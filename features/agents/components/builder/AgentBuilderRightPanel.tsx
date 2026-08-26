@@ -18,7 +18,7 @@ import {
   unregisterSurface,
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "../shared/AgentConversationColumn";
-import { AgentSampleStrip } from "../samples/AgentSampleStrip";
+import { AgentSamplesLauncher } from "../samples/AgentSamplesLauncher";
 import type { ConversationInvocation } from "@/features/agents/types/conversation-invocation.types";
 
 interface AgentBuilderRightPanelProps {
@@ -88,10 +88,15 @@ export function AgentBuilderRightPanel({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      {/* One-click "run with sample data" — approved test cases prefill the
-          composer through the normal input slices. */}
-      <AgentSampleStrip agentId={agentId} conversationId={conversationId} />
+    <div className="relative flex h-full min-h-0 flex-col">
+      {/* Test cases: ONE floating icon, out of everything's way (builder-only
+          by design — samples never add page chrome). Picking a sample prefills
+          the composer through the normal input slices. */}
+      <AgentSamplesLauncher
+        agentId={agentId}
+        conversationId={conversationId}
+        className="absolute right-2 top-2 z-10"
+      />
       <div className="min-h-0 flex-1">
         <AgentConversationColumn
           conversationId={conversationId}

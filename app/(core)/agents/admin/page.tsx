@@ -59,7 +59,7 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       url: "/administration/agents/system-agents/agents/[id]/samples",
       label: "Agent test cases (samples)",
       description:
-        "Per-agent sample-input store (agent.exemplar): browse approved/candidate test cases with contract-staleness badges, borrow raw inputs + reference output from real runs, approve (knob-capped) or prune. Approved samples render as one-click prefill chips in the builder test panel and the runner (AgentSampleStrip). SoR: features/agents/samples/FEATURE.md.",
+        "Per-agent sample-input store (agent.exemplar): browse approved/candidate test cases with contract-staleness badges, borrow raw inputs + reference output from real runs, approve (knob-capped) or prune. In the builder, ONE floating icon (AgentSamplesLauncher) opens the same manager — samples never add page chrome. SoR: features/agents/samples/FEATURE.md.",
       filePath:
         "app/(admin)/administration/agents/system-agents/agents/[id]/samples/page.tsx",
       status: "Live",
@@ -103,10 +103,10 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
 
   components: [
     {
-      name: "AgentSampleStrip",
-      filePath: "features/agents/components/samples/AgentSampleStrip.tsx",
+      name: "AgentSamplesLauncher",
+      filePath: "features/agents/components/samples/AgentSamplesLauncher.tsx",
       description:
-        "'Use a sample' chips above the builder test panel and the runner — an approved test case prefills variables + user input through the normal instance slices; 'Test cases' opens the manager sheet.",
+        "The ONE floating test-cases icon in the builder test panel — opens the manager sheet; picking a sample prefills variables + user input through the normal instance slices. Builder-only; samples never add page chrome.",
       tier: "internal",
     },
     {
