@@ -35,5 +35,11 @@ export const matrxKindRouteEnv: KindRouteEnv = {
  * wrapped-payload surface). That envelope is DATA there, not a route: routing
  * it to the bare kind component would strip the artifact chrome and lose the
  * door to the Canvas.
+ *
+ * A `matrx` block is a Kind Directive — its reserved-namespace slug is BY
+ * DESIGN never a kind_definition row, so any resolution the route could find
+ * for it would be wrong, and re-typing it away from MatrxEnvelopeBlock
+ * re-opens the raw-JSON break the Kind Directives merge closed (adversarial
+ * finding A-8: today the block survives only because the lookup misses).
  */
-export const MATRX_OWNED_BLOCK_TYPES = ["artifact"] as const;
+export const MATRX_OWNED_BLOCK_TYPES = ["artifact", "matrx"] as const;

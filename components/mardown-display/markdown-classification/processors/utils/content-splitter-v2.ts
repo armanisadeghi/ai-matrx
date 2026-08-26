@@ -2032,10 +2032,16 @@ export const splitContentIntoBlocksV2 = (
             language: "json",
             // content-ir: complete JSON regions carry the canonical envelope
             // (memoized one-shot parse — identical to the streaming path's).
-            metadata: withIrEnvelope(
-              extraction.content,
-              streamingState.metadata,
-            ),
+            // EXCEPT a directive: its __kind is a reserved-namespace slug that
+            // is BY DESIGN never in kind_definition, so an __ir envelope here
+            // fires a doomed registry fetch per message and lets the kind
+            // route re-type the block away from MatrxEnvelopeBlock the moment
+            // a directive-class registry row exists (adversarial finding A-8;
+            // recoverEmbeddedKindJsonBlocks already does exactly this).
+            metadata:
+              jsonType === "matrx"
+                ? streamingState.metadata
+                : withIrEnvelope(extraction.content, streamingState.metadata),
           });
         } else {
           // Regular JSON code block. Unknown-root JSON is where __kind-carried
@@ -2393,7 +2399,12 @@ export const splitContentIntoBlocksV2 = (
               type: jsonType as SplitterBlockType,
               content: jsonContent,
               language: "json",
-              metadata: withIrEnvelope(jsonContent, streamingState.metadata),
+              // A directive block never carries __ir — see the fenced-JSON
+              // site above (adversarial finding A-8).
+              metadata:
+                jsonType === "matrx"
+                  ? streamingState.metadata
+                  : withIrEnvelope(jsonContent, streamingState.metadata),
             });
           } else {
             blocks.push({
