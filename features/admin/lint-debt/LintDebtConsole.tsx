@@ -45,6 +45,8 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_REPORTING_SURFACE_NAME, createAdminReportingScope } from "@/features/surfaces/manifests/admin-reporting.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import {
   commitHref,
   pathHref,
@@ -80,6 +82,22 @@ const HANDOFF_PATH = "docs/handoffs/eslint-debt-campaign.md";
  */
 function isConcreteRoute(route: string | null): route is string {
   return route !== null && !route.includes("[");
+}
+
+function lintFindingKey(f: LintDebtFinding): string {
+  return `${f.file}:${f.line}:${f.column}:${f.rule}`;
+}
+
+/** The finding as readable text — what Copy-as / Export / AI actions carry. */
+function lintFindingContent(f: LintDebtFinding): string {
+  return [
+    `${f.file}:${f.line} [${f.rule}] (${CLASS_TITLES[classOf(f.rule)]})`,
+    `Feature: ${f.feature}`,
+    f.route ? `Route: ${f.route}` : "",
+    `Message: ${f.message}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 /** The clock never notifies us; the age only needs to be right on mount. */
@@ -128,6 +146,7 @@ export function LintDebtConsole({
 }: LintDebtConsoleProps) {
   const [bucket, setBucket] = useState<BucketFilter>({ kind: "none" });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [clickedFinding, setClickedFinding] = useState<LintDebtFinding | null>(null);
 
   /**
    * Snapshot age in days. The wall clock is an external system, so it is read
@@ -467,64 +486,126 @@ export function LintDebtConsole({
       )}
 
       <div className="min-h-0 flex-1">
-        <MatrxDataTable
-          urlState={{ id: "lint-debt" }}
-          data={findings}
-          columns={columns}
-          getRowId={(f) => `${f.file}:${f.line}:${f.column}:${f.rule}`}
-          pageSize={50}
-          emptyState={{
-            icon: <ShieldCheck className="h-8 w-8 text-muted-foreground" />,
-            title:
-              report.totals.errors === 0
-                ? "No error-severity lint findings"
-                : "No findings match this filter",
-            description:
-              report.totals.errors === 0
-                ? "The tree is clean at error severity. Promote check:lint-debt into the strict release gates."
-                : "Clear the bucket filter to see the full report.",
+        <NonEditableContextMenu
+          sourceFeature="lint-debt"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const finding = id ? findings.find((f) => lintFindingKey(f) === id) : undefined;
+            setClickedFinding(finding ?? null);
+            if (!finding) return null;
+            return { content: lintFindingContent(finding) };
           }}
-          toolbar={{
-            search: true,
-            searchPlaceholder: "Search file, rule, message…",
-          }}
-          copy={{
-            label: "Lint finding",
-            listLabel: "Lint findings (this view)",
-            location: "/administration/reporting/lint-debt",
-            rowKind: "lint-finding",
-            listKind: "lint-findings",
-            humanRow: (f) => `${f.file}:${f.line} [${f.rule}] ${f.message}`,
-            rowAttributes: (f) => ({
-              file: f.file,
-              line: f.line,
-              rule: f.rule,
-              class: classOf(f.rule),
-              route: f.route,
-            }),
-          }}
-          detail={{
-            title: (f) => (
-              <span className="font-mono text-sm">
-                {f.file.split("/").pop()}:{f.line}
-              </span>
-            ),
-            description: (f) => f.rule,
-            defaultWidth: 560,
-            render: (f) => (
-              <FindingDetail
-                finding={f}
-                onCopyFix={() =>
-                  void copy(
-                    `detail:${f.file}:${f.line}`,
-                    fixPromptForFinding(f),
-                    "Repair brief",
-                  )
-                }
-              />
-            ),
-          }}
-        />
+          extraSections={[
+            {
+              id: "lint-debt-row",
+              label: "This finding",
+              anchor: "after-compare",
+              items: [
+                {
+                  kind: "link",
+                  id: "lint-open-source",
+                  label: "Open source",
+                  icon: ExternalLink,
+                  href: clickedFinding ? sourceHref(clickedFinding.file, clickedFinding.line) : "#",
+                  target: "_blank",
+                  disabled: !clickedFinding,
+                  description: "Open the file:line on main",
+                },
+                ...(clickedFinding && isConcreteRoute(clickedFinding.route)
+                  ? ([
+                      {
+                        kind: "link",
+                        id: "lint-open-route",
+                        label: "Open surface",
+                        icon: ExternalLink,
+                        href: clickedFinding.route,
+                        target: "_blank",
+                        description: "Open the route this finding renders on",
+                      },
+                    ] satisfies ContextMenuExtraItem[])
+                  : []),
+                {
+                  kind: "item",
+                  id: "lint-copy-fix",
+                  label: "Copy repair brief",
+                  icon: Copy,
+                  disabled: !clickedFinding,
+                  description: "A paste-ready brief for an agent to fix this",
+                  onSelect: () => {
+                    if (clickedFinding) {
+                      void copy(
+                        `menu:${clickedFinding.file}:${clickedFinding.line}`,
+                        fixPromptForFinding(clickedFinding),
+                        "Repair brief",
+                      );
+                    }
+                  },
+                },
+              ] satisfies ContextMenuExtraItem[],
+            },
+          ]}
+        >
+          <MatrxDataTable
+            urlState={{ id: "lint-debt" }}
+            data={findings}
+            columns={columns}
+            getRowId={(f) => lintFindingKey(f)}
+            pageSize={50}
+            emptyState={{
+              icon: <ShieldCheck className="h-8 w-8 text-muted-foreground" />,
+              title:
+                report.totals.errors === 0
+                  ? "No error-severity lint findings"
+                  : "No findings match this filter",
+              description:
+                report.totals.errors === 0
+                  ? "The tree is clean at error severity. Promote check:lint-debt into the strict release gates."
+                  : "Clear the bucket filter to see the full report.",
+            }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Search file, rule, message…",
+            }}
+            copy={{
+              label: "Lint finding",
+              listLabel: "Lint findings (this view)",
+              location: "/administration/reporting/lint-debt",
+              rowKind: "lint-finding",
+              listKind: "lint-findings",
+              humanRow: (f) => `${f.file}:${f.line} [${f.rule}] ${f.message}`,
+              rowAttributes: (f) => ({
+                file: f.file,
+                line: f.line,
+                rule: f.rule,
+                class: classOf(f.rule),
+                route: f.route,
+              }),
+            }}
+            detail={{
+              title: (f) => (
+                <span className="font-mono text-sm">
+                  {f.file.split("/").pop()}:{f.line}
+                </span>
+              ),
+              description: (f) => f.rule,
+              defaultWidth: 560,
+              render: (f) => (
+                <FindingDetail
+                  finding={f}
+                  onCopyFix={() =>
+                    void copy(
+                      `detail:${f.file}:${f.line}`,
+                      fixPromptForFinding(f),
+                      "Repair brief",
+                    )
+                  }
+                />
+              ),
+            }}
+          />
+        </NonEditableContextMenu>
       </div>
     </div>
     </SurfaceRuntimeProvider>

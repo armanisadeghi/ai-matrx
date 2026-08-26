@@ -18,6 +18,8 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import {
     CHANGE_HANDLING_MODE_LABELS,
     CHANGE_TYPE_CATALOGUE,
@@ -26,6 +28,31 @@ import {
     type ChangeTypeDef,
 } from "../catalogue";
 import { getChangePolicyDivergence, type OrgDivergenceRow } from "../service";
+
+function divergenceRowHref(row: OrgDivergenceRow): string {
+    return `/organizations/${row.organization_slug ?? row.organization_id}/settings/change-policy`;
+}
+
+function divergenceRowContent(row: OrgDivergenceRow): string {
+    return [
+        row.organization_name ?? row.organization_id,
+        `Overridden rows: ${row.override_count}`,
+        `Last change: ${row.last_updated ? new Date(row.last_updated).toLocaleString() : "—"}`,
+    ].join("\n");
+}
+
+function catalogueRowContent(row: ChangeTypeDef): string {
+    return [
+        `${row.label} (${row.key})`,
+        `Tier ${row.tier} — ${TIER_META_BY_TIER.get(row.tier)?.title ?? ""}`,
+        `Platform default: ${CHANGE_HANDLING_MODE_LABELS[row.defaultMode]}`,
+        `Window lapses: ${defaultTimeoutExpiryFor(row) === "proceed" ? "Proceeds" : "Holds"}`,
+        row.floorHumanOnly ? "Floor: Human only" : "",
+        row.description,
+    ]
+        .filter(Boolean)
+        .join("\n");
+}
 
 const catalogueColumns: MatrxColumnDef<ChangeTypeDef>[] = [
     {
@@ -73,6 +100,8 @@ const catalogueColumns: MatrxColumnDef<ChangeTypeDef>[] = [
 export function AdminChangePolicyView() {
     const [divergence, setDivergence] = React.useState<OrgDivergenceRow[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [clickedOrgRow, setClickedOrgRow] = React.useState<OrgDivergenceRow | null>(null);
+    const [clickedCatalogueRow, setClickedCatalogueRow] = React.useState<ChangeTypeDef | null>(null);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -127,13 +156,43 @@ export function AdminChangePolicyView() {
                         Every organization currently follows the platform defaults for all change types.
                     </SettingsCallout>
                 ) : (
-                    <MatrxDataTable
-                        data={divergence}
-                        columns={divergenceColumns}
-                        getRowId={(row) => row.organization_id}
-                        isLoading={loading}
-                        zebra
-                    />
+                    <NonEditableContextMenu
+                        sourceFeature="change-policy"
+                        contentSource={{ type: "raw" }}
+                        contextData={{ content: "" }}
+                        resolveContextOnOpen={(element) => {
+                            const id = element?.closest("[data-row-id]")?.getAttribute("data-row-id");
+                            const row = id ? divergence.find((r) => r.organization_id === id) : undefined;
+                            setClickedOrgRow(row ?? null);
+                            if (!row) return null;
+                            return { content: divergenceRowContent(row) };
+                        }}
+                        extraSections={[
+                            {
+                                id: "change-policy-org-row",
+                                label: "This organization",
+                                anchor: "after-compare",
+                                items: [
+                                    {
+                                        kind: "link",
+                                        id: "change-policy-open-org",
+                                        label: "Open organization's change policy",
+                                        icon: Building2,
+                                        href: clickedOrgRow ? divergenceRowHref(clickedOrgRow) : "#",
+                                        disabled: !clickedOrgRow,
+                                    },
+                                ] satisfies ContextMenuExtraItem[],
+                            },
+                        ]}
+                    >
+                        <MatrxDataTable
+                            data={divergence}
+                            columns={divergenceColumns}
+                            getRowId={(row) => row.organization_id}
+                            isLoading={loading}
+                            zebra
+                        />
+                    </NonEditableContextMenu>
                 )}
             </div>
 
@@ -143,13 +202,49 @@ export function AdminChangePolicyView() {
                     title="Platform defaults — the change-type catalogue"
                     description={`All ${CHANGE_TYPE_CATALOGUE.length} change types with their default handling. The catalogue is CODE (features/change-policy/catalogue.ts); edit it there and apply the generated seed — never by hand in the DB. Row 38 is floored structurally in the resolver.`}
                 />
-                <MatrxDataTable
-                    data={[...CHANGE_TYPE_CATALOGUE]}
-                    columns={catalogueColumns}
-                    getRowId={(row) => row.key}
-                    pageSize={50}
-                    zebra
-                />
+                <NonEditableContextMenu
+                    sourceFeature="change-policy"
+                    contentSource={{ type: "raw" }}
+                    contextData={{ content: "" }}
+                    resolveContextOnOpen={(element) => {
+                        const id = element?.closest("[data-row-id]")?.getAttribute("data-row-id");
+                        const row = id ? CHANGE_TYPE_CATALOGUE.find((r) => r.key === id) : undefined;
+                        setClickedCatalogueRow(row ?? null);
+                        if (!row) return null;
+                        return { content: catalogueRowContent(row) };
+                    }}
+                    extraSections={[
+                        {
+                            id: "change-policy-catalogue-row",
+                            label: "This change type",
+                            anchor: "after-compare",
+                            items: [
+                                {
+                                    kind: "item",
+                                    id: "change-policy-copy-key",
+                                    label: "Copy change-type key",
+                                    icon: ShieldCheck,
+                                    disabled: !clickedCatalogueRow,
+                                    onSelect: () => {
+                                        if (!clickedCatalogueRow) return;
+                                        void navigator.clipboard
+                                            .writeText(clickedCatalogueRow.key)
+                                            .then(() => toast.success("Key copied"))
+                                            .catch(() => toast.error("Could not copy to the clipboard"));
+                                    },
+                                },
+                            ] satisfies ContextMenuExtraItem[],
+                        },
+                    ]}
+                >
+                    <MatrxDataTable
+                        data={[...CHANGE_TYPE_CATALOGUE]}
+                        columns={catalogueColumns}
+                        getRowId={(row) => row.key}
+                        pageSize={50}
+                        zebra
+                    />
+                </NonEditableContextMenu>
             </div>
         </div>
     );

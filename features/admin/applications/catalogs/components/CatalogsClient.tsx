@@ -25,6 +25,8 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { createClient } from "@/utils/supabase/client";
 import { APPLICATIONS_ADMIN_LOCATION } from "@/features/admin/applications/constants";
 import { AddFromLinkDialog } from "@/features/admin/applications/catalogs/components/AddFromLinkDialog";
@@ -252,6 +254,8 @@ export function CatalogsClient({
 
   type KindRow = (typeof kindRows)[number];
 
+  const [clickedKindRow, setClickedKindRow] = useState<KindRow | null>(null);
+
   const kindColumns: MatrxColumnDef<KindRow>[] = [
     {
       id: "label",
@@ -471,6 +475,41 @@ export function CatalogsClient({
         </p>
 
         <div className="min-h-0 flex-1">
+          <NonEditableContextMenu
+            sourceFeature="applications-catalogs"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "" }}
+            resolveContextOnOpen={(element) => {
+              const id = element?.closest("[data-row-id]")?.getAttribute("data-row-id");
+              const row = id ? kindRows.find((r) => r.slug === id) : undefined;
+              setClickedKindRow(row ?? null);
+              if (!row) return null;
+              return {
+                content: `${row.label} (${row.slug}) — ${row.total} entries, ${row.active} active, ${row.inactive} inactive`,
+              };
+            }}
+            extraSections={[
+              {
+                id: "catalog-kind-row",
+                label: "This kind",
+                anchor: "after-compare",
+                items: [
+                  {
+                    kind: "item",
+                    id: "catalog-open-kind",
+                    label: "Open entries",
+                    icon: LibraryBig,
+                    disabled: !clickedKindRow,
+                    description: "Open this kind's entry table",
+                    onSelect: () => {
+                      if (clickedKindRow)
+                        setView({ mode: "kind", kind: clickedKindRow.slug });
+                    },
+                  },
+                ] satisfies ContextMenuExtraItem[],
+              },
+            ]}
+          >
           <MatrxDataTable
             urlState={{ id: "application-catalogs" }}
             data={kindRows}
@@ -549,6 +588,7 @@ export function CatalogsClient({
               </Button>
             )}
           />
+          </NonEditableContextMenu>
         </div>
 
         <AddFromLinkDialog

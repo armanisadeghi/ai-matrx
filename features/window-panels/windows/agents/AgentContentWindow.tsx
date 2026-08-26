@@ -63,6 +63,12 @@ import { AgentContentTab } from "./agent-content.types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { AGENT_ADVANCED_EDITOR_SURFACE_NAME } from "./agentAdvancedEditorWrite";
 import { useAgentAdvancedEditorSurface } from "./useAgentAdvancedEditorSurface";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+  type ResolvedContextMenuContext,
+} from "@/features/context-menu-v3/types";
 import { JsonInspector } from "@/components/official-candidate/json-inspector/JsonInspector";
 import {
   AgentSidebar,
@@ -159,6 +165,7 @@ export function CompactTabStrip({
         return (
           <button
             key={tab.id}
+            data-agent-tab-id={tab.id}
             onClick={() => onTabChange(tab.id)}
             className={cn(
               "flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium whitespace-nowrap border-b-2 transition-all duration-150 shrink-0 relative",
@@ -869,12 +876,106 @@ export default function AgentContentWindow({
             )
           ) : (
             <>
-              <CompactTabStrip
-                tabs={activeTabs}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                isDirty={isDirty}
-              />
+              {/* The strip's OWN right-click menu (context-menu-v3). Two of the
+                  twelve tab bodies (`system`, `messages`) already mount their
+                  own menu deep inside `TabContent`; the strip that decides
+                  WHICH tab you're looking at, and the other ten tab bodies,
+                  had none — a right-click there fell through to whatever page
+                  sat underneath the floating window. This menu owns the strip
+                  pane only: a sibling of the tab-body menus, never nested
+                  around them (ONE MENU PER PANE). */}
+              <NonEditableContextMenu
+                sourceFeature="agent-builder"
+                surfaceName={AGENT_ADVANCED_EDITOR_SURFACE_NAME}
+                contentSource={{ type: "raw" }}
+                // The manifest's own values, deliberately NOT
+                // `getApplicationScope` — that would win outright over the
+                // per-tab resolution below and erase the right-clicked tab.
+                contextData={getScope()}
+                entity={{
+                  type: "agent",
+                  id: agentId,
+                  title: agentName ?? "Agent",
+                  resourceType: "agent",
+                }}
+                resolveContextOnOpen={(
+                  target,
+                ): ResolvedContextMenuContext | null => {
+                  const clickedId = target
+                    ?.closest<HTMLElement>("[data-agent-tab-id]")
+                    ?.getAttribute("data-agent-tab-id") as
+                    | AgentContentTab
+                    | null;
+                  const clickedDef = activeTabs.find(
+                    (t) => t.id === clickedId,
+                  );
+                  return {
+                    content: clickedDef
+                      ? `${agentName ?? "Agent"} — ${clickedDef.label} tab`
+                      : [
+                          `${agentName ?? "Agent"} — open tabs`,
+                          ...activeTabs.map((t) => `• ${t.label}`),
+                        ].join("\n"),
+                    [CONTEXT_MENU_ENTITY_KEY]: {
+                      type: "agent",
+                      id: agentId,
+                      title: agentName ?? "Agent",
+                      resourceType: "agent",
+                    },
+                  };
+                }}
+                extraSections={[
+                  ((): ContextMenuExtraSection => {
+                    return {
+                      id: "agent-advanced-editor",
+                      label: "Agent",
+                      icon: Cpu,
+                      items: [
+                        {
+                          kind: "item",
+                          id: "aae-copy-id",
+                          label: "Copy agent ID",
+                          icon: Copy,
+                          onSelect: () => {
+                            void navigator.clipboard.writeText(agentId);
+                            toast.success("Agent ID copied");
+                          },
+                        },
+                        {
+                          kind: "item",
+                          id: "aae-copy-name",
+                          label: "Copy agent name",
+                          icon: Copy,
+                          disabled: !agentName,
+                          onSelect: () => {
+                            void navigator.clipboard.writeText(
+                              agentName ?? "",
+                            );
+                            toast.success("Agent name copied");
+                          },
+                        },
+                        { kind: "separator", id: "aae-sep" },
+                        {
+                          kind: "item",
+                          id: "aae-refresh",
+                          label: "Refresh agent data",
+                          icon: RefreshCw,
+                          onSelect: () => {
+                            dispatch(fetchFullAgent(agentId));
+                          },
+                        },
+                      ],
+                    };
+                  })(),
+                ]}
+              >
+                <CompactTabStrip
+                  tabs={activeTabs}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  isDirty={isDirty}
+                />
+              </NonEditableContextMenu>
               <TabContent
                 agentId={agentId}
                 activeTab={activeTab}

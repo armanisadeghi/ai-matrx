@@ -31,6 +31,8 @@ import KindCatalogTable from "@/features/content-ir/admin/KindCatalogTable";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 import { buildAdminKindCatalogScope } from "@/features/content-ir/admin/kind-registry-scope";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 
 const KindSchemaExplorer = dynamic(
   () => import("@/features/content-ir/admin/KindRegistryAdminClient"),
@@ -106,6 +108,21 @@ export default function KindRegistryPageClient({
       surfaceName={ADMIN_KIND_REGISTRY_SURFACE_NAME}
       getScope={() => buildAdminKindCatalogScope({ board, tab })}
     >
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        surfaceName={ADMIN_KIND_REGISTRY_SURFACE_NAME}
+        contentSource={{ type: "raw" }}
+        getApplicationScope={() =>
+          buildApplicationScopeFromMenuContext({
+            selectedText: window.getSelection?.()?.toString() ?? "",
+            selectionRange: null,
+            contextData: buildAdminKindCatalogScope({
+              board,
+              tab,
+            }) as unknown as Record<string, unknown>,
+          })
+        }
+      >
       <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
         {/* Header + tabs */}
         <header className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border bg-card px-4 pr-14 pt-2">
@@ -181,6 +198,7 @@ export default function KindRegistryPageClient({
           )}
         </main>
       </div>
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }

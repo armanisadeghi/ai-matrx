@@ -11,6 +11,8 @@ import { repositorySourceHref } from "@/features/admin/reporting/source-links";
 import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_REPORTING_SURFACE_NAME, createAdminReportingScope } from "@/features/surfaces/manifests/admin-reporting.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import {
   DETECTOR_TITLES,
   type UnwiredFinding,
@@ -18,6 +20,21 @@ import {
   type UnwiredReport,
 } from "@/scripts/unwired/types";
 import { finishWiringPrompt } from "./fix-prompt";
+
+function findingKey(finding: UnwiredFinding): string {
+  return `${finding.repository}:${finding.file}:${finding.line}:${finding.symbol}`;
+}
+
+/** The finding as readable text — what Copy-as / Export / AI actions carry. */
+function findingContent(finding: UnwiredFinding): string {
+  return [
+    `${finding.file}:${finding.line} (${finding.repository})`,
+    `Detector: ${DETECTOR_TITLES[finding.detector]}`,
+    `Artifact: ${finding.symbol}`,
+    `Size: ${finding.lines.toLocaleString()} lines`,
+    `What remains: ${finding.remains}`,
+  ].join("\n");
+}
 
 const STALE_AFTER_DAYS = 7;
 const subscribeToNothing = () => () => {};
@@ -35,6 +52,7 @@ interface UnwiredConsoleProps {
 
 export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProps) {
   const [copied, setCopied] = useState<string | null>(null);
+  const [clickedFinding, setClickedFinding] = useState<UnwiredFinding | null>(null);
   const scanAge = useSyncExternalStore(subscribeToNothing, () => ageInDays(report.generatedAt), () => null);
   const prior = history.length > 1 ? history.at(-2) : null;
   const copyBrief = async (finding: UnwiredFinding): Promise<void> => {
@@ -181,19 +199,64 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
       </section>
 
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card">
-        <MatrxDataTable
-          data={report.findings}
-          columns={columns}
-          getRowId={(finding) => `${finding.repository}:${finding.file}:${finding.line}:${finding.symbol}`}
-          urlState={{ id: "unwired" }}
-          pageSize={50}
-          toolbar={{ search: true, searchPlaceholder: "Search repository, source, artifact, or remaining work…" }}
-          emptyState={{
-            icon: <PlugZap className="size-8 text-muted-foreground" />,
-            title: "No unfinished wiring found by the completed rules",
-            description: "Read scripts/unwired/FEATURE.md → Known limits before treating a clean static report as proof.",
+        <NonEditableContextMenu
+          sourceFeature="unwired"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const finding = id ? report.findings.find((f) => findingKey(f) === id) : undefined;
+            setClickedFinding(finding ?? null);
+            if (!finding) return null;
+            return { content: findingContent(finding) };
           }}
-        />
+          extraSections={[
+            {
+              id: "unwired-row",
+              label: "This finding",
+              anchor: "after-compare",
+              items: [
+                {
+                  kind: "link",
+                  id: "unwired-open-source",
+                  label: "Open source",
+                  icon: ExternalLink,
+                  href: clickedFinding
+                    ? repositorySourceHref(clickedFinding.repository, clickedFinding.file, clickedFinding.line)
+                    : "#",
+                  target: "_blank",
+                  disabled: !clickedFinding,
+                  description: "Open the file:line on the default branch",
+                },
+                {
+                  kind: "item",
+                  id: "unwired-copy-brief",
+                  label: "Copy finish-the-wiring brief",
+                  icon: Copy,
+                  disabled: !clickedFinding,
+                  description: "A paste-ready brief for an agent to finish this",
+                  onSelect: () => {
+                    if (clickedFinding) void copyBrief(clickedFinding);
+                  },
+                },
+              ] satisfies ContextMenuExtraItem[],
+            },
+          ]}
+        >
+          <MatrxDataTable
+            data={report.findings}
+            columns={columns}
+            getRowId={(finding) => findingKey(finding)}
+            urlState={{ id: "unwired" }}
+            pageSize={50}
+            toolbar={{ search: true, searchPlaceholder: "Search repository, source, artifact, or remaining work…" }}
+            emptyState={{
+              icon: <PlugZap className="size-8 text-muted-foreground" />,
+              title: "No unfinished wiring found by the completed rules",
+              description: "Read scripts/unwired/FEATURE.md → Known limits before treating a clean static report as proof.",
+            }}
+          />
+        </NonEditableContextMenu>
       </div>
     </div>
     </SurfaceRuntimeProvider>

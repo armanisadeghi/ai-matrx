@@ -14,7 +14,8 @@
 import { useMemo, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { Copy, ExternalLink, Loader2 } from "lucide-react";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -29,6 +30,12 @@ import {
   COLUMN_HEADING,
   StatusIcon,
 } from "@/features/content-ir/admin/KindStatusBoard";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+  type ResolvedContextMenuContext,
+} from "@/features/context-menu-v3/types";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "ok", label: "ok" },
@@ -133,6 +140,95 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
       router.push(href);
     });
   };
+
+  // ── The ONE right-click menu for the whole catalog ───────────────────────
+  //
+  // `MatrxDataTable` stamps `data-row-id` from `getRowId` (the kind name), so
+  // the pane's single menu resolves the right-clicked row from the DOM, same
+  // delegation shape as the CRM/lists reference wirings.
+  const [menuRow, setMenuRow] = useState<KindBoardRow | null>(null);
+
+  const resolveMenuTarget = (
+    target: HTMLElement | null,
+  ): ResolvedContextMenuContext | null => {
+    const kind = target
+      ?.closest?.("[data-row-id]")
+      ?.getAttribute("data-row-id");
+    const row = kind ? (filteredRows.find((r) => r.kind === kind) ?? null) : null;
+    setMenuRow(row);
+    if (!row) return null;
+    return {
+      content: `${row.kind} (${row.label}) — active: ${row.isActive ? "yes" : "no"}, family: ${row.family ?? "none"}, components: ${row.componentCount}, surfaces: ${row.surfaceCount}, examples: ${row.exampleCount}`,
+      [CONTEXT_MENU_ENTITY_KEY]:
+        row.presence === "snapshot-only"
+          ? null
+          : { type: "kind_definition", id: row.kind, title: row.label },
+    };
+  };
+
+  const menuSections: ContextMenuExtraSection[] = (() => {
+    const row = menuRow;
+    if (!row) return [];
+    const href = kindDetailHref(row);
+    const items: ContextMenuExtraSection["items"] = [];
+    if (href) {
+      items.push({
+        kind: "link",
+        id: "kind-open",
+        label: `Open "${row.kind}"`,
+        icon: ExternalLink,
+        href,
+        description: "Open this kind's definition",
+      });
+      items.push({
+        kind: "link",
+        id: "kind-open-new-tab",
+        label: "Open in a new tab",
+        icon: ExternalLink,
+        href,
+        target: "_blank",
+      });
+    }
+    items.push({
+      kind: "item",
+      id: "kind-copy-id",
+      label: "Copy __kind id",
+      icon: Copy,
+      onSelect: () => {
+        void navigator.clipboard.writeText(row.kind).then(() => {
+          toast.success("Copied __kind id");
+        });
+      },
+    });
+    const examplesHref = kindTabHref(row, "examples");
+    if (examplesHref && row.exampleCount > 0) {
+      items.push({
+        kind: "link",
+        id: "kind-open-examples",
+        label: `Examples (${row.exampleCount})`,
+        icon: ExternalLink,
+        href: examplesHref,
+      });
+    }
+    const assetsHref = kindTabHref(row, "assets");
+    if (assetsHref && row.componentCount > 0) {
+      items.push({
+        kind: "link",
+        id: "kind-open-renderer",
+        label: `Renderer components (${row.componentCount})`,
+        icon: ExternalLink,
+        href: assetsHref,
+      });
+    }
+    return [
+      {
+        id: "kind-actions",
+        label: "Kind",
+        anchor: "after-clipboard",
+        items,
+      },
+    ];
+  })();
 
   const columns = useMemo((): MatrxColumnDef<KindBoardRow>[] => {
     return [
@@ -314,6 +410,13 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
   }, [familyOptions, navigatingKind, isPending]);
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="admin"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: "Content-IR Kind Catalog" }}
+      resolveContextOnOpen={resolveMenuTarget}
+      extraSections={menuSections}
+    >
     <MatrxDataTable<KindBoardRow>
       urlState={{ id: "content-kinds" }}
       data={filteredRows}
@@ -392,5 +495,6 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
         description: "Clear filters or facets to see the full registry.",
       }}
     />
+    </NonEditableContextMenu>
   );
 }

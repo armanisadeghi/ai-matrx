@@ -31,6 +31,8 @@ import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 
 import {
   purposeService,

@@ -43,6 +43,8 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_REPORTING_SURFACE_NAME, createAdminReportingScope } from "@/features/surfaces/manifests/admin-reporting.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { describeFinding, isRegistryToken } from "@/scripts/dead-ends/describe";
 import {
   RULE_DOCTRINE,
@@ -83,6 +85,22 @@ function isConcreteRoute(route: string | null): route is string {
   return route !== null && !route.includes("[");
 }
 
+function deadEndKey(f: DeadEndFinding): string {
+  return `${f.file}:${f.line}:${f.column}:${f.rule}`;
+}
+
+/** The finding as readable text — what Copy-as / Export / AI actions carry. */
+function deadEndContent(f: DeadEndFinding): string {
+  return [
+    `${f.file}:${f.line} [${RULE_TITLES[f.rule]} / ${f.severity}]`,
+    `Entity: ${f.entity}`,
+    f.route ? `Surface: ${f.route}` : "",
+    describeFinding(f),
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 /** The clock never notifies us; the age only needs to be right on mount. */
 const subscribeToNothing = () => () => {};
 
@@ -117,6 +135,7 @@ export function DeadEndsConsole({
 }: DeadEndsConsoleProps) {
   const [bucket, setBucket] = useState<BucketFilter>({ kind: "none" });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [clickedFinding, setClickedFinding] = useState<DeadEndFinding | null>(null);
   /**
    * Snapshot age in days. The wall clock is an external system, so it is read
    * through `useSyncExternalStore` rather than during render — `Date.now()` in
@@ -484,11 +503,72 @@ export function DeadEndsConsole({
       )}
 
       <div className="min-h-0 flex-1">
+        <NonEditableContextMenu
+          sourceFeature="dead-ends"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const finding = id ? findings.find((f) => deadEndKey(f) === id) : undefined;
+            setClickedFinding(finding ?? null);
+            if (!finding) return null;
+            return { content: deadEndContent(finding) };
+          }}
+          extraSections={[
+            {
+              id: "dead-ends-row",
+              label: "This finding",
+              anchor: "after-compare",
+              items: [
+                {
+                  kind: "link",
+                  id: "dead-end-open-source",
+                  label: "Open source",
+                  icon: ExternalLink,
+                  href: clickedFinding ? sourceHref(clickedFinding.file, clickedFinding.line) : "#",
+                  target: "_blank",
+                  disabled: !clickedFinding,
+                  description: "Open the file:line on main",
+                },
+                ...(clickedFinding && isConcreteRoute(clickedFinding.route)
+                  ? ([
+                      {
+                        kind: "link",
+                        id: "dead-end-open-route",
+                        label: "Open surface",
+                        icon: ExternalLink,
+                        href: clickedFinding.route,
+                        target: "_blank",
+                        description: "Open the route this finding names",
+                      },
+                    ] satisfies ContextMenuExtraItem[])
+                  : []),
+                {
+                  kind: "item",
+                  id: "dead-end-copy-fix",
+                  label: "Copy repair brief",
+                  icon: Copy,
+                  disabled: !clickedFinding,
+                  description: "A paste-ready brief for an agent to fix this",
+                  onSelect: () => {
+                    if (clickedFinding) {
+                      void copy(
+                        `menu:${clickedFinding.file}:${clickedFinding.line}`,
+                        fixPromptForFinding(clickedFinding),
+                        "Repair brief",
+                      );
+                    }
+                  },
+                },
+              ] satisfies ContextMenuExtraItem[],
+            },
+          ]}
+        >
         <MatrxDataTable
           urlState={{ id: "dead-ends" }}
           data={findings}
           columns={columns}
-          getRowId={(f) => `${f.file}:${f.line}:${f.column}:${f.rule}`}
+          getRowId={(f) => deadEndKey(f)}
           pageSize={50}
           emptyState={{
             icon: <DoorOpen className="h-8 w-8 text-muted-foreground" />,
@@ -546,6 +626,7 @@ export function DeadEndsConsole({
             ),
           }}
         />
+        </NonEditableContextMenu>
       </div>
 
       <AllowlistPanel report={report} />

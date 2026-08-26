@@ -21,9 +21,12 @@ import React, { useState, useCallback, useEffect } from "react";
 import {
   ChevronLeft,
   ChevronRight,
+  Copy,
   Download,
   FlipHorizontal,
   FlipVertical,
+  Image as ImageIcon,
+  Link as LinkIcon,
   ZoomIn,
   ZoomOut,
   RotateCcw,
@@ -42,6 +45,9 @@ import {
   IMAGE_VIEWER_SURFACE_NAME,
   createImageViewerScope,
 } from "@/features/surfaces/manifests/image-viewer.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { toast } from "@/lib/toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -444,13 +450,62 @@ export function ImageViewerWindow({
         }
         isEditable={false}
       >
-        <ImageViewer
-          images={images}
-          initialIndex={initialIndex}
-          alts={alts}
-          activeIndex={index}
-          onIndexChange={setIndex}
-        />
+        {/* The window's own right-click menu. Without it a right-click here
+            answers with whatever page sits under the floating window — the
+            twin surface (`GalleryWindow`) already proves this pattern.
+            `images` are plain URL strings (see `OpenImageViewerPayload`),
+            never a durable file/media record, so — same as Gallery — no
+            `entity` is declared and Attach To / Share correctly stay
+            hidden rather than pointing at a record that doesn't exist. */}
+        <NonEditableContextMenu
+          sourceFeature="image-studio"
+          surfaceName={IMAGE_VIEWER_SURFACE_NAME}
+          contentSource={{ type: "raw" }}
+          contextData={{
+            content: alts?.[index]
+              ? `${alts[index]} — ${images[index] ?? ""}`
+              : (images[index] ?? ""),
+          }}
+          extraSections={[
+            {
+              id: "image-viewer-actions",
+              label: "Image",
+              icon: ImageIcon,
+              items: [
+                {
+                  kind: "item",
+                  id: "iv-copy-url",
+                  label: "Copy image URL",
+                  icon: LinkIcon,
+                  disabled: !images[index],
+                  onSelect: () => {
+                    void navigator.clipboard.writeText(images[index] ?? "");
+                    toast.success("Image URL copied");
+                  },
+                },
+                {
+                  kind: "item",
+                  id: "iv-copy-all-urls",
+                  label: "Copy all image URLs",
+                  icon: Copy,
+                  disabled: images.length < 2,
+                  onSelect: () => {
+                    void navigator.clipboard.writeText(images.join("\n"));
+                    toast.success(`${images.length} image URLs copied`);
+                  },
+                },
+              ],
+            } satisfies ContextMenuExtraSection,
+          ]}
+        >
+          <ImageViewer
+            images={images}
+            initialIndex={initialIndex}
+            alts={alts}
+            activeIndex={index}
+            onIndexChange={setIndex}
+          />
+        </NonEditableContextMenu>
       </SurfaceRuntimeProvider>
     </WindowPanel>
   );

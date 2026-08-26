@@ -18,12 +18,20 @@ import React, {
 import { useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
+  Copy,
+  ExternalLink,
   History,
   Loader2,
   RefreshCw,
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+  type ResolvedContextMenuContext,
+} from "@/features/context-menu-v3/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -124,7 +132,7 @@ function toMandateDetail(
   };
 }
 
-function humanRow(r: MandateRow): string {
+export function humanRow(r: MandateRow): string {
   return [
     `Mandate: ${r.mandateKey}${r.label ? ` (${r.label})` : ""}`,
     `Agent: ${r.agentName}`,
@@ -273,6 +281,86 @@ export function MandatesConsole() {
   const codeAgentDriftRows = rows.filter(
     (row) => row.health === "code ↔ agent drift",
   );
+
+  // ── The ONE right-click menu for the whole console ───────────────────────
+  //
+  // Delegates off `data-row-id` (stamped by `MatrxDataTable`'s `getRowId`),
+  // same shape as the CRM/lists reference wirings. "Open" reuses the SAME
+  // selection state the table's own row click and the `?mandate=` deep link
+  // both drive — a right-clicked mandate opens the same detail panel, never a
+  // second viewer.
+  const [menuRow, setMenuRow] = useState<MandateRow | null>(null);
+
+  const resolveMandateMenuTarget = (
+    target: HTMLElement | null,
+  ): ResolvedContextMenuContext | null => {
+    const id = target?.closest?.("[data-row-id]")?.getAttribute("data-row-id");
+    const row = id ? (rows.find((r) => r.id === id) ?? null) : null;
+    setMenuRow(row);
+    if (!row) return null;
+    return {
+      content: humanRow(row),
+      [CONTEXT_MENU_ENTITY_KEY]: {
+        type: "mandate",
+        id: row.id,
+        title: row.mandateKey,
+      },
+    };
+  };
+
+  const mandateMenuSections: ContextMenuExtraSection[] = (() => {
+    const row = menuRow;
+    if (!row) return [];
+    const deepLinkHref = `/administration/agents/mandates?mandate=${encodeURIComponent(row.mandateKey)}`;
+    const items: ContextMenuExtraSection["items"] = [
+      {
+        kind: "item",
+        id: "mandate-open",
+        label: `Open "${row.mandateKey}"`,
+        icon: ExternalLink,
+        description: "Open this mandate's detail panel — holders, bindings, contract",
+        onSelect: () => setSelectedId(row.id),
+      },
+      {
+        kind: "link",
+        id: "mandate-open-new-tab",
+        label: "Open in a new tab",
+        icon: ExternalLink,
+        href: deepLinkHref,
+        target: "_blank",
+      },
+      {
+        kind: "item",
+        id: "mandate-copy-key",
+        label: "Copy mandate key",
+        icon: Copy,
+        onSelect: () => {
+          void navigator.clipboard.writeText(row.mandateKey).then(() => {
+            toast.success("Copied mandate key");
+          });
+        },
+      },
+      {
+        kind: "item",
+        id: "mandate-copy-id",
+        label: "Copy mandate id",
+        icon: Copy,
+        onSelect: () => {
+          void navigator.clipboard.writeText(row.id).then(() => {
+            toast.success("Copied mandate id");
+          });
+        },
+      },
+    ];
+    return [
+      {
+        id: "mandate-actions",
+        label: "Mandate",
+        anchor: "after-clipboard",
+        items,
+      },
+    ];
+  })();
 
   // Surface scope — built at Run time from live console state so agents
   // launched here know every mandate, the health roll-up, and the selected
@@ -721,6 +809,13 @@ export function MandatesConsole() {
           </div>
         )}
         <div className="min-h-0 flex-1" data-surface-value="mandates_summary">
+          <NonEditableContextMenu
+            sourceFeature="admin"
+            contentSource={{ type: "raw" }}
+            contextData={{ content: "Agent Mandates console" }}
+            resolveContextOnOpen={resolveMandateMenuTarget}
+            extraSections={mandateMenuSections}
+          >
           <MatrxDataTable
             urlState={{ id: "mandates", selectedRow: false }}
             data={rows}
@@ -799,6 +894,7 @@ export function MandatesConsole() {
               defaultTab: "edit",
             }}
           />
+          </NonEditableContextMenu>
         </div>
       </div>
     </SurfaceRuntimeProvider>

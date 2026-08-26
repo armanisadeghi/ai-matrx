@@ -9,6 +9,8 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
 import { toast } from "@/lib/toast";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import { loadReviewQueue } from "@/features/admin/agent-review/service";
 import {
   EMPTY_REVIEW_REGISTRY,
@@ -43,6 +45,22 @@ function featureName(row: ReviewQueueRow, registry: ReviewRegistry): string {
   return registry.featuresById.get(row.feature_id)?.name ?? "Not assigned";
 }
 
+/** The row as readable text — what Copy-as / Export / AI actions carry. */
+function reviewRowContent(
+  row: ReviewQueueRow,
+  registry: ReviewRegistry,
+): string {
+  return [
+    row.title,
+    `Status: ${REVIEW_STATUS_LABELS[row.status as ReviewStatus] ?? row.status}`,
+    `Domain: ${domainName(row, registry)}`,
+    `Feature: ${featureName(row, registry)}`,
+    `Repository: ${row.repo_slug}`,
+    `Target page: ${reviewTargetPageDisplay(row.url).fullHref}`,
+    `Last activity: ${new Date(row.updated_at).toLocaleString()}`,
+  ].join("\n");
+}
+
 export default function AgentReviewQueueTable() {
   const router = useRouter();
   const [view, setView] = useUrlState(
@@ -54,6 +72,7 @@ export default function AgentReviewQueueTable() {
     EMPTY_REVIEW_REGISTRY,
   );
   const [loading, setLoading] = useState(true);
+  const [clickedRow, setClickedRow] = useState<ReviewQueueRow | null>(null);
 
   async function refresh() {
     setLoading(true);
@@ -272,38 +291,83 @@ export default function AgentReviewQueueTable() {
       </nav>
 
       <div className="min-h-0 flex-1">
-        <MatrxDataTable
-          data={visibleRows}
-          columns={columns}
-          getRowId={(row) => row.id}
-          isLoading={loading}
-          urlState={{
-            id: "agent-review",
-            defaultSort: { id: "updated_at", direction: "desc" },
+        <NonEditableContextMenu
+          sourceFeature="agent-review"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const row = id ? visibleRows.find((r) => r.id === id) : undefined;
+            setClickedRow(row ?? null);
+            if (!row) return null;
+            return { content: reviewRowContent(row, registry) };
           }}
-          toolbar={{
-            search: true,
-            searchPlaceholder: "Search review items",
-          }}
-          detail={{ enabled: false }}
-          onRowOpen={(row) =>
-            router.push(`/administration/users/agent-review/${row.id}`)
-          }
-          pageSize={25}
-          pageSizeOptions={[25, 50, 100]}
-          zebra
-          mobile="scroll"
-          emptyState={{
-            title:
-              view === "inbox"
-                ? "Nothing is waiting for your review"
-                : "No review items match this view",
-            description:
-              view === "inbox"
-                ? "Agents are still testing and repairing the remaining activity."
-                : "Clear a search or column filter to see more items.",
-          }}
-        />
+          extraSections={[
+            {
+              id: "agent-review-row",
+              label: "This review item",
+              anchor: "after-compare",
+              items: [
+                {
+                  kind: "link",
+                  id: "agent-review-open-item",
+                  label: "Open review item",
+                  icon: ArrowRight,
+                  href: clickedRow
+                    ? `/administration/users/agent-review/${clickedRow.id}`
+                    : "#",
+                  disabled: !clickedRow,
+                  description: "Open the review's own page",
+                },
+                {
+                  kind: "link",
+                  id: "agent-review-open-target",
+                  label: "Open the reviewed surface",
+                  icon: ExternalLink,
+                  href: clickedRow
+                    ? reviewTargetPageDisplay(clickedRow.url).href
+                    : "#",
+                  target: "_blank",
+                  disabled: !clickedRow,
+                  description: "Open the surface this item reviews",
+                },
+              ] satisfies ContextMenuExtraItem[],
+            },
+          ]}
+        >
+          <MatrxDataTable
+            data={visibleRows}
+            columns={columns}
+            getRowId={(row) => row.id}
+            isLoading={loading}
+            urlState={{
+              id: "agent-review",
+              defaultSort: { id: "updated_at", direction: "desc" },
+            }}
+            toolbar={{
+              search: true,
+              searchPlaceholder: "Search review items",
+            }}
+            detail={{ enabled: false }}
+            onRowOpen={(row) =>
+              router.push(`/administration/users/agent-review/${row.id}`)
+            }
+            pageSize={25}
+            pageSizeOptions={[25, 50, 100]}
+            zebra
+            mobile="scroll"
+            emptyState={{
+              title:
+                view === "inbox"
+                  ? "Nothing is waiting for your review"
+                  : "No review items match this view",
+              description:
+                view === "inbox"
+                  ? "Agents are still testing and repairing the remaining activity."
+                  : "Clear a search or column filter to see more items.",
+            }}
+          />
+        </NonEditableContextMenu>
       </div>
     </div>
   );

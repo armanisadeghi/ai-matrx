@@ -31,6 +31,8 @@ import type {
   CellEditsMap,
   MatrxColumnDef,
 } from "@/components/official/matrx-data-table/types";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 import {
   APPLICATIONS_ADMIN_LOCATION,
   catalogEntryHref,
@@ -71,6 +73,16 @@ interface CatalogKindTableProps {
   onChanged: () => void;
 }
 
+/** The entry as readable text — what Copy-as / Export / AI actions carry. */
+function catalogEntryContent(row: CatalogEntryRow): string {
+  return [
+    `${row.app}/${row.kind}/${row.key}`,
+    `name=${payloadDisplayName(row.payload) ?? "?"}`,
+    `active=${row.is_active} sort=${row.sort_order} min_app_version=${row.min_app_version ?? "none"}`,
+    `artifact=${row.artifact_url ?? "none"}`,
+  ].join("\n");
+}
+
 interface PendingToggle {
   row: CatalogEntryRow;
   next: boolean;
@@ -98,6 +110,7 @@ export function CatalogKindTable({
   const [pendingToggle, setPendingToggle] = useState<PendingToggle | null>(
     null,
   );
+  const [clickedRow, setClickedRow] = useState<CatalogEntryRow | null>(null);
   const [toggling, setToggling] = useState(false);
   // Keyed by target URL — a result only counts for the URL it probed, so no
   // synchronous reset is needed when the dialog target changes.
@@ -401,6 +414,38 @@ export function CatalogKindTable({
       </div>
 
       <div className="min-h-0 flex-1">
+        <NonEditableContextMenu
+          sourceFeature="applications-catalogs"
+          contentSource={{ type: "raw" }}
+          contextData={{ content: "" }}
+          resolveContextOnOpen={(element) => {
+            const id = element?.closest("[data-row-id]")?.getAttribute("data-row-id");
+            const row = id ? entries.find((r) => r.id === id) : undefined;
+            setClickedRow(row ?? null);
+            if (!row) return null;
+            return { content: catalogEntryContent(row) };
+          }}
+          extraSections={[
+            {
+              id: "catalog-entry-row",
+              label: "This entry",
+              anchor: "after-compare",
+              items: [
+                {
+                  kind: "item",
+                  id: "catalog-open-entry",
+                  label: "Open entry",
+                  icon: Link2,
+                  disabled: !clickedRow,
+                  description: "Open the entry editor",
+                  onSelect: () => {
+                    if (clickedRow) onOpenEntry(clickedRow);
+                  },
+                },
+              ] satisfies ContextMenuExtraItem[],
+            },
+          ]}
+        >
         <MatrxDataTable
           urlState={{ id: "application-catalog-entries" }}
           data={entries}
@@ -463,6 +508,7 @@ export function CatalogKindTable({
             }),
           }}
         />
+        </NonEditableContextMenu>
       </div>
 
       <ConfirmDialog

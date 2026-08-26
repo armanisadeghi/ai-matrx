@@ -70,6 +70,14 @@ import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE,
 } from "@/components/official/mobile-table/mobileTable";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  CONTEXT_MENU_ENTITY_KEY,
+  type ContextMenuExtraSection,
+  type ResolvedContextMenuContext,
+} from "@/features/context-menu-v3/types";
+
+const SHORTCUT_ROW_DOM_ATTR = "data-shortcut-row-id";
 
 type SortField =
   "label" | "agent" | "scope" | "category" | "placement" | "surface" | "status";
@@ -335,9 +343,89 @@ export function ShortcutDirectory({
     }
   };
 
+  // ── The ONE right-click menu for the whole directory ────────────────────
+  //
+  // Single-instance delegation, same shape as the CRM/lists reference: one
+  // `NonEditableContextMenu` wraps the whole table and `resolveContextOnOpen`
+  // reads the right-clicked row off `SHORTCUT_ROW_DOM_ATTR`, so Open / Copy ID
+  // / Copy config ride the SAME data the row's own controls already use.
+  const [menuRow, setMenuRow] = useState<ShortcutDirectoryRow | null>(null);
+
+  const resolveMenuTarget = (
+    target: HTMLElement | null,
+  ): ResolvedContextMenuContext | null => {
+    const id = target
+      ?.closest?.(`[${SHORTCUT_ROW_DOM_ATTR}]`)
+      ?.getAttribute(SHORTCUT_ROW_DOM_ATTR);
+    const row = id ? (filtered.find((r) => r.id === id) ?? null) : null;
+    setMenuRow(row);
+    if (!row) return null;
+    return {
+      content: shortcutDirectoryRowSummary(row),
+      [CONTEXT_MENU_ENTITY_KEY]: {
+        type: "agent_shortcut",
+        id: row.id,
+        title: row.label,
+      },
+    };
+  };
+
+  const menuSections: ContextMenuExtraSection[] = (() => {
+    const row = menuRow;
+    if (!row) return [];
+    const items: ContextMenuExtraSection["items"] = [
+      {
+        kind: "link",
+        id: "shortcut-open",
+        label: `Open "${row.label}"`,
+        icon: ExternalLink,
+        href: resolveShortcutEditUrl(row, mode),
+        description: "Open this shortcut for editing",
+      },
+      {
+        kind: "link",
+        id: "shortcut-open-new-tab",
+        label: "Open in a new tab",
+        icon: ExternalLink,
+        href: resolveShortcutEditUrl(row, mode),
+        target: "_blank",
+      },
+      {
+        kind: "item",
+        id: "shortcut-copy-id",
+        label: "Copy ID",
+        icon: Copy,
+        onSelect: () => {
+          void navigator.clipboard.writeText(row.id).then(() => {
+            toast({ title: "Copied", description: "Shortcut ID copied" });
+          });
+        },
+      },
+    ];
+    if (row.agentId) {
+      items.push({
+        kind: "link",
+        id: "shortcut-open-agent",
+        label: `Open agent "${row.agentName ?? row.agentId}"`,
+        icon: ExternalLink,
+        href: resolveAgentUrl(row.agentId, mode),
+      });
+    }
+    return [
+      {
+        id: "shortcut-actions",
+        label: "Shortcut",
+        icon: MousePointerClick,
+        anchor: "after-clipboard",
+        items,
+      },
+    ];
+  })();
+
   const renderRow = (row: ShortcutDirectoryRow) => (
     <TableRow
       key={row.id}
+      {...{ [SHORTCUT_ROW_DOM_ATTR]: row.id }}
       className="group/x cursor-pointer bg-card sm:bg-transparent sm:hover:bg-muted/50"
       onClick={() => navigateToShortcut(row)}
     >
@@ -739,6 +827,13 @@ export function ShortcutDirectory({
                 so this container scrolls it horizontally, and the first
                 column freezes so a row stays identifiable while scrolling.
                 `sm:` restores the exact desktop rendering. */}
+            <NonEditableContextMenu
+              sourceFeature="admin"
+              contentSource={{ type: "raw" }}
+              contextData={{ content: "Agent shortcuts directory" }}
+              resolveContextOnOpen={resolveMenuTarget}
+              extraSections={menuSections}
+            >
             <Table className={MOBILE_TABLE}>
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
@@ -888,6 +983,7 @@ export function ShortcutDirectory({
                 Loading shortcuts...
               </div>
             )}
+            </NonEditableContextMenu>
           </div>
         </div>
       </div>
