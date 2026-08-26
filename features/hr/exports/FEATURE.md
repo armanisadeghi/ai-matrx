@@ -186,11 +186,14 @@ deleted, `/schema/all` takes over, and a shape that changed makes this feature g
 build is the contract-drift detector** — fix `types.ts` to match, never narrow the generated type.
 
 **Debt left deliberately**
-1. 🚨 **A parallel, uncommitted implementation of this same UI exists at
-   `features/hr/time/exports/`** (`ExportPanel`, `ExportRunList`, `ExportFormatPicker`,
-   `ExportPreviewPanel`, `ExportPreconditionNotice`, `RunVerdictNotice`). Two implementations of
-   one thing is a defect. It is another session's in-flight work, so L13 did not touch it — it
-   needs a coordinator ruling on which survives.
+1. 🚨 **A second set of export COMPONENTS exists, uncommitted, at `features/hr/time/exports/`**
+   (`ExportPanel`, `ExportRunList`, `ExportFormatPicker`, `ExportPreviewPanel`,
+   `ExportPreconditionNotice`, `RunVerdictNotice`). Verified 2026-08-26: it *consumes* this
+   feature's `service.ts` and `types.ts` — so the data layer is not duplicated — but it is a
+   second presentation of the same nine operations, and **nothing imports it**; the mounted
+   components are the ones in this directory. Two renderings of one thing is a defect even while
+   one is unwired. It is another session's in-flight work, so L13 did not touch it: it needs a
+   coordinator ruling on which set survives, and the loser deleted rather than left dormant.
 2. **`payrollExportDomainKey` ignores the format.** Per §1.4's frozen spelling, generating
    `generic_csv` then `adp_csv` for one period replays the first export. Following the spec
    literally was the right call for a frozen contract; whether the spec intends this is a
