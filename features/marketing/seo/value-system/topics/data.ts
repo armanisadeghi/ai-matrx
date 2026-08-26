@@ -35,6 +35,7 @@ import type {
   KeywordTopicResult,
   TopicDeleteImpact,
   TopicDeleteResult,
+  TopicPlacementDiffRow,
 } from "./types";
 
 async function seoDb() {
@@ -309,6 +310,27 @@ export async function deleteTopic(
 // one ruling that arrived with no reason attached (P24). Deleted 2026-08-24.
 
 // ── The placement backfill (ledger-backed) ─────────────────────────────────
+
+/**
+ * P30a THE DIFF LAW. Reads `seo.gsc_topic_placement_diff` — bounded to this
+ * site's own keywords, and only keywords the site has never itself ruled on.
+ * A row here means a higher tier's opinion moved while this site was
+ * inheriting it; both "Take it" and "Keep mine" resolve a row through
+ * `setKeywordService`, the SAME placement write every other surface uses —
+ * never a second door.
+ */
+export async function getTopicPlacementDiff(
+  siteId: string,
+  limit = 50,
+  signal?: AbortSignal,
+): Promise<TopicPlacementDiffRow[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_topic_placement_diff", { p_site_id: siteId, p_limit: limit })
+    .abortSignal(signal ?? new AbortController().signal);
+  return (
+    assertData(response.data, response.error, "read the placement diff") ?? []
+  );
+}
 
 /**
  * The ONE server-state read the placement strip renders

@@ -95,6 +95,15 @@ export interface KeywordTopicResult {
   value_score: number | null;
 }
 
+/**
+ * `seo.gsc_topic_placement_diff` — P30a THE DIFF LAW. A keyword this site has
+ * always inherited (never its own ruling) whose higher tier's opinion moved.
+ * `old_topic_id` is null-filtered out by the RPC itself, so every row here is
+ * a real "it used to say X, it now says Y" — never a first-time placement.
+ */
+export type TopicPlacementDiffRow =
+  Database["seo"]["Functions"]["gsc_topic_placement_diff"]["Returns"][number];
+
 /** Exact generated contract for the global impact preview shown before delete. */
 export type TopicDeleteImpact =
   Database["seo"]["Functions"]["gsc_topic_delete_impact"]["Returns"][number];

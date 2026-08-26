@@ -72,6 +72,7 @@ import {
   OfferingSplitHeadline,
   type OfferingKpiTarget,
 } from "./OfferingSplitHeadline";
+import { PlacementDiffQueue } from "./PlacementDiffQueue";
 import { ProposedQueue } from "./ProposedQueue";
 import { TopicPlacementStrip } from "./TopicPlacementStrip";
 import {
@@ -813,6 +814,11 @@ export function TopicTreeWorkbench() {
           onPassFinished={refreshTree}
         />
       ) : null}
+
+      {/* P30a THE DIFF LAW — a higher tier's opinion moved while this site was
+          inheriting it; nothing here re-applies over the site's own state
+          without an explicit Take it / Keep mine. */}
+      <PlacementDiffQueue siteId={siteId} onChanged={refreshTree} />
 
       {/* P26 — ONE TABLE. The tree above is legitimately a TREE; these two
           keyword lists are TABLES, and they are the canonical one. */}
