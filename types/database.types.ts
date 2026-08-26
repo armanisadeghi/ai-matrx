@@ -32889,11 +32889,28 @@ export type Database = {
         }
         Relationships: []
       }
+      v_hr_jur_seed_progress: {
+        Row: {
+          classes: string[] | null
+          jur_seed_task: string | null
+          jurisdictions: string[] | null
+          next_verification_due: string | null
+          rows_active: number | null
+          rows_advisory: number | null
+          rows_draft: number | null
+          rows_overdue: number | null
+          rows_total: number | null
+          rows_with_unverified_keys: number | null
+          task_complete: boolean | null
+        }
+        Relationships: []
+      }
       v_hr_jurisdiction_rule_overdue: {
         Row: {
           basis: string | null
           citation: Json | null
           days_overdue: number | null
+          jur_seed_task: string | null
           jurisdiction_key: string | null
           jurisdiction_name: string | null
           organization_id: string | null

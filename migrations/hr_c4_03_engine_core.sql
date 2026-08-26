@@ -271,6 +271,15 @@ exception when others then
 end $fn$;
 
 -- ============================================================ 5. grants + task projection (§1.3, §5)
+-- 🚨 ONE GRANT PER (INSTANCE, USER), NOT ONE PER STEP. `iam.permissions` carries a UNIQUE on
+-- (resource_type, resource_id, granted_to_user_id) — verified live, the hard way: a person who
+-- approves two steps of the same instance (a parallel offboarding group, or an approver who is also
+-- the escalation target) collided on the second activation and the whole decision raised. The
+-- `review_note = 'auto:wf_step:<step_id>'` marker §1.3 specifies is kept, and a second step on the
+-- same instance simply re-points it. THE CONSEQUENCE FOR REVOCATION IS THE IMPORTANT HALF: closing
+-- one step must NOT strip a person's reach while another open step still needs it, so the delete is
+-- conditional on no other active step naming them. Getting that backwards would have been a silent
+-- over-tightening — the approver's inbox row would survive and the row behind it would 404.
 create or replace function hr._wf_grant_step(p_step uuid)
 returns integer language plpgsql security definer set search_path to 'hr','public' as $fn$
 declare st hr.workflow_step%rowtype; u uuid; v_n integer := 0;
@@ -279,13 +288,11 @@ begin
   foreach u in array st.resolved_user_ids loop
     insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level,
                                  status, review_note)
-    select 'hr_workflow_instance', st.workflow_instance_id, u, 'editor'::permission_level,
-           'active', 'auto:wf_step:' || p_step::text
-     where not exists (select 1 from iam.permissions p
-                        where p.resource_type = 'hr_workflow_instance'
-                          and p.resource_id = st.workflow_instance_id
-                          and p.granted_to_user_id = u
-                          and p.review_note = 'auto:wf_step:' || p_step::text);
+    values ('hr_workflow_instance', st.workflow_instance_id, u, 'editor'::permission_level,
+            'active', 'auto:wf_step:' || p_step::text)
+    on conflict (resource_type, resource_id, granted_to_user_id) do update
+      set permission_level = 'editor'::permission_level, status = 'active',
+          review_note = excluded.review_note;
     v_n := v_n + 1;
   end loop;
   return v_n;
@@ -293,11 +300,23 @@ end $fn$;
 
 create or replace function hr._wf_revoke_step(p_step uuid)
 returns integer language plpgsql security definer set search_path to 'hr','public' as $fn$
-declare v_n integer;
+declare st hr.workflow_step%rowtype; u uuid; v_n integer := 0;
 begin
-  delete from iam.permissions
-   where resource_type = 'hr_workflow_instance' and review_note = 'auto:wf_step:' || p_step::text;
-  get diagnostics v_n = row_count;
+  select * into st from hr.workflow_step where id = p_step;
+  if not found then return 0; end if;
+  foreach u in array coalesce(st.resolved_user_ids,'{}'::uuid[]) loop
+    -- keep the grant if ANOTHER still-open step on this instance names the same person
+    continue when exists (select 1 from hr.workflow_step s2
+                           where s2.workflow_instance_id = st.workflow_instance_id
+                             and s2.id <> p_step
+                             and s2.state in ('active','awaiting_result')
+                             and u = any(s2.resolved_user_ids));
+    delete from iam.permissions
+     where resource_type = 'hr_workflow_instance' and resource_id = st.workflow_instance_id
+       and granted_to_user_id = u
+       and review_note like 'auto:wf_step:%';
+    v_n := v_n + 1;
+  end loop;
   return v_n;
 end $fn$;
 
@@ -330,7 +349,10 @@ begin
   end if;
 
   foreach u in array st.resolved_user_ids loop
-    v_task := public.wsp_upsert_system_task(
+    -- wsp_upsert_system_task returns a JSONB envelope ({id, status, created}), not a bare uuid.
+    -- Assigning it straight into a uuid raised 22P02 inside the projection's own catch block, so
+    -- the task never landed and nothing surfaced. Only a probe found it.
+    v_task := (public.wsp_upsert_system_task(
       p_dedupe_key      => 'hrwf:' || p_step::text || ':' || u::text,
       p_title           => v_title,
       p_description     => sd.label,
@@ -352,7 +374,7 @@ begin
       p_assignee_id     => u,
       p_organization_id => inst.organization_id,
       p_metadata        => jsonb_build_object('flow_key', inst.flow_key, 'instance_id', inst.id,
-                                              'sensitivity_tier', inst.sensitivity_tier));
+                                              'sensitivity_tier', inst.sensitivity_tier)) ->> 'id')::uuid;
     v_n := v_n + 1;
     if st.workspace_task_id is null and v_task is not null then
       perform set_config('hr.privileged_write','on',true);
