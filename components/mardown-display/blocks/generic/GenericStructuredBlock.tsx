@@ -23,6 +23,7 @@ import { ContentIrHostBoundary } from "@/features/content-ir/host/ContentIrHostB
 import { readIrRouteMarker } from "@/features/content-ir/react/kind-route";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { reportKindComponentIncident } from "@/features/content-ir/react/db-component/kindComponentIncident";
+import { KindFixItBar } from "@/features/content-ir/react/fixit/KindFixItBar";
 import { StructuredValueTabs } from "./StructuredValueTabs";
 
 export interface GenericStructuredBlockProps {
@@ -76,9 +77,27 @@ const GenericStructuredBlock: React.FC<GenericStructuredBlockProps> = (
   // survived, else the raw region source.
   const envelope = readEnvelope(props.metadata);
   const value = envelope ? reconstructRegionValue(envelope) : undefined;
+  // THE FIX-IT BAR (Arman, 2026-08-27): a settled value on the generic floor
+  // explains itself and offers the one-click repair to anyone with rights.
+  // Settled only — a streaming region belongs to the loading sequence, and a
+  // half-arrived payload must never be offered as the kind's example. The
+  // diagnosis is lazy and session-cached; a successful custom render never
+  // pays for any of this.
+  const settledKind =
+    envelope?.root.kind && envelope.root.status === "complete"
+      ? envelope.root.kind
+      : null;
   return (
     <ContentIrHostBoundary>
-      <StructuredValueTabs value={value} raw={props.content}>
+      <StructuredValueTabs
+        value={value}
+        raw={props.content}
+        header={
+          settledKind ? (
+            <KindFixItBar kind={settledKind} value={value} />
+          ) : undefined
+        }
+      >
         <GenericStructuredView {...props} streamingIndicator={StillArriving} />
       </StructuredValueTabs>
     </ContentIrHostBoundary>
