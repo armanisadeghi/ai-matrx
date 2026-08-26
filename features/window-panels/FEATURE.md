@@ -99,6 +99,8 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
+- 2026-08-26 — **Added `listenSummaryWindow` ("Listen") — the summarize-for-listening player.** New singleton, ephemeral window (`windows/listen/ListenSummaryWindow.tsx`, 460×560) opened by the "Summarize for listening" / "Summarize & listen" actions (assistant context menu + action-bar ⋯ menu). Launches the surface's `spoken_summary` agent headlessly (`useLiveAgentRun`, `expect: "text"`), renders the streaming summary through the canonical `LiveRunDisplay variant="bare"`, and pins a glass audio transport (play/pause/stop/replay + live equalizer) driven by the audio session registry. The `autoPlay` mode is stream-to-stream: speech starts while the summary is still being written, via the app-root speaker (`voicePlaybackBus` request with `includeActive: true`). Registered the canonical 5 ways (`overlay-ids.ts`, `catalogue.ts`, `windowRegistryMetadata.ts` ephemeral + `mobilePresentation: "card"`, `OverlayController.tsx`, opener `features/overlays/openers/listenSummaryWindow.tsx`).
+
 - 2026-08-26 — **Fullscreen mobile window chrome is touch-safe.** Close,
   Minimize, and the sidebar/main pane toggles keep 44px hit areas while the
   traffic-light visuals remain 24px.
