@@ -288,6 +288,10 @@ const AgentSettingsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentSettingsWindow"),
   { ssr: false },
 );
+const MandateWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/agents/MandateWindow"),
+  { ssr: false },
+);
 const AgentSidebarOverlay = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentSidebarOverlay").then(
@@ -1177,6 +1181,7 @@ export default function OverlayController() {
     agentSettingsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentSettingsWindow"),
     ),
+    mandateWindow: useAppSelector((s) => selectIsOverlayOpen(s, "mandateWindow")),
     aiVoiceWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "aiVoiceWindow"),
     ),
@@ -1539,6 +1544,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     agentSettingsWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentSettingsWindow"),
+    ) as Record<string, unknown> | null,
+    mandateWindow: useAppSelector((s) =>
+      selectOverlayData(s, "mandateWindow"),
     ) as Record<string, unknown> | null,
     aiVoiceWindow: useAppSelector((s) =>
       selectOverlayData(s, "aiVoiceWindow"),
@@ -2895,6 +2903,44 @@ export default function OverlayController() {
             }
             initialView={
               data?.initialView === "info" || data?.initialView === "surface"
+                ? data.initialView
+                : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* mandateWindow */}
+      {(() => {
+        const isOpen = isOpenById.mandateWindow;
+        const data = dataById.mandateWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <MandateWindow
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "mandateWindow" }))}
+            initialMandateKey={
+              typeof data?.initialMandateKey === "string"
+                ? data.initialMandateKey
+                : undefined
+            }
+            mandateKeys={
+              Array.isArray(data?.mandateKeys)
+                ? (data.mandateKeys as unknown[]).filter(
+                    (key): key is string => typeof key === "string",
+                  )
+                : undefined
+            }
+            surfaceName={
+              typeof data?.surfaceName === "string"
+                ? data.surfaceName
+                : undefined
+            }
+            initialView={
+              data?.initialView === "yours" || data?.initialView === "admin"
                 ? data.initialView
                 : undefined
             }

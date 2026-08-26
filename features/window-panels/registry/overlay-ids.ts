@@ -56,6 +56,7 @@ export const OVERLAY_IDS = [
   "agentRunHistoryWindow",
   "agentRunWindow",
   "agentSettingsWindow",
+  "mandateWindow",
   "agentSkillsWindow",
   "googleConnectWindow",
   "agentSidebarOverlay",

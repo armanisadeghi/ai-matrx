@@ -202,6 +202,7 @@ export default function SurfaceAgentsPanelImpl({
           primarySurfaceName={null}
           familySurfaceNames={[]}
           isAdmin={isAdmin}
+          onOpened={() => onRequestClose?.()}
         />
         <div className="rounded-md border border-dashed border-border p-3 text-sm text-muted-foreground">
           <p className="font-medium text-foreground">
@@ -228,6 +229,7 @@ export default function SurfaceAgentsPanelImpl({
         primarySurfaceName={primaryName}
         familySurfaceNames={familySurfaceNames}
         isAdmin={isAdmin}
+        onOpened={() => onRequestClose?.()}
       />
 
       {/* Hierarchy breadcrumb — full ancestry, root first, self last. */}

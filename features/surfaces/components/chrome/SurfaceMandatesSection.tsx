@@ -21,19 +21,20 @@
  *     `useDeclaredSurfaceMandates`, for surfaces that pick their mandate from
  *     live state (the run console runs a different one per engine).
  *
- * Every row is a DOOR (no-dead-ends): it opens the mandate console, where the
- * pinned agent, its instructions, its bindings and its history live. Admins
- * additionally get the notes composer in place — feedback is worth most in the
- * second you notice something, not at the end of a trip to another screen.
+ * Every row is a DOOR (no-dead-ends), and the door opens IN PLACE: the
+ * `mandateWindow` panel over this page — the pinned agent, your own binding,
+ * the admin workbench and the notes, without losing the surface you are
+ * standing on (Arman, 2026-08-26). A `<Link>` to a mandate route from here is a
+ * regression. The sticky-note button stays for one-breath capture without even
+ * opening the window.
  */
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import {
   BrainCircuit,
   ChevronDown,
   ChevronRight,
-  ExternalLink,
+  Maximize2,
   StickyNote,
 } from "lucide-react";
 
@@ -46,6 +47,7 @@ import {
   type MandateIdentity,
 } from "@/features/agents/mandates/service";
 import { MandateNotesPanel } from "@/features/agents/mandates/components/MandateNotesPanel";
+import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 
 export interface SurfaceMandatesSectionProps {
   /** The surface the user is standing on. */
@@ -53,6 +55,8 @@ export interface SurfaceMandatesSectionProps {
   /** Family surface names — ancestry + children, from the registry. */
   familySurfaceNames: readonly string[];
   isAdmin: boolean;
+  /** Called after a mandate window opens, so the host popover can close. */
+  onOpened?: () => void;
   className?: string;
 }
 
@@ -64,14 +68,6 @@ interface MandateRow {
   relation: "self" | "family";
   /** For family rows: which surface declares it. */
   fromSurfaceName: string | null;
-}
-
-/** Admins repair mandates in the console; everyone else picks their agent. */
-function mandateHref(mandateKey: string, isAdmin: boolean): string {
-  const key = encodeURIComponent(mandateKey);
-  return isAdmin
-    ? `/administration/agents/mandates?mandate=${key}`
-    : `/agents/mandates?feature=${key}`;
 }
 
 function collectRows(
@@ -121,9 +117,11 @@ export function SurfaceMandatesSection({
   primarySurfaceName,
   familySurfaceNames,
   isAdmin,
+  onOpened,
   className,
 }: SurfaceMandatesSectionProps) {
   const live = useLiveSurfaceMandates();
+  const openMandate = useOpenMandateWindow();
   const rows = collectRows(primarySurfaceName, familySurfaceNames, live);
   const [identities, setIdentities] = useState<
     Record<string, MandateIdentity>
@@ -169,10 +167,19 @@ export function SurfaceMandatesSection({
           return (
             <li key={row.mandateKey} className="min-w-0">
               <div className="flex min-w-0 items-start gap-1">
-                <Link
-                  href={mandateHref(row.mandateKey, isAdmin)}
-                  title={`Open ${row.mandateKey} — the agent, its instructions and its bindings`}
-                  className="group min-w-0 flex-1 rounded-md border border-border bg-card px-2 py-1 transition-colors hover:border-primary/40 hover:bg-primary/5"
+                <button
+                  type="button"
+                  onClick={() => {
+                    openMandate({
+                      initialMandateKey: row.mandateKey,
+                      mandateKeys: rows.map((entry) => entry.mandateKey),
+                      surfaceName: primarySurfaceName,
+                      initialView: isAdmin ? "admin" : "yours",
+                    });
+                    onOpened?.();
+                  }}
+                  title={`Open ${row.mandateKey} — the agent, its instructions, your binding and its notes`}
+                  className="group min-w-0 flex-1 rounded-md border border-border bg-card px-2 py-1 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
                 >
                   <span className="flex min-w-0 items-center gap-1">
                     <span className="truncate text-xs font-medium text-foreground">
@@ -188,7 +195,7 @@ export function SurfaceMandatesSection({
                         off
                       </span>
                     )}
-                    <ExternalLink className="ml-auto h-2.5 w-2.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    <Maximize2 className="ml-auto h-2.5 w-2.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                   </span>
                   <span className="block truncate text-[10px] text-muted-foreground">
                     {row.does}
@@ -196,7 +203,7 @@ export function SurfaceMandatesSection({
                   <span className="block truncate font-mono text-[9px] text-muted-foreground/70">
                     {row.mandateKey}
                   </span>
-                </Link>
+                </button>
                 {isAdmin && identity && (
                   <button
                     type="button"

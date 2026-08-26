@@ -636,6 +636,23 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "agent-settings" },
   },
 
+  // ── Mandates (in place — never a trip to the mandate route) ───────────────
+  {
+    slug: "mandate-window",
+    overlayId: "mandateWindow",
+    kind: "window",
+    label: "Mandates",
+    defaultData: {
+      initialMandateKey: null,
+      mandateKeys: null,
+      surfaceName: null,
+      initialView: null,
+    },
+    mobilePresentation: "drawer",
+    mobileSidebarAs: "drawer",
+    urlSync: { key: "mandate" },
+  },
+
   // ── Agent Run History ─────────────────────────────────────────────────────
   {
     slug: "agent-run-history-window",

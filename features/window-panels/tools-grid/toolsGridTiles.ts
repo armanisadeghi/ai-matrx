@@ -432,6 +432,13 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     overlayId: "agentSettingsWindow",
   },
   {
+    id: "tile.mandates",
+    label: "Mandates",
+    icon: BrainCircuit,
+    category: "dupes",
+    overlayId: "mandateWindow",
+  },
+  {
     id: "tile.agent-run-history",
     label: "Run History",
     icon: History,

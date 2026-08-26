@@ -12,18 +12,20 @@
  * all one that runs on a schedule while nobody is watching.
  *
  * This is the ONE way to disclose that. Give it the mandate keys the surface
- * actually runs; it renders them as doors into the mandate console, which
- * shows the pinned agent, its version, its instructions and its bindings
- * (`?mandate=<key>` deep-links to the row — see `MandatesConsole`).
+ * actually runs; it renders them as doors that open the `mandateWindow` OVER
+ * this page — the pinned agent, its version, its instructions, your own
+ * binding and its notes — because a disclosure that costs the user the screen
+ * they are working on is not one they will use (Arman, 2026-08-26). Never a
+ * `<Link>` to a mandate route from a working surface.
  *
  * A mandate KEY, never a raw agent id: the agent behind a job is DB-managed
  * and changes without a deploy, so the key is the stable identity of "the AI
  * that does this job" (common-docs/systems/mandates/FEATURE.md).
  */
 
-import Link from "next/link";
-import { BrainCircuit, ExternalLink } from "lucide-react";
+import { BrainCircuit, Maximize2 } from "lucide-react";
 import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
 
 export interface PageAgentRef {
   /** The mandate key, e.g. `seo.topic_assigner`. */
@@ -54,6 +56,7 @@ export function PageAgents({
   surfaceName?: string | null;
   className?: string;
 }) {
+  const openMandate = useOpenMandateWindow();
   useDeclaredSurfaceMandates(
     agents.map((agent) => ({
       mandateKey: agent.mandateKey,
@@ -71,16 +74,23 @@ export function PageAgents({
           AI on this page
         </span>
         {agents.map((agent) => (
-          <Link
+          <button
             key={agent.mandateKey}
-            href={`/administration/agents/mandates?mandate=${encodeURIComponent(agent.mandateKey)}`}
-            title={`${agent.does} — open this agent's instructions`}
+            type="button"
+            onClick={() =>
+              openMandate({
+                initialMandateKey: agent.mandateKey,
+                mandateKeys: agents.map((entry) => entry.mandateKey),
+                surfaceName: surfaceName ?? null,
+              })
+            }
+            title={`${agent.does} — open this agent's instructions and settings here`}
             className="inline-flex items-center gap-1 rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-foreground transition-colors hover:border-primary/50 hover:text-primary"
           >
             <span className="font-medium">{agent.mandateKey}</span>
             <span className="text-muted-foreground">· {agent.does}</span>
-            <ExternalLink className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
-          </Link>
+            <Maximize2 className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
+          </button>
         ))}
       </div>
     </div>

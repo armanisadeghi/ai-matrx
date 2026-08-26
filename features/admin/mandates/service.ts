@@ -69,16 +69,34 @@ export interface MandateConsoleData {
   bindingsByMandateId: Record<string, MandateBindingRow[]>;
 }
 
-export async function fetchMandateConsoleData(): Promise<MandateConsoleData> {
+export interface FetchMandateConsoleDataOptions {
+  /**
+   * Restrict the load to these mandate keys. The console omits it and takes
+   * everything; a WINDOW opened on one surface passes that surface's keys, so
+   * it reads a handful of rows instead of the platform's 365 and their
+   * bindings. Omitted or empty = the whole console load, unchanged.
+   */
+  mandateKeys?: readonly string[];
+}
+
+export async function fetchMandateConsoleData(
+  options: FetchMandateConsoleDataOptions = {},
+): Promise<MandateConsoleData> {
   const supabase = createClient();
+  const scopedKeys =
+    options.mandateKeys && options.mandateKeys.length > 0
+      ? [...new Set(options.mandateKeys)]
+      : null;
+
+  let mandateQuery = supabase
+    .schema("agent")
+    .from("mandate")
+    .select("*")
+    .is("deleted_at", null);
+  if (scopedKeys) mandateQuery = mandateQuery.in("mandate_key", scopedKeys);
 
   const [mandatesRes, bindingsRes] = await Promise.all([
-    supabase
-      .schema("agent")
-      .from("mandate")
-      .select("*")
-      .is("deleted_at", null)
-      .order("mandate_key"),
+    mandateQuery.order("mandate_key"),
     supabase
       .schema("agent")
       .from("mandate_binding")
@@ -89,7 +107,13 @@ export async function fetchMandateConsoleData(): Promise<MandateConsoleData> {
   if (mandatesRes.error) throw mandatesRes.error;
   if (bindingsRes.error) throw bindingsRes.error;
   const mandates = mandatesRes.data ?? [];
-  const bindings = bindingsRes.data ?? [];
+  // Bindings are read unscoped (RLS already narrows them to what the caller may
+  // see) and filtered to the loaded mandates here — a `.in()` on a second
+  // column would need the ids the first query only just returned.
+  const loadedMandateIds = new Set(mandates.map((row) => row.id));
+  const bindings = (bindingsRes.data ?? []).filter(
+    (binding) => !scopedKeys || loadedMandateIds.has(binding.mandate_id),
+  );
 
   const agentIds = new Set<string>();
   const versionIds = new Set<string>();
