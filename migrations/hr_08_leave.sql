@@ -430,9 +430,19 @@ do $$ begin
   end if;
 end $$;
 
+-- Section 9.4: "Append-only, immutable, no delete -- an error is a `reversal` entry, never an
+-- edit." BOTH walls, not just the delete half. hr._reject_update() is file 06's shared
+-- append-only trigger. Nothing legitimately updates a ledger row: it carries no {{RETAIN}}
+-- block, so not even the retention stamper touches it.
+-- NOTE: the update wall was applied separately as migration `hr_08a_leave_ledger_append_only`
+-- because file 08 had already been applied when the gap was found in a behavioural probe. This
+-- file is idempotent and carries both, so a re-run of hr_08 alone reproduces the full state.
 drop trigger if exists _zz_leave_ledger_no_delete on hr.leave_ledger;
 create trigger _zz_leave_ledger_no_delete before delete on hr.leave_ledger
   for each row execute function hr._reject_delete();
+drop trigger if exists _zz_leave_ledger_no_update on hr.leave_ledger;
+create trigger _zz_leave_ledger_no_update before update on hr.leave_ledger
+  for each row execute function hr._reject_update();
 
 create index if not exists leave_ledger_balance_idx
   on hr.leave_ledger (employment_id, leave_policy_id, occurred_on desc);
