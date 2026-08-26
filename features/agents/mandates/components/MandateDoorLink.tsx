@@ -9,10 +9,10 @@
 // which is a scroll, not a door.
 //
 // `feature` is the mandate key's first segment (`splitMandateKey().feature` —
-// e.g. "crm" for `crm.contact_saver`). The target page seeds its filter box
-// from `?feature=`, and that filter is a substring search over domain + key +
-// label + description, so a value deliberately also surfaces neighbouring
-// mandates that mention it.
+// e.g. "crm" for `crm.contact_saver`). Since the 2026-08-26 rework the door
+// lands as a REAL select facet on the canonical list (`?filters=` via
+// mandatesBrowseHref) — strict, not the old neighbour-surfacing substring
+// search; the legacy `?feature=` form still normalizes server-side.
 //
 // Icon is BrainCircuit, always — Sparkles is banned for AI (CLAUDE.md).
 // Law: ../../../../../common-docs/policies/no-dead-ends.md
@@ -21,6 +21,7 @@
 import Link from "next/link";
 import { BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { mandatesBrowseHref } from "../browse/url-compat";
 
 interface MandateDoorLinkProps {
   /** Mandate-key domain, e.g. "crm", "masterwork", "workflow". */
@@ -41,7 +42,7 @@ export function MandateDoorLink({
   variant = "icon",
   className,
 }: MandateDoorLinkProps) {
-  const href = `/agents/mandates?feature=${encodeURIComponent(feature)}`;
+  const href = mandatesBrowseHref(feature);
 
   if (variant === "inline") {
     return (
