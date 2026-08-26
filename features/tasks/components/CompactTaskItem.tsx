@@ -6,6 +6,7 @@ import { Calendar, Paperclip, User, ExternalLink } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TASK_LABEL_OPTIONS } from "@/features/tasks/services/taskService";
 import { ScopeTagsDisplay } from "@/features/agent-context/components/ScopeTagsDisplay";
+import { TaskProvenanceChip } from "@/features/tasks/components/TaskProvenanceChip";
 import type { TaskWithProject } from "@/features/tasks/types";
 import { cn } from "@/lib/utils";
 
@@ -102,6 +103,17 @@ function TaskMetadata({
 }) {
   return (
     <>
+      {/* The same generic provenance badge the /tasks rows show — a projected
+          task reads as machine-made and opens its source from any list. */}
+      <TaskProvenanceChip
+        compact
+        origin={task.origin ?? null}
+        sourceType={task.sourceType ?? null}
+        sourceUrl={task.sourceUrl ?? null}
+        sourceLabel={task.sourceLabel ?? null}
+        className="shrink-0 max-w-[160px]"
+      />
+
       {task.projectName && !hideProjectName && (
         <div className="flex items-center gap-1 min-w-0">
           <span className="text-primary truncate">{task.projectName}</span>
@@ -181,18 +193,33 @@ function StackedTaskMetaRow({
   hideProjectName: boolean;
   isPastDue: boolean;
 }) {
+  const hasProvenance = !!(
+    task.sourceUrl ||
+    task.sourceLabel ||
+    (task.origin && task.origin !== "user")
+  );
   const hasMeta =
     (task.projectName && !hideProjectName) ||
     task.dueDate ||
     task.priority ||
     (task.attachments && task.attachments.length > 0) ||
     task.assigneeName ||
+    hasProvenance ||
     (task.settings?.labels?.length ?? 0) > 0;
 
   if (!hasMeta) return null;
 
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 w-full min-w-0 text-[10px] leading-tight text-muted-foreground">
+      <TaskProvenanceChip
+        compact
+        origin={task.origin ?? null}
+        sourceType={task.sourceType ?? null}
+        sourceUrl={task.sourceUrl ?? null}
+        sourceLabel={task.sourceLabel ?? null}
+        className="shrink-0 max-w-[140px]"
+      />
+
       {task.projectName && !hideProjectName && (
         <span className="truncate min-w-0 max-w-[60%] font-normal">
           {task.projectName}

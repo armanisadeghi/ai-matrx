@@ -57,6 +57,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/utils/cn";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { TaskProvenanceChip } from "@/features/tasks/components/TaskProvenanceChip";
 import {
   compareTimestamps,
   formatAbsoluteDate,
@@ -813,6 +814,17 @@ export default function TasksTableView() {
                             )}
                           </div>
                         )}
+                        {/* Same generic provenance badge the rows view shows —
+                            the table is the alternate view of the SAME list,
+                            so a projected task reads the same in both. */}
+                        <TaskProvenanceChip
+                          compact
+                          origin={task.origin ?? null}
+                          sourceType={task.sourceType ?? null}
+                          sourceUrl={task.sourceUrl ?? null}
+                          sourceLabel={task.sourceLabel ?? null}
+                          className="mt-0.5 max-w-[180px]"
+                        />
                       </div>
                     </TableCell>
                     <TableCell className="py-1.5 text-sm text-muted-foreground">

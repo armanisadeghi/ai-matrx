@@ -47,6 +47,7 @@ import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/utils/cn";
 import type { TaskWithProject } from "@/features/tasks/types";
 import TasksTableView from "@/features/tasks/components/TasksTableView";
+import { TaskProvenanceChip } from "@/features/tasks/components/TaskProvenanceChip";
 import { useRefocusInputAfterAsync } from "@/features/tasks/hooks/useRefocusInputAfterAsync";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
@@ -619,7 +620,7 @@ function TaskRow({
             />
           )}
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground/80 mt-0.5">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground/80 mt-0.5">
           {task.projectName && task.projectId !== "__unassigned__" && (
             <EntityRef
               token="project"
@@ -648,6 +649,17 @@ function TaskRow({
               })}
             </span>
           )}
+          {/* A projected task is visibly machine-made in the list itself, and
+              the badge is the door back to whatever produced it — one generic
+              chip off origin/source_*, never a per-producer list query. */}
+          <TaskProvenanceChip
+            compact
+            origin={task.origin ?? null}
+            sourceType={task.sourceType ?? null}
+            sourceUrl={task.sourceUrl ?? null}
+            sourceLabel={task.sourceLabel ?? null}
+            className="max-w-[150px]"
+          />
         </div>
         <ScopeTagsDisplay
           entityType="task"
