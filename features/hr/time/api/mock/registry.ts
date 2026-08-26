@@ -1079,6 +1079,90 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
   // the corresponding RPC could return, chosen for the edges that are expensive to discover late.
   // ───────────────────────────────────────────────────────────────────────────────────────────
 
+  /**
+   * The approval grid's HEADER read. It is a `hr_pay_period_*` contract, so the periods lane owns
+   * the shape; these four cases exist because route 28 needs the header's own state machine and its
+   * "N of M approved" figure, and a missing fixture throws rather than degrading.
+   */
+  hr_pay_period_get: {
+    happy: {
+      ok: true,
+      data: {
+        id: PERIOD,
+        payGroupId: "44444444-4444-4444-8444-444444444444",
+        payGroupName: "Semimonthly — Hourly",
+        periodStartOn: "2026-03-16",
+        periodEndOn: "2026-03-31",
+        payDate: "2026-04-05",
+        sequenceNumber: 6,
+        // 🚨 `submitted` is a PERIOD state and never a row state (§14 D8).
+        state: "submitted",
+        submittedAt: "2026-04-01T16:00:00Z",
+        approvedAt: null,
+        exportedAt: null,
+        lockedAt: null,
+        closedAt: null,
+        reopenedAt: null,
+        reopenReason: null,
+        boundaryWorkweekIds: [WORKWEEK],
+        counts: { employments: 41, approved: 38, open: 2, attested: 1, disputed: 0 },
+      },
+    },
+    empty: {
+      ok: true,
+      data: {
+        id: PERIOD,
+        payGroupId: "44444444-4444-4444-8444-444444444444",
+        payGroupName: "Semimonthly — Hourly",
+        periodStartOn: "2026-04-01",
+        periodEndOn: "2026-04-15",
+        payDate: null,
+        sequenceNumber: 7,
+        state: "open",
+        submittedAt: null,
+        approvedAt: null,
+        exportedAt: null,
+        lockedAt: null,
+        closedAt: null,
+        reopenedAt: null,
+        reopenReason: null,
+        boundaryWorkweekIds: [],
+        counts: { employments: 41, approved: 0, open: 41, attested: 0, disputed: 0 },
+      },
+    },
+    // A REOPENED period. Its rows stay `approved` and their steps reopen — there is no row-level
+    // reopened state, which is exactly what §14 D8 exists to stop a surface from inventing.
+    edge: {
+      ok: true,
+      data: {
+        id: PERIOD,
+        payGroupId: "44444444-4444-4444-8444-444444444444",
+        payGroupName: "Semimonthly — Hourly",
+        periodStartOn: "2026-02-16",
+        periodEndOn: "2026-02-28",
+        payDate: "2026-03-05",
+        sequenceNumber: 4,
+        state: "reopened",
+        submittedAt: "2026-03-01T16:00:00Z",
+        approvedAt: "2026-03-02T17:00:00Z",
+        exportedAt: "2026-03-03T09:00:00Z",
+        lockedAt: "2026-03-04T09:00:00Z",
+        closedAt: null,
+        reopenedAt: "2026-03-09T17:00:00Z",
+        reopenReason: "A missed clock-out was reported after the period was locked.",
+        boundaryWorkweekIds: [WORKWEEK],
+        counts: { employments: 41, approved: 41, open: 0, attested: 0, disputed: 2 },
+      },
+    },
+    error: {
+      ok: false,
+      error: "not_found",
+      message: "no pay period with that id is readable",
+      user_message: "We could not find that pay period.",
+      details: {},
+    },
+  },
+
   hr_attendance_exception_list: {
     happy: {
       ok: true,
