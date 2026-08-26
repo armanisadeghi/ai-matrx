@@ -83,6 +83,38 @@ platform-wide PGRST002 outage. It is a fleet-wide config change and **not a buil
 | `timesheet/`, `punches/`, `exceptions/`, `shared/` | The timesheet family and the presentational pieces every lane shares. |
 | `periods/`, `exports/`, `overtime/` | Period lifecycle, the export UI, OT pre-approval. |
 
+## The wire, and the two things about it that already broke once
+
+The `hr_*` wrappers answer with an envelope, and **both halves of it were misread in the first
+build — silently, returning `undefined` rather than failing**:
+
+```jsonc
+// refusal
+{ "ok": false, "error": { "code": "hr_employment_not_found",
+                          "message": "That employment record does not exist.", "details": {} } }
+// success — note there is NO `data` wrapper; the payload sits beside `ok`
+{ "ok": true, "punch": {…}, "clock_state": {…}, "exceptions": [] }
+```
+
+- **`error` is an OBJECT, not a string code.** Reading it as a code puts `[object Object]` where
+  SPEC-TIME §2.1 requires the server's human sentence *verbatim* — and on the clock surface that is
+  how an hourly employee ends up with nowhere to go.
+- **There is no `data` key.** Unwrapping one yields nothing for every call in the lane.
+
+**The SQL builds jsonb in snake_case; `types.ts` is camelCase.** The seam is `camelizeDeep` in
+`api/rpc.ts` and it is deliberately in exactly one place — the alternative is a
+`row.local_work_date ?? row.localWorkDate` dance half-supported in every component. Request
+arguments are **not** mapped: they are the `p_`-prefixed names the functions declare.
+
+🚨 **Some keys' values must never be mapped**, and the list lives beside the code: `calc`,
+`attestation_response`, `original_values`, `metadata`, `details`, `parameters`, `resolution`,
+`facts`, `scope`. `attestation_response` is the sharpest — it is SPEC-TIME §3.2's **declared**
+shape and every detector, premium determination and export mapping reads `prompt_version` /
+`count_owed` by those exact names (§14 D9), so renaming inside it corrupts data rather than tidying
+it. The rule: exclude a key only when its value is genuinely free-form, or is evidence read back by
+its stored names — **never merely because it sounds like a bag.** `config` was excluded on that
+mistaken instinct and left the entire kiosk configuration `undefined`.
+
 ## The mock lane, and what it can never be used for
 
 `NEXT_PUBLIC_HR_MOCK=1` is read in exactly one place (`features/hr/mock/transport.ts`).
@@ -148,6 +180,9 @@ two factors on it.
 
 ## Change Log
 
+- 2026-08-27 — Records the wire's real envelope after both halves were misread in the first build
+  (no `data` wrapper; `error` is an object), the snake→camel seam and the opaque-key rule that goes
+  with it — including the `config` exclusion that left the whole kiosk configuration undefined.
 - 2026-08-26 — Created with the lane's shared data layer (`api/`) at the L3 build kickoff (HRB-015).
   Records the PostgREST finding that shapes the whole client, the two-lane split, the six laws, and
   the rendering rules that decide what a number means.
