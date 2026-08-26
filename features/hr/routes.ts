@@ -224,6 +224,64 @@ export function hrPayPeriodsHref(org?: HrOrgRef): string {
 export function hrPayPeriodHref(periodId: string, org?: HrOrgRef): string {
   return hrUrl(`/hr/time/periods/${periodId}`, org);
 }
+/** Route 28 — the timesheet approval grid for one pay group and period. */
+export function hrTimesheetsHref(org?: HrOrgRef, periodId?: string): string {
+  return hrUrl("/hr/time/timesheets", org, { period: periodId });
+}
+/** Route 29 — one person's period in full. */
+export function hrTimesheetHref(
+  employmentId: string,
+  org?: HrOrgRef,
+  periodId?: string,
+): string {
+  return hrUrl(`/hr/time/timesheets/${employmentId}`, org, { period: periodId });
+}
+/** Route 30 — the RAW punch register (AD-11's evidence lane). No computed value lives here. */
+export function hrPunchesHref(
+  org?: HrOrgRef,
+  filters?: { employment?: string; from?: string; to?: string; group?: string },
+): string {
+  return hrUrl("/hr/time/punches", org, {
+    employment: filters?.employment,
+    from: filters?.from,
+    to: filters?.to,
+    group: filters?.group,
+  });
+}
+/** Route 31 — the attendance-exception queue. `kind` pre-filters it from an exceptions strip. */
+export function hrTimeExceptionsHref(
+  org?: HrOrgRef,
+  filters?: { kind?: string; period?: string; employment?: string },
+): string {
+  return hrUrl("/hr/time/exceptions", org, {
+    kind: filters?.kind,
+    period: filters?.period,
+    employment: filters?.employment,
+  });
+}
+/**
+ * Route 31a — the overtime pre-approval queue and the approaching-OT watchlist (D24a).
+ *
+ * 🚨 Unapproved overtime is **still paid**. This surface flags it for review; it never
+ * withholds, delays or conditions payment (SPEC-TIME §4.4/§4.6).
+ */
+export function hrOvertimeHref(org?: HrOrgRef, state?: string): string {
+  return hrUrl("/hr/time/overtime", org, { state });
+}
+/** Route 31b — one OT request. The employee's view and the manager's are one component. */
+export function hrOvertimeRequestHref(requestId: string, org?: HrOrgRef): string {
+  return hrUrl(`/hr/time/overtime/${requestId}`, org);
+}
+/**
+ * Route 75a — kiosk device management (pair, trust, suspend, revoke).
+ *
+ * The route FILE is a shared settings surface owned by lane L1 under the EXECUTION §3
+ * shared-surface rule; L3 owns the panels it mounts. The builder lives here so every
+ * door to it is already correct the moment that file lands.
+ */
+export function hrSettingsDevicesHref(org?: HrOrgRef): string {
+  return hrUrl("/hr/settings/devices", org);
+}
 export function hrScheduleHref(org?: HrOrgRef): string {
   return hrUrl("/hr/schedule", org);
 }
