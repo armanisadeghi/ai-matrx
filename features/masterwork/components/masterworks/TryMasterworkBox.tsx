@@ -656,16 +656,29 @@ export function TryMasterworkBox({
       {/* THE WATCHABLE WAIT (run beaf6a28): the currently talking step's own
           words, streaming live, auto-following the tail. This replaces the
           "one small spinner for several minutes, then everything at once". */}
+      {/* A schema-bound step's tokens are raw JSON — showing them is worse
+          than the spinner (Arman, 2026-08-26: "the data streamed in as raw
+          json"). Structured steps get an honest progress line; prose streams
+          verbatim. The real fix — rendering typed partial kinds through the
+          canonical lane machinery — is the adopt-workflow-run migration. */}
       {liveText && phase === "running" ? (
-        <div className="max-h-56 overflow-y-auto rounded-md border border-border/60 bg-muted/30 p-2.5">
-          <p className="mb-1 text-[11px] font-medium text-muted-foreground">
-            {stageLabel(liveText.nodeId)} — live
+        /^[{[]/.test(liveText.text.trimStart()) ? (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <CircleDashed className="h-3 w-3 animate-spin text-primary" />
+            {stageLabel(liveText.nodeId)} — writing the structured answer (
+            {liveText.text.length.toLocaleString()} characters so far)
           </p>
-          <pre className="whitespace-pre-wrap break-words font-sans text-xs text-foreground">
-            {liveText.text}
-          </pre>
-          <div ref={liveTailRef} />
-        </div>
+        ) : (
+          <div className="max-h-56 overflow-y-auto rounded-md border border-border/60 bg-muted/30 p-2.5">
+            <p className="mb-1 text-[11px] font-medium text-muted-foreground">
+              {stageLabel(liveText.nodeId)} — live
+            </p>
+            <pre className="whitespace-pre-wrap break-words font-sans text-xs text-foreground">
+              {liveText.text}
+            </pre>
+            <div ref={liveTailRef} />
+          </div>
+        )
       ) : null}
 
       {/* A stopped run is never a bare red line: what stopped, why in plain
