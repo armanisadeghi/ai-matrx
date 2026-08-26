@@ -26,7 +26,6 @@ function file(
     publicUrl: null,
     url: null,
     cdnUrl: null,
-    signedUrl: null,
     downloadUrl: null,
     source: { kind: "real" },
     _dirty: false,

@@ -271,7 +271,7 @@
   "mitigated": [
     {
       "target": "chat.message.content",
-      "reason": "Stores our own expiring URLs inside message bodies, but EVERY reading path re-mints: markdown images through ImageBlock -> useRemintableSrc -> recognizeOurFileUrl, and media blocks through buildMediaSource, which recovers the file_id from the URL and hands the handler a durable file_id source. No user-visible break. NOT auto-healed because message bodies are the conversation record \u2014 rewriting them edits what was said, which is Arman's call, not an agent's.",
+      "reason": "Stores our own legacy expiring URLs inside message bodies, but EVERY reading path resolves through durable identity: markdown images through ImageBlock -> useDurableSrc -> recognizeOurFileUrl, and media blocks through buildMediaSource, which recovers the file_id from the URL and hands the handler a durable file_id source. New writes carry durable URLs only. No user-visible break. NOT auto-healed because message bodies are the conversation record \u2014 rewriting them edits what was said, which is Arman's call, not an agent's.",
       "consumer": "components/mardown-display/blocks/images/ImageBlock.tsx:33, components/mardown-display/blocks/buildMediaSource.ts:54",
       "open": true
     },

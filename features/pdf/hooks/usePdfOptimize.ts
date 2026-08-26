@@ -7,7 +7,7 @@
  * (docs/FILE_HANDLING_CONSOLIDATION_PLAN.md).
  *
  * The endpoint returns either `data_url` (≤256 KB) or a 5-min ephemeral
- * `signed_url`; this hook materializes either into a `File` so consumers
+ * `ephemeral_url`; this hook materializes either into a `File` so consumers
  * see the same return shape as before.
  */
 import { useState, useCallback } from 'react';

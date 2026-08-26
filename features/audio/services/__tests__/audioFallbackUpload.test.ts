@@ -3,8 +3,8 @@ import { logClientError } from "../audioFallbackUpload";
 jest.mock("@/features/files/handler/handler", () => ({
   fileHandler: {},
 }));
-jest.mock("../transcribeSignedUrl", () => ({
-  transcribeSignedUrl: jest.fn(),
+jest.mock("../speechApi", () => ({
+  transcribeCloudFile: jest.fn(),
 }));
 
 describe("logClientError", () => {

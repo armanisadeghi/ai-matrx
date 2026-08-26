@@ -4,9 +4,8 @@
  * Audio import dialog for the Raw column. Three sources:
  *   - **File**: drag-drop or browse a local audio/video file. Uploads
  *     through the universal file handler into cld_files, then transcribes.
- *   - **URL**: paste a cld_files signed URL (mint via the handler or via
- *     `Files.getSignedUrl`). The transcribe route allowlist accepts
- *     Python backend + AWS S3 signed URLs only.
+ *   - **URL**: paste a URL the transcription backend can fetch (the
+ *     route allowlist accepts Python backend + AWS S3 URLs only).
  *   - **Cloud Files**: opens the Cloud Files window so the user can pick
  *     a file they've already uploaded.
  *
@@ -37,11 +36,11 @@ import {
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { saveAudioToStorage } from "@/features/transcripts/service/audioStorageService";
 import {
-  saveAudioToStorage,
-  getAudioUrl,
-} from "@/features/transcripts/service/audioStorageService";
-import { transcribeSignedUrl } from "@/features/audio/services/transcribeSignedUrl";
+  transcribeAudioUrl,
+  transcribeCloudFile,
+} from "@/features/audio/services/speechApi";
 import { rawSegmentsAppended } from "../../redux/slice";
 import { insertRawSegment } from "../../service/studioService";
 import type { RawSegment } from "../../types";
@@ -189,8 +188,7 @@ export function AudioImportDialog({
         { source: "import" },
       );
       setProgressLabel("Transcribing…");
-      const signedUrl = await getAudioUrl(upload.fileId);
-      const data = await transcribeSignedUrl(signedUrl);
+      const data = await transcribeCloudFile({ fileId: upload.fileId });
       const count = await ingestSegments(data.segments ?? [], data.text ?? "");
       toast.success(
         `Imported ${count} segment${count === 1 ? "" : "s"} from "${file.name}".`,
@@ -212,7 +210,7 @@ export function AudioImportDialog({
     try {
       setBusy(true);
       setProgressLabel("Transcribing…");
-      const data = await transcribeSignedUrl(trimmed);
+      const data = await transcribeAudioUrl(trimmed);
       const count = await ingestSegments(data.segments ?? [], data.text ?? "");
       toast.success(`Imported ${count} segment${count === 1 ? "" : "s"}.`);
       reset();
@@ -357,7 +355,7 @@ export function AudioImportDialog({
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste a cld_files signed URL"
+              placeholder="Paste a cloud-file URL"
               autoFocus
               disabled={busy}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-ring"

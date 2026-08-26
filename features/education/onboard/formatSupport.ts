@@ -11,7 +11,7 @@
 //
 // Each supported kind maps to an EXISTING platform pipeline (see `useIngest`):
 //   pdf/image  → the PDF-extractor OCR service (`streamPdfExtractText`)
-//   audio/video→ the Groq-Whisper transcription route (`transcribeSignedUrl`)
+//   audio/video→ server-side transcription by file_id (`transcribeCloudFile`)
 //   text       → read inline
 //   office     → aidream's content-processing orchestrator (`extractOfficeText`) —
 //                python-docx/python-pptx/openpyxl, no LibreOffice/OCR

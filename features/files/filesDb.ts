@@ -39,8 +39,8 @@ export function filesDb<C extends SupabaseClient<Database>>(client: C) {
  * REVOKEd from `authenticated`, so `select("*")` on `files.files` ERRORS with
  * "permission denied for column storage_uri". Never select `*` on this table
  * and never add `storage_uri` here. Renderable URLs come from the server's
- * FileRecord/FileRef URL contract (`url` / `cdn_url` / `signed_url` /
- * `download_url`), never assembled client-side from a storage location.
+ * FileRecord/FileRef URL contract (`url` / `cdn_url` / `download_url`),
+ * never assembled client-side from a storage location.
  */
 export const FILES_TABLE_COLUMNS =
   "id, created_by, updated_by, version, file_path, file_name, mime_type, size_bytes, checksum, visibility, current_version, parent_folder_id, metadata, created_at, updated_at, deleted_at, organization_id, parent_file_id, derivation_kind, derivation_metadata, duplicate_of_file_id, canonical_processed_document_id, width, height, duration_ms";

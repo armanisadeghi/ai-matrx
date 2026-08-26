@@ -140,10 +140,6 @@ const STANDALONE_FILE_ROUTE_RULES: readonly ServiceRouteRule[] = [
     methods: methods("POST"),
   },
   {
-    pattern: new RegExp(`^/files/${UUID_SEGMENT}/url/?$`, "i"),
-    methods: methods("GET"),
-  },
-  {
     pattern: new RegExp(`^/files/${UUID_SEGMENT}/restore/?$`, "i"),
     methods: methods("POST"),
   },

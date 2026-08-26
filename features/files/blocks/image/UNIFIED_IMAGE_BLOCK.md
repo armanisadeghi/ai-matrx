@@ -1,6 +1,8 @@
 # Unified Image Block
 
-> 🚫 **`storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06).** The client never carries a native storage location: no `fileUri`/`canonicalFileUri` on any block, no `file_uri` on the wire. Identify by `fileId`; render via `cdnUrl`/`signedUrl`/`downloadUrl`. The contract sections below are amended; any remaining historical mention (change log, phase narrative) is obsolete — see [features/files/FEATURE.md](../../FEATURE.md).
+> 🚫 **`storage_uri`/`file_uri` were ERADICATED from the FE (2026-07-06).** The client never carries a native storage location: no `fileUri`/`canonicalFileUri` on any block, no `file_uri` on the wire. Identify by `fileId`; render via `cdnUrl`/`downloadUrl`/the durable inline URL.
+>
+> 🚫 **Signed URLs were ERADICATED platform-wide (2026-08-26).** `signedUrl`/`signedUrlExpiresAt` no longer exist on any block or wire shape; the render URL for a private file is the durable `{base}/files/{id}/download?inline=1` (authenticated by the `mx_files_session` cookie — see `features/files/handler/session.ts`), and error recovery is a session refresh, never a re-mint. Any mention of signed URLs, expiry, or re-minting below is historical narrative — see [features/files/handler/FEATURE.md](../../handler/FEATURE.md) and `docs/CDN_INTEGRATION.md` for the live contract.
 
 > **Audience:** Python team, frontend engineers, future agents working on streaming, persistence, or rendering of images.
 > **Status:** Phase 2 — frontend ingestion is **wire-shape ready and awaiting the Python deploy**. The shared `UnifiedMediaBlock` shape, the `fromMediaBlock` adapter, and the `process-stream.ts` dispatch are all live; Python backend code landed on `main` 2026-05-16 (commit `96f7ff7b`) but isn't deployed yet at the time of writing. The legacy adapters (`image_output` / `partial_image`) currently carry traffic and become fallback once Python deploys.
@@ -28,7 +30,6 @@ type UnifiedImageBlock = MatrxImageBlock | ExternalImageBlock;
 // Shared by both variants
 interface ImageBlockShared {
   cdnUrl: string | null;
-  signedUrl: string | null;
   downloadUrl: string | null;
   base64: string | null;
 
@@ -40,7 +41,6 @@ interface ImageBlockShared {
 
   status: "complete" | "streaming" | "error";
   progress: number | null;
-  signedUrlExpiresAt: number | null;  // ms epoch
 
   metadata: Record<string, unknown> | null;
 }
@@ -135,23 +135,21 @@ UnifiedImageBlock = Union[MatrxImageBlock, ExternalImageBlock]
 
 **Phase 1b note:** thumbnails for matrx-owned media live on `Asset.variants["thumbnail_url"]` and are fetched per file via `GET /assets/{file_id}`. For grid listings, `CloudFile.thumbnailUrl` (lifted from the REST `FileRecord.thumbnail_url` field, which the backend now resolves from the variants store) is the cached source — see `MediaThumbnail` in `features/files/components/core/MediaThumbnail/MediaThumbnail.tsx`.
 | `metadata`              | `metadata`                 | Pass-through. |
-| (computed: Python signs) | `cdnUrl`                  | Server-side, for public files. |
-| (computed: Python signs) | `signedUrl`               | Pre-signed at emission time. |
-| (computed: Python signs) | `downloadUrl`             | Attachment-disposition variant. |
-| (computed: Python signs) | `signedUrlExpiresAt`      | Pre-computed `Date.now() + expires_in*1000`. |
+| (computed server-side)  | `cdnUrl`                  | Permanent CDN URL, public files only. |
+| (computed server-side)  | `downloadUrl`             | Durable attachment-disposition URL. |
 
 Dimensions (`width`, `height`) come from cld_files.metadata if available, otherwise null until probed.
 
-## How is expiry detected & resolved?
+## How is the render URL resolved?
 
 Single source of truth: [`features/files/blocks/image/useUnifiedImageUrl.ts`](./useUnifiedImageUrl.ts).
 
-1. **External** → use `externalUrl`. No expiry logic.
-2. **Matrx + public visibility** → prefer `cdnUrl`. No expiry logic.
-3. **Matrx + signedUrl valid** (`signedUrlExpiresAt > now + 30s`) → use it.
-4. **Matrx + signedUrl missing or expired** → call `fileHandler` (existing universal handler), which calls `Files.getSignedUrl(fileId)` and registers the new expiry with the global `expiry-wheel` so a refresh happens 30s before the next expiry — automatically, for every image in the app, with a single global timer.
+1. **External** → use `externalUrl`.
+2. **Matrx + public visibility** → prefer `cdnUrl` (a true permanent CDN URL, verified with `isSignedUrl`).
+3. **Matrx** → the handler resolves the durable inline URL from `fileId` (`useFileAs(html_src)`).
+4. **Load failure on an owned file** → `reportLoadError` refreshes the file-session cookie once and retries the SAME durable URL (`retryNonce` key bump). A second failure is terminal.
 
-Components NEVER touch signed-URL plumbing.
+Components NEVER touch URL/auth plumbing — there is no expiry.
 
 ## Adapter contract (the temporary translation layer)
 

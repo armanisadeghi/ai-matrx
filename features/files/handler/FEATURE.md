@@ -1,6 +1,6 @@
 # features/files/handler — the universal file handler (local mechanics)
 
-> **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/media/file-service/STATE.md` — read it before touching this feature in ANY repo. What the handler enforces (lazy signed-URL minting, share-vs-signed, transport policy, the Vault byte boundary) is stated once in `FILE_HANDLING_LAWS.md` § 9 in that same directory.
+> **Cross-repo system-of-record:** `/Users/armanisadeghi/code/common-docs/systems/media/file-service/STATE.md` — read it before touching this feature in ANY repo. What the handler enforces (durable URLs + the file-session cookie, share-vs-private, transport policy, the Vault byte boundary) is stated once in `FILE_HANDLING_LAWS.md` § 9 in that same directory; the durable-URL contract lives in `../media-durability/FEATURE.md` beside it.
 
 Every codepath that touches a file funnels through ONE `FileSource → NormalizedFile → FileTarget`
 pipeline. This is the single source of resistance for file flows.
@@ -23,12 +23,34 @@ it owns no slice (files live in `cloudFiles`, in-flight uploads in `cloudFiles.u
 
 ## Where things are
 
-`handler.ts` (entry) · `types.ts` (16 `FileSource` variants, `NormalizedFile`, 11 `FileTarget`
-variants) · `errors.ts` · `intelligence/access.ts` (`decideForOwnedFile`) ·
-`intelligence/signed-url-cache.ts` (the lazy cache) · `intelligence/refresh.ts` (the ONLY caller of
-`Files.getSignedUrl`) · `hooks/useRemintableSrc.ts` · `../upload/cloudUpload.ts` +
+`handler.ts` (entry) · `types.ts` (15 `FileSource` variants, `NormalizedFile`, 11 `FileTarget`
+variants) · `errors.ts` · `intelligence/access.ts` (`decideForOwnedFile`) · `session.ts` (the
+file-session cookie) · `hooks/useDurableSrc.ts` (session-refresh retry for raw URL strings) ·
+`utils/python-base.ts` (`fileUrls()` — THE durable URL builder) · `../upload/cloudUpload.ts` +
 `../upload/tusUpload.ts` + `../upload/__tests__/transport-policy.test.ts` ·
 `../vault/vaultAttachmentTransport.ts`.
+
+## Durable URLs + the file-session cookie (`session.ts`)
+
+Nothing mints signed URLs anymore — **every URL the platform emits or builds is durable**:
+`{base}/files/{id}/download` (`?inline=1` for render), `cdn_url` for public files. A durable URL
+contains only the file id and never expires; authorization happens at request time.
+
+Auth lanes for the durable byte routes:
+
+- **`fetch()` through the python-client** — attaches `Authorization: Bearer` (all reads/downloads).
+- **Plain `<img>`/`<video>`/`<audio>` bindings and navigations** — authenticate via the HttpOnly
+  `mx_files_session` cookie. `ensureFilesSession()` (`session.ts`) POSTs `/files/session` with
+  normal auth headers + `credentials: 'include'`; the backend sets the cookie (SameSite=None,
+  7-day TTL) and accepts it ONLY on GET byte routes. Fired at auth bootstrap
+  (`components/layout/AuthSessionWatcher.tsx`) and established on BOTH backend bases (main +
+  standalone files host) since cookies are per-host. In-memory dedupe/freshness only.
+- **Error recovery = session refresh, not URL re-mint.** `useDurableSrc` (and
+  `useUnifiedImageUrl`/`useUnifiedVideoUrl`'s `reportLoadError`) call
+  `ensureFilesSession({ force: true })` once on a media load failure and re-request the SAME URL
+  (key bump). A second failure is terminal.
+- A bare `fetch(durableUrl)` outside the python-client does NOT send the cross-origin cookie —
+  byte reads go through `Files.downloadFile` / `useFileBlob`.
 
 ## Invariants — do not violate
 
@@ -49,9 +71,10 @@ variants) · `errors.ts` · `intelligence/access.ts` (`decideForOwnedFile`) ·
    visibility. **`capture-uploader` deliberately combines `inheritActiveScope: true` with `personal`
    visibility** — the org id in `Captures/<orgId>/…` is *filing*, not access, and is what keeps the
    folder collision-free under the server's one-folder-path-per-user constraint. Do not "fix" it.
-7. **Signed URLs are private playback credentials, never share links.** `shareableMediaUrl` fails
-   closed on both AWS signing dialects; share/copy actions emit an internal viewer URL, a durable
-   CDN URL, or a canonical `/share/{token}`.
+7. **Durable authenticated URLs are private playback locators, never share links.**
+   `shareableMediaUrl` fails closed (and still rejects legacy signed URLs in both AWS dialects);
+   share/copy actions emit an internal viewer URL, a durable CDN URL, or a canonical
+   `/share/{token}`.
 8. **A successful upload returns `UploadedNormalizedFile`**, whose `fileId` is required at runtime
    and compile time. Agent attachment flows hand that identity to `MediaRef`; an opaque share URL is
    display/recovery data, never the primary locator.
@@ -65,8 +88,8 @@ variants) · `errors.ts` · `intelligence/access.ts` (`decideForOwnedFile`) ·
     **Do not claim live TUS verification until a real browser upload (preflight, resume,
     lost-final-response, token refresh) passes against the deployed server** — today it is unit-tested
     only.
-11. **`useRemintableSrc` is for a raw URL string only.** With a `file_id`/`MediaRef`, use
-    `useFileSrc` / `<InlineMediaRef>`, which mint up front.
+11. **`useDurableSrc` is for a raw URL string only.** With a `file_id`/`MediaRef`, use
+    `useFileSrc` / `<InlineMediaRef>`, which resolve the durable URL up front.
 12. **A canvas must not use the bare `/files/{id}/download` URL as `<img src>`** — an element cannot
     attach the bearer token, and a display/CDN URL is not a promise of CORS-readable pixels. Route
     `crossOrigin` consumers through `useFileBlob` and render a same-origin `blob:` URL.
@@ -89,7 +112,7 @@ Known non-handler byte paths, documented so they are not mistaken for bypasses:
 ## Upload failure playbook
 
 Error subclasses from `handler/errors`: `FileUploadError` (generic, wraps the backend message) ·
-`FileAccessDeniedError` (auth/RLS) · `FileExpiredError` (signed URL aged out — retry) ·
+`FileAccessDeniedError` (auth/RLS) ·
 `FileNotFoundError` · `FileDeletedError` (in trash) · `ShareLinkInvalidError` (410) ·
 `ExternalFetchError`.
 

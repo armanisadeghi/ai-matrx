@@ -1974,8 +1974,8 @@ export function getFilePreviewProfile(
     baseDetails.previewSizeCapOverride ??
     // Streamable kinds are always allowed regardless of size. SVG joins the
     // group: even though it's text underneath, it streams as an image via
-    // a signed URL — never read into memory by the renderer. HTML joins
-    // too: the Rendered view drives a sandboxed iframe `src={signedUrl}`
+    // its durable URL — never read into memory by the renderer. HTML joins
+    // too: the Rendered view drives a sandboxed iframe on the durable URL
     // (no client-side blob read), and the Source view fetches the bytes
     // through the standard blob path which has its own truncation.
     (kind === "image" ||

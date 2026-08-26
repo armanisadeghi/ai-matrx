@@ -157,7 +157,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
               description:
                 "Complete metadata for the file currently shown in the Info tab.",
               // `infoSnapshot.file` is a whole CloudFile, which carries
-              // `signedUrl`/`url`/`downloadUrl` (expiring) and `filePath` (a
+              // `url`/`downloadUrl` and `filePath` (a
               // raw storage path). An agent reads this payload long after the
               // click, so those are dead weight at best — `mediaSafe` strips
               // them and `file_ref` carries the durable identity instead.
@@ -253,7 +253,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
             ) : (
               <Row
                 label="Share link"
-                value={`No active share link. Use "Copy link" in the header to create a 7-day signed URL.`}
+                value={`No active share link. Use "Copy link" in the header to create one.`}
               />
             )}
           </Section>

@@ -548,17 +548,17 @@ export async function getTranscriptsByTag(tag: string): Promise<Transcript[]> {
 }
 
 /**
- * Get a signed URL for an audio/video file. The argument is now a
- * cld_files UUID; the universal handler mints (and auto-refreshes) the URL.
+ * Get the durable renderable URL for an audio/video file. The argument is a
+ * cld_files UUID; the universal handler resolves the durable URL.
  */
-export async function getSignedUrl(fileId: string): Promise<string | null> {
+export async function getFileRenderUrl(fileId: string): Promise<string | null> {
   try {
     const { fileHandler } = await import("@/features/files/handler/handler");
     return await fileHandler.use({ kind: "file_id", fileId }).as({
       kind: "html_src",
     });
   } catch (error) {
-    console.error("Error getting signed URL:", error);
+    console.error("Error resolving file URL:", error);
     return null;
   }
 }

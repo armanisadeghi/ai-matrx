@@ -8,9 +8,8 @@ const FILE_ID = "3e031c3f-b1e3-425c-ac49-217ad074b1d5";
 describe("isStandaloneFileServiceRoute", () => {
   it.each([
     `/files/${FILE_ID}`,
-    `/files/${FILE_ID}/url?expires_in=3600`,
-    `/files/${FILE_ID}/asset?signed_url_ttl=3600`,
-    `/files/${FILE_ID}/download?inline=true`,
+    `/files/${FILE_ID}/asset`,
+    `/files/${FILE_ID}/download?inline=1`,
     `/files/${FILE_ID}/share-links`,
     "/files/upload",
     "/files/bulk",
@@ -22,6 +21,8 @@ describe("isStandaloneFileServiceRoute", () => {
   });
 
   it.each([
+    // The signed-URL mint endpoint is DELETED — nothing may route it anywhere.
+    `/files/${FILE_ID}/url`,
     `/files/${FILE_ID}/ingest`,
     `/files/${FILE_ID}/knowledge-status`,
     `/files/${FILE_ID}/search`,

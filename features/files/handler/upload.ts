@@ -178,16 +178,19 @@ export async function uploadInternal(
   // Stitch on the share-link fields — cloudUpload created them in the
   // same round-trip as the upload. URL precedence is deliberate: a PUBLIC
   // file's `normalized.url` is the permanent CDN URL (set by fromCloudFile)
-  // and must win over the signed-redirect `directUrl` — otherwise we hand
-  // out a share-token URL as if it were a permanent CDN URL. Only
-  // private/shared files, whose `normalized.url` is empty, fall through to
-  // the share-token URLs.
+  // and must win over `directUrl` — otherwise we hand out a share-token URL
+  // as if it were a permanent CDN URL. Private/shared files take the
+  // share-token URLs: a caller that asked for a share link wants a URL any
+  // recipient can open, and the durable authenticated URL that
+  // `fromCloudFile` now seeds on `normalized.url` requires OUR auth.
   if (result.shareToken) {
     const appShareUrl = opts.appOrigin
       ? `${opts.appOrigin.replace(/\/$/, "")}/s/${result.shareToken}`
       : undefined;
+    const publicUrl =
+      cloudFile.visibility === "public" ? normalized.url : undefined;
     const url =
-      normalized.url ||
+      publicUrl ||
       result.directUrl ||
       appShareUrl ||
       result.shareUrl ||
@@ -240,7 +243,7 @@ function assertUploadedIdentity(
 
 // ---------------------------------------------------------------------------
 // Source → File coercion. Anything that already carries server identity
-// (cloud_file, file_id, signed_url, ...) is rejected — those are not
+// (cloud_file, file_id, share_link, ...) is rejected — those are not
 // "uploads", they're already persisted. The handler's resolve() path is
 // the right tool for those.
 // ---------------------------------------------------------------------------

@@ -36,9 +36,8 @@ jest.mock("@/features/audio/session/useMediaElementPlaybackSession", () => ({
   useMediaElementPlaybackSession: jest.fn(),
 }));
 
-jest.mock("@/features/files/handler/intelligence/signed-url-cache", () => ({
-  getOrMintSignedUrl: jest.fn(),
-  invalidateSignedUrl: jest.fn(),
+jest.mock("@/features/files/handler/session", () => ({
+  ensureFilesSession: jest.fn().mockResolvedValue(undefined),
 }));
 
 import { InlineMediaRef } from "./InlineMediaRef";

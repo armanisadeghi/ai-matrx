@@ -1117,7 +1117,7 @@ const legacySupabaseKeyBan = [
 // `authenticated`. This identifier family re-infected the codebase twice via
 // leftover references that coding agents copied; this ban makes reintroduction
 // structurally impossible. Identify files by `id`/`file_id`; render/download
-// via the URL contract (url / cdn_url / signed_url / download_url /
+// via the URL contract (url / cdn_url / download_url /
 // thumbnail_url). Read files.files ONLY through FILES_TABLE_COLUMNS
 // (features/files/filesDb.ts). The SOLE sanctioned exceptions are the
 // `Omit<..., "storage_uri">` read-row types in features/files/types.ts, which
@@ -1128,7 +1128,7 @@ const storageUriEradicationBan = [
         selector:
             'Identifier[name=/^(storageUri|storage_uri|fileUri|file_uri|canonicalFileUri|canonical_file_uri)$/]',
         message:
-            'storage_uri / file_uri (the native S3 location) is SERVER-ONLY and has been ERADICATED from the FE (2026-07-06). It exists on no backend response and its files.files column grant is REVOKEd. Identify by id/file_id; use the URL contract (url/cdn_url/signed_url/download_url). See features/files/FEATURE.md.',
+            'storage_uri / file_uri (the native S3 location) is SERVER-ONLY and has been ERADICATED from the FE (2026-07-06). It exists on no backend response and its files.files column grant is REVOKEd. Identify by id/file_id; use the URL contract (url/cdn_url/download_url). See features/files/FEATURE.md.',
     },
     {
         selector:

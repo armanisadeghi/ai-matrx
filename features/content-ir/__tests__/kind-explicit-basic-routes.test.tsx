@@ -296,7 +296,6 @@ const FIXTURES: Fixture[] = [
       file_name: "q3-report.docx",
       mime_type:
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      signed_url: null,
       visibility: "personal",
       office_kind: "docx",
       download_url: "https://files.example.com/f/0f1e2d3c?download=1",

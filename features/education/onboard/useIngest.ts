@@ -7,7 +7,7 @@
 //   • storage      → fileHandler (the ONE file entry point)
 //   • PDF text      → the pdf-extractor stream (`streamPdfExtractText`)
 //   • image OCR     → the SAME pdf-extractor stream (it accepts images; Tesseract)
-//   • audio/video   → Groq-Whisper transcription (`transcribeSignedUrl`)
+//   • audio/video   → server-side transcription by file_id (`transcribeCloudFile`)
 //   • YouTube       → aidream's real spoken-transcript agent (`fetchYouTubeTranscript`)
 //   • URLs          → the scraper
 // The set of readable file types (and the honest gate for the rest) lives in
@@ -27,7 +27,7 @@ import {
 } from "@/features/pdf-extractor/service/streamPdf";
 import { buildPdfSourceFromFileId } from "@/features/pdf/utils/source";
 import { formatBytes } from "@/features/image-studio/utils/format-bytes";
-import { transcribeSignedUrl } from "@/features/audio/services/transcribeSignedUrl";
+import { transcribeCloudFile } from "@/features/audio/services/speechApi";
 import { fetchYouTubeTranscript } from "./youtubeTranscript";
 import { extractOfficeText } from "./officeExtract";
 import { describeIngestSupport } from "./formatSupport";
@@ -342,12 +342,9 @@ export function useIngest(): UseIngestResult {
               ? "Transcribing the spoken audio from your video…"
               : "Transcribing your audio…",
         });
-        // The transcription backend fetches the file itself — hand it a durable
-        // signed URL minted through the file handler (never a hand-built path).
-        const signedUrl = await fileHandler
-          .use({ kind: "file_id", fileId })
-          .as({ kind: "html_src" });
-        const result = await transcribeSignedUrl(signedUrl);
+        // The transcription backend reads its own bytes — hand it the durable
+        // identity (file_id), never a URL.
+        const result = await transcribeCloudFile({ fileId });
         const raw = (result.text ?? "").trim();
         if (!raw || raw.length < 8) {
           throw new Error(

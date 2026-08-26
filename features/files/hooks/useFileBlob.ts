@@ -7,21 +7,12 @@
  *
  * Why this exists
  * ───────────────
- * The cloud-files signed-URL endpoint (`GET /files/{id}/url`) returns a
- * direct S3 presigned URL. That URL works for HTML elements that don't
- * trigger CORS (`<img>`, `<video>`, `<audio>`, `<iframe>`, anchor
- * navigation), but `fetch(signedUrl)` ALWAYS triggers a CORS preflight.
- * If the S3 bucket isn't configured to allow our origin, the fetch
- * fails with a 403 — which is exactly what was breaking PDF / Markdown
- * / CSV / TXT previews.
- *
- * The Python `/files/{id}/download` endpoint streams the bytes through
- * FastAPI (which already has CORS configured for our origins). Routing
- * fetch-based previewers through it sidesteps the S3-CORS issue
- * entirely. Note: S3 bucket CORS was applied 2026-05-05 (Bundle B4) so
- * direct-`fetch` against signed URLs now works too — we keep this
- * same-origin proxy as the default for the cached-bytes ergonomics, but
- * callers can switch to direct fetch when latency matters.
+ * Fetch-based previewers (PDF / Markdown / CSV / TXT) need the BYTES,
+ * with auth. The durable `/files/{id}/download` endpoint streams them
+ * through FastAPI with the python-client's Authorization header (a plain
+ * `<img>` binding rides the file-session cookie instead, but a bare
+ * `fetch` of the URL would send neither). This hook is the canonical
+ * bytes-with-progress reader over that endpoint.
  *
  * Caching
  * ───────

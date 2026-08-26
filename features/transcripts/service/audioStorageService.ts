@@ -217,8 +217,7 @@ export async function deleteAudioFromStorage(fileId: string): Promise<void> {
 }
 
 /**
- * Get a fresh signed URL for an audio file. Auto-refreshes before
- * expiry via the handler's expiry wheel.
+ * Get the durable renderable URL for an audio file.
  */
 export async function getAudioUrl(fileId: string): Promise<string> {
   const url = await fileHandler.use({ kind: "file_id", fileId }).as({

@@ -5,7 +5,7 @@
  * the user sees the actual web page first, with a one-click escape into the
  * raw markup. Mirrors the SVG previewer's pattern.
  *
- * **Rendered** mode mounts a sandboxed `<iframe src={signedUrl}>`. The
+ * **Rendered** mode mounts a sandboxed `<iframe src={durable url}>`. The
  * iframe is `sandbox="allow-scripts"` — scripts can run (most saved pages
  * need them to look right), but `allow-same-origin` is intentionally
  * omitted so the iframe cannot read cookies / localStorage / etc. of
@@ -111,7 +111,7 @@ export function HtmlPreview({
 export default HtmlPreview;
 
 // ---------------------------------------------------------------------------
-// Rendered view — sandboxed iframe driven by the signed URL.
+// Rendered view — sandboxed iframe driven by the durable URL.
 // ---------------------------------------------------------------------------
 
 function RenderedView({

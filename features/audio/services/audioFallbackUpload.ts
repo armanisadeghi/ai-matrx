@@ -1,10 +1,10 @@
 /**
  * Audio Fallback Upload Service
  *
- * When chunked transcription fails, uploads the full audio blob via the new
- * cloud-files backend, obtains a short-lived signed URL, hands it to the
- * URL-based transcription API (Groq Developer Plan supports up to 100 MB via
- * URL), and then hard-deletes the temporary upload.
+ * When chunked transcription fails, uploads the full audio blob via the
+ * cloud-files backend, hands the resulting `file_id` to the server-side
+ * transcription API (`POST /audio/transcribe-file` — the bytes never leave
+ * the server), and then hard-deletes the temporary upload.
  *
  * Routes audio through the canonical Files service.
  * system in Phase 8.
@@ -26,7 +26,7 @@ import { fileHandler } from "@/features/files/handler/handler";
 import { extractErrorMessage } from "@/utils/errors";
 import { AUDIO_API_ROUTES, RETRY_CONFIG } from "../constants";
 import { TranscriptionResult, TranscriptionOptions } from "../types";
-import { transcribeSignedUrl } from "./transcribeSignedUrl";
+import { transcribeCloudFile } from "./speechApi";
 import {
   normalizeAudioContentType,
   audioExtensionForType,
@@ -45,7 +45,6 @@ async function sleep(ms: number): Promise<void> {
 
 interface UploadHandle {
   fileId: string;
-  signedUrl: string;
 }
 
 async function uploadWithRetry(
@@ -97,14 +96,7 @@ async function uploadWithRetry(
       if (!normalized.fileId) {
         throw new Error("Upload returned no fileId");
       }
-      const fileId = normalized.fileId;
-
-      // Short-lived signed URL for the transcription service (10 min).
-      const signedUrl = await fileHandler
-        .use({ kind: "file_id", fileId })
-        .as({ kind: "html_src" });
-
-      return { fileId, signedUrl };
+      return { fileId: normalized.fileId };
     } catch (err) {
       lastError =
         err instanceof Error ? err : new Error(extractErrorMessage(err));
@@ -152,9 +144,13 @@ export async function uploadAndTranscribeFull(
   try {
     handle = await uploadWithRetry(blob);
 
-    // Canonical URL-transcription contract (shared with AudioImportDialog and
-    // the education Study-Kit ingest). Throws on a non-OK / failed envelope.
-    return await transcribeSignedUrl(handle.signedUrl, options);
+    // Server-side transcription by durable identity — the server reads its
+    // own bytes; no URL handoff. Throws on a non-OK / failed envelope.
+    return await transcribeCloudFile({
+      fileId: handle.fileId,
+      language: options?.language,
+      model: options?.model,
+    });
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Fallback transcription failed";

@@ -451,6 +451,9 @@ const registeredUrls = new Set<string>();
 // Mirror of `lib/media/signed-url.ts#SIGNED_URL_RE` — the SW has no app
 // imports, so keep this in sync by hand. Must match BOTH AWS dialects:
 // SigV4 (`X-Amz-*`) and SigV2 (`AWSAccessKeyId`/`Signature`/`Expires`).
+// The platform no longer mints signed URLs (durable `/files/{id}/download`
+// URLs — `?inline=1` included — are the norm and cache by ETag), but LEGACY
+// URLs still live in old rows and must never be cached.
 const SIGNED_URL_RE =
     /[?&](x-amz-signature|x-amz-credential|x-amz-date|x-amz-expires|awsaccesskeyid|signature|expires)=/i;
 
