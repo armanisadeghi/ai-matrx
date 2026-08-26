@@ -629,6 +629,14 @@ export function GscDimensionTable({
     width: 210,
   });
 
+  // ON A PHONE, EVERY COLUMN STILL SHIPS. None of these sets `mobileHidden`,
+  // deliberately: Class, Score and Level are the whole reason this table is
+  // different from Google's, and hiding the answer on the device the answer is
+  // most often read on would be the product deciding what a person is allowed
+  // to care about. Below `sm` the table sizes to its content and the container
+  // scrolls sideways, with edge fades and a sentence under the table saying so
+  // (MatrxDataTable) — the 2026-08-25 surface test read the absence of that
+  // affordance as "the columns are not shown", which was the real defect.
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [
     ...(watchable
       ? [

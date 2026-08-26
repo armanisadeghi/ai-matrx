@@ -460,8 +460,14 @@ export function LocationDecomposition({
 
   return (
     <ul className="divide-y divide-border overflow-hidden rounded-md border border-border bg-card">
-      {rows.map((row) => {
-        const key = row.location_id ?? row.decided_by;
+      {rows.map((row, index) => {
+        // One row per location is now the SERVER's contract
+        // (seo_gsc_perf_location_summary_one_row_per_location.sql — it used to
+        // group by attribution method too, which listed Los Angeles and
+        // Houston twice with different numbers and collided this key). The
+        // index is the belt to that braces: a duplicate key silently drops a
+        // row's state, and a decomposition is exactly where that is invisible.
+        const key = `${row.location_id ?? row.decided_by ?? "row"}:${index}`;
         const open = openRow === key;
         const clicks = Number(row.clicks);
         const share = totalClicks > 0 ? (clicks / totalClicks) * 100 : 0;

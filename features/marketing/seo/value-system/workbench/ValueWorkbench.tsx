@@ -1472,9 +1472,22 @@ export function ValueWorkbench() {
                             <p className="mb-1.5 text-xs font-semibold text-foreground">
                               Why this level
                             </p>
+                            {/* P26 — THE FULL LOOP. Without `linkContext` this
+                              receipt explained the number and then left the
+                              reader holding it: no step opened the rule, the
+                              dimension value, the offering or the thresholds
+                              that produced it (found by the 2026-08-25 surface
+                              test). The doors are the ONE mapping in
+                              reason-links.ts — this passes the context, it does
+                              not fork a second receipt. */}
                             <ReasonChainDetail
                               reasons={row.reasons}
                               source={row.value_source}
+                              linkContext={{
+                                brandId,
+                                siteId,
+                                keyword: row.keyword,
+                              }}
                             />
                           </div>
                           <div className="flex flex-wrap gap-2 border-t border-border pt-3">

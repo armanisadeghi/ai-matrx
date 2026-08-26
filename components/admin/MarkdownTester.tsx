@@ -70,6 +70,8 @@ import {
 } from "@/components/ui/select";
 import { isJsonObject } from "@/types/json";
 
+// context-menu-exempt: entity — an admin scratch tool for testing markdown rendering — the pad holds no record, so there is nothing to attach or share
+
 // Narrow an unknown error-response body (FastAPI-style `{detail}` or `{message}`) without `any`.
 function extractApiErrorMessage(body: unknown, fallback: string): string {
   if (isJsonObject(body)) {

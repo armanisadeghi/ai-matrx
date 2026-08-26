@@ -777,6 +777,7 @@ export function SearchConsoleWorkspace() {
                   filters={filters}
                   allowedKeys={allowedFilterKeysForTab(state.tab)}
                   siteId={state.siteId}
+                  brandId={site?.brand_id ?? null}
                   onChange={(next) => applyState({ ...state, filters: next })}
                 />
               ) : null}

@@ -30,6 +30,8 @@ import {
   type WarRoomThreadMenuRow,
 } from "@/features/war-room/lib/thread-actions";
 
+// context-menu-exempt: surfaceName — the registered matrx-user/war-room surface declares 17 per-ROOM values a cross-room table cannot emit; naming it would hand bound agents empty values
+
 const NO_ROOM_LABEL = "No room";
 
 interface ThreadTableRow {

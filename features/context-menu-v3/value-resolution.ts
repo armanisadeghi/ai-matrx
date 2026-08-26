@@ -68,6 +68,14 @@ export interface ResolveScopeArgs {
    * `adoptMountedRuntimeScope`).
    */
   surfaceName?: string;
+  /**
+   * AMBIENT STATE — what is true around the user right now (active org, active
+   * scopes, surface, whether a run is streaming). Collected by the engine from
+   * Redux and landed on ONE namespaced `ambient` key, never spread across the
+   * scope. The weakest layer there is: a surface that emits its own `ambient`
+   * keeps it untouched.
+   */
+  ambient?: Record<string, unknown>;
 }
 
 /**
@@ -177,6 +185,11 @@ export function resolveApplicationScope(
       if (isEmptyValue(base[k])) base[k] = v;
     }
   }
+
+  // THE AMBIENT LAYER — weaker still than the runtime underlay, and confined
+  // to ONE key. A surface that speaks about `ambient` is never contradicted.
+  if (args.ambient && !surfaceAnswered.has("ambient") && isEmptyValue(base.ambient))
+    base.ambient = args.ambient;
 
   // No-fake-menu net: if no usable content resolved but the DOM gave us text,
   // adopt it so Copy / AI actions always have something to act on. A surface

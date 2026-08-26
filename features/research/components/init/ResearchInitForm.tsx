@@ -91,6 +91,8 @@ import { researchStartDestination } from "@/features/research/utils/init-route";
 // MenuContent lazy-loads on first open.
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
+// context-menu-exempt: entity — the form that runs BEFORE the research exists — no row has been created yet, so there is no record to name
+
 type Mode = "manual" | "template" | "ai";
 
 // ── AI state machine ──────────────────────────────────────────────────────────

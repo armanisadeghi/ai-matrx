@@ -721,6 +721,17 @@ export function MeaningRulesWorkbench() {
   }, [areas.data]);
 
   const incompleteAreas = (areas.data ?? []).filter(areaNeedsPlaces);
+  /**
+   * "No places" and "nothing attributed" are TWO different facts, and this
+   * banner used to state the second while an area's own badge stated the
+   * opposite ("1 keyword · 8 clicks"). An area with no places matches nothing
+   * AUTOMATICALLY — but a person can still pin a keyword to it by hand, and
+   * that pin keeps counting. So the banner has to know which of the two it is
+   * looking at and say the right one.
+   */
+  const incompleteAreasWithUsage = incompleteAreas.filter(
+    (a) => (usageByArea.get(a.label)?.keywords ?? 0) > 0,
+  );
   const visibleAreas = (
     onlyIncompleteAreas ? incompleteAreas : (areas.data ?? [])
   ).filter((a) => matchesSource(a.id, a.metadata));
@@ -1399,12 +1410,47 @@ export function MeaningRulesWorkbench() {
                   </p>
                   <p className="mt-0.5 text-[10px] leading-4 text-muted-foreground">
                     {incompleteAreas.length === 1 ? "It was" : "They were"}{" "}
-                    created with a name and a band but nothing inside, so no
-                    search has ever matched{" "}
-                    {incompleteAreas.length === 1 ? "it" : "them"} and geography
-                    counts for nothing in your value tiers. Open{" "}
-                    {incompleteAreas.length === 1 ? "it" : "each one"} and add
-                    the towns, cities or regions it stands for.
+                    created with a name and a band but nothing inside, so
+                    nothing matches{" "}
+                    {incompleteAreas.length === 1 ? "it" : "them"}{" "}
+                    automatically — no search will ever land in{" "}
+                    {incompleteAreas.length === 1 ? "it" : "them"} on its own.
+                    {/* THE CONTRADICTION THIS SENTENCE EXISTS TO KILL (found by
+                      the 2026-08-25 surface test): the banner said "no search
+                      has ever matched them and geography counts for nothing"
+                      while "Out of market" wore a badge reading "1 keyword · 8
+                      clicks". Both were true — the keyword was attributed by a
+                      HUMAN PIN, not by a place matcher — and the reader was
+                      left to guess whether the area worked. Now the two are
+                      named separately, and the badge is the proof of the
+                      second. */}
+                    {incompleteAreasWithUsage.length > 0 ? (
+                      <>
+                        {" "}
+                        {incompleteAreasWithUsage.length ===
+                        incompleteAreas.length
+                          ? incompleteAreas.length === 1
+                            ? "It does"
+                            : "They do"
+                          : `${incompleteAreasWithUsage.length} of them (${incompleteAreasWithUsage
+                              .map((a) => a.label)
+                              .join(", ")}) do`}{" "}
+                        already carry keywords you pinned to{" "}
+                        {incompleteAreasWithUsage.length === 1 ? "it" : "them"}{" "}
+                        by hand — see the badge on the row — and those keep
+                        counting. Everything else geographic does not.
+                      </>
+                    ) : (
+                      <>
+                        {" "}
+                        Nothing is attributed to{" "}
+                        {incompleteAreas.length === 1 ? "it" : "them"} by hand
+                        either, so geography counts for nothing in your value
+                        tiers.
+                      </>
+                    )}{" "}
+                    Open {incompleteAreas.length === 1 ? "it" : "each one"} and
+                    add the towns, cities or regions it stands for.
                   </p>
                 </div>
                 {onlyIncompleteAreas ? (
@@ -1486,7 +1532,14 @@ export function MeaningRulesWorkbench() {
                       {humanizeSlug(area.area_kind)} ·{" "}
                       {areaNeedsPlaces(area) ? (
                         <span className="text-warning">
-                          no places yet — this area matches nothing
+                          {/* Not "matches nothing" — the badge beside this line
+                            may be saying "1 keyword · 8 clicks" from a human
+                            pin, and two opposite sentences on one row is how a
+                            working area gets deleted. */}
+                          no places yet — nothing matches it automatically
+                          {(usageByArea.get(area.label)?.keywords ?? 0) > 0
+                            ? "; the keywords on it were pinned by hand"
+                            : ""}
                         </span>
                       ) : healthByArea.get(area.id)?.state ===
                         "disconnected" ? (

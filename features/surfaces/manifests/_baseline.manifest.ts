@@ -68,6 +68,31 @@ export const BASELINE_VALUES = {
   },
 } as const satisfies Record<string, SurfaceValue>;
 
+/**
+ * AMBIENT — what is true around the user right now, regardless of surface.
+ *
+ * 🚨 ONE KEY, not five. Ambient state arrives as a single namespaced object so
+ * it can never collide with a surface's own value names, needs exactly one
+ * declaration here, and does not turn every surface's Context Admin into a
+ * wall of undeclared runtime keys.
+ *
+ * Written ONLY by the platform (the context menu's ambient underlay,
+ * `features/context-menu-v3/value-resolution.ts`) and only into a silence — a
+ * surface that declares its own `ambient` is never overwritten.
+ */
+export const AMBIENT_VALUES = {
+  ambient: {
+    name: "ambient",
+    label: "Ambient state",
+    description:
+      "What is true around the user at this moment, independent of the surface: the active organization, the active scopes/context selections, the surface they are on, and whether an agent run is currently streaming. Platform-written; use it to avoid asking the user what the app already knows.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 300,
+    sortOrder: 9998,
+  },
+} as const satisfies Record<string, SurfaceValue>;
+
 export type BaselineKey = keyof typeof BASELINE_VALUES;
 
 /** Pick a subset of baseline values by key. */
