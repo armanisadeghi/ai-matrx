@@ -228,6 +228,31 @@ async function getAccessTokenOrNull(): Promise<string | null> {
 /** Default hard timeout for JSON reads. A stalled GET must become a loud error,
  *  not an infinite spinner. Overridable per-call via `opts.timeoutMs`. */
 const DEFAULT_JSON_TIMEOUT_MS = 30000;
+const GET_NETWORK_RETRY_DELAY_MS = 250;
+
+function isRetryableGetTransportError(
+  error: unknown,
+  callerSignal: AbortSignal | undefined,
+): boolean {
+  if (callerSignal?.aborted) return false;
+  return error instanceof TypeError;
+}
+
+function waitForGetRetry(signal: AbortSignal | undefined): Promise<void> {
+  return new Promise((resolve, reject) => {
+    let onAbort: (() => void) | undefined;
+    const timer = setTimeout(() => {
+      if (signal && onAbort) signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, GET_NETWORK_RETRY_DELAY_MS);
+    if (!signal) return;
+    onAbort = () => {
+      clearTimeout(timer);
+      reject(signal.reason ?? new DOMException("Aborted", "AbortError"));
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
 
 /**
  * `fetch` with a hard timeout that composes with the caller's abort signal. On
@@ -465,16 +490,29 @@ export async function getJson<T>(
   );
   try {
     const { headers, requestId } = await buildHeaders(opts, false);
-    const response = await fetchWithTimeout(
-      url,
-      { method: "GET", headers },
-      opts.signal,
-      opts.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS,
-    );
+    let response: Response;
+    try {
+      response = await fetchWithTimeout(
+        url,
+        { method: "GET", headers },
+        opts.signal,
+        opts.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS,
+      );
+    } catch (error) {
+      if (!isRetryableGetTransportError(error, opts.signal)) throw error;
+      await waitForGetRetry(opts.signal);
+      response = await fetchWithTimeout(
+        url,
+        { method: "GET", headers },
+        opts.signal,
+        opts.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS,
+      );
+    }
     if (!response.ok) throw await parseHttpError(response);
     const data = (await response.json()) as T;
     return { data, meta: meta(response, requestId) };
   } catch (err) {
+    if (opts.captureErrors === false) throw err;
     failClient(err, "GET", path, url);
   }
 }
