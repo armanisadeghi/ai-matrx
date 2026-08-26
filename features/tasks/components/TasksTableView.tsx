@@ -736,6 +736,7 @@ export default function TasksTableView() {
                 return (
                   <TableRow
                     key={task.id}
+                    data-task-row-id={task.id}
                     className={cn(
                       "cursor-pointer",
                       isSelected && "bg-primary/[0.08] hover:bg-primary/[0.1]",

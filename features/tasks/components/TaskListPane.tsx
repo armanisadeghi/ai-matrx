@@ -231,9 +231,9 @@ export default function TaskListPane() {
 
   const resolveMenuTarget = (target: HTMLElement | null) => {
     const taskId =
-      target?.closest?.(`[${TASK_ROW_DOM_ATTR}]`)?.getAttribute(
-        TASK_ROW_DOM_ATTR,
-      ) ?? null;
+      target
+        ?.closest?.(`[${TASK_ROW_DOM_ATTR}]`)
+        ?.getAttribute(TASK_ROW_DOM_ATTR) ?? null;
     const next = taskId ? findTaskById(taskId) : null;
     menuTargetRef.current = next;
     setMenuTarget(next);
@@ -428,96 +428,98 @@ export default function TaskListPane() {
         </div>
       )}
 
-      {/* List */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        {isTableView ? (
-          <TasksTableView />
-        ) : loading && totalCount === 0 ? (
-          <div className="space-y-1 p-2 animate-pulse">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-12 bg-muted/50 rounded" />
-            ))}
-          </div>
-        ) : totalCount === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground/60 px-6 py-12">
-            <CircleDashed className="w-8 h-8 mb-2 opacity-40" />
-            <p className="text-xs font-medium">No tasks match</p>
-            <p className="text-[11px] mt-0.5 text-center">
-              Adjust filters or add a task above
-            </p>
-          </div>
-        ) : (
-          <NonEditableContextMenu
-            sourceFeature={TASKS_CONTEXT_MENU_PROPS.sourceFeature}
-            surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
-            getApplicationScope={getMenuApplicationScope}
-            resolveContextOnOpen={resolveMenuTarget}
-            extraSections={menuSections}
-          >
-          <div className={cn(isGrouped && "p-2 space-y-2")}>
-            {groups.map((group) => {
-              const isCollapsed = collapsed.has(group.key);
-              // Resolve scope ids to names where needed
-              const displayLabel =
-                group.label && group.label !== group.key
-                  ? group.label
-                  : (scopeNameMap[group.key] ?? group.label);
-              return (
-                <div
-                  key={group.key}
-                  className={cn(
-                    isGrouped &&
-                      "rounded-lg border border-border bg-card shadow-[var(--elevation-1)] overflow-hidden",
-                  )}
-                >
-                  <button
-                    onClick={() => toggleGroup(group.key)}
+      {/* The ONE menu for the list pane covers rows, table rows, loading,
+          empty space, and the empty state. Both row renderers publish the
+          same data-task-row-id anchor for delegated task identity. */}
+      <NonEditableContextMenu
+        sourceFeature={TASKS_CONTEXT_MENU_PROPS.sourceFeature}
+        surfaceName={TASKS_CONTEXT_MENU_PROPS.surfaceName}
+        getApplicationScope={getMenuApplicationScope}
+        resolveContextOnOpen={resolveMenuTarget}
+        extraSections={menuSections}
+      >
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {isTableView ? (
+            <TasksTableView />
+          ) : loading && totalCount === 0 ? (
+            <div className="space-y-1 p-2 animate-pulse">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-12 bg-muted/50 rounded" />
+              ))}
+            </div>
+          ) : totalCount === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground/60 px-6 py-12">
+              <CircleDashed className="w-8 h-8 mb-2 opacity-40" />
+              <p className="text-xs font-medium">No tasks match</p>
+              <p className="text-[11px] mt-0.5 text-center">
+                Adjust filters or add a task above
+              </p>
+            </div>
+          ) : (
+            <div className={cn(isGrouped && "p-2 space-y-2")}>
+              {groups.map((group) => {
+                const isCollapsed = collapsed.has(group.key);
+                // Resolve scope ids to names where needed
+                const displayLabel =
+                  group.label && group.label !== group.key
+                    ? group.label
+                    : (scopeNameMap[group.key] ?? group.label);
+                return (
+                  <div
+                    key={group.key}
                     className={cn(
-                      "group sticky top-0 z-10 flex items-center gap-1.5 w-full px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors",
-                      isGrouped
-                        ? "bg-muted/50 border-b border-border/60"
-                        : "bg-background/80 backdrop-blur-sm border-b border-border/30",
+                      isGrouped &&
+                        "rounded-lg border border-border bg-card shadow-[var(--elevation-1)] overflow-hidden",
                     )}
                   >
-                    {isCollapsed ? (
-                      <ChevronRight className="w-3.5 h-3.5 opacity-60 shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
-                    )}
-                    <span className="flex-1 text-left truncate">
-                      {displayLabel}
-                    </span>
-                    <span className="text-[11px] font-normal opacity-60 tabular-nums shrink-0">
-                      {group.tasks.length}
-                    </span>
-                  </button>
+                    <button
+                      onClick={() => toggleGroup(group.key)}
+                      className={cn(
+                        "group sticky top-0 z-10 flex items-center gap-1.5 w-full px-2.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors",
+                        isGrouped
+                          ? "bg-muted/50 border-b border-border/60"
+                          : "bg-background/80 backdrop-blur-sm border-b border-border/30",
+                      )}
+                    >
+                      {isCollapsed ? (
+                        <ChevronRight className="w-3.5 h-3.5 opacity-60 shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 opacity-60 shrink-0" />
+                      )}
+                      <span className="flex-1 text-left truncate">
+                        {displayLabel}
+                      </span>
+                      <span className="text-[11px] font-normal opacity-60 tabular-nums shrink-0">
+                        {group.tasks.length}
+                      </span>
+                    </button>
 
-                  {!isCollapsed && (
-                    <div className="divide-y divide-border/30">
-                      {group.tasks.map((task) => (
-                        <TaskRow
-                          key={`${group.key}:${task.id}`}
-                          task={task}
-                          kpis={listKpis}
-                          view={listView}
-                          isSelected={selectedTaskId === task.id}
-                          onSelect={() => handleSelectTask(task.id)}
-                          onToggle={() =>
-                            dispatch(
-                              toggleTaskCompleteThunk({ taskId: task.id }),
-                            )
-                          }
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          </NonEditableContextMenu>
-        )}
-      </div>
+                    {!isCollapsed && (
+                      <div className="divide-y divide-border/30">
+                        {group.tasks.map((task) => (
+                          <TaskRow
+                            key={`${group.key}:${task.id}`}
+                            task={task}
+                            kpis={listKpis}
+                            view={listView}
+                            isSelected={selectedTaskId === task.id}
+                            onSelect={() => handleSelectTask(task.id)}
+                            onToggle={() =>
+                              dispatch(
+                                toggleTaskCompleteThunk({ taskId: task.id }),
+                              )
+                            }
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </NonEditableContextMenu>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { buildTasksListContextData } from "@/features/tasks/agent-context/buildTasksContextData";
 import {
@@ -42,15 +41,7 @@ export function TasksListSurfaceRuntime({ children }: { children: ReactNode }) {
       getScope={getSurfaceScope}
       isEditable={false}
     >
-      <NonEditableContextMenu
-        sourceFeature="tasks"
-        surfaceName={SURFACE_NAME}
-        menuVersion={1}
-        getApplicationScope={getSurfaceScope}
-        contentSource={{ type: "raw" }}
-      >
-        <div className="h-full min-h-0 w-full overflow-hidden">{children}</div>
-      </NonEditableContextMenu>
+      <div className="h-full min-h-0 w-full overflow-hidden">{children}</div>
     </SurfaceRuntimeProvider>
   );
 }
