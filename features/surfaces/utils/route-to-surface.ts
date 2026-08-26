@@ -523,6 +523,14 @@ export function surfaceFromPathname(
     return "matrx-user/education-learn-authoring";
   }
 
+  // Organization performance reviews live under the dynamic organization
+  // route, but are a complete editor with their own agent-readable and
+  // agent-writable vocabulary. Resolve this before the broad organizations
+  // hub prefix so the generic organization surface cannot swallow it.
+  if (/^\/organizations\/[^/]+\/performance-reviews(?:\/|$)/.test(stripped)) {
+    return "matrx-user/organization-performance-reviews";
+  }
+
   // One Rulebook is `/masterwork/[rulebookId]`. Its record and built-output
   // children are distinct pages and must not inherit this editor's scope;
   // hubs such as `/masterwork/all`, `/new`, and `/encore` are excluded by the

@@ -188,6 +188,17 @@ describe("CMS surface resolution (nested [siteId])", () => {
   });
 });
 
+describe("Organization performance-review surface resolution", () => {
+  it("resolves the organization child editor before the organizations hub", () => {
+    expect(surfaceFromPathname("/organizations/acme/performance-reviews")).toBe(
+      "matrx-user/organization-performance-reviews",
+    );
+    expect(surfaceFromPathname("/organizations/acme")).toBe(
+      "matrx-user/organizations",
+    );
+  });
+});
+
 describe("Agent surface resolution (nested [id])", () => {
   const A = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 

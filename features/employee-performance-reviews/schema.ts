@@ -5,6 +5,12 @@
 
 export type RatingValue = 1 | 2 | 3 | 4 | 5;
 
+export function isRatingValue(value: unknown): value is RatingValue {
+  return (
+    value === 1 || value === 2 || value === 3 || value === 4 || value === 5
+  );
+}
+
 export const MIN_LIST_ITEMS = 2;
 export const IDEAL_LIST_ITEMS = 3;
 export const MAX_LIST_ITEMS = 5;

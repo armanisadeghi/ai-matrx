@@ -18,12 +18,19 @@ import {
   ListSectionKey,
 } from "./schema";
 
-const STORAGE_KEY = "matrx.performanceReviews.v1";
+export const DEMO_PERFORMANCE_REVIEW_STORAGE_KEY =
+  "matrx.performanceReviews.v1";
 
-function loadReviews(): Review[] {
+export function organizationPerformanceReviewStorageKey(
+  organizationId: string,
+): string {
+  return `matrx.performanceReviews.organization.${organizationId}.v1`;
+}
+
+function loadReviews(storageKey: string): Review[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey);
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -62,10 +69,10 @@ function loadReviews(): Review[] {
   }
 }
 
-function saveReviews(reviews: Review[]) {
+function saveReviews(storageKey: string, reviews: Review[]) {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(reviews));
+    window.localStorage.setItem(storageKey, JSON.stringify(reviews));
   } catch (error) {
     console.error("Unable to save performance reviews", error);
   }
@@ -98,12 +105,14 @@ export interface UseReviews {
   removeListItem: (section: ListSectionKey, index: number) => void;
   moveListItem: (section: ListSectionKey, index: number, dir: -1 | 1) => void;
   setRating: (category: string, item: string, value: RatingValue) => void;
+  setRatingValue: (category: string, item: string, value: RatingValue) => void;
   setOverall: (key: string) => void;
-  exportActive: () => void;
   importReviews: (json: string) => boolean;
 }
 
-export function useReviews(): UseReviews {
+export function useReviews(
+  storageKey = DEMO_PERFORMANCE_REVIEW_STORAGE_KEY,
+): UseReviews {
   const [hydrated, setHydrated] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -113,7 +122,7 @@ export function useReviews(): UseReviews {
   // Hydrate once on mount (client only) to avoid SSR mismatch.
   useEffect(() => {
     const timer = setTimeout(() => {
-      const loaded = loadReviews();
+      const loaded = loadReviews(storageKey);
       if (loaded.length === 0) {
         const blank = createBlankReview();
         setReviews([blank]);
@@ -126,7 +135,7 @@ export function useReviews(): UseReviews {
     }, 0);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [storageKey]);
 
   // Debounced persistence whenever reviews change (after hydration).
   useEffect(() => {
@@ -134,14 +143,14 @@ export function useReviews(): UseReviews {
     const stateTimer = setTimeout(() => setSaveState("saving"), 0);
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      saveReviews(reviews);
+      saveReviews(storageKey, reviews);
       setSaveState("saved");
     }, 400);
     return () => {
       clearTimeout(stateTimer);
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [reviews, hydrated]);
+  }, [reviews, hydrated, storageKey]);
 
   const active = useMemo(
     () => reviews.find((r) => r.id === activeId) ?? null,
@@ -262,25 +271,21 @@ export function useReviews(): UseReviews {
     [mutateActive],
   );
 
+  const setRatingValue = useCallback(
+    (category: string, item: string, value: RatingValue) => {
+      const key = ratingKey(category, item);
+      mutateActive((review) => ({
+        ...review,
+        ratings: { ...review.ratings, [key]: value },
+      }));
+    },
+    [mutateActive],
+  );
+
   const setOverall = useCallback(
     (key: string) => mutateActive((r) => ({ ...r, overall: key })),
     [mutateActive],
   );
-
-  const exportActive = useCallback(() => {
-    if (!active || typeof window === "undefined") return;
-    const blob = new Blob([JSON.stringify(active, null, 2)], {
-      type: "application/json",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `review-${(active.employeeName || "untitled")
-      .replace(/\s+/g, "_")
-      .toLowerCase()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [active]);
 
   const importReviews = useCallback((json: string): boolean => {
     try {
@@ -379,8 +384,8 @@ export function useReviews(): UseReviews {
     removeListItem,
     moveListItem,
     setRating,
+    setRatingValue,
     setOverall,
-    exportActive,
     importReviews,
   };
 }

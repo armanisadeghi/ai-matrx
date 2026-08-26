@@ -50,7 +50,9 @@ export function buildPerformanceReviewQuestionsPayload(): string {
     .join("\n");
 
   const listXml = LIST_SECTIONS.map(
-    (section) => `  <section __kind="performance_review_list_question" name="${section.key}" min_items="${MIN_LIST_ITEMS}" ideal_items="${IDEAL_LIST_ITEMS}" max_items="${MAX_LIST_ITEMS}">
+    (
+      section,
+    ) => `  <section __kind="performance_review_list_question" name="${section.key}" min_items="${MIN_LIST_ITEMS}" ideal_items="${IDEAL_LIST_ITEMS}" max_items="${MAX_LIST_ITEMS}">
     <label>${escapeXml(section.title)}</label>
     <question>${escapeXml(section.description)}</question>
     <guidance>The ideal number is three.</guidance>
@@ -58,7 +60,9 @@ export function buildPerformanceReviewQuestionsPayload(): string {
   ).join("\n");
 
   const ratingsXml = RATING_SCHEMA.map(
-    (category) => `    <category __kind="performance_review_rating_category" name="${category.key}">
+    (
+      category,
+    ) => `    <category __kind="performance_review_rating_category" name="${category.key}">
       <label>${escapeXml(category.label)}</label>
 ${category.items
   .map(
@@ -170,11 +174,13 @@ export function buildPerformanceReviewValuesPayload(
       "Every value currently visible in the active performance review form, including live unsaved/autosaving edits and expanded rating labels.",
     data: performanceReviewValuesData(review, stats, context),
     attributes: {
+      __kind: "performance_review_copy_attributes",
       completion_percent: stats.completionPct,
       rated_count: stats.ratedCount,
       total_rating_count: stats.totalCount,
     },
     context: {
+      __kind: "performance_review_copy_context",
       review_id: review.id,
       organization_id: context.organizationId ?? "browser-local-demo",
       persistence: "browser-local autosave",

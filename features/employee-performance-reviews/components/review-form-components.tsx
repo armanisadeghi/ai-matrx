@@ -328,13 +328,15 @@ export function StatTile({
   label,
   value,
   sub,
+  anchor,
 }: {
   label: string;
   value: React.ReactNode;
   sub?: React.ReactNode;
+  anchor?: string;
 }) {
   return (
-    <Card>
+    <Card data-surface-value={anchor}>
       <CardContent className="p-4">
         <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           {label}

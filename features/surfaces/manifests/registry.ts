@@ -117,6 +117,7 @@ import { contentPlanSetupManifest } from "./content-plan-setup.manifest";
 import { masterworkRulebookManifest } from "./masterwork-rulebook.manifest";
 import { agentsHubManifest } from "./agents-hub.manifest";
 import { organizationsManifest } from "./organizations.manifest";
+import { organizationPerformanceReviewsManifest } from "./organization-performance-reviews.manifest";
 import { dashboardManifest } from "./dashboard.manifest";
 import { educationManifest } from "./education.manifest";
 import { educationTutorManifest } from "./education-tutor.manifest";
@@ -331,6 +332,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   // 2026-07-24 fleet push — hub/list + workspace surfaces.
   agentsHubManifest,
   organizationsManifest,
+  organizationPerformanceReviewsManifest,
   dashboardManifest,
   educationManifest,
   educationTutorManifest,

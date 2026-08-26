@@ -1,5 +1,5 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
-import PerformanceReviewApp from "./PerformanceReviewApp";
+import PerformanceReviewApp from "@/features/employee-performance-reviews/components/PerformanceReviewApp";
 
 // Server component (SSR). Only the interactive tree below ships as client JS.
 export const metadata = createRouteMetadata("/demos/performance-review", {
