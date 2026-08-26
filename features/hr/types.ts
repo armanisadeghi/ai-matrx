@@ -171,6 +171,25 @@ export type HrDirectoryRow = {
   fte: number | null;
   /** null when `hr.employees.directory_shows_hire_date` is off. */
   hire_date: string | null;
+  /**
+   * Where this row's job columns came from.
+   *
+   * `hr.employee.current_*` is the sanctioned source for the directory (SPEC-EMPLOYEES §1.2 /
+   * §5.1) — but `hr._refresh_current_position` CLEARS those columns whenever no primary
+   * assignment is live today, so every **prehire** has them null. A directory built strictly on
+   * `current_*` therefore renders a brand-new hire as a row with a name, a number, and no title,
+   * no department, no manager and no `employment_id` to open.
+   *
+   * The door falls back to the incoming spell and says so here, so the UI can render
+   * "starts 9 Sep" rather than blanks — and can never mistake an upcoming assignment for a
+   * current one.
+   *
+   * - `current`                 — from `current_*`, live today
+   * - `upcoming`                — a future-dated hire; the job columns are what they WILL be
+   * - `no_primary_assignment`   — a live spell with no primary assignment on the date
+   * - `no_spell`                — no live spell at all (a terminated person reached by filter)
+   */
+  row_basis: "current" | "upcoming" | "no_primary_assignment" | "no_spell";
   custom: Record<string, unknown> | null;
 };
 
