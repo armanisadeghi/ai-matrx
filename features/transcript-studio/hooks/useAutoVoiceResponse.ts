@@ -108,6 +108,13 @@ export function useAutoVoiceResponse() {
     activeIdRef.current = null;
     const current = selectPrimaryRequest(conversationId)(store.getState());
     if (current?.requestId) handledIdRef.current.add(current.requestId);
+    // Proof-of-decision log (twin of the speaker's [tts-stream] logs): what the
+    // baseline captured. If a turn that should speak stays silent, this line
+    // says whether it was baselined-out (owner mounted after the stream began).
+    // eslint-disable-next-line no-console
+    console.log(
+      `[auto-voice] baseline conv=${conversationId} handled=${current?.requestId ?? "none"} status=${current?.status ?? "-"}`,
+    );
   }, [enabled, conversationId, store]);
 
   useEffect(() => {
@@ -135,6 +142,8 @@ export function useAutoVoiceResponse() {
       }
       if (!isLive) return; // not started yet — wait for the first chunk
       activeIdRef.current = requestId;
+      // eslint-disable-next-line no-console
+      console.log(`[auto-voice] beginStream req=${requestId} status=${status}`);
       void speaker.beginStream();
       if (text) void speaker.streamText(text);
       return;
