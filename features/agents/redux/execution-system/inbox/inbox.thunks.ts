@@ -142,6 +142,7 @@ export const enqueueInboxMessage = createAsyncThunk<
         path: "/ai/conversations/{conversation_id}/inbox",
         method: "POST",
         pathParams: { conversation_id: conversationId },
+        expectedErrorStatuses: [404],
         body: {
           kind,
           text,

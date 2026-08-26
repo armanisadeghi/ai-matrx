@@ -282,6 +282,12 @@ export interface ApiCallConfig<
   /** Query string parameters */
   queryParams?: Record<string, string | number | boolean>;
 
+  /**
+   * HTTP failures this call site fully handles as expected domain outcomes.
+   * They remain in the returned result but do not create a system_error row.
+   */
+  expectedErrorStatuses?: readonly number[];
+
   // ── Request body (inferred from generated schema) ────────────────────────
 
   /**
@@ -1237,7 +1243,10 @@ export function callApi<
         : await executeJsonRequest(url, config.method, headers, body, config);
       // Single capture chokepoint for backend failures that resolve with an
       // `{ error }` body (non-2xx). Feeds the systemwide Error Inspector.
-      if (result.error) {
+      if (
+        result.error &&
+        shouldCaptureApiError(result.error.status, config.expectedErrorStatuses)
+      ) {
         captureApiError(result.error, {
           url,
           method: config.method,
@@ -1264,6 +1273,13 @@ export function callApi<
       return { error };
     }
   };
+}
+
+export function shouldCaptureApiError(
+  status: number | null | undefined,
+  expectedErrorStatuses: readonly number[] | undefined,
+): boolean {
+  return status == null || !expectedErrorStatuses?.includes(status);
 }
 
 function isAiTurnPath(path: string): boolean {
