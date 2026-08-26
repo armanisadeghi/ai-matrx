@@ -54,7 +54,8 @@ in the same change.
 10. **Dialog on desktop, Drawer on mobile**, branched in the surface. `dvh` not `vh` under
     `app/(a)/files/`; `pb-safe` on fixed bottoms; 16px inputs. Tablet list rows reserve space for
     a visible 44px **More** control; mobile rows expose a 44px **Actions** control plus the canonical
-    ContextMenuV3 long-press path. No `window.alert/confirm/prompt`.
+    ContextMenuV3 long-press path. Row activation ignores portal-rendered menu events. No
+    `window.alert/confirm/prompt`.
 11. **Core components never know their host** — no imports from `app/`,
     `features/window-panels/`, or `useIsMobile`; no core component opens a Dialog directly.
     Surfaces read `useIsMobile()` once near the root and branch there.
@@ -82,6 +83,8 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-26 — Row menus no longer activate their file or folder.** Table rows reject synthetic
+  clicks from portal-rendered dropdown and context-menu actions before running row activation.
 - **2026-08-26 — Files certification no longer asks for an invented agent binding.** The
   `matrx-user/files` readiness note now states the actual disclosure boundary: Files runs no fixed
   AI job, so its remaining browser certification covers the responsive surface itself and must not

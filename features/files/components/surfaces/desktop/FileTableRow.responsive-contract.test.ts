@@ -25,4 +25,10 @@ describe("FileTableRow responsive action contract", () => {
       2,
     );
   });
+
+  it("does not activate rows from portal-rendered menu actions", () => {
+    expect(
+      source.match(/!e\.currentTarget\.contains\(e\.target as Node\)/g),
+    ).toHaveLength(2);
+  });
 });

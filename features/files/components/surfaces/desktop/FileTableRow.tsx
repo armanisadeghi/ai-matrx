@@ -186,6 +186,10 @@ function FileRow({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={(e) => {
+          // React portal events follow the component tree even though the
+          // menu item is not a DOM child of this row. Ignore those events or
+          // choosing Rename/Move/Delete also activates the file row.
+          if (!e.currentTarget.contains(e.target as Node)) return;
           // Belt-and-suspenders vs D72: never treat a click that landed
           // inside the row-actions toolbar as a row activation, and never
           // let a mid-hover hit-test race reach onShare via the row path.
@@ -486,6 +490,10 @@ function FolderRow({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onClick={(e) => {
+          // Dropdown and context-menu items render in React portals. Their
+          // synthetic click still follows this component tree, so reject it
+          // unless the clicked DOM node actually belongs to the row.
+          if (!e.currentTarget.contains(e.target as Node)) return;
           // Belt-and-suspenders vs D72 — see FileRow above.
           if ((e.target as HTMLElement).closest("[data-row-actions]")) return;
           onActivate();
