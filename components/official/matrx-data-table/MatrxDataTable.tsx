@@ -1,15 +1,31 @@
 "use client";
 
 import {
+  cloneElement,
   Fragment,
+  isValidElement,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
+  type HTMLAttributes,
+  type ReactElement,
   type ReactNode,
+  type Ref,
 } from "react";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  pointerWithin,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
 import Link from "next/link";
 import {
   ChevronRight,
@@ -256,7 +272,9 @@ function MatrxDataTableCore<T>({
 
   const [internalSearch, setInternalSearch] = useState("");
   const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
-  const [dragOverRowId, setDragOverRowId] = useState<string | null>(null);
+  const hierarchySensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+  );
   const toolbarSearchControlled = toolbar?.searchValue !== undefined;
   const searchValue = controlledQuery
     ? controlledQuery.state.search
@@ -665,13 +683,14 @@ function MatrxDataTableCore<T>({
   const draggedRow = draggedRowId
     ? hierarchyRows.find((row) => getRowId(row) === draggedRowId)
     : undefined;
-  const canDropOn = (target: T): boolean => {
-    if (!hierarchy || !draggedRow) return false;
-    if (getRowId(target) === draggedRowId) return false;
+  const canDropOn = (target: T, source = draggedRow): boolean => {
+    if (!hierarchy || !source) return false;
+    const sourceId = getRowId(source);
+    if (getRowId(target) === sourceId) return false;
     let cursor: T | undefined = target;
     let guard = 0;
     while (cursor && guard < hierarchyRows.length + 1) {
-      if (getRowId(cursor) === draggedRowId) return false;
+      if (getRowId(cursor) === sourceId) return false;
       const parentId = hierarchy.getParentId(cursor);
       cursor = parentId
         ? hierarchyRows.find((row) => getRowId(row) === parentId)
@@ -689,6 +708,22 @@ function MatrxDataTableCore<T>({
         );
       },
     );
+  };
+  const endHierarchyDrag = (event: DragEndEvent) => {
+    const source = hierarchyRows.find(
+      (row) => getRowId(row) === String(event.active.id),
+    );
+    const targetId = event.over ? String(event.over.id) : null;
+    if (source && targetId === "__root__") {
+      if (hierarchy?.getParentId(source) !== null)
+        persistReparent(source, null);
+    } else if (source && targetId) {
+      const target = hierarchyRows.find((row) => getRowId(row) === targetId);
+      if (target && canDropOn(target, source)) {
+        persistReparent(source, targetId);
+      }
+    }
+    setDraggedRowId(null);
   };
 
   const handleSaveEdits = async () => {
@@ -795,371 +830,370 @@ function MatrxDataTableCore<T>({
     : toolbar?.facets;
 
   return (
-    <div
-      ref={rootRef}
-      data-url-state-table={urlState?.id}
-      className={cn(
-        "flex h-full min-h-0 flex-col gap-2 max-lg:[&_button]:min-h-11 max-lg:[&_button]:min-w-11 max-lg:[&_input]:min-h-11 max-lg:[&_table_a]:inline-flex max-lg:[&_table_a]:min-h-11 max-lg:[&_table_a]:items-center",
-        className,
-      )}
+    <DndContext
+      sensors={hierarchySensors}
+      collisionDetection={pointerWithin}
+      onDragStart={(event) => setDraggedRowId(String(event.active.id))}
+      onDragCancel={() => setDraggedRowId(null)}
+      onDragEnd={endHierarchyDrag}
     >
-      {/* Toolbar */}
-      {(showSearch ||
-        toolbar?.anyOf ||
-        toolbar?.layeredFilters ||
-        (toolbar?.facets && toolbar.facets.length > 0) ||
-        toolbar?.leading ||
-        toolbar?.actions ||
-        hasActiveFilters ||
-        showToolbarCopy) && (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {showSearch ? (
-            <div
-              className={cn(
-                "flex w-full",
-                toolbar?.searchMatch ? "sm:max-w-md" : "sm:max-w-xs",
-              )}
-            >
-              <div className="relative min-w-0 flex-1">
+      <div
+        ref={rootRef}
+        data-url-state-table={urlState?.id}
+        className={cn(
+          "flex h-full min-h-0 flex-col gap-2 max-lg:[&_button]:min-h-11 max-lg:[&_button]:min-w-11 max-lg:[&_input]:min-h-11 max-lg:[&_table_a]:inline-flex max-lg:[&_table_a]:min-h-11 max-lg:[&_table_a]:items-center",
+          className,
+        )}
+      >
+        {/* Toolbar */}
+        {(showSearch ||
+          toolbar?.anyOf ||
+          toolbar?.layeredFilters ||
+          (toolbar?.facets && toolbar.facets.length > 0) ||
+          toolbar?.leading ||
+          toolbar?.actions ||
+          hasActiveFilters ||
+          showToolbarCopy) && (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {showSearch ? (
+              <div
+                className={cn(
+                  "flex w-full",
+                  toolbar?.searchMatch ? "sm:max-w-md" : "sm:max-w-xs",
+                )}
+              >
+                <div className="relative min-w-0 flex-1">
+                  <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchValue}
+                    onChange={(e) => setSearchValue(e.target.value)}
+                    placeholder={toolbar?.searchPlaceholder ?? "Search…"}
+                    className={cn(
+                      "h-8 pl-7 pr-7 text-sm",
+                      toolbar?.searchMatch && "rounded-r-none",
+                    )}
+                    style={{ fontSize: "16px" }}
+                  />
+                  {searchValue ? (
+                    <button
+                      type="button"
+                      aria-label="Clear search"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                      onClick={() => setSearchValue("")}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  ) : null}
+                </div>
+                {toolbar?.searchMatch ? (
+                  <Button
+                    type="button"
+                    variant={
+                      searchMatchMode === "whole_words"
+                        ? "secondary"
+                        : "outline"
+                    }
+                    size="sm"
+                    className="h-8 shrink-0 gap-1 rounded-l-none border-l-0 px-2 text-xs"
+                    aria-pressed={searchMatchMode === "whole_words"}
+                    aria-label={`Search match: ${searchMatchMode === "whole_words" ? "whole words" : "contains text"}`}
+                    title={
+                      searchMatchMode === "whole_words"
+                        ? "Whole words — click to match text anywhere"
+                        : "Contains text — click to require whole words"
+                    }
+                    onClick={() =>
+                      setSearchMatchMode(
+                        searchMatchMode === "whole_words"
+                          ? "contains"
+                          : "whole_words",
+                      )
+                    }
+                  >
+                    <WholeWord className="h-3.5 w-3.5" />
+                    {searchMatchMode === "whole_words"
+                      ? "Whole words"
+                      : "Contains"}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+
+            {toolbar?.layeredFilters ? (
+              <LayeredFilterBuilder
+                fields={toolbar.layeredFilters.fields}
+                rules={layeredFilters}
+                onChange={setLayeredFilters}
+                maxRules={toolbar.layeredFilters.maxRules}
+                label={toolbar.layeredFilters.label}
+              />
+            ) : null}
+
+            {toolbar?.anyOf ? (
+              <div className="relative w-full max-w-xs">
                 <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
-                  placeholder={toolbar?.searchPlaceholder ?? "Search…"}
-                  className={cn(
-                    "h-8 pl-7 pr-7 text-sm",
-                    toolbar?.searchMatch && "rounded-r-none",
-                  )}
+                  value={anyOfValue}
+                  onChange={(e) => setAnyOfValue(e.target.value)}
+                  placeholder={toolbar.anyOf.placeholder ?? "Match any of…"}
+                  className="h-8 pl-7 pr-7 text-sm"
                   style={{ fontSize: "16px" }}
                 />
-                {searchValue ? (
+                {anyOfValue ? (
                   <button
                     type="button"
-                    aria-label="Clear search"
+                    aria-label="Clear match-any search"
                     className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
-                    onClick={() => setSearchValue("")}
+                    onClick={() => setAnyOfValue("")}
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
                 ) : null}
               </div>
-              {toolbar?.searchMatch ? (
+            ) : null}
+
+            {renderedFacets ? <ToolbarFacets facets={renderedFacets} /> : null}
+            {toolbar?.leading}
+
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {hasActiveFilters ? (
                 <Button
                   type="button"
-                  variant={
-                    searchMatchMode === "whole_words" ? "secondary" : "outline"
-                  }
+                  variant="ghost"
                   size="sm"
-                  className="h-8 shrink-0 gap-1 rounded-l-none border-l-0 px-2 text-xs"
-                  aria-pressed={searchMatchMode === "whole_words"}
-                  aria-label={`Search match: ${searchMatchMode === "whole_words" ? "whole words" : "contains text"}`}
-                  title={
-                    searchMatchMode === "whole_words"
-                      ? "Whole words — click to match text anywhere"
-                      : "Contains text — click to require whole words"
-                  }
-                  onClick={() =>
-                    setSearchMatchMode(
-                      searchMatchMode === "whole_words"
-                        ? "contains"
-                        : "whole_words",
-                    )
-                  }
+                  className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+                  onClick={clearAllFilters}
+                  title="Clear all filters"
                 >
-                  <WholeWord className="h-3.5 w-3.5" />
-                  {searchMatchMode === "whole_words"
-                    ? "Whole words"
-                    : "Contains"}
+                  <Eraser className="h-3.5 w-3.5" />
+                  <span className="max-sm:sr-only">Clear all</span>
                 </Button>
               ) : null}
-            </div>
-          ) : null}
-
-          {toolbar?.layeredFilters ? (
-            <LayeredFilterBuilder
-              fields={toolbar.layeredFilters.fields}
-              rules={layeredFilters}
-              onChange={setLayeredFilters}
-              maxRules={toolbar.layeredFilters.maxRules}
-              label={toolbar.layeredFilters.label}
-            />
-          ) : null}
-
-          {toolbar?.anyOf ? (
-            <div className="relative w-full max-w-xs">
-              <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={anyOfValue}
-                onChange={(e) => setAnyOfValue(e.target.value)}
-                placeholder={toolbar.anyOf.placeholder ?? "Match any of…"}
-                className="h-8 pl-7 pr-7 text-sm"
-                style={{ fontSize: "16px" }}
-              />
-              {anyOfValue ? (
-                <button
-                  type="button"
-                  aria-label="Clear match-any search"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
-                  onClick={() => setAnyOfValue("")}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+              {showToolbarCopy && copy ? (
+                <CopyButtons
+                  size="icon"
+                  label={copy.listLabel ?? `${copy.label} view`}
+                  human={() => buildViewHuman(copy, processed, visibleColumns)}
+                  json={() =>
+                    processed.map((r) => (copy.agentRow ? copy.agentRow(r) : r))
+                  }
+                  agent={() =>
+                    buildViewAgentInput(copy, processed, data, {
+                      search: searchValue,
+                      searchMatchMode,
+                      anyOf: anyOfValue,
+                      filterCount:
+                        activeFilterCount +
+                        completeLayeredFilterRules(layeredFilters).length,
+                      sort: sort ? `${sort.id}:${sort.direction}` : null,
+                    })
+                  }
+                  aiVariants={copy.aiVariants?.(processed, data)}
+                  aiCustom={copy.aiCustom?.(processed, data)}
+                  export={{
+                    items: [
+                      jsonExportItem(
+                        () =>
+                          processed.map((r) =>
+                            copy.agentRow ? copy.agentRow(r) : r,
+                          ),
+                        "JSON (rows, raw)",
+                      ),
+                      {
+                        id: "csv",
+                        label: "CSV (current view)",
+                        build: () => ({
+                          content: rowsToCsvFromColumns(
+                            processed,
+                            visibleColumns,
+                          ),
+                          extension: "csv",
+                          mime: "text/csv",
+                        }),
+                      },
+                    ],
+                    sheetRows: () =>
+                      rowsToRecordsFromColumns(processed, visibleColumns),
+                  }}
+                />
               ) : null}
+              {toolbar?.actions}
+            </div>
+          </div>
+        )}
+
+        {/* Bulk bar — present only while rows are checked, so the toolbar's
+          normal actions never compete with a selection that isn't there. */}
+        {selection && selectionCount > 0 ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5">
+            <span className="text-xs font-medium text-foreground">
+              {selectionCount.toLocaleString()} {selectionNoun}
+              {selectionCount === 1 ? "" : "s"} selected
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 px-2 text-xs"
+              onClick={() => {
+                lastToggledIndex.current = null;
+                selection.onSelectedIdsChange([]);
+              }}
+            >
+              <X className="h-3.5 w-3.5" />
+              Clear
+            </Button>
+            <div className="ml-auto flex flex-wrap items-center gap-1.5">
+              {copy && selectedRows.length > 0 ? (
+                <CopyButtons
+                  size="icon"
+                  label={`${selectedRows.length} selected ${selectionNoun}${selectedRows.length === 1 ? "" : "s"}`}
+                  human={() =>
+                    buildViewHuman(copy, selectedRows, visibleColumns)
+                  }
+                  json={() =>
+                    selectedRows.map((row) =>
+                      copy.agentRow ? copy.agentRow(row) : row,
+                    )
+                  }
+                  agent={() =>
+                    buildViewAgentInput(copy, selectedRows, data, {
+                      scope: "selected",
+                    })
+                  }
+                />
+              ) : null}
+              {selection.actions?.(selectedRows, selection.selectedIds)}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Table */}
+        <div className="relative min-h-0 flex-1">
+          {mobileCards ? (
+            <div
+              aria-busy={isLoading || isFetching}
+              className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto rounded-md border border-border bg-card p-2 sm:hidden"
+            >
+              {isFetching && !isLoading ? (
+                <div
+                  role="status"
+                  className="h-0.5 shrink-0 overflow-hidden rounded-full bg-primary/15"
+                >
+                  <div className="h-full w-full animate-pulse bg-primary" />
+                  <span className="sr-only">Refreshing table data</span>
+                </div>
+              ) : null}
+              {isLoading ? (
+                Array.from({ length: 4 }).map((_, index) => (
+                  <Skeleton
+                    key={`mobile-card-sk-${index}`}
+                    className="h-52 w-full shrink-0 rounded-lg"
+                  />
+                ))
+              ) : paginated.length === 0 ? (
+                <div className="flex min-h-48 flex-1 items-center justify-center px-4 py-12 text-center">
+                  <div className="flex max-w-sm flex-col items-center gap-2">
+                    {emptyState?.icon}
+                    <p className="text-sm font-medium text-foreground">
+                      {emptyState?.title ?? "No rows"}
+                    </p>
+                    {emptyState?.description ? (
+                      <p className="text-xs text-muted-foreground">
+                        {emptyState.description}
+                      </p>
+                    ) : null}
+                    {emptyState?.action}
+                  </div>
+                </div>
+              ) : (
+                paginated.map((row, index) => {
+                  const id = getRowId(row);
+                  const displayRow = applyRowEdits(row, edits[id]);
+                  const selectable =
+                    selection?.isRowSelectable?.(row) ?? Boolean(selection);
+                  return (
+                    <Fragment key={id}>
+                      {mobileCards(displayRow, index, {
+                        selected: selectedIdSet.has(id),
+                        selectable,
+                        onSelectedChange: (nextSelected) => {
+                          if (
+                            !selection ||
+                            !selectable ||
+                            nextSelected === selectedIdSet.has(id)
+                          ) {
+                            return;
+                          }
+                          const next = new Set(selectedIdSet);
+                          if (nextSelected) next.add(id);
+                          else next.delete(id);
+                          setSelectedIds(next);
+                        },
+                        actions:
+                          showRowCopy || rowActions ? (
+                            <div
+                              className="inline-flex items-center gap-1"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              {showRowCopy && copy ? (
+                                <CopyButtons
+                                  size="xs"
+                                  label={copy.label}
+                                  human={() => copy.humanRow(displayRow)}
+                                  json={() =>
+                                    copy.agentRow
+                                      ? copy.agentRow(displayRow)
+                                      : displayRow
+                                  }
+                                  agent={() =>
+                                    buildRowAgentInput(copy, displayRow)
+                                  }
+                                />
+                              ) : null}
+                              {rowActions?.(row, {
+                                closeDetail: () => setSelectedId(null),
+                                openDetail: () => openDetail(row),
+                                openWindow: () => openWindow(row),
+                                closeWindow,
+                              })}
+                            </div>
+                          ) : null,
+                      })}
+                    </Fragment>
+                  );
+                })
+              )}
             </div>
           ) : null}
-
-          {renderedFacets ? <ToolbarFacets facets={renderedFacets} /> : null}
-          {toolbar?.leading}
-
-          <div className="ml-auto flex flex-wrap items-center gap-2">
-            {hasActiveFilters ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 px-2 text-xs text-muted-foreground"
-                onClick={clearAllFilters}
-                title="Clear all filters"
-              >
-                <Eraser className="h-3.5 w-3.5" />
-                <span className="max-sm:sr-only">Clear all</span>
-              </Button>
-            ) : null}
-            {showToolbarCopy && copy ? (
-              <CopyButtons
-                size="icon"
-                label={copy.listLabel ?? `${copy.label} view`}
-                human={() => buildViewHuman(copy, processed, visibleColumns)}
-                json={() =>
-                  processed.map((r) => (copy.agentRow ? copy.agentRow(r) : r))
-                }
-                agent={() =>
-                  buildViewAgentInput(copy, processed, data, {
-                    search: searchValue,
-                    searchMatchMode,
-                    anyOf: anyOfValue,
-                    filterCount:
-                      activeFilterCount +
-                      completeLayeredFilterRules(layeredFilters).length,
-                    sort: sort ? `${sort.id}:${sort.direction}` : null,
-                  })
-                }
-                aiVariants={copy.aiVariants?.(processed, data)}
-                aiCustom={copy.aiCustom?.(processed, data)}
-                export={{
-                  items: [
-                    jsonExportItem(
-                      () =>
-                        processed.map((r) =>
-                          copy.agentRow ? copy.agentRow(r) : r,
-                        ),
-                      "JSON (rows, raw)",
-                    ),
-                    {
-                      id: "csv",
-                      label: "CSV (current view)",
-                      build: () => ({
-                        content: rowsToCsvFromColumns(
-                          processed,
-                          visibleColumns,
-                        ),
-                        extension: "csv",
-                        mime: "text/csv",
-                      }),
-                    },
-                  ],
-                  sheetRows: () =>
-                    rowsToRecordsFromColumns(processed, visibleColumns),
-                }}
-              />
-            ) : null}
-            {toolbar?.actions}
-          </div>
-        </div>
-      )}
-
-      {/* Bulk bar — present only while rows are checked, so the toolbar's
-          normal actions never compete with a selection that isn't there. */}
-      {selection && selectionCount > 0 ? (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1.5">
-          <span className="text-xs font-medium text-foreground">
-            {selectionCount.toLocaleString()} {selectionNoun}
-            {selectionCount === 1 ? "" : "s"} selected
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1 px-2 text-xs"
-            onClick={() => {
-              lastToggledIndex.current = null;
-              selection.onSelectedIdsChange([]);
-            }}
-          >
-            <X className="h-3.5 w-3.5" />
-            Clear
-          </Button>
-          <div className="ml-auto flex flex-wrap items-center gap-1.5">
-            {copy && selectedRows.length > 0 ? (
-              <CopyButtons
-                size="icon"
-                label={`${selectedRows.length} selected ${selectionNoun}${selectedRows.length === 1 ? "" : "s"}`}
-                human={() => buildViewHuman(copy, selectedRows, visibleColumns)}
-                json={() =>
-                  selectedRows.map((row) =>
-                    copy.agentRow ? copy.agentRow(row) : row,
-                  )
-                }
-                agent={() =>
-                  buildViewAgentInput(copy, selectedRows, data, {
-                    scope: "selected",
-                  })
-                }
-              />
-            ) : null}
-            {selection.actions?.(selectedRows, selection.selectedIds)}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Table */}
-      <div className="relative min-h-0 flex-1">
-        {mobileCards ? (
           <div
+            ref={scrollRef}
+            onScroll={updateScrollHint}
             aria-busy={isLoading || isFetching}
-            className="flex h-full min-h-0 flex-col gap-2 overflow-y-auto rounded-md border border-border bg-card p-2 sm:hidden"
+            className={cn(
+              "relative h-full w-full overflow-auto rounded-md border border-border bg-card",
+              mobileCards && "max-sm:hidden",
+              tableClassName,
+            )}
           >
+            {hierarchy && draggedRow ? (
+              <HierarchyRootDropTarget
+                label={
+                  hierarchy.rootDropLabel ??
+                  "Drop here to move to the top level"
+                }
+              />
+            ) : null}
             {isFetching && !isLoading ? (
               <div
                 role="status"
-                className="h-0.5 shrink-0 overflow-hidden rounded-full bg-primary/15"
+                className="sticky left-0 top-0 z-20 h-0.5 w-full overflow-hidden bg-primary/15"
               >
                 <div className="h-full w-full animate-pulse bg-primary" />
                 <span className="sr-only">Refreshing table data</span>
               </div>
             ) : null}
-            {isLoading ? (
-              Array.from({ length: 4 }).map((_, index) => (
-                <Skeleton
-                  key={`mobile-card-sk-${index}`}
-                  className="h-52 w-full shrink-0 rounded-lg"
-                />
-              ))
-            ) : paginated.length === 0 ? (
-              <div className="flex min-h-48 flex-1 items-center justify-center px-4 py-12 text-center">
-                <div className="flex max-w-sm flex-col items-center gap-2">
-                  {emptyState?.icon}
-                  <p className="text-sm font-medium text-foreground">
-                    {emptyState?.title ?? "No rows"}
-                  </p>
-                  {emptyState?.description ? (
-                    <p className="text-xs text-muted-foreground">
-                      {emptyState.description}
-                    </p>
-                  ) : null}
-                  {emptyState?.action}
-                </div>
-              </div>
-            ) : (
-              paginated.map((row, index) => {
-                const id = getRowId(row);
-                const displayRow = applyRowEdits(row, edits[id]);
-                const selectable =
-                  selection?.isRowSelectable?.(row) ?? Boolean(selection);
-                return (
-                  <Fragment key={id}>
-                    {mobileCards(displayRow, index, {
-                      selected: selectedIdSet.has(id),
-                      selectable,
-                      onSelectedChange: (nextSelected) => {
-                        if (
-                          !selection ||
-                          !selectable ||
-                          nextSelected === selectedIdSet.has(id)
-                        ) {
-                          return;
-                        }
-                        const next = new Set(selectedIdSet);
-                        if (nextSelected) next.add(id);
-                        else next.delete(id);
-                        setSelectedIds(next);
-                      },
-                      actions:
-                        showRowCopy || rowActions ? (
-                          <div
-                            className="inline-flex items-center gap-1"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            {showRowCopy && copy ? (
-                              <CopyButtons
-                                size="xs"
-                                label={copy.label}
-                                human={() => copy.humanRow(displayRow)}
-                                json={() =>
-                                  copy.agentRow
-                                    ? copy.agentRow(displayRow)
-                                    : displayRow
-                                }
-                                agent={() =>
-                                  buildRowAgentInput(copy, displayRow)
-                                }
-                              />
-                            ) : null}
-                            {rowActions?.(row, {
-                              closeDetail: () => setSelectedId(null),
-                              openDetail: () => openDetail(row),
-                              openWindow: () => openWindow(row),
-                              closeWindow,
-                            })}
-                          </div>
-                        ) : null,
-                    })}
-                  </Fragment>
-                );
-              })
-            )}
-          </div>
-        ) : null}
-        <div
-          ref={scrollRef}
-          onScroll={updateScrollHint}
-          aria-busy={isLoading || isFetching}
-          className={cn(
-            "relative h-full w-full overflow-auto rounded-md border border-border bg-card",
-            mobileCards && "max-sm:hidden",
-            tableClassName,
-          )}
-        >
-          {hierarchy && draggedRow ? (
-            <div
-              className="sticky left-0 top-0 z-40 flex h-7 w-full items-center justify-center border-b border-primary/30 bg-primary/10 text-xs font-medium text-primary"
-              onDragOver={(event) => {
-                event.preventDefault();
-                setDragOverRowId("__root__");
-              }}
-              onDragLeave={() => setDragOverRowId(null)}
-              onDrop={(event) => {
-                event.preventDefault();
-                if (hierarchy.getParentId(draggedRow) !== null) {
-                  persistReparent(draggedRow, null);
-                }
-                setDraggedRowId(null);
-                setDragOverRowId(null);
-              }}
-            >
-              {hierarchy.rootDropLabel ?? "Drop here to move to the top level"}
-            </div>
-          ) : null}
-          {isFetching && !isLoading ? (
-            <div
-              role="status"
-              className="sticky left-0 top-0 z-20 h-0.5 w-full overflow-hidden bg-primary/15"
-            >
-              <div className="h-full w-full animate-pulse bg-primary" />
-              <span className="sr-only">Refreshing table data</span>
-            </div>
-          ) : null}
-          {/* Below `sm` the table sizes to its CONTENT (w-max + max-w-none — a
+            {/* Below `sm` the table sizes to its CONTENT (w-max + max-w-none — a
             global `table { max-width: 100% }` otherwise clamps it and silently
             kills the scroll) so the container scrolls horizontally instead of
             crushing every column into an unreadable wrap. Cells go nowrap and
@@ -1173,619 +1207,674 @@ function MatrxDataTableCore<T>({
             scroller — the frozen column then sticks to the table's scrollport
             (which itself moves) and never freezes. Utilities outrank the
             `@layer base` rule and restore real table layout. */}
-          <table className="table w-max min-w-full max-w-none caption-bottom overflow-visible text-sm sm:w-full sm:min-w-0 sm:max-w-full">
-            <thead className="sticky top-0 z-10 border-b border-border bg-muted/90 shadow-[0_1px_0_0_var(--border)] backdrop-blur-sm">
-              <tr>
-                {selection ? (
-                  <th className="h-9 w-9 px-2 text-left align-middle">
-                    <Checkbox
-                      checked={
-                        allOnPageSelected
-                          ? true
-                          : someOnPageSelected
-                            ? "indeterminate"
-                            : false
-                      }
-                      disabled={selectableRows.length === 0}
-                      onCheckedChange={toggleAllOnPage}
-                      aria-label={
-                        allOnPageSelected
-                          ? "Clear selection on this page"
-                          : "Select every row on this page"
-                      }
-                    />
-                  </th>
-                ) : null}
-                {visibleColumns.map((col, colIdx) => {
-                  const id = columnId(col);
-                  const meta = filterMeta.get(id);
-                  const isSorted = sort?.id === id;
-                  return (
-                    <th
-                      key={id}
-                      aria-sort={
-                        isSorted
-                          ? sort?.direction === "asc"
-                            ? "ascending"
-                            : "descending"
-                          : undefined
-                      }
-                      className={cn(
-                        "h-9 text-left align-middle max-sm:whitespace-nowrap",
-                        // ICON COLUMN (MatrxColumnDef.compact): a 40px star
-                        // column cannot honor `width: 40` while paying 16px of
-                        // padding for a 14px glyph.
-                        col.compact ? "px-1" : "px-2",
-                        // An intentional mobile column set (see
-                        // MatrxColumnDef.mobileHidden). CSS, not a JS
-                        // breakpoint — no hydration mismatch, and the column
-                        // stays sortable/filterable from the toolbar.
-                        col.mobileHidden && "max-sm:hidden",
-                        // bg-inherit picks up the thead's translucent bg-muted/90
-                        // but NOT its backdrop-filter — re-apply the blur so
-                        // scrolled-under header text can't ghost through.
-                        mobileScroll &&
-                          colIdx === 0 &&
-                          "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-inherit max-sm:backdrop-blur-sm",
-                        // Consumer widths are desktop tuning: applied from `sm`
-                        // up via a CSS var, so mobile stays content-sized
-                        // (nowrap + a hard width would bleed into the next cell).
-                        col.width !== undefined && "sm:w-[var(--matrx-col-w)]",
-                        col.headerClassName,
-                        col.align === "center" && "text-center",
-                        col.align === "right" && "text-right",
-                      )}
-                      style={columnWidthVar(col.width)}
-                    >
-                      <ColumnHeaderCell
-                        label={col.header}
-                        labelText={
-                          typeof col.header === "string" ? col.header : id
+            <table className="table w-max min-w-full max-w-none caption-bottom overflow-visible text-sm sm:w-full sm:min-w-0 sm:max-w-full">
+              <thead className="sticky top-0 z-10 border-b border-border bg-muted/90 shadow-[0_1px_0_0_var(--border)] backdrop-blur-sm">
+                <tr>
+                  {selection ? (
+                    <th className="h-9 w-9 px-2 text-left align-middle">
+                      <Checkbox
+                        checked={
+                          allOnPageSelected
+                            ? true
+                            : someOnPageSelected
+                              ? "indeterminate"
+                              : false
                         }
-                        sortable={col.sortable !== false}
-                        isSorted={Boolean(isSorted)}
-                        sortDirection={sort?.direction ?? "asc"}
-                        onSortAsc={() => setSort({ id, direction: "asc" })}
-                        onSortDesc={() => setSort({ id, direction: "desc" })}
-                        onClearSort={() => setSort(null)}
-                        onHeaderSortClick={() => {
-                          if (!isSorted) {
-                            setSort({ id, direction: "asc" });
-                            return;
-                          }
-                          if (sort?.direction === "asc") {
-                            setSort({ id, direction: "desc" });
-                            return;
-                          }
-                          setSort(null);
-                        }}
-                        filterKind={meta?.kind ?? null}
-                        filterValue={columnFilters[id]}
-                        onFilterChange={(next) => setColumnFilter(id, next)}
-                        selectOptions={meta?.options}
-                        selectSingle={col.filterSingle}
-                        align={col.align}
-                        compact={col.compact}
+                        disabled={selectableRows.length === 0}
+                        onCheckedChange={toggleAllOnPage}
+                        aria-label={
+                          allOnPageSelected
+                            ? "Clear selection on this page"
+                            : "Select every row on this page"
+                        }
                       />
                     </th>
-                  );
-                })}
-                {showActionsCol && (
-                  <th className="h-9 w-28 px-2 text-right align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Actions
-                  </th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                Array.from({ length: 6 }).map((_, i) => (
-                  <tr key={`sk-${i}`} className="border-b border-border/60">
-                    {selection ? (
-                      <td className="px-2 py-2">
-                        <Skeleton className="h-3.5 w-3.5" />
-                      </td>
-                    ) : null}
-                    {visibleColumns.map((col) => (
-                      <td
-                        key={columnId(col)}
+                  ) : null}
+                  {visibleColumns.map((col, colIdx) => {
+                    const id = columnId(col);
+                    const meta = filterMeta.get(id);
+                    const isSorted = sort?.id === id;
+                    return (
+                      <th
+                        key={id}
+                        aria-sort={
+                          isSorted
+                            ? sort?.direction === "asc"
+                              ? "ascending"
+                              : "descending"
+                            : undefined
+                        }
                         className={cn(
-                          "py-2",
+                          "h-9 text-left align-middle max-sm:whitespace-nowrap",
+                          // ICON COLUMN (MatrxColumnDef.compact): a 40px star
+                          // column cannot honor `width: 40` while paying 16px of
+                          // padding for a 14px glyph.
                           col.compact ? "px-1" : "px-2",
+                          // An intentional mobile column set (see
+                          // MatrxColumnDef.mobileHidden). CSS, not a JS
+                          // breakpoint — no hydration mismatch, and the column
+                          // stays sortable/filterable from the toolbar.
                           col.mobileHidden && "max-sm:hidden",
+                          // bg-inherit picks up the thead's translucent bg-muted/90
+                          // but NOT its backdrop-filter — re-apply the blur so
+                          // scrolled-under header text can't ghost through.
+                          mobileScroll &&
+                            colIdx === 0 &&
+                            "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-inherit max-sm:backdrop-blur-sm",
+                          // Consumer widths are desktop tuning: applied from `sm`
+                          // up via a CSS var, so mobile stays content-sized
+                          // (nowrap + a hard width would bleed into the next cell).
+                          col.width !== undefined &&
+                            "sm:w-[var(--matrx-col-w)]",
+                          col.headerClassName,
+                          col.align === "center" && "text-center",
+                          col.align === "right" && "text-right",
                         )}
+                        style={columnWidthVar(col.width)}
                       >
-                        <Skeleton className="h-5 w-full" />
-                      </td>
-                    ))}
-                    {showActionsCol && (
-                      <td className="px-2 py-2">
-                        <Skeleton className="ml-auto h-5 w-10" />
-                      </td>
-                    )}
-                  </tr>
-                ))
-              ) : paginated.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={
-                      visibleColumns.length +
-                      leadingCols +
-                      (showActionsCol ? 1 : 0)
-                    }
-                    className="px-4 py-12 text-center"
-                  >
-                    <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
-                      {emptyState?.icon}
-                      <p className="text-sm font-medium text-foreground">
-                        {emptyState?.title ?? "No rows"}
-                      </p>
-                      {emptyState?.description ? (
-                        <p className="text-xs text-muted-foreground">
-                          {emptyState.description}
-                        </p>
-                      ) : null}
-                      {emptyState?.action}
-                    </div>
-                  </td>
+                        <ColumnHeaderCell
+                          label={col.header}
+                          labelText={
+                            typeof col.header === "string" ? col.header : id
+                          }
+                          sortable={col.sortable !== false}
+                          isSorted={Boolean(isSorted)}
+                          sortDirection={sort?.direction ?? "asc"}
+                          onSortAsc={() => setSort({ id, direction: "asc" })}
+                          onSortDesc={() => setSort({ id, direction: "desc" })}
+                          onClearSort={() => setSort(null)}
+                          onHeaderSortClick={() => {
+                            if (!isSorted) {
+                              setSort({ id, direction: "asc" });
+                              return;
+                            }
+                            if (sort?.direction === "asc") {
+                              setSort({ id, direction: "desc" });
+                              return;
+                            }
+                            setSort(null);
+                          }}
+                          filterKind={meta?.kind ?? null}
+                          filterValue={columnFilters[id]}
+                          onFilterChange={(next) => setColumnFilter(id, next)}
+                          selectOptions={meta?.options}
+                          selectSingle={col.filterSingle}
+                          align={col.align}
+                          compact={col.compact}
+                        />
+                      </th>
+                    );
+                  })}
+                  {showActionsCol && (
+                    <th className="h-9 w-28 px-2 text-right align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Actions
+                    </th>
+                  )}
                 </tr>
-              ) : (
-                paginated.map((row, index) => {
-                  const id = getRowId(row);
-                  const isSelected = selectedId === id;
-                  const rowEdits = edits[id];
-                  const displayRow = applyRowEdits(row, rowEdits);
-                  const isChecked = selectedIdSet.has(id);
-                  const rowNode = (
-                    <tr
-                      key={id}
-                      data-row-id={id}
-                      data-state={isSelected ? "selected" : undefined}
-                      onDragOver={(event) => {
-                        if (!canDropOn(row)) return;
-                        event.preventDefault();
-                        setDragOverRowId(id);
-                      }}
-                      onDragLeave={() => {
-                        if (dragOverRowId === id) setDragOverRowId(null);
-                      }}
-                      onDrop={(event) => {
-                        if (!hierarchy || !draggedRow || !canDropOn(row))
-                          return;
-                        event.preventDefault();
-                        persistReparent(draggedRow, id);
-                        setDraggedRowId(null);
-                        setDragOverRowId(null);
-                      }}
-                      onClick={(e) => {
-                        // A click that started on a real link (the D112 title
-                        // anchor, an FK cell link) must not ALSO fire the
-                        // row-open — the anchor owns that navigation.
-                        if ((e.target as HTMLElement).closest("a")) return;
-                        openRow(row);
-                      }}
-                      className={cn(
-                        // bg-card is a visual no-op (the container is bg-card) but
-                        // gives the frozen first cell an OPAQUE background to
-                        // inherit, so horizontally-scrolled content never shows
-                        // through it. The translucent tints (zebra/hover) would
-                        // let it bleed, so they are desktop-only.
-                        "border-b border-border/60 bg-card transition-colors",
-                        (detailEnabled || Boolean(onRowOpen)) &&
-                          "cursor-pointer sm:hover:bg-muted/50",
-                        isSelected && "bg-muted",
-                        isChecked && "bg-primary/5",
-                        dragOverRowId === id &&
-                          "outline outline-2 -outline-offset-2 outline-primary/60",
-                        draggedRowId === id && "opacity-40",
-                        zebra &&
-                          index % 2 === 1 &&
-                          !isSelected &&
-                          !isChecked &&
-                          "sm:bg-muted/20",
-                      )}
-                    >
+              </thead>
+              <tbody>
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={`sk-${i}`} className="border-b border-border/60">
                       {selection ? (
-                        <td
-                          className="px-2 py-1.5 align-middle lg:py-0.5"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Checkbox
-                            checked={isChecked}
-                            disabled={
-                              !(selection.isRowSelectable?.(row) ?? true)
-                            }
-                            aria-label={`Select this ${selectionNoun}`}
-                            // Radix hands the checkbox's own click through here;
-                            // shift-range needs the native event's modifier, so
-                            // the row toggles from onClick, not onCheckedChange.
-                            onClick={(e) =>
-                              toggleRowSelected(index, e.shiftKey)
-                            }
-                          />
+                        <td className="px-2 py-2">
+                          <Skeleton className="h-3.5 w-3.5" />
                         </td>
                       ) : null}
-                      {visibleColumns.map((col, colIdx) => {
-                        const field = col.accessorKey
-                          ? String(col.accessorKey)
-                          : columnId(col);
-                        const display = renderCell(displayRow, col, index);
-                        const editable = Boolean(
-                          editEnabled &&
-                          col.editable &&
-                          (col.editableIf?.(row) ?? true),
-                        );
-                        const dirty = Boolean(rowEdits && field in rowEdits);
-                        const cellHref = col.href?.(row) ?? undefined;
-                        return (
-                          <td
-                            key={columnId(col)}
-                            className={cn(
-                              "py-1.5 align-middle lg:py-0.5",
-                              col.compact ? "px-1" : "px-2",
-                              // nowrap (NOT truncate — truncate clips the cell and
-                              // defeats w-max, killing the horizontal scroll).
-                              "max-sm:whitespace-nowrap",
-                              col.mobileHidden && "max-sm:hidden",
-                              mobileScroll &&
-                                colIdx === 0 &&
-                                "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit",
-                              col.width !== undefined &&
-                                "sm:w-[var(--matrx-col-w)] sm:max-w-[var(--matrx-col-w)]",
-                              col.className,
-                              col.align === "center" && "text-center",
-                              col.align === "right" && "text-right",
-                            )}
-                            style={columnWidthVar(col.width)}
-                          >
-                            <div
-                              className={cn(
-                                colIdx === 0 &&
-                                  hierarchy &&
-                                  "flex min-w-0 items-center",
-                              )}
-                            >
-                              {colIdx === 0 && hierarchy ? (
-                                <button
-                                  type="button"
-                                  draggable={
-                                    hierarchy.canReparent?.(row) ?? true
-                                  }
-                                  className="flex h-7 w-4 shrink-0 cursor-grab items-center justify-center text-muted-foreground hover:text-foreground active:cursor-grabbing"
-                                  aria-label={`Move ${hierarchy.itemLabel?.(row) ?? "row"}`}
-                                  title="Drag to move"
-                                  onClick={(event) => event.stopPropagation()}
-                                  onDragStart={(event) => {
-                                    event.stopPropagation();
-                                    event.dataTransfer.effectAllowed = "move";
-                                    event.dataTransfer.setData(
-                                      "text/plain",
-                                      id,
-                                    );
-                                    setDraggedRowId(id);
-                                  }}
-                                  onDragEnd={() => {
-                                    setDraggedRowId(null);
-                                    setDragOverRowId(null);
-                                  }}
-                                >
-                                  <GripVertical className="h-3.5 w-3.5" />
-                                </button>
-                              ) : null}
-                              <div className="min-w-0 flex-1">
-                                {editable && col.editable ? (
-                                  <EditableTableCell
-                                    value={
-                                      rowEdits && field in rowEdits
-                                        ? rowEdits[field]
-                                        : getCellValue(row, col)
-                                    }
-                                    editType={col.editable}
-                                    editOptions={col.editOptions}
-                                    display={display}
-                                    dirty={dirty}
-                                    onCommit={(next) =>
-                                      commitCell(id, field, next)
-                                    }
-                                    href={cellHref}
-                                    editTrigger={col.editTrigger}
-                                  />
-                                ) : cellHref ? (
-                                  <Link
-                                    href={cellHref}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="block w-full min-w-0 rounded outline-none  focus-visible:ring-2 focus-visible:ring-ring"
-                                  >
-                                    {display}
-                                  </Link>
-                                ) : (
-                                  display
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                        );
-                      })}
+                      {visibleColumns.map((col) => (
+                        <td
+                          key={columnId(col)}
+                          className={cn(
+                            "py-2",
+                            col.compact ? "px-1" : "px-2",
+                            col.mobileHidden && "max-sm:hidden",
+                          )}
+                        >
+                          <Skeleton className="h-5 w-full" />
+                        </td>
+                      ))}
                       {showActionsCol && (
-                        <td className="px-2 py-1.5 text-right align-middle lg:py-0.5">
-                          <div
-                            className="inline-flex items-center justify-end gap-0.5"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {showRowCopy && copy ? (
-                              <CopyButtons
-                                size="xs"
-                                label={copy.label}
-                                human={() => copy.humanRow(displayRow)}
-                                json={() =>
-                                  copy.agentRow
-                                    ? copy.agentRow(displayRow)
-                                    : displayRow
-                                }
-                                agent={() =>
-                                  buildRowAgentInput(copy, displayRow)
-                                }
-                              />
-                            ) : null}
-                            {rowActions?.(row, {
-                              closeDetail: () => setSelectedId(null),
-                              openDetail: () => openDetail(row),
-                              openWindow: () => openWindow(row),
-                              closeWindow,
-                            })}
-                            {windowEnabled ? (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="h-11 w-11 text-muted-foreground hover:text-foreground lg:h-5 lg:w-5 [&_svg]:size-3"
-                                aria-label={
-                                  opensWindowOnRowClick
-                                    ? "Open in side panel"
-                                    : "Open in window"
-                                }
-                                title={
-                                  opensWindowOnRowClick
-                                    ? "Open in side panel"
-                                    : "Open in window"
-                                }
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (opensWindowOnRowClick) {
-                                    openDetail(row);
-                                  } else {
-                                    openWindow(row);
-                                  }
-                                }}
-                              >
-                                {opensWindowOnRowClick ? (
-                                  <PanelRightOpen className="h-3.5 w-3.5" />
-                                ) : (
-                                  <PanelRight className="h-3.5 w-3.5" />
-                                )}
-                              </Button>
-                            ) : null}
-                          </div>
+                        <td className="px-2 py-2">
+                          <Skeleton className="ml-auto h-5 w-10" />
                         </td>
                       )}
                     </tr>
-                  );
-                  // The seam that keeps a surface from forking the table for a
-                  // right-click menu / drag handle / drop target. The wrapper
-                  // must emit the <tr> unchanged (Radix `asChild` does).
-                  return rowWrapper ? (
-                    <Fragment key={id}>{rowWrapper(row, rowNode)}</Fragment>
-                  ) : (
-                    rowNode
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-        {/* Mobile-only scroll affordance: right/left edge fades over the
+                  ))
+                ) : paginated.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={
+                        visibleColumns.length +
+                        leadingCols +
+                        (showActionsCol ? 1 : 0)
+                      }
+                      className="px-4 py-12 text-center"
+                    >
+                      <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
+                        {emptyState?.icon}
+                        <p className="text-sm font-medium text-foreground">
+                          {emptyState?.title ?? "No rows"}
+                        </p>
+                        {emptyState?.description ? (
+                          <p className="text-xs text-muted-foreground">
+                            {emptyState.description}
+                          </p>
+                        ) : null}
+                        {emptyState?.action}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  paginated.map((row, index) => {
+                    const id = getRowId(row);
+                    const isSelected = selectedId === id;
+                    const rowEdits = edits[id];
+                    const displayRow = applyRowEdits(row, rowEdits);
+                    const isChecked = selectedIdSet.has(id);
+                    const rowNode = (
+                      <tr
+                        key={id}
+                        data-row-id={id}
+                        data-state={isSelected ? "selected" : undefined}
+                        onClick={(e) => {
+                          // A click that started on a real link (the D112 title
+                          // anchor, an FK cell link) must not ALSO fire the
+                          // row-open — the anchor owns that navigation.
+                          if ((e.target as HTMLElement).closest("a")) return;
+                          openRow(row);
+                        }}
+                        className={cn(
+                          // bg-card is a visual no-op (the container is bg-card) but
+                          // gives the frozen first cell an OPAQUE background to
+                          // inherit, so horizontally-scrolled content never shows
+                          // through it. The translucent tints (zebra/hover) would
+                          // let it bleed, so they are desktop-only.
+                          "border-b border-border/60 bg-card transition-colors",
+                          (detailEnabled || Boolean(onRowOpen)) &&
+                            "cursor-pointer sm:hover:bg-muted/50",
+                          isSelected && "bg-muted",
+                          isChecked && "bg-primary/5",
+                          draggedRowId === id && "opacity-40",
+                          zebra &&
+                            index % 2 === 1 &&
+                            !isSelected &&
+                            !isChecked &&
+                            "sm:bg-muted/20",
+                        )}
+                      >
+                        {selection ? (
+                          <td
+                            className="px-2 py-1.5 align-middle lg:py-0.5"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Checkbox
+                              checked={isChecked}
+                              disabled={
+                                !(selection.isRowSelectable?.(row) ?? true)
+                              }
+                              aria-label={`Select this ${selectionNoun}`}
+                              // Radix hands the checkbox's own click through here;
+                              // shift-range needs the native event's modifier, so
+                              // the row toggles from onClick, not onCheckedChange.
+                              onClick={(e) =>
+                                toggleRowSelected(index, e.shiftKey)
+                              }
+                            />
+                          </td>
+                        ) : null}
+                        {visibleColumns.map((col, colIdx) => {
+                          const field = col.accessorKey
+                            ? String(col.accessorKey)
+                            : columnId(col);
+                          const display = renderCell(displayRow, col, index);
+                          const editable = Boolean(
+                            editEnabled &&
+                            col.editable &&
+                            (col.editableIf?.(row) ?? true),
+                          );
+                          const dirty = Boolean(rowEdits && field in rowEdits);
+                          const cellHref = col.href?.(row) ?? undefined;
+                          return (
+                            <td
+                              key={columnId(col)}
+                              className={cn(
+                                "py-1.5 align-middle lg:py-0.5",
+                                col.compact ? "px-1" : "px-2",
+                                // nowrap (NOT truncate — truncate clips the cell and
+                                // defeats w-max, killing the horizontal scroll).
+                                "max-sm:whitespace-nowrap",
+                                col.mobileHidden && "max-sm:hidden",
+                                mobileScroll &&
+                                  colIdx === 0 &&
+                                  "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit",
+                                col.width !== undefined &&
+                                  "sm:w-[var(--matrx-col-w)] sm:max-w-[var(--matrx-col-w)]",
+                                col.className,
+                                col.align === "center" && "text-center",
+                                col.align === "right" && "text-right",
+                              )}
+                              style={columnWidthVar(col.width)}
+                            >
+                              <div
+                                className={cn(
+                                  colIdx === 0 &&
+                                    hierarchy &&
+                                    "flex min-w-0 items-center",
+                                )}
+                              >
+                                {colIdx === 0 && hierarchy ? (
+                                  <HierarchyDragHandle
+                                    id={id}
+                                    label={hierarchy.itemLabel?.(row) ?? "row"}
+                                    disabled={
+                                      !(hierarchy.canReparent?.(row) ?? true)
+                                    }
+                                  />
+                                ) : null}
+                                <div className="min-w-0 flex-1">
+                                  {editable && col.editable ? (
+                                    <EditableTableCell
+                                      value={
+                                        rowEdits && field in rowEdits
+                                          ? rowEdits[field]
+                                          : getCellValue(row, col)
+                                      }
+                                      editType={col.editable}
+                                      editOptions={col.editOptions}
+                                      display={display}
+                                      dirty={dirty}
+                                      onCommit={(next) =>
+                                        commitCell(id, field, next)
+                                      }
+                                      href={cellHref}
+                                      editTrigger={col.editTrigger}
+                                    />
+                                  ) : cellHref ? (
+                                    <Link
+                                      href={cellHref}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="block w-full min-w-0 rounded outline-none  focus-visible:ring-2 focus-visible:ring-ring"
+                                    >
+                                      {display}
+                                    </Link>
+                                  ) : (
+                                    display
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                          );
+                        })}
+                        {showActionsCol && (
+                          <td className="px-2 py-1.5 text-right align-middle lg:py-0.5">
+                            <div
+                              className="inline-flex items-center justify-end gap-0.5"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {showRowCopy && copy ? (
+                                <CopyButtons
+                                  size="xs"
+                                  label={copy.label}
+                                  human={() => copy.humanRow(displayRow)}
+                                  json={() =>
+                                    copy.agentRow
+                                      ? copy.agentRow(displayRow)
+                                      : displayRow
+                                  }
+                                  agent={() =>
+                                    buildRowAgentInput(copy, displayRow)
+                                  }
+                                />
+                              ) : null}
+                              {rowActions?.(row, {
+                                closeDetail: () => setSelectedId(null),
+                                openDetail: () => openDetail(row),
+                                openWindow: () => openWindow(row),
+                                closeWindow,
+                              })}
+                              {windowEnabled ? (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-11 w-11 text-muted-foreground hover:text-foreground lg:h-5 lg:w-5 [&_svg]:size-3"
+                                  aria-label={
+                                    opensWindowOnRowClick
+                                      ? "Open in side panel"
+                                      : "Open in window"
+                                  }
+                                  title={
+                                    opensWindowOnRowClick
+                                      ? "Open in side panel"
+                                      : "Open in window"
+                                  }
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (opensWindowOnRowClick) {
+                                      openDetail(row);
+                                    } else {
+                                      openWindow(row);
+                                    }
+                                  }}
+                                >
+                                  {opensWindowOnRowClick ? (
+                                    <PanelRightOpen className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <PanelRight className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                              ) : null}
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                    // The seam that keeps a surface from forking the table for a
+                    // right-click menu / drag handle / drop target. The wrapper
+                    // must emit the <tr> unchanged (Radix `asChild` does).
+                    const wrappedRow = rowWrapper
+                      ? rowWrapper(row, rowNode)
+                      : rowNode;
+                    return hierarchy ? (
+                      <HierarchyDroppableRow
+                        key={id}
+                        id={id}
+                        disabled={!canDropOn(row)}
+                      >
+                        {wrappedRow}
+                      </HierarchyDroppableRow>
+                    ) : (
+                      <Fragment key={id}>{wrappedRow}</Fragment>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+          {/* Mobile-only scroll affordance: right/left edge fades over the
             scroll container (siblings, so they don't scroll away). The right
             fade carries a chevron until the user reaches the end. Desktop
             (>= sm) never shows them; `mobile="plain"` opts out entirely. */}
-        {mobileScroll && scrollHintRight ? (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 right-0 z-30 flex w-10 items-center justify-end rounded-r-md bg-gradient-to-l from-card via-card/60 to-transparent pr-0.5 sm:hidden"
-          >
-            <ChevronRight className="h-4 w-4 text-muted-foreground/70" />
+          {mobileScroll && scrollHintRight ? (
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 right-0 z-30 flex w-10 items-center justify-end rounded-r-md bg-gradient-to-l from-card via-card/60 to-transparent pr-0.5 sm:hidden"
+            >
+              <ChevronRight className="h-4 w-4 text-muted-foreground/70" />
+            </div>
+          ) : null}
+        </div>
+
+        {defaultPageSize !== 0 && totalItems > 0 ? (
+          <div className="shrink-0">
+            <GenericTablePagination
+              totalItems={totalItems}
+              itemsPerPage={effectivePageSize}
+              currentPage={safePage}
+              onPageChange={setPage}
+              onItemsPerPageChange={(n) => {
+                setPageSize(n);
+                if (!controlledQuery) setPage(1);
+              }}
+              pageSizeOptions={pageSizeOptions}
+              compact
+              hideEntriesInfo={false}
+            />
           </div>
         ) : null}
-      </div>
 
-      {defaultPageSize !== 0 && totalItems > 0 ? (
-        <div className="shrink-0">
-          <GenericTablePagination
-            totalItems={totalItems}
-            itemsPerPage={effectivePageSize}
-            currentPage={safePage}
-            onPageChange={setPage}
-            onItemsPerPageChange={(n) => {
-              setPageSize(n);
-              if (!controlledQuery) setPage(1);
-            }}
-            pageSizeOptions={pageSizeOptions}
-            compact
-            hideEntriesInfo={false}
-          />
-        </div>
-      ) : null}
+        {detailEnabled && selectedRow ? (
+          <SidePanelSurface
+            // `title` stays a plain string (it is the accessible name), while
+            // `titleNode` / `description` carry whatever the caller actually
+            // rendered — an `EntityRef` door included. These used to be coerced
+            // through string-only resolvers, so a detail config returning JSX had
+            // its door silently dropped.
+            title={resolveStringTitle(
+              detail?.title?.(selectedRow),
+              defaultRowTitle(selectedRow, visibleColumns),
+            )}
+            titleNode={detail?.title?.(selectedRow)}
+            description={detail?.description?.(selectedRow)}
+            onClose={() => setSelectedId(null)}
+            defaultWidth={detail?.defaultWidth ?? 480}
+            headerActions={
+              <div className="flex items-center gap-1">
+                {copy && showRowCopy ? (
+                  <CopyButtons
+                    size="icon"
+                    label={copy.label}
+                    human={() => copy.humanRow(selectedRow)}
+                    json={() =>
+                      copy.agentRow ? copy.agentRow(selectedRow) : selectedRow
+                    }
+                    agent={() => buildRowAgentInput(copy, selectedRow)}
+                  />
+                ) : null}
+                {detail?.headerActions?.(selectedRow)}
+                {windowEnabled ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    aria-label="Open in window"
+                    title="Open in window"
+                    onClick={() => openWindow(selectedRow)}
+                  >
+                    <PanelRight className="h-3.5 w-3.5" />
+                  </Button>
+                ) : null}
+              </div>
+            }
+          >
+            {detail?.render ? (
+              // The panel hands children a `min-h-0 flex-1 overflow-hidden` cell
+              // and expects the child to own scrolling. `DataRowInspector` does;
+              // custom `detail.render` bodies mostly did not, so their content
+              // silently cut off at the fold with no scrollbar. Owning it here
+              // fixes the whole class at once — a custom body that already
+              // scrolls (`h-full` + `overflow-y-auto` root) still resolves to
+              // this container's height, so no second scrollbar appears.
+              <div className="h-full min-h-0 overflow-y-auto">
+                {detail.render(selectedRow, {
+                  closeDetail: () => setSelectedId(null),
+                  openDetail: () => openDetail(selectedRow),
+                  openWindow: () => openWindow(selectedRow),
+                  closeWindow,
+                })}
+              </div>
+            ) : (
+              <DataRowInspector
+                row={selectedRow}
+                recordKind={copy?.rowKind}
+                recordLabel={copy?.label}
+                location={copy?.location}
+                tokenForField={detail?.tokenForField}
+              />
+            )}
+          </SidePanelSurface>
+        ) : null}
 
-      {detailEnabled && selectedRow ? (
-        <SidePanelSurface
-          // `title` stays a plain string (it is the accessible name), while
-          // `titleNode` / `description` carry whatever the caller actually
-          // rendered — an `EntityRef` door included. These used to be coerced
-          // through string-only resolvers, so a detail config returning JSX had
-          // its door silently dropped.
-          title={resolveStringTitle(
-            detail?.title?.(selectedRow),
-            defaultRowTitle(selectedRow, visibleColumns),
-          )}
-          titleNode={detail?.title?.(selectedRow)}
-          description={detail?.description?.(selectedRow)}
-          onClose={() => setSelectedId(null)}
-          defaultWidth={detail?.defaultWidth ?? 480}
-          headerActions={
-            <div className="flex items-center gap-1">
-              {copy && showRowCopy ? (
-                <CopyButtons
-                  size="icon"
-                  label={copy.label}
-                  human={() => copy.humanRow(selectedRow)}
-                  json={() =>
-                    copy.agentRow ? copy.agentRow(selectedRow) : selectedRow
-                  }
-                  agent={() => buildRowAgentInput(copy, selectedRow)}
-                />
-              ) : null}
-              {detail?.headerActions?.(selectedRow)}
-              {windowEnabled ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  aria-label="Open in window"
-                  title="Open in window"
-                  onClick={() => openWindow(selectedRow)}
-                >
-                  <PanelRight className="h-3.5 w-3.5" />
-                </Button>
-              ) : null}
-            </div>
-          }
-        >
-          {detail?.render ? (
-            // The panel hands children a `min-h-0 flex-1 overflow-hidden` cell
-            // and expects the child to own scrolling. `DataRowInspector` does;
-            // custom `detail.render` bodies mostly did not, so their content
-            // silently cut off at the fold with no scrollbar. Owning it here
-            // fixes the whole class at once — a custom body that already
-            // scrolls (`h-full` + `overflow-y-auto` root) still resolves to
-            // this container's height, so no second scrollbar appears.
-            <div className="h-full min-h-0 overflow-y-auto">
-              {detail.render(selectedRow, {
+        {windowRow ? (
+          <DataRowWindow
+            isOpen
+            onClose={closeWindow}
+            title={
+              windowConfig?.title?.(windowRow) ??
+              defaultRowTitle(windowRow, visibleColumns)
+            }
+            row={windowRow}
+            width={windowConfig?.width}
+            height={windowConfig?.height}
+            windowId={`matrx-data-row-${urlState?.id ?? "local"}-${getRowId(windowRow)}`}
+            defaultTab={windowConfig?.defaultTab}
+            headerActions={
+              <div className="flex items-center gap-1">
+                {opensWindowOnRowClick && detailEnabled ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    aria-label="Open in side panel"
+                    title="Open in side panel"
+                    onClick={() => {
+                      closeWindow();
+                      openDetail(windowRow);
+                    }}
+                  >
+                    <PanelRightOpen className="h-3.5 w-3.5" />
+                  </Button>
+                ) : null}
+                {copy ? (
+                  <CopyButtons
+                    size="icon"
+                    label={copy.label}
+                    human={() => copy.humanRow(windowRow)}
+                    json={() =>
+                      copy.agentRow ? copy.agentRow(windowRow) : windowRow
+                    }
+                    agent={() => buildRowAgentInput(copy, windowRow)}
+                  />
+                ) : null}
+              </div>
+            }
+            viewContent={
+              windowConfig?.renderView?.(windowRow, {
                 closeDetail: () => setSelectedId(null),
-                openDetail: () => openDetail(selectedRow),
-                openWindow: () => openWindow(selectedRow),
+                openDetail: () => openDetail(windowRow),
+                openWindow: () => openWindow(windowRow),
                 closeWindow,
-              })}
-            </div>
-          ) : (
-            <DataRowInspector
-              row={selectedRow}
-              recordKind={copy?.rowKind}
-              recordLabel={copy?.label}
-              location={copy?.location}
-              tokenForField={detail?.tokenForField}
-            />
-          )}
-        </SidePanelSurface>
-      ) : null}
-
-      {windowRow ? (
-        <DataRowWindow
-          isOpen
-          onClose={closeWindow}
-          title={
-            windowConfig?.title?.(windowRow) ??
-            defaultRowTitle(windowRow, visibleColumns)
-          }
-          row={windowRow}
-          width={windowConfig?.width}
-          height={windowConfig?.height}
-          windowId={`matrx-data-row-${urlState?.id ?? "local"}-${getRowId(windowRow)}`}
-          defaultTab={windowConfig?.defaultTab}
-          headerActions={
-            <div className="flex items-center gap-1">
-              {opensWindowOnRowClick && detailEnabled ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  aria-label="Open in side panel"
-                  title="Open in side panel"
-                  onClick={() => {
-                    closeWindow();
-                    openDetail(windowRow);
-                  }}
-                >
-                  <PanelRightOpen className="h-3.5 w-3.5" />
-                </Button>
-              ) : null}
-              {copy ? (
-                <CopyButtons
-                  size="icon"
-                  label={copy.label}
-                  human={() => copy.humanRow(windowRow)}
-                  json={() =>
-                    copy.agentRow ? copy.agentRow(windowRow) : windowRow
-                  }
-                  agent={() => buildRowAgentInput(copy, windowRow)}
+              }) ??
+              (copy ? (
+                <DataRowInspector
+                  row={windowRow}
+                  recordKind={copy.rowKind}
+                  recordLabel={copy.label}
+                  location={copy.location}
+                  tokenForField={detail?.tokenForField}
                 />
-              ) : null}
-            </div>
-          }
-          viewContent={
-            windowConfig?.renderView?.(windowRow, {
+              ) : undefined)
+            }
+            editContent={
+              windowConfig?.renderEdit === false
+                ? undefined
+                : windowConfig?.renderEdit
+                  ? windowConfig.renderEdit(windowRow, {
+                      closeDetail: () => setSelectedId(null),
+                      openDetail: () => openDetail(windowRow),
+                      openWindow: () => openWindow(windowRow),
+                      closeWindow,
+                    })
+                  : detail?.render?.(windowRow, {
+                      closeDetail: () => setSelectedId(null),
+                      openDetail: () => openDetail(windowRow),
+                      openWindow: () => openWindow(windowRow),
+                      closeWindow,
+                    })
+            }
+          >
+            {windowConfig?.render?.(windowRow, {
               closeDetail: () => setSelectedId(null),
               openDetail: () => openDetail(windowRow),
               openWindow: () => openWindow(windowRow),
               closeWindow,
-            }) ??
-            (copy ? (
-              <DataRowInspector
-                row={windowRow}
-                recordKind={copy.rowKind}
-                recordLabel={copy.label}
-                location={copy.location}
-                tokenForField={detail?.tokenForField}
-              />
-            ) : undefined)
-          }
-          editContent={
-            windowConfig?.renderEdit === false
-              ? undefined
-              : windowConfig?.renderEdit
-                ? windowConfig.renderEdit(windowRow, {
-                    closeDetail: () => setSelectedId(null),
-                    openDetail: () => openDetail(windowRow),
-                    openWindow: () => openWindow(windowRow),
-                    closeWindow,
-                  })
-                : detail?.render?.(windowRow, {
-                    closeDetail: () => setSelectedId(null),
-                    openDetail: () => openDetail(windowRow),
-                    openWindow: () => openWindow(windowRow),
-                    closeWindow,
-                  })
-          }
-        >
-          {windowConfig?.render?.(windowRow, {
-            closeDetail: () => setSelectedId(null),
-            openDetail: () => openDetail(windowRow),
-            openWindow: () => openWindow(windowRow),
-            closeWindow,
-          })}
-        </DataRowWindow>
-      ) : null}
+            })}
+          </DataRowWindow>
+        ) : null}
 
-      {editEnabled ? (
-        <DirtySavePill
-          changeCount={changeCount}
-          saving={saving}
-          onSave={() => void handleSaveEdits()}
-          onCancel={handleCancelEdits}
-        />
-      ) : null}
+        {editEnabled ? (
+          <DirtySavePill
+            changeCount={changeCount}
+            saving={saving}
+            onSave={() => void handleSaveEdits()}
+            onCancel={handleCancelEdits}
+          />
+        ) : null}
+      </div>
+      <DragOverlay>
+        {draggedRow ? (
+          <div className="rounded border border-border bg-card px-2.5 py-1.5 text-sm font-medium text-foreground shadow-md">
+            {hierarchy?.itemLabel?.(draggedRow) ?? "Moving row"}
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
+function HierarchyDragHandle({
+  id,
+  label,
+  disabled,
+}: {
+  id: string;
+  label: string;
+  disabled: boolean;
+}) {
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id,
+    disabled,
+  });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      disabled={disabled}
+      className="flex h-7 w-4 shrink-0 touch-none cursor-grab items-center justify-center text-muted-foreground hover:text-foreground active:cursor-grabbing disabled:cursor-default disabled:opacity-40"
+      aria-label={`Move ${label}`}
+      title="Drag to move"
+      onClick={(event) => event.stopPropagation()}
+      {...attributes}
+      {...listeners}
+    >
+      <GripVertical className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+function HierarchyRootDropTarget({ label }: { label: string }) {
+  const { isOver, setNodeRef } = useDroppable({ id: "__root__" });
+  return (
+    <div
+      ref={setNodeRef}
+      data-matrx-hierarchy-root
+      className={cn(
+        "sticky left-0 top-0 z-40 flex h-7 w-full items-center justify-center border-b border-primary/30 bg-primary/10 text-xs font-medium text-primary",
+        isOver && "bg-primary/20",
+      )}
+    >
+      {label}
     </div>
   );
+}
+
+type HierarchyRowElementProps = HTMLAttributes<HTMLTableRowElement> & {
+  ref?: Ref<HTMLTableRowElement>;
+};
+
+function HierarchyDroppableRow({
+  id,
+  disabled,
+  children,
+}: {
+  id: string;
+  disabled: boolean;
+  children: ReactNode;
+}) {
+  const { isOver, setNodeRef } = useDroppable({ id, disabled });
+  if (!isValidElement(children) || children.type !== "tr") return children;
+  const row = children as ReactElement<HierarchyRowElementProps>;
+  return cloneElement(row, {
+    ref: setNodeRef,
+    className: cn(
+      row.props.className,
+      isOver &&
+        !disabled &&
+        "outline outline-2 -outline-offset-2 outline-primary/60",
+    ),
+  });
 }
 
 /**

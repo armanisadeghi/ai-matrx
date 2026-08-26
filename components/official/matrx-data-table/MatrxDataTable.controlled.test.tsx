@@ -218,8 +218,8 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
       />,
     );
 
-    expect(markup).toContain('draggable="true"');
     expect(markup).toContain('aria-label="Move Alpha"');
+    expect(markup).toContain("touch-none");
     expect(markup).toContain('title="Drag to move"');
   });
 
