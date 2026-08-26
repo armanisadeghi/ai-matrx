@@ -1,0 +1,2106 @@
+{
+  "$comment": "HRB-010 language-neutral drift fixture for validate_custom_values (SPEC-EXTENSIBILITY 2.4.2) - the ONE pin holding every implementation together. CANONICAL: platform.validate_custom_values (plpgsql, applied migration ext_06b). Twins owed by their lanes: aidream/aidream/services/platform/custom_fields/validation.py (Python) and matrx-frontend/features/platform/custom-fields/validateCustom.ts (TypeScript); this file is byte-identical in all three directories and a drifting twin fails CI. expect.rejected_issues / warning_issues are SORTED, NON-DEDUPED [key, code] pairs - they pin the code vocabulary AND the issue multiplicity, which bare field lists are structurally blind to. The issue identifier property is `key` on every implementation. Codes: required_missing | unknown_key | type_mismatch | max_length | out_of_range | invalid_option | invalid_format | invalid_reference | too_many_values | archived_field | byte_cap. Row-level issues are keyed on the reserved literal __row__. max_length counts Unicode CODE POINTS (JS: [...s].length, NEVER .length). `is_required` / `is_multi` / `archived` constrain ONLY when they are the literal boolean true. A malformed constraint is IGNORED, never reinterpreted. `limits` is the optional 4th argument (max_custom_bytes / max_keys_per_row); absent means unconstrained.",
+  "signature": "validate_custom_values(field_definitions, values, validation_mode, limits) -> {ok, errors, warnings}",
+  "validate_cases": [
+    {
+      "name": "advisory_all_15_types_valid",
+      "field_definitions": [
+        {
+          "field_key": "t_text",
+          "field_type": "text"
+        },
+        {
+          "field_key": "t_long",
+          "field_type": "long_text"
+        },
+        {
+          "field_key": "t_num",
+          "field_type": "number"
+        },
+        {
+          "field_key": "t_cur",
+          "field_type": "currency"
+        },
+        {
+          "field_key": "t_bool",
+          "field_type": "boolean"
+        },
+        {
+          "field_key": "t_date",
+          "field_type": "date"
+        },
+        {
+          "field_key": "t_dt",
+          "field_type": "datetime"
+        },
+        {
+          "field_key": "t_sel",
+          "field_type": "single_select",
+          "options": [
+            "gold",
+            "silver"
+          ]
+        },
+        {
+          "field_key": "t_multi",
+          "field_type": "multi_select",
+          "options": [
+            "a",
+            "b"
+          ]
+        },
+        {
+          "field_key": "t_ref",
+          "field_type": "entity_reference",
+          "reference_target_token": "hr_employee"
+        },
+        {
+          "field_key": "t_user",
+          "field_type": "user_reference"
+        },
+        {
+          "field_key": "t_file",
+          "field_type": "file"
+        },
+        {
+          "field_key": "t_url",
+          "field_type": "url"
+        },
+        {
+          "field_key": "t_email",
+          "field_type": "email"
+        },
+        {
+          "field_key": "t_phone",
+          "field_type": "phone"
+        }
+      ],
+      "validation_mode": "advisory",
+      "values": {
+        "t_text": "Ada",
+        "t_long": "a longer body",
+        "t_num": 4,
+        "t_cur": {
+          "amount": 10.5,
+          "currency": "USD"
+        },
+        "t_bool": true,
+        "t_date": "2026-07-23",
+        "t_dt": "2026-07-23T10:30:00Z",
+        "t_sel": "gold",
+        "t_multi": [
+          "a",
+          "b"
+        ],
+        "t_ref": "11111111-1111-1111-1111-111111111111",
+        "t_user": "22222222-2222-2222-2222-222222222222",
+        "t_file": {
+          "file_id": "11111111-1111-1111-1111-111111111111",
+          "name": "x.pdf",
+          "size": 12,
+          "mime": "application/pdf"
+        },
+        "t_url": "https://example.com/x?y=1",
+        "t_email": "ada@example.com",
+        "t_phone": "+15551234567"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "strict_all_15_types_valid",
+      "field_definitions": [
+        {
+          "field_key": "t_text",
+          "field_type": "text"
+        },
+        {
+          "field_key": "t_long",
+          "field_type": "long_text"
+        },
+        {
+          "field_key": "t_num",
+          "field_type": "number"
+        },
+        {
+          "field_key": "t_cur",
+          "field_type": "currency"
+        },
+        {
+          "field_key": "t_bool",
+          "field_type": "boolean"
+        },
+        {
+          "field_key": "t_date",
+          "field_type": "date"
+        },
+        {
+          "field_key": "t_dt",
+          "field_type": "datetime"
+        },
+        {
+          "field_key": "t_sel",
+          "field_type": "single_select",
+          "options": [
+            "gold",
+            "silver"
+          ]
+        },
+        {
+          "field_key": "t_multi",
+          "field_type": "multi_select",
+          "options": [
+            "a",
+            "b"
+          ]
+        },
+        {
+          "field_key": "t_ref",
+          "field_type": "entity_reference",
+          "reference_target_token": "hr_employee"
+        },
+        {
+          "field_key": "t_user",
+          "field_type": "user_reference"
+        },
+        {
+          "field_key": "t_file",
+          "field_type": "file"
+        },
+        {
+          "field_key": "t_url",
+          "field_type": "url"
+        },
+        {
+          "field_key": "t_email",
+          "field_type": "email"
+        },
+        {
+          "field_key": "t_phone",
+          "field_type": "phone"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "t_text": "Ada",
+        "t_long": "a longer body",
+        "t_num": 4,
+        "t_cur": {
+          "amount": 10.5,
+          "currency": "USD"
+        },
+        "t_bool": true,
+        "t_date": "2026-07-23",
+        "t_dt": "2026-07-23T10:30:00Z",
+        "t_sel": "gold",
+        "t_multi": [
+          "a",
+          "b"
+        ],
+        "t_ref": "11111111-1111-1111-1111-111111111111",
+        "t_user": "22222222-2222-2222-2222-222222222222",
+        "t_file": {
+          "file_id": "11111111-1111-1111-1111-111111111111",
+          "name": "x.pdf",
+          "size": 12,
+          "mime": "application/pdf"
+        },
+        "t_url": "https://example.com/x?y=1",
+        "t_email": "ada@example.com",
+        "t_phone": "+15551234567"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "honest_empty_no_required",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text"
+        },
+        {
+          "field_key": "b",
+          "field_type": "number"
+        }
+      ],
+      "validation_mode": "advisory",
+      "values": {},
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      },
+      "$note": "Nothing declared required: an empty payload is VALID, not merely tolerated."
+    },
+    {
+      "name": "honest_empty_with_required",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "is_required": true
+        },
+        {
+          "field_key": "b",
+          "field_type": "number"
+        }
+      ],
+      "validation_mode": "advisory",
+      "values": {},
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "honest_empty_with_required_strict",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "is_required": true
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {},
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "honest_null_is_absence",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "is_required": true
+        }
+      ],
+      "validation_mode": "advisory",
+      "values": {
+        "a": null
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "empty_string_on_text_is_absence",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "is_required": true
+        }
+      ],
+      "validation_mode": "advisory",
+      "values": {
+        "a": ""
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "required_missing"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "empty_string_on_number_is_type_mismatch",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "number",
+          "is_required": true
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": ""
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "A browser submits \"\" for an untouched numeric input; treating it as absent would let a REQUIRED numeric field pass on a blank."
+    },
+    {
+      "name": "empty_string_on_boolean_is_type_mismatch",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "boolean",
+          "is_required": true
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": ""
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "empty_array_on_multi_select_is_present",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "multi_select",
+          "options": [
+            "x"
+          ],
+          "is_required": true
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": []
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      },
+      "$note": "[] is a PRESENT array value of the right type, not an absence."
+    },
+    {
+      "name": "required_not_literal_true_is_ignored",
+      "field_definitions": [
+        {
+          "field_key": "r1",
+          "field_type": "text",
+          "is_required": 1
+        },
+        {
+          "field_key": "r2",
+          "field_type": "text",
+          "is_required": "true"
+        },
+        {
+          "field_key": "r3",
+          "field_type": "text",
+          "is_required": []
+        },
+        {
+          "field_key": "r4",
+          "field_type": "text",
+          "is_required": {}
+        },
+        {
+          "field_key": "r5",
+          "field_type": "text",
+          "is_required": 0
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {},
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      },
+      "$note": "Ruling (h): language-native truthiness disagrees about [] and {} across twins. Only the literal boolean true constrains."
+    },
+    {
+      "name": "malformed_max_length_is_ignored",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "validation_rules": {
+            "max_length": -1
+          }
+        },
+        {
+          "field_key": "b",
+          "field_type": "text",
+          "validation_rules": {
+            "max_length": "5"
+          }
+        },
+        {
+          "field_key": "c",
+          "field_type": "text",
+          "validation_rules": {
+            "max_length": true
+          }
+        },
+        {
+          "field_key": "d",
+          "field_type": "text",
+          "validation_rules": {
+            "max_length": 2.5
+          }
+        },
+        {
+          "field_key": "e",
+          "field_type": "text",
+          "validation_rules": {
+            "max_length": null
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "xxxxxxxx",
+        "b": "xxxxxxxx",
+        "c": "xxxxxxxx",
+        "d": "xxxxxxxx",
+        "e": "xxxxxxxx"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "max_length_2_0_is_honoured_as_2",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "validation_rules": {
+            "max_length": 2.0
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "abc"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "JSON cannot distinguish 2.0 from 2, so honouring it is the only choice both twins can make identically."
+    },
+    {
+      "name": "max_length_counts_code_points",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "validation_rules": {
+            "max_length": 2
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "👍👍"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      },
+      "$note": "Two astral-plane code points. A JS twin counting .length (UTF-16 units) sees 4 and wrongly rejects."
+    },
+    {
+      "name": "max_length_counts_code_points_over",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "validation_rules": {
+            "max_length": 1
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "👍👍"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "max_length_applies_to_every_string_type",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "email",
+          "validation_rules": {
+            "max_length": 5
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "ada@example.com"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "Ruling (b): a declared constraint is never silently dropped because of the field's type."
+    },
+    {
+      "name": "malformed_options_leave_select_unconstrained",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "single_select",
+          "options": []
+        },
+        {
+          "field_key": "b",
+          "field_type": "single_select",
+          "options": "abc"
+        },
+        {
+          "field_key": "c",
+          "field_type": "single_select",
+          "options": [
+            "x",
+            1
+          ]
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "zzz",
+        "b": "zzz",
+        "c": "zzz"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      },
+      "$note": "A bare string used to be SUBSTRING-tested. A mixed list is un-actionable. Both leave the select unconstrained."
+    },
+    {
+      "name": "object_options_constrain_on_value",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "single_select",
+          "options": [
+            {
+              "value": "gold",
+              "label": "Gold"
+            }
+          ]
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "Gold"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_option"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "The stored value is the option's `value`, never its label."
+    },
+    {
+      "name": "malformed_pattern_is_ignored",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "validation_rules": {
+            "pattern": "([unclosed"
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "anything"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "number_string_is_never_coerced",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "number"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "5"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "boolean_is_strict",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "boolean"
+        },
+        {
+          "field_key": "b",
+          "field_type": "boolean"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": 1,
+        "b": "true"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "type_mismatch"
+          ],
+          [
+            "b",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "number_beyond_double_range_is_type_mismatch",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "number"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": Infinity
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "A literal this large becomes Infinity under JSON.parse; refusing it here keeps both twins agreeing about what was RECEIVED."
+    },
+    {
+      "name": "number_bounds",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "number",
+          "validation_rules": {
+            "min": 1,
+            "max": 20
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": 99
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "out_of_range"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "number_both_bounds_report_once_each",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "number",
+          "validation_rules": {
+            "min": 10,
+            "max": 5
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": 7
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "out_of_range"
+          ],
+          [
+            "a",
+            "out_of_range"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "Ruling (j): EVERY constraint failure is reported. A contradictory schema reports both."
+    },
+    {
+      "name": "number_decimals",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "number",
+          "validation_rules": {
+            "decimals": 2
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": 1.234
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "out_of_range"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "email_trailing_newline_is_invalid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "email"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "ada@example.com\n"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_format"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "Ruling (c): anchor so a trailing newline never passes."
+    },
+    {
+      "name": "email_internal_whitespace_is_invalid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "email"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "a b@x.co"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_format"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "email_bom_is_invalid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "email"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "a﻿b@x.co"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_format"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "Ruling (d): U+FEFF is whitespace to JS and not to Python; the explicit class is the contract."
+    },
+    {
+      "name": "url_uppercase_scheme_is_invalid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "url"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "HTTP://example.com"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_format"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "new URL() accepts this; the shared regex does not. The regex is the contract."
+    },
+    {
+      "name": "url_single_slash_is_invalid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "url"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "http:/x"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_format"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "datetime_space_separator_is_invalid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "datetime"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "2026-07-23 10:30:00"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_format"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "datetime_impossible_month_is_invalid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "datetime"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "2026-13-01T00:00:00Z"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_format"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "datetime_offset_is_valid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "datetime"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "2026-07-23T10:30:00+05:30"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "datetime_nanoseconds_are_valid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "datetime"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "2026-07-23T10:30:00.123456789Z"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "date_impossible_day_is_invalid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "date"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "2026-02-30"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_format"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "date_range_is_lexicographic_iso",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "date",
+          "validation_rules": {
+            "min": "2026-01-01",
+            "max": "2026-06-30"
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "2026-07-23"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "out_of_range"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "phone_is_never_rejected_on_shape_even_in_strict",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "phone"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "555-1234"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "a",
+            "invalid_format"
+          ]
+        ]
+      },
+      "$note": "2.3: phone format is advisory-warned, never rejected on shape alone - in BOTH modes."
+    },
+    {
+      "name": "phone_declared_pattern_is_also_only_advisory",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "phone",
+          "validation_rules": {
+            "pattern": "^\\+1"
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "+445551234567"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "a",
+            "invalid_format"
+          ],
+          [
+            "a",
+            "invalid_format"
+          ]
+        ]
+      },
+      "$note": "Both the E.164 shape warning and the declared-pattern warning fire; neither rejects."
+    },
+    {
+      "name": "multiplicity_two_failures_on_one_key",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "single_select",
+          "options": [
+            "gold"
+          ],
+          "validation_rules": {
+            "max_length": 2
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "silver"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_option"
+          ],
+          [
+            "a",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "A form UI wants to show both at once."
+    },
+    {
+      "name": "type_mismatch_short_circuits_constraints",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "validation_rules": {
+            "max_length": 2
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": 12345
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "Exactly ONE issue: a constraint check on a mistyped value is meaningless."
+    },
+    {
+      "name": "invalid_format_does_not_short_circuit",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "email",
+          "validation_rules": {
+            "max_length": 3
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "not-an-email-at-all"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_format"
+          ],
+          [
+            "a",
+            "max_length"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "Divergence 3: a format failure is a constraint, not a type mismatch, so the rest still runs."
+    },
+    {
+      "name": "unknown_key_warns_in_advisory",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text"
+        }
+      ],
+      "validation_mode": "advisory",
+      "values": {
+        "a": "x",
+        "stray": 1
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": [
+          [
+            "stray",
+            "unknown_key"
+          ]
+        ]
+      },
+      "$note": "Divergence 1 from the CMS validator, which passes unknown keys silently. SPEC-EXTENSIBILITY 2.4 and 6-B test 2 require the warning."
+    },
+    {
+      "name": "unknown_key_rejects_in_strict",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "x",
+        "stray": 1
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "stray",
+            "unknown_key"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "undeclared_field_key_makes_the_data_key_unknown",
+      "field_definitions": [
+        {
+          "field_key": "",
+          "field_type": "text"
+        },
+        {
+          "field_key": 5,
+          "field_type": "text"
+        },
+        "not-an-object"
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "": 1
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "",
+            "unknown_key"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "A field whose key is not a NON-EMPTY STRING is skipped entirely; its data key then reads as unknown."
+    },
+    {
+      "name": "archived_present_rejects_in_advisory",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "archived": true
+        }
+      ],
+      "validation_mode": "advisory",
+      "values": {
+        "a": "x"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "archived_field"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "Divergence 2: 2.2 says an archived definition rejects new writes; a warning that the write went through anyway defeats archiving."
+    },
+    {
+      "name": "archived_absent_is_completely_silent",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text",
+          "archived": true,
+          "is_required": true
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {},
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      },
+      "$note": "Divergence 4: an archived field is never also required, or every re-save of an old row would fail."
+    },
+    {
+      "name": "reference_not_a_uuid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "entity_reference",
+          "reference_target_token": "hr_employee"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "not-a-uuid"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_reference"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "reference_unresolved_by_caller",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "entity_reference",
+          "reference_target_token": "hr_employee",
+          "resolved": {
+            "11111111-1111-1111-1111-111111111111": true
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "22222222-2222-2222-2222-222222222222"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_reference"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "$note": "2.6 rule 5: a cross-organization id is INVALID, not merely unreadable. The caller resolved under its own RLS and handed the map in."
+    },
+    {
+      "name": "reference_resolved_by_caller",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "entity_reference",
+          "reference_target_token": "hr_employee",
+          "resolved": {
+            "11111111-1111-1111-1111-111111111111": true
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "11111111-1111-1111-1111-111111111111"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "reference_unresolved_map_absent_means_unchecked",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "entity_reference",
+          "reference_target_token": "hr_employee"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": "22222222-2222-2222-2222-222222222222"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      },
+      "$note": "The validator is PURE: with no resolution map it cannot and does not invent one."
+    },
+    {
+      "name": "multi_reference_reports_each_bad_id",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "entity_reference",
+          "is_multi": true,
+          "reference_target_token": "hr_employee",
+          "resolved": {
+            "11111111-1111-1111-1111-111111111111": true
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": [
+          "11111111-1111-1111-1111-111111111111",
+          "22222222-2222-2222-2222-222222222222",
+          "nope"
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_reference"
+          ],
+          [
+            "a",
+            "invalid_reference"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "currency_amount_must_be_a_number",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "currency"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": {
+          "amount": "10",
+          "currency": "USD"
+        }
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "currency_allowed_currencies",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "currency",
+          "validation_rules": {
+            "allowed_currencies": [
+              "USD"
+            ]
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": {
+          "amount": 10,
+          "currency": "EUR"
+        }
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_option"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "file_requires_a_uuid_file_id",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "file"
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": {
+          "name": "x.pdf"
+        }
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "type_mismatch"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "file_caps",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "file",
+          "validation_rules": {
+            "max_size": 10,
+            "allowed_mime": [
+              "image/png"
+            ]
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": {
+          "file_id": "11111111-1111-1111-1111-111111111111",
+          "size": 99,
+          "mime": "application/pdf"
+        }
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_option"
+          ],
+          [
+            "a",
+            "out_of_range"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "multi_select_too_many_and_invalid",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "multi_select",
+          "options": [
+            "a",
+            "b"
+          ],
+          "validation_rules": {
+            "max_values": 2
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "a": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "a",
+            "invalid_option"
+          ],
+          [
+            "a",
+            "too_many_values"
+          ]
+        ],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "byte_cap_rejects_in_advisory",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text"
+        }
+      ],
+      "validation_mode": "advisory",
+      "values": {
+        "a": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "__row__",
+            "byte_cap"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "limits": {
+        "max_custom_bytes": 50
+      },
+      "$note": "Divergence 2. A quota is a first-class explained refusal (3.6), never a silent truncation."
+    },
+    {
+      "name": "key_cap_rejects_in_advisory",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text"
+        },
+        {
+          "field_key": "b",
+          "field_type": "text"
+        },
+        {
+          "field_key": "c",
+          "field_type": "text"
+        }
+      ],
+      "validation_mode": "advisory",
+      "values": {
+        "a": "1",
+        "b": "2",
+        "c": "3"
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "__row__",
+            "byte_cap"
+          ]
+        ],
+        "warning_issues": []
+      },
+      "limits": {
+        "max_keys_per_row": 2
+      }
+    },
+    {
+      "name": "caps_absent_constrain_nothing",
+      "field_definitions": [
+        {
+          "field_key": "a",
+          "field_type": "text"
+        }
+      ],
+      "validation_mode": "advisory",
+      "values": {
+        "a": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "expect": {
+        "ok": true,
+        "rejected_issues": [],
+        "warning_issues": []
+      }
+    },
+    {
+      "name": "trap_sheet_advisory",
+      "field_definitions": [
+        {
+          "field_key": "cost_center",
+          "field_type": "text",
+          "is_required": true,
+          "validation_rules": {
+            "max_length": 8
+          }
+        },
+        {
+          "field_key": "headcount",
+          "field_type": "number",
+          "validation_rules": {
+            "min": 1,
+            "max": 20
+          }
+        },
+        {
+          "field_key": "tier",
+          "field_type": "single_select",
+          "options": [
+            "gold",
+            "silver"
+          ]
+        },
+        {
+          "field_key": "contact",
+          "field_type": "email"
+        },
+        {
+          "field_key": "cell",
+          "field_type": "phone"
+        },
+        {
+          "field_key": "salary_band",
+          "field_type": "currency",
+          "validation_rules": {
+            "allowed_currencies": [
+              "USD"
+            ]
+          }
+        },
+        {
+          "field_key": "tags",
+          "field_type": "multi_select",
+          "options": [
+            "a",
+            "b"
+          ],
+          "validation_rules": {
+            "max_values": 2
+          }
+        },
+        {
+          "field_key": "legacy",
+          "field_type": "text",
+          "archived": true
+        },
+        {
+          "field_key": "mgr",
+          "field_type": "entity_reference",
+          "reference_target_token": "hr_employee",
+          "resolved": {
+            "11111111-1111-1111-1111-111111111111": true
+          }
+        }
+      ],
+      "validation_mode": "advisory",
+      "values": {
+        "cost_center": "TOOLONGVALUE",
+        "headcount": 99,
+        "tier": "bronze",
+        "contact": "nope",
+        "cell": "5551234",
+        "salary_band": {
+          "amount": 10,
+          "currency": "EUR"
+        },
+        "tags": [
+          "a",
+          "b",
+          "c"
+        ],
+        "legacy": "x",
+        "mgr": "22222222-2222-2222-2222-222222222222",
+        "stray": 1
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "legacy",
+            "archived_field"
+          ]
+        ],
+        "warning_issues": [
+          [
+            "cell",
+            "invalid_format"
+          ],
+          [
+            "contact",
+            "invalid_format"
+          ],
+          [
+            "cost_center",
+            "max_length"
+          ],
+          [
+            "headcount",
+            "out_of_range"
+          ],
+          [
+            "mgr",
+            "invalid_reference"
+          ],
+          [
+            "salary_band",
+            "invalid_option"
+          ],
+          [
+            "stray",
+            "unknown_key"
+          ],
+          [
+            "tags",
+            "invalid_option"
+          ],
+          [
+            "tags",
+            "too_many_values"
+          ],
+          [
+            "tier",
+            "invalid_option"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "trap_sheet_strict",
+      "field_definitions": [
+        {
+          "field_key": "cost_center",
+          "field_type": "text",
+          "is_required": true,
+          "validation_rules": {
+            "max_length": 8
+          }
+        },
+        {
+          "field_key": "headcount",
+          "field_type": "number",
+          "validation_rules": {
+            "min": 1,
+            "max": 20
+          }
+        },
+        {
+          "field_key": "tier",
+          "field_type": "single_select",
+          "options": [
+            "gold",
+            "silver"
+          ]
+        },
+        {
+          "field_key": "contact",
+          "field_type": "email"
+        },
+        {
+          "field_key": "cell",
+          "field_type": "phone"
+        },
+        {
+          "field_key": "salary_band",
+          "field_type": "currency",
+          "validation_rules": {
+            "allowed_currencies": [
+              "USD"
+            ]
+          }
+        },
+        {
+          "field_key": "tags",
+          "field_type": "multi_select",
+          "options": [
+            "a",
+            "b"
+          ],
+          "validation_rules": {
+            "max_values": 2
+          }
+        },
+        {
+          "field_key": "legacy",
+          "field_type": "text",
+          "archived": true
+        },
+        {
+          "field_key": "mgr",
+          "field_type": "entity_reference",
+          "reference_target_token": "hr_employee",
+          "resolved": {
+            "11111111-1111-1111-1111-111111111111": true
+          }
+        }
+      ],
+      "validation_mode": "strict",
+      "values": {
+        "cost_center": "TOOLONGVALUE",
+        "headcount": 99,
+        "tier": "bronze",
+        "contact": "nope",
+        "cell": "5551234",
+        "salary_band": {
+          "amount": 10,
+          "currency": "EUR"
+        },
+        "tags": [
+          "a",
+          "b",
+          "c"
+        ],
+        "legacy": "x",
+        "mgr": "22222222-2222-2222-2222-222222222222",
+        "stray": 1
+      },
+      "expect": {
+        "ok": false,
+        "rejected_issues": [
+          [
+            "contact",
+            "invalid_format"
+          ],
+          [
+            "cost_center",
+            "max_length"
+          ],
+          [
+            "headcount",
+            "out_of_range"
+          ],
+          [
+            "legacy",
+            "archived_field"
+          ],
+          [
+            "mgr",
+            "invalid_reference"
+          ],
+          [
+            "salary_band",
+            "invalid_option"
+          ],
+          [
+            "stray",
+            "unknown_key"
+          ],
+          [
+            "tags",
+            "invalid_option"
+          ],
+          [
+            "tags",
+            "too_many_values"
+          ],
+          [
+            "tier",
+            "invalid_option"
+          ]
+        ],
+        "warning_issues": [
+          [
+            "cell",
+            "invalid_format"
+          ]
+        ]
+      }
+    }
+  ],
+  "utf8_byte_length_cases": [
+    {
+      "text": "",
+      "expect": 0
+    },
+    {
+      "text": "abc",
+      "expect": 3
+    },
+    {
+      "text": "é",
+      "expect": 2
+    },
+    {
+      "text": "中文",
+      "expect": 6
+    },
+    {
+      "text": "👍",
+      "expect": 4
+    }
+  ],
+  "item_byte_size_cases": [
+    {
+      "value": {},
+      "expect": 2
+    },
+    {
+      "value": {
+        "a": 1
+      },
+      "expect": 7
+    },
+    {
+      "value": {
+        "a": "x"
+      },
+      "expect": 9
+    },
+    {
+      "value": {
+        "a": [
+          1,
+          2
+        ]
+      },
+      "expect": 11
+    },
+    {
+      "value": {
+        "a": "👍"
+      },
+      "expect": 12
+    },
+    {
+      "value": {
+        "a": true,
+        "b": null
+      },
+      "expect": 21
+    }
+  ],
+  "count_keys_cases": [
+    {
+      "value": {},
+      "expect": 0
+    },
+    {
+      "value": {
+        "a": 1,
+        "b": 2
+      },
+      "expect": 2
+    },
+    {
+      "value": [
+        1,
+        2,
+        3
+      ],
+      "expect": 0
+    }
+  ]
+}
