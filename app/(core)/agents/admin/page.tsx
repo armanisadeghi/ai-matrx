@@ -56,6 +56,15 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/administration/agents/system-agents/agents/[id]/samples",
+      label: "Agent test cases (samples)",
+      description:
+        "Per-agent sample-input store (agent.exemplar): browse approved/candidate test cases with contract-staleness badges, borrow raw inputs + reference output from real runs, approve (knob-capped) or prune. Approved samples render as one-click prefill chips in the builder test panel and the runner (AgentSampleStrip). SoR: features/agents/samples/FEATURE.md.",
+      filePath:
+        "app/(admin)/administration/agents/system-agents/agents/[id]/samples/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/agents/orchestras/[conductorId]",
       label: "Set Builder",
       description:
@@ -93,6 +102,20 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
   ],
 
   components: [
+    {
+      name: "AgentSampleStrip",
+      filePath: "features/agents/components/samples/AgentSampleStrip.tsx",
+      description:
+        "'Use a sample' chips above the builder test panel and the runner — an approved test case prefills variables + user input through the normal instance slices; 'Test cases' opens the manager sheet.",
+      tier: "internal",
+    },
+    {
+      name: "AgentSamplesManager",
+      filePath: "features/agents/components/samples/AgentSamplesManager.tsx",
+      description:
+        "Browse/borrow/approve/prune an agent's test cases: freshness derived from contract hashes, borrow-from-real-runs (raw declared-variable values + __agent_user_input__, final response preview, conversation click-through).",
+      tier: "internal",
+    },
     {
       name: "AgentUsagesEngine",
       filePath: "features/agents/components/usages/AgentUsagesEngine.tsx",
