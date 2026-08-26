@@ -61,6 +61,14 @@ interface ConversationListProps {
   activeConversationId?: string | null;
   /** Live surface values supplied to AI/context-menu actions. */
   getApplicationScope?: () => ApplicationScope;
+  /**
+   * Controlled "New Conversation" dialog state. Optional — uncontrolled by
+   * default (internal state), but the window-panel host lifts this so its
+   * own empty-state context menu can also trigger "New conversation"
+   * without a second dialog instance.
+   */
+  newConversationOpen?: boolean;
+  onNewConversationOpenChange?: (open: boolean) => void;
 }
 
 export function ConversationList({
@@ -69,6 +77,8 @@ export function ConversationList({
   onSelectConversation,
   activeConversationId,
   getApplicationScope,
+  newConversationOpen,
+  onNewConversationOpenChange,
 }: ConversationListProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -122,7 +132,9 @@ export function ConversationList({
   };
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [showNewConversation, setShowNewConversation] = useState(false);
+  const [internalShowNewConversation, setInternalShowNewConversation] = useState(false);
+  const showNewConversation = newConversationOpen ?? internalShowNewConversation;
+  const setShowNewConversation = onNewConversationOpenChange ?? setInternalShowNewConversation;
 
   // Filter conversations by search
   const filteredConversations = conversations.filter((conv) => {
