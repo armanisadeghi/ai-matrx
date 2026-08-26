@@ -20,9 +20,11 @@ import {
   Pencil,
   X,
 } from "lucide-react";
-import type { RatingValue } from "./schema";
-
-const MAX_LIST_ITEMS = 5;
+import {
+  MAX_LIST_ITEMS,
+  type RatingValue,
+} from "@/features/employee-performance-reviews/schema";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 
 // ── Section card with a numbered/lettered badge ──────────────────────────────
 export function SectionCard({
@@ -31,15 +33,20 @@ export function SectionCard({
   description,
   children,
   className,
+  anchor,
 }: {
   badge: React.ReactNode;
   title: string;
   description?: string;
   children: React.ReactNode;
   className?: string;
+  anchor?: string;
 }) {
   return (
-    <Card className={cn("overflow-hidden", className)}>
+    <Card
+      className={cn("overflow-hidden", className)}
+      data-surface-value={anchor}
+    >
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center gap-3">
           <span className="grid h-7 w-7 flex-none place-items-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
@@ -60,12 +67,14 @@ export function SectionCard({
 export function Field({
   label,
   children,
+  anchor,
 }: {
   label: string;
   children: React.ReactNode;
+  anchor?: string;
 }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1.5" data-surface-value={anchor}>
       <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </span>
@@ -82,6 +91,8 @@ export function ListEditor({
   onEdit,
   onRemove,
   onMove,
+  surfaceName,
+  getApplicationScope,
 }: {
   items: string[];
   placeholder: string;
@@ -89,6 +100,8 @@ export function ListEditor({
   onEdit: (index: number, text: string) => void;
   onRemove: (index: number) => void;
   onMove: (index: number, dir: -1 | 1) => void;
+  surfaceName: string;
+  getApplicationScope: () => ApplicationScope;
 }) {
   const [draft, setDraft] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -115,13 +128,12 @@ export function ListEditor({
           onChange={(e) => setDraft(e.target.value)}
           placeholder={placeholder}
           minHeight={44}
-          maxHeight={160}
-          autoGrow
+          maxHeight={240}
           wrapperClassName="flex-1"
-          enableCleanup={false}
-          enableBoundAgents={false}
+          surfaceName={surfaceName}
+          getApplicationScope={getApplicationScope}
           enableTextStats={false}
-          className="min-h-[44px] text-base sm:text-sm"
+          className="min-h-[44px] resize-y text-base sm:text-sm"
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
@@ -170,13 +182,12 @@ export function ListEditor({
                     onChange={(e) => setEditingText(e.target.value)}
                     autoFocus
                     minHeight={44}
-                    maxHeight={160}
-                    autoGrow
+                    maxHeight={240}
                     wrapperClassName="flex-1"
-                    enableCleanup={false}
-                    enableBoundAgents={false}
+                    surfaceName={surfaceName}
+                    getApplicationScope={getApplicationScope}
                     enableTextStats={false}
-                    className="min-h-[44px] text-base sm:text-sm"
+                    className="min-h-[44px] resize-y text-base sm:text-sm"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                         e.preventDefault();
