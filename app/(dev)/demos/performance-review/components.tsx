@@ -117,6 +117,7 @@ export function ListEditor({
           minHeight={44}
           maxHeight={160}
           autoGrow
+          wrapperClassName="flex-1"
           enableCleanup={false}
           enableBoundAgents={false}
           enableTextStats={false}
@@ -171,6 +172,7 @@ export function ListEditor({
                     minHeight={44}
                     maxHeight={160}
                     autoGrow
+                    wrapperClassName="flex-1"
                     enableCleanup={false}
                     enableBoundAgents={false}
                     enableTextStats={false}

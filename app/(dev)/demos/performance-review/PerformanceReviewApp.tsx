@@ -125,6 +125,8 @@ export default function PerformanceReviewApp() {
         scale: 2,
         background: "#ffffff",
         theme: "light",
+        imageFormat: "jpeg",
+        imageQuality: 0.94,
       });
       toast.success("PDF downloaded");
     } catch (error) {
@@ -283,7 +285,8 @@ export default function PerformanceReviewApp() {
               className="max-w-[320px]"
             />
             <span className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
-              {store.stats.completionPct}% complete
+              {store.stats.completionPct}%
+              <span className="hidden sm:inline"> complete</span>
             </span>
           </div>
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -292,12 +295,15 @@ export default function PerformanceReviewApp() {
             ) : (
               <CircleCheck className="h-3.5 w-3.5 text-primary" />
             )}
-            {store.saveState === "saving" ? "Saving…" : "Saved"}
+            <span className="hidden sm:inline">
+              {store.saveState === "saving" ? "Saving…" : "Saved"}
+            </span>
           </div>
           <Separator orientation="vertical" className="hidden h-6 sm:block" />
           <Button
             variant={viewMode === "edit" ? "secondary" : "ghost"}
             size="sm"
+            className="max-sm:h-11"
             onClick={() => setViewMode("edit")}
           >
             <PenLine className="h-3.5 w-3.5" />
@@ -306,6 +312,7 @@ export default function PerformanceReviewApp() {
           <Button
             variant={viewMode === "report" ? "secondary" : "ghost"}
             size="sm"
+            className="max-sm:h-11"
             onClick={() => setViewMode("report")}
           >
             <FileText className="h-3.5 w-3.5" />
@@ -332,12 +339,18 @@ export default function PerformanceReviewApp() {
           <Button
             variant="outline"
             size="sm"
+            className="max-sm:h-11"
             onClick={() => openReviewPrintView(r, store.stats)}
           >
             <Printer className="h-3.5 w-3.5" />
             Print
           </Button>
-          <Button size="sm" onClick={handlePdfExport} disabled={isExportingPdf}>
+          <Button
+            size="sm"
+            className="max-sm:h-11"
+            onClick={handlePdfExport}
+            disabled={isExportingPdf}
+          >
             {isExportingPdf ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (

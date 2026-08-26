@@ -151,21 +151,21 @@ export type ListSectionKey =
 
 export const LIST_SECTIONS: {
   key: ListSectionKey;
-  index: number;
+  index: string;
   title: string;
   description: string;
   placeholder: string;
 }[] = [
   {
     key: "responsibilities",
-    index: 2,
+    index: "02",
     title: "Job Responsibilities",
     description: "The core responsibilities this role is accountable for.",
     placeholder: "Describe a job responsibility…",
   },
   {
     key: "accomplishments",
-    index: 3,
+    index: "03",
     title: "Accomplishments",
     description:
       "Concrete wins from this review period. Add them one at a time.",
@@ -173,14 +173,14 @@ export const LIST_SECTIONS: {
   },
   {
     key: "strengths",
-    index: 4,
+    index: "04",
     title: "Strengths",
     description: "What this person does consistently well.",
     placeholder: "Describe a strength…",
   },
   {
     key: "opportunities",
-    index: 5,
+    index: "05",
     title: "Opportunities for Improvement",
     description: "Where there is the most room to grow.",
     placeholder: "Describe an opportunity…",

@@ -23,6 +23,10 @@ export interface DomCaptureOptions {
   background?: string;
   /** Filename for the downloaded PDF (without extension). Default: 'ai-response' */
   filename?: string;
+  /** Image encoding inside the PDF. PNG is lossless; JPEG is much smaller for reports. */
+  imageFormat?: "png" | "jpeg";
+  /** JPEG quality from 0 to 1. Ignored for PNG. Default: 0.92. */
+  imageQuality?: number;
   /** Called after each page is captured, with current page / total estimate */
   onProgress?: (page: number, total: number) => void;
   /**
@@ -79,8 +83,11 @@ function patchGetComputedStyle(isDark: boolean): () => void {
     const computed = original(elt, pseudoElt);
 
     return new Proxy(computed, {
-      get(target, prop, receiver) {
-        const value: unknown = Reflect.get(target, prop, receiver);
+      get(target, prop) {
+        // CSSStyleDeclaration accessors require the native object as their
+        // receiver. Using the Proxy as the receiver throws "Illegal
+        // invocation" while html2canvas clones inline styles.
+        const value: unknown = Reflect.get(target, prop, target);
 
         // Intercept string property accesses (color values)
         if (typeof prop === "string" && typeof value === "string" && value) {
@@ -176,6 +183,8 @@ async function renderElementsToPdf(
     orientation = "portrait",
     scale = 2,
     background = "#ffffff",
+    imageFormat = "png",
+    imageQuality = 0.92,
     onProgress,
   } = options;
   const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
@@ -201,7 +210,18 @@ async function renderElementsToPdf(
         windowHeight: element.scrollHeight,
       });
       if (index > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageW, pageH);
+      const isJpeg = imageFormat === "jpeg";
+      pdf.addImage(
+        canvas.toDataURL(
+          isJpeg ? "image/jpeg" : "image/png",
+          isJpeg ? imageQuality : undefined,
+        ),
+        isJpeg ? "JPEG" : "PNG",
+        0,
+        0,
+        pageW,
+        pageH,
+      );
       onProgress?.(index + 1, elements.length);
     }
   } finally {

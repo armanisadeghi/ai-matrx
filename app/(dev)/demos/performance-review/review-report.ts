@@ -53,6 +53,7 @@ export const REVIEW_REPORT_STYLES = `
     padding-bottom: 18px;
     border-bottom: 2px solid var(--pr-ink);
   }
+  .pr-report-header > div:first-child { min-width: 0; }
 
   .pr-report-kicker {
     margin-bottom: 7px;
@@ -206,8 +207,8 @@ export const REVIEW_REPORT_STYLES = `
   .pr-rating-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px 12px;
-    margin-top: 13px;
+    gap: 8px 12px;
+    margin-top: 11px;
   }
 
   .pr-rating-category {
@@ -239,8 +240,8 @@ export const REVIEW_REPORT_STYLES = `
     grid-template-columns: 1fr 22px;
     align-items: center;
     gap: 8px;
-    min-height: 25px;
-    padding: 4px 8px;
+    min-height: 24px;
+    padding: 3px 8px;
     border-top: 1px solid #e8ebf2;
     font-size: 7.65pt;
     line-height: 1.22;
@@ -276,14 +277,19 @@ export const REVIEW_REPORT_STYLES = `
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-top: 13px;
-    padding: 11px 13px;
+    margin-top: 10px;
+    padding: 9px 13px;
     border-radius: 9px;
     background: var(--pr-accent-soft);
   }
 
   .pr-overall strong { font-size: 11pt; }
   .pr-overall span { color: var(--pr-muted); font-size: 8pt; }
+  .pr-report-page:nth-child(2) .pr-section { margin-top: 12px; }
+  .pr-report-page:nth-child(2) .pr-prose {
+    min-height: 52px;
+    padding: 8px 12px;
+  }
 
   .pr-report-footer {
     position: absolute;
@@ -298,6 +304,8 @@ export const REVIEW_REPORT_STYLES = `
     color: var(--pr-muted);
     font-size: 7.5pt;
   }
+  .pr-report-footer span:first-child { min-width: 0; }
+  .pr-report-footer span:last-child { flex: none; white-space: nowrap; }
 
   @media screen and (max-width: 760px) {
     .pr-report-preview .pr-report-page {
