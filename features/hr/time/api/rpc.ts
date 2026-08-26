@@ -133,20 +133,141 @@ export class HrRpcError extends Error {
   }
 }
 
-/** The envelope every `hr_*` wrapper answers with. A refusal is data, not an exception, in SQL. */
-interface HrRpcEnvelope<T> {
-  ok: boolean;
-  data?: T;
-  error?: string;
+/**
+ * The envelope every `hr_*` wrapper actually answers with — **verified against the shipped
+ * functions, not assumed.** A refusal is data, not an exception, in SQL:
+ *
+ * ```jsonc
+ * // refusal  — hr._punch_refusal(code, message, details)
+ * { "ok": false, "error": { "code": "hr_employment_not_found",
+ *                           "message": "That employment record does not exist.",
+ *                           "details": {} } }
+ * // success  — hr.punch_record
+ * { "ok": true, "punch": {…}, "clock_state": {…}, "exceptions": [] }
+ * ```
+ *
+ * 🚨 **Two things an earlier version of this file got wrong, and both silently returned
+ * `undefined` rather than failing loudly.** First, there is **no `data` wrapper** on success — the
+ * payload keys sit beside `ok`, so unwrapping `envelope.data` yielded nothing for every call in
+ * the lane. Second, `error` is an **object**, not a string code, so reading it as a code produced
+ * `[object Object]` where a human sentence belonged. Both are fixed here; the shapes above are
+ * what the live functions return.
+ */
+interface HrRpcRefusal {
+  code?: string;
   message?: string;
   user_message?: string | null;
   details?: Record<string, unknown> | null;
 }
 
-function isEnvelope(value: unknown): value is HrRpcEnvelope<unknown> {
+interface HrRpcEnvelope {
+  ok: boolean;
+  /** Object on a refusal. Tolerated as a string for the mock lane's older fixtures. */
+  error?: HrRpcRefusal | string | null;
+  message?: string;
+  user_message?: string | null;
+  details?: Record<string, unknown> | null;
+  /** Present only where a function deliberately nests its payload. Most do not. */
+  data?: unknown;
+  [key: string]: unknown;
+}
+
+function isEnvelope(value: unknown): value is HrRpcEnvelope {
   return typeof value === "object" && value !== null && "ok" in value;
 }
 
+/**
+ * Keys whose VALUES are opaque payloads and must never be key-mapped.
+ *
+ * 🚨 These are declared wire shapes or free-form jsonb, and renaming inside them corrupts data
+ * rather than tidying it. `attestation_response` in particular is SPEC-TIME §3.2's **declared**
+ * shape — `prompt_version`, `asked_at`, `count_owed` — and every detector, premium determination
+ * and export mapping reads it by those exact names (§14 D9). `calc` and `original_values` are
+ * evidence: the calculation record and the pre-edit payload *verbatim*.
+ */
+const OPAQUE_VALUE_KEYS = new Set([
+  "calc",
+  "attestation_response",
+  "original_values",
+  "metadata",
+  "details",
+  "parameters",
+  "resolution",
+  "facts",
+  "config",
+  "scope",
+]);
+
+function toCamel(key: string): string {
+  return key.replace(/_([a-z0-9])/g, (_, c: string) => c.toUpperCase());
+}
+
+/**
+ * Deep snake_case → camelCase on the RESPONSE only.
+ *
+ * The SQL bodies build their jsonb in snake_case (`clock_state`, `local_work_date`,
+ * `rounding_applied_minutes`) because that is what every other row in the database looks like;
+ * `types.ts` declares camelCase because that is what every other object in this repo looks like.
+ * The seam has to be somewhere, and **one place is the whole point of this module being the one
+ * door** — a per-component `row.local_work_date ?? row.localWorkDate` dance is how two spellings
+ * end up half-supported everywhere.
+ *
+ * Request arguments are **not** mapped: they are `p_`-prefixed positional names the functions
+ * declare, and renaming those would break the call rather than the reading.
+ */
+function camelizeDeep(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(camelizeDeep);
+  if (value === null || typeof value !== "object") return value;
+  if (value instanceof Date) return value;
+
+  const out: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+    out[toCamel(key)] = OPAQUE_VALUE_KEYS.has(key) ? val : camelizeDeep(val);
+  }
+  return out;
+}
+
+/** Lift a refusal into the typed error, tolerating both the object and legacy string shapes. */
+function refusalFrom(rpc: HrTimeRpcName, envelope: HrRpcEnvelope): HrRpcError {
+  const err = envelope.error;
+  if (err && typeof err === "object") {
+    return new HrRpcError({
+      rpc,
+      code: err.code ?? "hr_validation_error",
+      message: err.message ?? `${rpc} refused`,
+      userMessage: err.user_message ?? err.message,
+      details: err.details,
+    });
+  }
+  return new HrRpcError({
+    rpc,
+    code: typeof err === "string" && err ? err : "hr_validation_error",
+    message: envelope.message ?? `${rpc} refused`,
+    userMessage: envelope.user_message ?? envelope.message,
+    details: envelope.details,
+  });
+}
+
+/** Strip the envelope keys and hand back the payload the caller actually asked for. */
+function payloadFrom(envelope: HrRpcEnvelope): unknown {
+  if ("data" in envelope && envelope.data !== undefined) return envelope.data;
+  const { ok: _ok, error: _error, message: _m, user_message: _um, ...rest } = envelope;
+  void _ok;
+  void _error;
+  void _m;
+  void _um;
+  return rest;
+}
+
+/**
+ * Serve one fixture.
+ *
+ * Note the deliberate asymmetry with the live path: fixtures are authored **already camelCase**
+ * against `types.ts`, so they are returned untouched, while a live response is snake_case from the
+ * SQL body and goes through {@link camelizeDeep}. Both arrive at the caller in one spelling, which
+ * is the only property that matters. Do not "fix" this by camelizing the fixtures too — that would
+ * mangle the declared jsonb shapes they carry verbatim.
+ */
 function serveMock<T>(rpc: HrTimeRpcName, mockCase: HrFixtureCase | undefined): T {
   const cases = HR_TIME_RPC_FIXTURES[rpc];
   if (!cases) {
@@ -238,17 +359,9 @@ export async function callHrTimeRpc<T>(
   }
 
   if (isEnvelope(data)) {
-    if (!data.ok) {
-      throw new HrRpcError({
-        rpc,
-        code: data.error ?? "hr_validation_error",
-        message: data.message ?? `${rpc} refused`,
-        userMessage: data.user_message,
-        details: data.details,
-      });
-    }
-    return data.data as T;
+    if (!data.ok) throw refusalFrom(rpc, data);
+    return camelizeDeep(payloadFrom(data)) as T;
   }
 
-  return data as T;
+  return camelizeDeep(data) as T;
 }
