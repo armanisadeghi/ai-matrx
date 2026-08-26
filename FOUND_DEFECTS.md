@@ -280,7 +280,7 @@ regenerated against it. Old and new builds both read successfully — no deploy 
 Vercel projects, drop `orchestrator_id` and `set_label` from the `returns table(...)` list and
 from the select body. Nothing else reads them — verified by grep across both repos.
 
-### D261 — `iam.accessible_entity_ids` and `iam.has_access` DISAGREE: the set resolver never learned the library-grant lanes the kernel gained (2026-08-23)
+### D261 — RESOLVED 2026-08-23 — `iam.accessible_entity_ids` and `iam.has_access` DISAGREED: the set resolver never learned the library-grant lanes the kernel gained (2026-08-23)
 
 **Two functions that must answer the same question give different answers for the same (token, id, level).** Measured live as a real non-admin (`929274b1…`), on rulebook `e492a07f…`:
 
@@ -306,7 +306,16 @@ platform.entity_grants where entity_type='rulebook'       : 2 rows, audience='gl
 
 **The general lesson, and it is the same one D254's own history taught twice:** when a resolver is expressed in two forms — one per-row, one set-wise — a lane added to one and not the other is invisible until something stops masking it. There is no test asserting `has_access(t,id,l) == (id = ANY(accessible_entity_ids(t,l)))`. There should be; it is a one-query property check over real rows.
 
-### D254 — the `component` read lane has the SAME per-row `has_access` defect D249 just fixed for `entity`; `files.file_versions` is unreadable (2026-08-23)
+
+**RESOLVED** (aidream `0526`/`0527`/`0528`). `platform.entity_grants` and the two curator lanes were added to `accessible_entity_ids`'s candidate sources. Verified live before landing: **15 disagreements → 0**, in BOTH directions, across all three tokens. Both blocked component tables then proved row-identical to their original lane and were regenerated — **all 206 component tables are on the correct bounded lane, 0 remaining**.
+
+Safe on machinery every component parent arm depends on because the change adds *candidate sources only*, and every candidate is confirmed by `has_access_for_base` — the authority — before entering the result. The set stays a subset of what the per-row resolver approves, so it can only move toward agreement.
+
+**The guard now exists.** `scripts/check_access_resolver_agreement.py` + `iam.access_resolver_disagreements()` assert the property in both directions and BLOCK the release.
+
+**Re-recording the kernel fingerprint (0527) is itself proof the D249 guard works.** Changing `accessible_entity_ids` made `iam.entity_read_kernel_fingerprint()` stale, so `entity_read_expr` stopped bounding the definer call and emitted an UNBOUNDED `has_access`. The two tables regenerated in that window came out unbounded rather than bounded against a kernel nobody had re-read. That is the designed failure direction: **a read policy may become slow without review; it may never become wrong.**
+
+### D254 — RESOLVED 2026-08-23 — the `component` read lane had the SAME per-row `has_access` defect D249 fixed for `entity`; `files.file_versions` was unreadable (2026-08-23)
 
 **Measured live as the real non-admin `test@test.com`, immediately after D249's rollout:**
 
@@ -345,6 +354,16 @@ OR (id IN (<permissions ∪ memberships ∪ reachability ∪ entity_grants for t
 `iam.entity_read_equivalence` and `scripts/_verify_entity_read_equivalence.py` generalise to components unchanged — the prover compares two expressions and does not care which variant produced them. The kernel-fingerprint guard (`iam.entity_read_kernel_expected()`) already covers the functions a component lane would mirror.
 
 **Filed rather than done in the same session as D249**, deliberately: that was six live migrations across every entity table's read policy, and starting a seventh on a second variant at the end of it is how the mistakes in D249's own history happened (a bound that admitted half the table, a mirror that went stale mid-rollout, a lockout the proof could not see). This one wants its own measurement pass. **191 component tables** carry the lane.
+
+
+**RESOLVED** (aidream `0515`–`0528`). One shared builder serves both variants — `iam.entity_read_expr(schema, table, token, variant)` — rather than a second component-shaped copy that would drift. **206 of 206** component tables are on the correct bounded lane. `files.file_versions`: **120s timeout → 1.53s**, 2,495 rows.
+
+Two things the proving caught that reading would not have:
+
+* **A component's `has_access` can be true via the ORG-ADMIN lane — but only when the table has an owner column.** `platform.entity_row_access_attrs` needs `created_by` or `owner_id` *alongside* `organization_id`; without one it returns `o_org = NULL`, so those lanes cannot fire. 13 of 195 component tables are that shape, and emitting the org arms there would have GRANTED rows the kernel denies.
+* **The deployed component lane is more permissive than the kernel it expresses** — it walks parents with `include_public => true` while `has_access_for_base` walks with `false`. Mirroring the kernel would have removed 4,784 rows from `runtime.global_execution_event` and 4,734 from `runtime.global_execution`. D254 was a PERFORMANCE defect; that disagreement is filed separately rather than silently resolved inside one.
+
+**A regression shipped mid-rollout, recorded because why it was invisible matters more than the bug.** 163 component tables briefly carried a stricter parent arm than the lane they replaced (1,110 rows of read access removed on `files.file_versions` alone). The prover could not see it because it compared each candidate against the DEPLOYED policy — so once the bad expression was deployed, both sides came from the same wrong builder and it reported IDENTICAL. **A differential test whose two sides share a source cannot detect that the source is wrong.** Fixed by reconstructing the original lane (`iam.component_original_lane`), validating that reconstruction against 6 untouched tables, and re-proving all 163 against it. Net access change: zero.
 
 ### D249 — RESOLVED 2026-08-23 — a user listing their OWN files times out: the generated `entity` std_select is a per-row `has_access` over the whole table (2026-08-22)
 
