@@ -147,6 +147,7 @@ container.
 
 ## Change log
 
+- `2026-08-26` — **Code-tree context actions are reachable on every review breakpoint.** Nested file/folder and code-library source rows open the canonical v3 menu again on desktop. At tablet/mobile widths each row exposes a visible 44px overflow control that opens that same menu, and the resizable explorer now holds a `12rem` minimum instead of shrinking to roughly 136px at 768px.
 - `2026-08-23` — **Made sandbox organization identity end-to-end explicit.**
   All three create surfaces carry the selected app-context organization; shared
   client guards refuse missing, malformed, or stale-context payloads before

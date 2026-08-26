@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useTransition } from "react";
+import React, { useRef, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
@@ -31,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 
 export type TreeNodeType = "list" | "group" | "item";
 
@@ -87,6 +88,7 @@ export function TreeNode({
 }: TreeNodeProps) {
   const router = useRouter();
   const [, startTransition] = useTransition();
+  const rowRef = useRef<HTMLDivElement | null>(null);
 
   const Icon = NODE_ICONS[node.type];
   const hasChildren = node.type !== "item" && (node.childCount ?? 0) > 0;
@@ -156,7 +158,13 @@ export function TreeNode({
   }
   const extraSections: ContextMenuExtraSection[] =
     menuItems.length > 0
-      ? [{ id: "list-node-actions", anchor: "after-clipboard", items: menuItems }]
+      ? [
+          {
+            id: "list-node-actions",
+            anchor: "after-clipboard",
+            items: menuItems,
+          },
+        ]
       : [];
 
   return (
@@ -166,133 +174,147 @@ export function TreeNode({
       extraSections={extraSections}
       enableFloatingIcon={false}
     >
+      <div
+        ref={rowRef}
+        className={cn(
+          "group relative flex items-center gap-1 rounded-md transition-colors cursor-pointer select-none",
+          "max-lg:min-h-11",
+          "border border-transparent",
+          isActive && node.type === "list"
+            ? "bg-accent border-l-2 border-l-primary border-r-0 border-t-0 border-b-0 rounded-l-none"
+            : "hover:bg-accent/40",
+          isDisabled && !isNavigating && "opacity-60",
+        )}
+        style={{ paddingLeft }}
+      >
+        {/* Expand toggle */}
         <div
-          className={cn(
-            "group relative flex items-center gap-1 rounded-md transition-colors cursor-pointer select-none",
-            "border border-transparent",
-            isActive && node.type === "list"
-              ? "bg-accent border-l-2 border-l-primary border-r-0 border-t-0 border-b-0 rounded-l-none"
-              : "hover:bg-accent/40",
-            isDisabled && !isNavigating && "opacity-60",
-          )}
-          style={{ paddingLeft }}
+          className="flex-shrink-0 w-4 h-4 flex items-center justify-center"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (hasChildren) onToggleExpand(node.id);
+          }}
         >
-          {/* Expand toggle */}
-          <div
-            className="flex-shrink-0 w-4 h-4 flex items-center justify-center"
-            onClick={(e) => {
-              e.stopPropagation();
-              if (hasChildren) onToggleExpand(node.id);
-            }}
-          >
-            {hasChildren && (
-              <ChevronRight
-                className={cn(
-                  "h-3 w-3 text-muted-foreground transition-transform",
-                  isExpanded && "rotate-90",
-                )}
-              />
-            )}
-          </div>
-
-          <Link
-            href={href}
-            onClick={handleClick}
-            className="flex-1 flex items-center gap-1.5 py-1.5 pr-1 min-w-0"
-          >
-            {isNavigating && node.type === "list" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-primary flex-shrink-0" />
-            ) : (
-              <Icon
-                className={cn(
-                  "h-3.5 w-3.5 flex-shrink-0",
-                  isActive && node.type === "list"
-                    ? "text-primary"
-                    : "text-muted-foreground",
-                )}
-              />
-            )}
-
-            <span
+          {hasChildren && (
+            <ChevronRight
               className={cn(
-                "text-sm truncate flex-1 min-w-0",
-                isActive && node.type === "list"
-                  ? "font-medium text-foreground"
-                  : node.type === "group"
-                    ? "text-xs font-medium uppercase tracking-wide text-muted-foreground"
-                    : "text-foreground/80",
+                "h-3 w-3 text-muted-foreground transition-transform",
+                isExpanded && "rotate-90",
               )}
-            >
-              {node.label}
-            </span>
-
-            {node.childCount !== undefined && node.type !== "item" && (
-              <span className="flex-shrink-0 text-[10px] tabular-nums text-muted-foreground/50 font-mono">
-                {node.childCount}
-              </span>
-            )}
-          </Link>
-
-          {/* Overflow menu (hover) */}
-          {(onEdit || onDelete || onAddItem) && (
-            <div
-              className={cn(
-                "flex-shrink-0 pr-1 transition-opacity",
-                isActive && node.type === "list"
-                  ? "opacity-100"
-                  : "opacity-0 group-hover:opacity-100",
-              )}
-            >
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-5 w-5 p-0 rounded-sm"
-                    tabIndex={-1}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <MoreHorizontal className="h-3 w-3" />
-                    <span className="sr-only">Actions</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-36">
-                  {onInfo && (
-                    <DropdownMenuItem onClick={() => onInfo(node)}>
-                      <Info className="h-3.5 w-3.5 mr-2" />
-                      View details
-                    </DropdownMenuItem>
-                  )}
-                  {(node.type === "list" || node.type === "group") &&
-                    onAddItem && (
-                      <DropdownMenuItem onClick={() => onAddItem(node)}>
-                        <Plus className="h-3.5 w-3.5 mr-2" />
-                        Add item
-                      </DropdownMenuItem>
-                    )}
-                  {onEdit && (
-                    <DropdownMenuItem onClick={() => onEdit(node)}>
-                      <Pencil className="h-3.5 w-3.5 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                  )}
-                  {(onEdit || onAddItem) && onDelete && (
-                    <DropdownMenuSeparator />
-                  )}
-                  {onDelete && (
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={() => onDelete(node)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            />
           )}
         </div>
+
+        <Link
+          href={href}
+          onClick={handleClick}
+          className="flex-1 flex items-center gap-1.5 py-1.5 pr-1 min-w-0"
+        >
+          {isNavigating && node.type === "list" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary flex-shrink-0" />
+          ) : (
+            <Icon
+              className={cn(
+                "h-3.5 w-3.5 flex-shrink-0",
+                isActive && node.type === "list"
+                  ? "text-primary"
+                  : "text-muted-foreground",
+              )}
+            />
+          )}
+
+          <span
+            className={cn(
+              "text-sm truncate flex-1 min-w-0",
+              isActive && node.type === "list"
+                ? "font-medium text-foreground"
+                : node.type === "group"
+                  ? "text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                  : "text-foreground/80",
+            )}
+          >
+            {node.label}
+          </span>
+
+          {node.childCount !== undefined && node.type !== "item" && (
+            <span className="flex-shrink-0 text-[10px] tabular-nums text-muted-foreground/50 font-mono">
+              {node.childCount}
+            </span>
+          )}
+        </Link>
+
+        {/* Overflow menu (hover) */}
+        {(onEdit || onDelete || onAddItem) && (
+          <div
+            className={cn(
+              "hidden flex-shrink-0 pr-1 transition-opacity lg:block",
+              isActive && node.type === "list"
+                ? "opacity-100"
+                : "opacity-0 group-hover:opacity-100",
+            )}
+          >
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 w-5 p-0 rounded-sm"
+                  tabIndex={-1}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreHorizontal className="h-3 w-3" />
+                  <span className="sr-only">Actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-36">
+                {onInfo && (
+                  <DropdownMenuItem onClick={() => onInfo(node)}>
+                    <Info className="h-3.5 w-3.5 mr-2" />
+                    View details
+                  </DropdownMenuItem>
+                )}
+                {(node.type === "list" || node.type === "group") &&
+                  onAddItem && (
+                    <DropdownMenuItem onClick={() => onAddItem(node)}>
+                      <Plus className="h-3.5 w-3.5 mr-2" />
+                      Add item
+                    </DropdownMenuItem>
+                  )}
+                {onEdit && (
+                  <DropdownMenuItem onClick={() => onEdit(node)}>
+                    <Pencil className="h-3.5 w-3.5 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
+                {(onEdit || onAddItem) && onDelete && <DropdownMenuSeparator />}
+                {onDelete && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onDelete(node)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+          aria-label={`Actions for ${node.label}`}
+          aria-haspopup="menu"
+          onClick={(e) => {
+            e.stopPropagation();
+            openContextMenuForElement(rowRef.current);
+          }}
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </div>
     </NonEditableContextMenu>
   );
 }

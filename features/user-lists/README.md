@@ -53,21 +53,21 @@ non-owners** and must never reach a consumer's client:
 
 ### Key components
 
-| Component | Purpose |
-|---|---|
-| `ListsSidebarClient` | Client wrapper resolving active list from pathname |
-| `ListsSidebar` | Searchable list of list cards with create CTA |
-| `ListCard` | Single list row — visibility badge, item count, relative time |
-| `ListMetaHeader` | Title, description, stats, settings menu, list bookmark |
-| `GroupSection` | Collapsible group with items + group bookmark button |
-| `ListItem` | Item row — label, description, help_text, item bookmark, edit/delete |
-| `BookmarkCopyButton` | One-click JSON bookmark copy with toast confirmation |
-| `ListDetailClient` | Orchestrates all dialogs/state for the detail view |
-| `CreateListDialog` | Dialog (desktop) / Drawer (mobile) — creates list then navigates |
-| `EditListDialog` | Dialog/Drawer — patches list metadata |
-| `AddItemDialog` | Dialog/Drawer — adds a single item; group autocomplete via datalist |
-| `EditItemDialog` | Dialog/Drawer — edits item label/description/help_text |
-| `DeleteConfirmDialog` | AlertDialog for destructive actions |
+| Component             | Purpose                                                              |
+| --------------------- | -------------------------------------------------------------------- |
+| `ListsSidebarClient`  | Client wrapper resolving active list from pathname                   |
+| `ListsSidebar`        | Searchable list of list cards with create CTA                        |
+| `ListCard`            | Single list row — visibility badge, item count, relative time        |
+| `ListMetaHeader`      | Title, description, stats, settings menu, list bookmark              |
+| `GroupSection`        | Collapsible group with items + group bookmark button                 |
+| `ListItem`            | Item row — label, description, help_text, item bookmark, edit/delete |
+| `BookmarkCopyButton`  | One-click JSON bookmark copy with toast confirmation                 |
+| `ListDetailClient`    | Orchestrates all dialogs/state for the detail view                   |
+| `CreateListDialog`    | Dialog (desktop) / Drawer (mobile) — creates list then navigates     |
+| `EditListDialog`      | Dialog/Drawer — patches list metadata                                |
+| `AddItemDialog`       | Dialog/Drawer — adds a single item; group autocomplete via datalist  |
+| `EditItemDialog`      | Dialog/Drawer — edits item label/description/help_text               |
+| `DeleteConfirmDialog` | AlertDialog for destructive actions                                  |
 
 ## Bookmark System
 
@@ -75,42 +75,48 @@ Three bookmark types copy a JSON reference object to clipboard for use in workfl
 
 ```ts
 // List-level (ListMetaHeader)
-{ type: "full_list", list_id, list_name, description }
+{
+  type: ("full_list", list_id, list_name, description);
+}
 
 // Group-level (GroupSection header)
-{ type: "list_group", list_id, list_name, group_name, description }
+{
+  type: ("list_group", list_id, list_name, group_name, description);
+}
 
 // Item-level (ListItem row) — note `label` (was `item_label`)
-{ type: "list_item", list_id, list_name, item_id, label, description }
+{
+  type: ("list_item", list_id, list_name, item_id, label, description);
+}
 ```
 
 `BookmarkCopyButton` — click to copy, `BookmarkCheck` icon confirms for 1.5s, `sonner` toast shows what was copied.
 
 ## Ownership & Permissions
 
-- **Owner** (userId === list.user_id): full CRUD on list and items  
-- **Collaborator** (editor via RLS has_permission): can add/update items, cannot delete items  
+- **Owner** (userId === list.user_id): full CRUD on list and items
+- **Collaborator** (editor via RLS has_permission): can add/update items, cannot delete items
 - **Viewer** / public: read-only, no edit controls shown
 
 RLS enforced server-side. UI hides edit controls based on `isOwner` prop.
 
 ## Mobile
 
-- Sidebar hidden on mobile (`md:hidden` on `<aside>`)  
-- `/lists` shows a card grid instead  
-- `/lists/[id]` shows a back button → `/lists`  
-- All modals use `Drawer` on mobile via `useIsMobile()`  
-- No tabs used; groups stack vertically  
+- Sidebar hidden on mobile (`md:hidden` on `<aside>`)
+- `/lists` shows a card grid instead
+- `/lists/[id]` shows a back button → `/lists`
+- All modals use `Drawer` on mobile via `useIsMobile()`
+- No tabs used; groups stack vertically
 - All inputs use `fontSize: 16px` to prevent iOS zoom
 
 ## Supabase RPCs
 
-| RPC | Used by |
-|---|---|
-| `get_user_lists_summary(p_user_id)` | layout.tsx, page.tsx |
-| `get_user_list_with_items(p_list_id)` | [id]/page.tsx |
-| `create_user_list(...)` | createListAction |
-| `update_user_list(...)` | updateListAction |
+| RPC                                   | Used by              |
+| ------------------------------------- | -------------------- |
+| `get_user_lists_summary(p_user_id)`   | layout.tsx, page.tsx |
+| `get_user_list_with_items(p_list_id)` | [id]/page.tsx        |
+| `create_user_list(...)`               | createListAction     |
+| `update_user_list(...)`               | updateListAction     |
 
 Direct table queries used for: listing accessible lists, item-level mutations (add/update/delete).
 
@@ -119,10 +125,10 @@ Direct table queries used for: listing accessible lists, item-level mutations (a
 A user list is a live write target for surface-bound agents from **both** of
 its homes:
 
-| Surface | Mount | Manifest |
-| --- | --- | --- |
-| `matrx-user/list-manager` | `ListManagerFloatingWorkspace` (the floating window) | [`list-manager.manifest.ts`](../surfaces/manifests/list-manager.manifest.ts) |
-| `matrx-user/lists` | `ListDetailClient` with `asRoute` (the `/lists/[id]` route) | [`lists.manifest.ts`](../surfaces/manifests/lists.manifest.ts) |
+| Surface                   | Mount                                                       | Manifest                                                                     |
+| ------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `matrx-user/list-manager` | `ListManagerFloatingWorkspace` (the floating window)        | [`list-manager.manifest.ts`](../surfaces/manifests/list-manager.manifest.ts) |
+| `matrx-user/lists`        | `ListDetailClient` with `asRoute` (the `/lists/[id]` route) | [`lists.manifest.ts`](../surfaces/manifests/lists.manifest.ts)               |
 
 They are two mounts of the SAME editable state — the window renders the very
 same `ListDetailClient` in its detail pane — so they offer the same three
@@ -161,6 +167,7 @@ before changing them.
 
 ## Change Log
 
+- `2026-08-26` — **List/group actions are discoverable on touch.** Canonical `/lists` cards, `/lists/[id]` group headings, and the tree-layout nodes expose a visible 44px overflow control at tablet/mobile widths. Each dispatches into its existing universal v3 context-menu scope, so Copy, Agents, Quick Actions, and list-specific actions stay one implementation rather than drifting into a second mobile menu. Deterministic review target: `/lists/9f9241bc-7046-479a-a883-2133ef03cba8` (`Countries by Continent`, including the `Africa` group).
 - `2026-08-22` — claude: **surface-check `matrx-user/lists` — pass-with-arman-items
   (checklist v1, 4 fixes).** S2: five values added
   (`active_list_url`, `active_list_group_count`, `active_list_created_at`,

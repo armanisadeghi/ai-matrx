@@ -48,7 +48,6 @@ import {
   type SelectionRange,
 } from "./utils/selection-tracking";
 import {
-  CANONICAL_MENU_VERSION_V3,
   DEFAULT_MENU_DENSITY,
   DEFAULT_MENU_LAYOUT,
   type ContextMenuV3Props,
@@ -60,8 +59,6 @@ import {
   resolveEffectiveEntity,
 } from "./utils/per-row-entity";
 
-// Re-exported for the few callers that read the revision (admin tooling).
-export { CANONICAL_MENU_VERSION_V3 };
 import { useOptionalWidgetHandle } from "@/features/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
 
@@ -442,11 +439,12 @@ export function ContextMenuV3({
 
   const handleContextMenu = (e: React.MouseEvent) => {
     if (suppressed) return; // trigger is disabled; native menu shows
-    // Nested menus are deliberate (for example, RichDocument preview content
-    // inside the editable Notes surface). The innermost eligible trigger owns
-    // the gesture; otherwise both Radix roots open and the outer menu covers
-    // the content-specific one. This matches the mobile trigger contract.
-    e.stopPropagation();
+    // Radix's innermost trigger prevents the native event after it opens. Let
+    // that event bubble so the inner Radix handler can run, then make every
+    // outer shell yield when it sees the already-prevented event. Calling
+    // stopPropagation here aborts the asChild-composed Radix handler on nested
+    // rows, leaving the row with no menu at all.
+    if (e.defaultPrevented) return;
     captureContext(e.target as HTMLElement, e.currentTarget as HTMLElement);
     setMenuOpen(true);
   };

@@ -11,6 +11,7 @@ import {
   FilePlus,
   FolderPlus,
   Info,
+  MoreHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -36,6 +37,8 @@ import {
   TEXT_BODY,
 } from "../../styles/tokens";
 import { useDirectoryVersion, useInvalidateDirectory } from "./FileTreeWatcher";
+import { Button } from "@/components/ui/button";
+import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 
 interface FileTreeNodeProps {
   node: FilesystemNode;
@@ -108,6 +111,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
 
   const renameInputRef = useRef<HTMLInputElement | null>(null);
   const createInputRef = useRef<HTMLInputElement | null>(null);
+  const rowRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -169,7 +173,8 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
         onToggle(node.path);
       } else if (e.key === "F2") {
         e.preventDefault();
-        startRename();
+        setRenameValue(node.name);
+        setRenaming(true);
       } else if (e.key === "Delete" || e.key === "Backspace") {
         // Backspace alone shouldn't delete — guard on a modifier so the
         // user has to mean it.
@@ -179,7 +184,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
         }
       }
     },
-    [handleClick, isDir, expanded, node.path, onToggle, renaming],
+    [handleClick, isDir, expanded, node.name, node.path, onToggle, renaming],
   );
 
   // ── Drop zone (existing behaviour preserved) ────────────────────────────
@@ -200,7 +205,8 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
   }, [dragOver]);
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
-      if (!isDir || !adapter.upload) return;
+      const upload = adapter.upload;
+      if (!isDir || !upload) return;
       e.preventDefault();
       setDragOver(false);
       const files = Array.from(e.dataTransfer?.files ?? []);
@@ -209,7 +215,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
       try {
         for (const file of files) {
           const target = `${dirPath}/${file.name}`;
-          await adapter.upload!(target, file);
+          await upload(target, file);
         }
         if (!expanded) onToggle(node.path);
         invalidate(node.path);
@@ -217,7 +223,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
         setLoadError(extractErrorMessage(err));
       }
     },
-    [isDir, adapter, node.path, expanded, onToggle, invalidate],
+    [isDir, adapter.upload, node.path, expanded, onToggle, invalidate],
   );
 
   // ── Action handlers ─────────────────────────────────────────────────────
@@ -512,6 +518,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
         onMenuOpenChange={handleContextMenuOpenChange}
       >
         <div
+          ref={rowRef}
           role="treeitem"
           aria-expanded={isDir ? expanded : undefined}
           aria-selected={activePath === node.path}
@@ -524,6 +531,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
           className={cn(
             "flex items-center gap-1 text-[13px]",
             ROW_HEIGHT,
+            "max-lg:h-11",
             TEXT_BODY,
             !renaming && HOVER_ROW,
             activePath === node.path && !renaming && ACTIVE_ROW,
@@ -568,7 +576,23 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
               className="min-w-0 flex-1 bg-transparent font-mono text-[13px] outline-none"
             />
           ) : (
-            <span className="truncate">{node.name}</span>
+            <span className="min-w-0 flex-1 truncate">{node.name}</span>
+          )}
+          {!renaming && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+              aria-label={`Actions for ${node.name}`}
+              aria-haspopup="menu"
+              onClick={(e) => {
+                e.stopPropagation();
+                openContextMenuForElement(rowRef.current);
+              }}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
           )}
         </div>
       </NonEditableContextMenu>

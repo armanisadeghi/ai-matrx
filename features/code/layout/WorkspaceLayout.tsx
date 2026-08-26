@@ -88,9 +88,9 @@ const PANEL_IDS = {
  *     never `panel.collapse()` for adjacent collapsibles (right + farRight
  *     are adjacent and the lib's pivot would push freed space into the
  *     other neighbour, re-expanding it).
- *   - All sizes are PERCENTAGE STRINGS (`"18%"`) — bare numbers in v4 are
- *     pixels, which would mount the sidebar at 18px and the terminal at
- *     30px and produce hydration mismatches.
+ *   - Default/collapsed sizes are PERCENTAGE STRINGS (`"18%"`) — bare numbers
+ *     in v4 are pixels. The side panel's minimum is deliberately a CSS length
+ *     so tablet widths cannot collapse the explorer into an unusable sliver.
  */
 export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
   rightSlot,
@@ -235,7 +235,7 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           <ResizablePanel
             id={PANEL_IDS.SIDE}
             defaultSize={`${sideDefault}%`}
-            minSize="6%"
+            minSize="12rem"
             collapsible
             collapsedSize="0%"
             onResize={(size) => {

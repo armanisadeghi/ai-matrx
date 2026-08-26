@@ -1,7 +1,19 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, Pencil, Copy as CopyIcon, RefreshCw } from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  ChevronRight,
+  Pencil,
+  Copy as CopyIcon,
+  RefreshCw,
+  MoreHorizontal,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -21,6 +33,8 @@ import type {
   SourceEntry,
   SourceEntryField,
 } from "../../library-sources/types";
+import { Button } from "@/components/ui/button";
+import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 
 interface SourceEntryNodeProps {
   adapter: LibrarySourceAdapter;
@@ -35,7 +49,11 @@ interface SourceEntryNodeProps {
    * item is hidden.
    */
   onRename:
-    | ((rowId: string, newName: string, expectedUpdatedAt?: string) => Promise<void>)
+    | ((
+        rowId: string,
+        newName: string,
+        expectedUpdatedAt?: string,
+      ) => Promise<void>)
     | null;
   /** Refresh the parent source folder (re-list rows). */
   onRefresh: () => void | Promise<void>;
@@ -61,11 +79,7 @@ export const SourceEntryNode: React.FC<SourceEntryNodeProps> = ({
   const [renameValue, setRenameValue] = useState(entry.name);
   const [renaming_busy, setRenamingBusy] = useState(false);
   const renameInputRef = useRef<HTMLInputElement | null>(null);
-
-  // Keep the input synced with the latest entry name when not editing.
-  useEffect(() => {
-    if (!renaming) setRenameValue(entry.name);
-  }, [entry.name, renaming]);
+  const rowRef = useRef<HTMLDivElement | null>(null);
 
   // Auto-focus + select the basename portion (so the user can retype the
   // name without retyping the extension).
@@ -76,7 +90,6 @@ export const SourceEntryNode: React.FC<SourceEntryNodeProps> = ({
     const dot = renameValue.lastIndexOf(".");
     if (dot > 0) el.setSelectionRange(0, dot);
     else el.select();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [renaming]);
 
   const fields = entry.fields ?? null;
@@ -131,7 +144,14 @@ export const SourceEntryNode: React.FC<SourceEntryNodeProps> = ({
       setRenamingBusy(false);
       setRenaming(false);
     }
-  }, [cancelRename, entry.name, entry.rowId, entry.updatedAt, onRename, renameValue]);
+  }, [
+    cancelRename,
+    entry.name,
+    entry.rowId,
+    entry.updatedAt,
+    onRename,
+    renameValue,
+  ]);
 
   const handleCopyPath = useCallback(() => {
     void navigator.clipboard
@@ -180,77 +200,95 @@ export const SourceEntryNode: React.FC<SourceEntryNodeProps> = ({
         extraSections={extraSections}
         enableFloatingIcon={false}
       >
-          <div
-            role="treeitem"
-            aria-expanded={adapter.multiField ? expanded : undefined}
-            aria-selected={selfActive}
-            tabIndex={0}
-            onClick={handleClick}
-            onKeyDown={(e) => {
-              if (renaming) return;
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleClick();
-              } else if (e.key === "F2" && onRename) {
-                e.preventDefault();
-                startRename();
-              }
-            }}
-            className={cn(
-              "flex items-center gap-1 text-[13px] rounded-sm",
-              ROW_HEIGHT,
-              TEXT_BODY,
-              !renaming && "cursor-pointer",
-              !renaming && HOVER_ROW,
-              selfActive && !renaming && ACTIVE_ROW,
-              renaming && "bg-card outline outline-1 outline-blue-400",
-            )}
-            style={{ paddingLeft: 8 + depth * 12 }}
-            title={entry.description ?? entry.name}
-          >
-            {adapter.multiField ? (
-              <ChevronRight
-                size={12}
-                className={cn(
-                  "shrink-0 text-neutral-500 transition-transform",
-                  expanded && "rotate-90",
-                  !fields?.length && "opacity-30",
-                )}
-              />
-            ) : (
-              <span className="inline-block w-3" />
-            )}
-            <FileIcon name={renaming ? renameValue : entry.name} kind="file" />
-            {renaming ? (
-              <input
-                ref={renameInputRef}
-                type="text"
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    void commitRename();
-                  } else if (e.key === "Escape") {
-                    e.preventDefault();
-                    cancelRename();
-                  }
-                }}
-                onBlur={() => void commitRename()}
-                disabled={renaming_busy}
-                className="min-w-0 flex-1 bg-transparent font-mono text-[13px] outline-none"
-              />
-            ) : (
-              <span className="truncate">{entry.name}</span>
-            )}
-            {!renaming && entry.badge && (
-              <span className="ml-auto rounded bg-neutral-200 px-1 py-0 text-[10px] font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                {entry.badge}
-              </span>
-            )}
-          </div>
+        <div
+          ref={rowRef}
+          role="treeitem"
+          aria-expanded={adapter.multiField ? expanded : undefined}
+          aria-selected={selfActive}
+          tabIndex={0}
+          onClick={handleClick}
+          onKeyDown={(e) => {
+            if (renaming) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              handleClick();
+            } else if (e.key === "F2" && onRename) {
+              e.preventDefault();
+              startRename();
+            }
+          }}
+          className={cn(
+            "flex items-center gap-1 text-[13px] rounded-sm",
+            ROW_HEIGHT,
+            "max-lg:h-11",
+            TEXT_BODY,
+            !renaming && "cursor-pointer",
+            !renaming && HOVER_ROW,
+            selfActive && !renaming && ACTIVE_ROW,
+            renaming && "bg-card outline outline-1 outline-blue-400",
+          )}
+          style={{ paddingLeft: 8 + depth * 12 }}
+          title={entry.description ?? entry.name}
+        >
+          {adapter.multiField ? (
+            <ChevronRight
+              size={12}
+              className={cn(
+                "shrink-0 text-neutral-500 transition-transform",
+                expanded && "rotate-90",
+                !fields?.length && "opacity-30",
+              )}
+            />
+          ) : (
+            <span className="inline-block w-3" />
+          )}
+          <FileIcon name={renaming ? renameValue : entry.name} kind="file" />
+          {renaming ? (
+            <input
+              ref={renameInputRef}
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void commitRename();
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  cancelRename();
+                }
+              }}
+              onBlur={() => void commitRename()}
+              disabled={renaming_busy}
+              className="min-w-0 flex-1 bg-transparent font-mono text-[13px] outline-none"
+            />
+          ) : (
+            <span className="min-w-0 flex-1 truncate">{entry.name}</span>
+          )}
+          {!renaming && entry.badge && (
+            <span className="ml-auto rounded bg-neutral-200 px-1 py-0 text-[10px] font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+              {entry.badge}
+            </span>
+          )}
+          {!renaming && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+              aria-label={`Actions for ${entry.name}`}
+              aria-haspopup="menu"
+              onClick={(e) => {
+                e.stopPropagation();
+                openContextMenuForElement(rowRef.current);
+              }}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </NonEditableContextMenu>
 
       {adapter.multiField && expanded && fields && fields.length > 0 && (
