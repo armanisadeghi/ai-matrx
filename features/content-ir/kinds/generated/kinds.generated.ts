@@ -21,12 +21,38 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "9154e016fdfe";
+export const KIND_REGISTRY_FINGERPRINT = "8fa789bab08b";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
 // identical `$defs` entry carried by many kinds is ONE interface here.
 // ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * One context policy, as the live column actually stores it (rich objects,
+ * never bare strings — the Masterwork Conductor's ``platform_capabilities`` /
+ * ``my_resources`` policies are the reference shape).
+ *  *
+ *  * From kind `agent_definition`.
+ */
+export interface AgentDefinitionContextPolicy {
+  key: string;
+  type: string;
+  label?: string;
+  source?: AgentDefinitionContextPolicySource | null;
+  mutable?: boolean;
+  persist?: string;
+  description?: string;
+}
+
+/**
+ * Where a context policy's value comes from (a registered inventory kind).
+ *  *
+ *  * From kind `agent_definition`.
+ */
+export interface AgentDefinitionContextPolicySource {
+  kind: string;
+}
 
 /**
  * One prompt message. The system message comes first.
@@ -5105,11 +5131,12 @@ export interface AgentAssignmentBatchResult {
  * live ``agent.definition`` row (with its v1 snapshot); rendered, it is the
  * agent a person is watching being built.
  *  *
- *  * Kind `agent_definition` (registry v3).
+ *  * Kind `agent_definition` (registry v5).
  */
 export interface AgentDefinition {
   name: string;
   tags?: string[];
+  tools?: string[];
   /**
    * The registered kind this payload is an instance of.
    */
@@ -5120,7 +5147,7 @@ export interface AgentDefinition {
   settings: AgentDefinitionSettings;
   description?: string;
   custom_tools?: string[];
-  context_policies?: string[];
+  context_policies?: AgentDefinitionContextPolicy[];
   variable_definitions?: AgentDefinitionVariable[];
 }
 
