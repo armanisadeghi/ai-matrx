@@ -243,7 +243,12 @@ export function AgentConversationDisplay({
       window.clearTimeout(timer);
       if (animationFrame) window.cancelAnimationFrame(animationFrame);
     };
-  }, [bottomPinned, deferColdMarkdown, effectiveVisibleGroupLimit, lastUserKey]);
+  }, [
+    bottomPinned,
+    deferColdMarkdown,
+    effectiveVisibleGroupLimit,
+    lastUserKey,
+  ]);
 
   const assistantGroupCount = displayGroups.filter(
     (g) => g.kind === "assistant" || g.kind === "assistant-failed",
