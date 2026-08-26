@@ -149,7 +149,11 @@ export default async function ShapeFindingCodePage({
           {spec.what}
         </p>
         <p className="mt-1 max-w-4xl text-sm text-foreground">{spec.how}</p>
-        {isBookkeeping(spec) && spec.command && (
+        {/* For a class the board cannot observe, the "not measured here"
+            banner below is the stronger and more urgent statement — stacking
+            the bookkeeping banner on top of it just says the same thing
+            twice. */}
+        {isBookkeeping(spec) && spec.command && spec.measuredOnBoard && (
           <p className="mt-2 max-w-4xl rounded border border-violet-500/40 bg-violet-500/5 px-3 py-2 text-xs text-violet-800 dark:text-violet-200">
             This class is BOOKKEEPING — a generated file committed in the repo
             has gone stale, and no click in this browser can rewrite a file in
