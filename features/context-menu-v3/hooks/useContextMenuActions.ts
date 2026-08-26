@@ -758,16 +758,33 @@ export function useContextMenuActions(
   const handleContentBlockInsert = (
     entry: Extract<AgentMenuEntry, { entryType: "content_block" }>,
   ) => {
+    // The template passes through VERBATIM — placeholders like {{variable}}
+    // must reach the editor/clipboard unmangled.
     const template = entry.template;
-    if (editorId) {
-      if (insertTextAtCursor(editorId, template)) onContentInserted?.();
+    if (editorId && insertTextAtCursor(editorId, template)) {
+      onContentInserted?.();
       return;
     }
-    if (getTextarea) {
+    if (!editorId && getTextarea) {
       const textarea = getTextarea();
-      if (textarea && insertTextAtTextareaCursor(textarea, template))
+      if (textarea && insertTextAtTextareaCursor(textarea, template)) {
         onContentInserted?.();
+        return;
+      }
     }
+    // Read-only surface (or the insert target vanished): never a silent no-op —
+    // copy the block so the gesture still yields the text.
+    void navigator.clipboard.writeText(template).then(
+      () =>
+        toast({
+          title: "Copied to clipboard",
+          description: `"${entry.label}" can't be inserted here — this surface isn't editable.`,
+        }),
+      (err) => {
+        console.error("[ContextMenuV3] content block copy failed", err);
+        showManualCopy({ text: template });
+      },
+    );
   };
 
   const handleEntrySelect = (entry: AgentMenuEntry) => {
