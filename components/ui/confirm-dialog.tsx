@@ -79,7 +79,9 @@ export function ConfirmDialog({
         {content ?? null}
         <AlertDialogFooter>
           {cancelLabel === null ? null : (
-            <AlertDialogCancel disabled={busy}>{cancelLabel}</AlertDialogCancel>
+            <AlertDialogCancel className="max-lg:min-h-11" disabled={busy}>
+              {cancelLabel}
+            </AlertDialogCancel>
           )}
           <AlertDialogAction
             disabled={busy || confirmDisabled}
@@ -88,6 +90,7 @@ export function ConfirmDialog({
               void onConfirm();
             }}
             className={cn(
+              "max-lg:min-h-11",
               variant === "destructive" &&
                 "bg-destructive text-destructive-foreground hover:bg-destructive/90",
             )}

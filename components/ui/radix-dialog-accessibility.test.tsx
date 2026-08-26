@@ -28,6 +28,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { BottomSheet } from "@/components/official/bottom-sheet/BottomSheet";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 jest.mock("@/hooks/use-mobile", () => ({
   useIsMobile: () => false,
@@ -187,6 +188,31 @@ describe("Radix dialog accessibility semantics", () => {
     expect(dialog?.getAttribute("aria-modal")).toBe("true");
     expect(background.getAttribute("aria-hidden")).toBe("true");
     expect(dialog?.closest('[aria-hidden="true"]')).toBeNull();
+  });
+
+  it("keeps confirmation actions touch-sized below the desktop breakpoint", () => {
+    act(() => {
+      root.render(
+        <ConfirmDialog
+          open
+          onOpenChange={jest.fn()}
+          title="Generate this video?"
+          description="This action may consume provider credits."
+          confirmLabel="Generate video"
+          onConfirm={jest.fn()}
+        />,
+      );
+    });
+
+    const cancel = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent === "Cancel",
+    );
+    const confirm = Array.from(document.querySelectorAll("button")).find(
+      (button) => button.textContent === "Generate video",
+    );
+
+    expect(cancel?.classList.contains("max-lg:min-h-11")).toBe(true);
+    expect(confirm?.classList.contains("max-lg:min-h-11")).toBe(true);
   });
 
   it("marks Vaul drawers as modal and keeps the drawer outside hidden ancestors", () => {
