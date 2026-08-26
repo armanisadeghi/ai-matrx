@@ -235,6 +235,10 @@ if $STRICT; then
         # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md
         # row X4). Baseline ratchet: exits 1 only on a NEW site; advisory here.
         "Hardcoded agent ids (raw agent UUIDs in code)|pnpm check:hardcoded-agents"
+        # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
+        # names it inline AND in the Agents menu. Advisory: the backlog is 40
+        # surfaces deep and a release must not stall on someone else's page.
+        "Surfaces running an agent without naming it|pnpm check:agent-disclosure"
         # DDL GUARD LOG — the reader the sentinel never had. Advisory in BOTH
         # modes: the guard's own WARN lane is advisory, and a release that never
         # touches the database must not be blocked because someone else's ALTER
@@ -397,6 +401,10 @@ else
         # HARDCODED AGENT IDS — the same law spelled as a raw UUID (ROLLOUT.md
         # row X4). Baseline ratchet: exits 1 only on a NEW site; advisory here.
         "Hardcoded agent ids (raw agent UUIDs in code)|pnpm check:hardcoded-agents"
+        # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
+        # names it inline AND in the Agents menu. Advisory: the backlog is 40
+        # surfaces deep and a release must not stall on someone else's page.
+        "Surfaces running an agent without naming it|pnpm check:agent-disclosure"
         # DDL GUARD LOG — the reader the sentinel never had. Advisory in BOTH
         # modes: the guard's own WARN lane is advisory, and a release that never
         # touches the database must not be blocked because someone else's ALTER
