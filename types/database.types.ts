@@ -33233,6 +33233,56 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_field_index_due: {
+        Row: {
+          definition_id: string | null
+          field_key: string | null
+          field_type: string | null
+          index_error: string | null
+          index_name: string | null
+          index_state: string | null
+          is_unique: boolean | null
+          organization_id: string | null
+          target_definition_id: string | null
+          target_kind: string | null
+          target_token: string | null
+        }
+        Insert: {
+          definition_id?: string | null
+          field_key?: string | null
+          field_type?: string | null
+          index_error?: string | null
+          index_name?: never
+          index_state?: string | null
+          is_unique?: boolean | null
+          organization_id?: string | null
+          target_definition_id?: string | null
+          target_kind?: string | null
+          target_token?: string | null
+        }
+        Update: {
+          definition_id?: string | null
+          field_key?: string | null
+          field_type?: string | null
+          index_error?: string | null
+          index_name?: never
+          index_state?: string | null
+          is_unique?: boolean | null
+          organization_id?: string | null
+          target_definition_id?: string | null
+          target_kind?: string | null
+          target_token?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_field_definition_target_definition_id_fkey"
+            columns: ["target_definition_id"]
+            isOneToOne: false
+            referencedRelation: "custom_entity_definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ddl_guard_unacked: {
         Row: {
           first_seen: string | null
@@ -33587,6 +33637,18 @@ export type Database = {
           ordinal: number
         }[]
       }
+      adopt_custom_fields: {
+        Args: {
+          p_ai_exposure_ceiling?: string
+          p_max_custom_bytes?: number
+          p_max_fields?: number
+          p_notes?: string
+          p_sensitivity_ceiling?: string
+          p_target_token: string
+          p_validation_mode?: string
+        }
+        Returns: Json
+      }
       assert_admin_access_contract: { Args: never; Returns: undefined }
       assert_outsider_scope: {
         Args: {
@@ -33609,6 +33671,10 @@ export type Database = {
       assist_production_allowed: {
         Args: { p_source_key: string }
         Returns: boolean
+      }
+      backfill_record_names: {
+        Args: { p_batch?: number; p_definition_id: string }
+        Returns: Json
       }
       build_lifecycle_reference_map: { Args: never; Returns: Json }
       cf_compact_json: { Args: { p_value: Json }; Returns: string }
@@ -33639,6 +33705,28 @@ export type Database = {
           p_versioned: boolean
           p_visibility: string
         }
+        Returns: string
+      }
+      custom_field_defs: {
+        Args: {
+          p_definition_id?: string
+          p_include_archived?: boolean
+          p_organization_id: string
+          p_target_kind: string
+          p_target_token?: string
+        }
+        Returns: Json
+      }
+      custom_field_index_ddl: {
+        Args: { p_concurrently?: boolean; p_definition_id: string }
+        Returns: string
+      }
+      custom_field_index_expr: {
+        Args: { p_column?: string; p_field_key: string; p_field_type: string }
+        Returns: string
+      }
+      custom_field_index_name: {
+        Args: { p_definition_id: string }
         Returns: string
       }
       ddl_guard_ack: {
@@ -33696,6 +33784,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      demote_custom_field_index: {
+        Args: { p_definition_id: string }
+        Returns: Json
       }
       deprecate_relation: {
         Args: {
@@ -33952,6 +34044,10 @@ export type Database = {
           reason: string
         }[]
       }
+      promote_custom_field_index: {
+        Args: { p_concurrently?: boolean; p_definition_id: string }
+        Returns: Json
+      }
       purpose_for_unit: {
         Args: { p_position?: number; p_unit_id: string; p_unit_type: string }
         Returns: {
@@ -34021,6 +34117,15 @@ export type Database = {
       refresh_reachability: {
         Args: { p_container_id: string; p_container_type: string }
         Returns: undefined
+      }
+      render_record_name: {
+        Args: {
+          p_data: Json
+          p_first_text_key?: string
+          p_id?: string
+          p_template: string
+        }
+        Returns: string
       }
       resolve_assist_producer_policy: {
         Args: { p_source_key: string }
@@ -34214,6 +34319,18 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      validate_custom_row: {
+        Args: {
+          p_definition_id?: string
+          p_mode?: string
+          p_organization_id: string
+          p_resolved?: Json
+          p_target_kind: string
+          p_target_token?: string
+          p_values: Json
+        }
+        Returns: Json
       }
       validate_custom_values: {
         Args: {
@@ -39028,6 +39145,234 @@ export type Database = {
       entity_undelete: {
         Args: { p_id: string; p_token: string }
         Returns: boolean
+      }
+      esign_campaign_close: {
+        Args: { p_campaign_id: string; p_reason?: string }
+        Returns: Json
+      }
+      esign_campaign_enroll: {
+        Args: { p_campaign_id: string; p_members: Json }
+        Returns: Json
+      }
+      esign_campaign_export: { Args: { p_campaign_id: string }; Returns: Json }
+      esign_campaign_generate: {
+        Args: { p_batch_size?: number; p_campaign_id: string; p_frozen: Json }
+        Returns: Json
+      }
+      esign_campaign_progress: {
+        Args: { p_campaign_id: string }
+        Returns: Json
+      }
+      esign_certificate_public_keys: { Args: never; Returns: Json }
+      esign_create_campaign: {
+        Args: {
+          p_audience_kind?: string
+          p_audience_ref?: Json
+          p_consumer_key: string
+          p_document_source: Json
+          p_envelope_type?: string
+          p_expires_in_days?: number
+          p_message?: string
+          p_organization_id: string
+          p_sensitivity?: string
+          p_title: string
+        }
+        Returns: Json
+      }
+      esign_create_envelope: {
+        Args: {
+          p_callback_key?: string
+          p_consumer_key: string
+          p_documents: Json
+          p_envelope_type?: string
+          p_expires_in_days?: number
+          p_message?: string
+          p_organization_id: string
+          p_sensitivity?: string
+          p_signers: Json
+          p_signing_order?: string
+          p_source?: Json
+          p_title: string
+        }
+        Returns: Json
+      }
+      esign_envelope_state: { Args: { p_envelope_id: string }; Returns: Json }
+      esign_expire_sweep: { Args: { p_limit?: number }; Returns: Json }
+      esign_mint_signer_token: {
+        Args: { p_email?: string; p_signer_id: string }
+        Returns: Json
+      }
+      esign_my_signer_row: { Args: { p_envelope_id: string }; Returns: Json }
+      esign_provider_dispatch: {
+        Args: { p_envelope_id: string }
+        Returns: Json
+      }
+      esign_provider_ingest: {
+        Args: {
+          p_envelope_id: string
+          p_external_envelope_id: string
+          p_external_status: string
+          p_observed?: Json
+          p_payload?: Json
+          p_provider_event_id?: string
+          p_provider_key: string
+        }
+        Returns: Json
+      }
+      esign_remind: { Args: { p_envelope_id: string }; Returns: Json }
+      esign_resend_signer: {
+        Args: { p_email?: string; p_signer_id: string }
+        Returns: Json
+      }
+      esign_rotate_signing_key: { Args: { p_reason?: string }; Returns: Json }
+      esign_send_envelope: {
+        Args: { p_envelope_id: string; p_frozen: Json }
+        Returns: Json
+      }
+      esign_sign: {
+        Args: {
+          p_action_id: string
+          p_ip?: unknown
+          p_observed: Json
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_adopt_signature: {
+        Args: {
+          p_image_file_id?: string
+          p_ip?: unknown
+          p_kind: string
+          p_signer_id: string
+          p_strokes?: Json
+          p_typed_name?: string
+          p_typed_style?: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_consent: {
+        Args: {
+          p_disclosure_id: string
+          p_ip?: unknown
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_decline: {
+        Args: {
+          p_ip?: unknown
+          p_reason: string
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_download: {
+        Args: {
+          p_document_id: string
+          p_ip?: unknown
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_load: {
+        Args: { p_envelope_id: string; p_ip?: unknown; p_ua?: string }
+        Returns: Json
+      }
+      esign_sign_preview_ack: {
+        Args: {
+          p_document_id: string
+          p_ip?: unknown
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_adopt_signature: {
+        Args: {
+          p_image_file_id?: string
+          p_ip?: unknown
+          p_kind: string
+          p_session: string
+          p_strokes?: Json
+          p_typed_name?: string
+          p_typed_style?: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_consent: {
+        Args: {
+          p_disclosure_id: string
+          p_ip?: unknown
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_decline: {
+        Args: {
+          p_ip?: unknown
+          p_reason: string
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_delegate: {
+        Args: {
+          p_email: string
+          p_full_name: string
+          p_ip?: unknown
+          p_reason?: string
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_download_url: {
+        Args: {
+          p_document_id: string
+          p_ip?: unknown
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_load: {
+        Args: { p_ip?: unknown; p_session: string; p_ua?: string }
+        Returns: Json
+      }
+      esign_signer_preview_ack: {
+        Args: {
+          p_document_id: string
+          p_ip?: unknown
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_sign: {
+        Args: {
+          p_action_id: string
+          p_ip?: unknown
+          p_observed: Json
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_verify_envelope: {
+        Args: { p_envelope_id: string; p_observed?: Json }
+        Returns: Json
+      }
+      esign_void_envelope: {
+        Args: { p_envelope_id: string; p_reason: string }
+        Returns: Json
       }
       execute_admin_query: { Args: { query: string }; Returns: Json }
       expand_archetype: {
