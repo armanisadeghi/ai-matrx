@@ -126,10 +126,22 @@ describe("generic input key parity", () => {
 });
 
 describe("input-path coverage", () => {
-  it("classifies generated contract metadata before a human input surface is offered", () => {
-    expect(isDataOnlyKindMetadata({ family: "workflow_io" })).toBe(true);
+  it("reads the ROW's own data_only flag, never a family name", () => {
     expect(isDataOnlyKindMetadata({ data_only: true })).toBe(true);
+    expect(isDataOnlyKindMetadata({ data_only: false })).toBe(false);
     expect(isDataOnlyKindMetadata({ family: "render_block" })).toBe(false);
+    // THE FAMILY LEG IS GONE (2026-08-25). A family NAME is not evidence about
+    // a shape: machine contracts are quarantined by residence in
+    // `content_ir.io_contract` and never reach this registry, so the leg only
+    // ever fired on REAL rows a seeder had misnamed. These 33 curated
+    // `workflow_io` kinds ship an active human input component — 20 of them —
+    // and were being told a machine fills them.
+    expect(isDataOnlyKindMetadata({ family: "workflow_io" })).toBe(false);
+    expect(isDataOnlyKindMetadata({ family: "agent_io" })).toBe(false);
+    // A row that says so itself is still honest, whatever its family.
+    expect(
+      isDataOnlyKindMetadata({ family: "seo", data_only: true }),
+    ).toBe(true);
   });
 
   it("every ACTIVE display root resolves an input path from the compiled floor alone", () => {

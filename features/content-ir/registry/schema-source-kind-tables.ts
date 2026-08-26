@@ -407,11 +407,11 @@ export interface KindInputContract {
   /** The materialized `kind_definition.emitted_json_schema` — the structural-leg authority. */
   emittedJsonSchema: Json | null;
   /**
-   * True when the kind is a generated data-only machine contract
-   * (`metadata.data_only` or a generated contract family) — machines fill
-   * these, humans never do. The input routing law refuses them even if a
-   * stray input-role component row exists (enforced invariant, not data
-   * hygiene).
+   * True when the row's own `metadata.data_only` says machines produce this
+   * shape in production flows. INFORMATIONAL: it annotates the input path, it
+   * never removes one (`kind-input-resolution.ts`). Machine I/O contracts are
+   * quarantined by RESIDENCE in `content_ir.io_contract` and never reach this
+   * registry at all.
    */
   dataOnly: boolean;
 }
@@ -452,16 +452,29 @@ export function kindFamilyFromMetadata(metadata: Json | null): string | null {
   return typeof family === "string" && family.length > 0 ? family : null;
 }
 
+/**
+ * Does the ROW ITSELF say machines produce this shape?
+ *
+ * Reads `metadata.data_only` and nothing else. There used to be a second leg
+ * here — `family ∈ GENERATED_CONTRACT_FAMILY_VALUES` — and it was the bug:
+ * a family NAME is not evidence about a shape. Post-eviction, machine
+ * contracts are quarantined by residence in `content_ir.io_contract`, so every
+ * row that reaches this registry is real, and the family leg only ever fired
+ * on real rows that a seeder had misnamed. It refused
+ * `/shapes/topic_assignment_batch_v1/test` (a hand-seeded SEO output), and it
+ * still stamps "machines fill it, humans never do" on the 20 curated
+ * `workflow_io` kinds — `text`, `string_list`, `json`, `number`, `boolean` —
+ * that ship an active human input component.
+ *
+ * The RENDER leg keeps its family-based exemption (`KindGateTab`): a data
+ * contract legitimately owns no output component. That is a different
+ * question from whether a person may fill this shape in.
+ */
 export function isDataOnlyKindMetadata(metadata: Json | null): boolean {
   if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
     return false;
   }
-  const record = metadata as Record<string, Json | undefined>;
-  if (record.data_only === true) return true;
-  return (
-    typeof record.family === "string" &&
-    GENERATED_CONTRACT_FAMILY_VALUES.has(record.family)
-  );
+  return (metadata as Record<string, Json | undefined>).data_only === true;
 }
 
 /**

@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "29dc96f9472e";
+export const KIND_REGISTRY_FINGERPRINT = "f2ff2e18496e";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5323,7 +5323,7 @@ export interface AggregateResult {
 }
 
 /**
- * Kind `ai_answer` (registry v11).
+ * Kind `ai_answer` (registry v12).
  */
 export interface AiAnswer {
   /**
@@ -6333,7 +6333,7 @@ export interface CompetitorOpportunityAutopsyResult {
 }
 
 /**
- * Kind `competitor_opportunity_autopsy_v1` (registry v3).
+ * Kind `competitor_opportunity_autopsy_v1` (registry v4).
  */
 export interface CompetitorOpportunityAutopsyV1 {
   error: string | null;
@@ -6354,7 +6354,7 @@ export interface CompetitorOpportunityAutopsyV1 {
 }
 
 /**
- * Kind `competitor_page_autopsy_v1` (registry v3).
+ * Kind `competitor_page_autopsy_v1` (registry v4).
  */
 export interface CompetitorPageAutopsyV1 {
   error: string | null;
@@ -6850,7 +6850,7 @@ export interface DiagramSpec {
 }
 
 /**
- * Kind `digital_pr_reputation_brief_v1` (registry v4).
+ * Kind `digital_pr_reputation_brief_v1` (registry v5).
  */
 export interface DigitalPrReputationBriefV1 {
   cases: ReputationCase[];
@@ -6911,7 +6911,7 @@ export interface DirectoryListing {
 }
 
 /**
- * Kind `discussion_result` (registry v10).
+ * Kind `discussion_result` (registry v11).
  */
 export interface DiscussionResult {
   url: string;
@@ -6993,7 +6993,7 @@ export interface DomainFoldReport {
 }
 
 /**
- * Kind `entity_card` (registry v11).
+ * Kind `entity_card` (registry v12).
  */
 export interface EntityCard {
   name: string;
@@ -7064,7 +7064,7 @@ export interface EvidenceSource {
  * `source`/`position` are OPTIONAL here because authored FAQs have neither —
  * the search adapters always fill both.
  *  *
- *  * Kind `faq_item` (registry v9).
+ *  * Kind `faq_item` (registry v10).
  */
 export interface FaqItem {
   /**
@@ -7544,7 +7544,7 @@ export interface GeneratedVideoSet {
 }
 
 /**
- * Kind `geo_coordinates` (registry v10).
+ * Kind `geo_coordinates` (registry v11).
  */
 export interface GeoCoordinates {
   /**
@@ -7749,7 +7749,7 @@ export interface GscOpportunities {
 /**
  * The intake agent's input — four period slices + site-level headlines.
  *  *
- *  * Kind `gsc_site_intake_bundle` (registry v7).
+ *  * Kind `gsc_site_intake_bundle` (registry v8).
  */
 export interface GscSiteIntakeBundle {
   /**
@@ -7772,7 +7772,7 @@ export interface GscSiteIntakeBundle {
  * The intake agent's structured output — the ``gsc_site_intake_proposal``
  * content-ir kind. Confirmable-card material, never chat-only.
  *  *
- *  * Kind `gsc_site_intake_proposal` (registry v4).
+ *  * Kind `gsc_site_intake_proposal` (registry v5).
  */
 export interface GscSiteIntakeProposal {
   gaps?: string[];
@@ -8203,7 +8203,7 @@ export interface JsonPathResult {
 }
 
 /**
- * Kind `keyword_classification_batch_v1` (registry v7).
+ * Kind `keyword_classification_batch_v1` (registry v8).
  */
 export interface KeywordClassificationBatchV1 {
   /**
@@ -8658,7 +8658,7 @@ export interface LiveHelpAnswer {
 }
 
 /**
- * Kind `local_place` (registry v13).
+ * Kind `local_place` (registry v14).
  */
 export interface LocalPlace {
   name: string;
@@ -9107,7 +9107,7 @@ export interface MetaTagOptions {
 }
 
 /**
- * Kind `news_result` (registry v10).
+ * Kind `news_result` (registry v11).
  */
 export interface NewsResult {
   url: string;
@@ -9370,7 +9370,7 @@ export interface OfficeSpreadsheet {
 }
 
 /**
- * Kind `opening_hours` (registry v11).
+ * Kind `opening_hours` (registry v12).
  */
 export interface OpeningHours {
   /**
@@ -9653,7 +9653,7 @@ export interface PageImage {
 /**
  * `page_keyword_analysis_v1` — the Page Analyzer's artifact.
  *  *
- *  * Kind `page_keyword_analysis_v1` (registry v2).
+ *  * Kind `page_keyword_analysis_v1` (registry v3).
  */
 export interface PageKeywordAnalysisV1 {
   gaps?: ContentGap[];
@@ -9676,7 +9676,7 @@ export interface PageKeywordAnalysisV1 {
 /**
  * `page_keyword_map_v1` — the Page↔Keyword Mapper's artifact.
  *  *
- *  * Kind `page_keyword_map_v1` (registry v3).
+ *  * Kind `page_keyword_map_v1` (registry v4).
  */
 export interface PageKeywordMapV1 {
   error?: string | null;
@@ -10477,7 +10477,7 @@ export interface PodcastVideoComposeResult {
 }
 
 /**
- * Kind `postal_address` (registry v10).
+ * Kind `postal_address` (registry v11).
  */
 export interface PostalAddress {
   city?: string | null;
@@ -11237,7 +11237,7 @@ export interface RandomStringResult {
 }
 
 /**
- * Kind `rating` (registry v10).
+ * Kind `rating` (registry v11).
  */
 export interface Rating {
   /**
@@ -11471,7 +11471,7 @@ export interface ResearchCoverageAudit {
 }
 
 /**
- * Kind `research_cross_cutting_tags` (registry v3).
+ * Kind `research_cross_cutting_tags` (registry v4).
  */
 export interface ResearchCrossCuttingTags {
   /**
@@ -11482,7 +11482,7 @@ export interface ResearchCrossCuttingTags {
 }
 
 /**
- * Kind `research_page_analysis` (registry v3).
+ * Kind `research_page_analysis` (registry v4).
  */
 export interface ResearchPageAnalysis {
   id?: string;
@@ -11519,7 +11519,7 @@ export interface ResearchPageAnalysis {
 }
 
 /**
- * Kind `research_report` (registry v5).
+ * Kind `research_report` (registry v6).
  */
 export interface ResearchReport {
   title: string;
@@ -11591,7 +11591,7 @@ export interface ResearchReport {
 }
 
 /**
- * Kind `research_setup_suggestion` (registry v4).
+ * Kind `research_setup_suggestion` (registry v5).
  */
 export interface ResearchSetupSuggestion {
   title?: string;
@@ -11614,7 +11614,7 @@ export interface ResearchSetupSuggestion {
 }
 
 /**
- * Kind `research_tag_suggestions` (registry v3).
+ * Kind `research_tag_suggestions` (registry v4).
  */
 export interface ResearchTagSuggestions {
   /**
@@ -12235,7 +12235,7 @@ export interface ScraperCrawlResult {
 /**
  * The `seo_authority_route_analysis` Content IR Shape.
  *  *
- *  * Kind `seo_authority_route_analysis` (registry v3).
+ *  * Kind `seo_authority_route_analysis` (registry v4).
  */
 export interface SeoAuthorityRouteAnalysis {
   __kind: "seo_authority_route_analysis";
@@ -12384,7 +12384,7 @@ export interface SeoCompetitorDiscoveryResult {
 /**
  * The fixer's whole world: one finding, one page, one site.
  *  *
- *  * Kind `seo_finding_fix_context` (registry v8).
+ *  * Kind `seo_finding_fix_context` (registry v9).
  */
 export interface SeoFindingFixContext {
   page: FixPageContext;
@@ -12402,7 +12402,7 @@ export interface SeoFindingFixContext {
 /**
  * A drafted fix. Only the fields the finding actually calls for are set.
  *  *
- *  * Kind `seo_finding_fix_proposal` (registry v8).
+ *  * Kind `seo_finding_fix_proposal` (registry v9).
  */
 export interface SeoFindingFixProposal {
   risks: string[];
@@ -14631,7 +14631,7 @@ export interface ToolTraceIncidentReport {
 }
 
 /**
- * Kind `topic_assignment_batch_v1` (registry v4).
+ * Kind `topic_assignment_batch_v1` (registry v5).
  */
 export interface TopicAssignmentBatchV1 {
   /**
@@ -14980,7 +14980,7 @@ export interface VideoPromptOptions {
 }
 
 /**
- * Kind `video_result` (registry v10).
+ * Kind `video_result` (registry v11).
  */
 export interface VideoResult {
   url: string;
@@ -17494,7 +17494,7 @@ export interface WebRedirectLoopV1 {
 }
 
 /**
- * Kind `web_result` (registry v12).
+ * Kind `web_result` (registry v13).
  */
 export interface WebResult {
   url: string;

@@ -56,7 +56,12 @@ export interface KindValidationResult {
   errors: string[];
   /** Non-null exactly when `checked === false`. */
   degradedReason: KindValidationDegradedReason | null;
-  /** True when the kind is a generated machine contract (never human-filled). */
+  /**
+   * True when the row's own `metadata.data_only` says machines PRODUCE this
+   * shape in production flows. Informational — a person may still author an
+   * instance on the test bench. Not "a generated machine contract": those live
+   * in `content_ir.io_contract` and never reach this registry.
+   */
   dataOnly: boolean | null;
 }
 

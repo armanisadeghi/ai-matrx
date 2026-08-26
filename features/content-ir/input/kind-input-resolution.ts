@@ -65,17 +65,35 @@ export function decideKindInputPath(
   resolution: ComponentResolution | null,
   schema: KindSchema | null,
   dataOnly = false,
+  hasEmittedSchema = false,
 ): KindInputPath {
   if (resolution === null) {
-    // A data-only kind with no input row still gets the honest fallback: the
-    // instance-JSON editor (schema permitting), annotated — the test bench
-    // must never dead-end on a real shape.
-    if (dataOnly) {
-      return { mode: "instance-json", note: dataOnlyNote(kind) };
+    // A REGISTERED SHAPE WITH A CONTRACT IS NEVER A DEAD END. The
+    // instance-JSON editor can edit anything that has an `emitted_json_schema`
+    // to validate against, so a missing input-component row costs the nicer
+    // form, never the bench.
+    //
+    // This fallback used to be reachable only via `dataOnly`, and `dataOnly`
+    // used to be derived from the kind's FAMILY NAME. That coupling was doing
+    // two unrelated jobs at once, and dropping the family leg (2026-08-25)
+    // silently took the fallback with it — 13 real workflow-I/O shapes
+    // (`table_rows`, `parsed_json`, `saved_row`, `user_inputs`, …) have no
+    // input row and no compiled floor entry, and every one of them would have
+    // started refusing AND filing an incident on a working surface.
+    //
+    // So the fallback now rests on what it always actually needed — a
+    // contract to edit — and `dataOnly` is left to do only its own job: the
+    // note. The refusal is reserved for a row with nothing to edit at all,
+    // which is a genuine registry gap worth screaming about.
+    if (dataOnly || hasEmittedSchema) {
+      return {
+        mode: "instance-json",
+        note: dataOnly ? dataOnlyNote(kind) : undefined,
+      };
     }
     return {
       mode: "refused",
-      reason: `No input component is registered for kind "${kind}" (resolver returned null for role "input") — a registry gap: add the kind_component row, never a guessed form.`,
+      reason: `No input component is registered for kind "${kind}" (resolver returned null for role "input") and the row carries no emitted_json_schema to edit against — a registry gap: add the kind_component row, never a guessed form.`,
     };
   }
   if (!resolution.isActive) {

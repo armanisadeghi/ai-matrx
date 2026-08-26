@@ -1,5 +1,5 @@
 {
-  "generated_for": "871-kinds+b4c9c58e9c81",
+  "generated_for": "952-kinds+788c661a2c00",
   "columns": [
     "definition",
     "example",
@@ -132,6 +132,336 @@
       }
     },
     {
+      "kind": "agent_input_agent_config_41eec0",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_audio_style_content_speaker_1_profile_speaker_2_profile",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_brief",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_cleaned_window_prior_tasks_session_title",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_company_name_employee_info",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_concept_content_format_idea_count",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_content_goal_existing_content",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_context_a58621",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_context_transcribed_text",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_conversation_id_fa282d",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_current_code_161b4f",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_current_code_d03087",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_current_system_message_additional_guidance",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_document_audits_c_audits_u_audits_w_440610",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_document_audits_c_audits_u_audits_w_954fce",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_document_name_page_content",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_dynamic_context",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_extraction_unit",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_front_back_card_history_learner_context",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_front_back_rubric_seconds_allowed_22f70d",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_front_back_topic_difficulty_56526b",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_image_description_1497da",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "agent_input_instructions_scraped_content_queries_search_results",
       "is_active": false,
       "family": "agent_input",
@@ -139,8 +469,38 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_intent_or_content_style",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_intent_or_content_style_count",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -154,8 +514,233 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_json_data_fields_data_data_description_current_schema",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_keywords_search_results",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_legal_area_transcript",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_overall_agent_goal_tone_and_tyle_response_format_constra_63058a",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_page_content_45ae23",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_page_content_800869",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_page_context",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_podcast_content",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_podcast_topic_or_content_17ec37",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_prior_cleaned_suffix_raw_window_session_title_module_id",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_project_overview_victory_condition_first_step",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_prompt_config",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_prompt_object_sample_response_input_fields_to_include_pa_3f4ca3",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_prompt_object_sample_response_input_fields_to_include_pa_f4ceb8",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_prompt_purpose",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -177,6 +762,126 @@
       }
     },
     {
+      "kind": "agent_input_query",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_raw_window_module_id_prior_concepts_session_title",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_rulebook_document_brief",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_scraped_content_focus_area",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_selection_content_current_message_role_context",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_service_name_region_name_state_name_intro_section_data",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_since_iso_environment_label",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_site_name_site_domain_site_brand_site_vertical_cb3911",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "agent_input_task_additional_context",
       "is_active": false,
       "family": "agent_input",
@@ -184,8 +889,188 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_text",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_topic_1e50f4",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_topic_count_difficulty_grade_level_8dffc3",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_topic_front_back_struggle_signal_9481fb",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_topic_grade_level_difficulty",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_topic_page_content_page_url_page_title_0c274b",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_topic_sources",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_transcript_087e8c",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_transcript_attempts_aggregate_remaining_cards_8ab902",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_transcript_delta_round_directive_stage_goal_held_note_2c4562",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_user_input_page_url_page_metadata_list_root_hint",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_user_input_page_url_page_text_page_metadata",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -199,8 +1084,23 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "agent_input_who_is_going_on_the_trip_event_or_purpose_age_ranges_of",
+      "is_active": false,
+      "family": "agent_input",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -402,6 +1302,21 @@
       }
     },
     {
+      "kind": "analytics_insight",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "answer_grade",
       "is_active": true,
       "family": "user_authored",
@@ -439,8 +1354,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -454,8 +1369,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -469,8 +1384,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -484,8 +1399,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -499,8 +1414,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -514,8 +1429,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -529,8 +1444,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "warn",
         "content_block": "ok",
         "surface": "warn"
@@ -544,8 +1459,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -559,8 +1474,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -803,6 +1718,21 @@
         "loading": "ok",
         "skill": "ok",
         "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "card_image_judgment",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -1214,31 +2144,31 @@
     {
       "kind": "competitor_opportunity_autopsy_v1",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
       "kind": "competitor_page_autopsy_v1",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -1249,8 +2179,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -1744,8 +2674,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -2054,16 +2984,16 @@
     {
       "kind": "digital_pr_reputation_brief_v1",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -3229,8 +4159,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -3314,31 +4244,31 @@
     {
       "kind": "gsc_site_intake_bundle",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
       "kind": "gsc_site_intake_proposal",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -3649,8 +4579,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "missing",
-        "loading": "missing",
+        "component": "ok",
+        "loading": "ok",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -3698,6 +4628,21 @@
         "loading": "ok",
         "skill": "missing",
         "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "interview_hole_set",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -3914,16 +4859,16 @@
     {
       "kind": "keyword_classification_batch_v1",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -3949,8 +4894,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -4161,6 +5106,21 @@
         "gate_structural": "ok",
         "component": "missing",
         "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "kit_title",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -4632,6 +5592,21 @@
       }
     },
     {
+      "kind": "masterwork.intake_design.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "masterwork.rule_improve.offer",
       "is_active": false,
       "family": "provision_offer",
@@ -4774,10 +5749,25 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "media_candidate_verdict",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "warn",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -4800,6 +5790,21 @@
       "kind": "media_chapters",
       "is_active": true,
       "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "media_list_ranking_result",
+      "is_active": true,
+      "family": "user_authored",
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -5254,8 +6259,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -5494,8 +6499,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -5639,31 +6644,31 @@
     {
       "kind": "page_keyword_analysis_v1",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
       "kind": "page_keyword_map_v1",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -5854,8 +6859,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -5899,8 +6904,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -5914,8 +6919,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -5959,8 +6964,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -5989,8 +6994,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -6019,8 +7024,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -6049,8 +7054,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -6154,8 +7159,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -6657,6 +7662,21 @@
       }
     },
     {
+      "kind": "practice_prompt",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "warn",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "presentation_deck",
       "is_active": true,
       "family": null,
@@ -6718,16 +7738,16 @@
     },
     {
       "kind": "press_source_request_ingest_result",
-      "is_active": false,
+      "is_active": true,
       "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "missing",
-        "loading": "missing",
-        "skill": "missing",
-        "content_block": "missing",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -6819,6 +7839,66 @@
         "skill": "ok",
         "content_block": "ok",
         "surface": "ok"
+      }
+    },
+    {
+      "kind": "proof_attestation",
+      "is_active": true,
+      "family": "verification",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "proof_check_status",
+      "is_active": true,
+      "family": "verification",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "proof_recording",
+      "is_active": false,
+      "family": "verification",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "proof_result",
+      "is_active": false,
+      "family": "verification",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "loading": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
       }
     },
     {
@@ -7264,8 +8344,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -7299,6 +8379,36 @@
         "skill": "ok",
         "content_block": "ok",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "recipient_shortlist_result",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "recipient_shortlist_verdict",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "warn",
+        "content_block": "ok",
+        "surface": "warn"
       }
     },
     {
@@ -7439,16 +8549,16 @@
     {
       "kind": "research_cross_cutting_tags",
       "is_active": true,
-      "family": "agent_io",
+      "family": "research",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -7469,16 +8579,16 @@
     {
       "kind": "research_page_analysis",
       "is_active": true,
-      "family": "agent_io",
+      "family": "research",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -7529,31 +8639,31 @@
     {
       "kind": "research_setup_suggestion",
       "is_active": true,
-      "family": "agent_io",
+      "family": "research",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
+        "loading": "ok",
         "skill": "ok",
         "content_block": "ok",
-        "surface": "n/a"
+        "surface": "warn"
       }
     },
     {
       "kind": "research_tag_suggestions",
       "is_active": true,
-      "family": "agent_io",
+      "family": "research",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -7804,8 +8914,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -7834,8 +8944,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -7849,8 +8959,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -8129,16 +9239,16 @@
     {
       "kind": "seo_authority_route_analysis",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -8234,31 +9344,31 @@
     {
       "kind": "seo_finding_fix_context",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
       "kind": "seo_finding_fix_proposal",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -9349,8 +10459,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -9454,8 +10564,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -9503,6 +10613,21 @@
         "loading": "ok",
         "skill": "missing",
         "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "spoken_practice_session",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -9657,6 +10782,21 @@
       }
     },
     {
+      "kind": "study_analytics_narrative",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "study_notes",
       "is_active": true,
       "family": null,
@@ -9668,6 +10808,21 @@
         "loading": "ok",
         "skill": "missing",
         "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "study_notes_document",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
         "surface": "warn"
       }
     },
@@ -9702,6 +10857,66 @@
       }
     },
     {
+      "kind": "study_plan",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "study_plan_block",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "loading": "n/a",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "study_plan_day",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "ok",
+        "content_block": "ok",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "study_summary",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "study_tip",
       "is_active": true,
       "family": "user_authored",
@@ -9724,8 +10939,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "missing",
         "surface": "warn"
@@ -9799,8 +11014,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -9814,8 +11029,8 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "ok",
-        "loading": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
@@ -10214,16 +11429,16 @@
     {
       "kind": "topic_assignment_batch_v1",
       "is_active": true,
-      "family": "agent_io",
+      "family": "seo",
       "assets": {
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
         "component": "ok",
-        "loading": "n/a",
-        "skill": "n/a",
-        "content_block": "n/a",
-        "surface": "n/a"
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -13099,8 +14314,26 @@
     {
       "severity": "red",
       "code": "duplicate-skill",
+      "kind": "media_candidate_verdict",
+      "message": "2 render_block skills teach kind \"media_candidate_verdict\" (json syntax): kind_media_candidate_verdict, kind_media_list_ranking_result — R9 law is ONE per kind per syntax"
+    },
+    {
+      "severity": "red",
+      "code": "duplicate-skill",
+      "kind": "practice_prompt",
+      "message": "2 render_block skills teach kind \"practice_prompt\" (json syntax): kind_practice_prompt, kind_spoken_practice_session — R9 law is ONE per kind per syntax"
+    },
+    {
+      "severity": "red",
+      "code": "duplicate-skill",
       "kind": "presentation_slide",
       "message": "2 render_block skills teach kind \"presentation_slide\" (json syntax): kind_presentation_slide, presentation-deck-kind — R9 law is ONE per kind per syntax"
+    },
+    {
+      "severity": "red",
+      "code": "duplicate-skill",
+      "kind": "recipient_shortlist_verdict",
+      "message": "2 render_block skills teach kind \"recipient_shortlist_verdict\" (json syntax): kind_recipient_shortlist_result, kind_recipient_shortlist_verdict — R9 law is ONE per kind per syntax"
     },
     {
       "severity": "red",
@@ -13112,6 +14345,311 @@
       "severity": "red",
       "code": "vocab-unclassified",
       "message": "kind_definition slug \"agent_definition\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_agent_config_41eec0\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_audio_style_content_speaker_1_profile_speaker_2_profile\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_brief\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_cleaned_window_prior_tasks_session_title\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_company_name_employee_info\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_concept_content_format_idea_count\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_content_goal_existing_content\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_context_a58621\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_context_transcribed_text\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_conversation_id_fa282d\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_current_code_161b4f\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_current_code_d03087\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_current_system_message_additional_guidance\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_document_audits_c_audits_u_audits_w_440610\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_document_audits_c_audits_u_audits_w_954fce\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_document_name_page_content\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_dynamic_context\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_extraction_unit\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_front_back_card_history_learner_context\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_front_back_rubric_seconds_allowed_22f70d\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_front_back_topic_difficulty_56526b\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_image_description_1497da\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_intent_or_content_style_count\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_intent_or_content_style\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_json_data_fields_data_data_description_current_schema\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_keywords_search_results\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_legal_area_transcript\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_overall_agent_goal_tone_and_tyle_response_format_constra_63058a\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_page_content_45ae23\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_page_content_800869\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_page_context\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_podcast_content\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_podcast_topic_or_content_17ec37\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_prior_cleaned_suffix_raw_window_session_title_module_id\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_project_overview_victory_condition_first_step\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_prompt_config\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_prompt_object_sample_response_input_fields_to_include_pa_3f4ca3\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_prompt_object_sample_response_input_fields_to_include_pa_f4ceb8\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_prompt_purpose\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_query\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_raw_window_module_id_prior_concepts_session_title\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_rulebook_document_brief\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_scraped_content_focus_area\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_selection_content_current_message_role_context\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_service_name_region_name_state_name_intro_section_data\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_since_iso_environment_label\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_site_name_site_domain_site_brand_site_vertical_cb3911\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_text\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_topic_1e50f4\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_topic_count_difficulty_grade_level_8dffc3\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_topic_front_back_struggle_signal_9481fb\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_topic_grade_level_difficulty\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_topic_page_content_page_url_page_title_0c274b\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_topic_sources\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_transcript_087e8c\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_transcript_attempts_aggregate_remaining_cards_8ab902\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_transcript_delta_round_directive_stage_goal_held_note_2c4562\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_user_input_page_url_page_metadata_list_root_hint\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_user_input_page_url_page_text_page_metadata\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"agent_input_who_is_going_on_the_trip_event_or_purpose_age_ranges_of\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"analytics_insight\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
     },
     {
       "severity": "red",
@@ -13166,6 +14704,11 @@
     {
       "severity": "red",
       "code": "vocab-unclassified",
+      "message": "kind_definition slug \"card_image_judgment\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
       "message": "kind_definition slug \"client_site_audit\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
     },
     {
@@ -13176,12 +14719,42 @@
     {
       "severity": "red",
       "code": "vocab-unclassified",
+      "message": "kind_definition slug \"interview_hole_set\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"kit_title\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"masterwork.intake_design.offer\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"media_candidate_verdict\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"media_list_ranking_result\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
       "message": "kind_definition slug \"newsjacking_article_expert_quote\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
     },
     {
       "severity": "red",
       "code": "vocab-unclassified",
       "message": "kind_definition slug \"newsjacking_expert_article\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"practice_prompt\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
     },
     {
       "severity": "red",
@@ -13201,7 +14774,37 @@
     {
       "severity": "red",
       "code": "vocab-unclassified",
+      "message": "kind_definition slug \"proof_attestation\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"proof_check_status\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"proof_recording\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"proof_result\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
       "message": "kind_definition slug \"provider_run_receipt\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"recipient_shortlist_result\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"recipient_shortlist_verdict\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
     },
     {
       "severity": "red",
@@ -13227,6 +14830,41 @@
       "severity": "red",
       "code": "vocab-unclassified",
       "message": "kind_definition slug \"source_ref\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"spoken_practice_session\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"study_analytics_narrative\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"study_notes_document\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"study_plan_block\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"study_plan_day\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"study_plan\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
+    },
+    {
+      "severity": "red",
+      "code": "vocab-unclassified",
+      "message": "kind_definition slug \"study_summary\" is not classified in the content-vocab crosswalk — run pnpm check:shapes:crosswalk:refresh (and add a rule if it fails)"
     },
     {
       "severity": "red",
@@ -13339,8 +14977,152 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "agent_input_agent_config_41eec0",
+      "message": "kind \"agent_input_agent_config_41eec0\" has no content block referencing \"__kind\": \"agent_input_agent_config_41eec0\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_audio_style_content_speaker_1_profile_speaker_2_profile",
+      "message": "kind \"agent_input_audio_style_content_speaker_1_profile_speaker_2_profile\" has no content block referencing \"__kind\": \"agent_input_audio_style_content_speaker_1_profile_speaker_2_profile\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_brief",
+      "message": "kind \"agent_input_brief\" has no content block referencing \"__kind\": \"agent_input_brief\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_cleaned_window_prior_tasks_session_title",
+      "message": "kind \"agent_input_cleaned_window_prior_tasks_session_title\" has no content block referencing \"__kind\": \"agent_input_cleaned_window_prior_tasks_session_title\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_company_name_employee_info",
+      "message": "kind \"agent_input_company_name_employee_info\" has no content block referencing \"__kind\": \"agent_input_company_name_employee_info\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_concept_content_format_idea_count",
+      "message": "kind \"agent_input_concept_content_format_idea_count\" has no content block referencing \"__kind\": \"agent_input_concept_content_format_idea_count\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_content_goal_existing_content",
+      "message": "kind \"agent_input_content_goal_existing_content\" has no content block referencing \"__kind\": \"agent_input_content_goal_existing_content\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_context_a58621",
+      "message": "kind \"agent_input_context_a58621\" has no content block referencing \"__kind\": \"agent_input_context_a58621\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_context_transcribed_text",
+      "message": "kind \"agent_input_context_transcribed_text\" has no content block referencing \"__kind\": \"agent_input_context_transcribed_text\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_conversation_id_fa282d",
+      "message": "kind \"agent_input_conversation_id_fa282d\" has no content block referencing \"__kind\": \"agent_input_conversation_id_fa282d\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_current_code_161b4f",
+      "message": "kind \"agent_input_current_code_161b4f\" has no content block referencing \"__kind\": \"agent_input_current_code_161b4f\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_current_code_d03087",
+      "message": "kind \"agent_input_current_code_d03087\" has no content block referencing \"__kind\": \"agent_input_current_code_d03087\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_current_system_message_additional_guidance",
+      "message": "kind \"agent_input_current_system_message_additional_guidance\" has no content block referencing \"__kind\": \"agent_input_current_system_message_additional_guidance\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_document_audits_c_audits_u_audits_w_440610",
+      "message": "kind \"agent_input_document_audits_c_audits_u_audits_w_440610\" has no content block referencing \"__kind\": \"agent_input_document_audits_c_audits_u_audits_w_440610\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_document_audits_c_audits_u_audits_w_954fce",
+      "message": "kind \"agent_input_document_audits_c_audits_u_audits_w_954fce\" has no content block referencing \"__kind\": \"agent_input_document_audits_c_audits_u_audits_w_954fce\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_document_name_page_content",
+      "message": "kind \"agent_input_document_name_page_content\" has no content block referencing \"__kind\": \"agent_input_document_name_page_content\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_dynamic_context",
+      "message": "kind \"agent_input_dynamic_context\" has no content block referencing \"__kind\": \"agent_input_dynamic_context\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_extraction_unit",
+      "message": "kind \"agent_input_extraction_unit\" has no content block referencing \"__kind\": \"agent_input_extraction_unit\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_front_back_card_history_learner_context",
+      "message": "kind \"agent_input_front_back_card_history_learner_context\" has no content block referencing \"__kind\": \"agent_input_front_back_card_history_learner_context\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_front_back_rubric_seconds_allowed_22f70d",
+      "message": "kind \"agent_input_front_back_rubric_seconds_allowed_22f70d\" has no content block referencing \"__kind\": \"agent_input_front_back_rubric_seconds_allowed_22f70d\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_front_back_topic_difficulty_56526b",
+      "message": "kind \"agent_input_front_back_topic_difficulty_56526b\" has no content block referencing \"__kind\": \"agent_input_front_back_topic_difficulty_56526b\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_image_description_1497da",
+      "message": "kind \"agent_input_image_description_1497da\" has no content block referencing \"__kind\": \"agent_input_image_description_1497da\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "agent_input_instructions_scraped_content_queries_search_results",
       "message": "kind \"agent_input_instructions_scraped_content_queries_search_results\" has no content block referencing \"__kind\": \"agent_input_instructions_scraped_content_queries_search_results\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_intent_or_content_style",
+      "message": "kind \"agent_input_intent_or_content_style\" has no content block referencing \"__kind\": \"agent_input_intent_or_content_style\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_intent_or_content_style_count",
+      "message": "kind \"agent_input_intent_or_content_style_count\" has no content block referencing \"__kind\": \"agent_input_intent_or_content_style_count\""
     },
     {
       "severity": "yellow",
@@ -13351,8 +15133,146 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "agent_input_json_data_fields_data_data_description_current_schema",
+      "message": "kind \"agent_input_json_data_fields_data_data_description_current_schema\" has no content block referencing \"__kind\": \"agent_input_json_data_fields_data_data_description_current_schema\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_keywords_search_results",
+      "message": "kind \"agent_input_keywords_search_results\" has no content block referencing \"__kind\": \"agent_input_keywords_search_results\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_legal_area_transcript",
+      "message": "kind \"agent_input_legal_area_transcript\" has no content block referencing \"__kind\": \"agent_input_legal_area_transcript\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_overall_agent_goal_tone_and_tyle_response_format_constra_63058a",
+      "message": "kind \"agent_input_overall_agent_goal_tone_and_tyle_response_format_constra_63058a\" has no content block referencing \"__kind\": \"agent_input_overall_agent_goal_tone_and_tyle_response_format_constra_63058a\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_page_content_45ae23",
+      "message": "kind \"agent_input_page_content_45ae23\" has no content block referencing \"__kind\": \"agent_input_page_content_45ae23\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_page_content_800869",
+      "message": "kind \"agent_input_page_content_800869\" has no content block referencing \"__kind\": \"agent_input_page_content_800869\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_page_context",
+      "message": "kind \"agent_input_page_context\" has no content block referencing \"__kind\": \"agent_input_page_context\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_podcast_content",
+      "message": "kind \"agent_input_podcast_content\" has no content block referencing \"__kind\": \"agent_input_podcast_content\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_podcast_topic_or_content_17ec37",
+      "message": "kind \"agent_input_podcast_topic_or_content_17ec37\" has no content block referencing \"__kind\": \"agent_input_podcast_topic_or_content_17ec37\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_prior_cleaned_suffix_raw_window_session_title_module_id",
+      "message": "kind \"agent_input_prior_cleaned_suffix_raw_window_session_title_module_id\" has no content block referencing \"__kind\": \"agent_input_prior_cleaned_suffix_raw_window_session_title_module_id\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_project_overview_victory_condition_first_step",
+      "message": "kind \"agent_input_project_overview_victory_condition_first_step\" has no content block referencing \"__kind\": \"agent_input_project_overview_victory_condition_first_step\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_prompt_config",
+      "message": "kind \"agent_input_prompt_config\" has no content block referencing \"__kind\": \"agent_input_prompt_config\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_prompt_object_sample_response_input_fields_to_include_pa_3f4ca3",
+      "message": "kind \"agent_input_prompt_object_sample_response_input_fields_to_include_pa_3f4ca3\" has no content block referencing \"__kind\": \"agent_input_prompt_object_sample_response_input_fields_to_include_pa_3f4ca3\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_prompt_object_sample_response_input_fields_to_include_pa_f4ceb8",
+      "message": "kind \"agent_input_prompt_object_sample_response_input_fields_to_include_pa_f4ceb8\" has no content block referencing \"__kind\": \"agent_input_prompt_object_sample_response_input_fields_to_include_pa_f4ceb8\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_prompt_purpose",
+      "message": "kind \"agent_input_prompt_purpose\" has no content block referencing \"__kind\": \"agent_input_prompt_purpose\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "agent_input_qme_report",
       "message": "kind \"agent_input_qme_report\" has no content block referencing \"__kind\": \"agent_input_qme_report\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_query",
+      "message": "kind \"agent_input_query\" has no content block referencing \"__kind\": \"agent_input_query\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_raw_window_module_id_prior_concepts_session_title",
+      "message": "kind \"agent_input_raw_window_module_id_prior_concepts_session_title\" has no content block referencing \"__kind\": \"agent_input_raw_window_module_id_prior_concepts_session_title\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_rulebook_document_brief",
+      "message": "kind \"agent_input_rulebook_document_brief\" has no content block referencing \"__kind\": \"agent_input_rulebook_document_brief\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_scraped_content_focus_area",
+      "message": "kind \"agent_input_scraped_content_focus_area\" has no content block referencing \"__kind\": \"agent_input_scraped_content_focus_area\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_selection_content_current_message_role_context",
+      "message": "kind \"agent_input_selection_content_current_message_role_context\" has no content block referencing \"__kind\": \"agent_input_selection_content_current_message_role_context\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_service_name_region_name_state_name_intro_section_data",
+      "message": "kind \"agent_input_service_name_region_name_state_name_intro_section_data\" has no content block referencing \"__kind\": \"agent_input_service_name_region_name_state_name_intro_section_data\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_since_iso_environment_label",
+      "message": "kind \"agent_input_since_iso_environment_label\" has no content block referencing \"__kind\": \"agent_input_since_iso_environment_label\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_site_name_site_domain_site_brand_site_vertical_cb3911",
+      "message": "kind \"agent_input_site_name_site_domain_site_brand_site_vertical_cb3911\" has no content block referencing \"__kind\": \"agent_input_site_name_site_domain_site_brand_site_vertical_cb3911\""
     },
     {
       "severity": "yellow",
@@ -13363,8 +15283,86 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "agent_input_text",
+      "message": "kind \"agent_input_text\" has no content block referencing \"__kind\": \"agent_input_text\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_topic_1e50f4",
+      "message": "kind \"agent_input_topic_1e50f4\" has no content block referencing \"__kind\": \"agent_input_topic_1e50f4\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_topic_count_difficulty_grade_level_8dffc3",
+      "message": "kind \"agent_input_topic_count_difficulty_grade_level_8dffc3\" has no content block referencing \"__kind\": \"agent_input_topic_count_difficulty_grade_level_8dffc3\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_topic_front_back_struggle_signal_9481fb",
+      "message": "kind \"agent_input_topic_front_back_struggle_signal_9481fb\" has no content block referencing \"__kind\": \"agent_input_topic_front_back_struggle_signal_9481fb\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_topic_grade_level_difficulty",
+      "message": "kind \"agent_input_topic_grade_level_difficulty\" has no content block referencing \"__kind\": \"agent_input_topic_grade_level_difficulty\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_topic_page_content_page_url_page_title_0c274b",
+      "message": "kind \"agent_input_topic_page_content_page_url_page_title_0c274b\" has no content block referencing \"__kind\": \"agent_input_topic_page_content_page_url_page_title_0c274b\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_topic_sources",
+      "message": "kind \"agent_input_topic_sources\" has no content block referencing \"__kind\": \"agent_input_topic_sources\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_transcript_087e8c",
+      "message": "kind \"agent_input_transcript_087e8c\" has no content block referencing \"__kind\": \"agent_input_transcript_087e8c\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_transcript_attempts_aggregate_remaining_cards_8ab902",
+      "message": "kind \"agent_input_transcript_attempts_aggregate_remaining_cards_8ab902\" has no content block referencing \"__kind\": \"agent_input_transcript_attempts_aggregate_remaining_cards_8ab902\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_transcript_delta_round_directive_stage_goal_held_note_2c4562",
+      "message": "kind \"agent_input_transcript_delta_round_directive_stage_goal_held_note_2c4562\" has no content block referencing \"__kind\": \"agent_input_transcript_delta_round_directive_stage_goal_held_note_2c4562\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_user_input_page_url_page_metadata_list_root_hint",
+      "message": "kind \"agent_input_user_input_page_url_page_metadata_list_root_hint\" has no content block referencing \"__kind\": \"agent_input_user_input_page_url_page_metadata_list_root_hint\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_user_input_page_url_page_text_page_metadata",
+      "message": "kind \"agent_input_user_input_page_url_page_text_page_metadata\" has no content block referencing \"__kind\": \"agent_input_user_input_page_url_page_text_page_metadata\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "agent_input_video_description",
       "message": "kind \"agent_input_video_description\" has no content block referencing \"__kind\": \"agent_input_video_description\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "agent_input_who_is_going_on_the_trip_event_or_purpose_age_ranges_of",
+      "message": "kind \"agent_input_who_is_going_on_the_trip_event_or_purpose_age_ranges_of\" has no content block referencing \"__kind\": \"agent_input_who_is_going_on_the_trip_event_or_purpose_age_ranges_of\""
     },
     {
       "severity": "yellow",
@@ -13593,6 +15591,18 @@
       "code": "no-content-block",
       "kind": "competitor_opportunity_autopsy_result",
       "message": "kind \"competitor_opportunity_autopsy_result\" has no content block referencing \"__kind\": \"competitor_opportunity_autopsy_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "competitor_opportunity_autopsy_v1",
+      "message": "kind \"competitor_opportunity_autopsy_v1\" has no content block referencing \"__kind\": \"competitor_opportunity_autopsy_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "competitor_page_autopsy_v1",
+      "message": "kind \"competitor_page_autopsy_v1\" has no content block referencing \"__kind\": \"competitor_page_autopsy_v1\""
     },
     {
       "severity": "yellow",
@@ -13827,6 +15837,12 @@
       "code": "no-content-block",
       "kind": "diff",
       "message": "kind \"diff\" has no content block referencing \"__kind\": \"diff\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "digital_pr_reputation_brief_v1",
+      "message": "kind \"digital_pr_reputation_brief_v1\" has no content block referencing \"__kind\": \"digital_pr_reputation_brief_v1\""
     },
     {
       "severity": "yellow",
@@ -14245,6 +16261,18 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "gsc_site_intake_bundle",
+      "message": "kind \"gsc_site_intake_bundle\" has no content block referencing \"__kind\": \"gsc_site_intake_bundle\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "gsc_site_intake_proposal",
+      "message": "kind \"gsc_site_intake_proposal\" has no content block referencing \"__kind\": \"gsc_site_intake_proposal\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "hash_result",
       "message": "kind \"hash_result\" has no content block referencing \"__kind\": \"hash_result\""
     },
@@ -14413,6 +16441,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "keyword_classification_batch_v1",
+      "message": "kind \"keyword_classification_batch_v1\" has no content block referencing \"__kind\": \"keyword_classification_batch_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "keyword_relationship_list",
       "message": "kind \"keyword_relationship_list\" has no content block referencing \"__kind\": \"keyword_relationship_list\""
     },
@@ -14487,6 +16521,12 @@
       "code": "no-content-block",
       "kind": "kind_validation_result",
       "message": "kind \"kind_validation_result\" has no content block referencing \"__kind\": \"kind_validation_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "kit_title",
+      "message": "kind \"kit_title\" has no content block referencing \"__kind\": \"kit_title\""
     },
     {
       "severity": "yellow",
@@ -14649,6 +16689,12 @@
       "code": "no-content-block",
       "kind": "masterwork.corpus_synthesis.offer",
       "message": "kind \"masterwork.corpus_synthesis.offer\" has no content block referencing \"__kind\": \"masterwork.corpus_synthesis.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "masterwork.intake_design.offer",
+      "message": "kind \"masterwork.intake_design.offer\" has no content block referencing \"__kind\": \"masterwork.intake_design.offer\""
     },
     {
       "severity": "yellow",
@@ -14925,6 +16971,18 @@
       "code": "no-content-block",
       "kind": "page_image",
       "message": "kind \"page_image\" has no content block referencing \"__kind\": \"page_image\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "page_keyword_analysis_v1",
+      "message": "kind \"page_keyword_analysis_v1\" has no content block referencing \"__kind\": \"page_keyword_analysis_v1\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "page_keyword_map_v1",
+      "message": "kind \"page_keyword_map_v1\" has no content block referencing \"__kind\": \"page_keyword_map_v1\""
     },
     {
       "severity": "yellow",
@@ -15295,12 +17353,6 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
-      "kind": "press_source_request_ingest_result",
-      "message": "kind \"press_source_request_ingest_result\" has no content block referencing \"__kind\": \"press_source_request_ingest_result\""
-    },
-    {
-      "severity": "yellow",
-      "code": "no-content-block",
       "kind": "press_story_angle_generation_result",
       "message": "kind \"press_story_angle_generation_result\" has no content block referencing \"__kind\": \"press_story_angle_generation_result\""
     },
@@ -15315,6 +17367,24 @@
       "code": "no-content-block",
       "kind": "product_research_report",
       "message": "kind \"product_research_report\" has no content block referencing \"__kind\": \"product_research_report\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "proof_attestation",
+      "message": "kind \"proof_attestation\" has no content block referencing \"__kind\": \"proof_attestation\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "proof_check_status",
+      "message": "kind \"proof_check_status\" has no content block referencing \"__kind\": \"proof_check_status\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "proof_recording",
+      "message": "kind \"proof_recording\" has no content block referencing \"__kind\": \"proof_recording\""
     },
     {
       "severity": "yellow",
@@ -15493,6 +17563,24 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "research_cross_cutting_tags",
+      "message": "kind \"research_cross_cutting_tags\" has no content block referencing \"__kind\": \"research_cross_cutting_tags\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "research_page_analysis",
+      "message": "kind \"research_page_analysis\" has no content block referencing \"__kind\": \"research_page_analysis\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "research_tag_suggestions",
+      "message": "kind \"research_tag_suggestions\" has no content block referencing \"__kind\": \"research_tag_suggestions\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "research.capture_coverage.offer",
       "message": "kind \"research.capture_coverage.offer\" has no content block referencing \"__kind\": \"research.capture_coverage.offer\""
     },
@@ -15667,6 +17755,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "seo_authority_route_analysis",
+      "message": "kind \"seo_authority_route_analysis\" has no content block referencing \"__kind\": \"seo_authority_route_analysis\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "seo_authority_route_result",
       "message": "kind \"seo_authority_route_result\" has no content block referencing \"__kind\": \"seo_authority_route_result\""
     },
@@ -15699,6 +17793,18 @@
       "code": "no-content-block",
       "kind": "seo_competitor_discovery_result",
       "message": "kind \"seo_competitor_discovery_result\" has no content block referencing \"__kind\": \"seo_competitor_discovery_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "seo_finding_fix_context",
+      "message": "kind \"seo_finding_fix_context\" has no content block referencing \"__kind\": \"seo_finding_fix_context\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "seo_finding_fix_proposal",
+      "message": "kind \"seo_finding_fix_proposal\" has no content block referencing \"__kind\": \"seo_finding_fix_proposal\""
     },
     {
       "severity": "yellow",
@@ -16219,6 +18325,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "study_summary",
+      "message": "kind \"study_summary\" has no content block referencing \"__kind\": \"study_summary\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "study_tip",
       "message": "kind \"study_tip\" has no content block referencing \"__kind\": \"study_tip\""
     },
@@ -16353,6 +18465,12 @@
       "code": "no-content-block",
       "kind": "tools.content_summarization.offer",
       "message": "kind \"tools.content_summarization.offer\" has no content block referencing \"__kind\": \"tools.content_summarization.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "topic_assignment_batch_v1",
+      "message": "kind \"topic_assignment_batch_v1\" has no content block referencing \"__kind\": \"topic_assignment_batch_v1\""
     },
     {
       "severity": "yellow",
@@ -17965,6 +20083,12 @@
     {
       "severity": "yellow",
       "code": "no-example",
+      "kind": "masterwork.intake_design.offer",
+      "message": "kind \"masterwork.intake_design.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
       "kind": "masterwork.rule_improve.offer",
       "message": "kind \"masterwork.rule_improve.offer\" has no example (no kind_example row, no interim sample_data)"
     },
@@ -19423,6 +21547,12 @@
     {
       "severity": "yellow",
       "code": "no-loading-component",
+      "kind": "proof_check_status",
+      "message": "kind \"proof_check_status\" renders but declares no loading_component, and its schema is not distinctive enough to derive one — while it streams the user really does see the shapeless generic skeleton; set metadata.loading_component to a loading-library slug"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-loading-component",
       "kind": "provider_run_receipt",
       "message": "kind \"provider_run_receipt\" renders but declares no loading_component, and its schema is not distinctive enough to derive one — while it streams the user really does see the shapeless generic skeleton; set metadata.loading_component to a loading-library slug"
     },
@@ -19555,8 +21685,152 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "agent_input_agent_config_41eec0",
+      "message": "kind \"agent_input_agent_config_41eec0\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_audio_style_content_speaker_1_profile_speaker_2_profile",
+      "message": "kind \"agent_input_audio_style_content_speaker_1_profile_speaker_2_profile\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_brief",
+      "message": "kind \"agent_input_brief\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_cleaned_window_prior_tasks_session_title",
+      "message": "kind \"agent_input_cleaned_window_prior_tasks_session_title\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_company_name_employee_info",
+      "message": "kind \"agent_input_company_name_employee_info\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_concept_content_format_idea_count",
+      "message": "kind \"agent_input_concept_content_format_idea_count\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_content_goal_existing_content",
+      "message": "kind \"agent_input_content_goal_existing_content\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_context_a58621",
+      "message": "kind \"agent_input_context_a58621\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_context_transcribed_text",
+      "message": "kind \"agent_input_context_transcribed_text\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_conversation_id_fa282d",
+      "message": "kind \"agent_input_conversation_id_fa282d\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_current_code_161b4f",
+      "message": "kind \"agent_input_current_code_161b4f\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_current_code_d03087",
+      "message": "kind \"agent_input_current_code_d03087\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_current_system_message_additional_guidance",
+      "message": "kind \"agent_input_current_system_message_additional_guidance\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_document_audits_c_audits_u_audits_w_440610",
+      "message": "kind \"agent_input_document_audits_c_audits_u_audits_w_440610\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_document_audits_c_audits_u_audits_w_954fce",
+      "message": "kind \"agent_input_document_audits_c_audits_u_audits_w_954fce\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_document_name_page_content",
+      "message": "kind \"agent_input_document_name_page_content\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_dynamic_context",
+      "message": "kind \"agent_input_dynamic_context\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_extraction_unit",
+      "message": "kind \"agent_input_extraction_unit\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_front_back_card_history_learner_context",
+      "message": "kind \"agent_input_front_back_card_history_learner_context\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_front_back_rubric_seconds_allowed_22f70d",
+      "message": "kind \"agent_input_front_back_rubric_seconds_allowed_22f70d\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_front_back_topic_difficulty_56526b",
+      "message": "kind \"agent_input_front_back_topic_difficulty_56526b\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_image_description_1497da",
+      "message": "kind \"agent_input_image_description_1497da\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "agent_input_instructions_scraped_content_queries_search_results",
       "message": "kind \"agent_input_instructions_scraped_content_queries_search_results\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_intent_or_content_style",
+      "message": "kind \"agent_input_intent_or_content_style\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_intent_or_content_style_count",
+      "message": "kind \"agent_input_intent_or_content_style_count\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -19567,8 +21841,146 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "agent_input_json_data_fields_data_data_description_current_schema",
+      "message": "kind \"agent_input_json_data_fields_data_data_description_current_schema\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_keywords_search_results",
+      "message": "kind \"agent_input_keywords_search_results\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_legal_area_transcript",
+      "message": "kind \"agent_input_legal_area_transcript\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_overall_agent_goal_tone_and_tyle_response_format_constra_63058a",
+      "message": "kind \"agent_input_overall_agent_goal_tone_and_tyle_response_format_constra_63058a\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_page_content_45ae23",
+      "message": "kind \"agent_input_page_content_45ae23\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_page_content_800869",
+      "message": "kind \"agent_input_page_content_800869\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_page_context",
+      "message": "kind \"agent_input_page_context\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_podcast_content",
+      "message": "kind \"agent_input_podcast_content\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_podcast_topic_or_content_17ec37",
+      "message": "kind \"agent_input_podcast_topic_or_content_17ec37\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_prior_cleaned_suffix_raw_window_session_title_module_id",
+      "message": "kind \"agent_input_prior_cleaned_suffix_raw_window_session_title_module_id\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_project_overview_victory_condition_first_step",
+      "message": "kind \"agent_input_project_overview_victory_condition_first_step\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_prompt_config",
+      "message": "kind \"agent_input_prompt_config\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_prompt_object_sample_response_input_fields_to_include_pa_3f4ca3",
+      "message": "kind \"agent_input_prompt_object_sample_response_input_fields_to_include_pa_3f4ca3\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_prompt_object_sample_response_input_fields_to_include_pa_f4ceb8",
+      "message": "kind \"agent_input_prompt_object_sample_response_input_fields_to_include_pa_f4ceb8\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_prompt_purpose",
+      "message": "kind \"agent_input_prompt_purpose\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "agent_input_qme_report",
       "message": "kind \"agent_input_qme_report\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_query",
+      "message": "kind \"agent_input_query\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_raw_window_module_id_prior_concepts_session_title",
+      "message": "kind \"agent_input_raw_window_module_id_prior_concepts_session_title\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_rulebook_document_brief",
+      "message": "kind \"agent_input_rulebook_document_brief\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_scraped_content_focus_area",
+      "message": "kind \"agent_input_scraped_content_focus_area\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_selection_content_current_message_role_context",
+      "message": "kind \"agent_input_selection_content_current_message_role_context\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_service_name_region_name_state_name_intro_section_data",
+      "message": "kind \"agent_input_service_name_region_name_state_name_intro_section_data\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_since_iso_environment_label",
+      "message": "kind \"agent_input_since_iso_environment_label\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_site_name_site_domain_site_brand_site_vertical_cb3911",
+      "message": "kind \"agent_input_site_name_site_domain_site_brand_site_vertical_cb3911\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -19579,8 +21991,86 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "agent_input_text",
+      "message": "kind \"agent_input_text\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_topic_1e50f4",
+      "message": "kind \"agent_input_topic_1e50f4\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_topic_count_difficulty_grade_level_8dffc3",
+      "message": "kind \"agent_input_topic_count_difficulty_grade_level_8dffc3\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_topic_front_back_struggle_signal_9481fb",
+      "message": "kind \"agent_input_topic_front_back_struggle_signal_9481fb\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_topic_grade_level_difficulty",
+      "message": "kind \"agent_input_topic_grade_level_difficulty\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_topic_page_content_page_url_page_title_0c274b",
+      "message": "kind \"agent_input_topic_page_content_page_url_page_title_0c274b\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_topic_sources",
+      "message": "kind \"agent_input_topic_sources\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_transcript_087e8c",
+      "message": "kind \"agent_input_transcript_087e8c\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_transcript_attempts_aggregate_remaining_cards_8ab902",
+      "message": "kind \"agent_input_transcript_attempts_aggregate_remaining_cards_8ab902\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_transcript_delta_round_directive_stage_goal_held_note_2c4562",
+      "message": "kind \"agent_input_transcript_delta_round_directive_stage_goal_held_note_2c4562\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_user_input_page_url_page_metadata_list_root_hint",
+      "message": "kind \"agent_input_user_input_page_url_page_metadata_list_root_hint\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_user_input_page_url_page_text_page_metadata",
+      "message": "kind \"agent_input_user_input_page_url_page_text_page_metadata\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "agent_input_video_description",
       "message": "kind \"agent_input_video_description\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "agent_input_who_is_going_on_the_trip_event_or_purpose_age_ranges_of",
+      "message": "kind \"agent_input_who_is_going_on_the_trip_event_or_purpose_age_ranges_of\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -19767,6 +22257,18 @@
       "code": "no-skill",
       "kind": "competitor_opportunity_autopsy_result",
       "message": "kind \"competitor_opportunity_autopsy_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "competitor_opportunity_autopsy_v1",
+      "message": "kind \"competitor_opportunity_autopsy_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "competitor_page_autopsy_v1",
+      "message": "kind \"competitor_page_autopsy_v1\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -20001,6 +22503,12 @@
       "code": "no-skill",
       "kind": "diff",
       "message": "kind \"diff\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "digital_pr_reputation_brief_v1",
+      "message": "kind \"digital_pr_reputation_brief_v1\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -20407,6 +22915,18 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "gsc_site_intake_bundle",
+      "message": "kind \"gsc_site_intake_bundle\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "gsc_site_intake_proposal",
+      "message": "kind \"gsc_site_intake_proposal\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "hash_result",
       "message": "kind \"hash_result\" has no render_block skill teaching it"
     },
@@ -20575,6 +23095,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "keyword_classification_batch_v1",
+      "message": "kind \"keyword_classification_batch_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "kg_entity_mentions_page",
       "message": "kind \"kg_entity_mentions_page\" has no render_block skill teaching it"
     },
@@ -20613,6 +23139,12 @@
       "code": "no-skill",
       "kind": "kind_validation_result",
       "message": "kind \"kind_validation_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "kit_title",
+      "message": "kind \"kit_title\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -20769,6 +23301,12 @@
       "code": "no-skill",
       "kind": "masterwork.corpus_synthesis.offer",
       "message": "kind \"masterwork.corpus_synthesis.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "masterwork.intake_design.offer",
+      "message": "kind \"masterwork.intake_design.offer\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -21033,6 +23571,18 @@
       "code": "no-skill",
       "kind": "page_image",
       "message": "kind \"page_image\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "page_keyword_analysis_v1",
+      "message": "kind \"page_keyword_analysis_v1\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "page_keyword_map_v1",
+      "message": "kind \"page_keyword_map_v1\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -21313,12 +23863,6 @@
     {
       "severity": "yellow",
       "code": "no-skill",
-      "kind": "press_source_request_ingest_result",
-      "message": "kind \"press_source_request_ingest_result\" has no render_block skill teaching it"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-skill",
       "kind": "press_story_angle_generation_result",
       "message": "kind \"press_story_angle_generation_result\" has no render_block skill teaching it"
     },
@@ -21327,6 +23871,24 @@
       "code": "no-skill",
       "kind": "press_story_angle_ruling_result",
       "message": "kind \"press_story_angle_ruling_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "proof_attestation",
+      "message": "kind \"proof_attestation\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "proof_check_status",
+      "message": "kind \"proof_check_status\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "proof_recording",
+      "message": "kind \"proof_recording\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -21499,6 +24061,24 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "research_cross_cutting_tags",
+      "message": "kind \"research_cross_cutting_tags\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "research_page_analysis",
+      "message": "kind \"research_page_analysis\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "research_tag_suggestions",
+      "message": "kind \"research_tag_suggestions\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "research.capture_coverage.offer",
       "message": "kind \"research.capture_coverage.offer\" has no render_block skill teaching it"
     },
@@ -21625,6 +24205,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "seo_authority_route_analysis",
+      "message": "kind \"seo_authority_route_analysis\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "seo_authority_route_result",
       "message": "kind \"seo_authority_route_result\" has no render_block skill teaching it"
     },
@@ -21657,6 +24243,18 @@
       "code": "no-skill",
       "kind": "seo_competitor_discovery_result",
       "message": "kind \"seo_competitor_discovery_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "seo_finding_fix_context",
+      "message": "kind \"seo_finding_fix_context\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "seo_finding_fix_proposal",
+      "message": "kind \"seo_finding_fix_proposal\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -22153,6 +24751,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "study_summary",
+      "message": "kind \"study_summary\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "surfaces_client.binding_context.offer",
       "message": "kind \"surfaces_client.binding_context.offer\" has no render_block skill teaching it"
     },
@@ -22269,6 +24873,12 @@
       "code": "no-skill",
       "kind": "tools.content_summarization.offer",
       "message": "kind \"tools.content_summarization.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "topic_assignment_batch_v1",
+      "message": "kind \"topic_assignment_batch_v1\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",

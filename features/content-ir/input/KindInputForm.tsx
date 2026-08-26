@@ -150,6 +150,10 @@ export default function KindInputForm({
           resolveComponent(kind, "web", "input"),
           contract.schema,
           contract.dataOnly,
+          // A stored JSON Schema is enough to edit against, so a kind with no
+          // input-component row still gets the instance-JSON bench instead of
+          // a dead end.
+          contract.emittedJsonSchema !== null,
         );
         if (path.mode === "refused") {
           // Post-eviction, dataOnly no longer refuses (it annotates), so every
