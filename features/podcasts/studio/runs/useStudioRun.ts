@@ -46,7 +46,7 @@ import {
 import { createStreamingMp3Player } from "@/features/audio/streamingMp3Player";
 import { studioRunsService } from "./service";
 import { rowToRunState, detailToRunState, mergeRowPrompts } from "./mapping";
-import { hasPendingStart, takePendingStart } from "./pendingStart";
+import { takePendingStart } from "./pendingStart";
 import { reportMediaDurabilityViolation } from "@/lib/media/durability";
 import {
   regenerateAsset as regenerateAssetApi,
@@ -936,17 +936,25 @@ export function useStudioRun(runId: string): UseStudioRun {
         );
       }
 
+      // Only one boot may own the one-shot pending start and the mount
+      // decision. Reading it and consuming it in separate steps let a competing
+      // boot take the request between those operations; the losing boot then
+      // reconciled the stale backend id that the missing detail had disproved.
+      if (startedRef.current) return;
+      startedRef.current = true;
+      const pending = takePendingStart(runId);
+
       // Decide orphan-ness BEFORE the page stops loading. It is a property of
       // what we just hydrated, not of the start/resume decision further down —
       // and settling it later let the "interrupted, everything so far is saved"
       // branch render first, which is the exact opposite of the truth. A queued
-      // live start means the run is about to stream, so it is not orphaned;
-      // `hasPendingStart` peeks without consuming the single take below.
+      // live start means the run is about to stream, so it is not orphaned.
+      // `pending` is the atomically claimed payload, not a non-consuming peek.
       const isOrphaned = isOrphanedServerRun({
         hasClientRow: Boolean(row),
         clientStatus: row?.status,
         hasServerDetail: Boolean(runDetail),
-        hasPendingStart: hasPendingStart(runId),
+        hasPendingStart: Boolean(pending),
       });
       setOrphaned(isOrphaned);
       if (isOrphaned) {
@@ -981,10 +989,6 @@ export function useStudioRun(runId: string): UseStudioRun {
         }
       }
 
-      if (startedRef.current) return;
-      startedRef.current = true;
-
-      const pending = takePendingStart(runId);
       // THE MOUNT DECISION, made on the TRUE status (runs/run-truth.ts): read
       // the durable record, and if it is still generating, attach to the live
       // stream; if it already delivered, it is done and nothing is offered.

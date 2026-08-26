@@ -108,6 +108,14 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-25 — **The missing-run guard now claims a fresh start atomically.**
+  Orphan classification previously peeked at the module-scoped pending request
+  and consumed it later. Two overlapping boots could both pass the peek, one
+  consume the request, and the other continue to reconcile a stale
+  `backend_run_id` even though the durable-detail read had already proved the
+  run absent. One boot now owns both the one-shot request and mount decision;
+  every loser stops before reconcile/resume.
+
 - 2026-08-25 — **A stale `backend_run_id` no longer triggers impossible
   reconcile/resume calls.** The durable-detail lookup, not the scratch row's
   cached id, proves that a server run exists. A running/failed
