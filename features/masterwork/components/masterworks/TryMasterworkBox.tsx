@@ -2,71 +2,73 @@
 
 // features/masterwork/components/masterworks/TryMasterworkBox.tsx
 //
-// "Try your Masterwork" IN PLACE — the Masterwork is a working AI checker, so
-// the Masterworks page lets the Expert run it right here: paste text (edit
-// shape) or a brief (generate shape), watch the real stages tick by, and read
-// the chief's ruling when it lands. The workflow studio stays available as the
-// power door; it is no longer the only way to run a Masterwork.
+// "Try your Masterwork" IN PLACE — the Masterwork is a working AI system, so
+// every surface that shows one lets the Expert run it right here: fill in the
+// fields the BUILDER designed, watch the real steps, and receive the finished
+// work.
 //
-// Canonical machinery, nothing bespoke (mirrors features/vision-interview/
-// hooks/useInterviewRun.ts): callApi starts the run (typed path), the inline
-// NDJSON detaches after handing us run_id, followWorkflowRunStream owns the
-// durable SSE (reconnects, stall detection), and the final markdown renders
-// through RichDocument (the one pipeline). The run itself is durable server
-// work — closing the page loses nothing; the run lands in Past runs.
+// ── 2026-08-26: THIS BOX NO LONGER DRIVES ITS OWN STREAM ───────────────────
+// It used to: its own SSE follower, its own stage list, its own "is this JSON?"
+// guard, its own verdict reader. Every one of those was a SECOND, worse copy of
+// machinery `features/workflow-runtime` already owns — and each copy drifted.
+// Arman, 2026-08-26, on the result: "the data streamed in as raw json and
+// absolutely no __kind components… I didn't get any cool, fancy things that
+// displayed beautifully." The canonical surface had already solved that; this
+// box simply wasn't using it.
 //
-// And a refresh loses nothing EITHER: the run id is remembered per Masterwork
-// for the tab's lifetime, so on mount we read the run row and either rejoin
-// the live run (attachWorkflowRun replays the node lifecycle we missed) or
-// show the verdict it reached while the Expert was away.
+// So the plumbing is now 100% canonical, and the ONLY thing this file owns is
+// the Masterwork framing around it:
+//   * `useWorkflowRunControls().startRun` — the one typed start path.
+//   * `useWorkflowRun(runId)`             — THE Run Stream Adapter: replay on
+//     mount (a refresh rejoins exactly where it was), live SSE + poller, and
+//     per-node streaming lanes fed through the canonical accumulator.
+//   * `InvocationBody`                    — THE renderer: typed partial kinds
+//     render progressively as real components, a declared-kind step shows its
+//     arriving silhouette instead of a JSON dump, and the settled kind-checked
+//     document takes over when the run ends.
+//   * `describeWorkflowSteps` / `deliverableSteps` — the step list and which
+//     step carries the deliverable, both read from the definition.
+//
+// A future field type, kind component or streaming fix lands here for free
+// because it lands THERE. Never reintroduce a second stream reader.
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CircleCheck, CircleDashed, CircleX, Play, Scale } from "lucide-react";
+
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ProTextarea } from "@/components/official/ProTextarea";
-import { callApi } from "@/lib/api/call-api";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
-import { attachWorkflowRun } from "@/features/agents/redux/execution-system/thunks/attach-workflow-run";
+import { useAppSelector } from "@/lib/redux/hooks";
+
+import { useWorkflowRun } from "@/features/workflow-runtime/hooks/useWorkflowRun";
+import { useWorkflowRunControls } from "@/features/workflow-runtime/hooks/useWorkflowRunControls";
 import {
-  followWorkflowRunStream,
-  TERMINAL_RUN_EVENTS,
-  type WorkflowRunWireEvent,
-} from "@/features/agents/redux/execution-system/thunks/follow-workflow-run-stream";
-import { RichDocument } from "@/features/rich-document/RichDocument";
+  selectNodeAggregate,
+  selectNodeAggregatePhases,
+  selectRunStatus,
+} from "@/features/workflow-runtime/redux/workflow-runs.selectors";
+import { TERMINAL_RUN_STATUSES } from "@/features/workflow-runtime/types";
+import {
+  InterruptCard,
+  InvocationBody,
+} from "@/features/workflow-runtime/components/readout-parts";
+import {
+  describeWorkflowSteps,
+  deliverableSteps,
+  type RunStepPresentation,
+} from "@/features/workflow-runtime/components/run/node-presentation";
+import { RunFormFieldControl } from "@/features/workflow-runtime/components/RunFormFieldControl";
+import type { RunFormField } from "@/features/workflow-runtime/surface/run-form";
 import {
   explainRunFailure,
   type RunFailureExplanation,
-  type RunFailureInput,
 } from "@/features/workflow-runtime/run-failure-explanation";
-import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+
 import {
+  getMasterworkDefinition,
   getMasterworkRunFields,
   getMasterworkRunVerdict,
-  type MasterworkRunVerdict,
 } from "../../service";
-import { RunFormFieldControl } from "@/features/workflow-runtime/components/RunFormFieldControl";
-import type { RunFormField } from "@/features/workflow-runtime/surface/run-form";
-
-type Phase = "idle" | "starting" | "running" | "done" | "failed";
-
-interface StageRow {
-  nodeId: string;
-  status: "running" | "done" | "failed";
-}
-
-// workflow.run's terminal vocabulary — "errored" is what a mid-run node
-// failure writes (proven live 2026-08-17: a run erroring left this box
-// "Working…" forever because the list missed it).
-const TERMINAL_STATUSES = [
-  "completed",
-  "failed",
-  "errored",
-  "cancelled",
-  "abandoned",
-];
 
 /**
  * The last run started for this Masterwork, remembered for the tab's lifetime
@@ -100,50 +102,6 @@ function forgetRun(masterworkId: string): void {
   }
 }
 
-/** A section code (`rankability`, `page_purpose`) as the Expert wrote it. */
-function sectionName(code: string): string {
-  const words = code.replaceAll("_", " ").trim();
-  return words.charAt(0).toUpperCase() + words.slice(1);
-}
-
-/**
- * Node-id → plain language.
- *
- * Arman, 2026-08-21, reading his own run: the list said "fan purpose", "cite
- * structure", "Writing variant expansion" — internal node ids leaking through a
- * `replaceAll("_", " ")` fallback, plus one label that was simply wrong (`mk_X`
- * prepares the checks; it does not write a variant). Every id BOTH shapes can
- * emit is named here, and the fallback says something true rather than
- * something internal. If you add a node to build.py, add it here in the same
- * change — an unnamed step is a step the Expert watches with no idea what it is.
- */
-function stageLabel(nodeId: string): string {
-  if (nodeId === "ask") return "Reading your submission";
-  if (nodeId === "maker") return "Writing the drafts";
-  if (nodeId === "editor") return "Applying corrections";
-  if (nodeId === "chief") return "The expert's final ruling";
-  if (nodeId === "show") return "Preparing your result";
-  if (nodeId === "understudy") return "Doing the whole job (first cut)";
-
-  const section = (prefix: string) => sectionName(nodeId.slice(prefix.length));
-  if (nodeId.startsWith("audit_"))
-    return `Checking your ${section("audit_")} rules`;
-  if (nodeId.startsWith("mk_")) return `Preparing the ${section("mk_")} checks`;
-  if (nodeId.startsWith("fan_"))
-    return `Checking every draft — ${section("fan_")}`;
-  if (nodeId.startsWith("flat_"))
-    return `Gathering the ${section("flat_")} findings`;
-  // cite_ + gate_ are the citation gate: every finding must point at a real
-  // rule of yours, or the run stops rather than hand you something untraceable.
-  if (nodeId.startsWith("cite_") || nodeId.startsWith("gate_"))
-    return `Making sure every ${section(nodeId.startsWith("cite_") ? "cite_" : "gate_")} finding points at a real rule`;
-  if (nodeId.startsWith("collect_"))
-    return `Collecting the ${section("collect_")} findings`;
-  if (nodeId.startsWith("fmt_"))
-    return `Writing up the ${section("fmt_")} findings`;
-  return "Working";
-}
-
 export function TryMasterworkBox({
   masterworkId,
   masterworkKind,
@@ -171,520 +129,253 @@ export function TryMasterworkBox({
    */
   submitLabel?: string | null;
   /**
-   * Surface-specific display labels for otherwise-canonical run fields. The
-   * field keys and submitted payload never change. This is intentionally an
-   * ordered presentation override: generic system workflows such as the
-   * Understudy can use plain human labels without rewriting purpose-built
-   * Masterwork intake copy or forking the run form.
+   * Caller override for the FALLBACK field labels only — used when the
+   * definition has no legible `io.user_input` node to read (the Understudy,
+   * and any hand-authored workflow). The BUILDER'S OWN designed fields always
+   * win over this: a caller cannot know the domain better than the intake
+   * designer that read the deliverable.
    */
-  fieldLabels?: readonly string[];
+  fieldLabels?: string[];
   /** Fired when a run reaches a terminal state (refresh Past runs). */
   onRunFinished: () => void;
   /**
-   * Owner-only door beside the verdict: hand the Masterwork's own output to
-   * the Audition, prefilled, so "is this actually as good as the real thing?"
-   * is one click from the answer instead of a copy-paste. Omit to hide it.
+   * Owner-only door beside the result: hand the Masterwork's own output to
+   * the Audition, prefilled. Omit to hide it.
    */
   onCompare?: (candidateText: string) => void;
 }) {
-  const dispatch = useAppDispatch();
-  // THE BUILDER'S OWN FIELDS (Arman, 2026-08-21): every Build writes an `ask`
-  // node with labelled inputs, and this box used to throw that away and show
-  // a generic "Try it now" textarea. The spec is read off the definition; the
-  // generic pair below is only the fallback while it loads (or for a
-  // hand-authored workflow with no legible ask node).
-  const [askFields, setAskFields] = useState<RunFormField[] | null>(null);
-  const [values, setValues] = useState<Record<string, unknown>>({});
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [stages, setStages] = useState<StageRow[]>([]);
-  /**
-   * Live token deltas from the node currently talking (Arman, 2026-08-25, on
-   * run beaf6a28: the chief burned 112 of 141 seconds behind one spinner and
-   * everything "appeared instantly" — the SERVER streamed the whole time; this
-   * box just dropped every `node_stream` frame on the floor). Keyed to one
-   * node at a time: a new streaming node replaces the previous node's text.
-   */
-  const [liveText, setLiveText] = useState<{ nodeId: string; text: string } | null>(
-    null,
-  );
-  const liveTailRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    liveTailRef.current?.scrollIntoView({ block: "nearest" });
-  }, [liveText]);
-  const [verdict, setVerdict] = useState<MasterworkRunVerdict | null>(null);
-  const [failure, setFailure] = useState<RunFailureExplanation | null>(null);
-  /** True while showing a run recovered on mount rather than started here. */
-  const [rejoined, setRejoined] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
-  const runIdRef = useRef<string | null>(null);
-  const adoptedRef = useRef<{
-    requestId: string;
-    conversationId: string;
-  } | null>(null);
+  const { startRun, starting } = useWorkflowRunControls();
   const isEdit = masterworkKind !== "generate";
 
-  useEffect(() => () => abortRef.current?.abort(), []);
+  const [askFields, setAskFields] = useState<RunFormField[] | null>(null);
+  const [values, setValues] = useState<Record<string, unknown>>({});
+  const [steps, setSteps] = useState<RunStepPresentation[]>([]);
+  const [runId, setRunId] = useState<string | null>(() => recallRun(masterworkId));
+  const [failure, setFailure] = useState<RunFailureExplanation | null>(null);
+  /** Terminal handling fires exactly once per run — a ref, so settling it
+   *  never schedules another render. */
+  const notifiedFor = useRef<string | null>(null);
 
+  // ── THE ONE ADOPTION. Replay + live SSE + lanes, all of it. ──────────────
+  useWorkflowRun(runId);
+
+  const runStatus = useAppSelector(selectRunStatus(runId ?? ""));
+  const phases = useAppSelector(selectNodeAggregatePhases(runId ?? ""));
+  const terminal = runStatus !== null && TERMINAL_RUN_STATUSES.has(runStatus);
+  const running = runId !== null && !terminal;
+
+  // ── The definition: the fields to ask for, and the steps to show ────────
   useEffect(() => {
     let alive = true;
     void getMasterworkRunFields(masterworkId).then((f) => {
       if (alive && f.length) setAskFields(f);
+    });
+    void getMasterworkDefinition(masterworkId).then((def) => {
+      if (alive && def) setSteps(describeWorkflowSteps(def));
     });
     return () => {
       alive = false;
     };
   }, [masterworkId]);
 
-  // The fields to render: the builder's own, or — only for a definition with
-  // no legible input node — one honest fallback. The fallback deliberately
-  // does NOT invent domain wording it cannot know.
-  const fields: RunFormField[] = askFields ?? [
-    {
-      key: isEdit ? "document" : "job_brief",
-      label: isEdit ? "The text to check" : "What you want made",
-      type: "long_text",
-      required: true,
-      options: [],
-      help: "",
-      placeholder: "",
-      defaultValue: null,
-    },
-  ];
+  // A refresh mid-run rejoins: the adapter REPLAYS the durable event log, so
+  // simply naming the run is enough — no bespoke catch-up path.
+  // A refresh mid-run rejoins: `runId` is SEEDED from the remembered id in
+  // useState's initializer (above), so the adapter adopts and REPLAYS the
+  // durable event log on the very first render — no effect, no cascade, no
+  // bespoke catch-up path.
+
+  // The steps worth showing, and the one that carries the deliverable. The
+  // input step is never shown — the person just filled it in.
+  const visibleSteps = useMemo(
+    () => steps.filter((s) => !s.collectsInput),
+    [steps],
+  );
+  const finalStep = useMemo(() => {
+    const withOutput = deliverableSteps(visibleSteps);
+    // `show` is the builder's own handover node; otherwise the last step that
+    // declares an output is the closest honest answer.
+    return (
+      visibleSteps.find((s) => s.nodeId === "show") ??
+      withOutput[withOutput.length - 1] ??
+      visibleSteps[visibleSteps.length - 1] ??
+      null
+    );
+  }, [visibleSteps]);
+
+  const finalAggregate = useAppSelector(
+    selectNodeAggregate(runId ?? "", finalStep?.nodeId ?? ""),
+  );
+  const finalInvocation = finalAggregate.invocations[0] ?? null;
+
+  // ── Terminal handling: tell the caller once, explain a failure once ──────
+  useEffect(() => {
+    if (!runId || !terminal || notifiedFor.current === runId) return;
+    notifiedFor.current = runId;
+    onRunFinished();
+    if (runStatus === "completed") return;
+    // The run ROW's recorded error is richer than anything the stream carried.
+    void getMasterworkRunVerdict(runId)
+      .then((row) => setFailure(explainRunFailure(row?.error ?? null, whatItRuns)))
+      .catch(() =>
+        setFailure(explainRunFailure(null, whatItRuns)),
+      );
+  }, [runId, terminal, runStatus, onRunFinished, whatItRuns]);
+
+  // ── The fields, and starting ────────────────────────────────────────────
+  const fields: RunFormField[] =
+    askFields ??
+    [
+      {
+        key: isEdit ? "document" : "job_brief",
+        label: fieldLabels?.[0] ?? (isEdit ? "The text to check" : "What you want made"),
+        type: "long_text" as const,
+        required: true,
+        options: [],
+        help: "",
+        placeholder: "",
+        defaultValue: null,
+      },
+      ...(isEdit
+        ? [
+            {
+              key: "notes",
+              label: fieldLabels?.[1] ?? "Facts that must not change",
+              type: "long_text" as const,
+              required: false,
+              options: [],
+              help: "",
+              placeholder: "",
+              defaultValue: null,
+            },
+          ]
+        : []),
+    ];
   const setField = (key: string, value: unknown) =>
     setValues((prev) => ({ ...prev, [key]: value }));
 
-  // THE ONE FAILURE DOOR. Every path that can stop a run goes through here, so
-  // there is exactly one place that decides what a stopped run says — and it
-  // is never bare. `raw` is the best reason we hold at the call site; when a
-  // run row exists, its recorded error is richer than anything the stream
-  // carries, so it is read and preferred before explaining. It travels as the
-  // WHOLE error record (or a bare string, from a throw) — never narrowed —
-  // because that record is where the engine's structured cause lives.
-  const failRunRef = useRef<
-    (runId: string | null, raw?: RunFailureInput) => Promise<void>
-  >(async () => undefined);
-  failRunRef.current = async (runId, raw) => {
-    let reason: RunFailureInput = raw ?? null;
-    if (runId) {
-      try {
-        const row = await getMasterworkRunVerdict(runId);
-        if (row?.error) reason = row.error;
-      } catch {
-        // The run row is unreadable — explain from what we already have
-        // rather than degrade to "something went wrong".
-      }
-    }
-    setPhase("failed");
-    setFailure(explainRunFailure(reason, whatItRuns));
-  };
-
-  // Backstop: the SSE follower is the primary signal, but a run is durable
-  // server work — if the stream dies silently (proxy restart, dropped
-  // reconnect), the run row is still truth. While running, check it every
-  // 20s; a terminal status the stream never delivered recovers the verdict
-  // AND screams, because a firing backstop means the stream path failed.
-  useEffect(() => {
-    if (phase !== "running") return;
-    const timer = setInterval(() => {
-      const runId = runIdRef.current;
-      if (!runId) return;
-      void getMasterworkRunVerdict(runId)
-        .then((result) => {
-          if (!result) return;
-          if (TERMINAL_STATUSES.includes(result.status)) {
-            console.error(
-              "[TryMasterworkBox] run reached a terminal state but the event stream never delivered it — recovered from the run row",
-              { runId, status: result.status },
-            );
-            abortRef.current?.abort();
-            if (result.status === "completed") {
-              setVerdict(result);
-              setPhase("done");
-            } else {
-              void failRunRef.current(runId, result.error);
-            }
-            onRunFinished();
-          }
-        })
-        .catch(() => undefined);
-    }, 20_000);
-    return () => clearInterval(timer);
-  }, [phase, onRunFinished]);
-
-  const handleRunEvent = (event: WorkflowRunWireEvent) => {
-    // Breadcrumb for the missed-terminal-event investigation (see the
-    // backstop below): if the backstop ever fires, this trail shows exactly
-    // which event the stream died after.
-    console.debug(
-      "[TryMasterworkBox] run event",
-      event.event,
-      event.node_id ?? "",
-    );
-    const nodeId = typeof event.node_id === "string" ? event.node_id : null;
-    if (
-      nodeId &&
-      event.event === "node_stream" &&
-      typeof event.delta === "string" &&
-      event.delta
-    ) {
-      // Text kinds only — structured/blocks frames carry their own kinds and
-      // would render as JSON soup here.
-      const kind = typeof event.kind === "string" ? event.kind : "chunk";
-      if (kind === "chunk" || kind === "text") {
-        const delta = event.delta;
-        setLiveText((prev) =>
-          prev && prev.nodeId === nodeId
-            ? { nodeId, text: prev.text + delta }
-            : { nodeId, text: delta },
-        );
-      }
-      return;
-    }
-    if (nodeId && event.event === "node_started") {
-      setStages((prev) =>
-        prev.some((s) => s.nodeId === nodeId)
-          ? prev
-          : [...prev, { nodeId, status: "running" }],
-      );
-    }
-    if (
-      nodeId &&
-      (event.event === "node_completed" || event.event === "node_failed")
-    ) {
-      setStages((prev) =>
-        prev.map((s) =>
-          s.nodeId === nodeId
-            ? {
-                ...s,
-                status: event.event === "node_completed" ? "done" : "failed",
-              }
-            : s,
-        ),
-      );
-      setLiveText((prev) => (prev?.nodeId === nodeId ? null : prev));
-    }
-    if (TERMINAL_RUN_EVENTS.has(event.event)) {
-      const runId = runIdRef.current;
-      if (event.event !== "run_completed") {
-        void failRunRef.current(runId, event.error_message ?? null);
-        onRunFinished();
-        return;
-      }
-      void (async () => {
-        try {
-          const result = runId ? await getMasterworkRunVerdict(runId) : null;
-          setVerdict(result);
-          setPhase("done");
-          // We watched this one land, whether or not we rejoined mid-run —
-          // so drop the "finished while you were away" note.
-          setRejoined(false);
-        } catch {
-          // The run finished; the verdict read failing is recoverable via
-          // Past runs — say so instead of pretending the run failed.
-          setPhase("failed");
-          setFailure({
-            headline: `${whatItRuns} finished its work, but the result couldn't be loaded onto this page.`,
-            nextStep:
-              "Nothing was lost — open it under Past runs to read what it produced, or reload this page.",
-            technical: null,
-            unrecognized: false,
-            action: null,
-            // Not a run failure at all — the run succeeded and the verdict
-            // read didn't. There is no engine cause to carry.
-            cause: null,
-          });
-        } finally {
-          onRunFinished();
-        }
-      })();
-    }
-  };
-
-  // The event handler is re-created every render (it closes over the latest
-  // onRunFinished); the mount-time re-attach must run ONCE, so it reaches the
-  // handler through a ref instead of taking it as a dependency.
-  const handleRunEventRef = useRef(handleRunEvent);
-  handleRunEventRef.current = handleRunEvent;
-
-  // ── Re-attach after a refresh ──────────────────────────────────────────
-  // The run is durable server work; only this view was ephemeral. On mount,
-  // if this Masterwork has a remembered run: still going → rejoin its event
-  // feed (the feed replays the node lifecycle from the start, so the stage
-  // list rebuilds itself); already finished → show what it decided while we
-  // were away. A run row that no longer reads is forgotten rather than nagged
-  // at.
-  useEffect(() => {
-    const runId = recallRun(masterworkId);
-    if (!runId) return;
-    let cancelled = false;
-    const controller = new AbortController();
-
-    void getMasterworkRunVerdict(runId)
-      .then((result) => {
-        if (cancelled) return;
-        if (!result) {
-          forgetRun(masterworkId);
-          return;
-        }
-        runIdRef.current = runId;
-        setRejoined(true);
-        if (result.status === "completed") {
-          setVerdict(result);
-          setPhase("done");
-          return;
-        }
-        if (TERMINAL_STATUSES.includes(result.status)) {
-          void failRunRef.current(runId, result.error);
-          return;
-        }
-        // Still running: rejoin the live feed. abortRef is this box's single
-        // teardown handle — the unmount effect and any new run both abort it.
-        abortRef.current?.abort();
-        abortRef.current = controller;
-        setPhase("running");
-        void dispatch(
-          attachWorkflowRun({
-            runId,
-            signal: controller.signal,
-            onEvent: (event) => handleRunEventRef.current(event),
-          }),
-        );
-      })
-      .catch(() => undefined);
-
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [masterworkId, dispatch]);
-
-  /** What a finished run produced — the Audition's candidate, when there is one. */
-  const candidateText =
-    phase === "done" && verdict
-      ? (verdict.resultText ??
-        verdict.editorText ??
-        verdict.chiefText ??
-        verdict.understudyText)
-      : null;
-
-  const start = async () => {
-    // "Empty" depends on the field type now that these are real controls:
-    // a blank string, an unticked yes/no and an unpicked choice are all
-    // holes; the number 0 is a real answer.
+  const start = useCallback(async () => {
     const isBlank = (v: unknown) =>
       v === undefined || v === null || (typeof v === "string" && !v.trim());
     const missing = fields.find((f) => f.required && isBlank(values[f.key]));
     if (missing) {
-      toast.error(
-        `${missing.label.split("(")[0].trim()} — fill this in first.`,
-      );
+      toast.error(`${missing.label.split("(")[0].trim()} — fill this in first.`);
       return;
     }
-    setPhase("starting");
-    setStages([]);
-    setVerdict(null);
     setFailure(null);
-    setRejoined(false);
-    runIdRef.current = null;
+    notifiedFor.current = null;
     forgetRun(masterworkId);
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+    setRunId(null);
 
-    const consume = dispatch(
-      adoptForeignStream({
-        onAdopted: ({ requestId, conversationId }) => {
-          adoptedRef.current = { requestId, conversationId };
-        },
-        onEvent: (event: TypedStreamEvent) => {
-          const wire = event as unknown as {
-            event?: string;
-            data?: { event?: string; run_id?: string };
-          };
-          if (wire.event !== "data") return;
-          if (
-            wire.data?.event === "workflow_run_started" &&
-            typeof wire.data.run_id === "string"
-          ) {
-            const adopted = adoptedRef.current;
-            if (!adopted) return;
-            runIdRef.current = wire.data.run_id;
-            // Remembered before the first node event: a refresh one second
-            // into a four-minute run must still find its way back.
-            rememberRun(masterworkId, wire.data.run_id);
-            setPhase("running");
-            void dispatch(
-              followWorkflowRunStream({
-                runId: wire.data.run_id,
-                requestId: adopted.requestId,
-                conversationId: adopted.conversationId,
-                signal: controller.signal,
-                onEvent: handleRunEvent,
-              }),
-            );
-          }
-        },
-      }),
-    );
+    const nodeInputs = {
+      ask: Object.fromEntries(fields.map((f) => [f.key, values[f.key] ?? ""])),
+    };
+    const newRunId = await startRun({ definitionId: masterworkId, nodeInputs });
+    if (!newRunId) return; // startRun already explained itself
+    rememberRun(masterworkId, newRunId);
+    setRunId(newRunId);
+  }, [fields, values, masterworkId, startRun]);
 
-    const fieldPayload = Object.fromEntries(
-      fields.map((f) => [f.key, values[f.key] ?? ""]),
-    );
-    try {
-      const result = await dispatch(
-        callApi({
-          path: "/workflows/{definition_id}/runs",
-          method: "POST",
-          pathParams: { definition_id: masterworkId },
-          body: { node_inputs: { ask: fieldPayload } } as never,
-          stream: true,
-          consumeStream: consume,
-        }),
-      );
-      const error = (result as { error?: { message?: string } }).error;
-      if (error) {
-        // No run row exists yet — the start itself was refused, so the
-        // message we were handed is the only reason there is.
-        setPhase("failed");
-        setFailure(explainRunFailure(error.message ?? null, whatItRuns));
-      }
-    } catch (err) {
-      setPhase("failed");
-      setFailure(
-        explainRunFailure(
-          err instanceof Error ? err.message : null,
-          whatItRuns,
-        ),
-      );
-    }
-  };
+  const candidateText =
+    terminal && runStatus === "completed" && finalInvocation?.output
+      ? String(
+          (finalInvocation.output as Record<string, unknown>).result ??
+            (finalInvocation.output as Record<string, unknown>).report ??
+            "",
+        ).trim() || null
+      : null;
 
   return (
     <div className="space-y-3">
-      {/* NO PREAMBLE. Arman, 2026-08-25: the screen above already says what
-          this makes, and repeating it here ("You get back: …" under "It
-          makes: …") is the same sentence twice. Whatever the builder wants
-          to say lives in the FIELDS — their labels, placeholders and help. */}
-      {fields.map((f, index) => {
-        const displayLabel = fieldLabels?.[index] ?? f.label;
-        return (
-          <div key={f.key} className="space-y-1">
-            <label className="text-xs font-medium text-foreground">
-              {displayLabel}
-              {f.required ? null : (
-                <span className="ml-1 font-normal text-muted-foreground">
-                  (optional)
-                </span>
-              )}
-            </label>
-            {/* THE canonical control — same renderer as the run form and the
-              trigger surface, so every field type, placeholder and choice
-              list the input node can declare renders here without this file
-              knowing about any of them. */}
-            <RunFormFieldControl
-              field={f}
-              value={values[f.key] ?? f.defaultValue ?? ""}
-              onChange={(v) => setField(f.key, v)}
-            />
-            {f.help ? (
-              <p className="text-[11px] text-muted-foreground">{f.help}</p>
-            ) : null}
-          </div>
-        );
-      })}
-      <div
-        className={cn("flex items-center gap-2", !onCompare && "justify-end")}
-      >
+      {/* ── The builder's own fields ────────────────────────────────────── */}
+      {fields.map((f) => (
+        <div key={f.key} className="space-y-1">
+          <label className="text-xs font-medium text-foreground">
+            {f.label}
+            {f.required ? null : (
+              <span className="ml-1 font-normal text-muted-foreground">
+                (optional)
+              </span>
+            )}
+          </label>
+          <RunFormFieldControl
+            field={f}
+            value={values[f.key] ?? f.defaultValue ?? ""}
+            onChange={(v) => setField(f.key, v)}
+          />
+          {f.help ? (
+            <p className="text-[11px] text-muted-foreground">{f.help}</p>
+          ) : null}
+        </div>
+      ))}
+
+      <div className="flex items-center gap-2">
         <Button
           size="sm"
-          className="h-8"
           onClick={() => void start()}
-          disabled={phase === "starting" || phase === "running"}
+          disabled={starting || running}
           aria-label={submitLabel ?? `Run ${whatItRuns}`}
           title={submitLabel ?? `Run ${whatItRuns}`}
         >
           <Play className={submitLabel ? "mr-1 h-4 w-4" : "h-4 w-4"} />
-          {phase === "starting"
-            ? "Starting…"
-            : phase === "running"
-              ? "Working…"
-              : (submitLabel ?? "")}
+          {starting ? "Starting…" : running ? "Working…" : (submitLabel ?? "")}
         </Button>
-        {/* One compare entry per Masterwork: it moves to the verdict
-            (prefilled) the moment there is output to compare, so the two
-            never stack. */}
         {onCompare && !candidateText ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-xs text-muted-foreground"
-            onClick={() => onCompare("")}
-          >
-            <Scale className="mr-1 h-3.5 w-3.5" />
-            Compare to the original
-          </Button>
-        ) : null}
-        {(phase === "running" || phase === "starting") && (
           <span className="text-xs text-muted-foreground">
-            {rejoined
-              ? "Picking this run back up where it was — it kept going while you were away."
-              : "Takes a few minutes — safe to leave; it lands under Past runs."}
+            Runs land in your recent runs below.
           </span>
-        )}
+        ) : null}
       </div>
 
-      {stages.length > 0 && phase !== "idle" ? (
-        <ul className="space-y-0.5">
-          {stages.map((s) => (
-            <li
-              key={s.nodeId}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground"
-            >
-              {s.status === "running" ? (
-                <CircleDashed className="h-3 w-3 animate-spin text-primary" />
-              ) : s.status === "done" ? (
-                <CircleCheck className="h-3 w-3 text-primary" />
-              ) : (
-                <CircleX className="h-3 w-3 text-destructive" />
-              )}
-              {stageLabel(s.nodeId)}
-            </li>
-          ))}
-        </ul>
+      {/* ── The steps, straight from the run adapter's phases ───────────── */}
+      {runId && visibleSteps.length > 0 ? (
+        <div className="space-y-1 rounded-md border border-border bg-muted/30 p-2.5">
+          {visibleSteps.map((step) => {
+            const phase = phases[step.nodeId] ?? "idle";
+            return (
+              <div
+                key={step.nodeId}
+                className={cn(
+                  "flex items-center gap-1.5 text-xs",
+                  phase === "idle" ? "text-muted-foreground/50" : "text-muted-foreground",
+                )}
+              >
+                {phase === "running" || phase === "retrying" ? (
+                  <CircleDashed className="h-3 w-3 shrink-0 animate-spin text-primary" />
+                ) : phase === "failed" ? (
+                  <CircleX className="h-3 w-3 shrink-0 text-destructive" />
+                ) : phase === "settled" || phase === "skipped" ? (
+                  <CircleCheck className="h-3 w-3 shrink-0 text-primary" />
+                ) : (
+                  <CircleDashed className="h-3 w-3 shrink-0 opacity-40" />
+                )}
+                <span className="truncate">{step.label}</span>
+              </div>
+            );
+          })}
+        </div>
       ) : null}
 
-      {/* THE WATCHABLE WAIT (run beaf6a28): the currently talking step's own
-          words, streaming live, auto-following the tail. This replaces the
-          "one small spinner for several minutes, then everything at once". */}
-      {/* A schema-bound step's tokens are raw JSON — showing them is worse
-          than the spinner (Arman, 2026-08-26: "the data streamed in as raw
-          json"). Structured steps get an honest progress line; prose streams
-          verbatim. The real fix — rendering typed partial kinds through the
-          canonical lane machinery — is the adopt-workflow-run migration. */}
-      {liveText && phase === "running" ? (
-        /^[{[]/.test(liveText.text.trimStart()) ? (
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <CircleDashed className="h-3 w-3 animate-spin text-primary" />
-            {stageLabel(liveText.nodeId)} — writing the structured answer (
-            {liveText.text.length.toLocaleString()} characters so far)
-          </p>
-        ) : (
-          <div className="max-h-56 overflow-y-auto rounded-md border border-border/60 bg-muted/30 p-2.5">
-            <p className="mb-1 text-[11px] font-medium text-muted-foreground">
-              {stageLabel(liveText.nodeId)} — live
-            </p>
-            <pre className="whitespace-pre-wrap break-words font-sans text-xs text-foreground">
-              {liveText.text}
-            </pre>
-            <div ref={liveTailRef} />
-          </div>
-        )
+      {/* Pause & Ask, if this Masterwork ever interrupts. */}
+      {runId ? <InterruptCard runId={runId} /> : null}
+
+      {/* ── THE RESULT — the canonical renderer. Typed partial kinds render
+          progressively as real components; a declared-kind step shows its
+          arriving silhouette rather than a JSON dump; the settled,
+          kind-checked document takes over when the run ends. Everything
+          Arman asked to see, owned by one component we do not maintain. */}
+      {runId && finalStep && finalInvocation ? (
+        <div className="rounded-md border border-border bg-card p-3">
+          <InvocationBody
+            runId={runId}
+            invocation={finalInvocation}
+            declaredKind={finalStep.outputKind}
+            prefer="live"
+          />
+        </div>
       ) : null}
 
-      {/* A stopped run is never a bare red line: what stopped, why in plain
-          words, what to do next — and the technical cause kept reachable
-          rather than hidden or promoted to the headline. */}
-      {phase === "failed" && failure ? (
+      {failure ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
           <p className="text-xs font-medium text-foreground">
             {failure.headline}
@@ -693,7 +384,7 @@ export function TryMasterworkBox({
             {failure.nextStep}
           </p>
           {failure.technical ? (
-            <details className="mt-1.5">
+            <details className="mt-1">
               <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">
                 Technical detail (for us)
               </summary>
@@ -705,84 +396,15 @@ export function TryMasterworkBox({
         </div>
       ) : null}
 
-      {phase === "done" && verdict ? (
-        <div className="space-y-3 border-t border-border pt-2">
-          {rejoined ? (
-            <p className="text-xs text-muted-foreground">
-              This finished while you were away — here&apos;s what it decided.
-            </p>
-          ) : null}
-          {/* THE DELIVERABLE FIRST (run beaf6a28): the winning work itself,
-              when the graph handed it over. The ruling renders after it. */}
-          {verdict.resultText ? (
-            <div>
-              <h4 className="mb-1 text-xs font-semibold text-foreground">
-                Your result
-                {verdict.resultApproach ? (
-                  <span className="ml-1.5 font-normal text-muted-foreground">
-                    — {verdict.resultApproach}
-                  </span>
-                ) : null}
-              </h4>
-              <RichDocument
-                content={verdict.resultText}
-                source={{ type: "raw" }}
-                hideCopyButton
-                contentClassName="text-sm"
-              />
-            </div>
-          ) : null}
-          {verdict.editorText ? (
-            <div>
-              <h4 className="mb-1 text-xs font-semibold text-foreground">
-                Corrected text
-              </h4>
-              <RichDocument
-                content={verdict.editorText}
-                source={{ type: "raw" }}
-                hideCopyButton
-                contentClassName="text-sm"
-              />
-            </div>
-          ) : null}
-          {/* The Understudy is ONE agent — no chief, no editor — so its
-              output lands on the "understudy" node and is titled for what it
-              actually is. Reading only chief/editor is what made a SUCCESSFUL
-              Understudy run report "no ruling text came back" (2026-08-18). */}
-          <div>
-            <h4 className="mb-1 text-xs font-semibold text-foreground">
-              {(verdict.verdictText ?? verdict.chiefText) ? "The ruling" : "The first cut"}
-            </h4>
-            {(verdict.verdictText ?? verdict.chiefText ?? verdict.understudyText) ? (
-              <RichDocument
-                content={
-                  (verdict.verdictText ??
-                    verdict.chiefText ??
-                    verdict.understudyText) as string
-                }
-                source={{ type: "raw" }}
-                hideCopyButton
-                contentClassName="text-sm"
-              />
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                It finished, but sent back no text at all — open it under Past
-                runs to see every step it took. If that page is empty too, tell
-                us: a run that produces nothing is a bug, not your doing.
-              </p>
-            )}
-          </div>
-          {onCompare && candidateText ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onCompare(candidateText)}
-            >
-              <Scale className="mr-1 h-3.5 w-3.5" />
-              Compare to the original
-            </Button>
-          ) : null}
-        </div>
+      {onCompare && candidateText ? (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => onCompare(candidateText)}
+        >
+          <Scale className="mr-1 h-4 w-4" />
+          Judge this against your own work
+        </Button>
       ) : null}
     </div>
   );

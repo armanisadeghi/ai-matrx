@@ -725,6 +725,28 @@ export async function setMasterworkReleased(opts: {
  *
  * Returns [] when the definition has no legible `io.user_input` node.
  */
+/**
+ * The Masterwork's definition, for the surfaces that describe its STEPS
+ * (`describeWorkflowSteps`) as well as its inputs. One read, both answers —
+ * the run box needs the step list to show progress and the deliverable step
+ * to render the result.
+ */
+export async function getMasterworkDefinition(
+  masterworkId: string,
+): Promise<{ nodes: never[]; edges: never[] } | null> {
+  const { data, error } = await supabase
+    .schema("workflow")
+    .from("definition")
+    .select("nodes,edges")
+    .eq("id", masterworkId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return {
+    nodes: (data.nodes ?? []) as never[],
+    edges: (data.edges ?? []) as never[],
+  };
+}
+
 export async function getMasterworkRunFields(
   masterworkId: string,
 ): Promise<RunFormField[]> {
