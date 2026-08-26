@@ -15,9 +15,9 @@
  *    being wrong.
  *
  *  · The other seven have no component anywhere, so they get the generic
- *    structured renderer as an EXPLICIT route: the resolver answers
- *    (`by:'db'`) instead of the seam falling back
- *    (`by:'generic', unverified:true`).
+ *    structured renderer as an EXPLICIT route. The shared route keeps that
+ *    floor honest as `by:'generic', reason:'generic-row', unverified:true`:
+ *    an explicit generic row is still not purpose-built component coverage.
  *
  * Every assertion runs against each kind's LIVE canonical `kind_example.data`,
  * copied verbatim from content_ir into
@@ -205,7 +205,7 @@ describe("the seven with no component route EXPLICITLY, not by fallback", () => 
     },
   );
 
-  it("[after] every one routes through the RESOLVER, stamping by:'db'", () => {
+  it("[after] every explicit generic row stays honestly unverified", () => {
     componentRegistry.ingestDbRows(
       GENERIC_ROUTED.map((g) =>
         routeRow(g.kind, GENERIC_STRUCTURED_COMPONENT_KEY),
@@ -218,10 +218,11 @@ describe("the seven with no component route EXPLICITLY, not by fallback", () => 
       expect(routed.type).toBe(GENERIC_STRUCTURED_COMPONENT_KEY);
       expect(routed.serverData).toBeUndefined();
       expect(markerOf(routed)).toEqual({
-        by: "db",
+        by: "generic",
         key: GENERIC_STRUCTURED_COMPONENT_KEY,
+        unverified: true,
+        reason: "generic-row",
       });
-      expect(markerOf(routed)?.unverified).toBeUndefined();
     }
   });
 });

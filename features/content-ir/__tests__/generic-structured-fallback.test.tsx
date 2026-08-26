@@ -213,11 +213,10 @@ describe("R6 generic fallback at the render seam", () => {
     expect(markerOf(routed)).toEqual({ by: "db", key: "gantt" });
   });
 
-  it("[migration path] an ACTIVE generic_structured row routes the kind through the resolver, stamping by:'db'", () => {
+  it("[migration path] an ACTIVE generic_structured row remains an honest generic floor", () => {
     // Exactly what migrations/content_ir_generic_structured_roots.sql creates
-    // for q_and_a_set. The resolver (not the fallback) answers, which is the
-    // live proof of R1 registry-resolution; the block still lands on
-    // GenericStructuredBlock, which supplies the honesty.
+    // for q_and_a_set. The row still lands on GenericStructuredBlock, but the
+    // route remains unverified because naming the floor is not component proof.
     registerWarmDefinition("q_and_a_set_live");
     componentRegistry.ingestDbRows([
       dbRow({
@@ -234,8 +233,10 @@ describe("R6 generic fallback at the render seam", () => {
     expect(routed.type).toBe(GENERIC_STRUCTURED_COMPONENT_KEY);
     expect(routed.serverData).toBeUndefined();
     expect(markerOf(routed)).toEqual({
-      by: "db",
+      by: "generic",
       key: GENERIC_STRUCTURED_COMPONENT_KEY,
+      unverified: true,
+      reason: "generic-row",
     });
   });
 
@@ -315,19 +316,20 @@ describe("GenericStructuredBlock renders the shape honestly", () => {
     expect(markup).toContain("T");
   });
 
-  it("still tells the truth when an ACTIVE registry row named the generic viewer (by:'db')", () => {
+  it("still tells the truth when an ACTIVE registry row named the generic viewer", () => {
     // The live shape of q_and_a_set / study_pack_set / schema_showcase after
     // the migration: `kind_component.component_key = 'generic_structured'`,
-    // is_active = true. The resolver routes by:'db' — no fallback, no
-    // `unverified` flag — and the banner MUST still appear, because naming the
-    // generic viewer as the component is not the same as having a renderer.
+    // is_active = true. The route remains explicitly generic and unverified,
+    // because naming the generic viewer is not the same as having a renderer.
     const markup = renderToStaticMarkup(
       <GenericStructuredBlock
         content='{"__kind":"q_and_a_set","title":"T"}'
         metadata={{
           [IR_ROUTE_KEY]: {
-            by: "db",
+            by: "generic",
             key: GENERIC_STRUCTURED_COMPONENT_KEY,
+            unverified: true,
+            reason: "generic-row",
           } satisfies IrRouteMarker,
         }}
       />,

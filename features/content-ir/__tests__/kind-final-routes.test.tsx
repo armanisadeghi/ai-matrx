@@ -163,7 +163,7 @@ describe("the final four route EXPLICITLY, not by fallback", () => {
     },
   );
 
-  it("[after] every one routes through the RESOLVER, stamping by:'db'", () => {
+  it("[after] every explicit generic row stays honestly unverified", () => {
     componentRegistry.ingestDbRows(FINAL_FOUR.map((f) => routeRow(f.kind)));
 
     for (const { kind } of FINAL_FOUR) {
@@ -172,10 +172,11 @@ describe("the final four route EXPLICITLY, not by fallback", () => {
       expect(routed.type).toBe(GENERIC_STRUCTURED_COMPONENT_KEY);
       expect(routed.serverData).toBeUndefined();
       expect(markerOf(routed)).toEqual({
-        by: "db",
+        by: "generic",
         key: GENERIC_STRUCTURED_COMPONENT_KEY,
+        unverified: true,
+        reason: "generic-row",
       });
-      expect(markerOf(routed)?.unverified).toBeUndefined();
     }
   });
 });

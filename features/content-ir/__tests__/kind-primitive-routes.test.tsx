@@ -7,8 +7,9 @@
  * `number`, `text`, `string_list`, `json`, `items`, `value`, `table_rows` —
  * used to reach the generic viewer by SILENT FALLBACK (marker
  * `by:'generic', unverified:true`). Each now carries an EXPLICIT
- * `(kind, 'web', 'output') -> generic_structured` row, so the RESOLVER
- * answers (`by:'db'`) — a decision on the record, not a fallback nobody chose.
+ * `(kind, 'web', 'output') -> generic_structured` row. The shared route keeps
+ * that floor honest as `by:'generic', reason:'generic-row', unverified:true`:
+ * an explicit floor row is still not purpose-built component coverage.
  *
  * What these tests pin, using each kind's LIVE canonical `kind_example.data`
  * (read from content_ir on 2026-08-20, reproduced verbatim in PRIMITIVES):
@@ -214,7 +215,7 @@ describe("primitive kinds: the explicit route replaces the silent fallback", () 
     },
   );
 
-  it("[after] every object primitive routes through the RESOLVER, stamping by:'db'", () => {
+  it("[after] every explicit generic row stays honestly unverified", () => {
     componentRegistry.ingestDbRows(
       OBJECT_PRIMITIVES.map((p) => primitiveRouteRow(p.kind)),
     );
@@ -226,11 +227,11 @@ describe("primitive kinds: the explicit route replaces the silent fallback", () 
       // The raw region's `{ language: "json" }` annotation is not kind data.
       expect(routed.serverData).toBeUndefined();
       expect(markerOf(routed)).toEqual({
-        by: "db",
+        by: "generic",
         key: GENERIC_STRUCTURED_COMPONENT_KEY,
+        unverified: true,
+        reason: "generic-row",
       });
-      // No fallback flag survives — the platform CHOSE this renderer.
-      expect(markerOf(routed)?.unverified).toBeUndefined();
     }
   });
 });

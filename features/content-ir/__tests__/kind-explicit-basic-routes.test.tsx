@@ -8,8 +8,9 @@
  *
  * These are eight DIFFERENT plumbing shapes (`metadata.family='workflow_io'`),
  * not one family, so the honest route is the platform floor REGISTERED on
- * purpose: the resolver answers `by:'db'` and `GenericStructuredBlock` still
- * says "no custom view yet" out loud.
+ * purpose. The shared route stamps `by:'generic', reason:'generic-row',
+ * unverified:true` because an explicit generic row is still not purpose-built
+ * component coverage; `GenericStructuredBlock` says "no custom view yet".
  *
  * FIXTURES ARE THE LIVE CANONICAL EXAMPLES — `content_ir.kind_example`,
  * `is_canonical`, `validation_status='passed'`, pinned to each kind's current
@@ -389,7 +390,7 @@ function markerOf(block: { metadata?: Record<string, unknown> }) {
   return block.metadata?.[IR_ROUTE_KEY] as IrRouteMarker | undefined;
 }
 
-describe("kinds on an explicit basic route resolve by:'db', never by silent fallback", () => {
+describe("explicit basic routes remain honest generic-floor routes", () => {
   // ORDER-SENSITIVE, like the sibling suites: both registries are module
   // singletons, so the pre-registration assertion runs before any ingest.
   it("[before] an unregistered result kind reaches the reader only by silent fallback", () => {
@@ -411,7 +412,7 @@ describe("kinds on an explicit basic route resolve by:'db', never by silent fall
   });
 
   it.each(FIXTURES.map((f) => [f.kind, f] as const))(
-    "%s resolves by:'db' and renders its live canonical example",
+    "%s resolves as an explicit generic row and renders its live canonical example",
     (kind, fixture) => {
       kindRegistry.upsertDefinition({
         kind,
@@ -423,13 +424,14 @@ describe("kinds on an explicit basic route resolve by:'db', never by silent fall
 
       const routed = applyIrKindRoute(kindBlock(kind, fixture.data));
 
-      // The resolver answered — no silent fallback, no `unverified` flag.
+      // A DB row naming the generic floor is still not custom component proof.
       expect(routed.type).toBe(GENERIC_STRUCTURED_COMPONENT_KEY);
       expect(markerOf(routed)).toEqual({
-        by: "db",
+        by: "generic",
         key: GENERIC_STRUCTURED_COMPONENT_KEY,
+        unverified: true,
+        reason: "generic-row",
       });
-      expect(markerOf(routed)?.unverified).toBeUndefined();
       // The raw region annotation is poison, not data.
       expect(routed.serverData).toBeUndefined();
 
@@ -455,7 +457,7 @@ describe("kinds on an explicit basic route resolve by:'db', never by silent fall
  * still has to work, because a broken SCHEMA must never mean a broken SCREEN.
  */
 describe("claim_evidence routes even though its schema cannot compile", () => {
-  it("resolves by:'db' and renders its nested evidence_source children", () => {
+  it("uses the explicit generic floor and renders its nested evidence_source children", () => {
     kindRegistry.upsertDefinition({
       kind: "claim_evidence",
       schema: null,
@@ -484,8 +486,10 @@ describe("claim_evidence routes even though its schema cannot compile", () => {
     );
 
     expect(markerOf(routed)).toEqual({
-      by: "db",
+      by: "generic",
       key: GENERIC_STRUCTURED_COMPONENT_KEY,
+      unverified: true,
+      reason: "generic-row",
     });
 
     const markup = renderRouted(routed);
