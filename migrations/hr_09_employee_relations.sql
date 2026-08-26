@@ -337,12 +337,19 @@ create index if not exists incident_party_incident_idx on hr.incident_party (inc
 create index if not exists incident_party_employment_idx on hr.incident_party (employment_id)
   where employment_id is not null and deleted_at is null;
 
--- 🚨 NOT flagged -- BLOCKED, not skipped. hr_incident_party IS on section 18.1a's list and is a
--- `component`, and the flag cannot certify on a component until iam._apply_rls_unchecked strips
--- that lane's system-org/super-admin arm. See RECORDED TECHNICAL DECISION 3 at the head of this
--- file. Its parent hr_incident IS walled.
-update platform.entity_types set taxonomy_node_id = '394893a0-be07-4b4a-9b50-3a0cd984bc80'
+-- section 18.1a: investigation content. This flag was BLOCKED when this file first applied --
+-- the privacy wall could not certify on a `component` variant -- and the P3 owner landed the
+-- generator fix (in iam.entity_read_expr, re-proven 466/466) the same day. It was applied as
+-- migration `hr_09a_incident_party_privacy_wall` and is folded back in here, so a re-run of
+-- hr_09 alone reproduces the full state.
+update platform.entity_types set
+  suppress_platform_admin_lane = true,
+  taxonomy_node_id = '394893a0-be07-4b4a-9b50-3a0cd984bc80'
 where token = 'hr_incident_party';
+
+do $$ begin
+  perform iam.apply_rls('hr','incident_party','hr_incident_party','component');
+end $$;
 
 -- ============================================================ 10.2 the veto materialiser
 -- 🚨 SPEC-ACCESS section 5 evaluates subject exclusion as an ARRAY-MEMBERSHIP TEST on
@@ -507,7 +514,8 @@ begin
 
   -- section 18.1a, for the two this file CAN flag
   select count(*) into v_bad from platform.entity_types
-   where token in ('hr_restricted_note','hr_incident') and not suppress_platform_admin_lane;
+   where token in ('hr_restricted_note','hr_incident','hr_incident_party')
+     and not suppress_platform_admin_lane;
   if v_bad > 0 then
     raise exception 'hr_09: % investigation-content token(s) lack suppress_platform_admin_lane', v_bad;
   end if;
