@@ -1,6 +1,7 @@
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { callApi } from "@/lib/api/call-api";
+import { readAllRows } from "@/lib/supabase/readAllRows";
 import type { AppDispatch } from "@/lib/redux/store";
 import type {
   CompetitorTrackingStatus,
@@ -13,11 +14,15 @@ export type CompetitorOpportunityRow =
   Database["seo"]["Tables"]["competitor_opportunity"]["Row"];
 export type CompetitorRunRow =
   Database["seo"]["Tables"]["collection_run"]["Row"];
+type WebSiteRow = Database["web"]["Tables"]["site"]["Row"];
+type WebBrandRow = Database["web"]["Tables"]["brand"]["Row"];
 export type CompetitorSite = Pick<
-  Database["web"]["Tables"]["site"]["Row"],
+  WebSiteRow,
   "id" | "name" | "domain" | "root_url" | "brand_id"
   | "organization_id" | "created_by"
->;
+> & {
+  brand: Pick<WebBrandRow, "id" | "name"> | null;
+};
 
 export interface CompetitorLookupResult {
   title: string;
@@ -33,15 +38,22 @@ function requireData<T>(data: T | null, error: unknown): T {
 }
 
 export async function listCompetitorSites(): Promise<CompetitorSite[]> {
-  const { data, error } = await supabase
-    .schema("web")
-    .from("site")
-    .select("id,name,domain,root_url,brand_id,organization_id,created_by")
-    .is("deleted_at", null)
-    .eq("status", "active")
-    .order("name")
-    .limit(250);
-  return requireData(data, error);
+  return readAllRows<CompetitorSite>(
+    ({ from, to }) =>
+      supabase
+        .schema("web")
+        .from("site")
+        .select(
+          "id,name,domain,root_url,brand_id,organization_id,created_by,brand:brand_id(id,name)",
+          { count: "exact" },
+        )
+        .is("deleted_at", null)
+        .eq("status", "active")
+        .order("name", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "web.site competitor workspace options" },
+  );
 }
 
 export async function lookupCompetitor(

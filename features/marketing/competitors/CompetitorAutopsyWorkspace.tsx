@@ -2,15 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowUpRight,
-  CheckCircle2,
   CircleDot,
+  ClipboardCheck,
+  FileSearch,
   Globe,
+  History,
   Loader2,
   MapPin,
-  Radar,
   RefreshCw,
   ScanSearch,
   Swords,
@@ -33,10 +34,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingCompetitorsScope } from "@/features/surfaces/manifests/marketing-competitors.manifest";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
@@ -51,6 +53,7 @@ import type {
   CompetitorOpportunityRow,
   CompetitorRow,
   CompetitorRunRow,
+  CompetitorSite,
 } from "./data";
 import { saveCompetitorClassification, updateCompetitorTracking, updateOpportunityStatus } from "./data";
 import {
@@ -93,6 +96,33 @@ type Artifact = {
     limitations?: string[];
   };
 };
+
+const COMPETITOR_VIEWS = [
+  { id: "run", name: "Run", icon: ScanSearch },
+  { id: "review", name: "Review", icon: ClipboardCheck },
+  { id: "opportunities", name: "Opportunities", icon: Target },
+  { id: "competitors", name: "Competitors", icon: Swords },
+  { id: "evidence", name: "Evidence", icon: FileSearch },
+  { id: "history", name: "History", icon: History },
+] as const;
+
+type CompetitorView = (typeof COMPETITOR_VIEWS)[number]["id"];
+
+function competitorView(raw: string | null): CompetitorView {
+  return COMPETITOR_VIEWS.find((view) => view.id === raw)?.id ?? "run";
+}
+
+function competitorViewHref(view: CompetitorView, siteId: string | null): string {
+  const params = new URLSearchParams();
+  if (siteId) params.set("siteId", siteId);
+  if (view !== "run") params.set("view", view);
+  const query = params.toString();
+  return `${marketingRoutes.competitors()}${query ? `?${query}` : ""}`;
+}
+
+function siteBrandLabel(site: CompetitorSite): string {
+  return site.brand?.name || site.name || site.domain || site.root_url;
+}
 
 function object(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -201,8 +231,11 @@ function OpportunityDetail({ row }: { row: CompetitorOpportunityRow }) {
 
 export default function CompetitorAutopsyWorkspace() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const requestedSiteId = searchParams.get("siteId");
+  const activeView = competitorView(searchParams.get("view"));
   const [siteId, setSiteId] = useState<string | null>(() =>
-    searchParams.get("siteId"),
+    requestedSiteId,
   );
   const [domains, setDomains] = useState("");
   const [maxCompetitors, setMaxCompetitors] = useState(3);
@@ -239,7 +272,6 @@ export default function CompetitorAutopsyWorkspace() {
   const [localSearching, setLocalSearching] = useState(false);
   const [localStage, setLocalStage] = useState<string | null>(null);
   const [localResult, setLocalResult] = useState<LocalCompetitorSearchResult | null>(null);
-  const [activeTab, setActiveTab] = useState("competitors");
   /** MSR-25 — WHICH COMPETITOR UNIVERSE this run should look in. National is
    *  keyword overlap against our own domain; local is the map pack for a real
    *  search in a real place. They return different companies, so the user
@@ -252,6 +284,12 @@ export default function CompetitorAutopsyWorkspace() {
   const localScopeIncomplete =
     autopsyScope === "local" &&
     (!autopsyLocalKeyword.trim() || !autopsyLocalArea.trim());
+
+  useEffect(() => {
+    if (requestedSiteId && requestedSiteId !== siteId) {
+      setSiteId(requestedSiteId);
+    }
+  }, [requestedSiteId, siteId]);
 
   useEffect(() => {
     if (!resolvedSiteId || !proposed.length) return;
@@ -738,6 +776,29 @@ export default function CompetitorAutopsyWorkspace() {
     [],
   );
 
+  const availableSites = sites.data ?? [];
+  const brandSiteCounts = new Map<string, number>();
+  for (const site of availableSites) {
+    const label = siteBrandLabel(site);
+    brandSiteCounts.set(label, (brandSiteCounts.get(label) ?? 0) + 1);
+  }
+  const headerModes = COMPETITOR_VIEWS.map((view) => ({
+    name: view.name,
+    icon: view.icon,
+    href: competitorViewHref(view.id, resolvedSiteId),
+  }));
+  const headerOptions = availableSites.map((site) => {
+    const brandLabel = siteBrandLabel(site);
+    return {
+      label:
+        (brandSiteCounts.get(brandLabel) ?? 0) > 1
+          ? `${brandLabel} · ${site.domain}`
+          : brandLabel,
+      href: competitorViewHref(activeView, site.id),
+      active: site.id === resolvedSiteId,
+    };
+  });
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/marketing-competitors"
@@ -763,111 +824,49 @@ export default function CompetitorAutopsyWorkspace() {
       }
       getWriteHandlers={getSurfaceWriteHandlers}
     >
-      {/* MSR-24: no width cap — this is a data-dense workspace, not a
-          document, and it should use the whole page like every other core
-          route. */}
-      <main className="flex w-full flex-col gap-5 p-4 md:p-6">
-        <AssistStrip surfaceName="matrx-user/marketing-competitors" />
+      <EntityModeHeader
+        backHref={marketingRoutes.home()}
+        entityLabel={
+          selectedSite ? siteBrandLabel(selectedSite) : "Choose a brand"
+        }
+        entityOptions={headerOptions}
+        modes={headerModes}
+        activeModeHref={competitorViewHref(activeView, resolvedSiteId)}
+        actions={[
+          {
+            label: "Refresh",
+            icon: RefreshCw,
+            onPress: () => void refresh(),
+            disabled: workspace.isFetching,
+          },
+        ]}
+      />
+      <main className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 pb-3 sm:px-4">
+          <AssistStrip surfaceName="matrx-user/marketing-competitors" />
 
-        <section className="overflow-hidden rounded-2xl border bg-gradient-to-br from-background via-background to-primary/[0.06] shadow-sm">
-          <div className="flex items-start gap-3 p-5 pb-0 lg:p-7 lg:pb-0">
-            <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
-              <Swords className="size-5" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight">
-                Competitor opportunity autopsy
-              </h2>
-              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-                Find the competitors that actually overlap, inspect the pages
-                creating their advantage, and turn the evidence into a
-                prioritized plan for the assets you already own.
-              </p>
-            </div>
-          </div>
-
-          {/* MSR-17: the KPI tiles and "Add a competitor you already know"
-              stack together in ONE column so they stop fighting the run form
-              for horizontal space; "Run a fresh autopsy" gets its own column
-              beside them instead of towering over a mostly-empty left side. */}
-          <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:p-7 lg:pt-5">
-            <div className="flex flex-col gap-4">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <Card>
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <Radar className="size-5 text-primary" />
-                    <div>
-                      <p className="text-2xl font-semibold">
-                        {data?.competitors.length ?? 0}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Relevant competitors
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <Target className="size-5 text-amber-500" />
-                    <div>
-                      <p className="text-2xl font-semibold">{openActions}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Open actions
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <CheckCircle2 className="size-5 text-emerald-500" />
-                    <div>
-                      <p className="text-2xl font-semibold">
-                        {latestArtifact?.already_have_percentage ?? "—"}
-                        {typeof latestArtifact?.already_have_percentage ===
-                        "number"
-                          ? "%"
-                          : ""}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Advantage already covered
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
+          {activeView === "run" ? (
+            <section className="rounded-lg border border-border bg-card p-3 sm:p-4">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-foreground">
+                  Run a fresh autopsy
+                </h2>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <span>{data?.competitors.length ?? 0} competitors</span>
+                  <span>{openActions} open actions</span>
+                  <span>
+                    {latestArtifact?.already_have_percentage ?? "—"}
+                    {typeof latestArtifact?.already_have_percentage === "number"
+                      ? "% covered"
+                      : " covered"}
+                  </span>
+                </div>
               </div>
 
-              <ManualCompetitorAdd site={selectedSite} onAdded={refresh} />
-            </div>
-
-            <Card className="border-primary/15 bg-background/90">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm">Run a fresh autopsy</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="competitor-site">Site</Label>
-                  <Select
-                    value={resolvedSiteId ?? ""}
-                    onValueChange={setSiteId}
-                  >
-                    <SelectTrigger id="competitor-site">
-                      <SelectValue placeholder="Choose a site" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sites.data?.map((site) => (
-                        <SelectItem key={site.id} value={site.id}>
-                          {site.name || site.domain || site.root_url}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {/* MSR-25 — the choice Arman asked for. Two genuinely
-                  different competitor universes, so it is a decision the user
-                  makes, never one the system infers from the site. */}
-                <div className="space-y-1.5">
-                  <Label>Where to look for competitors</Label>
-                  <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Label className="mr-1">Competitor market</Label>
                     <Button
                       type="button"
                       size="sm"
@@ -888,155 +887,158 @@ export default function CompetitorAutopsyWorkspace() {
                       <MapPin className="size-3.5" />
                       Local
                     </Button>
+                    <span className="text-xs text-muted-foreground">
+                      {autopsyScope === "local"
+                        ? "Google Maps results for a service and area."
+                        : "Nationwide keyword overlap."}
+                    </span>
                   </div>
-                  <p className="text-xs leading-5 text-muted-foreground">
-                    {autopsyScope === "local"
-                      ? "If you serve an area rather than the whole country, the businesses you actually compete with are the ones Google puts on the map for a local search — not the national sites that happen to rank for your keywords."
-                      : "Looks nationwide, at whoever ranks for the same keywords you do. If you sell to one city or region, choose Local instead."}
-                  </p>
-                </div>
-                {autopsyScope === "local" ? (
-                  <div className="space-y-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="autopsy-local-keyword">
-                        {LOCAL_SEARCH_KEYWORD_LABEL}
-                      </Label>
-                      <Input
-                        id="autopsy-local-keyword"
-                        value={autopsyLocalKeyword}
-                        placeholder={LOCAL_SEARCH_KEYWORD_PLACEHOLDER}
-                        onChange={(event) =>
-                          setAutopsyLocalKeyword(event.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="autopsy-local-area">
-                        {LOCAL_SEARCH_AREA_LABEL}
-                      </Label>
-                      <Input
-                        id="autopsy-local-area"
-                        value={autopsyLocalArea}
-                        placeholder={LOCAL_SEARCH_AREA_PLACEHOLDER}
-                        onChange={(event) => setAutopsyLocalArea(event.target.value)}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="competitor-domains">
-                      Competitors to include{" "}
-                      <span className="font-normal text-muted-foreground">
-                        (optional)
-                      </span>
-                    </Label>
-                    <Textarea
-                      id="competitor-domains"
-                      value={domains}
-                      onChange={(event) => setDomains(event.target.value)}
-                      placeholder="One domain per line. Leave blank for automatic discovery."
-                      className="min-h-20 resize-none"
-                    />
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Both selects render from the SAME constant the manifest's
-                    contract prose is interpolated from and the write handler
-                    validates against, so the three cannot drift. */}
-                  <div className="space-y-1.5">
-                    <Label>Competitors</Label>
-                    <Select
-                      value={String(maxCompetitors)}
-                      onValueChange={(value) =>
-                        setMaxCompetitors(Number(value))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AUTOPSY_RUN_BOUND_CHOICES.map((value) => (
-                          <SelectItem key={value} value={String(value)}>
-                            {value}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Pages each</Label>
-                    <Select
-                      value={String(pagesPerCompetitor)}
-                      onValueChange={(value) =>
-                        setPagesPerCompetitor(Number(value))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AUTOPSY_RUN_BOUND_CHOICES.map((value) => (
-                          <SelectItem key={value} value={String(value)}>
-                            {value}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="force-refresh"
-                    checked={forceRefresh}
-                    onCheckedChange={(value) => setForceRefresh(value === true)}
-                  />
-                  <Label htmlFor="force-refresh" className="font-normal">
-                    Ignore today&apos;s cached provider evidence
-                  </Label>
-                </div>
-                <Button
-                  className="w-full gap-2"
-                  disabled={
-                    !resolvedSiteId ||
-                    run.status === "running" ||
-                    localScopeIncomplete
-                  }
-                  onClick={() =>
-                    void start({
-                      // A local run seeds its competitors from the map pack, so
-                      // the typed domain list has nothing to seed — the field
-                      // is hidden above and nothing is sent.
-                      competitorDomains:
-                        autopsyScope === "local"
-                          ? []
-                          : parseCompetitorDomainsField(domains),
-                      maxCompetitors,
-                      pagesPerCompetitor,
-                      forceRefresh,
-                      ...(autopsyScope === "local"
-                        ? {
-                            localKeyword: autopsyLocalKeyword,
-                            localLocation: autopsyLocalArea,
+
+                  {autopsyScope === "local" ? (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="autopsy-local-keyword">
+                          {LOCAL_SEARCH_KEYWORD_LABEL}
+                        </Label>
+                        <Input
+                          id="autopsy-local-keyword"
+                          value={autopsyLocalKeyword}
+                          placeholder={LOCAL_SEARCH_KEYWORD_PLACEHOLDER}
+                          className="max-sm:text-base"
+                          onChange={(event) =>
+                            setAutopsyLocalKeyword(event.target.value)
                           }
-                        : {}),
-                    })
-                  }
-                >
-                  {run.status === "running" ? (
-                    <Loader2 className="size-4 animate-spin" />
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="autopsy-local-area">
+                          {LOCAL_SEARCH_AREA_LABEL}
+                        </Label>
+                        <Input
+                          id="autopsy-local-area"
+                          value={autopsyLocalArea}
+                          placeholder={LOCAL_SEARCH_AREA_PLACEHOLDER}
+                          className="max-sm:text-base"
+                          onChange={(event) =>
+                            setAutopsyLocalArea(event.target.value)
+                          }
+                        />
+                      </div>
+                    </div>
                   ) : (
-                    <ScanSearch className="size-4" />
+                    <div className="space-y-1.5">
+                      <Label htmlFor="competitor-domains">
+                        Include specific competitors{" "}
+                        <span className="font-normal text-muted-foreground">
+                          (optional)
+                        </span>
+                      </Label>
+                      <Textarea
+                        id="competitor-domains"
+                        value={domains}
+                        onChange={(event) => setDomains(event.target.value)}
+                        placeholder="One domain per line. Leave blank for automatic discovery."
+                        className="min-h-24 resize-none max-sm:text-base"
+                      />
+                    </div>
                   )}
-                  {run.status === "running"
-                    ? "Building the autopsy"
-                    : autopsyScope === "local"
-                      ? "Run local competitor autopsy"
-                      : "Run competitor autopsy"}
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
+                </div>
+
+                <div className="flex flex-col gap-3 border-border lg:border-l lg:pl-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Competitors</Label>
+                      <Select
+                        value={String(maxCompetitors)}
+                        onValueChange={(value) =>
+                          setMaxCompetitors(Number(value))
+                        }
+                      >
+                        <SelectTrigger className="max-sm:text-base">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AUTOPSY_RUN_BOUND_CHOICES.map((value) => (
+                            <SelectItem key={value} value={String(value)}>
+                              {value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Pages each</Label>
+                      <Select
+                        value={String(pagesPerCompetitor)}
+                        onValueChange={(value) =>
+                          setPagesPerCompetitor(Number(value))
+                        }
+                      >
+                        <SelectTrigger className="max-sm:text-base">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {AUTOPSY_RUN_BOUND_CHOICES.map((value) => (
+                            <SelectItem key={value} value={String(value)}>
+                              {value}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="force-refresh"
+                      checked={forceRefresh}
+                      onCheckedChange={(value) =>
+                        setForceRefresh(value === true)
+                      }
+                    />
+                    <Label htmlFor="force-refresh" className="font-normal">
+                      Ignore today&apos;s cached evidence
+                    </Label>
+                  </div>
+                  <Button
+                    className="mt-auto w-full gap-2"
+                    disabled={
+                      !resolvedSiteId ||
+                      run.status === "running" ||
+                      localScopeIncomplete
+                    }
+                    onClick={() =>
+                      void start({
+                        competitorDomains:
+                          autopsyScope === "local"
+                            ? []
+                            : parseCompetitorDomainsField(domains),
+                        maxCompetitors,
+                        pagesPerCompetitor,
+                        forceRefresh,
+                        ...(autopsyScope === "local"
+                          ? {
+                              localKeyword: autopsyLocalKeyword,
+                              localLocation: autopsyLocalArea,
+                            }
+                          : {}),
+                      })
+                    }
+                  >
+                    {run.status === "running" ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <ScanSearch className="size-4" />
+                    )}
+                    {run.status === "running"
+                      ? "Building the autopsy"
+                      : autopsyScope === "local"
+                        ? "Run local autopsy"
+                        : "Run autopsy"}
+                  </Button>
+                </div>
+              </div>
+            </section>
+          ) : null}
 
         {/* Only while the run is live. The strategist's output is pure structured
           JSON, so the canonical renderer has no text to show and parks on its
