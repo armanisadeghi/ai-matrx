@@ -535,6 +535,16 @@ export function surfaceFromPathname(
     return "matrx-user/masterwork-rulebook";
   }
 
+  // ONE open review is `/administration/users/agent-review/[id]` — a dynamic
+  // leaf under the queue list's prefix, which cannot tell them apart. They are
+  // two surfaces on purpose: the list emits true queue-wide counts it can only
+  // know because it reads every row, and the item page emits the open row's
+  // state and its feedback editor. Neither can emit the other's values, so a
+  // fall-through here would hand the item page a vocabulary it cannot fill.
+  if (/^\/administration\/users\/agent-review\/[^/]+/.test(stripped)) {
+    return "matrx-admin/agent-review-item";
+  }
+
   const marketing = resolveMarketingSurface(stripped);
   if (marketing) return marketing;
 
