@@ -138,6 +138,79 @@ export async function captureToPDFBlob(
   return pdf.output("blob");
 }
 
+/**
+ * Capture deliberately paginated DOM elements as one PDF page each.
+ *
+ * Use this for designed reports whose page boundaries are part of the layout.
+ * The ordinary capture helpers intentionally slice one continuous canvas; this
+ * variant preserves explicit report pages and therefore cannot cut a section
+ * in half at an arbitrary paper boundary.
+ */
+export async function captureElementsToPDF(
+  elements: HTMLElement[],
+  options: DomCaptureOptions = {},
+): Promise<void> {
+  const pdf = await renderElementsToPdf(elements, options);
+  pdf.save(`${options.filename ?? "ai-response"}.pdf`);
+}
+
+/** Blob form of captureElementsToPDF for durable file-system uploads. */
+export async function captureElementsToPDFBlob(
+  elements: HTMLElement[],
+  options: DomCaptureOptions = {},
+): Promise<Blob> {
+  const pdf = await renderElementsToPdf(elements, options);
+  return pdf.output("blob");
+}
+
+async function renderElementsToPdf(
+  elements: HTMLElement[],
+  options: DomCaptureOptions,
+) {
+  if (elements.length === 0) {
+    throw new Error("No report pages are available to export.");
+  }
+
+  const {
+    paperSize = "a4",
+    orientation = "portrait",
+    scale = 2,
+    background = "#ffffff",
+    onProgress,
+  } = options;
+  const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+    import("html2canvas"),
+    import("jspdf"),
+  ]);
+  const dims = PAGE_DIMS[paperSize];
+  const pageW = orientation === "portrait" ? dims.w : dims.h;
+  const pageH = orientation === "portrait" ? dims.h : dims.w;
+  const pdf = new jsPDF({ orientation, unit: "mm", format: paperSize });
+  const restoreGetComputedStyle = patchGetComputedStyle(false);
+
+  try {
+    for (let index = 0; index < elements.length; index += 1) {
+      const element = elements[index];
+      onProgress?.(index, elements.length);
+      const canvas = await html2canvas(element, {
+        scale,
+        useCORS: true,
+        backgroundColor: background,
+        logging: false,
+        windowWidth: element.scrollWidth,
+        windowHeight: element.scrollHeight,
+      });
+      if (index > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, pageW, pageH);
+      onProgress?.(index + 1, elements.length);
+    }
+  } finally {
+    restoreGetComputedStyle();
+  }
+
+  return pdf;
+}
+
 async function renderElementToPdf(
   element: HTMLElement,
   options: DomCaptureOptions = {},

@@ -29,21 +29,31 @@ function loadReviews(): Review[] {
     if (!Array.isArray(parsed)) return [];
 
     return parsed
-      .filter((value): value is Partial<Review> => Boolean(value && typeof value === "object"))
+      .filter((value): value is Partial<Review> =>
+        Boolean(value && typeof value === "object"),
+      )
       .map((value) => ({
         ...createBlankReview(),
         ...value,
         responsibilities: Array.isArray(value.responsibilities)
-          ? value.responsibilities.filter((item): item is string => typeof item === "string")
+          ? value.responsibilities.filter(
+              (item): item is string => typeof item === "string",
+            )
           : [],
         accomplishments: Array.isArray(value.accomplishments)
-          ? value.accomplishments.filter((item): item is string => typeof item === "string")
+          ? value.accomplishments.filter(
+              (item): item is string => typeof item === "string",
+            )
           : [],
         strengths: Array.isArray(value.strengths)
-          ? value.strengths.filter((item): item is string => typeof item === "string")
+          ? value.strengths.filter(
+              (item): item is string => typeof item === "string",
+            )
           : [],
         opportunities: Array.isArray(value.opportunities)
-          ? value.opportunities.filter((item): item is string => typeof item === "string")
+          ? value.opportunities.filter(
+              (item): item is string => typeof item === "string",
+            )
           : [],
       }));
   } catch (error) {

@@ -6,14 +6,9 @@
 
 import * as React from "react";
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -26,6 +21,8 @@ import {
   X,
 } from "lucide-react";
 import type { RatingValue } from "./schema";
+
+const MAX_LIST_ITEMS = 5;
 
 // ── Section card with a numbered/lettered badge ──────────────────────────────
 export function SectionCard({
@@ -98,7 +95,7 @@ export function ListEditor({
   const [editingText, setEditingText] = useState("");
 
   const commitAdd = () => {
-    if (!draft.trim()) return;
+    if (!draft.trim() || items.length >= MAX_LIST_ITEMS) return;
     onAdd(draft);
     setDraft("");
   };
@@ -112,13 +109,18 @@ export function ListEditor({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-end gap-2">
-        <Textarea
+      <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-end">
+        <ProTextarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder={placeholder}
           minHeight={44}
-          className="min-h-[44px]"
+          maxHeight={160}
+          autoGrow
+          enableCleanup={false}
+          enableBoundAgents={false}
+          enableTextStats={false}
+          className="min-h-[44px] text-base sm:text-sm"
           onKeyDown={(e) => {
             if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
@@ -126,10 +128,22 @@ export function ListEditor({
             }
           }}
         />
-        <Button type="button" onClick={commitAdd} className="flex-none">
+        <Button
+          type="button"
+          onClick={commitAdd}
+          disabled={items.length >= MAX_LIST_ITEMS}
+          className="flex-none"
+        >
           <Plus className="h-4 w-4" />
-          Add
+          {items.length >= MAX_LIST_ITEMS ? "Limit reached" : "Add"}
         </Button>
+      </div>
+
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+        <span>Add up to five items.</span>
+        <span className="tabular-nums">
+          {items.length} / {MAX_LIST_ITEMS}
+        </span>
       </div>
 
       {items.length === 0 ? (
@@ -150,12 +164,17 @@ export function ListEditor({
 
               {editingIndex === i ? (
                 <div className="flex flex-1 items-end gap-2">
-                  <Textarea
+                  <ProTextarea
                     value={editingText}
                     onChange={(e) => setEditingText(e.target.value)}
                     autoFocus
                     minHeight={44}
-                    className="min-h-[44px]"
+                    maxHeight={160}
+                    autoGrow
+                    enableCleanup={false}
+                    enableBoundAgents={false}
+                    enableTextStats={false}
+                    className="min-h-[44px] text-base sm:text-sm"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                         e.preventDefault();
@@ -188,7 +207,7 @@ export function ListEditor({
                   <span className="flex-1 whitespace-pre-wrap break-words text-sm leading-relaxed">
                     {text}
                   </span>
-                  <div className="flex flex-none items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 print:hidden">
+                  <div className="flex flex-none items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 print:hidden">
                     <Button
                       type="button"
                       size="icon"
@@ -246,14 +265,6 @@ export function ListEditor({
 }
 
 // ── 1–5 rating scale ─────────────────────────────────────────────────────────
-const RATING_COLORS: Record<RatingValue, string> = {
-  1: "bg-rose-500 border-rose-500 text-white",
-  2: "bg-orange-500 border-orange-500 text-white",
-  3: "bg-amber-500 border-amber-500 text-white",
-  4: "bg-lime-600 border-lime-600 text-white",
-  5: "bg-emerald-600 border-emerald-600 text-white",
-};
-
 export function RatingScale({
   value,
   onSelect,
@@ -266,21 +277,23 @@ export function RatingScale({
       {([1, 2, 3, 4, 5] as RatingValue[]).map((v) => {
         const selected = value === v;
         return (
-          <button
+          <Button
             key={v}
             type="button"
+            variant="outline"
+            size="icon"
             onClick={() => onSelect(v)}
             aria-label={`Rate ${v}`}
             aria-pressed={selected}
             className={cn(
-              "h-8 w-8 rounded-md border text-sm font-bold tabular-nums transition-all",
+              "h-8 w-8 rounded-md text-sm font-bold tabular-nums max-sm:h-11 max-sm:w-11",
               selected
-                ? RATING_COLORS[v]
+                ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
                 : "border-border bg-card text-muted-foreground hover:border-primary hover:text-primary",
             )}
           >
             {v}
-          </button>
+          </Button>
         );
       })}
     </div>

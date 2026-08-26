@@ -22,8 +22,14 @@ export const RATING_SCHEMA: RatingCategory[] = [
     label: "Job Knowledge",
     items: [
       { key: "meets_job_requirements", label: "Meets job requirements" },
-      { key: "applies_knowledge_skills", label: "Applies knowledge/skills to job" },
-      { key: "adds_to_knowledge_skills", label: "Adds to knowledge and skills" },
+      {
+        key: "applies_knowledge_skills",
+        label: "Applies knowledge/skills to job",
+      },
+      {
+        key: "adds_to_knowledge_skills",
+        label: "Adds to knowledge and skills",
+      },
     ],
   },
   {
@@ -45,7 +51,10 @@ export const RATING_SCHEMA: RatingCategory[] = [
     label: "Communication",
     items: [
       { key: "reports_to_supervisor", label: "Reports to proper supervisor" },
-      { key: "understands_instructions", label: "Understands instructions easily" },
+      {
+        key: "understands_instructions",
+        label: "Understands instructions easily",
+      },
       { key: "verbal_communication", label: "Verbal communication skills" },
       { key: "written_communication", label: "Written communication skills" },
     ],
@@ -54,8 +63,14 @@ export const RATING_SCHEMA: RatingCategory[] = [
     key: "interpersonal_skills",
     label: "Interpersonal Skills",
     items: [
-      { key: "working_relationship_others", label: "Working relationship with others" },
-      { key: "relationship_customers", label: "Relationship with customers/clients" },
+      {
+        key: "working_relationship_others",
+        label: "Working relationship with others",
+      },
+      {
+        key: "relationship_customers",
+        label: "Relationship with customers/clients",
+      },
       { key: "relationship_supervisor", label: "Relationship with supervisor" },
     ],
   },
@@ -72,7 +87,10 @@ export const RATING_SCHEMA: RatingCategory[] = [
     key: "safety_compliance",
     label: "Safety Compliance",
     items: [
-      { key: "safe_condition", label: "Keeps workplace and workspace in safe condition" },
+      {
+        key: "safe_condition",
+        label: "Keeps workplace and workspace in safe condition",
+      },
       { key: "safety_over_production", label: "Puts safety over production" },
     ],
   },
@@ -129,10 +147,7 @@ export const SCALE_LEGEND: { value: RatingValue; label: string }[] = [
 // The four "add one at a time" narrative sections. Responsibilities belong
 // first because they establish the role against which the rest is evaluated.
 export type ListSectionKey =
-  | "responsibilities"
-  | "accomplishments"
-  | "strengths"
-  | "opportunities";
+  "responsibilities" | "accomplishments" | "strengths" | "opportunities";
 
 export const LIST_SECTIONS: {
   key: ListSectionKey;
@@ -143,28 +158,29 @@ export const LIST_SECTIONS: {
 }[] = [
   {
     key: "responsibilities",
-    index: 1,
+    index: 2,
     title: "Job Responsibilities",
     description: "The core responsibilities this role is accountable for.",
     placeholder: "Describe a job responsibility…",
   },
   {
     key: "accomplishments",
-    index: 2,
+    index: 3,
     title: "Accomplishments",
-    description: "Concrete wins from this review period. Add them one at a time.",
+    description:
+      "Concrete wins from this review period. Add them one at a time.",
     placeholder: "Describe an accomplishment…",
   },
   {
     key: "strengths",
-    index: 3,
+    index: 4,
     title: "Strengths",
     description: "What this person does consistently well.",
     placeholder: "Describe a strength…",
   },
   {
     key: "opportunities",
-    index: 4,
+    index: 5,
     title: "Opportunities for Improvement",
     description: "Where there is the most room to grow.",
     placeholder: "Describe an opportunity…",

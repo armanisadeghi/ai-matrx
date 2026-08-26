@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/demos/performance-review", {
   titlePrefix: "Performance Review",
   title: "Demos",
   description:
-    "Employee performance review builder — capture ratings, strengths, goals and comments. Saves multiple reviews to local storage.",
+    "Employee performance review builder with responsibilities, ratings, narrative sections, and a polished two-page PDF report.",
   letter: "PR",
 });
 
