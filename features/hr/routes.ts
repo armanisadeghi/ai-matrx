@@ -194,9 +194,21 @@ export function hrEmployeeCustomTabHref(
 export function hrRelationsHref(org?: HrOrgRef): string {
   return hrUrl("/hr/people/relations", org);
 }
-/** Route 16 — one case. */
-export function hrRelationsCaseHref(caseId: string, org?: HrOrgRef): string {
-  return hrUrl(`/hr/people/relations/${caseId}`, org);
+/**
+ * Route 16 — one case.
+ *
+ * `kind` is optional but always worth passing: route 15 is a UNION of two
+ * audited doors, so a link that omits it forces route 16 to probe both, and the
+ * losing probe writes a DENIAL into `hr.access_audit`. The audit is doing its
+ * job — but a subject reading their own access log should not see a denial that
+ * only happened because a link was lazy.
+ */
+export function hrRelationsCaseHref(
+  caseId: string,
+  org?: HrOrgRef,
+  kind?: "incident" | "corrective_action" | null,
+): string {
+  return hrUrl(`/hr/people/relations/${caseId}`, org, { kind });
 }
 /** Route 17 — employment / income verification letters. */
 export function hrVerificationsHref(org?: HrOrgRef): string {

@@ -545,6 +545,28 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
   // (features/hr/time/periods/components/PeriodStatePanel.tsx). A Coming Soon entry for a surface
   // that exists is a promise the product is already keeping, and leaving it here would let a future
   // caller announce "coming soon" over a live screen. It had no call sites when it was removed.
+  "hr.corrective-action-create": {
+    id: "hr.corrective-action-create",
+    label: "Start a corrective action",
+    owner: "hr",
+    promise:
+      "Open a corrective action pre-filled with the objective facts — dates, hours, thresholds crossed, alerts delivered and read, and whether a request was denied. Offered, never automatic: no pattern, count or threshold ever creates one, because a human decides that a person is being written up.",
+    stage: "blocked",
+    blockedBy:
+      "hr.corrective_action is CONF-tier and its authoring surface belongs to the employee-relations lane; the overtime lane owns only the door and its four guards (offered-never-automatic, absent-without-authority, one-way evidence, acknowledge-the-disagreement-first).",
+    surfaces: ["/hr/time/overtime/[requestId] — corrective action"],
+  },
+  "hr.corrective-action-record": {
+    id: "hr.corrective-action-record",
+    label: "Open a corrective action",
+    owner: "hr",
+    promise:
+      "Read the corrective action these hours are cited in. The link is one-way evidence: resolving the attendance exception never edits the write-up, and voiding the write-up never rewrites the attendance record.",
+    stage: "blocked",
+    blockedBy:
+      "The employee-relations record surface is not built yet. hr.attendance_exception.corrective_action_id already carries the link.",
+    surfaces: ["/hr/time/overtime/[requestId] — corrective action"],
+  },
   "hr.time-adjustment-create": {
     id: "hr.time-adjustment-create",
     label: "Record a correction after lock",
