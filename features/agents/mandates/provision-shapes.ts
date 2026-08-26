@@ -138,7 +138,11 @@ export type ConsumptionEntry = Extract<
   { mapType: "offered_value" }
 >;
 
-/** offered value name → how this Holder consumes it. */
+/** HOLDER INPUT name (variable / context-policy key) → how it is fed.
+ * `entry.target` names the SOURCE offered value (defaults to the key) — the
+ * map is target-centric on the wire; docs claiming "keyed by offered value"
+ * were corrected 2026-08-26 (the parse below always resolved
+ * `entry.target || name` as the source). */
 export type ConsumptionMap = Record<string, ConsumptionEntry>;
 
 const WHEN_ABSENT_VALUES = new Set(["skip", "use_default", "fail"]);
