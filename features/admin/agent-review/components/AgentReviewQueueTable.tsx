@@ -11,7 +11,10 @@ import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
 import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_AGENT_REVIEW_SURFACE_NAME } from "@/features/surfaces/manifests/admin-agent-review.manifest";
+import { buildAgentReviewScope } from "@/features/admin/agent-review/surface-scope";
+import { AgentReviewWriteTargets } from "@/features/admin/agent-review/components/AgentReviewWriteTargets";
 import { loadReviewQueue } from "@/features/admin/agent-review/service";
 import {
   EMPTY_REVIEW_REGISTRY,
@@ -73,6 +76,7 @@ export default function AgentReviewQueueTable() {
     EMPTY_REVIEW_REGISTRY,
   );
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [clickedRow, setClickedRow] = useState<ReviewQueueRow | null>(null);
 
   async function refresh() {
@@ -84,10 +88,12 @@ export default function AgentReviewQueueTable() {
       ]);
       setRows(queue);
       setRegistry(nextRegistry);
+      setLoadError(null);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Review queue failed to load",
-      );
+      const message =
+        error instanceof Error ? error.message : "Review queue failed to load";
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -100,14 +106,16 @@ export default function AgentReviewQueueTable() {
         if (!active) return;
         setRows(queue);
         setRegistry(nextRegistry);
+        setLoadError(null);
       })
       .catch((error: unknown) => {
         if (active) {
-          toast.error(
+          const message =
             error instanceof Error
               ? error.message
-              : "Review queue failed to load",
-          );
+              : "Review queue failed to load";
+          setLoadError(message);
+          toast.error(message);
         }
       })
       .finally(() => {
@@ -237,7 +245,32 @@ export default function AgentReviewQueueTable() {
   const inboxRows = rows.filter((row) => row.status === "ready_for_human");
   const visibleRows = view === "all" ? rows : inboxRows;
 
+  /** The surface's live scope, assembled at trigger time from what the list
+   *  actually holds — never stale state captured at render. */
+  function getSurfaceScope() {
+    return buildAgentReviewScope({
+      rows,
+      registry,
+      view,
+      visibleRows,
+      loadError,
+    });
+  }
+
+  /** A row the write target just persisted replaces its copy in place, so
+   *  every read twin reflects what the server actually stored. */
+  function applySavedRow(saved: ReviewQueueRow) {
+    setRows((current) =>
+      current.map((row) => (row.id === saved.id ? saved : row)),
+    );
+  }
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_AGENT_REVIEW_SURFACE_NAME}
+      getScope={getSurfaceScope}
+      isEditable={false}
+    >
     <div className="flex h-full min-h-0 flex-col gap-4 p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -292,18 +325,19 @@ export default function AgentReviewQueueTable() {
       </nav>
 
       <div className="min-h-0 flex-1">
+        {/* Write half of the surface — renders nothing, services the
+            manifest's triage target through updateReviewQueueRow. */}
+        <AgentReviewWriteTargets rows={rows} onRowUpdated={applySavedRow} />
         {/* No entity: agent.review_queue has no registered EntityTypeToken
             today — Copy/AI act on the raw content only.
             surfaceName is `matrx-admin/agent-review` (registered manifest,
             features/surfaces/manifests/admin-agent-review.manifest.ts) —
-            this IS that surface's own table. No `getApplicationScope` yet:
-            the manifest's doc comment claims an emitter is wired, but no
-            `<SurfaceRuntimeProvider>` exists anywhere in this file or its
-            page — that gap is real and pre-existing, not introduced here;
-            v3 will (correctly) scream a VALUE MAPPING GAP until it's built. */}
+            this IS that surface's own table, and the provider above supplies
+            the same live scope the menu passes as `getApplicationScope`. */}
         <NonEditableContextMenu
           sourceFeature="admin"
           surfaceName={ADMIN_AGENT_REVIEW_SURFACE_NAME}
+          getApplicationScope={getSurfaceScope}
           contentSource={{ type: "raw" }}
           contextData={{ content: "" }}
           resolveContextOnOpen={(element) => {
@@ -381,5 +415,6 @@ export default function AgentReviewQueueTable() {
         </NonEditableContextMenu>
       </div>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -18,6 +18,16 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import {
+  useSurfaceRuntimeRegistration,
+  useSurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME,
+  createAdminAgentReviewItemScope,
+} from "@/features/surfaces/manifests/admin-agent-review-item.manifest";
+import { parseReviewMetadata } from "@/features/admin/agent-review/triage";
+import { reviewTargetPageDisplay } from "@/features/admin/agent-review/target-page";
+import {
   loadReviewQueueItem,
   recordHumanReviewAction,
 } from "@/features/admin/agent-review/service";
@@ -108,6 +118,59 @@ export default function AgentReviewWorkspace({
       active = false;
     };
   }, [reviewId]);
+
+  // The surface emits only once the row is loaded: this page has early
+  // returns for loading and error, and an unregistered surface is honest
+  // where a scope of empty strings would be a lie. `useSurfaceRuntimeRegistration`
+  // (not a wrapping provider) is what survives those branch flips.
+  useSurfaceRuntimeRegistration(
+    row
+      ? {
+          surfaceName: ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME,
+          isEditable: false,
+          getScope: () => {
+            const names = classification(row, registry);
+            const triage = parseReviewMetadata(row.metadata);
+            return createAdminAgentReviewItemScope({
+              review_id: row.id,
+              review_title: row.title,
+              review_status: row.status as ReviewStatus,
+              review_target_url: reviewTargetPageDisplay(row.url).fullHref,
+              review_repo_slug: row.repo_slug,
+              review_domain: names.domain,
+              review_feature: names.feature,
+              review_created_at: row.created_at,
+              review_updated_at: row.updated_at,
+              review_instructions: row.instructions,
+              feedback_draft: feedback,
+              can_act: row.status === "ready_for_human" && Boolean(user?.id),
+              ...(row.feedback ? { review_feedback: row.feedback } : {}),
+              ...(row.conversation_id
+                ? { review_conversation_id: row.conversation_id }
+                : {}),
+              ...(triage.state === "ready" ? { review_triage: triage.triage } : {}),
+            });
+          },
+        }
+      : null,
+  );
+
+  // The draft target stages prose into the SAME buffer the human types into.
+  // Nothing is saved and no status moves — Request changes / Approve / Run
+  // agent review again stay human button presses.
+  useSurfaceWriteHandlers(
+    row ? ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME : null,
+    {
+      review_feedback_draft: (value: unknown) => {
+        if (typeof value !== "string") {
+          throw new Error(
+            "review_feedback_draft expects the full replacement text as a plain string.",
+          );
+        }
+        setFeedback(value);
+      },
+    },
+  );
 
   const currentStage = useMemo(
     () =>

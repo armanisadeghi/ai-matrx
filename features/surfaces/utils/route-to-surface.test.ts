@@ -294,6 +294,13 @@ describe("Admin surface resolution (post catch-all removal)", () => {
     expect(surfaceFromPathname("/administration/users/agent-review")).toBe(
       "matrx-admin/agent-review",
     );
+    // ONE open review is its own surface — the list's queue-wide counts and
+    // the item page's open-row values cannot be emitted by each other.
+    expect(
+      surfaceFromPathname(
+        "/administration/users/agent-review/2f1c4f80-0c1a-4a9c-9f1e-2b5d6f7a8c90",
+      ),
+    ).toBe("matrx-admin/agent-review-item");
     expect(surfaceFromPathname("/administration/users/admins")).toBe(
       "matrx-admin/users",
     );
