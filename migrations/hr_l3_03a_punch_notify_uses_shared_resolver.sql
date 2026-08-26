@@ -65,7 +65,7 @@ returns integer
 language plpgsql
 security definer
 set search_path to 'hr', 'public'
-as $fn$
+as $$
 declare
   v_user uuid; v_channels text[]; v_basis text; ch text; v_n integer := 0;
   v_payload jsonb; v_link text;
@@ -73,7 +73,7 @@ begin
   select e.login_user_id into v_user
     from hr.employment em join hr.employee e on e.id = em.employee_id
    where em.id = p_employment_id;
-  if v_user is null then return 0; end if;    -- nobody to reach; the punch row still records it
+  if v_user is null then return 0; end if;      -- nobody to reach; the punch row still records it
 
   -- THE ONE RESOLVER (hr_l10_02). ARRAY['in_app'] for an unregistered event, '{}' when every
   -- channel is explicitly off.
@@ -108,7 +108,7 @@ begin
   end loop;
   return v_n;
 end
-$fn$;
+$$;
 
 comment on function hr._punch_notify_edited(uuid, uuid, uuid, uuid, text, uuid, jsonb) is
   'SPEC-TIME 4.1 - the employee is told their punch was edited, ALWAYS. Channels come from the ONE '
@@ -119,16 +119,16 @@ create or replace function hr.punch_edit_notify_debt()
 returns jsonb
 language sql
 stable
-as $fn$
+as $$
   select jsonb_build_object(
     'event_key', 'hr.time.punch_edited',
     'seeded', exists (select 1 from communication.notification_event_type
                        where event_key = 'hr.time.punch_edited' and deleted_at is null),
     'resolved_channels', to_jsonb(hr._notify_channels('hr.time.punch_edited', null)),
-    'fallback_channels', jsonb_build_array('in_app'),
+    'fallback_channels', '["in_app"]'::jsonb,
     'resolver', 'hr._notify_channels (hr_l10_02) - this lane keeps no second copy',
     'owner', 'event seeded by HRB-022 (l10-inbox); the punch emitter is HRB-015 lane L3');
-$fn$;
+$$;
 
 -- ============================================================ assertions (RD 2)
 

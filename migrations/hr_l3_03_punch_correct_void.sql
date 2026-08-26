@@ -235,12 +235,11 @@ begin
    where em.id = p_employment_id;
   if v_user is null then return 0; end if;      -- nobody to reach; the punch row still records it
 
-  -- THE ONE RESOLVER (hr_l10_02). Returns ARRAY['in_app'] for an unregistered event and '{}' when
-  -- every channel is explicitly off. This lane keeps no second copy of the shape read.
+  -- THE ONE RESOLVER (hr_l10_02). ARRAY['in_app'] for an unregistered event, '{}' when every
+  -- channel is explicitly off.
   v_channels := hr._notify_channels('hr.time.punch_edited', p_organization_id);
   if v_channels is null or cardinality(v_channels) = 0 then
-    -- decision 6: the law is not conditional. "No channels" cannot mean "stay silent".
-    v_channels := array['in_app']; v_basis := 'law_overrides_empty_channel_set';
+    v_channels := array['in_app']; v_basis := 'law_overrides_empty_channel_set';   -- RD 4
   else
     v_basis := 'notify_channels_resolver';
   end if;
@@ -282,7 +281,7 @@ as $$
                        where event_key = 'hr.time.punch_edited' and deleted_at is null),
     'resolved_channels', to_jsonb(hr._notify_channels('hr.time.punch_edited', null)),
     'fallback_channels', '["in_app"]'::jsonb,
-    'resolver', 'hr._notify_channels (hr_l10_02) — this lane keeps no second copy',
+    'resolver', 'hr._notify_channels (hr_l10_02) - this lane keeps no second copy',
     'owner', 'event seeded by HRB-022 (l10-inbox); the punch emitter is HRB-015 lane L3');
 $$;
 
