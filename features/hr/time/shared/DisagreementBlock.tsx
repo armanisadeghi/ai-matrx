@@ -24,7 +24,7 @@ import { MessageSquareWarning } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import type { PayPeriodEmploymentState, TimesheetDispute } from "../api/types";
-import { formatHours, formatStampedDateTimeExact, viewerTimeZone } from "./format";
+import { formatHours, formatDateTimeInTz, viewerTimeZone } from "./format";
 
 export function DisagreementBlock({
   dispute,
@@ -56,7 +56,7 @@ export function DisagreementBlock({
         <div>
           <h3 className="text-sm font-semibold">The employee does not agree with these hours</h3>
           <p className="text-xs text-muted-foreground">
-            Recorded {formatStampedDateTimeExact(dispute.disputedAt, viewerTimeZone())}. This stays
+            Recorded {formatDateTimeInTz(dispute.disputedAt, viewerTimeZone())}. This stays
             on the record through approval, export and lock — approving does not remove it.
           </p>
         </div>
@@ -92,7 +92,7 @@ export function DisagreementBlock({
             <p className="mt-1.5 text-[11px] text-muted-foreground">
               {dispute.disputeResolvedByName ?? "A manager"}
               {dispute.disputeResolvedAt
-                ? ` · ${formatStampedDateTimeExact(dispute.disputeResolvedAt, viewerTimeZone())}`
+                ? ` · ${formatDateTimeInTz(dispute.disputeResolvedAt, viewerTimeZone())}`
                 : null}
             </p>
           </>

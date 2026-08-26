@@ -17,7 +17,7 @@ import { Camera, MapPin, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import type { PunchRow } from "../api/types";
-import { formatStampedDateTimeExact } from "./format";
+import { formatDateTimeInTz } from "./format";
 import { StampedTime } from "./timing";
 import { ACTOR_TYPE_LABELS, PUNCH_KIND_LABELS, PUNCH_SOURCE_LABELS } from "./vocabulary";
 
@@ -115,7 +115,7 @@ function PunchChainRow({
         <div className="mt-1.5 flex items-start gap-1.5 rounded border border-border bg-muted/60 px-2 py-1 text-[11px]">
           <Undo2 className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" aria-hidden />
           <span>
-            Voided {formatStampedDateTimeExact(punch.voidedAt, punch.tz)}
+            Voided {formatDateTimeInTz(punch.voidedAt, punch.tz)}
             {punch.voidedReason ? <> — &ldquo;{punch.voidedReason}&rdquo;</> : null}
             {punch.voidedByPunchId ? (
               <>

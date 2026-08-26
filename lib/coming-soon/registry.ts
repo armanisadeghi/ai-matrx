@@ -540,16 +540,21 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "/hr/time/periods/[periodId] — pending-workweek precondition",
     ],
   },
-  "hr.period-approval-progress": {
-    id: "hr.period-approval-progress",
-    label: "Pay-period approval progress",
+  // "hr.period-approval-progress" was retired 2026-08-26 by lane L3 (HRB-015): the pay-period
+  // state machine and its approval progress SHIPPED as `/hr/time/periods/[periodId]`
+  // (features/hr/time/periods/components/PeriodStatePanel.tsx). A Coming Soon entry for a surface
+  // that exists is a promise the product is already keeping, and leaving it here would let a future
+  // caller announce "coming soon" over a live screen. It had no call sites when it was removed.
+  "hr.time-adjustment-create": {
+    id: "hr.time-adjustment-create",
+    label: "Record a correction after lock",
     owner: "hr",
     promise:
-      "See how far this pay period is through approval — who still has timecards to approve, which exceptions are open, and what has to happen before it can be exported.",
-    stage: "building",
+      "File a correction against a locked pay period. It rides the next payroll export, tagged back to the period it belongs to — the locked period is never rewritten and the delivered export is never regenerated, because regenerating in place double-pays.",
+    stage: "blocked",
     blockedBy:
-      "The pay-period state machine and its approval view are being built alongside the export lane; export history landed first.",
-    surfaces: ["/hr/time/periods/[periodId] — period header"],
+      "The read side is built; hr.time_adjustment_create is a SQL RPC that does not exist yet (lane L3, HRB-015). The surface lists corrections and states the rule today.",
+    surfaces: ["/hr/time/periods/[periodId] — corrections after lock"],
   },
   "hr.time-rule-detail": {
     id: "hr.time-rule-detail",
@@ -561,6 +566,161 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     blockedBy:
       "The calculation already preserves the rule identifier, but the versioned HR rule detail surface is still being built.",
     surfaces: ["HR time calculation snapshot — auto-close rule"],
+  },
+  // ── HR / people (lane L1) ────────────────────────────────────────────────
+  // The directory row action set and the org chart's NL query box are specified
+  // in full (SPEC-EMPLOYEES §2.2, §5.2). Each of these is a real advertised verb
+  // whose lane has not shipped its half yet — declared here so the promise is
+  // countable and reviewable rather than a toast or a silently-missing action.
+  "hr.people.message": {
+    id: "hr.people.message",
+    label: "Message this person",
+    owner: "hr",
+    promise:
+      "Start a message to a colleague from their directory row or profile, without leaving HR to find their address.",
+    stage: "planned",
+    blockedBy:
+      "There is no in-product person-to-person messaging surface to open. HR must not invent a second one; the row shows the work email it holds and waits for that surface.",
+    surfaces: [
+      "/hr/people — row menu",
+      "/hr/people/[employeeId] — profile header menu",
+    ],
+  },
+  "hr.people.assign-training": {
+    id: "hr.people.assign-training",
+    label: "Assign training",
+    owner: "hr",
+    promise:
+      "Assign a course or a compliance mandate to one person, or to everyone selected in the directory, and track completion from the same list.",
+    stage: "planned",
+    blockedBy:
+      "The Training pillar (routes 57–61) owns assignment; its surfaces and RPCs are not built. The directory offers the verb because bulk assignment is specified there.",
+    surfaces: [
+      "/hr/people — row menu",
+      "/hr/people — bulk action bar",
+    ],
+  },
+  "hr.people.send-acknowledgment": {
+    id: "hr.people.send-acknowledgment",
+    label: "Send an acknowledgment",
+    owner: "hr",
+    promise:
+      "Send a document acknowledgment request to everyone selected, and watch the outstanding count come down from the campaign screen.",
+    stage: "planned",
+    blockedBy:
+      "Acknowledgment campaigns live in Documents & Forms (route 54), which is not built.",
+    surfaces: ["/hr/people — bulk action bar"],
+  },
+  "hr.people.directory-export": {
+    id: "hr.people.directory-export",
+    label: "Export this list",
+    owner: "hr",
+    promise:
+      "Download exactly the people this filtered list is showing, with the columns the list is showing, as a file — and have the export recorded, because who exported the people list and when is itself a record.",
+    stage: "blocked",
+    blockedBy:
+      "SPEC-EMPLOYEES §2.2 makes an export an AUDITED action (hr.access_audit action='export'). There is no hr_directory_export door, and a browser cannot write that audit row — so an unaudited CSV of everyone is deliberately NOT shipped. Copy / Copy for AI on the table remain available for the directory-tier columns already on screen.",
+    surfaces: ["/hr/people — bulk action bar", "/hr/people — toolbar"],
+  },
+  "hr.people.start-offboarding": {
+    id: "hr.people.start-offboarding",
+    label: "Start offboarding",
+    owner: "hr",
+    promise:
+      "Open the separation form — last day worked, termination date, reason, initiator, rehire eligibility — and hand off to the offboarding run once it is approved.",
+    stage: "blocked",
+    blockedBy:
+      "hr_separation_record is an agreed signature that does not exist in the database yet (verified against pg_proc 2026-08-26). The action is capability-gated and absent for anyone who could not use it anyway.",
+    surfaces: [
+      "/hr/people — row menu",
+      "/hr/people/[employeeId]/job — spell actions",
+    ],
+  },
+  "hr.people.org-chart-query": {
+    id: "hr.people.org-chart-query",
+    label: "Ask the org chart a question",
+    owner: "hr",
+    promise:
+      "Ask in plain words — “who reports to Dana two levels down”, “which teams have no manager” — and the matching nodes light up on the chart you are already looking at. It is never a chat reply.",
+    stage: "blocked",
+    blockedBy:
+      "The mandate hr.employees.org_chart_query is specified (SPEC-EMPLOYEES §8) but not registered, so there is nothing to launch. The box renders honestly disabled rather than pretending.",
+    surfaces: ["/hr/people/org-chart — query box"],
+  },
+  "hr.people.chart-image-export": {
+    id: "hr.people.chart-image-export",
+    label: "Export the org chart as PDF or PNG",
+    owner: "hr",
+    promise:
+      "Download the chart exactly as drawn — as of the date on the chip — as a PDF or a PNG that carries that date in its filename and its header.",
+    stage: "building",
+    blockedBy:
+      "CSV export is live and carries the as-of date. Rendering the laid-out chart to an image needs a rasteriser decision that has not been made; CSV ships first rather than shipping three broken formats.",
+    surfaces: ["/hr/people/org-chart — export menu"],
+  },
+  "hr.people.bulk-manager-assignment": {
+    id: "hr.people.bulk-manager-assignment",
+    label: "Assign managers in bulk",
+    owner: "hr",
+    promise:
+      "Set the reporting line for many people at once, so an org with no manager data gets a chart instead of an empty canvas.",
+    stage: "blocked",
+    blockedBy:
+      "Each assignment is an effective-dated position change through hr_position_change, which does not exist in the database yet. A bulk writer on top of a missing single writer would be the wrong thing built twice.",
+    surfaces: [
+      "/hr/people/org-chart — no-manager-data state",
+      "/hr/people/org-chart — cycle badge",
+    ],
+  },
+  "hr.people.ssn-reveal": {
+    id: "hr.people.ssn-reveal",
+    label: "Reveal the full SSN",
+    owner: "hr",
+    promise:
+      "Show the full number once, against a recorded justification, without ever caching it — the audited door that replaces a masked field nobody can act on.",
+    stage: "blocked",
+    blockedBy:
+      "POST /api/hr/identity/{id}/ssn/reveal is specified (SPEC-EMPLOYEES §1.3) and not built. Last-4 is what every viewer sees, including hr_owner, so nothing is hidden that was ever shown.",
+    surfaces: ["/hr/people/[employeeId]/personal — SSN field"],
+  },
+  "hr.people.custom-fields": {
+    id: "hr.people.custom-fields",
+    label: "Custom fields and custom tabs",
+    owner: "hr",
+    promise:
+      "Fields your org defined render with the right editor for their type, in the order an admin set, with their own sensitivity tier — on the profile and as directory columns.",
+    stage: "blocked",
+    blockedBy:
+      "The platform tier-1 custom-fields client kit (CustomFieldsSection / CustomFieldInput / customFieldColumns) belongs to lane L14 and does not exist. The profile shows the stored values read-only through a marked adapter rather than inventing a competing kit.",
+    surfaces: [
+      "/hr/people/[employeeId]/[tab] — More section",
+      "/hr/people/[employeeId]/c/[tabKey]",
+    ],
+  },
+  "hr.timecard-correction-request": {
+    id: "hr.timecard-correction-request",
+    label: "Ask for a correction",
+    owner: "hr",
+    promise:
+      "Raise a correction request against a specific day on your timesheet. Your manager decides it, your own words are kept on the record either way, and nothing about the figure changes until somebody with authority agrees to it.",
+    stage: "blocked",
+    blockedBy:
+      "A correction request is a `timecard_correction` workflow instance opened through hr.wf_request. The engine function exists in the hr schema, but there is no PostgREST-reachable `public.hr_wf_request` wrapper (verified live 2026-08-26), so no browser can open one. Owed by lane L3 / HRB-015. After lock this becomes hr.time_adjustment_create instead — see hr.time-adjustment-create.",
+    surfaces: [
+      "/hr/me/timesheet — attestation bar",
+      "/hr/time/timesheets/[employmentId] — day actions",
+    ],
+  },
+  "hr.punch-photo": {
+    id: "hr.punch-photo",
+    label: "View the punch photo",
+    owner: "hr",
+    promise:
+      "Open the photo captured with this punch, behind the same sensitivity gate as any other employee image — and recorded in the access log, because looking at a picture of an employee is an access event.",
+    stage: "blocked",
+    blockedBy:
+      "The register reports photo PRESENCE (`hasPhoto`), which is all a list may show. Opening the image needs the gated file read (`hr_confidential_get` on the punch photo target), and the punch photo is not yet a registered confidential target. Owed by lane L3 / HRB-015 with L1's sensitivity lane.",
+    surfaces: ["/hr/time/punches — photo column"],
   },
 };
 

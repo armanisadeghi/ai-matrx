@@ -19,6 +19,24 @@
  * DEBT (lane owner): `clock/stampedTime.ts` is used by three lanes now and belongs in `shared/`.
  */
 
+/**
+ * 🚨 THESE RE-EXPORTS ARE LOAD-BEARING — do not "tidy" them away.
+ *
+ * `shared/format` is the ONE import site every Time surface uses (`timesheet/`, `punches/`,
+ * `exceptions/`, `exports/`, `periods/`). The stamped-zone renderers live in `clock/stampedTime.ts`
+ * because the clock lane wrote them first; re-exporting them here is what stops a second lane from
+ * writing a second `5:58 AM PDT`. Deleting this block does not remove a duplicate — it CREATES the
+ * pressure for one, and it breaks every sibling lane's build at once (it did, 2026-08-26).
+ */
+export {
+  formatStampedTime,
+  formatStampedDate,
+  formatStampedTimeWithZone,
+  stampedZoneAbbreviation,
+  viewerTimeZone,
+  crossZoneNotice,
+} from "../clock/stampedTime";
+
 import { viewerTimeZone } from "../clock/stampedTime";
 
 /** True when the record's stamped zone is not the zone the reader is sitting in. */
@@ -44,7 +62,7 @@ export function formatTimeInViewerZone(iso: string | null): string {
  * `occurred_at` and `device_reported_at` routinely differ by a few of them and that difference is
  * the whole point of the `clock_skew_applied_seconds` column beside them.
  */
-export function formatStampedDateTimeExact(iso: string | null, tz: string): string {
+export function formatDateTimeInTz(iso: string | null, tz: string): string {
   if (!iso) return "—";
   const showZone = zoneDiffersFromViewer(tz);
   return new Intl.DateTimeFormat(undefined, {

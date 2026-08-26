@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { viewerTimeZone } from "../clock/stampedTime";
 
 import type { CalcBlock } from "../api/types";
-import { formatStampedDateTimeExact } from "./format";
+import { formatDateTimeInTz } from "./format";
 import { IncompleteFactSentences } from "./MoneyAndFlags";
 
 export interface RuleSnapshotRequest {
@@ -101,7 +101,7 @@ function RuleSnapshotBody({ request }: { request: RuleSnapshotRequest }) {
               label="Calculated at"
               value={
                 calc.computedAt
-                  ? formatStampedDateTimeExact(calc.computedAt, viewerTimeZone())
+                  ? formatDateTimeInTz(calc.computedAt, viewerTimeZone())
                   : "Not recorded"
               }
             />

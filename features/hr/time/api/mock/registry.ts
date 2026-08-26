@@ -522,6 +522,364 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
       user_message: "We could not find that timesheet.",
       details: {},
     },
+
+    /**
+     * 🚨 THE UGLY-STATES FIXTURE — appended by the timesheet lane so every rule that is expensive
+     * to discover late can be LOOKED AT on one screen rather than reasoned about:
+     *
+     *   • a **multi-rate** week (no single week rate exists, OT rides the weighted average);
+     *   • a **spring-forward** day whose shift was 7 hours and not 8, with the server's sentence;
+     *   • a **cross-midnight** pair — hours on the clock-in's date, the next day carrying the
+     *     reciprocal marker and NOT repeating them;
+     *   • a **workday attribution** where the 04:00 workday differs from the calendar day;
+     *   • an **advisory** premium line: hours present, amount ABSENT, `moneyWithheld` true;
+     *   • an interval with a **non-zero rounding delta** for the inline sentence;
+     *   • a preserved **disagreement**, and **recomputed-since-approval**.
+     */
+    edge: {
+      ok: true,
+      data: {
+        employmentId: EMPLOYMENT,
+        employeeDisplayName: "Dana Ruiz",
+        payPeriod: {
+          id: PERIOD,
+          payGroupId: "44444444-4444-4444-8444-444444444444",
+          payGroupName: "Semimonthly — Hourly",
+          periodStartOn: "2026-03-01",
+          periodEndOn: "2026-03-15",
+          payDate: "2026-03-20",
+          sequenceNumber: 5,
+          state: "approved",
+          submittedAt: "2026-03-16T16:00:00Z",
+          approvedAt: "2026-03-17T16:00:00Z",
+          exportedAt: null,
+          lockedAt: null,
+          closedAt: null,
+          reopenedAt: null,
+          reopenReason: null,
+          boundaryWorkweekIds: [WORKWEEK],
+          counts: { employments: 41, approved: 38, open: 2, attested: 1, disputed: 1 },
+        },
+        rowState: "disputed",
+        weeks: [
+          {
+            workweek: {
+              id: WORKWEEK,
+              employmentId: EMPLOYMENT,
+              payGroupId: "44444444-4444-4444-8444-444444444444",
+              weekStartAt: "2026-03-08T08:00:00Z",
+              weekEndAt: "2026-03-15T07:00:00Z",
+              weekStartLocalDate: "2026-03-08",
+              // Stamped as a WEDNESDAY start: the org changed the setting later, and this week is
+              // still cut the old way. The block header must say so.
+              weekStartDow: 3,
+              weekStartTime: "06:00:00",
+              tz: TZ,
+              hoursWorked: 43,
+              hoursRegular: 40,
+              hoursOvertime: 3,
+              hoursDoubletime: 0,
+              hoursPaidLeave: 8,
+              hoursUnpaidLeave: 0,
+              hoursHoliday: 0,
+              hoursOnCall: 0,
+              hoursOfService: 51,
+              // 🚨 Multi-rate: the OT figure is a DOOR onto this breakdown, and no single week
+              // rate is displayed anywhere, because there isn't one.
+              weightedAverageRegularRate: 25.4186,
+              multiRate: true,
+              rateComponents: [
+                { positionAssignmentId: "bbbbbbb1-0000-4000-8000-000000000001", positionTitle: "Line Cook", rate: 24.375, hours: 30, product: 731.25 },
+                { positionAssignmentId: "bbbbbbb1-0000-4000-8000-000000000002", positionTitle: "Shift Lead", rate: 28, hours: 13, product: 364 },
+              ],
+              isFinal: false,
+              isBoundaryWeek: true,
+              calc: { ...CALC_OK, calc: { ...CALC_OK.calc, weighted_average_regular_rate: 25.4186, incomplete: [{ class: "exempt-status", fact: "the employee's FLSA exemption test result for this period" }] } },
+              money: MONEY_OK,
+            },
+            // A shift crosses this week's start, so it renders in both blocks with the split stated.
+            splitAtBoundary: true,
+            days: [
+              {
+                // ── SPRING FORWARD. 7 hours, not 8. The sentence is the SERVER's.
+                localWorkDate: "2026-03-08",
+                tz: TZ,
+                intervals: [
+                  {
+                    id: "ffffff01-0000-4000-8000-000000000101",
+                    employmentId: EMPLOYMENT,
+                    positionAssignmentId: "bbbbbbb1-0000-4000-8000-000000000001",
+                    positionTitle: "Line Cook",
+                    workweekId: WORKWEEK,
+                    payPeriodId: PERIOD,
+                    intervalKind: "worked",
+                    hoursCategory: "worked",
+                    earningCodeId: "ccccccc1-0000-4000-8000-000000000001",
+                    earningCodeName: "Regular",
+                    earningCode: "REG",
+                    startedAt: "2026-03-08T06:00:00Z",
+                    endedAt: "2026-03-08T13:00:00Z",
+                    localWorkDate: "2026-03-08",
+                    tz: TZ,
+                    hours: 7,
+                    rate: 24.375,
+                    isOvertime: false,
+                    roundingAppliedMinutes: 0,
+                    rawStartedAt: "2026-03-08T06:00:00Z",
+                    rawEndedAt: "2026-03-08T13:00:00Z",
+                    sourcePunchIds: [PUNCH_CLOCK_IN.id],
+                    attendanceExceptionId: null,
+                    isCurrent: true,
+                    supersededById: null,
+                    calc: CALC_OK,
+                    money: MONEY_OK,
+                  },
+                ],
+                punches: [PUNCH_CLOCK_IN],
+                totalHours: 7,
+                hoursByCategory: { worked: 7, paid_leave: 0, unpaid_leave: 0, holiday: 0, on_call: 0, premium: 0 },
+                roundingAppliedMinutes: 0,
+                dst: {
+                  transition: true,
+                  sentence:
+                    "Daylight saving: clocks moved forward one hour at 2:00 AM America/Los_Angeles. This shift was 7 hours, not the 8 the wall clock suggests.",
+                },
+                crossesMidnight: false,
+                continuesIntoDate: null,
+                continuedFromDate: null,
+                workdayAttribution: null,
+                exceptions: [],
+                scheduledHours: 8,
+              },
+              {
+                // ── CROSS-MIDNIGHT, and a 04:00 workday. Hours live HERE, on the clock-in's date.
+                localWorkDate: "2026-03-10",
+                tz: TZ,
+                intervals: [
+                  {
+                    id: "ffffff01-0000-4000-8000-000000000102",
+                    employmentId: EMPLOYMENT,
+                    positionAssignmentId: "bbbbbbb1-0000-4000-8000-000000000001",
+                    positionTitle: "Line Cook",
+                    workweekId: WORKWEEK,
+                    payPeriodId: PERIOD,
+                    intervalKind: "worked",
+                    hoursCategory: "worked",
+                    earningCodeId: "ccccccc1-0000-4000-8000-000000000001",
+                    earningCodeName: "Regular",
+                    earningCode: "REG",
+                    startedAt: "2026-03-11T01:58:00Z",
+                    endedAt: "2026-03-11T10:03:00Z",
+                    localWorkDate: "2026-03-10",
+                    tz: TZ,
+                    hours: 8,
+                    rate: 24.375,
+                    isOvertime: false,
+                    // Non-zero → the inline sentence on the employee's own timesheet.
+                    roundingAppliedMinutes: 1,
+                    rawStartedAt: "2026-03-11T01:58:00Z",
+                    rawEndedAt: "2026-03-11T10:03:00Z",
+                    sourcePunchIds: [PUNCH_CLOCK_IN.id],
+                    attendanceExceptionId: null,
+                    isCurrent: true,
+                    supersededById: null,
+                    calc: CALC_OK,
+                    money: MONEY_OK,
+                  },
+                  {
+                    // A mid-shift TRANSFER: a second assignment, so the day view names both titles.
+                    id: "ffffff01-0000-4000-8000-000000000103",
+                    employmentId: EMPLOYMENT,
+                    positionAssignmentId: "bbbbbbb1-0000-4000-8000-000000000002",
+                    positionTitle: "Shift Lead",
+                    workweekId: WORKWEEK,
+                    payPeriodId: PERIOD,
+                    intervalKind: "worked",
+                    hoursCategory: "worked",
+                    earningCodeId: "ccccccc1-0000-4000-8000-000000000002",
+                    earningCodeName: "Overtime",
+                    earningCode: "OT",
+                    startedAt: "2026-03-11T10:03:00Z",
+                    endedAt: "2026-03-11T13:03:00Z",
+                    localWorkDate: "2026-03-10",
+                    tz: TZ,
+                    hours: 3,
+                    rate: 28,
+                    isOvertime: true,
+                    roundingAppliedMinutes: 0,
+                    rawStartedAt: "2026-03-11T10:03:00Z",
+                    rawEndedAt: "2026-03-11T13:03:00Z",
+                    sourcePunchIds: [PUNCH_CLOCK_IN.id],
+                    attendanceExceptionId: null,
+                    isCurrent: true,
+                    supersededById: null,
+                    calc: CALC_OK,
+                    money: MONEY_OK,
+                  },
+                  {
+                    // 🚨 THE ADVISORY PREMIUM LINE. Hours show. The amount is ABSENT — not 0, not —.
+                    id: "ffffff01-0000-4000-8000-000000000104",
+                    employmentId: EMPLOYMENT,
+                    positionAssignmentId: null,
+                    positionTitle: null,
+                    workweekId: WORKWEEK,
+                    payPeriodId: PERIOD,
+                    intervalKind: "premium_only",
+                    hoursCategory: "premium",
+                    earningCodeId: "ccccccc1-0000-4000-8000-00000000000a",
+                    earningCodeName: "Predictability pay",
+                    earningCode: "PREDICT_PAY",
+                    startedAt: null,
+                    endedAt: null,
+                    localWorkDate: "2026-03-10",
+                    tz: TZ,
+                    hours: 1,
+                    rate: null,
+                    isOvertime: false,
+                    // Rounding NEVER applies to a premium line — it is 1.0 hours by statute.
+                    roundingAppliedMinutes: 0,
+                    rawStartedAt: null,
+                    rawEndedAt: null,
+                    sourcePunchIds: [],
+                    attendanceExceptionId: "eeeeeee1-0000-4000-8000-000000000001",
+                    isCurrent: true,
+                    supersededById: null,
+                    calc: CALC_OK,
+                    money: MONEY_WITHHELD,
+                  },
+                ],
+                punches: [PUNCH_CLOCK_IN],
+                totalHours: 12,
+                hoursByCategory: { worked: 11, paid_leave: 0, unpaid_leave: 0, holiday: 0, on_call: 0, premium: 1 },
+                roundingAppliedMinutes: 1,
+                dst: { transition: false, sentence: null },
+                crossesMidnight: true,
+                continuesIntoDate: "2026-03-11",
+                continuedFromDate: null,
+                workdayAttribution: { workdayStartLocal: "04:00", evaluatedWorkdayDate: "2026-03-10" },
+                exceptions: [EXCEPTION_VIOLATION],
+                scheduledHours: 8,
+              },
+              {
+                // ── THE RECIPROCAL DAY. Marker only. The hours are NOT repeated — a week total that
+                // double-counts a midnight crossing is the classic bug §9 rule 4 prevents.
+                localWorkDate: "2026-03-11",
+                tz: TZ,
+                intervals: [],
+                punches: [],
+                totalHours: 0,
+                hoursByCategory: { worked: 0, paid_leave: 0, unpaid_leave: 0, holiday: 0, on_call: 0, premium: 0 },
+                roundingAppliedMinutes: 0,
+                dst: { transition: false, sentence: null },
+                crossesMidnight: false,
+                continuesIntoDate: null,
+                continuedFromDate: "2026-03-10",
+                workdayAttribution: null,
+                exceptions: [],
+                scheduledHours: null,
+              },
+              {
+                // Paid leave — counts toward hours of service, not toward FLSA overtime.
+                localWorkDate: "2026-03-12",
+                tz: TZ,
+                intervals: [
+                  {
+                    id: "ffffff01-0000-4000-8000-000000000105",
+                    employmentId: EMPLOYMENT,
+                    positionAssignmentId: "bbbbbbb1-0000-4000-8000-000000000001",
+                    positionTitle: "Line Cook",
+                    workweekId: WORKWEEK,
+                    payPeriodId: PERIOD,
+                    intervalKind: "leave",
+                    hoursCategory: "paid_leave",
+                    earningCodeId: "ccccccc1-0000-4000-8000-000000000005",
+                    earningCodeName: "Sick",
+                    earningCode: "SICK",
+                    startedAt: null,
+                    endedAt: null,
+                    localWorkDate: "2026-03-12",
+                    tz: TZ,
+                    hours: 8,
+                    rate: 24.375,
+                    isOvertime: false,
+                    roundingAppliedMinutes: 0,
+                    rawStartedAt: null,
+                    rawEndedAt: null,
+                    sourcePunchIds: [],
+                    attendanceExceptionId: null,
+                    isCurrent: true,
+                    supersededById: null,
+                    calc: CALC_OK,
+                    money: MONEY_OK,
+                  },
+                ],
+                punches: [],
+                totalHours: 8,
+                hoursByCategory: { worked: 0, paid_leave: 8, unpaid_leave: 0, holiday: 0, on_call: 0, premium: 0 },
+                roundingAppliedMinutes: 0,
+                dst: { transition: false, sentence: null },
+                crossesMidnight: false,
+                continuesIntoDate: null,
+                continuedFromDate: null,
+                workdayAttribution: null,
+                exceptions: [],
+                scheduledHours: 8,
+              },
+            ],
+          },
+        ],
+        periodTotals: {
+          totalHours: 51,
+          hoursByCategory: { worked: 43, paid_leave: 8, unpaid_leave: 0, holiday: 0, on_call: 0, premium: 1 },
+          hoursOvertime: 3,
+          hoursDoubletime: 0,
+          premiumLineCount: 1,
+          boundaryNote:
+            "One workweek straddles this period's edge. Overtime for that week is computed on the whole week and attributed to the period containing the week's end date.",
+        },
+        attestation: {
+          stepId: "99999999-0000-4000-8000-000000000001",
+          canAttest: false,
+          attestedAt: "2026-03-16T15:20:00Z",
+          // 🚨 STORED AS SHOWN. The org has since edited its statement; this is what Dana agreed to,
+          // and it must never be retroactively replaced by the current text.
+          statementShown:
+            "I confirm these hours are complete and accurate, including every meal and rest break I was provided.",
+          statementToShow:
+            "I confirm these hours are a complete and accurate record of the time I worked, including all meal and rest breaks I was provided.",
+        },
+        dispute: {
+          disputedAt: "2026-03-16T15:20:00Z",
+          disputeNote:
+            "Wednesday shows 8 hours but I worked until 6, not 4:30. I clocked out on the tablet and it did not take.",
+          disputeResolution: null,
+          disputeResolvedAt: null,
+          disputeResolvedByName: null,
+        },
+        editHistory: [
+          {
+            at: "2026-03-16T22:05:00Z",
+            byName: "Priya Anand",
+            reason: "Employee reported the tablet did not record the clock-out.",
+            field: "clock_out",
+            originalValue: "4:30 PM PDT",
+            newValue: "6:00 PM PDT",
+            voidedPunchId: "aaaaaaa1-0000-4000-8000-000000000003",
+            replacementPunchId: "aaaaaaa1-0000-4000-8000-00000000000b",
+            rateAtTime: 24.375,
+          },
+        ],
+        openExceptions: [EXCEPTION_VIOLATION],
+        // 🚨 Recomputed AFTER approval: the banner shows prior vs current, and re-approval is required.
+        recomputedSinceApproval: {
+          at: "2026-03-18T17:30:00Z",
+          byName: "Priya Anand",
+          priorTotalHours: 49.5,
+          currentTotalHours: 51,
+        },
+        noTimesheetReason: null,
+      },
+    },
   },
 
   hr_timesheet_period_grid: {
@@ -712,6 +1070,213 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
     edge: {
       ok: true,
       data: { adjustmentId: "77777777-0000-4000-8000-000000000002", originalPayPeriodId: PERIOD, targetPayPeriodId: "33333333-3333-4333-8333-333333333334", workflowInstanceId: "88888888-0000-4000-8000-000000000002", hoursDelta: -2 },
+    },
+  },
+
+  // ───────────────────────────────────────────────────────────────────────────────────────────
+  // APPENDED BY THE TIMESHEET/PUNCH/EXCEPTION LANE (routes 5, 28, 29, 30, 31).
+  // Four cases each, same discipline. Nothing below simulates behaviour — each entry is a payload
+  // the corresponding RPC could return, chosen for the edges that are expensive to discover late.
+  // ───────────────────────────────────────────────────────────────────────────────────────────
+
+  hr_attendance_exception_list: {
+    happy: {
+      ok: true,
+      data: {
+        rows: [
+          EXCEPTION_VIOLATION,
+          {
+            ...EXCEPTION_VIOLATION,
+            id: "eeeeeee1-0000-4000-8000-000000000011",
+            employeeDisplayName: "Sam Okafor",
+            employmentId: "11111111-1111-4111-8111-111111111112",
+            exceptionKind: "late_arrival",
+            severity: "warn",
+            varianceMinutes: 18,
+            scheduledStartAt: "2026-03-17T16:00:00Z",
+            actualStartAt: "2026-03-17T16:18:00Z",
+            premiumEarningCodeId: null,
+            allowedResolutions: ["acknowledged", "excused", "corrected", "escalated", "closed"],
+            message: "Clocked in 18 minutes after the scheduled start of a 9:00 AM shift.",
+          },
+          {
+            ...EXCEPTION_VIOLATION,
+            id: "eeeeeee1-0000-4000-8000-000000000012",
+            employeeDisplayName: "Ari Bennett",
+            exceptionKind: "auto_closed_estimate",
+            severity: "warn",
+            premiumEarningCodeId: null,
+            // 🚨 An estimate never becomes a measurement, however it is resolved.
+            isEstimate: true,
+            allowedResolutions: ["acknowledged", "excused", "corrected", "escalated", "closed"],
+            message:
+              "No clock-out was recorded, so the shift was closed automatically at the scheduled end. This end time is an estimate.",
+          },
+        ],
+        page: 1,
+        pageSize: 50,
+        totalRows: 3,
+        hasMore: false,
+      },
+    },
+    // 🚨 The empty state is a SENTENCE the surface prints, never a blank grid.
+    empty: { ok: true, data: { rows: [], page: 1, pageSize: 50, totalRows: 0, hasMore: false } },
+    // The linked-to-schedule-change state (§2.6) and an unapproved-overtime row carrying the
+    // materially different fact that the employee worked AFTER a denial.
+    edge: {
+      ok: true,
+      data: {
+        rows: [
+          {
+            ...EXCEPTION_VIOLATION,
+            id: "eeeeeee1-0000-4000-8000-000000000013",
+            exceptionKind: "no_show",
+            severity: "warn",
+            scheduleChangeId: "5c5c5c5c-0000-4000-8000-000000000001",
+            premiumEarningCodeId: null,
+            allowedResolutions: ["acknowledged", "excused", "corrected", "escalated", "closed"],
+            message:
+              "The scheduled shift elapsed with no punches. The schedule was changed after publication.",
+          },
+          {
+            ...EXCEPTION_VIOLATION,
+            id: "eeeeeee1-0000-4000-8000-000000000014",
+            exceptionKind: "unapproved_overtime",
+            severity: "warn",
+            premiumEarningCodeId: null,
+            workedAfterDenial: true,
+            allowedResolutions: ["acknowledged", "excused", "corrected", "escalated", "closed"],
+            message:
+              "6.0 hours of overtime were worked after an overtime request for these dates was denied. The hours are paid.",
+          },
+        ],
+        page: 1,
+        pageSize: 50,
+        totalRows: 2,
+        hasMore: false,
+      },
+    },
+    error: {
+      ok: false,
+      error: "hr_capability_denied",
+      message: "no read reach on the requested employments",
+      user_message: "You can only see attendance exceptions for people who report to you.",
+      details: { capability: "time.read" },
+    },
+  },
+
+  hr_wf_for_target: {
+    happy: {
+      ok: true,
+      data: {
+        steps: [
+          {
+            step_id: "99999999-0000-4000-8000-000000000001",
+            instance_id: "88888888-0000-4000-8000-00000000000a",
+            flow_key: "timecard_attestation",
+            state: "active",
+            // The only v1 step that sets it — an employee decides their OWN attestation step.
+            allows_self: true,
+          },
+        ],
+      },
+    },
+    empty: { ok: true, data: { steps: [] } },
+    edge: {
+      ok: true,
+      data: {
+        steps: [
+          {
+            step_id: "99999999-0000-4000-8000-000000000002",
+            instance_id: "88888888-0000-4000-8000-00000000000b",
+            flow_key: "timecard_approval",
+            state: "active",
+            allows_self: false,
+          },
+        ],
+      },
+    },
+    error: {
+      ok: false,
+      error: "hr_capability_denied",
+      message: "caller cannot read this target's workflow",
+      user_message: "You do not have access to this timecard's approval history.",
+      details: {},
+    },
+  },
+
+  hr_wf_decide: {
+    happy: {
+      ok: true,
+      data: { stepId: "99999999-0000-4000-8000-000000000001", decision: "approve", state: "decided" },
+    },
+    // Attest WITH exception — the engine echoes the words back so the surface can show that the
+    // disagreement was recorded, not swallowed.
+    edge: {
+      ok: true,
+      data: {
+        stepId: "99999999-0000-4000-8000-000000000001",
+        decision: "approve",
+        state: "decided",
+        dispute_recorded: true,
+        dispute_note: "Thursday shows 8 hours but I worked until 6, not 4:30.",
+      },
+    },
+    empty: {
+      ok: true,
+      data: { stepId: "99999999-0000-4000-8000-000000000001", decision: "reject", state: "decided" },
+    },
+    // 🚨 The deadline behaviour: the tick auto-CLOSES an undecided step as `not_attested` and flags
+    // it to the manager. It NEVER auto-attests, so a late click is refused rather than accepted.
+    error: {
+      ok: false,
+      error: "hr_state_conflict",
+      message: "step is not active",
+      user_message:
+        "The attestation window for this pay period has closed and your manager has been told it was not attested. Ask them to reopen it.",
+      details: { state: "closed", closed_as: "not_attested" },
+    },
+  },
+
+  hr_wf_bulk_decide: {
+    happy: {
+      ok: true,
+      data: {
+        outcomes: [
+          { step_id: "99999999-0000-4000-8000-000000000002", granted: true, reason: null, detail: null },
+          { step_id: "99999999-0000-4000-8000-000000000003", granted: true, reason: null, detail: null },
+        ],
+      },
+    },
+    // 🚨 PER-STEP OUTCOMES, NEVER ALL-OR-NOTHING (§6.3). A partial result is the NORMAL result, and
+    // each failure carries its own reason so the manager knows which rows still need them.
+    edge: {
+      ok: true,
+      data: {
+        outcomes: [
+          { step_id: "99999999-0000-4000-8000-000000000002", granted: true, reason: null, detail: null },
+          {
+            step_id: "99999999-0000-4000-8000-000000000003",
+            granted: false,
+            reason: "hr_state_conflict",
+            detail: "A punch was corrected after this timecard was submitted. Review it again.",
+          },
+          {
+            step_id: "99999999-0000-4000-8000-000000000004",
+            granted: false,
+            reason: "hr_capability_denied",
+            detail: "You do not approve timecards for the Fremont location.",
+          },
+        ],
+      },
+    },
+    empty: { ok: true, data: { outcomes: [] } },
+    error: {
+      ok: false,
+      error: "hr_validation_error",
+      message: "bulk max exceeded",
+      user_message: "You can approve up to 50 timecards at once. Narrow the selection and try again.",
+      details: { bulk_max: 50 },
     },
   },
 

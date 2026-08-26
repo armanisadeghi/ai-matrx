@@ -58,6 +58,19 @@ export type HrTimeRpcName =
   | "hr_time_adjustment_create"
   | "hr_time_adjustment_list"
   | "hr_attendance_exception_resolve"
+  /**
+   * 🚨 NAMED BY L3's CLIENT LANE, OWED BY THE SQL LANE — nothing implements this yet.
+   *
+   * Route 31 (`/hr/time/exceptions`) is a standalone queue, and SPEC-TIME §2.6 specifies its
+   * filters (`resolution_state`, `exception_kind`, `severity`, location, department, manager, date
+   * range, affects-an-unapproved-period) without naming a contract for them — §1.3 lists the
+   * *resolve* RPC and no list RPC. The queue cannot be built without one, so the name is declared
+   * here under R-L3 U-03's grammar (`hr.attendance_exception_list` in SQL, `hr_attendance_exception_list`
+   * at the call site) rather than left to be invented differently by whoever writes the SQL.
+   *
+   * Until it lands, route 31 runs on the appended fixture set only.
+   */
+  | "hr_attendance_exception_list"
   // overtime pre-approval lane (D24a) — the ROW reads and the create.
   // 🚨 The DECISION is `hr_wf_decide` below and nothing else: the workflow engine is the only
   // approval engine (SPEC-TIME §0 law 5). There is no `hr_overtime_preapproval_decide`, and
