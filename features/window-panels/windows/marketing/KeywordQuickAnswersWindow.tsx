@@ -71,9 +71,9 @@ function KeywordQuickAnswersWindowInner({
       id="keyword-quick-answers-window"
       overlayId="keywordQuickAnswersWindow"
       minWidth={620}
-      minHeight={560}
+      minHeight={620}
       width={760}
-      height={700}
+      height={760}
       position="center"
       onClose={onClose}
       onCollectData={collectData}

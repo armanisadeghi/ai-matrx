@@ -594,7 +594,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 ## Change log
 
 - 2026-08-26 — Codex: **Quick Answers now fits the five-answer workflow.** The
-  floating panel opens at a wider and taller working size, removes the dimension
+  floating panel opens at a wider, near-viewport-height working size, removes the dimension
   essay from its header, keeps each row's answer choices on one line, and uses
   primary, info, and success accents instead of dim gray-on-gray cards. The
   optional reason prompt is concise, while the existing canonical keyword

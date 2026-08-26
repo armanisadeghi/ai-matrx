@@ -238,7 +238,7 @@ export function QuickAnswers({
             <p className="text-xs font-semibold text-primary">
               Same answer for the {outstanding.length} still open
             </p>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
+            <div className="mt-1.5 flex flex-nowrap gap-1.5 overflow-x-auto pb-0.5 scrollbar-thin">
               {values.map((value) => (
                 <button
                   key={value.value_id}
@@ -252,7 +252,7 @@ export function QuickAnswers({
                       valueLabel: value.label,
                     })
                   }
-                  className="rounded-md border border-primary/35 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10 disabled:opacity-50"
+                  className="shrink-0 rounded-md border border-primary/35 bg-card px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary hover:bg-primary/10 disabled:opacity-50"
                 >
                   {value.label}
                 </button>
