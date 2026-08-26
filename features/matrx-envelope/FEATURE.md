@@ -228,6 +228,13 @@ silently drops items the server would have happily applied.
 
 ## Change Log
 
+- 2026-08-26 — **A-10.2 closed: `url` is a REGISTERED server shape + a parity guard.** The
+  messaging attach flow mints `directive_v1_reference_url` live, and the server registry had
+  no such shape — aidream now registers `UrlRef {url, label?}` + `resolve_url` (renders the
+  link, never fetches it). `features/content-ir/__tests__/reference-noun-parity.test.ts`
+  (runs in CI's `test:content-ir`) pins every `REFERENCE_TYPES` noun against the committed
+  `docs/protocol/kind_directive_registry.generated.json` mirror, so an FE noun the server
+  cannot resolve can no longer ship.
 - 2026-08-25 — Claude (KD3/KD4/KD5b): **the Kind Directives merge, frontend half.**
   aidream had minted the two-key `__kind` shell in production since 2026-08-23 while this
   repo still detected `matrx_version`, so a server-minted reference fence rendered to the
