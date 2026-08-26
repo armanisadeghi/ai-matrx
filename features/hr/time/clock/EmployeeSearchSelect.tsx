@@ -35,8 +35,9 @@ import { useEffect, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import type { HrWorkerClass } from "@/features/hr/constants";
 import { fetchHrDirectory } from "@/features/hr/service";
-import { isHrGranted, type HrWorkerClass } from "@/features/hr/types";
+import { isHrGranted } from "@/features/hr/types";
 
 /** Below this, nothing is queried and nothing is shown. The roster never renders itself. */
 export const MIN_QUERY_LENGTH = 2;
