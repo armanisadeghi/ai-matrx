@@ -291,7 +291,7 @@ export function OfferingTreeTable({
         const hasChildren = (node?.children.length ?? 0) > 0;
         return (
           <div
-            className="flex min-w-0 items-center"
+            className="flex min-w-0 items-center gap-0.5"
             style={{ paddingLeft: `${Math.min(row.depth, 10) * 12}px` }}
           >
             <button
