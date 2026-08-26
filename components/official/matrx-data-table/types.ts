@@ -511,10 +511,24 @@ export interface MatrxDataTableHierarchyConfig<T> {
   /** Complete hierarchy when `data` is only the current controlled page. */
   rows?: T[];
   getParentId: (row: T) => string | null;
-  onReparent: (row: T, parentId: string | null) => void | Promise<void>;
+  /** Persist the exact structural intent represented by the drop shadow. */
+  onMove: (
+    row: T,
+    move: MatrxDataTableHierarchyMove,
+  ) => void | Promise<void>;
+  /** Enables sibling insertion shadows in addition to parent/root drops. */
+  manualOrder?: boolean;
   canReparent?: (row: T) => boolean;
   itemLabel?: (row: T) => string;
   rootDropLabel?: string;
+}
+
+export interface MatrxDataTableHierarchyMove {
+  parentId: string | null;
+  /** Insert immediately before this sibling. Null means first/only child. */
+  beforeId: string | null;
+  position: "before" | "inside" | "root";
+  targetId: string | null;
 }
 
 /**
