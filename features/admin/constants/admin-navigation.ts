@@ -122,6 +122,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
             "/administration/agents/system-agents/agents/[id]/build",
             "/administration/agents/system-agents/agents/[id]/latest",
             "/administration/agents/system-agents/agents/[id]/run",
+            "/administration/agents/system-agents/agents/[id]/samples",
             "/administration/agents/system-agents/agents/[id]/surfaces",
             "/administration/agents/system-agents/agents/[id]/surfaces/batch",
             "/administration/agents/system-agents/agents/[id]/v/[version]",
