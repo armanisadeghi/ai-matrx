@@ -32,6 +32,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentMessages,
+  selectAgentName,
   selectAgentSettings,
   selectAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/selectors";
@@ -101,6 +102,8 @@ export function SystemMessage({
   const agentSettings = useAppSelector((state) =>
     selectAgentSettings(state, agentId),
   );
+
+  const agentName = useAppSelector((state) => selectAgentName(state, agentId));
 
   const variableDefinitions = useAppSelector((state) =>
     selectAgentVariableDefinitions(state, agentId),
@@ -706,6 +709,12 @@ export function SystemMessage({
             <EditableContextMenu
               sourceFeature="agent-builder"
               surfaceName="matrx-user/agent-builder"
+              contentSource={{ type: "raw" }}
+              entity={{
+                type: "agent",
+                id: agentId,
+                title: agentName || "Agent",
+              }}
               getTextarea={() =>
                 textareaRefs.current[systemMessageIndex] || null
               }

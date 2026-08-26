@@ -714,6 +714,10 @@ export function MessageItem({
           <EditableContextMenu
             sourceFeature="agent-builder"
             surfaceName="matrx-user/agent-builder"
+            // No `entity`: this textarea edits one few-shot example message
+            // inside the agent's definition JSON, not a standalone record —
+            // Attach To / Share belong on the agent itself, not a fragment.
+            contentSource={{ type: "raw" }}
             getTextarea={() => textareaRef.current}
             contextData={contextMenuData}
             enableFloatingIcon={true}
