@@ -324,22 +324,23 @@ export function MessageItem({
     }
   }, [isEditing]);
 
-  // Context menu handlers
+  // Context menu handlers.
+  // onTextReplace is a FULL-content replace — the engine contract: Cut/Paste/
+  // Find-Replace and the WidgetHandle (widget_text_replace/patch/prepend/
+  // append) all pass the WHOLE new value. Splicing it into the selection
+  // duplicated the message content.
   const handleTextReplace = useCallback(
     (newText: string) => {
+      handleTextChange(newText);
       const textarea = textareaRef.current;
       if (!textarea) return;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      handleTextChange(
-        currentText.substring(0, start) + newText + currentText.substring(end),
-      );
       setTimeout(() => {
         textarea.focus();
-        textarea.setSelectionRange(start, start + newText.length);
+        const caret = Math.min(textarea.selectionStart ?? 0, newText.length);
+        textarea.setSelectionRange(caret, caret);
       }, 0);
     },
-    [currentText, handleTextChange],
+    [handleTextChange],
   );
 
   const handleTextInsertBefore = useCallback(

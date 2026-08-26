@@ -365,21 +365,22 @@ export function SystemMessage({
     [developerMessage, cursorPositions, systemMessageIndex, handleTextChange],
   );
 
+  // onTextReplace is a FULL-content replace — the engine contract: Cut/Paste/
+  // Find-Replace and the WidgetHandle (widget_text_replace/patch/prepend/
+  // append) all pass the WHOLE new value. Splicing it into the selection
+  // duplicated the instructions content.
   const handleTextReplace = useCallback(
     (newText: string) => {
+      handleTextChange(newText);
       const textarea = textareaRefs.current[systemMessageIndex];
       if (!textarea) return;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const before = developerMessage.substring(0, start);
-      const after = developerMessage.substring(end);
-      handleTextChange(before + newText + after);
       setTimeout(() => {
         textarea.focus();
-        textarea.setSelectionRange(start, start + newText.length);
+        const caret = Math.min(textarea.selectionStart ?? 0, newText.length);
+        textarea.setSelectionRange(caret, caret);
       }, 0);
     },
-    [developerMessage, handleTextChange],
+    [systemMessageIndex, handleTextChange],
   );
 
   const handleTextInsertBefore = useCallback(

@@ -122,6 +122,11 @@ export function CodeEditorDemoPanel({
         {...explicitContextProps}
         contextData={contextData}
         getApplicationScope={getApplicationScope}
+        getTextarea={() => textareaRef.current}
+        // FULL-content replace — the engine contract (Cut/Paste/Find-Replace
+        // pass the whole new value; the WidgetHandle streams widget_text_*
+        // edits through the same callback).
+        onTextReplace={setContent}
         {...menuOverrides}
       >
         <DemoProTextarea

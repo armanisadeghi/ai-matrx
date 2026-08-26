@@ -597,7 +597,6 @@ export function ScraperFloatingWorkspace({
         <div className="flex flex-col flex-1 min-h-0">
           <EditableContextMenu
             {...SCRAPER_CONTEXT_MENU_PROPS}
-            getTextarea={() => null}
             getApplicationScope={getConfigApplicationScope}
             onTextReplace={setUrl}
             contextData={contextData}
@@ -646,7 +645,6 @@ export function ScraperFloatingWorkspace({
         <div className="flex flex-col flex-1 min-h-0">
           <EditableContextMenu
             {...SCRAPER_CONTEXT_MENU_PROPS}
-            getTextarea={() => null}
             getApplicationScope={getConfigApplicationScope}
             onTextReplace={setKeyword}
             contextData={contextData}

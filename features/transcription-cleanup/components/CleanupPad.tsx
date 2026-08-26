@@ -2051,16 +2051,17 @@ export default function CleanupPad({
       getValue: () => string,
       setValue: (v: string) => void,
     ) => ({
+      // FULL-content replace — the engine contract. Cut/Paste/Find-Replace and
+      // the WidgetHandle (widget_text_replace/patch/prepend/append) all pass
+      // the WHOLE new value; splicing it into the selection duplicated content.
       onTextReplace: (newText: string) => {
+        setValue(newText);
         const ta = taRef.current;
         if (!ta) return;
-        const value = getValue();
-        const start = ta.selectionStart;
-        const end = ta.selectionEnd;
-        setValue(value.substring(0, start) + newText + value.substring(end));
         setTimeout(() => {
           ta.focus();
-          ta.setSelectionRange(start, start + newText.length);
+          const caret = Math.min(ta.selectionStart ?? 0, newText.length);
+          ta.setSelectionRange(caret, caret);
         }, 0);
       },
       onTextInsertBefore: (text: string) => {

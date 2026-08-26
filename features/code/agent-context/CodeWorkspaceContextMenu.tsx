@@ -180,13 +180,28 @@ export function CodeWorkspaceContextMenu({
     });
   };
 
-  // Apply an agent's replacement text over the live selection.
+  // FULL-content replace — the engine contract: Cut/Paste/Find-Replace and
+  // the WidgetHandle (widget_text_replace/patch/prepend/append) all pass the
+  // WHOLE new value. Replacing only the selection duplicated the file.
+  // executeEdits over the full range keeps Monaco's undo stack intact (the
+  // range is derived from the methods `MonacoModel` declares — same pattern
+  // as the surface write handler below).
   const handleTextReplace = (newText: string) => {
     const ed = editorRef.current;
-    const sel = ed?.getSelection();
-    if (!ed || !sel) return;
+    const model = ed?.getModel();
+    if (!ed || !model) return;
+    const lastLine = model.getLineCount();
     ed.executeEdits("ai-replace", [
-      { range: sel, text: newText, forceMoveMarkers: true },
+      {
+        range: {
+          startLineNumber: 1,
+          startColumn: 1,
+          endLineNumber: lastLine,
+          endColumn: model.getLineContent(lastLine).length + 1,
+        },
+        text: newText,
+        forceMoveMarkers: true,
+      },
     ]);
     ed.focus();
   };

@@ -181,13 +181,16 @@ export function CodeEditorContextMenu({
     const getApplicationScope = (): ApplicationScope =>
         codeEditorLaunchScope(getContextData()) as ApplicationScope;
 
-    // Apply an agent's replacement text over the live selection.
+    // FULL-content replace — the engine contract: Cut/Paste/Find-Replace and
+    // the WidgetHandle (widget_text_replace/patch/prepend/append) all pass the
+    // WHOLE new value. Replacing only the selection duplicated the file.
+    // executeEdits over the full model range keeps Monaco's undo stack intact.
     const handleTextReplace = (newText: string) => {
         const ed = editorRef.current;
-        const selection = ed?.getSelection();
-        if (!ed || !selection) return;
+        const model = ed?.getModel();
+        if (!ed || !model) return;
         ed.executeEdits('ai-replace', [
-            { range: selection, text: newText, forceMoveMarkers: true },
+            { range: model.getFullModelRange(), text: newText, forceMoveMarkers: true },
         ]);
         ed.focus();
         onTextReplaced?.(newText);
