@@ -101700,6 +101700,7 @@
               "path_present",
               "path_absent",
               "path_equals",
+              "path_not_equals",
               "min_items",
               "max_items",
               "matches",

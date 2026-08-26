@@ -31,12 +31,17 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import type { MarketingSite } from "@/features/marketing/types";
-import { useCompanyQuickResearch } from "@/features/research/hooks/useCompanyQuickResearch";
 import { useLatestSuccessfulResearchDocument } from "@/features/research/hooks/useResearchState";
 import { getLatestSuccessfulDocument } from "@/features/research/service";
+import { researchInitHref } from "@/features/research/utils/init-route";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
-import { AssociationList } from "@/features/scopes/components/associations/AssociationList";
+import {
+  AssociationList,
+  useContainerLinksAdapter,
+  type ContainerResourcesAdapter,
+} from "@/features/scopes/components/associations/AssociationList";
+import { isUuid } from "@/features/scopes/service/associationGuards";
 import { RESEARCH_LINEAGE_TOKENS } from "@/features/cms/hooks/useCmsResearchLineage";
 import { createContentPlanSetupScope } from "@/features/surfaces/manifests/content-plan-setup.manifest";
 import {
@@ -226,7 +231,13 @@ function namesFromPlan(
 }
 
 export function SetupView() {
-  const { siteId, setSiteId, setView } = usePlanWorkspaceParams();
+  const {
+    siteId,
+    researchTopicReturnId,
+    setSiteId,
+    setView,
+    clearResearchTopicReturn,
+  } = usePlanWorkspaceParams();
   const queryClient = useQueryClient();
   // The guided setup checklist performs real server work on the user's behalf
   // (create the website, build its starter design) through the same `callApi`
@@ -346,7 +357,17 @@ export function SetupView() {
   const researchDoc = useLatestSuccessfulResearchDocument(
     researchTopicId ?? "",
   );
-  const quickResearch = useCompanyQuickResearch();
+  const researchResourceLinks = useContainerLinksAdapter(
+    site
+      ? {
+          type: "web_site",
+          id: site.id,
+          orgId: site.organization_id,
+          label: site.name,
+        }
+      : null,
+    RESEARCH_LINEAGE_TOKENS,
+  );
   const agents = useSetupAgents(siteId);
   // The three WHOLE-PLAN passes run on the SERVER (aidream), which records the
   // run on `chat.agent_run` and persists the proposal on the site before it
@@ -394,7 +415,7 @@ export function SetupView() {
   const committingRef = useRef(false);
 
   useEffect(() => {
-    if (!siteId) return;
+    if (!siteId || seed?.siteId === siteId) return;
     let cancelled = false;
     void fetchFreshSite(siteId)
       .then((fresh) => {
@@ -414,7 +435,9 @@ export function SetupView() {
           if (Object.keys(draft.topicsByArchetype).length > 0) {
             setTopicsByArchetype(draft.topicsByArchetype);
           }
-          if (draft.researchTopicId) setResearchTopicId(draft.researchTopicId);
+          if (draft.researchTopicId && !isUuid(researchTopicReturnId)) {
+            setResearchTopicId(draft.researchTopicId);
+          }
           // The three expensive WHOLE-PLAN runs come back exactly as they
           // were left — a returning user reads their review, strategy and
           // entity plan instead of an empty panel with a Run button that
@@ -459,7 +482,9 @@ export function SetupView() {
         }
         // No in-progress draft topic → the site's recorded research link
         // (the same one aidream's generator/deepen read) is the default.
-        if (!draft?.researchTopicId) {
+        if (isUuid(researchTopicReturnId)) {
+          setResearchTopicId(researchTopicReturnId);
+        } else if (!draft?.researchTopicId) {
           const linked = readSiteResearchTopicId(fresh.settings);
           if (linked) setResearchTopicId(linked);
         }
@@ -488,12 +513,53 @@ export function SetupView() {
     return () => {
       cancelled = true;
     };
-  }, [siteId]);
+  }, [researchTopicReturnId, seed?.siteId, siteId]);
 
   const invalidateSiteOptions = () =>
     void queryClient.invalidateQueries({
       queryKey: marketingKeys.siteOptions(),
     });
+
+  // The canonical Research intake returns here only AFTER the user reviews
+  // and approves the keywords/settings. Link that approved topic once, then
+  // consume the one-shot URL handoff so reloads cannot repeat the write.
+  useEffect(() => {
+    if (
+      !siteId ||
+      !researchTopicReturnId ||
+      seed?.siteId !== siteId
+    ) {
+      return;
+    }
+    if (!isUuid(researchTopicReturnId)) {
+      toast.error("Research returned an invalid topic id; nothing was linked.");
+      clearResearchTopicReturn();
+      return;
+    }
+    let cancelled = false;
+    void recordSiteResearchTopic(siteId, researchTopicReturnId)
+      .then(() => {
+        if (cancelled) return;
+        setResearchTopicId(researchTopicReturnId);
+        invalidateSiteOptions();
+        clearResearchTopicReturn();
+        toast.success("Approved research linked to this content plan.");
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        toast.error(
+          `Approved research was not linked: ${extractErrorMessage(error)}`,
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    clearResearchTopicReturn,
+    researchTopicReturnId,
+    seed?.siteId,
+    siteId,
+  ]);
 
   useEffect(() => {
     if (!siteId || seed?.siteId !== siteId) return;
@@ -793,41 +859,6 @@ export function SetupView() {
     }
   };
 
-  /**
-   * No research yet? Create it FROM HERE: one confirmed click runs the whole
-   * company-research pipeline (topic from the "Company Research" template →
-   * search → scrape → analyze → synthesize → final Document) and lands the
-   * report back in this bar. The topic is selected + linked the moment it
-   * exists, so even an interrupted run leaves the site pointing at it.
-   */
-  const handleCreateResearch = async () => {
-    if (!site) return;
-    const ok = await confirm({
-      title: `Research ${site.name}?`,
-      description:
-        "Runs the full company research pipeline (search → scrape → analyze → synthesize → report) " +
-        "for this site's company. It takes several minutes and spends real AI credits. Keep this tab " +
-        "open — the finished report lands here and grounds every AI step automatically.",
-      confirmLabel: "Start research",
-    });
-    if (!ok) return;
-    setAiError(null);
-    try {
-      await quickResearch.run({
-        organizationId: site.organization_id,
-        companyName: site.name,
-        websiteUrl: site.root_url || site.domain,
-        onTopicCreated: (topic) => selectTopic(topic.id),
-      });
-      researchDoc.refresh();
-      toast.success(
-        "Research report ready — the AI steps are now grounded in it.",
-      );
-    } catch (error) {
-      toast.error(`Company research failed: ${extractErrorMessage(error)}`);
-    }
-  };
-
   /** The Shape Planner's variables — one builder so every caller agrees. */
   const shapePlannerVariables = (
     report: string,
@@ -1034,11 +1065,9 @@ export function SetupView() {
   };
 
   /**
-   * "Build with AI" — the guided flow. The dialog's answers arrive as HINTS;
-   * when no report exists this FIRST runs the whole research pipeline (the
-   * dialog said so, with the cost), then drafts the work order from the fresh
-   * report. Bounded by design: everything stages; the live plan is untouched
-   * until the user approves the routes.
+   * "Build with AI" — the guided flow. The dialog's answers arrive as HINTS
+   * and the selected, human-approved research report is mandatory. Research is
+   * never auto-created or auto-run from content planning.
    */
   const handleBuildWithAi = async (hints: SetupGuidance) => {
     if (!site) return;
@@ -1064,23 +1093,9 @@ export function SetupView() {
         if (report) researchDoc.refresh();
       }
       if (!report) {
-        const topic = await quickResearch.run({
-          organizationId: site.organization_id,
-          companyName: site.name,
-          websiteUrl: site.root_url || site.domain,
-          onTopicCreated: (created) => selectTopic(created.id),
-          onProgress: pushBuildProgress,
-        });
-        researchDoc.refresh();
-        // The hook state is async — read the fresh report DIRECTLY so the
-        // draft grounds on it this pass, not on a stale closure.
-        const doc = await getLatestSuccessfulDocument(topic.id);
-        report = doc?.content?.trim() || null;
-        if (!report) {
-          throw new Error(
-            "Research finished but no report content was found — open the topic in Research and re-run Document assembly.",
-          );
-        }
+        throw new Error(
+          "Choose a research topic with a finished report first. New research must be planned, reviewed, and explicitly started in Research.",
+        );
       }
       await runDraftWorkOrder(report, hints);
       setBuildLog((current) =>
@@ -1815,6 +1830,60 @@ export function SetupView() {
     },
   });
 
+  const researchPlanHref = site
+    ? researchInitHref({
+        subject: `Company research for ${site.name}${
+          site.root_url || site.domain
+            ? ` — ${site.root_url || site.domain}`
+            : ""
+        }`,
+        instructions:
+          `Research the exact company represented by this website: ${
+            site.root_url || site.domain || site.name
+          }. Keep same-named companies separate and prioritize sources the user can verify.`,
+        returnTo: marketingRoutes.contentPlanSite(site.id, "setup"),
+      })
+    : "/research/topics/new?mode=ai";
+
+  const researchResourcesAdapter: ContainerResourcesAdapter = {
+    ...researchResourceLinks,
+    detach: async (token, resourceId, role) => {
+      // The selected site-grounding topic exists in TWO representations: the
+      // canonical association edge and the older settings pointer still read
+      // by content-plan generation. Removing only the edge makes the item
+      // return. Clear both through the one compatibility writer.
+      if (
+        site &&
+        token === "research_topic" &&
+        resourceId === researchTopicId
+      ) {
+        try {
+          await recordSiteResearchTopic(site.id, null);
+          setResearchTopicId(null);
+          await researchResourceLinks.reload();
+          invalidateSiteOptions();
+          return { ok: true };
+        } catch (error) {
+          const message = extractErrorMessage(error);
+          toast.error(`Research resource was not removed: ${message}`);
+          return { ok: false, error: message };
+        }
+      }
+
+      const result = await researchResourceLinks.detach(
+        token,
+        resourceId,
+        role,
+      );
+      if (!result.ok) {
+        toast.error(
+          `Research resource was not removed: ${result.error ?? "unknown error"}`,
+        );
+      }
+      return result;
+    },
+  };
+
   // ── states ──────────────────────────────────────────────────────────────
   if (sites.isError) {
     return (
@@ -1907,8 +1976,7 @@ export function SetupView() {
         <SetupAiBar
           selectedTopicId={researchTopicId}
           onSelectTopic={selectTopic}
-          onCreateResearch={() => void handleCreateResearch()}
-          researchStage={quickResearch.stage}
+          researchPlanHref={researchPlanHref}
           document={researchDoc.data ?? null}
           documentLoading={Boolean(researchTopicId) && researchDoc.isLoading}
           onRecommendShape={() => void handleRecommendShape()}
@@ -1957,6 +2025,7 @@ export function SetupView() {
                 orgId: site.organization_id,
                 label: site.name,
               }}
+              adapter={researchResourcesAdapter}
               tokens={[...RESEARCH_LINEAGE_TOKENS]}
               variant="compact"
             />

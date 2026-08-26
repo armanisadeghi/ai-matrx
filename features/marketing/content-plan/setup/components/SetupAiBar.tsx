@@ -14,14 +14,14 @@ import {
   ClipboardList,
   Compass,
   ExternalLink,
-  FlaskConical,
+  ListChecks,
   Loader2,
   X,
 } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { ResearchTopicSelect } from "@/features/marketing/content-plan/components/ResearchTopicSelect";
-import type { QuickResearchStage } from "@/features/research/hooks/useCompanyQuickResearch";
 import type { ResearchDocument } from "@/features/research/types";
 
 export interface SetupAiRunSummary {
@@ -30,17 +30,10 @@ export interface SetupAiRunSummary {
   detail?: string;
 }
 
-const RESEARCH_STAGE_LABEL: Partial<Record<QuickResearchStage, string>> = {
-  creating: "Creating the research topic…",
-  running: "Researching — search, scrape, analyze, synthesize (several minutes)…",
-  assembling: "Assembling the final report…",
-};
-
 export function SetupAiBar({
   selectedTopicId,
   onSelectTopic,
-  onCreateResearch,
-  researchStage,
+  researchPlanHref,
   document,
   documentLoading,
   onRecommendShape,
@@ -54,9 +47,8 @@ export function SetupAiBar({
 }: {
   selectedTopicId: string | null;
   onSelectTopic: (topicId: string | null) => void;
-  /** Run the full company-research pipeline from here (confirmed upstream). */
-  onCreateResearch: () => void;
-  researchStage: QuickResearchStage;
+  /** Canonical Research intake: propose → review keywords/settings → approve. */
+  researchPlanHref: string;
   /** The newest rs_document for the selected topic (null = none yet). */
   document: ResearchDocument | null;
   documentLoading: boolean;
@@ -76,20 +68,10 @@ export function SetupAiBar({
   const reportReady = Boolean(
     document && document.status === "success" && document.content?.trim(),
   );
-  const researchBusy =
-    researchStage === "creating" ||
-    researchStage === "running" ||
-    researchStage === "assembling";
-  // ONE thing at a time across the whole bar: a research run mid-draft would
-  // relink the site while the draft still reasons over the old report, and a
-  // draft mid-research would ground on a report about to be replaced.
-  const anyBusy = researchBusy || anyAgentBusy;
+  const anyBusy = anyAgentBusy;
   const reportStatus = (() => {
-    if (researchBusy) {
-      return `${RESEARCH_STAGE_LABEL[researchStage]} Keep this tab open — the report lands here.`;
-    }
     if (!selectedTopicId)
-      return "Pick a research topic — or research the company from here.";
+      return "Choose existing research, or review a new plan before anything runs.";
     if (documentLoading) return "Loading the research report…";
     if (!document) return "This topic has no successful final report yet — run Document assembly in Research first.";
     if (!document.content?.trim()) return "The report is empty — regenerate it in Research.";
@@ -105,25 +87,20 @@ export function SetupAiBar({
         <ResearchTopicSelect
           value={selectedTopicId}
           onChange={onSelectTopic}
-          refreshKey={researchStage === "done" ? selectedTopicId : null}
+          refreshKey={selectedTopicId}
           ariaLabel="Research topic grounding the AI steps"
         />
         <Button
+          asChild
           size="sm"
-          // The MAIN affordance until a report exists — grounding is the
-          // prerequisite for every other button on this screen.
           variant={reportReady ? "ghost" : "outline"}
           className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
-          disabled={anyBusy}
-          title="Create a research topic for this site's company and run the full pipeline — the finished report grounds every AI step here."
-          onClick={onCreateResearch}
+          title="Open Research to generate a proposed topic and keywords, review keyword limits and settings, then explicitly approve the run."
         >
-          {researchBusy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <FlaskConical className="h-3.5 w-3.5" />
-          )}
-          Research this company
+          <Link href={researchPlanHref}>
+            <ListChecks className="h-3.5 w-3.5" />
+            Plan company research
+          </Link>
         </Button>
         {selectedTopicId ? (
           <a
@@ -143,8 +120,12 @@ export function SetupAiBar({
         <Button
           size="sm"
           className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
-          disabled={anyBusy}
-          title="Answer a few quick questions (all optional hints) and the AI builds the whole work order — researching the company first if no report exists. Everything stages for your review; nothing is written until you commit."
+          disabled={!reportReady || anyBusy}
+          title={
+            reportReady
+              ? "Answer a few optional questions and draft the work order from the approved research report. Everything stages for review."
+              : "Choose a completed research report first. New research must be planned, reviewed, and explicitly started in Research."
+          }
           onClick={onBuildWithAi}
         >
           {draftBusy ? (

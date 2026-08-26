@@ -38897,7 +38897,7 @@ export interface components {
              * Rule
              * @enum {string}
              */
-            rule: "contains_marker" | "excludes_marker" | "routes_exist" | "path_present" | "path_absent" | "path_equals" | "min_items" | "max_items" | "matches" | "judge";
+            rule: "contains_marker" | "excludes_marker" | "routes_exist" | "path_present" | "path_absent" | "path_equals" | "path_not_equals" | "min_items" | "max_items" | "matches" | "judge";
             /**
              * Title
              * @default
