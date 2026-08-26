@@ -96124,6 +96124,18 @@
             "title": "Ids",
             "description": "When set, only dismiss these failure ids (must still be unrecovered). Other filter fields are ignored."
           },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Why these rows are dismissed rather than replayed."
+          },
           "table_target": {
             "anyOf": [
               {

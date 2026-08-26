@@ -36799,6 +36799,11 @@ export interface components {
              * @description When set, only dismiss these failure ids (must still be unrecovered). Other filter fields are ignored.
              */
             ids?: string[] | null;
+            /**
+             * Reason
+             * @description Why these rows are dismissed rather than replayed.
+             */
+            reason?: string | null;
             /** Table Target */
             table_target?: string | null;
             /** Error Text Contains */
