@@ -23529,6 +23529,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**
@@ -23798,6 +23803,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**
@@ -30421,6 +30431,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**
@@ -33803,6 +33818,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**
@@ -34050,6 +34070,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**
@@ -41371,6 +41396,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**
@@ -52450,6 +52480,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**
@@ -52662,6 +52697,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**
@@ -53507,6 +53547,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**
@@ -54675,6 +54720,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**
@@ -64236,6 +64286,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**
@@ -69924,6 +69979,11 @@ export interface components {
              * @description Active context-scope ids selected by the caller and membership-validated server-side.
              */
             scope_ids?: string[] | null;
+            /**
+             * Active Scope Type Ids
+             * @description Active scope-type ids selected by the caller (type-level selection with no specific scope chosen).
+             */
+            active_scope_type_ids?: string[] | null;
             /** @description Durable resource identity from which authoritative organization and task context is reloaded. */
             context_anchor?: components["schemas"]["ContextAnchor"] | null;
             /**

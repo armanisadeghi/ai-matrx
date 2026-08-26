@@ -61943,6 +61943,21 @@
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
+          },
           "context_anchor": {
             "anyOf": [
               {
@@ -62627,6 +62642,21 @@
             ],
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
+          },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
           },
           "context_anchor": {
             "anyOf": [
@@ -79058,6 +79088,21 @@
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
+          },
           "context_anchor": {
             "anyOf": [
               {
@@ -88143,6 +88188,21 @@
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
+          },
           "context_anchor": {
             "anyOf": [
               {
@@ -88789,6 +88849,21 @@
             ],
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
+          },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
           },
           "context_anchor": {
             "anyOf": [
@@ -107897,6 +107972,21 @@
             ],
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
+          },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
           },
           "context_anchor": {
             "anyOf": [
@@ -135766,6 +135856,21 @@
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
+          },
           "context_anchor": {
             "anyOf": [
               {
@@ -136209,6 +136314,21 @@
             ],
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
+          },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
           },
           "context_anchor": {
             "anyOf": [
@@ -138049,6 +138169,21 @@
             ],
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
+          },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
           },
           "context_anchor": {
             "anyOf": [
@@ -140880,6 +141015,21 @@
             ],
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
+          },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
           },
           "context_anchor": {
             "anyOf": [
@@ -164909,6 +165059,21 @@
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
           },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
+          },
           "context_anchor": {
             "anyOf": [
               {
@@ -179836,6 +180001,21 @@
             ],
             "title": "Scope Ids",
             "description": "Active context-scope ids selected by the caller and membership-validated server-side."
+          },
+          "active_scope_type_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active Scope Type Ids",
+            "description": "Active scope-type ids selected by the caller (type-level selection with no specific scope chosen)."
           },
           "context_anchor": {
             "anyOf": [
