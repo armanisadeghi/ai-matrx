@@ -140,13 +140,13 @@ export function MediaThumbnail({
     allowSourceFallback &&
     (strategy === "image" || strategy === "video-poster");
   const cdnUrl = needsBytes ? (file.publicUrl ?? null) : null;
-  const signedUrlEnabled = needsBytes && !backendThumb && !assetUrl && !cdnUrl;
-  const signedUrl = useFileSrc(
-    signedUrlEnabled ? { kind: "file_id", fileId: file.id } : null,
+  const durableUrlEnabled = needsBytes && !backendThumb && !assetUrl && !cdnUrl;
+  const durableUrl = useFileSrc(
+    durableUrlEnabled ? { kind: "file_id", fileId: file.id } : null,
   );
 
   // Best available URL for this file, in priority order.
-  const url = backendThumb ?? assetUrl ?? cdnUrl ?? signedUrl;
+  const url = backendThumb ?? assetUrl ?? cdnUrl ?? durableUrl;
 
   // ── Source 4 — Icon fallback. ────────────────────────────────────────
   const fallback = (
