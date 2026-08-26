@@ -519,10 +519,10 @@ async def main():  # noqa: C901
             tok["id"])
         rec("E outsider", "…and the TRUE reason went to the token ledger, never to the caller",
             unver_ev == "session_not_verified" and "true_reason" not in unver, unver_ev)
+        # The forged row is NOT deleted: the helper's own `replay_rejected` event references it by
+        # FK, which is itself evidence the ledger write happened. `single_session` means the real
+        # outsider_verify below revokes it anyway, and the rollback removes both.
         await as_owner()
-        await conn.execute(
-            "delete from platform.actor_session where session_hash = encode(extensions.digest($1,'sha256'),'hex')",
-            unver_secret)
 
         # position 2 cannot act yet
         jack_ctx = await sysval("select esign._can_act($1)", sid_jack)
@@ -605,8 +605,19 @@ async def main():  # noqa: C901
 
         dl_bad = await j("select public.esign_signer_download_url($1,$2,$3::inet,$4)",
                          session, str(doc), IP_A, UA)
-        rec("E outsider", "§5.3(2) the download verb is checked and CAN refuse — another envelope's document",
-            dl_bad.get("granted") is False and dl_bad["reason"] == "link_no_longer_valid", dl_bad)
+        rec("E outsider", "another envelope's document is refused to this session",
+            dl_bad.get("granted") is False, dl_bad)
+        # 🚨 …but note WHERE it is refused. It is the DOOR that refuses (`unknown_document`, because
+        # _act_download scopes the document to this signer's envelope), NOT the scope check. The
+        # shared matcher reads `((g->>'id') is not distinct from p_id OR (g->>'parent_id') is not
+        # null)`, so a grant written with `parent_id` matches ANY id of that resource type and never
+        # verifies the row's parent actually is that parent. §5.3 law 1 forbids wildcards, and a
+        # parent_id grant is one in effect. Safe here only because the door scopes it too — which is
+        # exactly the redundancy a consumer trusting the scope check alone would not have.
+        # ROUTED to the access lane (owner of platform.assert_outsider_scope), not patched here.
+        rec("E outsider", "🚨 FINDING: a `parent_id` grant matches any id — the door, not the scope "
+                          "check, is what refuses it (routed to the access lane)",
+            dl_bad.get("reason") == "unknown_document", dl_bad)
 
         ksign = await j("select public.esign_signer_sign($1,$2::jsonb,'btn-sign-nda',$3::inet,$4)", session,
                         json.dumps([{"document_id": str(doc2), "content_hash": nda_hash}]), IP_A, UA)
