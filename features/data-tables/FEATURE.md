@@ -688,6 +688,38 @@ table's own order rather than being invisible; `hidden` is applied last so
 hiding never disturbs ordering. The last visible column cannot be hidden — an
 empty grid looks broken and offers nothing to click to recover.
 
+### Saved views
+
+A saved view is **the URL made durable** — the same state the query string
+already carries (search, sort, filters, columns, order, page size) under a name
+you can return to. Applying a view writes the URL through the same setters a
+click uses, so the address bar still describes what is on screen and the link is
+still shareable. **A view is a shortcut to a URL, never a second source of
+truth**, which is why there is no second state to drift.
+
+Stored in **`platform.saved_view`** — the platform-wide table, not a
+feature-scoped one. `surface_key` says which list; `subject_id` narrows it to
+one record of that list (the dataset). Every read filters on both.
+
+**The page number is deliberately NOT stored.** "Page 4" is where you happened
+to be, not what the view IS, and the row that was on page 4 last week is not
+there now. Applying a view always lands on page 1.
+
+🚨 **A LINK ALWAYS BEATS YOUR DEFAULT.** The default view auto-applies only when
+the URL arrives pristine. If someone opened a colleague's link, a bookmark, or
+pressed Back, applying their own default over it would silently show them
+something other than what they asked for.
+
+**Clicking a view chip always APPLIES it.** An earlier version toggled — so
+clicking the active chip cleared it, and the obvious gesture for "put me back"
+did the opposite. Un-applying is what Reset view is for, and Reset view also
+clears the active chip so the bar never claims a view that is not on screen.
+
+**The definition is jsonb and validated per FIELD on read.** One corrupt filter
+blob must not also discard the column layout someone arranged. Bump
+`SAVED_VIEW_DEFINITION_VERSION` when the shape changes and teach the parser the
+older shapes.
+
 ## Change log
 
 - `2026-08-25` — **URL-backed table filters no longer crash with React #185.** The shared
