@@ -36,7 +36,7 @@ order by last_checked_at nulls first, sort_order, name
 limit 5;
 ```
 
-Run via Supabase MCP `execute_sql` (project `brsgrqvjdzwihsvnfqkf`). Pick the first; a dispatcher may hand you a slice (`name like 'matrx-user/marketing-%'`).
+Run via Supabase MCP `execute_sql` (project `brsgrqvjdzwihsvnfqkf`). Discard every agent-native candidate named by the eligibility gate before claiming; pick the first eligible ordinary product surface. If all five are excluded, query the next batch. A dispatcher may hand you a slice (`name like 'matrx-user/marketing-%'`).
 
 ## Step 0 — Claim (first action)
 
@@ -128,6 +128,6 @@ It is also an advisory release gate ("Surface value blast radius").
 1. ~~Ledger columns~~ — LIVE (`ui.ui_surface.last_checked_at / last_checked_by / last_check / check_claimed_at / check_claimed_by`).
 2. ~~`/administration/ui/surfaces` Checked column + never/stale filter~~ — LIVE (sortable; never-checked first). Still missing: the per-section result popover reading `last_check.sections`.
 3. `pnpm check:textareas` ratchet — non-Pro textarea count per feature, baseline only goes down (S7 has no guard today; ~528 sites).
-4. Structural guards for S5 — (a) an eslint rule or test that every `launchAgentExecution`/`launchMandate` call inside an agent-purpose feature passes `surfaceName: null` or a literal string (never `undefined`); (b) a static candidate report that compares explicit Mandate/agent launch points with manifest roles and live bindings. Historical tool-call reduction still requires runtime telemetry, so the static report is a scout, not proof.
+4. Structural guards for S5 — (a) an eslint rule or test that every primary `launchAgentExecution`/`launchMandate` call inside an agent-native feature passes `surfaceName: null` (never `undefined` or a literal surface); an ordinary nested child must be explicitly classified as an eligible ordinary surface before it may pass its literal name; (b) a static candidate report that compares explicit Mandate/agent launch points with manifest roles and live bindings. Historical tool-call reduction still requires runtime telemetry, so the static report is a scout, not proof.
 5. Add a structural campaign-eligibility guard so agent-native routes cannot enter rolling/live-UI fleets; until it lands, the explicit eligibility gate above is mandatory.
 6. `create<X>Scope` builders are hand-written and drift silently — nothing validates that a builder's param keys match its manifest's value names. A generated `ValueNameOf<M>` type would make a rename a compile error.
