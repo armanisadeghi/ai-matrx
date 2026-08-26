@@ -14,6 +14,7 @@ import {
 import FlexibleLoadingComponent from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultLoadingComponent";
 import { useIsMobile } from "@/hooks/use-mobile";
 import DefaultErrorFallback from "@/components/mardown-display/markdown-classification/custom-views/common/DefaultErrorFallback";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 interface CandidateExperience {
   company?: string;
@@ -57,9 +58,23 @@ const ModernOneColumnProfileDisplay = ({ data }: { data: CandidateProfileData })
   };
 
   return (
+    <NonEditableContextMenu
+      sourceFeature="content-extractor"
+      contentSource={{ type: "raw" }}
+      contextData={{ content: JSON.stringify(extracted) }}
+      resolveContextOnOpen={(target) => {
+        const item = target?.closest?.("[data-candidate-profile-item]");
+        if (!(item instanceof HTMLElement)) return null;
+        return { content: item.innerText.trim() };
+      }}
+      enableFloatingIcon={false}
+    >
     <div className="max-w-5xl mx-auto overflow-hidden rounded-xl shadow-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700">
       {/* Modern Gradient Header */}
-      <div className="px-8 py-10 bg-gradient-to-r from-indigo-500/90 via-purple-500/90 to-pink-500/90 text-white">
+      <div
+        data-candidate-profile-item="identity"
+        className="px-8 py-10 bg-gradient-to-r from-indigo-500/90 via-purple-500/90 to-pink-500/90 text-white"
+      >
         <h1 className="text-3xl font-bold">
           {extracted.name || "Unnamed Candidate"}
         </h1>
@@ -82,6 +97,7 @@ const ModernOneColumnProfileDisplay = ({ data }: { data: CandidateProfileData })
               {extracted.key_experiences.map((experience: CandidateExperience, index: number) => (
                 <div
                   key={index}
+                  data-candidate-profile-item="experience"
                   className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 border border-slate-100 dark:border-slate-700"
                 >
                   <div
@@ -151,7 +167,11 @@ const ModernOneColumnProfileDisplay = ({ data }: { data: CandidateProfileData })
               sectionData.length > 0;
 
             return (
-              <div key={section} className="space-y-3">
+              <div
+                key={section}
+                data-candidate-profile-item={section}
+                className="space-y-3"
+              >
                 <div
                   onClick={() => toggleSection(section)}
                   className={`flex justify-between items-center cursor-pointer p-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 ${
@@ -268,6 +288,7 @@ const ModernOneColumnProfileDisplay = ({ data }: { data: CandidateProfileData })
         </p>
       </div>
     </div>
+    </NonEditableContextMenu>
   );
 };
 
