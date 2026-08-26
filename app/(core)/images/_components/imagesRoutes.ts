@@ -13,7 +13,7 @@ import {
   Upload,
   UserCircle,
   Wrench,
-  type LucideIcon
+  type LucideIcon,
 } from "lucide-react";
 
 /**
@@ -41,6 +41,8 @@ export interface ImagesRoute {
   group: ImagesGroup;
   /** True if this is the group's landing entry (first item, slightly emphasised). */
   isGroupLanding?: boolean;
+  /** Guests stop at ModuleSignInGate before private cloud UI mounts. */
+  requiresAuthentication?: boolean;
 }
 
 export const IMAGES_ROOT_PATH = "/images";
@@ -68,6 +70,7 @@ export const IMAGES_ROUTES: readonly ImagesRoute[] = [
     Icon: Cloud,
     iconColor: "text-violet-500",
     group: "manager",
+    requiresAuthentication: true,
   },
   {
     path: "/images/all-files",
@@ -75,6 +78,7 @@ export const IMAGES_ROUTES: readonly ImagesRoute[] = [
     Icon: FolderTree,
     iconColor: "text-amber-500",
     group: "manager",
+    requiresAuthentication: true,
   },
   {
     path: "/images/upload",
@@ -82,6 +86,7 @@ export const IMAGES_ROUTES: readonly ImagesRoute[] = [
     Icon: Upload,
     iconColor: "text-emerald-500",
     group: "manager",
+    requiresAuthentication: true,
   },
   {
     path: "/images/branded",

@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-05-08`
+**Last updated:** `2026-08-26`
 
 ---
 
@@ -10,17 +10,18 @@
 
 `image-manager` provides the **shared tab components** for every image-related affordance in the app — public stock search, the user's cloud library, branded variant uploads, the Studio Library, profile-photo updates, AI generation (placeholder), and a Tools group hosting niche utilities (crop, lightbox, screenshot, etc.). These components are consumed by two surfaces: the unified `/images/*` route tree (real Next.js routes, one per tab) and the legacy modal `<ImageManager>` (used as a picker by callers elsewhere in the app).
 
-> **Migration note (2026-05-06):** The dedicated `/image-manager` route was removed. Every tab is now a flat sibling under `/images/*` — see `app/(a)/images/_components/imagesRoutes.ts`. The components in `features/image-manager/components/` are unchanged; only the route shell that hosted them moved.
+> **Migration note (2026-05-06):** The dedicated `/image-manager` route was removed. Every tab is now a flat sibling under `/images/*` — see `app/(core)/images/_components/imagesRoutes.ts`. The components in `features/image-manager/components/` are unchanged; only the route shell that hosted them moved.
 
 ---
 
 ## Entry points
 
 **Routes (under `/images/*`)**
+
 - `/images/public-search` → `<PublicImagesSection>`
-- `/images/my-cloud` → `<CloudImagesTab>`
-- `/images/all-files` → `<CloudFilesTab>`
-- `/images/upload` → `<CloudUploadTab>`
+- `/images/my-cloud` → `<CloudImagesTab>` (sign-in required)
+- `/images/all-files` → `<CloudFilesTab>` (sign-in required)
+- `/images/upload` → `<CloudUploadTab>` (sign-in required)
 - `/images/branded` → `<BrandedUploadTab>`
 - `/images/tools` → `<ToolsTab>`
 - `/images/studio-light` → `<ImageStudioTab>`
@@ -28,26 +29,31 @@
 - `/images/ai-generate` → `<AIGenerateHero>`
 - `/images/profile-photo` → `<ProfilePhotoTab>`
 
-Layout/sidebar shell: `app/(a)/images/layout.tsx` + `app/(a)/images/_components/ImagesSidebar.tsx`. Active route is detected via `usePathname()` — no fake routes, no client-state tab switching.
+Layout/sidebar shell: `app/(core)/images/layout.tsx` + `app/(core)/images/_components/ImagesSidebar.tsx`. Active route is detected via `usePathname()` — no fake routes, no client-state tab switching.
 
 **Modal**
+
 - `<ImageManager>` from `components/image/ImageManager.tsx` — fullscreen overlay used by callers that need a picker. Consumes the same `buildImageManagerSections` registry; never enters Browse mode. Independent of the route shell — deleting the route had no impact on the modal.
 
 **Hooks**
+
 - `useBrowseAction()` from `features/image-manager/browse/BrowseImageProvider.tsx` — hook every Browse-aware tab calls. Wraps `openImageViewer()` from `features/window-panels/windows/image/ImageViewerWindow.tsx`.
 - `useSelectedImages()` (re-used) from `components/image/context/SelectedImagesProvider.tsx` — adds Selection vs. Browse mode awareness via `selectionMode: "single" | "multiple" | "none"` (`"none"` semantically = Browse).
 
 **Registry**
+
 - `features/image-manager/registry/sections.ts` — `buildImageManagerSections(ctx)` factory. Single source of truth for tab list. Both modal and route call it.
 - `features/image-manager/registry/types.ts` — `SectionDefinition`, `SectionContext`, `SectionId`.
 - `SECTION_IDS` exports stable ids for deep-linking.
 
 **API endpoints**
+
 - `app/api/unsplash/route.ts` — Unsplash proxy (POST + GET). Consumes the server-only `UNSPLASH_ACCESS_KEY`. Used by both `components/official/PublicImageSearch.tsx` and `hooks/images/useUnsplashGallery.ts` (via `hooks/images/unsplashClient.ts`).
 - `app/api/image-proxy/route.ts` — image proxy with Cache-Control + CORP. Sole survivor; the legacy `/api/proxy-image` was deleted.
 - **`POST /assets`** (Python backend, called via `features/files/api/assets.ts` → `useFileAsset`) — canonical asset-upload endpoint with preset variant generation (Pillow on the Python side). Powers the Branded Upload tab via `<ImageAssetUploader>`. (Replaces the legacy Next.js+Sharp route at `/api/images/upload`, which was deleted on 2026-05-12 after the FE finished migrating.)
 
 **Redux**
+
 - No new slice — uses `cloudFiles` (from `features/files/`), the existing `SelectedImagesProvider` context, and the overlay slice for the floating viewer / floating gallery / settings deep-link.
 
 ---
@@ -96,11 +102,11 @@ The registry returns a flat `SectionDefinition[]` with `group: "primary" | "tool
 
 `useSelectedImages().selectionMode` is the single dispatcher:
 
-| Mode       | What clicks do                                             | Where used        |
-|------------|------------------------------------------------------------|-------------------|
-| `single`   | Replace selection with this one image                       | route + modal     |
-| `multiple` | Toggle this image in/out of selection                      | route + modal     |
-| `none`     | Browse — open `ImageViewerWindow` via `useBrowseAction()`  | route only        |
+| Mode       | What clicks do                                            | Where used    |
+| ---------- | --------------------------------------------------------- | ------------- |
+| `single`   | Replace selection with this one image                     | route + modal |
+| `multiple` | Toggle this image in/out of selection                     | route + modal |
+| `none`     | Browse — open `ImageViewerWindow` via `useBrowseAction()` | route only    |
 
 The 3-way toggle in the route's sidebar persists last choice to `localStorage["image-manager:selection-mode"]`.
 
@@ -168,6 +174,7 @@ Adding a new tile is a `ToolDescriptor` append — see `ToolsTab.tsx`.
 ## Invariants & gotchas
 
 - **Modal never enters Browse mode.** `selectionMode: "none"` is route-only. The modal hides the Image Studio tab when in `"none"` historically; the registry honors this via `showImageStudio !== false && selectionMode !== "none"`.
+- **Private cloud routes stop guests on the server.** `IMAGES_ROUTES.requiresAuthentication` gates My Cloud, All Files, and Upload through `ModuleSignInGate`; public search and Studio remain anonymous tools.
 - **`group: "tools"` is route-only.** The modal calls `buildImageManagerSections({ variant: "modal", showTools: false })`. Don't put primary functionality under `tools`.
 - **`SelectedImagesProvider.selectionMode === "none"` is "Browse".** Don't add a 4th mode — the contract is enumerated and consumed in two surfaces. Reuse `none`.
 - **`Base64DecoderShell` lives in `features/image-studio`** — Image Manager imports it. If Image Studio moves, update the import in `CloudUploadTab.tsx`.
@@ -199,7 +206,8 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
-- `2026-08-15` — claude: **Copy / Copy-for-AI on the image details sheet, with signed URLs kept out of the payload.** `CloudFileMetadataSheet` gains a header `CopyButtons` pair (`kind="image-file-metadata"`). Both flavors come from the new shared `lib/copy-format.ts` — `imageFileHumanSummary` / `imageRowSummary` / `imageFileAgentData` / `imageListAgentRows` — so the record, the rows, and any future grid copy cannot drift. Image rows are the cluster's worst signed-URL offenders: a `CloudFile` carries `url` / `signedUrl` / `downloadUrl` (all expiring within days) plus `filePath` (a raw storage path). The agent payload therefore leads with `agentFileRef` (durable `file_id` + CDN URL, or `durable_url: null` — never a signed substitute) and runs the row through `mediaSafe`, which replaces those fields with honest stubs. The sheet still *renders* the storage path, but deliberately does not emit it. Two surfaces reclassified during the audit and intentionally left unwired: `PublicImagesSection` is an image **picker** over external Unsplash results plus a static preset catalog (no copyable record), and `StudioLibraryTab` is a thin wrapper — its `.map()` lives in `components/image/cloud/CloudFilesTab.tsx`, which is where a grid copy belongs so every cloud-file grid benefits at once. Audit: [`docs/handoffs/agent-copy-media-cluster.md`](../../docs/handoffs/agent-copy-media-cluster.md).
+- `2026-08-26` — codex: **Private image-cloud routes now stop guests before user data UI mounts.** `/images/my-cloud`, `/images/all-files`, and `/images/upload` use the registry-backed server gate; `/images/public-search` and `/images/studio` remain public.
+- `2026-08-15` — claude: **Copy / Copy-for-AI on the image details sheet, with signed URLs kept out of the payload.** `CloudFileMetadataSheet` gains a header `CopyButtons` pair (`kind="image-file-metadata"`). Both flavors come from the new shared `lib/copy-format.ts` — `imageFileHumanSummary` / `imageRowSummary` / `imageFileAgentData` / `imageListAgentRows` — so the record, the rows, and any future grid copy cannot drift. Image rows are the cluster's worst signed-URL offenders: a `CloudFile` carries `url` / `signedUrl` / `downloadUrl` (all expiring within days) plus `filePath` (a raw storage path). The agent payload therefore leads with `agentFileRef` (durable `file_id` + CDN URL, or `durable_url: null` — never a signed substitute) and runs the row through `mediaSafe`, which replaces those fields with honest stubs. The sheet still _renders_ the storage path, but deliberately does not emit it. Two surfaces reclassified during the audit and intentionally left unwired: `PublicImagesSection` is an image **picker** over external Unsplash results plus a static preset catalog (no copyable record), and `StudioLibraryTab` is a thin wrapper — its `.map()` lives in `components/image/cloud/CloudFilesTab.tsx`, which is where a grid copy belongs so every cloud-file grid benefits at once. Audit: [`docs/handoffs/agent-copy-media-cluster.md`](../../docs/handoffs/agent-copy-media-cluster.md).
 - `2026-08-11` — claude: **My Cloud is now agent-writable.** `matrx-user/images` declares 3 ask-policy `ui` write targets (`search_query`, `recents_only`, `image_selection`) and `CloudImagesTab` services them from its own `SurfaceRuntimeProvider` via `getWriteHandlers`, calling the same `setQuery` / `setShowRecentsOnly` / `setBulkSelectedIds` setters the search box, the Recents chip and the tile checkboxes call — no parallel write path. An agent can narrow the library and hand back a bulk selection ("select the invoice screenshots"), but the bulk actions themselves (download / move / visibility / **delete**) are deliberately NOT writable: its reach stops at proposing WHICH images, and the user still presses the button. `image_selection` replaces the whole selection and validates every id against the rows actually rendered, rejecting the entire call on one unknown id so a selection can never half-apply. `view_mode` is deliberately not a target — a mechanical display toggle nobody asks an agent to flip. Note for future work here: the surface scope is captured at RUN time, so `visible_image_ids` goes stale the moment a filter target is applied; the rejection message lists the live rows back as `id (filename)` so the agent corrects in one step instead of guessing. Live-verified end-to-end with a real agent run — see the `features/surfaces/FEATURE.md` Change Log entry for the full result.
 - `2026-08-09` — claude: **Your Cloud's Cozy/Compact/List toggle moved onto `useListViewPrefs`** (`surfaceKey` `image-manager-cloud`). The local `ViewMode` union, the `image-manager:cloud-images-view` localStorage key, `loadInitialView()`, and the persist `useEffect` are deleted. The three buttons are now a render-time projection of the two canonical style axes — Cozy = `cards`/`comfortable`, Compact = `cards`/`compact`, List = `rows` — so the choice syncs across devices via `userPreferences`. Default is unchanged (Cozy); switching to List no longer forgets the last grid density.
 - `2026-08-08` — `hooks/images/unsplashClient.ts` gained `photos.trackDownload` (shim + server route now cover the same method set). First consumer outside presentations: the marketing Media workspace Sources view (`features/marketing/components/media/StockSourcesView.tsx`) — Unsplash search + durable save-to-brand-library.
@@ -223,7 +231,7 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 - `2026-05-07` — Public Search toolbar polish: switched Unsplash search to the official `SearchInput`, moved result text into a dedicated results header, added a more visible loaded-count status, and reused the official `EmptyStateCard` when no Unsplash images are loaded.
 - `2026-05-05` — **Legacy `/image-editing/*` routes deleted** (CLEANUP-CANDIDATES.md items 2-5). Dropped the entire `app/(authenticated)/image-editing/` directory (4 pages + 1 layout): the disabled placeholder, the parallax-scroll gallery demo, the standalone public-image-search demo, and the simple-crop demo. `pnpm tsc --noEmit` clean. Knock-on cleanups not yet applied (per owner): `components/matrx/parallax-scroll/` is now orphaned, and the live "Image Search" entry in `constants/navigation-links.tsx` (plus `favicon-route-data.ts` and the deprecated `MatrixFloatingMenu.tsx`) still link to `/image-editing/public-image-search` and will 404 from `<MatrxFloatingMenu>`/`<NavigationMenu>` until pruned. The `ToolsTab.tsx` **Beta** subgroup also still links to the deleted routes — owner asked to leave the Tools tab untouched.
 - `2026-05-05` — **Fabric.js purge** (CLEANUP-CANDIDATES.md items 1 + 9). Deleted `components/advanced-image-editor/` (17 files), `vendors/fabric.js` (~1.0 MB), and the orphaned duplicate `app/vendor/fabric.js` (~1.2 MB), plus their now-empty parent directories. Companion build-config cleanup: dropped the `vendors/fabric.js` `script-loader` rule from `utils/next-config/webpackConfig.js`, removed the duplicate fabric-specific `jsdom` client externalization block from `next.config.js` (the remaining block in `webpackConfig.js` still covers other transitive consumers), and removed `@types/fabric` from `package.json` devDependencies. `pnpm install` re-pinned the lockfile. The `/image-editing/*` legacy demo routes and the `ToolsTab` Beta group still reference `/image-editing` placeholder URLs — pending in items 2-7 of the cleanup checklist.
-- `2026-05-05` — **Your Cloud** view-mode toggle (Cozy / Compact / List) plus localStorage persistence under `image-manager:cloud-images-view`. Same UX feel as Public Images — Cozy is the previous default (5-col grid), Compact bumps to 9-col with smaller tiles, List is a table-style row view with thumbnail + filename + size + relative timestamp + mime. Also fixed a Browse-mode bug: clicking a tile previously kicked off `Promise.all(imageFiles.map(resolveCloudFileUrl))` (a signed-URL request per visible image, on every single click) AND pushed each `ResolvedCloudUrl` *object* into the viewer's `images: string[]` contract — so `<ImageViewerWindow>` rendered `<img src="[object Object]">`. Browse now resolves only the clicked file's URL and opens the viewer with one image.
+- `2026-05-05` — **Your Cloud** view-mode toggle (Cozy / Compact / List) plus localStorage persistence under `image-manager:cloud-images-view`. Same UX feel as Public Images — Cozy is the previous default (5-col grid), Compact bumps to 9-col with smaller tiles, List is a table-style row view with thumbnail + filename + size + relative timestamp + mime. Also fixed a Browse-mode bug: clicking a tile previously kicked off `Promise.all(imageFiles.map(resolveCloudFileUrl))` (a signed-URL request per visible image, on every single click) AND pushed each `ResolvedCloudUrl` _object_ into the viewer's `images: string[]` contract — so `<ImageViewerWindow>` rendered `<img src="[object Object]">`. Browse now resolves only the clicked file's URL and opens the viewer with one image.
 - `2026-05-05` — Round 2: collapsible sidebar (slim icon-only rail; the blue ImageIcon doubles as the expand affordance), persisted to `localStorage` under `image-manager:sidebar-collapsed`. Renamed the embedded studio tab to **Studio Light** and added a new **Image Studio** tab (`FullImageStudioTab`, id `studio-full`) that lazy-loads the full `<ImageStudioShell>` in-page. Tightened the **Crop Studio** tool card copy to call out one-or-many file support and renamed it to "Crop Studio (one or many)". Added a **Beta** subgroup inside `ToolsTab` linking the four cleanup-candidate `image-editing/*` routes (legacy editor, parallax gallery, public-image-search demo, easy cropper demo) so they remain reachable for verification before deletion. New `SECTION_IDS.studioFull = "studio-full"`.
 - `2026-05-05` — `SECTION_IDS` extracted into a leaf `registry/ids.ts` module to break a Turbopack TDZ cycle (`ImageManager` → `sections.ts` → `ToolsTab` → `ImageCropperWithSelect` → `SingleImageSelect` → `ImageManager`). `sections.ts` re-exports for back-compat. Drive-by: deleted orphaned `features/image-studio/components/InitialCropDialog.tsx` (zero importers — `InitialCropWindow` is the canonical wrapper).
 - `2026-05-05` — Hub plan completed: section registry, 3-way selection mode (Browse/Single/Multi), `BrowseImageProvider`, Curated Covers, metadata sheet, Photos link, base64 paste, Branded Upload, Studio Library, Profile Photo tabs, Tools group, Unsplash server proxy, `proxy-image` deleted, `ImageManagerContent.tsx` deleted, cleanup candidates listed.
