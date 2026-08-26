@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 479 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 481 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "8b9a37610180";
+export const KIND_REGISTRY_FINGERPRINT = "1c831b1362d5";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -6678,6 +6678,33 @@ export interface CriterionCoverage {
 }
 
 /**
+ * Kind `crm_contact_save_result` (registry v2).
+ */
+export interface CrmContactSaveResult {
+  __kind: "crm_contact_save_result";
+  /**
+   * True when a brand-new record was created; false when matched to an existing record or when nothing was saved.
+   */
+  created: boolean;
+  /**
+   * One plain-language sentence for the user.
+   */
+  summary: string;
+  /**
+   * UUID of the CRM record the resolver returned, or empty string when nothing was saved.
+   */
+  party_id: string;
+  /**
+   * "person", "organization", or null when nothing was saved.
+   */
+  party_kind: string | null;
+  /**
+   * Display name of the saved or matched record, or empty string when nothing was saved.
+   */
+  display_name: string;
+}
+
+/**
  * Output of ``seo.crm.fold_settings.read`` and ``seo.crm.fold_settings.update``.
  *  *
  *  * Kind `crm_fold_settings` (registry v4).
@@ -10022,6 +10049,25 @@ export interface ParsedTable {
    * Column names from the header row (empty when has_header is off).
    */
   columns?: string[];
+}
+
+/**
+ * Kind `party_kind_verdict` (registry v3).
+ */
+export interface PartyKindVerdict {
+  __kind: "party_kind_verdict";
+  /**
+   * Who this account belongs to: an individual person, an organization, or undetermined.
+   */
+  verdict: "person" | "organization" | "unknown";
+  /**
+   * One short sentence naming the evidence that decided the verdict.
+   */
+  rationale: string;
+  /**
+   * How sure the verdict is.
+   */
+  confidence: "high" | "medium" | "low";
 }
 
 /**
@@ -18766,6 +18812,7 @@ export type GeneratedKindSlug =
   | "cooking_recipe"
   | "criteria_gate_result"
   | "criterion_coverage"
+  | "crm_contact_save_result"
   | "crm_fold_settings"
   | "custom_script_result"
   | "data_table"
@@ -18904,6 +18951,7 @@ export type GeneratedKindSlug =
   | "parsed_datetime"
   | "parsed_json"
   | "parsed_table"
+  | "party_kind_verdict"
   | "pdf_table_extraction"
   | "pdf_text_extraction"
   | "personalization_target_result"
@@ -19248,6 +19296,7 @@ export interface KindPayloadBySlug {
   "cooking_recipe": CookingRecipe;
   "criteria_gate_result": CriteriaGateResult;
   "criterion_coverage": CriterionCoverage;
+  "crm_contact_save_result": CrmContactSaveResult;
   "crm_fold_settings": CrmFoldSettings;
   "custom_script_result": CustomScriptResult;
   "data_table": DataTable;
@@ -19386,6 +19435,7 @@ export interface KindPayloadBySlug {
   "parsed_datetime": ParsedDatetime;
   "parsed_json": ParsedJson;
   "parsed_table": ParsedTable;
+  "party_kind_verdict": PartyKindVerdict;
   "pdf_table_extraction": PdfTableExtraction;
   "pdf_text_extraction": PdfTextExtraction;
   "personalization_target_result": PersonalizationTargetResult;
@@ -19734,6 +19784,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "cooking_recipe",
   "criteria_gate_result",
   "criterion_coverage",
+  "crm_contact_save_result",
   "crm_fold_settings",
   "custom_script_result",
   "data_table",
@@ -19872,6 +19923,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "parsed_datetime",
   "parsed_json",
   "parsed_table",
+  "party_kind_verdict",
   "pdf_table_extraction",
   "pdf_text_extraction",
   "personalization_target_result",
