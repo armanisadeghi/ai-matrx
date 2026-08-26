@@ -7,7 +7,9 @@
 // - Active tab action buttons: Save, Duplicate, Share, Info, Delete, Voice
 //   (Info opens the Note Info window — note metadata + context + folder)
 // - Close button on all tabs
-// - Right-click context menu
+// - Right-click context menu — the universal v3 menu (NonEditableContextMenu)
+//   with the tab's own actions riding along as ONE "Tab" extraSections group.
+//   Same source array feeds the "…" dropdown, so the two never drift.
 // - DnD reordering
 // Props: noteId + instanceId only. Everything from Redux.
 
@@ -26,6 +28,8 @@ import {
   MoreHorizontal,
   Database,
   FolderInput,
+  PanelTop,
+  type LucideIcon,
 } from "lucide-react";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -45,7 +49,22 @@ import {
   selectInstanceTabs,
   selectAllFolders,
   selectNoteFolder,
+  selectNoteById,
+  selectNoteEditorMode,
 } from "../redux/selectors";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import type {
+  ContextMenuExtraItem,
+  ContextMenuExtraSection,
+} from "@/features/context-menu-v3/types";
+import type { ContentSource } from "@/features/rich-document/types";
+import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
+import { useNotesSurfaceScope } from "../hooks/useNotesSurfaceScope";
+import {
+  normalizeNoteEditorMode,
+  usePreferredDefaultEditorMode,
+} from "../hooks/usePreferredDefaultEditorMode";
 import { saveNote, copyNote, moveNoteToFolder } from "../redux/thunks";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
@@ -107,14 +126,13 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
 
   // ── Local UI state ─────────────────────────────────────────────────
   const [localLabel, setLocalLabel] = useState(label);
-  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
+  const [tabMenuOpen, setTabMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [titleFocused, setTitleFocused] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [contentCopied, setContentCopied] = useState(false);
   const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   // Sync Redux label → local — NEVER while the user is typing the title.
   // Auto-label (autoSaveMiddleware) and realtime merges land in Redux; if
@@ -126,18 +144,6 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     setLastSyncedLabel(label);
     setLocalLabel(label);
   }
-
-  // Close context menu on outside click
-  useEffect(() => {
-    if (!ctxMenu) return undefined;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setCtxMenu(null);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [ctxMenu]);
 
   // ── Handlers ───────────────────────────────────────────────────────
   // Tag the user as actively interacting with the tab strip. Callers wire
@@ -233,7 +239,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   // a folder, etc. — even if they linger on the dialog without
   // touching anything else.
   const anyTabUiOpen =
-    !!ctxMenu ||
+    tabMenuOpen ||
     shareOpen ||
     moveDialogOpen ||
     deleteConfirmOpen ||
@@ -341,33 +347,70 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
     [bumpTabInteraction, dispatch, noteId],
   );
 
+  // ── Universal v3 context-menu scope ────────────────────────────────
+  // Same surface + scope shape as the editor wiring (NoteContentEditor):
+  // `matrx-user/notes` with the full manifest scope built at open time for
+  // THIS tab's note. The tab has no textarea — a permanently-null ref keeps
+  // the selection fields empty, which is correct for a tab strip.
+  const preferredDefaultMode = usePreferredDefaultEditorMode();
+  const savedEditorMode = useAppSelector(selectNoteEditorMode(noteId));
+  const editorMode = normalizeNoteEditorMode(
+    savedEditorMode,
+    preferredDefaultMode,
+  );
+  const noteRecord = useAppSelector(selectNoteById(noteId));
+  const noTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const buildSurfaceScope = useNotesSurfaceScope({
+    instanceId,
+    noteId,
+    content,
+    textareaRef: noTextareaRef,
+    editorMode,
+  });
+  const getApplicationScope = useCallback(
+    () =>
+      buildApplicationScopeFromMenuContext({
+        selectedText: "",
+        selectionRange: null,
+        contextData: buildSurfaceScope() as Record<string, unknown>,
+      }),
+    [buildSurfaceScope],
+  );
+
   // Secondary actions — the single source for BOTH the "…" dropdown and the
-  // right-click menu, so they never drift. Primary actions (copy content,
-  // share, context, mic) live inline on the tab.
+  // right-click menu's "Tab" section, so they never drift. Primary actions
+  // (copy content, share, context, mic) live inline on the tab.
   type TabMenuItem = {
-    icon: React.ReactNode;
+    id: string;
+    icon: LucideIcon;
+    /** Dropdown-only rich icon override (e.g. Database + ingested badge). */
+    iconNode?: React.ReactNode;
     label: string;
     fn: () => void;
     destructive?: boolean;
   };
   const menuItems: (TabMenuItem | null)[] = [
     {
-      icon: <Save className="w-3.5 h-3.5" />,
+      id: "save",
+      icon: Save,
       label: isSaving ? "Saving…" : "Save",
       fn: () => void handleSave(),
     },
     {
-      icon: <Bookmark className="w-3.5 h-3.5" />,
+      id: "copy-reference",
+      icon: Bookmark,
       label: "Copy reference",
       fn: copyReference,
     },
     {
-      icon: <CopyPlus className="w-3.5 h-3.5" />,
+      id: "duplicate",
+      icon: CopyPlus,
       label: "Duplicate note",
       fn: () => void handleDuplicate(),
     },
     {
-      icon: <FolderInput className="w-3.5 h-3.5" />,
+      id: "move-to-folder",
+      icon: FolderInput,
       label: "Move to folder…",
       fn: () => {
         bumpTabInteraction();
@@ -375,12 +418,15 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       },
     },
     {
-      icon: <Info className="w-3.5 h-3.5" />,
+      id: "about",
+      icon: Info,
       label: "About this note",
       fn: () => openNoteInfo({ noteId, title: label }),
     },
     {
-      icon: (
+      id: "knowledge",
+      icon: Database,
+      iconNode: (
         <span className="relative inline-flex">
           <Database className="w-3.5 h-3.5" />
           {ingest.state === "ingested" && (
@@ -395,37 +441,86 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       fn: () => openKnowledge({ noteId, title: label }),
     },
     {
-      icon: <Download className="w-3.5 h-3.5" />,
+      id: "export-markdown",
+      icon: Download,
       label: "Export as Markdown",
       fn: handleExport,
     },
     null,
     {
-      icon: <X className="w-3.5 h-3.5" />,
+      id: "close-tab",
+      icon: X,
       label: "Close tab",
       fn: () => dispatch(removeInstanceTab({ instanceId, noteId })),
     },
     {
-      icon: <X className="w-3.5 h-3.5" />,
+      id: "close-others",
+      icon: X,
       label: "Close other tabs",
       fn: handleCloseOtherTabs,
     },
     {
-      icon: <X className="w-3.5 h-3.5" />,
+      id: "close-all",
+      icon: X,
       label: "Close all tabs",
       fn: handleCloseAllTabs,
     },
     null,
     {
-      icon: <Trash2 className="w-3.5 h-3.5" />,
+      id: "delete",
+      icon: Trash2,
       label: "Delete note",
       fn: requestDelete,
       destructive: true,
     },
   ];
 
+  // Every bespoke-menu item, verbatim, as ONE v3 section (THE LOSSLESS LAW).
+  const tabExtraSections: ContextMenuExtraSection[] = [
+    {
+      id: "note-tab",
+      label: "Tab",
+      icon: PanelTop,
+      anchor: "after-compare",
+      items: menuItems.map((item, i): ContextMenuExtraItem =>
+        item === null
+          ? { kind: "separator", id: `tab-sep-${i}` }
+          : {
+              kind: "item",
+              id: item.id,
+              label: item.label,
+              icon: item.icon,
+              destructive: item.destructive,
+              onSelect: item.fn,
+            },
+      ),
+    },
+  ];
+
   return (
     <>
+      {/* Universal v3 right-click menu — asChild merges onto the tab div (no
+          extra DOM box, tab-strip layout untouched). contentSource lights up
+          Copy-as / Export / Convert; entity lights up Attach To + Share; the
+          tab's own actions ride along as the "Tab" section. */}
+      <NonEditableContextMenu
+        sourceFeature={NOTES_EDITOR_CONTEXT_MENU_PROPS.sourceFeature}
+        surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+        getApplicationScope={getApplicationScope}
+        contentSource={{ type: "note", noteId } satisfies ContentSource}
+        entity={{
+          type: "note",
+          id: noteId,
+          title: label,
+          resourceType: "note",
+          isOwner: !noteRecord?._sharedWithMe,
+        }}
+        extraSections={tabExtraSections}
+        onMenuOpenChange={(open) => {
+          setTabMenuOpen(open);
+          if (open) bumpTabInteraction();
+        }}
+      >
       <div
         draggable
         onDragStart={(e) => {
@@ -443,11 +538,6 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
         data-active={isActive ? "true" : undefined}
         aria-selected={isActive}
         onClick={handleClick}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          bumpTabInteraction();
-          setCtxMenu({ x: e.clientX, y: e.clientY });
-        }}
       >
         {isDirty && (
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mr-1" />
@@ -516,7 +606,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
                     <DropdownMenuSeparator key={`sep-${i}`} />
                   ) : (
                     <DropdownMenuItem
-                      key={item.label}
+                      key={item.id}
                       onSelect={() => item.fn()}
                       className={cn(
                         "gap-2 text-xs",
@@ -524,7 +614,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
                           "text-destructive focus:text-destructive",
                       )}
                     >
-                      {item.icon}
+                      {item.iconNode ?? <item.icon className="w-3.5 h-3.5" />}
                       {item.label}
                     </DropdownMenuItem>
                   ),
@@ -544,43 +634,7 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           <X className="w-2.5 h-2.5" />
         </span>
       </div>
-
-      {/* Right-click context menu */}
-      {ctxMenu && (
-        <>
-          <div
-            className="fixed inset-0 z-[110]"
-            onClick={() => setCtxMenu(null)}
-          />
-          <div
-            ref={menuRef}
-            className="fixed z-[120] min-w-[160px] py-1 bg-card/95 backdrop-blur-2xl border border-border rounded-lg shadow-lg"
-            style={{ left: ctxMenu.x, top: ctxMenu.y }}
-          >
-            {menuItems.map((item, i) =>
-              item === null ? (
-                <div key={`sep-${i}`} className="h-px bg-border/50 my-1" />
-              ) : (
-                <button
-                  key={item.label}
-                  className={cn(
-                    "flex items-center gap-2 w-full px-3 py-1.5 text-xs transition-colors cursor-pointer",
-                    item.destructive
-                      ? "text-destructive hover:bg-destructive/10"
-                      : "text-foreground hover:bg-accent",
-                  )}
-                  onClick={() => {
-                    item.fn();
-                    setCtxMenu(null);
-                  }}
-                >
-                  {item.icon} {item.label}
-                </button>
-              ),
-            )}
-          </div>
-        </>
-      )}
+      </NonEditableContextMenu>
 
       {/* Share modal */}
       <ShareModal
