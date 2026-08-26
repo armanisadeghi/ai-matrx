@@ -41016,6 +41016,15 @@ export type Database = {
         Returns: Json
       }
       shape_doctor_gather: { Args: { p_dataset: string }; Returns: Json }
+      shape_doctor_set_skill_owner: {
+        Args: {
+          p_kind: string
+          p_note?: string
+          p_skill_id?: string
+          p_syntax: string
+        }
+        Returns: Json
+      }
       share_link_authorizes: {
         Args: {
           p_resource_id: string
@@ -50832,7 +50841,7 @@ export type Database = {
           organization_id?: string
           scope_brand_id?: string | null
           scope_site_id?: string | null
-          scope_tier: string
+          scope_tier?: string
           topic_id: string
           updated_at?: string
           updated_by?: string | null
