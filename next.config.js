@@ -395,6 +395,18 @@ const nextConfig = {
   async redirects() {
     return [
       ...adminLegacyRouteRedirects,
+      // 2026-08-26 (HRB-022): the HR workflow spec built `/hr/inbox` into every
+      // deep link before SPEC-UI-IA ruled `/hr/tasks` canonical. There is exactly
+      // ONE HR inbox, so the old path is a config redirect rather than a second
+      // route — a `permanentRedirect()` page under `(core)` renders the AppShell
+      // first and answers 200 with an RSC-level redirect, which is not a 308 and
+      // therefore not something a bookmark, an email client, or a crawler honours.
+      { source: "/hr/inbox", destination: "/hr/tasks", permanent: true },
+      {
+        source: "/hr/inbox/:path*",
+        destination: "/hr/tasks/:path*",
+        permanent: true,
+      },
       // Message templates are chat content, not application settings.
       // Preserve exact legacy destinations for existing bookmarks and
       // shared record links while keeping one canonical route family.

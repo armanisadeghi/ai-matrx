@@ -18,6 +18,12 @@ you are about to break this — add the flow to the engine instead and it appear
 `/hr/inbox` and `/hr/inbox/{instance}?step={step}` **308** here with the query preserved, so every
 link ever written against the workflow spec's original name still opens the exact object.
 
+🚨 **The redirect is a `next.config.js` entry, NOT a `permanentRedirect()` page — and this was
+measured, not assumed.** A redirect page under `(core)` renders the AppShell first, so Next answers
+**200** with an RSC-level redirect: fine for in-app navigation, invisible to a bookmark, an email
+client, or a crawler. Verified with curl: the page form returned `200`, the config form returns
+`308 → /hr/tasks/<instance>?step=<step>`. If you ever move this route, move it in the config.
+
 ## What it is built on — and what it must never become
 
 | Layer | Owns | Never |
