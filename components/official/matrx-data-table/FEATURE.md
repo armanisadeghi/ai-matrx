@@ -40,11 +40,18 @@ tables (AI Models, relationships, …) can cut over to one contract.
   every active canonical query control. Set `pageSize={0}` when a hierarchy
   must remain whole; pagination is then omitted even when URL state is enabled.
 - **Hierarchy movement is table-owned and opt-in.** `hierarchy` adds a compact
-  first-cell pointer/touch drag handle, exact drop shadows, descendant-cycle
-  prevention, and one `onMove(row, move)` write. A shadow between rows means
-  `position: "before"`; an indented shadow beneath a row means
-  `position: "inside"`; the persistent top strip means `position: "root"`.
-  Row highlighting is never used as a sibling-placement claim. Consumers set
+  first-cell pointer/touch drag handle, exact in-row drop indicators,
+  descendant-cycle prevention, and one `onMove(row, move)` write. Drop zones
+  are the standard tree thirds against the target row's LIVE rect: top third
+  = `position: "before"` (insertion line above), bottom third =
+  `position: "after"` (line below; `beforeId` resolves to the next sibling,
+  null = append last), middle = `position: "inside"` (ring on the row), and
+  the persistent top strip = `position: "root"`. Indicators draw absolutely
+  INSIDE the scroll container below the sticky header's z-index — never a
+  fixed-position element that can cover the header or drift on scroll — and
+  the per-move preview state lives in a leaf `useDndMonitor` layer so a drag
+  never re-renders the table itself (`MeasuringStrategy.Always` keeps
+  collision rects true after the root strip shifts rows). Consumers set
   `manualOrder: true` only when they persist `beforeId` and the complete sibling
   order; reparent-only consumers continue to offer parent/root targets without
   advertising an order they cannot save. A moved row keeps its descendants
@@ -257,6 +264,18 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-25 — Rebuilt hierarchy drag-and-drop for correctness and speed: the
+  per-mousemove preview state moved from the table component into a leaf
+  `useDndMonitor` indicator layer (the old design re-rendered every row on
+  every pointer move), cycle checks went from repeated linear scans to O(1)
+  memoized maps, `MeasuringStrategy.Always` fixed drops landing one row off
+  after the root strip shifts the table at drag start, the fixed-position
+  drop shadow that floated over the sticky header became an in-container
+  indicator (line above/below, ring for nest-inside), and top/middle/bottom
+  thirds replaced the left-edge heuristic — adding `position: "after"` so a
+  row can finally be dropped at the end of a sibling list. Verified live on
+  the Offerings tree: before/after/inside all land exactly and persist.
 
 - 2026-08-25 — Replaced ambiguous hierarchy row highlighting with exact dashed
   drop shadows for sibling-above, nested-inside, and absolute-top placement.

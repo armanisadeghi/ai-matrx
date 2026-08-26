@@ -522,9 +522,12 @@ export interface MatrxDataTableHierarchyConfig<T> {
 
 export interface MatrxDataTableHierarchyMove {
   parentId: string | null;
-  /** Insert immediately before this sibling. Null means first/only child. */
+  /**
+   * Insert immediately before this sibling. Null means first child for
+   * "inside"/"root", and LAST sibling for "after" (target had no successor).
+   */
   beforeId: string | null;
-  position: "before" | "inside" | "root";
+  position: "before" | "after" | "inside" | "root";
   targetId: string | null;
 }
 

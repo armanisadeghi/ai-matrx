@@ -14,12 +14,15 @@ import {
   type ReactElement,
   type ReactNode,
   type Ref,
+  type RefObject,
 } from "react";
 import {
   DndContext,
   DragOverlay,
+  MeasuringStrategy,
   PointerSensor,
   pointerWithin,
+  useDndMonitor,
   useDraggable,
   useDroppable,
   useSensor,
@@ -105,9 +108,18 @@ import type {
 
 interface HierarchyDropPreview {
   move: MatrxDataTableHierarchyMove;
-  rect: { left: number; top: number; width: number; height: number };
+  targetId: string | null;
+  position: "before" | "after" | "inside" | "root";
   depth: number;
   targetLabel: string | null;
+}
+
+/** Current pointer Y in viewport coords: drag-start position plus travel. */
+function dragPointerY(event: DragMoveEvent | DragEndEvent): number {
+  const activator = event.activatorEvent;
+  return "clientY" in activator && typeof activator.clientY === "number"
+    ? activator.clientY + event.delta.y
+    : 0;
 }
 
 function isStringArray(value: unknown): value is string[] {
@@ -281,8 +293,6 @@ function MatrxDataTableCore<T>({
 
   const [internalSearch, setInternalSearch] = useState("");
   const [draggedRowId, setDraggedRowId] = useState<string | null>(null);
-  const [hierarchyDropPreview, setHierarchyDropPreview] =
-    useState<HierarchyDropPreview | null>(null);
   const hierarchySensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
@@ -691,47 +701,92 @@ function MatrxDataTableCore<T>({
   };
 
   const hierarchyRows = hierarchy?.rows ?? data;
-  const draggedRow = draggedRowId
-    ? hierarchyRows.find((row) => getRowId(row) === draggedRowId)
-    : undefined;
-  const hierarchyDepth = (row: T): number => {
-    if (!hierarchy) return 0;
-    let parentId = hierarchy.getParentId(row);
-    let depth = 0;
-    while (parentId && depth < hierarchyRows.length) {
-      depth += 1;
-      const parent = hierarchyRows.find(
-        (candidate) => getRowId(candidate) === parentId,
-      );
-      parentId = parent ? hierarchy.getParentId(parent) : null;
+  const hierarchyGetParentId = hierarchy?.getParentId;
+  // O(1) lookups for everything the drag path needs. The previous
+  // implementation walked ancestor chains with linear `.find`s per row per
+  // render — quadratic work re-run on every drag event.
+  const hierarchyIndex = useMemo(() => {
+    if (!hierarchyGetParentId) return null;
+    const byId = new Map<string, T>();
+    const parentById = new Map<string, string | null>();
+    for (const row of hierarchyRows) {
+      const id = getRowId(row);
+      byId.set(id, row);
+      parentById.set(id, hierarchyGetParentId(row));
     }
-    return depth;
-  };
-  const canMoveToParent = (
-    parentId: string | null,
-    source = draggedRow,
-  ): boolean => {
-    if (!hierarchy || !source) return false;
-    const sourceId = getRowId(source);
-    if (parentId === sourceId) return false;
-    let cursor = parentId
-      ? hierarchyRows.find((row) => getRowId(row) === parentId)
+    const depthById = new Map<string, number>();
+    const depthOf = (id: string): number => {
+      const known = depthById.get(id);
+      if (known !== undefined) return known;
+      // Iterative walk with cycle guard — bad data must not hang the tab.
+      const chain: string[] = [];
+      let cursor: string | null = id;
+      while (
+        cursor !== null &&
+        !depthById.has(cursor) &&
+        chain.length <= byId.size
+      ) {
+        chain.push(cursor);
+        const parent: string | null = parentById.get(cursor) ?? null;
+        cursor = parent !== null && byId.has(parent) ? parent : null;
+      }
+      let depth = cursor !== null ? (depthById.get(cursor) ?? 0) : -1;
+      for (let i = chain.length - 1; i >= 0; i -= 1) {
+        depth += 1;
+        depthById.set(chain[i], depth);
+      }
+      return depthById.get(id) ?? 0;
+    };
+    for (const id of byId.keys()) depthOf(id);
+    return { byId, parentById, depthById };
+  }, [hierarchyGetParentId, hierarchyRows, getRowId]);
+  const draggedRow =
+    draggedRowId && hierarchyIndex
+      ? hierarchyIndex.byId.get(draggedRowId)
       : undefined;
-    let guard = 0;
-    while (cursor && guard < hierarchyRows.length + 1) {
-      if (getRowId(cursor) === sourceId) return false;
-      const parentId = hierarchy.getParentId(cursor);
-      cursor = parentId
-        ? hierarchyRows.find((row) => getRowId(row) === parentId)
-        : undefined;
-      guard += 1;
+  // The dragged row plus its whole subtree: every id a drop may not land
+  // inside. Built once per drag, not re-derived per row per render.
+  const hierarchyBlockedIds = useMemo(() => {
+    if (!draggedRowId || !hierarchyIndex) return null;
+    const childrenById = new Map<string, string[]>();
+    for (const [id, parentId] of hierarchyIndex.parentById) {
+      if (parentId === null) continue;
+      const siblings = childrenById.get(parentId);
+      if (siblings) siblings.push(id);
+      else childrenById.set(parentId, [id]);
     }
-    return true;
+    const blocked = new Set<string>([draggedRowId]);
+    const queue = [draggedRowId];
+    while (queue.length > 0) {
+      const id = queue.pop();
+      if (id === undefined) break;
+      for (const child of childrenById.get(id) ?? []) {
+        if (!blocked.has(child)) {
+          blocked.add(child);
+          queue.push(child);
+        }
+      }
+    }
+    return blocked;
+  }, [draggedRowId, hierarchyIndex]);
+  const hierarchyDropZones = (
+    targetId: string,
+  ): { insideOk: boolean; siblingOk: boolean } => {
+    if (!hierarchyIndex || !hierarchyBlockedIds || targetId === draggedRowId) {
+      return { insideOk: false, siblingOk: false };
+    }
+    const parentId = hierarchyIndex.parentById.get(targetId) ?? null;
+    return {
+      insideOk: !hierarchyBlockedIds.has(targetId),
+      siblingOk:
+        Boolean(hierarchy?.manualOrder) &&
+        (parentId === null || !hierarchyBlockedIds.has(parentId)),
+    };
   };
-  const canDropOn = (target: T, source = draggedRow): boolean =>
-    canMoveToParent(getRowId(target), source) ||
-    (Boolean(hierarchy?.manualOrder) &&
-      canMoveToParent(hierarchy?.getParentId(target) ?? null, source));
+  const canDropOn = (target: T): boolean => {
+    const zones = hierarchyDropZones(getRowId(target));
+    return zones.insideOk || zones.siblingOk;
+  };
   const persistHierarchyMove = (row: T, move: MatrxDataTableHierarchyMove) => {
     if (!hierarchy) return;
     void Promise.resolve(hierarchy.onMove(row, move)).catch(
@@ -742,12 +797,18 @@ function MatrxDataTableCore<T>({
       },
     );
   };
-  const resolveHierarchyDropPreview = (
-    event: DragMoveEvent | DragEndEvent,
+  /**
+   * One resolver for the live indicator AND the final drop, measuring the
+   * target row's REAL on-screen rect (never dnd-kit's drag-start snapshot, the
+   * source of drops landing on the wrong row after any mid-drag scroll).
+   * Standard tree zones: top third = above, bottom third = below, middle =
+   * nest inside; invalid zones fall back to whichever remains valid.
+   */
+  const resolveHierarchyMove = (
+    overId: string,
+    pointerY: number,
   ): HierarchyDropPreview | null => {
-    if (!hierarchy || !event.over) return null;
-    const overId = String(event.over.id);
-    const rect = event.over.rect;
+    if (!hierarchy || !hierarchyIndex || !scrollRef.current) return null;
     if (overId === "__root__") {
       return {
         move: {
@@ -756,61 +817,96 @@ function MatrxDataTableCore<T>({
           position: "root",
           targetId: null,
         },
-        rect,
+        targetId: null,
+        position: "root",
         depth: 0,
         targetLabel: null,
       };
     }
-    const target = hierarchyRows.find((row) => getRowId(row) === overId);
+    const target = hierarchyIndex.byId.get(overId);
     if (!target) return null;
-    const targetDepth = hierarchyDepth(target);
-    const activator = event.activatorEvent;
-    const pointerX =
-      "clientX" in activator && typeof activator.clientX === "number"
-        ? activator.clientX + event.delta.x
-        : rect.left + rect.width / 2;
-    const pointerY =
-      "clientY" in activator && typeof activator.clientY === "number"
-        ? activator.clientY + event.delta.y
-        : rect.top + rect.height / 2;
-    const siblingIntent =
-      Boolean(hierarchy.manualOrder) &&
-      (pointerY <= rect.top + rect.height * 0.34 ||
-        pointerX <= rect.left + 58 + targetDepth * 12);
-    const move: MatrxDataTableHierarchyMove = siblingIntent
-      ? {
-          parentId: hierarchy.getParentId(target),
-          beforeId: overId,
-          position: "before",
-          targetId: overId,
-        }
-      : {
+    const zones = hierarchyDropZones(overId);
+    if (!zones.insideOk && !zones.siblingOk) return null;
+    const rowElement = scrollRef.current.querySelector(
+      `tr[data-row-id="${CSS.escape(overId)}"]`,
+    );
+    if (!rowElement) return null;
+    const rect = rowElement.getBoundingClientRect();
+    const ratio =
+      rect.height > 0 ? (pointerY - rect.top) / rect.height : 0.5;
+    let position: "before" | "after" | "inside";
+    if (!zones.siblingOk) {
+      position = "inside";
+    } else if (!zones.insideOk) {
+      position = ratio < 0.5 ? "before" : "after";
+    } else if (ratio < 1 / 3) {
+      position = "before";
+    } else if (ratio > 2 / 3) {
+      position = "after";
+    } else {
+      position = "inside";
+    }
+    const targetDepth = hierarchyIndex.depthById.get(overId) ?? 0;
+    if (position === "inside") {
+      return {
+        move: {
           parentId: overId,
           beforeId: null,
           position: "inside",
           targetId: overId,
-        };
-    if (!canMoveToParent(move.parentId)) return null;
+        },
+        targetId: overId,
+        position,
+        depth: targetDepth + 1,
+        targetLabel: hierarchy.itemLabel?.(target) ?? "row",
+      };
+    }
+    const parentId = hierarchyIndex.parentById.get(overId) ?? null;
+    // "after" resolves to "before the next visible sibling" so consumers keep
+    // one insertion semantic; a target with no successor means insert last.
+    let beforeId: string | null = overId;
+    if (position === "after") {
+      beforeId = null;
+      const targetIndex = paginated.findIndex(
+        (row) => getRowId(row) === overId,
+      );
+      for (
+        let i = targetIndex + 1;
+        targetIndex >= 0 && i < paginated.length;
+        i += 1
+      ) {
+        const candidateId = getRowId(paginated[i]);
+        if (candidateId === draggedRowId) continue;
+        if ((hierarchyIndex.parentById.get(candidateId) ?? null) === parentId) {
+          beforeId = candidateId;
+          break;
+        }
+        // Left the sibling group (shallower row) — target is the last sibling.
+        if (
+          (hierarchyIndex.depthById.get(candidateId) ?? 0) <= targetDepth &&
+          (hierarchyIndex.parentById.get(candidateId) ?? null) !== parentId
+        ) {
+          break;
+        }
+      }
+    }
     return {
-      move,
-      rect,
-      depth: siblingIntent ? targetDepth : targetDepth + 1,
+      move: { parentId, beforeId, position, targetId: overId },
+      targetId: overId,
+      position,
+      depth: targetDepth,
       targetLabel: hierarchy.itemLabel?.(target) ?? "row",
     };
   };
-  const updateHierarchyDropPreview = (event: DragMoveEvent) => {
-    setHierarchyDropPreview(resolveHierarchyDropPreview(event));
-  };
   const endHierarchyDrag = (event: DragEndEvent) => {
-    const source = hierarchyRows.find(
-      (row) => getRowId(row) === String(event.active.id),
-    );
-    const preview = resolveHierarchyDropPreview(event);
+    const source = hierarchyIndex?.byId.get(String(event.active.id));
+    const preview = event.over
+      ? resolveHierarchyMove(String(event.over.id), dragPointerY(event))
+      : null;
     if (source && preview) {
       persistHierarchyMove(source, preview.move);
     }
     setDraggedRowId(null);
-    setHierarchyDropPreview(null);
   };
 
   const handleSaveEdits = async () => {
@@ -920,15 +1016,14 @@ function MatrxDataTableCore<T>({
     <DndContext
       sensors={hierarchySensors}
       collisionDetection={pointerWithin}
+      // Re-measure droppables while dragging: the root drop strip mounts at
+      // drag start and shifts every row, so drag-start-only rects would leave
+      // collision detection one row off for the whole drag.
+      measuring={{ droppable: { strategy: MeasuringStrategy.Always } }}
       onDragStart={(event) => {
         setDraggedRowId(String(event.active.id));
-        setHierarchyDropPreview(null);
       }}
-      onDragMove={updateHierarchyDropPreview}
-      onDragCancel={() => {
-        setDraggedRowId(null);
-        setHierarchyDropPreview(null);
-      }}
+      onDragCancel={() => setDraggedRowId(null)}
       onDragEnd={endHierarchyDrag}
     >
       <div
@@ -1277,6 +1372,12 @@ function MatrxDataTableCore<T>({
                   "Drop here to move to the top level"
                 }
                 draggedLabel={hierarchy.itemLabel?.(draggedRow) ?? "Moving row"}
+              />
+            ) : null}
+            {hierarchy && draggedRowId ? (
+              <HierarchyDragIndicatorLayer
+                scrollRef={scrollRef}
+                resolve={resolveHierarchyMove}
               />
             ) : null}
             {isFetching && !isLoading ? (
@@ -1890,17 +1991,14 @@ function MatrxDataTableCore<T>({
       </div>
       <DragOverlay>
         {draggedRow ? (
-          <div className="rounded border border-border bg-card px-2.5 py-1.5 text-sm font-medium text-foreground shadow-md">
+          // w-max: the overlay inherits the ACTIVE node's size, and the active
+          // node is the 16px grip handle — without it the label wraps to one
+          // character per line.
+          <div className="w-max max-w-xs truncate rounded border border-border bg-card px-2.5 py-1.5 text-sm font-medium text-foreground shadow-md">
             {hierarchy?.itemLabel?.(draggedRow) ?? "Moving row"}
           </div>
         ) : null}
       </DragOverlay>
-      {hierarchyDropPreview && draggedRow ? (
-        <HierarchyDropShadow
-          preview={hierarchyDropPreview}
-          draggedLabel={hierarchy?.itemLabel?.(draggedRow) ?? "Moving row"}
-        />
-      ) : null}
     </DndContext>
   );
 }
@@ -1958,41 +2056,119 @@ function HierarchyRootDropTarget({
   );
 }
 
-function HierarchyDropShadow({
-  preview,
-  draggedLabel,
-}: {
+interface HierarchyIndicatorRect {
   preview: HierarchyDropPreview;
-  draggedLabel: string;
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * The live drop indicator, isolated so per-mousemove state re-renders ONLY
+ * this leaf — never the table (the old design set preview state on the whole
+ * table component, re-rendering every row on every pointer move). It draws in
+ * the scroll container's own coordinate space, so it scrolls and clips with
+ * the rows and can never float over the sticky header or off the table.
+ */
+function HierarchyDragIndicatorLayer({
+  scrollRef,
+  resolve,
+}: {
+  scrollRef: RefObject<HTMLDivElement | null>;
+  resolve: (overId: string, pointerY: number) => HierarchyDropPreview | null;
 }) {
-  if (preview.move.position === "root") return null;
-  const nested = preview.move.position === "inside";
-  const top = nested
-    ? preview.rect.top + preview.rect.height - 12
-    : preview.rect.top - 12;
-  const left = preview.rect.left + 22 + preview.depth * 12;
-  const width = Math.max(
-    180,
-    Math.min(420 - preview.depth * 12, preview.rect.width - 44),
+  const [indicator, setIndicator] = useState<HierarchyIndicatorRect | null>(
+    null,
   );
+  useDndMonitor({
+    onDragMove(event) {
+      const container = scrollRef.current;
+      const overId = event.over ? String(event.over.id) : null;
+      const preview =
+        container && overId ? resolve(overId, dragPointerY(event)) : null;
+      if (!container || !preview || preview.targetId === null) {
+        setIndicator(null);
+        return;
+      }
+      const rowElement = container.querySelector(
+        `tr[data-row-id="${CSS.escape(preview.targetId)}"]`,
+      );
+      if (!rowElement) {
+        setIndicator(null);
+        return;
+      }
+      const rowRect = rowElement.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+      setIndicator({
+        preview,
+        top: rowRect.top - containerRect.top + container.scrollTop,
+        left: rowRect.left - containerRect.left + container.scrollLeft,
+        width: rowRect.width,
+        height: rowRect.height,
+      });
+    },
+    onDragCancel() {
+      setIndicator(null);
+    },
+    onDragEnd() {
+      setIndicator(null);
+    },
+  });
+  if (!indicator) return null;
+  const { preview } = indicator;
+  const indent = indicator.left + 10 + preview.depth * 12;
+  if (preview.position === "inside") {
+    return (
+      <div
+        aria-hidden="true"
+        data-matrx-hierarchy-indicator="inside"
+        className="pointer-events-none absolute z-[5] rounded-sm bg-primary/10 ring-2 ring-inset ring-primary/60"
+        style={{
+          top: indicator.top,
+          left: indicator.left + 2,
+          width: Math.max(0, indicator.width - 4),
+          height: indicator.height,
+        }}
+      >
+        {/* Left-anchored at the row's indent: the row can be far wider than
+            the viewport, so a right-edge label would sit off-screen. */}
+        <span
+          className="absolute top-1/2 -translate-y-1/2 whitespace-nowrap rounded bg-card/95 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+          style={{ left: 32 + preview.depth * 12 }}
+        >
+          Inside {preview.targetLabel}
+        </span>
+      </div>
+    );
+  }
+  const lineTop =
+    preview.position === "before"
+      ? indicator.top - 1
+      : indicator.top + indicator.height - 1;
   return (
     <div
       aria-hidden="true"
-      data-matrx-hierarchy-shadow={preview.move.position}
-      className="pointer-events-none fixed z-[80] flex h-7 items-center gap-2 rounded border border-dashed border-primary/70 bg-card/95 px-2 text-xs font-medium text-foreground shadow-lg shadow-primary/25 backdrop-blur-sm"
+      data-matrx-hierarchy-indicator={preview.position}
+      className="pointer-events-none absolute z-[5]"
       style={{
-        left,
-        top,
-        width,
-        maxWidth: `calc(100vw - ${left + 8}px)`,
+        top: lineTop,
+        left: indent,
+        width: Math.max(0, indicator.left + indicator.width - indent - 8),
       }}
     >
-      <span className="min-w-0 flex-1 truncate">{draggedLabel}</span>
-      <span className="shrink-0 text-primary">
-        {nested
-          ? `Inside ${preview.targetLabel}`
-          : `Above ${preview.targetLabel}`}
-      </span>
+      <div className="relative h-0.5 rounded-full bg-primary">
+        <span className="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full border-2 border-primary bg-card" />
+        <span
+          className={cn(
+            "absolute left-2 rounded bg-card/95 px-1.5 py-0.5 text-[10px] font-medium text-primary",
+            preview.position === "before" ? "top-1" : "bottom-1",
+          )}
+        >
+          {preview.position === "before" ? "Above" : "Below"}{" "}
+          {preview.targetLabel}
+        </span>
+      </div>
     </div>
   );
 }

@@ -149,4 +149,26 @@ describe("Offering tree table processing", () => {
       }),
     ).toEqual(["child-a", "child-b"]);
   });
+
+  it("inserts before the resolved successor for an after drop", () => {
+    expect(
+      destinationSiblingOrder(rows, "child-b", {
+        parentId: null,
+        beforeId: "root-b",
+        position: "after",
+        targetId: "root-a",
+      }),
+    ).toEqual(["root-a", "child-b", "root-b"]);
+  });
+
+  it("appends at the end for an after drop on the last sibling", () => {
+    expect(
+      destinationSiblingOrder(rows, "child-a", {
+        parentId: null,
+        beforeId: null,
+        position: "after",
+        targetId: "root-b",
+      }),
+    ).toEqual(["root-a", "root-b", "child-a"]);
+  });
 });

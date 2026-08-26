@@ -123,7 +123,9 @@ export function destinationSiblingOrder(
   const beforeIndex = move.beforeId
     ? siblings.findIndex((row) => row.id === move.beforeId)
     : -1;
-  const insertionIndex = beforeIndex >= 0 ? beforeIndex : 0;
+  // "after" with no successor means the target was the last sibling — append.
+  const insertionIndex =
+    beforeIndex >= 0 ? beforeIndex : move.position === "after" ? siblings.length : 0;
   const siblingIds = siblings.map((row) => row.id);
   siblingIds.splice(insertionIndex, 0, movedId);
   return siblingIds;
@@ -513,7 +515,8 @@ export function OfferingTreeTable({
         searchMatch: {},
         leading: (
           <span className="hidden text-xs text-muted-foreground xl:inline">
-            Drag left or above for a sibling · right for a child.
+            Drop on a row&apos;s top or bottom edge to reorder · middle to nest
+            inside it.
           </span>
         ),
         actions: (
