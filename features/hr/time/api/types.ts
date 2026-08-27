@@ -316,48 +316,123 @@ export interface AttestationResponse {
 }
 
 /**
- * `hr_clock_state` — the single read every clock surface mounts on. The widget **renders this and
- * derives no state of its own** (SPEC-TIME §2.1).
+ * 🚨 **THIS SHAPE WAS WRONG AND IT COST A VERIFICATION ROUND (G2 F6).**
+ *
+ * It was written from the specs before `hr.clock_state` existed, and when the function shipped the
+ * two disagreed. The payload is **camelized and cast**, never mapped, so a field the server does not
+ * send is silently `undefined` rather than a type error — and every field below that the spec
+ * invented rendered as blank:
+ *
+ * | This file declared | The function actually sends |
+ * |---|---|
+ * | `phase` | `state` |
+ * | `blocked.reason` / `.href` / `.hrefLabel` | `blocked.message` / `.door` / `.reasonCode` |
+ * | `dayTotalHours` | *nothing* |
+ * | `attestation{…}` | `attestationRequiredAtClockOut` + `jurisdictionMinimums{…}` |
+ * | `capture{…}` | *nothing* |
+ * | `lastPunchAt` | *nothing* (there is `currentSegmentStartedAt`) |
+ *
+ * The visible cost: a blocked employee saw *"Ask your manager…"* while the server had sent them a
+ * worded reason **and** a door, because `blocked.reason` and `blocked.href` were both `undefined`
+ * and the renderer fell through to its no-door branch.
+ *
+ * **Verified live against `hr.clock_state`'s body, 2026-08-27.** The declaration below is now the
+ * server's shape, and `mapClockState` in `service.ts` maps every field by name so the next drift is
+ * a **visible** hole rather than a blank paragraph. Do not add a field here that the function does
+ * not send — that is precisely how this defect was built.
  */
 export interface ClockState {
   employmentId: string;
+  organizationId: string | null;
+  /** The server's own word. It was `phase` here and `state` on the wire; the wire wins. */
   phase: ClockPhase;
-  /** Set only when the server refuses the whole surface. Carries the sentence AND the door. */
+  /**
+   * Set only when the server refuses the whole surface, and it **always carries both** a worded
+   * `message` and a `door` (§2.1 / L3-44). Field names are the server's.
+   */
   blocked: {
-    reason: string;
+    /** A machine token — `no_position_assignment`, `worker_class_not_enabled`. Never rendered raw. */
+    reasonCode: string | null;
+    /** The sentence a person reads, verbatim from the server. */
+    message: string;
     /** The door. "No dead ends" — a blocked employee must never be left with nowhere to go. */
-    href: string | null;
-    hrefLabel: string | null;
+    door: string | null;
   } | null;
 
-  localWorkDate: string;
-  tz: string;
-  /** Server-computed. The client never subtracts timestamps to produce these. */
+  localWorkDate: string | null;
+  tz: string | null;
+  workLocationId: string | null;
+  jurisdictionKey: string | null;
+  positionAssignmentId: string | null;
+
+  /** Server-computed. The client never subtracts timestamps to produce these (L3-74). */
   elapsedWorkedMinutes: number;
   elapsedBreakMinutes: number;
-  dayTotalHours: number;
+  /** When the current worked/break segment began. Server-sent; used only as a display anchor. */
+  currentSegmentStartedAt: string | null;
 
-  openChain: PunchRow[];
-  lastPunchAt: string | null;
+  openChain: ClockChainPunch[];
 
-  /** Whether a clock-out will present the attestation card, and what it may legally ask. */
-  attestation: {
-    requiredAtClockOut: boolean;
-    promptVersion: string | null;
-    mealRuleResolved: boolean;
-    /** e.g. 30 — displayed as "30 minutes required in California". Null where no rule resolved. */
-    mealMinimumMinutes: number | null;
-    /** Absent where the resolved rule permits no waiver for this shift length. */
-    mealWaiverOffered: boolean;
-    restBreaksOwed: number | null;
+  /**
+   * 🚨 The server sends a **boolean only**. It does not send the prompt version, the meal minimum,
+   * whether a waiver is permitted, or the rest-break count — those live in
+   * {@link jurisdictionMinimums} where a rule resolved, and are **absent** where none did. The
+   * clock-out card reads them from there and shows nothing where the server said nothing, because
+   * inventing "30 minutes" for an org with no meal rule is a fabricated legal claim.
+   */
+  attestationRequiredAtClockOut: boolean;
+
+  /**
+   * The resolver's answer, passed through with its flags intact (§0 law 4). `resolved` is keyed by
+   * rule class (`meal-break`, `rest-break`); `advisory`, `incomplete` and `noRule` are the reasons a
+   * figure may be missing and are rendered rather than swallowed.
+   */
+  jurisdictionMinimums: {
+    asOf: string | null;
+    resolved: Record<string, unknown>;
+    advisory: unknown[];
+    incomplete: unknown[];
+    noRule: unknown[];
   };
 
-  /** Capture posture, so the surface can say so BEFORE the punch (SPEC-TIME §4.9, ruled). */
-  capture: { geoRequested: boolean; photoRequested: boolean; maxGeoAccuracyM: number | null };
-
-  openExceptions: AttendanceExceptionRow[];
+  openExceptions: ClockStateException[];
   /** Which kinds the server will accept right now. The button's absence is courtesy; the refusal is the contract. */
   allowedKinds: PunchKind[];
+  /** The function states this on the wire so the omission is not read as an oversight. */
+  statesThisEndpointCannotReturn: string[];
+}
+
+/**
+ * A punch on the open chain. **Narrower than {@link PunchRow}** — `hr._punch_open_chain` returns
+ * nine columns, not the register's thirty, and declaring the wide type here was part of the same
+ * cast-don't-map mistake.
+ */
+export interface ClockChainPunch {
+  id: string;
+  punchKind: PunchKind;
+  occurredAt: string;
+  breakPaid: boolean | null;
+  source: PunchSource;
+  tz: string;
+  localWorkDate: string;
+  positionAssignmentId: string | null;
+  attestationResponse: AttestationResponse | Record<string, never>;
+}
+
+/**
+ * An open exception as *this* read returns it. Deliberately narrower than
+ * {@link AttendanceExceptionRow}: `hr.clock_state` sends seven fields and **no `message`**, so a
+ * surface must label the row from `exceptionKind` through the shared lexicon rather than render an
+ * empty sentence.
+ */
+export interface ClockStateException {
+  id: string;
+  exceptionKind: AttendanceExceptionKind;
+  severity: ExceptionSeverity;
+  resolutionState: ExceptionResolutionState;
+  detectedAt: string;
+  localWorkDate: string;
+  calc: Record<string, unknown> | null;
 }
 
 /** What `hr_punch_record` answers with. A replay is a **success path**, not an error. */

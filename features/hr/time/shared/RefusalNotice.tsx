@@ -39,6 +39,21 @@ export function RefusalNotice({
   return (
     <div
       role="alert"
+      /*
+       * 🚨 THE MACHINE CODE IS AN ATTRIBUTE, NEVER PAGE TEXT (G2 finding F7).
+       *
+       * This used to render `error.code` as a small mono line under the sentence, and the verifier
+       * caught the result on `/hr/time/punches`: a person was shown the bare token
+       * `hr_register_scope_required`. That is the envelope being RENDERED instead of READ. A code is
+       * not a fact about the reader's situation — they cannot act on it, cannot search for it, and
+       * cannot tell whether it is a warning or the name of a thing they were supposed to do.
+       *
+       * It still has one legitimate audience — a support conversation and an error report — so it
+       * stays on the DOM as a data attribute and a hover title, where it can be copied out without
+       * ever being read to somebody as if it were an explanation.
+       */
+      data-hr-refusal-code={isRpc ? error.code : undefined}
+      title={isRpc ? `Reference: ${error.code}` : undefined}
       className={cn(
         "flex items-start gap-2.5 rounded-md border px-3 py-2.5 text-sm",
         locked
@@ -61,9 +76,6 @@ export function RefusalNotice({
           >
             Record a correction in the next pay period
           </Link>
-        ) : null}
-        {isRpc && !locked ? (
-          <p className="font-mono text-[11px] text-muted-foreground">{error.code}</p>
         ) : null}
       </div>
     </div>

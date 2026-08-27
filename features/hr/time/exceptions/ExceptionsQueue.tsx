@@ -48,6 +48,7 @@ import { toast } from "@/lib/toast";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { hrTimeExceptionsHref, hrTimesheetHref } from "@/features/hr/routes";
 
+import { HrRpcError } from "../api/rpc";
 import { resolveAttendanceException } from "../api/service";
 import type {
   AttendanceExceptionKind,
@@ -101,8 +102,8 @@ export function ExceptionsQueue({
     (signal) =>
       listAttendanceExceptions(
         {
-          exceptionKinds: kind ? [kind] : undefined,
-          employmentIds: employmentId ? [employmentId] : undefined,
+          exceptionKind: kind ?? undefined,
+          employmentId: employmentId ?? undefined,
           // A work DATE, not an instant — `from`/`to` bracket the single day.
           from: day ?? undefined,
           to: day ?? undefined,
@@ -236,14 +237,20 @@ function readFilters(query: MatrxDataTableQueryState) {
   const filters: Record<string, unknown> = {};
   for (const [id, value] of Object.entries(query.columnFilters)) {
     if (!value) continue;
+    /*
+     * The live contract takes ONE value per axis, not a set. A multi-select column filter therefore
+     * narrows to its first choice rather than silently sending an array the server ignores — and
+     * the table still shows the user what they picked, so the narrowing is visible rather than a
+     * result set that quietly disagrees with the control.
+     */
     if (id === "resolutionState" && value.kind === "select") {
-      filters.resolutionStates = value.values ?? [value.value];
+      filters.resolutionState = value.values?.[0] ?? value.value;
     }
     if (id === "severity" && value.kind === "select") {
-      filters.severities = value.values ?? [value.value];
+      filters.severity = value.values?.[0] ?? value.value;
     }
     if (id === "exceptionKind" && value.kind === "select") {
-      filters.exceptionKinds = value.values ?? [value.value];
+      filters.exceptionKind = value.values?.[0] ?? value.value;
     }
   }
   return filters;
@@ -424,7 +431,18 @@ function BulkAcknowledgeDialog({
           id: exc.id,
           name: exc.employeeDisplayName ?? exc.id,
           ok: false,
-          reason: caught instanceof Error ? caught.message : String(caught),
+          /*
+           * 🚨 `userMessage`, NOT `message` (same class as G2 finding F7). `HrRpcError.message` is
+           * the server's INTERNAL text — "excused is not a legal resolution for severity=violation"
+           * — while `userMessage` is the sentence written for a person. Reading the wrong one puts
+           * a SQL-shaped string in front of a manager and calls it an explanation.
+           */
+          reason:
+            caught instanceof HrRpcError
+              ? caught.userMessage
+              : caught instanceof Error
+                ? caught.message
+                : String(caught),
         });
       }
     }

@@ -128,7 +128,15 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
   const strip = useHrTimeQuery<Paged<AttendanceExceptionRow>>(
     (signal) =>
       listAttendanceExceptions(
-        { payPeriodId: payPeriodId as string, resolutionStates: ["open"] },
+        /*
+         * ⚠️ There is no pay-period filter on `hr.attendance_exception_list` (verified live) — its
+         * axes are resolution state, kind, severity, employment, location and a date range. So the
+         * strip asks for what it can honestly ask for: everything still OPEN and sitting on a
+         * period nobody has approved. Narrowing to THIS period needs a `pay_period_id` filter on
+         * the contract; recorded for the lane owner rather than faked with a date range that would
+         * silently miss a boundary week.
+         */
+        { resolutionState: "open", affectsUnapprovedPeriod: true },
         { page: 1, pageSize: 200 },
         { mockCase, signal },
       ),

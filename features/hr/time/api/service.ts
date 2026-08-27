@@ -20,7 +20,10 @@
 import { callHrTimeRpc, type HrRpcOptions } from "./rpc";
 import type {
   AttendanceExceptionRow,
+  ClockChainPunch,
+  ClockPhase,
   ClockState,
+  ClockStateException,
   ExceptionResolutionState,
   KioskDeviceSession,
   KioskPairingResult,
@@ -35,6 +38,49 @@ import type {
   Timesheet,
   PageRequest,
 } from "./types";
+
+/**
+ * 🚨 THE WIRE SHAPE OF A JSONB BAG IS NOT THE CLIENT'S SHAPE — FIXED AFTER A LIVE READ.
+ *
+ * `rpc.ts` camelizes RESPONSES and deliberately leaves REQUEST arguments alone, because those are
+ * `p_`-prefixed positional names the functions declare. That reasoning is correct for the argument
+ * NAMES and wrong for the *contents* of the two jsonb bags: `p_filters` and `p_page` are read
+ * INSIDE the SQL by their own keys, and those keys are snake_case.
+ *
+ * Verified live 2026-08-26 against `hr.punch_register` / `hr.timesheet_period_grid` /
+ * `hr.attendance_exception_list`:
+ *   • filters are read as `employment_ids`, `organization_id`, `punch_kinds`, `from`, `to`, …
+ *   • paging is read as **`limit` / `offset`** — not `page` / `pageSize`.
+ *
+ * So a client sending `{employmentIds, includeVoided}` and `{page: 2, pageSize: 50}` had **every
+ * filter silently ignored and every request served as page one**. Nothing errored; the surface just
+ * showed the wrong rows, which is the worst way for this to fail on an evidence lane.
+ *
+ * These two helpers are the seam, in the one module that assembles the call.
+ */
+function snakeKey(key: string): string {
+  return key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`);
+}
+
+function snakeizeBag(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(snakeizeBag);
+  if (value === null || typeof value !== "object") return value;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (v === undefined) continue;
+    out[snakeKey(k)] = snakeizeBag(v);
+  }
+  return out;
+}
+
+/** `{page, pageSize, sort}` → the `{limit, offset, sort}` the SQL actually reads. */
+function toWirePage(page: PageRequest): Record<string, unknown> {
+  return {
+    limit: page.pageSize,
+    offset: Math.max(0, (page.page - 1) * page.pageSize),
+    ...(page.sort ? { sort: snakeizeBag(page.sort) } : {}),
+  };
+}
 
 // ---------------------------------------------------------------------------------------------
 // Punch lane
@@ -84,9 +130,88 @@ export function recordPunch(
   );
 }
 
+/**
+ * 🚨 **MAPPED, NOT CAST — THIS IS THE G2 F6 FIX.**
+ *
+ * Every other call in this file hands `callHrTimeRpc<T>` a type parameter, which camelizes the
+ * payload and **casts** it. A cast cannot fail, so when `hr.clock_state` shipped with different
+ * field names than the spec had guessed, nothing went red: `blocked.reason` and `blocked.href` were
+ * simply `undefined`, and a blocked employee was shown *"Ask your manager…"* while the server had
+ * sent them a worded reason **and** a door.
+ *
+ * So this one read is mapped by hand, field by field, from the shape verified live against the
+ * function body. Two properties follow, and both are the point:
+ *   • a field the server stops sending becomes a **visible** default here, in one place, instead of
+ *     an `undefined` that renders as a blank paragraph three components away;
+ *   • nothing is invented. Where the server sends nothing — a day total, a capture posture — this
+ *     mapper does not manufacture one, because a fabricated number on a time clock is the defect
+ *     the whole lane is built to avoid.
+ */
+function mapClockState(raw: unknown): ClockState {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const pick = <T>(key: string, fallback: T): T => (r[key] === undefined || r[key] === null ? fallback : (r[key] as T));
+
+  const blockedRaw = r.blocked as Record<string, unknown> | null | undefined;
+  const minimums = (r.jurisdictionMinimums ?? {}) as Record<string, unknown>;
+
+  return {
+    employmentId: pick<string>("employmentId", ""),
+    organizationId: pick<string | null>("organizationId", null),
+    // 🚨 The wire calls it `state`. `phase` was this file's invention.
+    phase: pick<ClockPhase>("state", "clocked_out"),
+    blocked: blockedRaw
+      ? {
+          reasonCode: (blockedRaw.reasonCode as string | null) ?? null,
+          /*
+            The server always words this. The fallback exists only so a future envelope change
+            cannot produce a silent empty paragraph — it is a loud placeholder, not a substitute.
+          */
+          message:
+            typeof blockedRaw.message === "string" && blockedRaw.message.trim()
+              ? blockedRaw.message
+              : "The time clock is not available for you right now, and the server did not say why.",
+          door: (blockedRaw.door as string | null) ?? null,
+        }
+      : null,
+
+    localWorkDate: pick<string | null>("localWorkDate", null),
+    tz: pick<string | null>("tz", null),
+    workLocationId: pick<string | null>("workLocationId", null),
+    jurisdictionKey: pick<string | null>("jurisdictionKey", null),
+    positionAssignmentId: pick<string | null>("positionAssignmentId", null),
+
+    elapsedWorkedMinutes: pick<number>("elapsedWorkedMinutes", 0),
+    elapsedBreakMinutes: pick<number>("elapsedBreakMinutes", 0),
+    currentSegmentStartedAt: pick<string | null>("currentSegmentStartedAt", null),
+
+    openChain: pick<ClockChainPunch[]>("openChain", []),
+    attestationRequiredAtClockOut: pick<boolean>("attestationRequiredAtClockOut", false),
+
+    jurisdictionMinimums: {
+      asOf: (minimums.asOf as string | null) ?? null,
+      resolved: (minimums.resolved as Record<string, unknown>) ?? {},
+      advisory: (minimums.advisory as unknown[]) ?? [],
+      incomplete: (minimums.incomplete as unknown[]) ?? [],
+      noRule: (minimums.noRule as unknown[]) ?? [],
+    },
+
+    openExceptions: pick<ClockStateException[]>("openExceptions", []),
+    allowedKinds: pick<PunchKind[]>("allowedKinds", []),
+    statesThisEndpointCannotReturn: pick<string[]>("statesThisEndpointCannotReturn", []),
+  };
+}
+
 /** The single read every clock surface mounts on. The widget derives no state of its own. */
-export function getClockState(employmentId: string, opts?: HrRpcOptions): Promise<ClockState> {
-  return callHrTimeRpc<ClockState>("hr_clock_state", { p_employment_id: employmentId }, opts);
+export async function getClockState(
+  employmentId: string,
+  opts?: HrRpcOptions,
+): Promise<ClockState> {
+  const raw = await callHrTimeRpc<unknown>(
+    "hr_clock_state",
+    { p_employment_id: employmentId },
+    opts,
+  );
+  return mapClockState(raw);
 }
 
 export interface PunchCorrectionResult {
@@ -160,7 +285,7 @@ export function getPunchRegister(
 ): Promise<Paged<PunchRow>> {
   return callHrTimeRpc<Paged<PunchRow>>(
     "hr_punch_register",
-    { p_filters: filters, p_page: page },
+    { p_filters: snakeizeBag(filters), p_page: toWirePage(page) },
     opts,
   );
 }
@@ -209,7 +334,7 @@ export function getPeriodGrid(
 ): Promise<Paged<PeriodGridRow>> {
   return callHrTimeRpc<Paged<PeriodGridRow>>(
     "hr_timesheet_period_grid",
-    { p_pay_period_id: payPeriodId, p_filters: filters, p_page: page },
+    { p_pay_period_id: payPeriodId, p_filters: snakeizeBag(filters), p_page: toWirePage(page) },
     opts,
   );
 }
