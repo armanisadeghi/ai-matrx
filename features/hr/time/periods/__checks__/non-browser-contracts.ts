@@ -419,6 +419,50 @@ async function main(): Promise<void> {
   );
   ok("…and a row nobody ever started", getEdge.workflow.noFlow === 1);
 
+  // ── U2: the attestation outcome must be WORDS, and must never be inferred. ──────────────────
+  const { attestationOutcomeSentence, approvedWithoutAttestation } = await import(
+    "@/features/hr/time/periods/workflowHealth"
+  );
+  const realRow = {
+    attestationOutcome: "not_attested",
+    attestationNote: null,
+    attestedAt: null,
+    managerApprovedAt: "2026-08-27T11:35:56Z",
+    unableReason: "no_login",
+  };
+  const sentence = attestationOutcomeSentence(realRow) ?? "";
+  ok("the outcome says NOT ATTESTED in words", sentence.includes("Not attested"));
+  ok(
+    "…says it closed without the employee's confirmation",
+    sentence.includes("without the employee's confirmation"),
+  );
+  ok("…names WHY they could not act", sentence.includes("no platform login"));
+  ok("…and says the manager approved it anyway", sentence.includes("the manager approved"));
+  ok("money-moved-on-unconfirmed-hours is detectable", approvedWithoutAttestation(realRow));
+
+  // 🚨 THE NEVER-INFER RULE. attested_at is null and a manager approved — which LOOKS like proof —
+  // but with no outcome from the server the surface must stay silent rather than guess.
+  ok(
+    "with NO outcome from the server, nothing is claimed",
+    attestationOutcomeSentence({ ...realRow, attestationOutcome: null }) === null,
+  );
+  ok(
+    "…and it is not treated as money-on-unconfirmed-hours either",
+    !approvedWithoutAttestation({ ...realRow, attestationOutcome: null }),
+  );
+  ok(
+    "a row the employee DID attest is not flagged",
+    !approvedWithoutAttestation({ ...realRow, attestationOutcome: "attested", attestedAt: "2026-08-26T09:00:00Z" }),
+  );
+
+  const happyRows = (HR_TIME_RPC_FIXTURES.hr_pay_period_get?.happy?.data as {
+    workflow: { rows: Array<Record<string, unknown>> };
+  }).workflow.rows;
+  ok(
+    "the happy fixture carries the REAL approved-but-never-attested row",
+    happyRows.some((r) => r.attestationOutcome === "not_attested" && r.rowState === "approved"),
+  );
+
   // ── S4: the capability tokens must be the SERVER's, and hr_admin must actually reach. ───────
   //
   // `hr.pay_period_transition` gates on `payroll.read` for every transition except export. An

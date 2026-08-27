@@ -1555,7 +1555,23 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
         workflow: {
           awaiting: 3, stuck: 0, noFlow: 0, done: 285,
           rows: [
-            { payPeriodEmploymentId: "aaaa0001-0000-4000-8000-000000000001", employmentId: "11111111-1111-4111-8111-111111111111", rowState: "open", health: "awaiting", flowKey: "timecard_attestation", instanceId: "470e7247-0000-4000-8000-000000000001", instanceState: "active", failureClass: null, failureId: null },
+            { payPeriodEmploymentId: "aaaa0001-0000-4000-8000-000000000001", employmentId: "11111111-1111-4111-8111-111111111111", rowState: "open", health: "awaiting", flowKey: "timecard_attestation", instanceId: "470e7247-0000-4000-8000-000000000001", instanceState: "active", failureClass: null, failureId: null, attestationOutcome: null, attestationNote: null, attestationClosedAt: null, attestedAt: null, managerApprovedAt: null, unableReason: null },
+            /*
+             * 🚨 U2 — COPIED FIELD-FOR-FIELD FROM THE REAL ROW: G2V Window Biweekly,
+             * pay_period_employment 3a71adf6, read live 2026-08-27. An APPROVED row whose subject
+             * never confirmed the hours, and who never could — they have no platform login.
+             *
+             * `health` is `done` and the row state is `approved`: by every other signal on this
+             * screen it looks finished. The outcome is the only thing that says money moved on
+             * unconfirmed hours, which is exactly why it has to be rendered rather than deduced.
+             */
+            { payPeriodEmploymentId: "3a71adf6-7552-4c65-8786-91c392ed20ea", employmentId: "ca9e12da-35bb-402d-8bda-1b76fa4c678d", rowState: "approved", health: "done", flowKey: "timecard_attestation", instanceId: "470e7247-375e-428c-9667-d6cf699cd250", instanceState: "closed", failureClass: null, failureId: null,
+              attestationOutcome: "not_attested",
+              attestationNote: "The attestation deadline passed with no action from the employee. The step was closed as not_attested and flagged to the manager. NOTHING here attested on their behalf.",
+              attestationClosedAt: "2026-08-27T11:35:56.014508+00:00",
+              attestedAt: null,
+              managerApprovedAt: "2026-08-27T11:35:56.014508+00:00",
+              unableReason: "no_login" },
           ],
         },
       },

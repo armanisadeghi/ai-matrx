@@ -264,6 +264,25 @@ export interface PeriodWorkflowRow {
    */
   failureClass: string | null;
   failureId: string | null;
+
+  /*
+   * ── U2: the ATTESTATION OUTCOME, read from the record ────────────────────────────────────────
+   * Optional because `hr.pay_period_get` does not project them until
+   * `migrations/hr_l3_46_project_attestation_outcome.sql` is applied. Absent means the surface says
+   * NOTHING about the outcome — it never falls back to inferring one.
+   */
+
+  /** `not_attested` when the deadline passed with no action from the employee. */
+  attestationOutcome: string | null;
+  /** 🚨 The server's own sentence about what happened. Rendered VERBATIM when present. */
+  attestationNote: string | null;
+  attestationClosedAt: string | null;
+  /** 🚨 `null` is the load-bearing value: the employee never confirmed these hours. */
+  attestedAt: string | null;
+  /** Set when a manager approved anyway — which is legitimate, recorded, and must be SAID. */
+  managerApprovedAt: string | null;
+  /** Why the subject could never act, e.g. `no_login`. From the flow's own failure detail. */
+  unableReason: string | null;
 }
 
 export interface PeriodWorkflowHealth {
@@ -291,6 +310,12 @@ function mapWorkflowRow(raw: unknown): PeriodWorkflowRow {
     instanceState: strOrNull(r.instanceState),
     failureClass: strOrNull(r.failureClass),
     failureId: strOrNull(r.failureId),
+    attestationOutcome: strOrNull(r.attestationOutcome),
+    attestationNote: strOrNull(r.attestationNote),
+    attestationClosedAt: strOrNull(r.attestationClosedAt),
+    attestedAt: strOrNull(r.attestedAt),
+    managerApprovedAt: strOrNull(r.managerApprovedAt),
+    unableReason: strOrNull(r.unableReason),
   };
 }
 

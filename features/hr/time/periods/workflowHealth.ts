@@ -79,3 +79,81 @@ export function isManagerFlagged(
 ): boolean {
   return row.failureClass === "not_attested" || row.instanceState === "not_attested";
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+// U2 — the attestation OUTCOME, in words
+// ═══════════════════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Why the subject could never act, in words. `no_login` is the live case: the employee has no
+ * platform login, so the attestation step could never route to them at all.
+ */
+const UNABLE_WORDS: Record<string, string> = {
+  no_login: "no way to act: no platform login",
+  excluded_by_caller: "no way to act: they are excluded from deciding their own record here",
+  terminated: "no way to act: the employment had ended",
+  inactive: "no way to act: the employment was not active",
+};
+
+function unableWords(reason: string | null): string | null {
+  if (!reason) return null;
+  return UNABLE_WORDS[reason] ?? `no way to act: ${reason.replace(/_/g, " ")}`;
+}
+
+/**
+ * 🚨 THE SENTENCE THAT REPLACES SUBTRACTION.
+ *
+ * An approved period used to render "Employee attested 0 / Manager approved 1" and leave a manager
+ * to work out for themselves that pay was released on a timecard its subject never confirmed.
+ * SPEC-TIME §7.1's ruling — a missed attestation *"auto-closes as not_attested and is flagged to
+ * the manager. NEVER silently attested"* — is not in force if its outcome is invisible on the
+ * screen where money is released.
+ *
+ * 🚨 THIS READS THE RECORD AND NEVER INFERS. It returns `null` unless the server actually said
+ * `attestation_outcome`. It deliberately does NOT fall back to "attested_at is null, so they must
+ * not have attested", and it must never be changed to: `counts.attested = 0` beside `approved = 1`
+ * looks like proof and is not — those are CURRENT-state counts, so a row that attested and was
+ * then approved has LEFT `attested` and ENTERED `approved`. On this screen the guess would be
+ * about whether somebody confirmed the hours they were paid for.
+ *
+ * Where the server ships its own note, that note wins verbatim — one authority for the wording.
+ */
+export function attestationOutcomeSentence(
+  row: Pick<
+    PeriodWorkflowRow,
+    "attestationOutcome" | "attestationNote" | "attestedAt" | "managerApprovedAt" | "unableReason"
+  >,
+): string | null {
+  if (!row.attestationOutcome) return null;
+
+  if (row.attestationOutcome !== "not_attested") {
+    // A recognised, unremarkable outcome (e.g. `attested`). Nothing to warn about.
+    return row.attestationNote;
+  }
+
+  const why = unableWords(row.unableReason);
+  const approved = row.managerApprovedAt !== null;
+
+  return (
+    `Not attested — closed without the employee's confirmation` +
+    (why ? ` (${why})` : "") +
+    `;` +
+    (approved
+      ? " the manager approved the flagged timecard."
+      : " no manager decision has been recorded on it yet.")
+  );
+}
+
+/**
+ * 🚨 True when money moved on hours the subject never confirmed. This is the combination §7.1
+ * exists to make safe, and it is the one that must never be left to arithmetic.
+ */
+export function approvedWithoutAttestation(
+  row: Pick<PeriodWorkflowRow, "attestationOutcome" | "attestedAt" | "managerApprovedAt">,
+): boolean {
+  return (
+    row.attestationOutcome === "not_attested" &&
+    row.attestedAt === null &&
+    row.managerApprovedAt !== null
+  );
+}

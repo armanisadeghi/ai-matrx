@@ -41,6 +41,8 @@ import type { PeriodWorkflowHealth, RowHealth } from "../api/periodReads";
 import {
   HEALTH_LABEL,
   HEALTH_MEANING,
+  approvedWithoutAttestation,
+  attestationOutcomeSentence,
   failureWords,
   isManagerFlagged,
 } from "../workflowHealth";
@@ -84,6 +86,8 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
   // A failure at ANY health — the `awaiting`-with-an-open-failure case included.
   const withFailure = rows.filter((r) => r.failureClass !== null);
   const flagged = rows.filter(isManagerFlagged);
+  // Money moved on hours the subject never confirmed — §7.1's case, read from the record.
+  const unconfirmed = rows.filter(approvedWithoutAttestation);
 
   return (
     <section className="rounded-lg border border-border bg-card">
@@ -128,6 +132,24 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
           </p>
         ) : null}
 
+        {/*
+          🚨 U2 — THE SENTENCE THAT REPLACES SUBTRACTION. "Employee attested 0 / Manager approved 1"
+          is arithmetic a manager should never have to do about whether somebody confirmed the hours
+          they were paid for. Read from the record; absent if the server did not say so.
+        */}
+        {unconfirmed.length > 0 ? (
+          <p className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-relaxed text-amber-800 dark:text-amber-300">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>
+              {unconfirmed.length === 1
+                ? "1 timecard was approved without its employee ever confirming the hours."
+                : `${unconfirmed.length} timecards were approved without their employees ever confirming the hours.`}{" "}
+              That is allowed and it is recorded — but nothing here was attested on anyone&apos;s
+              behalf.
+            </span>
+          </p>
+        ) : null}
+
         {flagged.length > 0 ? (
           <p className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-relaxed text-amber-800 dark:text-amber-300">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -144,6 +166,7 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
         {rows.map((row) => {
           const Icon = HEALTH_ICON[row.health];
           const words = failureWords(row.failureClass);
+          const outcome = attestationOutcomeSentence(row);
           return (
             <li key={row.payPeriodEmploymentId} className="p-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -159,6 +182,15 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
                     ? `Stuck — ${words.split(" — ")[0]}`
                     : HEALTH_LABEL[row.health]}
                 </span>
+
+                {row.attestationOutcome === "not_attested" ? (
+                  <span
+                    title="The employee never confirmed these hours. Nothing attested on their behalf."
+                    className="inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-300"
+                  >
+                    Not attested
+                  </span>
+                ) : null}
 
                 {isManagerFlagged(row) ? (
                   <span className="inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-300">
@@ -189,6 +221,31 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
                   {row.instanceState ? ` · instance ${row.instanceState}` : ""}
                 </span>
               </div>
+
+              {/*
+                🚨 THE OUTCOME, ON THE ROW. The server's own note wins verbatim when it sent one;
+                otherwise the composed sentence. Never rendered from an inference — if the record
+                did not say, this is silent.
+              */}
+              {outcome ? (
+                <p
+                  className={cn(
+                    "mt-1.5 text-[12px] leading-relaxed",
+                    approvedWithoutAttestation(row)
+                      ? "text-amber-800 dark:text-amber-300"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {outcome}
+                </p>
+              ) : null}
+
+              {/* The server's own note, when it added one beyond the outcome sentence. */}
+              {row.attestationNote && row.attestationNote !== outcome ? (
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                  {row.attestationNote}
+                </p>
+              ) : null}
 
               {/* 🚨 A failure shows at ANY health, in words. */}
               {words ? (
