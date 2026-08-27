@@ -265,6 +265,12 @@ async function callHrWrite(
 export function fetchHrContext(
   organizationId?: string | null,
 ): Promise<HrResult<HrMyContext>> {
+  // verified aligned 2026-08-27 — the door was called live against the sandbox
+  // employer with real rows and its top-level keys were SET-COMPARED with the
+  // declared type in both directions (declared-but-absent, present-but-undeclared).
+  // Wire: {active, as_of, employers}. Exact match.
+  // Nested `active` also carries `employer_profile_id`, which `HrActiveEmployer` does
+  // not declare — present-but-undeclared, so unreadable rather than wrong.
   return callHrAligned<HrMyContext>(
     "hr_my_context",
     { p_organization_id: organizationId ?? null },
@@ -284,6 +290,13 @@ export function fetchHrDirectory(args: {
   sort?: HrDirectorySort;
   direction?: "asc" | "desc";
 }): Promise<HrResult<HrDirectoryPage>> {
+  // verified aligned 2026-08-27 — the door was called live against the sandbox
+  // employer with real rows and its top-level keys were SET-COMPARED with the
+  // declared type in both directions (declared-but-absent, present-but-undeclared).
+  // Wire: {as_of, capabilities, columns, limit, offset, persona, rows, total}. Exact
+  // match, and `HrDirectoryRow` matched its 23 row keys in both directions.
+  // NOTE this door IS offset-paged — unlike the audited list doors, whose fifth
+  // argument is `p_cursor`. `p_offset` is correct here and only here.
   return callHrAligned<HrDirectoryPage>(
     "hr_directory_list",
     {
@@ -306,6 +319,11 @@ export function fetchHrOrgChart(args: {
   organizationId: string;
   on?: string | null;
 }): Promise<HrResult<HrOrgChart>> {
+  // verified aligned 2026-08-27 — the door was called live against the sandbox
+  // employer with real rows and its top-level keys were SET-COMPARED with the
+  // declared type in both directions (declared-but-absent, present-but-undeclared).
+  // Wire: {as_of, cycles, dotted_lines, earliest_known_on, history_available, nodes,
+  // persona, requested_on, unplaced}. Exact match; `HrOrgChartNode` matched too.
   return callHrAligned<HrOrgChart>(
     "hr_org_chart",
     { p_organization_id: args.organizationId, p_on: args.on ?? null },
@@ -323,6 +341,15 @@ export function fetchHrEmployeeProfile(args: {
   employeeId: string;
   asOf?: string | null;
 }): Promise<HrResult<HrEmployeeProfile>> {
+  // verified aligned 2026-08-27 — the door was called live against the sandbox
+  // employer with real rows and its top-level keys were SET-COMPARED with the
+  // declared type in both directions (declared-but-absent, present-but-undeclared).
+  // Wire: {as_of, capabilities, comp_visibility, granted, header, organization_id,
+  // personal, tabs, viewer, worker_class_machinery}; `granted` is stripped by the
+  // envelope. `HrProfileHeader` matched its 24 keys in both directions.
+  // `personal.private_state` is correctly OPTIONAL: the door emits it only when there
+  // is no `hr.employee_private` row ('not_collected'), so its absence is meaningful
+  // and a required declaration would have been the lie.
   return callHrAligned<HrEmployeeProfile>(
     "hr_employee_profile",
     { p_employee_id: args.employeeId, p_as_of: args.asOf ?? null },
@@ -334,6 +361,11 @@ export function fetchHrEmployeeProfile(args: {
 export function fetchHrEmploymentHistory(
   employeeId: string,
 ): Promise<HrResult<HrEmploymentHistory>> {
+  // verified aligned 2026-08-27 — the door was called live against the sandbox
+  // employer with real rows and its top-level keys were SET-COMPARED with the
+  // declared type in both directions (declared-but-absent, present-but-undeclared).
+  // Wire: {assignments, engagements, external_identities, reporting_lines, spells}
+  // plus `granted`, which the envelope strips. Exact match.
   return callHrAligned<HrEmploymentHistory>(
     "hr_employment_history",
     { p_employee_id: employeeId },
@@ -345,6 +377,12 @@ export function fetchHrEmploymentHistory(
 export function fetchHrPendingChanges(
   employmentId: string,
 ): Promise<HrResult<HrPendingChanges>> {
+  // verified aligned 2026-08-27 — the door was called live against the sandbox
+  // employer with real rows and its top-level keys were SET-COMPARED with the
+  // declared type in both directions (declared-but-absent, present-but-undeclared).
+  // Wire: {compensation, in_flight, positions, reporting_lines} plus `granted`, which
+  // the envelope strips. Exact match. A subject with no live employment answers the
+  // read dialect's {granted:false, reason} and becomes a refusal, not an empty panel.
   return callHrAligned<HrPendingChanges>(
     "hr_pending_changes",
     { p_employment_id: employmentId },
@@ -356,6 +394,11 @@ export function fetchHrPendingChanges(
 export function fetchHrStructure(
   organizationId: string,
 ): Promise<HrResult<HrStructure>> {
+  // verified aligned 2026-08-27 — the door was called live against the sandbox
+  // employer with real rows and its top-level keys were SET-COMPARED with the
+  // declared type in both directions (declared-but-absent, present-but-undeclared).
+  // Wire carries `employer_profile_id` and `tax_registrations`, which this type did NOT
+  // declare until today — see `HrStructure`. Everything else matched.
   return callHrAligned<HrStructure>(
     "hr_structure_list",
     { p_organization_id: organizationId },
@@ -372,6 +415,11 @@ export function fetchHrKnobs(args: {
   organizationId: string;
   overriddenOnly?: boolean;
 }): Promise<HrResult<HrKnobIndex>> {
+  // verified aligned 2026-08-27 — the door was called live against the sandbox
+  // employer with real rows and its top-level keys were SET-COMPARED with the
+  // declared type in both directions (declared-but-absent, present-but-undeclared).
+  // Wire: {keys, organization_id}. Exact match, and every one of the 21 key fields
+  // matched the declared shape.
   return callHrAligned<HrKnobIndex>(
     "hr_knob_index",
     {

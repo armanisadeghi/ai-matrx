@@ -520,6 +520,13 @@ export type HrJobTitle = {
 
 export type HrStructure = {
   is_admin: boolean;
+  /**
+   * Verified live 2026-08-27: the door builds this and this type did not declare
+   * it. Unreadable rather than wrong — but its absence is what sent route 68 on an
+   * audited confidential list call just to learn the id of the profile it was
+   * editing (RECORDED DECISION 28, in the server lane's own words).
+   */
+  employer_profile_id: string | null;
   departments: HrDepartment[];
   locations: HrLocation[];
   job_titles: HrJobTitle[];
