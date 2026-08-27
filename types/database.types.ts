@@ -42984,6 +42984,10 @@ export type Database = {
       }
       _wf_join: { Args: { p_instance: string }; Returns: Json }
       _wf_login_of: { Args: { p_employment_id: string }; Returns: string }
+      _wf_not_attested: {
+        Args: { p_actor?: string; p_note?: string; p_step: string }
+        Returns: Json
+      }
       _wf_notify: {
         Args: {
           p_employment: string
