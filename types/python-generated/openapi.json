@@ -77817,6 +77817,17 @@
             ],
             "title": "Jurisdiction Key"
           },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
           "message": {
             "type": "string",
             "title": "Message"

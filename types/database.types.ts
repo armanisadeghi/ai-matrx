@@ -42620,6 +42620,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _dst_transition: {
+        Args: { p_from: string; p_to: string; p_tz: string }
+        Returns: Json
+      }
       _earning_code_id: {
         Args: { p_code: string; p_organization_id: string }
         Returns: string
@@ -42648,12 +42652,22 @@ export type Database = {
         }
         Returns: Json
       }
+      _hours_text: { Args: { p_hours: number }; Returns: string }
       _hr_knob: {
         Args: {
           p_default: Json
           p_feature: string
           p_key: string
           p_organization_id: string
+        }
+        Returns: Json
+      }
+      _interval_time_facts: {
+        Args: {
+          p_ended: string
+          p_local_work_date: string
+          p_started: string
+          p_tz: string
         }
         Returns: Json
       }
@@ -42944,6 +42958,7 @@ export type Database = {
         }
         Returns: string
       }
+      _rules_evidence: { Args: { p_ids: string[] }; Returns: Json }
       _run_fixture_probe: {
         Args: { p_input: Json; p_probe: string }
         Returns: Json
@@ -43091,6 +43106,10 @@ export type Database = {
       _wf_unproject_step: {
         Args: { p_outcome?: string; p_step: string }
         Returns: number
+      }
+      _workweek_dst: {
+        Args: { p_end: string; p_start: string; p_tz: string }
+        Returns: Json
       }
       access_audit_page: {
         Args: {

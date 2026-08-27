@@ -179,8 +179,25 @@ export type OvertimePreapprovalState =
  * `ruleVersionIds`, `engineKey`, `engineVersion` and `calc` is an **unfinished surface**
  * (SPEC-TIME §0 law 2). Every OT, DT and premium figure on screen is a door that opens this.
  */
+/**
+ * One rule version as the SERVER resolves it for a snapshot (`calc_ref.rules`).
+ *
+ * 🚨 `status` may be `superseded`, and that is DISCLOSED rather than filtered out. A snapshot cites
+ * the rule **as it stood when the figure was computed**; hiding a superseded row would leave a
+ * reader believing they are looking at today's law. Render the qualifier whenever it is present.
+ */
+export interface CalcRuleEvidence {
+  id: string;
+  name: string | null;
+  jurisdictionKey: string | null;
+  status: string | null;
+  thresholds: Record<string, unknown>;
+}
+
 export interface CalcBlock {
   ruleVersionIds: string[];
+  /** The named law behind the figure. Empty on snapshots written before the door served it. */
+  rules?: CalcRuleEvidence[];
   engineKey: string | null;
   engineVersion: string | null;
   computedAt: string | null;
@@ -514,6 +531,19 @@ export interface WorkIntervalRow {
    * *"Recorded 7:58–4:03. Paid 8:00–4:00. +1 minute."* An employee attesting to hours they cannot
    * see the derivation of is attesting to nothing.
    */
+  /**
+   * 🚨 THE SERVER'S OWN ZONE FACTS (§9 rules 3, 4 and 7 — *"the renderer reads them; it never
+   * re-derives them from arithmetic"*). `dst.sentence` is composed by the engine from the stored
+   * span, so it can state the wall-clock length AND the measured length; a client cannot.
+   */
+  timeFacts?: {
+    crossesMidnight: boolean;
+    continuesIntoDate: string | null;
+    elapsedHours?: number;
+    wallClockHours?: number;
+    dst: { direction?: string; atLocal?: string; sentence: string } | null;
+  } | null;
+
   roundingAppliedMinutes: number;
   rawStartedAt: string | null;
   rawEndedAt: string | null;

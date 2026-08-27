@@ -30265,6 +30265,8 @@ export interface components {
             rule_id?: string | null;
             /** Jurisdiction Key */
             jurisdiction_key?: string | null;
+            /** Key */
+            key?: string | null;
             /** Message */
             message: string;
         };
