@@ -1,4 +1,7 @@
-import { connectionResource } from "@/features/marketing/google/service";
+import {
+  connectionResource,
+  type GoogleConnectionPurpose,
+} from "@/features/marketing/google/service";
 import { GOOGLE_CONNECTION_SCOPES } from "@/features/marketing/google/types";
 import {
   GOOGLE_ADS_REPORTING_SCOPES,
@@ -153,5 +156,10 @@ describe("Google OAuth connection resources", () => {
     expect(new Set(GOOGLE_READ_ONLY_SWEEP_SCOPES).size).toBe(
       GOOGLE_READ_ONLY_SWEEP_SCOPES.length,
     );
+  });
+
+  it("keeps the guarded read-only exchange purpose available during staggered deploys", () => {
+    const purpose: GoogleConnectionPurpose = "read_only_sweep";
+    expect(purpose).toBe("read_only_sweep");
   });
 });

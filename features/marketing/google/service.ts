@@ -15,11 +15,14 @@ import type {
   YouTubeAnalyticsPreview,
 } from "@/features/marketing/google/types";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
-import type { components } from "@/types/python-generated/api-types";
-
-export type GoogleConnectionPurpose = NonNullable<
-  components["schemas"]["GoogleExchangeRequest"]["connection_purpose"]
->;
+// Keep this small exchange control local rather than deriving it from the
+// deployed OpenAPI snapshot: the frontend and backend deploy independently,
+// and a newly added fail-closed purpose must be usable as soon as both source
+// commits exist even while production type synchronization catches up.
+export type GoogleConnectionPurpose =
+  | "general"
+  | "google_ads_isolated"
+  | "read_only_sweep";
 
 // `credential_item_id` / `vault_secret_key` are REFERENCES, never secrets (a
 // vault item id and a key name). Reading them is what lets the UI tell the

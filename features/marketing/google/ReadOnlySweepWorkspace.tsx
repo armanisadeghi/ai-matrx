@@ -164,6 +164,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
       const result = await connect.mutateAsync({
         code,
         owner: { type: "user" },
+        connectionPurpose: "read_only_sweep",
       });
       setSelectedConnections(
         Object.fromEntries(
