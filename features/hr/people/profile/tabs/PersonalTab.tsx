@@ -41,6 +41,7 @@ import type {
 } from "../../../types";
 import { formatFullDate } from "../../shared/HrStatusChip";
 import { MoreSection } from "../MoreSection";
+import { PlatformAccessSection } from "../PlatformAccessSection";
 
 // ── Field specs — data, so they can be reordered and reused ─────────────────
 
@@ -160,6 +161,13 @@ export function PersonalTab({
           <HomeAddress priv={priv} />
         </section>
       ) : null}
+
+      {/*
+        Platform access — the only place an employee can be offered a login.
+        It renders itself away entirely for a viewer the server did not send
+        `login_user_id` to, so §1.3's absence is decided on the wire, not here.
+      */}
+      <PlatformAccessSection profile={profile} />
 
       {/* Custom fields go BELOW the built-ins, never interleaved (§7.4). */}
       <MoreSection custom={personal.custom ?? null} tabLabel="Personal" />
