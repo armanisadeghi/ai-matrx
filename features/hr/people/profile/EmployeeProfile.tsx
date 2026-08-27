@@ -134,6 +134,7 @@ export function EmployeeProfile({
           tab={tab}
           org={orgRef}
           assignmentParam={assignmentParam}
+          onChanged={refresh}
         />
       ) : null}
     </HrPageState>
@@ -146,12 +147,15 @@ function ProfileBody({
   tab,
   org,
   assignmentParam,
+  onChanged,
 }: {
   profile: HrEmployeeProfileData;
   employeeId: string;
   tab: string;
   org: string | null;
   assignmentParam?: string | null;
+  /** Re-read the profile after a self-service write, so the panel shows stored truth. */
+  onChanged: () => void;
 }) {
   // 🚨 A TAB THE SERVER DID NOT SEND IS NOT RENDERED. Somebody who types
   // `/hr/people/<id>/compensation` when they may not see compensation gets the
@@ -181,6 +185,7 @@ function ProfileBody({
             tab={tab}
             org={org}
             assignmentParam={assignmentParam}
+            onChanged={onChanged}
           />
         )}
       </div>
@@ -193,13 +198,16 @@ function TabBody({
   tab,
   org,
   assignmentParam,
+  onChanged,
 }: {
   profile: HrEmployeeProfileData;
   tab: string;
   org: string | null;
   assignmentParam?: string | null;
+  onChanged: () => void;
 }) {
-  if (tab === "personal") return <PersonalTab profile={profile} />;
+  if (tab === "personal")
+    return <PersonalTab profile={profile} onChanged={onChanged} />;
   if (tab === "job") {
     return (
       <JobTab profile={profile} org={org} assignmentParam={assignmentParam} />

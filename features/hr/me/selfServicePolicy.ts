@@ -133,20 +133,46 @@ export function isSelfUpdateRefusal(
   return record.ok === false && record.reason === "fields_not_self_writable";
 }
 
-/** What `hr_self_update` returns when it accepted (some of) the patch. */
+/**
+ * What `hr_self_update` returns when it accepted (some of) the patch.
+ *
+ * 🚨 `applied` AND `requested` ARE OBJECTS KEYED BY FIELD, NOT ARRAYS OF NAMES.
+ * They were declared as `string[]` and never checked against the door, so
+ * `isSelfUpdateAck` demanded `Array.isArray(applied)` and answered false on every
+ * SUCCESSFUL save — and the hook then told the person *"The change came back in a
+ * shape this app does not understand"* about a change that had just been written
+ * and audited. Verified against the live envelope, which is:
+ *
+ *     {"ok": true, "applied": {"directory_opt_out": true},
+ *      "requested": {}, "requests": [], "audit_id": "…"}
+ *
+ * The server sends the VALUES as well as the names because the split is per key —
+ * `v_free` and `v_req` are the two halves of the patch it actually acted on. The
+ * field names are the keys, which is what every message here needs.
+ */
 export type HrSelfUpdateAck = {
   ok: true;
-  /** Field keys written immediately (the `free` half). */
-  applied: string[];
-  /** Field keys that became requests instead (the `request_approval` half). */
-  requested: string[];
-  requests: { instance_id: string; flow_key: string; fields: string[] }[];
+  /** Field → value, written immediately (the `free`/`self_free` half). */
+  applied: Record<string, unknown>;
+  /** Field → value, turned into requests instead (the `request_approval` half). */
+  requested: Record<string, unknown>;
+  requests: { action_type: string; instance: unknown }[];
+  audit_id?: string | null;
 };
 
+/** The field names out of either half, in the order the server sent them. */
+export function selfUpdateFields(half: Record<string, unknown> | undefined): string[] {
+  return half ? Object.keys(half) : [];
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === "object" && !Array.isArray(value);
+}
+
 export function isSelfUpdateAck(value: unknown): value is HrSelfUpdateAck {
-  if (!value || typeof value !== "object") return false;
-  const record = value as Record<string, unknown>;
-  return record.ok === true && Array.isArray(record.applied);
+  if (!isPlainObject(value)) return false;
+  // `applied` is an object; an ARRAY here is the old wrong shape and must not pass.
+  return value.ok === true && isPlainObject(value.applied);
 }
 
 /** Turn `home_address` into "Home address" for a sentence a person reads. */

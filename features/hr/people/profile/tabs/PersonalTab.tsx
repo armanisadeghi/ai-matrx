@@ -42,6 +42,8 @@ import type {
 } from "../../../types";
 import { formatFullDate } from "../../shared/HrStatusChip";
 import { SsnField } from "../../identity/SsnField";
+import { SelfServiceToggle } from "@/features/hr/me/SelfServiceToggle";
+import { useSelfUpdate } from "@/features/hr/me/useSelfUpdate";
 import { MoreSection } from "../MoreSection";
 import { PlatformAccessSection } from "../PlatformAccessSection";
 
@@ -103,13 +105,27 @@ function daysUntil(iso: unknown): number | null {
 
 export function PersonalTab({
   profile,
+  onChanged,
   className,
 }: {
   profile: HrEmployeeProfile;
+  /** Re-read after a self-service write, so the panel shows stored truth. */
+  onChanged?: () => void;
   className?: string;
 }) {
   const personal = profile.personal;
   const priv = personal.private ?? null;
+
+  /*
+    🚨 SELF-SERVICE IS THE SAME PROFILE, NOT A SECOND SURFACE. `/hr/me` renders this
+    very component with `viewer === "self"` — there is no separate "my profile"
+    implementation, and the moment there were two they would drift.
+  */
+  const isSelf = profile.viewer === "self";
+  const selfUpdate = useSelfUpdate({
+    employeeId: profile.header.employee_id,
+    onApplied: () => onChanged?.(),
+  });
 
   const expiryDays = daysUntil(priv?.work_authorization_expires_on);
   const expiringSoon = expiryDays !== null && expiryDays <= 90;
@@ -197,6 +213,44 @@ export function PersonalTab({
         `login_user_id` to, so §1.3's absence is decided on the wire, not here.
       */}
       <PlatformAccessSection profile={profile} />
+
+      {/*
+        🚨 THE PRIVACY SWITCH IS THE PERSON'S OWN, AND ONLY THEIRS.
+        `hr.field_policy` seeds `hr_employee.directory_opt_out` as `self_free` at the
+        platform level, which `hr_self_update` applies immediately — no approval, no
+        HR in the loop. That is the point: hiding yourself from a staff directory is
+        not a request you should have to make to anybody.
+
+        It is offered on `viewer === "self"` only. HR can SEE the flag (the field is
+        on the wire for every viewer) but does not get a control here, because §7's
+        self-service model gives this switch to the subject; an HR admin flipping
+        somebody's privacy preference from their profile page is not a thing this
+        surface should make easy.
+      */}
+      {isSelf ? (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">Privacy</h3>
+          <SelfServiceToggle
+            field="directory_opt_out"
+            label="Hide me from the staff directory"
+            /*
+              🚨 THIS SENTENCE PROMISES ONLY WHAT THE SERVER ACTUALLY DOES.
+              It said "the directory or the org chart" until it was tested:
+              `hr_directory_list` filters on `directory_opt_out`, and
+              `hr_org_chart` does not mention the column at all — verified live,
+              where a peer's directory dropped from 10 people to 9 while the org
+              chart still showed her. Whether the chart SHOULD suppress is a real
+              question (she has two direct reports, and hiding a manager leaves
+              them dangling), and it is open on the register — but a privacy
+              control must never claim a protection that is not there.
+            */
+            description="Colleagues will not find you in the staff directory. HR, your manager and anyone who needs your record for work still see you — this hides you from browsing, not from your employer."
+            value={personal.directory_opt_out === true}
+            saving={selfUpdate.saving}
+            onSave={(field, next) => selfUpdate.save(field, next)}
+          />
+        </section>
+      ) : null}
 
       {/* Custom fields go BELOW the built-ins, never interleaved (§7.4). */}
       <MoreSection custom={personal.custom ?? null} tabLabel="Personal" />

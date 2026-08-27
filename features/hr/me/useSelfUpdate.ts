@@ -27,6 +27,7 @@ import {
   humanFieldName,
   isSelfUpdateAck,
   isSelfUpdateRefusal,
+  selfUpdateFields,
 } from "./selfServicePolicy";
 
 export type HrSelfUpdateState = {
@@ -98,8 +99,10 @@ export function useSelfUpdate(args: {
       setRejected([]);
 
       if (isSelfUpdateAck(payload)) {
-        const applied = payload.applied ?? [];
-        const requested = payload.requested ?? [];
+        // The names, out of the keys — see `HrSelfUpdateAck` for why these are
+        // objects and not arrays.
+        const applied = selfUpdateFields(payload.applied);
+        const requested = selfUpdateFields(payload.requested);
 
         // A partial result said out loud, both halves named.
         if (applied.length > 0 && requested.length > 0) {
