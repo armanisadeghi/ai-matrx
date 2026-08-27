@@ -2,9 +2,9 @@
 
 /**
  * The mermaid engine singleton — the ONLY module that imports `mermaid` or
- * `@mermaid-js/layout-elk`. Both load dynamically so they never enter the
- * initial bundle; call preloadMermaid() the moment a mermaid block appears
- * so the chunk download races the stream.
+ * `@mermaid-js/layout-elk`. Mermaid loads dynamically so it never enters the
+ * initial bundle; the optional 15 MB-on-disk ELK plugin loads only when the
+ * user actually selects ELK. Default Dagre diagrams must never pay for it.
  *
  * mermaid's config is GLOBAL and `render` is async, so all renders are
  * serialized through one promise chain and the config is re-initialized only
@@ -26,10 +26,14 @@ console.log(
 type MermaidModule = (typeof import("mermaid"))["default"];
 
 let mermaidPromise: Promise<MermaidModule> | null = null;
+let elkPromise: Promise<boolean> | null = null;
 let elkRegistered = false;
 let lastConfigKey = "";
 let renderChain: Promise<unknown> = Promise.resolve();
 let idCounter = 0;
+const MAX_RENDER_CACHE_ENTRIES = 12;
+const renderCache = new Map<string, { svg: string }>();
+const inFlightRenders = new Map<string, Promise<{ svg: string }>>();
 
 function baseConfig(): MermaidConfig {
   return {
@@ -45,34 +49,33 @@ function baseConfig(): MermaidConfig {
 async function getMermaid(): Promise<MermaidModule> {
   if (!mermaidPromise) {
     mermaidPromise = (async () => {
-      const [{ default: mermaid }, elk] = await Promise.all([
-        import("mermaid"),
-        import("@mermaid-js/layout-elk").catch((err) => {
-          // ELK is an enhancement — dagre still works without it. Loud, not fatal.
-          console.warn(
-            "[MermaidRuntime] ELK layout plugin failed to load; dagre only",
-            err,
-          );
-          return null;
-        }),
-      ]);
-      if (elk?.default) {
-        try {
-          mermaid.registerLayoutLoaders(elk.default);
-          elkRegistered = true;
-        } catch (err) {
-          console.warn(
-            "[MermaidRuntime] registerLayoutLoaders(elk) failed; dagre only",
-            err,
-          );
-        }
-      }
+      const { default: mermaid } = await import("mermaid");
       mermaid.initialize(baseConfig());
       lastConfigKey = "";
       return mermaid;
     })();
   }
   return mermaidPromise;
+}
+
+async function ensureElk(mermaid: MermaidModule): Promise<boolean> {
+  if (elkRegistered) return true;
+  if (!elkPromise) {
+    elkPromise = import("@mermaid-js/layout-elk")
+      .then((elk) => {
+        mermaid.registerLayoutLoaders(elk.default);
+        elkRegistered = true;
+        return true;
+      })
+      .catch((err) => {
+        console.warn(
+          "[MermaidRuntime] ELK layout plugin failed to load; dagre only",
+          err,
+        );
+        return false;
+      });
+  }
+  return elkPromise;
 }
 
 /** Fire-and-forget warmup — call when a mermaid block mounts mid-stream. */
@@ -109,14 +112,16 @@ export async function validateMermaid(
   }
 }
 
-function applyOptions(
+async function applyOptions(
   mermaid: MermaidModule,
   opts: MermaidRenderOptions,
-): void {
-  const key = renderOptionsKey(opts);
-  if (key === lastConfigKey) return;
+): Promise<void> {
   const layout =
-    opts.layout === "elk" && !elkRegistered ? "dagre" : opts.layout;
+    opts.layout === "elk" && !(await ensureElk(mermaid))
+      ? "dagre"
+      : opts.layout;
+  const key = renderOptionsKey({ ...opts, layout });
+  if (key === lastConfigKey) return;
   mermaid.initialize({
     ...baseConfig(),
     theme: opts.theme,
@@ -131,7 +136,7 @@ async function doRender(
   opts: MermaidRenderOptions,
 ): Promise<{ svg: string }> {
   const mermaid = await getMermaid();
-  applyOptions(mermaid, opts);
+  await applyOptions(mermaid, opts);
   const id = `mmd-${++idCounter}`;
   try {
     const { svg } = await mermaid.render(id, source);
@@ -154,7 +159,32 @@ export function renderMermaid(
   source: string,
   opts: MermaidRenderOptions,
 ): Promise<{ svg: string }> {
-  const task = renderChain.then(() => doRender(source, opts));
+  const cacheKey = `${renderOptionsKey(opts)}\u0000${source}`;
+  const cached = renderCache.get(cacheKey);
+  if (cached) {
+    // Refresh insertion order so the bounded cache behaves as an LRU.
+    renderCache.delete(cacheKey);
+    renderCache.set(cacheKey, cached);
+    return Promise.resolve(cached);
+  }
+  const inFlight = inFlightRenders.get(cacheKey);
+  if (inFlight) return inFlight;
+
+  const task = renderChain
+    .then(() => doRender(source, opts))
+    .then((result) => {
+      renderCache.set(cacheKey, result);
+      while (renderCache.size > MAX_RENDER_CACHE_ENTRIES) {
+        const oldestKey = renderCache.keys().next().value;
+        if (oldestKey === undefined) break;
+        renderCache.delete(oldestKey);
+      }
+      return result;
+    })
+    .finally(() => {
+      inFlightRenders.delete(cacheKey);
+    });
+  inFlightRenders.set(cacheKey, task);
   renderChain = task.catch(() => {});
   return task;
 }

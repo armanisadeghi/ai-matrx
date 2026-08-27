@@ -17,7 +17,7 @@ import { MermaidOpError, type MermaidOp } from "../model/ops";
 import { parseWithFidelityGate } from "../model/round-trip";
 import type { MermaidDoc, ParseOutcome } from "../model/types";
 
-export type WorkbenchMode = "visual" | "outline" | "code";
+export type WorkbenchMode = "view" | "visual" | "outline" | "code";
 
 export interface EditorSelection {
   kind: "node" | "edge";
@@ -150,16 +150,17 @@ export function useMermaidEditor(initialSource: string, initialMode?: WorkbenchM
     initialSource,
     (source): MermaidEditorState => {
       const derived = derive(source);
-      // Non-technical users land in the friendliest mode that actually works
-      // for this document; advanced syntax lands in code mode honestly.
-      const structuralOk = derived.outcome?.status === "ok";
       return {
         source,
         ...derived,
         baselineSource: source,
         undoStack: [],
         redoStack: [],
-        mode: initialMode ?? (structuralOk ? "visual" : "code"),
+        // Opening an artifact is LOOKING at it, not editing it. Every other
+        // mode is an editor, and `code` (the old non-structural fallback) put
+        // source beside the diagram — so a diagram the structural adapter
+        // can't parse used to open as a split code editor. View is the floor.
+        mode: initialMode ?? "view",
         selection: null,
       };
     },

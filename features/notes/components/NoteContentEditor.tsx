@@ -447,8 +447,8 @@ export function NoteContentEditor({
   }, [dispatch, noteId, localContent]);
 
   const handleDuplicate = useCallback(() => {
-    dispatch(copyNote(noteId));
-  }, [dispatch, noteId]);
+    dispatch(copyNote({ noteId, instanceId }));
+  }, [dispatch, instanceId, noteId]);
 
   const handleExport = useCallback(() => {
     const blob = new Blob([localContent], { type: "text/markdown" });
@@ -586,7 +586,9 @@ export function NoteContentEditor({
     return {
       note_content: (value: unknown) => {
         if (typeof value !== "string")
-          throw new Error("note_content expects a string (the full note body).");
+          throw new Error(
+            "note_content expects a string (the full note body).",
+          );
         handleChangeFlush(value);
       },
       append_to_note: (value: unknown) => {
@@ -803,137 +805,137 @@ export function NoteContentEditor({
           this provider (null while read-only / access loading — the Detach
           chrome then simply doesn't render). */}
       <UnbindSurfaceContext.Provider value={unbindSurface}>
-      <EditableContextMenu
-        {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
-        extraSections={notesExtras}
-        getTextarea={() => textareaRef.current}
-        getApplicationScope={getApplicationScope}
-        // Note-typed content source so the rich-document Export / Convert
-        // actions (HTML preview save-back, Convert→Task linking) resolve the
-        // note adapter instead of the save-less `raw` default (D33). Held to
-        // raw while access is loading or read-only — a Save that RLS would
-        // reject must not render, not even transiently.
-        contentSource={
-          access.loading || readOnly
-            ? undefined
-            : ({ type: "note", noteId } satisfies ContentSource)
-        }
-        contextData={surfaceContextData}
-        onTextReplace={handleChangeFlush}
-        onTextInsertBefore={(t) => insertAtCursor(t, "before")}
-        onTextInsertAfter={(t) => insertAtCursor(t, "after")}
-        onContentInserted={() => {}}
-        onUndo={undo}
-        onRedo={redo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        undoHint={undoHint}
-        redoHint={redoHint}
-      >
-        <div
-          className="flex-1 flex flex-col min-h-0 min-w-0"
-          data-surface-value="current_note"
+        <EditableContextMenu
+          {...NOTES_EDITOR_CONTEXT_MENU_PROPS}
+          extraSections={notesExtras}
+          getTextarea={() => textareaRef.current}
+          getApplicationScope={getApplicationScope}
+          // Note-typed content source so the rich-document Export / Convert
+          // actions (HTML preview save-back, Convert→Task linking) resolve the
+          // note adapter instead of the save-less `raw` default (D33). Held to
+          // raw while access is loading or read-only — a Save that RLS would
+          // reject must not render, not even transiently.
+          contentSource={
+            access.loading || readOnly
+              ? undefined
+              : ({ type: "note", noteId } satisfies ContentSource)
+          }
+          contextData={surfaceContextData}
+          onTextReplace={handleChangeFlush}
+          onTextInsertBefore={(t) => insertAtCursor(t, "before")}
+          onTextInsertAfter={(t) => insertAtCursor(t, "after")}
+          onContentInserted={() => {}}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+          undoHint={undoHint}
+          redoHint={redoHint}
         >
-          {readOnly && (
-            <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
-              <Eye className="w-3.5 h-3.5 shrink-0" />
-              <span className="text-xs truncate">
-                Read-only — shared with view access
-                {access.ownerEmail ? ` by ${access.ownerEmail}` : ""}. Your
-                edits here can't be saved.
-              </span>
-              <button
-                type="button"
-                onClick={handleDuplicate}
-                className="ml-auto shrink-0 rounded px-2 py-0.5 text-xs font-medium text-amber-700 hover:bg-amber-500/15 dark:text-amber-400 transition-colors cursor-pointer"
-                title="Create your own editable copy of this note"
-              >
-                Duplicate to edit
-              </button>
-            </div>
-          )}
-          {/* Loud recovery, in priority order: work that is failing to save
+          <div
+            className="flex-1 flex flex-col min-h-0 min-w-0"
+            data-surface-value="current_note"
+          >
+            {readOnly && (
+              <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 border-b border-border/40 bg-amber-500/10 text-amber-700 dark:text-amber-400">
+                <Eye className="w-3.5 h-3.5 shrink-0" />
+                <span className="text-xs truncate">
+                  Read-only — shared with view access
+                  {access.ownerEmail ? ` by ${access.ownerEmail}` : ""}. Your
+                  edits here can't be saved.
+                </span>
+                <button
+                  type="button"
+                  onClick={handleDuplicate}
+                  className="ml-auto shrink-0 rounded px-2 py-0.5 text-xs font-medium text-amber-700 hover:bg-amber-500/15 dark:text-amber-400 transition-colors cursor-pointer"
+                  title="Create your own editable copy of this note"
+                >
+                  Duplicate to edit
+                </button>
+              </div>
+            )}
+            {/* Loud recovery, in priority order: work that is failing to save
               blocks first, then work we already rescued into a local draft. */}
-          <NoteSaveFailureBanner noteId={noteId} />
-          {!readOnly && (
-            <NoteDraftRecoveryBanner
-              noteId={noteId}
-              onRestore={handleChangeFlush}
-            />
-          )}
-          {findReplaceState?.isOpen && (
-            <FindReplaceBar noteId={noteId} textareaRef={textareaRef} />
-          )}
-          <NoteEditorCore
-            content={localContent}
-            onChange={handleChange}
-            onChangeFlush={handleChangeFlush}
-            readOnly={readOnly}
-            editorMode={
-              // TUI modes have no read-only support — degrade to preview.
-              readOnly &&
-              (editorMode === "wysiwyg" || editorMode === "markdown-split")
-                ? "preview"
-                : editorMode
-            }
-            textareaRef={textareaRef}
-            surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
-            getApplicationScope={getApplicationScope}
-            showVoiceButton={editorMode !== "preview" && !readOnly}
-            placeholder="Start typing..."
-            className="flex-1 min-h-0"
-            resetKey={`${noteId}:${resetGen}`}
-            noteId={noteId}
-            actionsSurfaceId={actionsSurfaceId}
-            largeScrollbar={!embedded}
-            embedded={embedded}
-            enableTextStats={false}
-            findOverlay={
-              editorMode === "plain" || editorMode === "split" ? (
-                <>
-                  {findReplaceState?.isOpen && (
-                    // Keyed by editorMode so the overlay remounts cleanly when
-                    // the user toggles plain↔split — a fresh mount re-scrolls
-                    // the active match into view instead of leaving it stranded.
-                    <NoteFindMatchOverlayRedux
-                      key={editorMode}
-                      instanceId={instanceId}
-                      noteId={noteId}
-                      textareaRef={textareaRef}
-                      content={localContent}
-                    />
-                  )}
-                  {recentChange && (
-                    <RecentChangeOverlay
-                      textareaRef={textareaRef}
-                      content={localContent}
-                      range={recentChange.range}
-                      flashKey={recentChange.flashKey}
-                      editorLabel={
-                        noteEditor ? editorDisplayName(noteEditor) : null
-                      }
-                    />
-                  )}
-                </>
-              ) : null
-            }
-            previewContainerRef={previewContainerRef}
-          />
-          {findReplaceState?.isOpen &&
-            (editorMode === "split" || editorMode === "preview") && (
-              // Keyed by editorMode so the hook remounts when switching
-              // split↔preview. The preview DOM container is a different element
-              // per mode, and a stable ref can't tell the effect its `.current`
-              // swapped — remounting forces a fresh highlight + scroll-to-active
-              // against the new container.
-              <NotePreviewFindHighlightRedux
-                key={editorMode}
-                instanceId={instanceId}
-                containerRef={previewContainerRef}
+            <NoteSaveFailureBanner noteId={noteId} />
+            {!readOnly && (
+              <NoteDraftRecoveryBanner
+                noteId={noteId}
+                onRestore={handleChangeFlush}
               />
             )}
-        </div>
-      </EditableContextMenu>
+            {findReplaceState?.isOpen && (
+              <FindReplaceBar noteId={noteId} textareaRef={textareaRef} />
+            )}
+            <NoteEditorCore
+              content={localContent}
+              onChange={handleChange}
+              onChangeFlush={handleChangeFlush}
+              readOnly={readOnly}
+              editorMode={
+                // TUI modes have no read-only support — degrade to preview.
+                readOnly &&
+                (editorMode === "wysiwyg" || editorMode === "markdown-split")
+                  ? "preview"
+                  : editorMode
+              }
+              textareaRef={textareaRef}
+              surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
+              getApplicationScope={getApplicationScope}
+              showVoiceButton={editorMode !== "preview" && !readOnly}
+              placeholder="Start typing..."
+              className="flex-1 min-h-0"
+              resetKey={`${noteId}:${resetGen}`}
+              noteId={noteId}
+              actionsSurfaceId={actionsSurfaceId}
+              largeScrollbar={!embedded}
+              embedded={embedded}
+              enableTextStats={false}
+              findOverlay={
+                editorMode === "plain" || editorMode === "split" ? (
+                  <>
+                    {findReplaceState?.isOpen && (
+                      // Keyed by editorMode so the overlay remounts cleanly when
+                      // the user toggles plain↔split — a fresh mount re-scrolls
+                      // the active match into view instead of leaving it stranded.
+                      <NoteFindMatchOverlayRedux
+                        key={editorMode}
+                        instanceId={instanceId}
+                        noteId={noteId}
+                        textareaRef={textareaRef}
+                        content={localContent}
+                      />
+                    )}
+                    {recentChange && (
+                      <RecentChangeOverlay
+                        textareaRef={textareaRef}
+                        content={localContent}
+                        range={recentChange.range}
+                        flashKey={recentChange.flashKey}
+                        editorLabel={
+                          noteEditor ? editorDisplayName(noteEditor) : null
+                        }
+                      />
+                    )}
+                  </>
+                ) : null
+              }
+              previewContainerRef={previewContainerRef}
+            />
+            {findReplaceState?.isOpen &&
+              (editorMode === "split" || editorMode === "preview") && (
+                // Keyed by editorMode so the hook remounts when switching
+                // split↔preview. The preview DOM container is a different element
+                // per mode, and a stable ref can't tell the effect its `.current`
+                // swapped — remounting forces a fresh highlight + scroll-to-active
+                // against the new container.
+                <NotePreviewFindHighlightRedux
+                  key={editorMode}
+                  instanceId={instanceId}
+                  containerRef={previewContainerRef}
+                />
+              )}
+          </div>
+        </EditableContextMenu>
       </UnbindSurfaceContext.Provider>
 
       <MoveNoteDialog

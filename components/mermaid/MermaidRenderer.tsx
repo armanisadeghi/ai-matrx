@@ -6,9 +6,9 @@
  * Behavior contract:
  *  - Streaming: debounced (300ms) validate→render attempts; failures keep the
  *    last good render on screen silently (partial text is expected to fail).
- *  - Complete: full forgiving ladder (sanitize.ts). Success renders the fixed
- *    source; failure shows a rich error card with the engine message, the
- *    fixes attempted, and the original source — never a blank hole.
+ *  - Complete: render valid source directly (Mermaid's render already parses
+ *    it), then run the forgiving ladder only after a failure. This avoids the
+ *    former double-parse cost on every valid diagram.
  *  - The original source is never mutated; fixes affect only what renders.
  */
 
@@ -37,6 +37,7 @@ import type { MermaidRenderOptions } from "./types";
 import { renderOptionsKey } from "./types";
 
 const STREAMING_DEBOUNCE_MS = 300;
+const SETTLED_DEBOUNCE_MS = 250;
 
 interface MermaidRendererProps {
   source: string;
@@ -90,6 +91,23 @@ export function MermaidRenderer({
     const timer = setTimeout(
       async () => {
         try {
+          if (!isStreamActive) {
+            let directRenderError: unknown;
+            try {
+              const { svg } = await renderMermaid(trimmed, options);
+              if (epoch !== epochRef.current) return;
+              setLastGoodSvg(svg);
+              setFailure(null);
+              return;
+            } catch (err) {
+              directRenderError = err;
+              // Invalid LLM-authored diagrams take the repair ladder below.
+              // Valid diagrams never pay for a separate parse pass.
+            }
+            const validation = await validateMermaid(trimmed);
+            if (epoch !== epochRef.current) return;
+            if (validation.ok) throw directRenderError;
+          }
           const ladder = await parseWithLadder(trimmed, validateMermaid, {
             streaming: isStreamActive,
           });
@@ -124,7 +142,7 @@ export function MermaidRenderer({
           }
         }
       },
-      isStreamActive ? STREAMING_DEBOUNCE_MS : 0,
+      isStreamActive ? STREAMING_DEBOUNCE_MS : SETTLED_DEBOUNCE_MS,
     );
     return () => clearTimeout(timer);
   }, [source, optionsKey, isStreamActive]);

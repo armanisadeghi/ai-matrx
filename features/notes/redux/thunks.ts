@@ -55,6 +55,9 @@ import {
   setListError,
   setActiveNote,
   addTab,
+  addInstanceTab,
+  setInstanceActiveTab,
+  markTabInteraction,
   setNoteField,
 } from "./slice";
 import { serverMatchesAttempt } from "../utils/saveVerification";
@@ -547,66 +550,67 @@ export const deleteNote = createAsyncThunk<void, string>(
 
 /**
  * Duplicate a note. Creates a new note with the same content, tags, folder,
- * and label + " (Copy)". Opens the copy in a new tab.
+ * and label + " (Copy)". The invoking Notes instance owns opening/focusing
+ * the returned row; this thunk must not write the retired global tab state.
  */
-export const copyNote = createAsyncThunk<Note, string>(
-  "notes/copyNote",
-  async (noteId, { dispatch, getState }) => {
-    const state = getState() as RootState;
-    const record = state.notes.notes[noteId] as NoteRecord | undefined;
-    const userId = getUserId(getState);
+export const copyNote = createAsyncThunk<
+  Note,
+  { noteId: string; instanceId: string }
+>("notes/copyNote", async ({ noteId, instanceId }, { dispatch, getState }) => {
+  const state = getState() as RootState;
+  const record = state.notes.notes[noteId] as NoteRecord | undefined;
+  const userId = getUserId(getState);
 
-    if (!record) throw new Error("Note not found in state"); // access-errors: ok — in-memory Redux store lookup; the record is verifiably absent locally
+  if (!record) throw new Error("Note not found in state"); // access-errors: ok — in-memory Redux store lookup; the record is verifiably absent locally
 
-    const copyLabel =
-      record.label.toLowerCase() === "new note"
-        ? "New Note"
-        : `${record.label} (Copy)`;
+  const copyLabel =
+    record.label.toLowerCase() === "new note"
+      ? "New Note"
+      : `${record.label} (Copy)`;
 
-    const { data, error } = await supabase
-      .schema("workbench")
-      .from("notes")
-      .insert({
-        // Canonical RLS std_insert requires created_by = auth.uid().
-        created_by: userId,
-        label: copyLabel,
-        content: record.content,
-        folder_name: record.folder_name,
-        tags: record.tags ?? [],
-        metadata: {},
-        position: 0,
-        // A duplicate is private by default — don't inherit a shared
-        // visibility, and don't fall through to the DB 'internal' default.
-        visibility: "personal",
-        // Keep the copy in the original's org — EXCEPT when duplicating a
-        // note someone shared with us: the sharee may not be a member of the
-        // owner's org and std_insert would 42501. Home their copy in their
-        // own active/personal org instead.
-        organization_id: await ensureOrgId(
-          record._sharedWithMe ? undefined : record.organization_id,
-        ),
-      })
-      .select()
-      .single();
+  const { data, error } = await supabase
+    .schema("workbench")
+    .from("notes")
+    .insert({
+      // Canonical RLS std_insert requires created_by = auth.uid().
+      created_by: userId,
+      label: copyLabel,
+      content: record.content,
+      folder_name: record.folder_name,
+      tags: record.tags ?? [],
+      metadata: {},
+      position: 0,
+      // A duplicate is private by default — don't inherit a shared
+      // visibility, and don't fall through to the DB 'internal' default.
+      visibility: "personal",
+      // Keep the copy in the original's org — EXCEPT when duplicating a
+      // note someone shared with us: the sharee may not be a member of the
+      // owner's org and std_insert would 42501. Home their copy in their
+      // own active/personal org instead.
+      organization_id: await ensureOrgId(
+        record._sharedWithMe ? undefined : record.organization_id,
+      ),
+    })
+    .select()
+    .single();
 
-    if (error) throw error;
-    if (!data) throw new Error("Failed to copy note");
+  if (error) throw error;
+  if (!data) throw new Error("Failed to copy note");
 
-    const note = data as Note;
+  const note = data as Note;
 
-    dispatch(
-      upsertNoteFromServer({
-        note,
-        fetchStatus: "full",
-      }),
-    );
+  dispatch(
+    upsertNoteFromServer({
+      note,
+      fetchStatus: "full",
+    }),
+  );
+  dispatch(markTabInteraction({ instanceId }));
+  dispatch(addInstanceTab({ instanceId, noteId: note.id }));
+  dispatch(setInstanceActiveTab({ instanceId, noteId: note.id }));
 
-    dispatch(addTab(note.id));
-    dispatch(setActiveNote(note.id));
-
-    return note;
-  },
-);
+  return note;
+});
 
 // ---------------------------------------------------------------------------
 // 7. findOrCreateEmptyNote

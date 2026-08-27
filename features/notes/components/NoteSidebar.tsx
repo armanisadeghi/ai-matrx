@@ -478,13 +478,27 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
 
   // Recent notes for "default" mode, always by updated_at desc (independent of
   // the user's sort field/order, which applies to folder groups). Fully sorted
-  // here; the render slices to `recentVisibleCount` for pagination.
+  // here; the render slices to `recentVisibleCount` for pagination. The note
+  // the user is actively working in is always first and remains visible even
+  // when the current org/scope context would otherwise filter it out. Search
+  // still filters normally — an explicit query must remain authoritative.
   const recentSorted = useMemo(() => {
     if (groupBy !== "default") return [] as NoteRecord[];
-    return [...filteredNotes].sort((a, b) =>
-      (b.updated_at ?? "").localeCompare(a.updated_at ?? ""),
-    );
-  }, [groupBy, filteredNotes]);
+    const activeNote = activeTabId
+      ? allNotes.find((note) => note.id === activeTabId)
+      : undefined;
+    const candidates =
+      !searchQuery &&
+      activeNote &&
+      !filteredNotes.some((note) => note.id === activeNote.id)
+        ? [activeNote, ...filteredNotes]
+        : filteredNotes;
+    return [...candidates].sort((a, b) => {
+      if (a.id === activeTabId) return -1;
+      if (b.id === activeTabId) return 1;
+      return (b.updated_at ?? "").localeCompare(a.updated_at ?? "");
+    });
+  }, [groupBy, filteredNotes, activeTabId, allNotes, searchQuery]);
 
   // Get group labels for display
   const getGroupLabel = useCallback(

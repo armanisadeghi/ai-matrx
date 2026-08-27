@@ -348,7 +348,7 @@ function TabStrip({
           aria-selected={activeTab === t.id}
           onClick={() => onTabChange(t.id)}
           className={cn(
-            "flex items-center gap-1 border-b border-r border-transparent px-2.5 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors",
+            "flex max-lg:min-h-11 items-center gap-1 border-b border-r border-transparent px-2.5 py-1.5 text-[10px] font-medium uppercase tracking-wider transition-colors",
             activeTab === t.id
               ? "border-r-border bg-background text-foreground"
               : "border-r-border text-muted-foreground hover:bg-accent/40",

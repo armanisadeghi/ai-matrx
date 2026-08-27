@@ -136,7 +136,9 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [contentCopied, setContentCopied] = useState(false);
   const labelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const copiedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copiedResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   // Sync Redux label → local — NEVER while the user is typing the title.
   // Auto-label (autoSaveMiddleware) and realtime merges land in Redux; if
@@ -195,7 +197,8 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   useEffect(() => {
     return () => {
       setNoteLabelEditing(noteId, false);
-      if (copiedResetTimerRef.current) clearTimeout(copiedResetTimerRef.current);
+      if (copiedResetTimerRef.current)
+        clearTimeout(copiedResetTimerRef.current);
     };
   }, [noteId]);
 
@@ -286,7 +289,8 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
       .writeText(content)
       .then(() => {
         setContentCopied(true);
-        if (copiedResetTimerRef.current) clearTimeout(copiedResetTimerRef.current);
+        if (copiedResetTimerRef.current)
+          clearTimeout(copiedResetTimerRef.current);
         copiedResetTimerRef.current = setTimeout(
           () => setContentCopied(false),
           1200,
@@ -297,13 +301,13 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   }, [content]);
 
   const handleDuplicate = useCallback(async () => {
-    const result = await dispatch(copyNote(noteId));
+    const result = await dispatch(copyNote({ noteId, instanceId }));
     if (copyNote.rejected.match(result)) {
       toast.error("Failed to duplicate note");
       return;
     }
     toast.success("Note duplicated");
-  }, [dispatch, noteId]);
+  }, [dispatch, instanceId, noteId]);
 
   const handleTranscription = useCallback(
     (text: string) => {
@@ -531,130 +535,134 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
           if (open) bumpTabInteraction();
         }}
       >
-      <div
-        draggable
-        onDragStart={(e) => {
-          bumpTabInteraction();
-          e.dataTransfer.effectAllowed = "move";
-          e.dataTransfer.setData("text/plain", noteId);
-        }}
-        className={cn(
-          "group flex items-center gap-0 h-8 px-[6px] text-[0.6875rem] font-medium whitespace-nowrap min-w-0 shrink-0 transition-colors",
-          isActive
-            ? "max-w-[340px] bg-accent/60 text-foreground"
-            : "max-w-[160px] bg-transparent text-muted-foreground hover:bg-accent/30 cursor-pointer",
-        )}
-        role="tab"
-        data-active={isActive ? "true" : undefined}
-        aria-selected={isActive}
-        onClick={handleClick}
-      >
-        {isDirty && (
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mr-1" />
-        )}
+        <div
+          draggable
+          onDragStart={(e) => {
+            bumpTabInteraction();
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", noteId);
+          }}
+          className={cn(
+            "group flex items-center gap-0 h-8 px-[6px] text-[0.6875rem] font-medium whitespace-nowrap min-w-0 shrink-0 transition-colors",
+            isActive
+              ? "max-w-[340px] bg-accent/60 text-foreground"
+              : "max-w-[160px] bg-transparent text-muted-foreground hover:bg-accent/30 cursor-pointer",
+          )}
+          role="tab"
+          data-active={isActive ? "true" : undefined}
+          aria-selected={isActive}
+          onClick={handleClick}
+        >
+          {isDirty && (
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 mr-1" />
+          )}
 
-        {isActive ? (
-          <input
-            className="bg-transparent outline-none border-none min-w-0 w-full text-[0.6875rem] font-medium text-foreground truncate cursor-text"
-            // readOnly until focus: a live (editable) text input makes the v3
-            // menu yield to the browser's native menu, which swallowed the
-            // whole tab menu on the active tab. Focus (the same single click
-            // that always started a rename) lifts readOnly, so typing works
-            // exactly as before — and while actually renaming, right-click
-            // correctly yields to the native text menu.
-            readOnly={!titleEditing}
-            value={localLabel}
-            onChange={handleTitleChange}
-            onClick={(e) => {
-              e.stopPropagation();
-              setTitleEditing(true);
-              bumpTabInteraction();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") setTitleEditing(true);
-            }}
-            onFocus={handleTitleFocus}
-            onBlur={handleTitleBlur}
-            aria-label="Note title"
-            spellCheck={false}
-          />
-        ) : (
-          <span className="overflow-hidden text-ellipsis">{label}</span>
-        )}
+          {isActive ? (
+            <input
+              className="bg-transparent outline-none border-none min-w-0 w-full text-[0.6875rem] font-medium text-foreground truncate cursor-text"
+              // readOnly until focus: a live (editable) text input makes the v3
+              // menu yield to the browser's native menu, which swallowed the
+              // whole tab menu on the active tab. Focus (the same single click
+              // that always started a rename) lifts readOnly, so typing works
+              // exactly as before — and while actually renaming, right-click
+              // correctly yields to the native text menu.
+              readOnly={!titleEditing}
+              value={localLabel}
+              onChange={handleTitleChange}
+              onClick={(e) => {
+                e.stopPropagation();
+                setTitleEditing(true);
+                bumpTabInteraction();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") setTitleEditing(true);
+              }}
+              onFocus={handleTitleFocus}
+              onBlur={handleTitleBlur}
+              aria-label="Note title"
+              spellCheck={false}
+            />
+          ) : (
+            <span className="overflow-hidden text-ellipsis">{label}</span>
+          )}
 
-        {/* Active tab action buttons: copy | share | context | mic | … */}
-        {isActive && (
-          <div
-            className="flex items-center gap-px shrink-0 ml-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              bumpTabInteraction();
-            }}
-          >
-            <button
-              className={actionBtnClass}
-              onClick={handleCopyContent}
-              title="Copy content"
-              aria-label="Copy note content"
+          {/* Active tab action buttons: copy | share | context | mic | … */}
+          {isActive && (
+            <div
+              className="flex items-center gap-px shrink-0 ml-1"
+              onClick={(e) => {
+                e.stopPropagation();
+                bumpTabInteraction();
+              }}
             >
-              {contentCopied ? <Check className="text-green-500" /> : <Copy />}
-            </button>
-            <button
-              className={actionBtnClass}
-              onClick={() => setShareOpen(true)}
-              title="Share note"
-            >
-              <Share2 />
-            </button>
-            {/* Context shortcut — amber = no context yet (nudge), green = set.
+              <button
+                className={actionBtnClass}
+                onClick={handleCopyContent}
+                title="Copy content"
+                aria-label="Copy note content"
+              >
+                {contentCopied ? (
+                  <Check className="text-green-500" />
+                ) : (
+                  <Copy />
+                )}
+              </button>
+              <button
+                className={actionBtnClass}
+                onClick={() => setShareOpen(true)}
+                title="Share note"
+              >
+                <Share2 />
+              </button>
+              {/* Context shortcut — amber = no context yet (nudge), green = set.
                 Same picker + same save behavior as the note-footer panel.
                 Already sized/shaped to match the other action buttons. */}
-            <NoteContextStatusIcon noteId={noteId} />
-            <MicrophoneIconButton
-              onTranscriptionComplete={handleTranscription}
-              variant="icon-only"
-              size="sm"
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className={actionBtnClass} title="More actions">
-                  <MoreHorizontal />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[190px]">
-                {menuItems.map((item, i) =>
-                  item === null ? (
-                    <DropdownMenuSeparator key={`sep-${i}`} />
-                  ) : (
-                    <DropdownMenuItem
-                      key={item.id}
-                      onSelect={() => item.fn()}
-                      className={cn(
-                        "gap-2 text-xs",
-                        item.destructive &&
-                          "text-destructive focus:text-destructive",
-                      )}
-                    >
-                      {item.iconNode ?? <item.icon className="w-3.5 h-3.5" />}
-                      {item.label}
-                    </DropdownMenuItem>
-                  ),
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
+              <NoteContextStatusIcon noteId={noteId} />
+              <MicrophoneIconButton
+                onTranscriptionComplete={handleTranscription}
+                variant="icon-only"
+                size="sm"
+              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={actionBtnClass} title="More actions">
+                    <MoreHorizontal />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[190px]">
+                  {menuItems.map((item, i) =>
+                    item === null ? (
+                      <DropdownMenuSeparator key={`sep-${i}`} />
+                    ) : (
+                      <DropdownMenuItem
+                        key={item.id}
+                        onSelect={() => item.fn()}
+                        className={cn(
+                          "gap-2 text-xs",
+                          item.destructive &&
+                            "text-destructive focus:text-destructive",
+                        )}
+                      >
+                        {item.iconNode ?? <item.icon className="w-3.5 h-3.5" />}
+                        {item.label}
+                      </DropdownMenuItem>
+                    ),
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
 
-        {/* Close button */}
-        <span
-          className="notes-tab-close-btn flex items-center justify-center w-4 h-4 rounded-sm text-muted-foreground shrink-0 hover:bg-accent hover:text-foreground ml-1"
-          role="button"
-          aria-label={`Close ${label}`}
-          onClick={handleClose}
-        >
-          <X className="w-2.5 h-2.5" />
-        </span>
-      </div>
+          {/* Close button */}
+          <span
+            className="notes-tab-close-btn flex items-center justify-center w-4 h-4 rounded-sm text-muted-foreground shrink-0 hover:bg-accent hover:text-foreground ml-1"
+            role="button"
+            aria-label={`Close ${label}`}
+            onClick={handleClose}
+          >
+            <X className="w-2.5 h-2.5" />
+          </span>
+        </div>
       </NonEditableContextMenu>
 
       {/* Share modal */}

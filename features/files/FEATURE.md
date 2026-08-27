@@ -85,6 +85,9 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-27 — PDF Edit reaches the canonical annotation surface on every viewport.** The
+  Preview action routes PDFs to Analysis Studio, while Files and Studio PDF annotation controls
+  keep the tablet/mobile 44px touch floor.
 - **2026-08-27 — Tablet file actions regain Move and the 44px dialog floor.** The shared file menu
   now opens its canonical picker without requiring a host callback; Rename/Delete actions remain
   44px at tablet/mobile widths for both files and folders.

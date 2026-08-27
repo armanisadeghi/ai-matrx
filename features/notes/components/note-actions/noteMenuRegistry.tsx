@@ -93,7 +93,9 @@ export function openNoteShareModal(
 
 /** Duplicate a note with success/failure toasts. Shared by both menus. */
 async function duplicateNoteAction(ctx: NoteMenuContext): Promise<void> {
-  const result = await ctx.dispatch(copyNote(ctx.noteId));
+  const result = await ctx.dispatch(
+    copyNote({ noteId: ctx.noteId, instanceId: ctx.instanceId }),
+  );
   if (copyNote.rejected.match(result)) {
     toast.error("Duplicate failed");
   } else {

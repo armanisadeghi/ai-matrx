@@ -56,13 +56,7 @@ import { ImageEditTab } from "./single-file/ImageEditTab";
 import { PdfEditTab } from "./single-file/PdfEditTab";
 
 export type FileTab =
-  | "preview"
-  | "edit"
-  | "document"
-  | "analysis"
-  | "share"
-  | "versions"
-  | "info";
+  "preview" | "edit" | "document" | "analysis" | "share" | "versions" | "info";
 
 const ALL_TABS: readonly FileTab[] = [
   "preview",

@@ -126,10 +126,8 @@ export function FilePreview({
     return getPreviewCapability(file.fileName, file.mimeType, file.fileSize);
   }, [file]);
 
-  // Per-type action bar wiring. Edit handoff is null for kinds we don't
-  // support yet (image / video / audio / pdf / data) — the bar shows the
-  // button as disabled with a tooltip rather than hiding it, so the
-  // capability is discoverable.
+  // Per-type action bar wiring. PDF editing belongs to the canonical
+  // Analysis Studio; other editable kinds keep their existing editor host.
   const actionBar = useMemo(() => {
     if (!file || !capability) return null;
     // Virtual sources surface an "Open in <feature>" handoff in the action
@@ -196,7 +194,10 @@ export function FilePreview({
       onOpenFullView: () => router.push(`/files/f/${fileId}`),
       onRename: () => requestRename("file", fileId),
       onDelete: () => void actions.delete({ hard: false }),
-      onEdit: () => requestEdit(fileId),
+      onEdit:
+        capability.previewKind === "pdf"
+          ? () => router.push(`/files/f/${encodeURIComponent(fileId)}/studio`)
+          : () => requestEdit(fileId),
       openInRoute,
       onExtractText:
         capability.previewKind === "pdf" && file.source.kind !== "virtual"
@@ -229,9 +230,8 @@ export function FilePreview({
           ? async () => {
               const toastId = toast.loading("Converting to PDF…");
               try {
-                const { convertOfficeToPdf } = await import(
-                  "@/features/files/api/office"
-                );
+                const { convertOfficeToPdf } =
+                  await import("@/features/files/api/office");
                 const ref = await convertOfficeToPdf(fileId);
                 toast.success("PDF ready", { id: toastId });
                 router.push(`/files/f/${ref.file_id}`);

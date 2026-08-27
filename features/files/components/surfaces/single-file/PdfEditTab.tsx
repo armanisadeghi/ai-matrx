@@ -61,7 +61,10 @@ import { useAnnotations } from "@/features/file-analysis/hooks/useAnnotations";
 import { PdfRegionContextMenu } from "@/features/file-analysis/components/RegionContextMenu";
 import { useFileAnalysis } from "@/features/file-analysis/hooks/useFileAnalysis";
 import { usePages } from "@/features/file-analysis/hooks/usePages";
-import type { AnnotationLayerMode, PdfRegion } from "@/features/pdf/components/viewer/annotation-layer/types";
+import type {
+  AnnotationLayerMode,
+  PdfRegion,
+} from "@/features/pdf/components/viewer/annotation-layer/types";
 
 export interface PdfEditTabProps {
   fileId: string;
@@ -221,7 +224,11 @@ export function PdfEditTab({ fileId, className }: PdfEditTabProps) {
             className="h-7 gap-1.5 text-xs"
             title="Open the full Analysis Studio (3-pane workshop with content + tools panels)"
           >
-            <Link href={`/files/f/${encodeURIComponent(fileId)}/studio`} target="_blank" rel="noopener noreferrer">
+            <Link
+              href={`/files/f/${encodeURIComponent(fileId)}/studio`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <ExternalLink className="h-3 w-3" />
               Open in Studio
             </Link>
@@ -336,7 +343,7 @@ function ModeButton({
       onClick={onClick}
       title={tooltip}
       className={cn(
-        "flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition-colors",
+        "flex max-lg:min-h-11 max-lg:min-w-11 items-center justify-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition-colors",
         active
           ? "bg-primary text-primary-foreground shadow-sm"
           : "text-muted-foreground hover:bg-accent/40 hover:text-foreground",

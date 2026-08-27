@@ -16,7 +16,10 @@ import { useEffect, useRef, useState } from "react";
 import { EyeOff, Eye, Loader2, RotateCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { usePages, invalidatePages } from "@/features/file-analysis/hooks/usePages";
+import {
+  usePages,
+  invalidatePages,
+} from "@/features/file-analysis/hooks/usePages";
 import { usePageThumbnail } from "@/features/file-analysis/hooks/usePageThumbnail";
 import * as Api from "@/features/file-analysis/api/file-analysis";
 import type { FilePageOut } from "@/features/file-analysis/api/file-analysis";
@@ -190,7 +193,7 @@ function ThumbnailItem({
           <div className="h-full w-full animate-pulse bg-muted/50" />
         )}
         {/* Annotation count — green badge top-right so the user can see
-          * at a glance which pages have user-pinned data. */}
+         * at a glance which pages have user-pinned data. */}
         {annotationCount > 0 ? (
           <span
             className="absolute right-0.5 top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold text-white shadow"
@@ -213,8 +216,10 @@ function ThumbnailItem({
           type="button"
           onClick={(e) => void toggle(e)}
           disabled={toggling}
-          aria-label={excluded ? "Include in extraction" : "Exclude from extraction"}
-          className="ml-auto opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 disabled:opacity-100"
+          aria-label={
+            excluded ? "Include in extraction" : "Exclude from extraction"
+          }
+          className="ml-auto flex items-center justify-center opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 disabled:opacity-100 max-lg:h-11 max-lg:w-11 max-lg:opacity-100"
           title={excluded ? "Include in extraction" : "Exclude from extraction"}
         >
           {toggling ? (

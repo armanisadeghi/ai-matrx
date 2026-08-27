@@ -15,11 +15,15 @@
  * lose work.
  */
 
-import { useEffect, useState } from "react";
-import { Copy, LifeBuoy, Trash2, Undo2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Copy, Eye, LifeBuoy, Trash2, Undo2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { writeClipboard } from "@/components/agent-copy/clipboard";
+import {
+  useOpenDiffViewerWindow,
+  type DiffViewerWindowHandle,
+} from "@/features/overlays/openers/diffViewerWindow";
 import { selectNoteContent } from "../redux/selectors";
 import { discardNoteDraft, getNoteDraft } from "../utils/notesDrafts";
 import type { LocalDraft } from "@/lib/local-drafts/types";
@@ -56,6 +60,8 @@ export function NoteDraftRecoveryBanner({
   const content = useAppSelector(selectNoteContent(noteId)) ?? "";
   const [draft, setDraft] = useState<LocalDraft | null>(null);
   const [readFor, setReadFor] = useState<string | null>(null);
+  const openDiffViewer = useOpenDiffViewerWindow();
+  const diffWindowRef = useRef<DiffViewerWindowHandle | null>(null);
 
   // Read the draft store ONCE per (note, user), during render rather than in
   // an effect — re-reading on every keystroke would resurrect a banner the
@@ -91,18 +97,36 @@ export function NoteDraftRecoveryBanner({
   const handleRestore = () => {
     onRestore(draft.content);
     discardNoteDraft(noteId);
+    diffWindowRef.current?.close();
+    diffWindowRef.current = null;
     setDraft(null);
     toast.success("Recovered changes restored — saving them now.");
   };
 
   const handleDiscard = () => {
     discardNoteDraft(noteId);
+    diffWindowRef.current?.close();
+    diffWindowRef.current = null;
     setDraft(null);
   };
 
   const handleCopy = async () => {
     await writeClipboard(draft.content);
     toast.success("Recovered text copied to your clipboard.");
+  };
+
+  const handleView = () => {
+    diffWindowRef.current = openDiffViewer({
+      instanceId: `note-draft-recovery-${noteId}`,
+      title: "Recovered note changes",
+      original: content,
+      modified: draft.content,
+      originalLabel: "Saved version",
+      modifiedLabel: "Recovered version",
+      engine: "light",
+      language: "markdown",
+      defaultView: "split",
+    });
   };
 
   const reason = REASON_LABELS[draft.reason] ?? "the changes were never saved";
@@ -123,6 +147,14 @@ export function NoteDraftRecoveryBanner({
           the saved version — restore it, or discard it to keep what is saved.
         </p>
         <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handleView}
+            className="inline-flex items-center gap-1 rounded-md border border-primary/40 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15 cursor-pointer"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            View changes
+          </button>
           <button
             type="button"
             onClick={handleRestore}
