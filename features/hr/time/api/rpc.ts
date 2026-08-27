@@ -186,7 +186,6 @@ function isEnvelope(value: unknown): value is HrRpcEnvelope {
  * evidence: the calculation record and the pre-edit payload *verbatim*.
  */
 const OPAQUE_VALUE_KEYS = new Set([
-  "calc",
   "attestation_response",
   "original_values",
   "metadata",
@@ -196,6 +195,31 @@ const OPAQUE_VALUE_KEYS = new Set([
   "facts",
   "scope",
 ]);
+
+/**
+ * 🚨 **`calc` IS NOT IN THAT SET, AND LISTING IT THERE BROKE EVERY RULE SNAPSHOT IN THE LANE.**
+ *
+ * The engines emit a **calc block** — `{rule_version_ids, engine_key, engine_version, computed_at,
+ * calc}` — where the OUTER four keys are a declared shape `CalcBlock` reads by its camel names, and
+ * only the INNER `calc` is the free-form engine payload. Excluding the key `calc` wholesale passed
+ * the entire block through unmapped, so `ruleVersionIds`, `engineKey`, `engineVersion` and
+ * `computedAt` all read `undefined` — on `AttendanceExceptionRow` and `OvertimePreapprovalRow`
+ * among others.
+ *
+ * That is **AR2 LOCK 6 failing in exactly the way it is written to prevent**: the figure renders and
+ * the path to the rule that produced it does not. *"A figure rendered without a path to
+ * `rule_version_ids`, `engine_key`, `engine_version` and `calc` is an unfinished surface"* — and the
+ * evidence drawer opened empty, silently, on a wage record.
+ *
+ * So the exclusion is **structural, not by name**: a calc block is recognised by carrying
+ * `rule_version_ids`, its own keys are mapped, and only its inner `calc` is left verbatim. See
+ * {@link isCalcBlock}.
+ */
+const CALC_BLOCK_MARKER = "rule_version_ids";
+
+function isCalcBlock(obj: Record<string, unknown>): boolean {
+  return CALC_BLOCK_MARKER in obj || "ruleVersionIds" in obj;
+}
 
 // ⚠️ `config` is deliberately NOT in that list, and the reason is a bug this file already had.
 // `hr._kiosk_device_config` returns `{require_photo, require_geo, max_clock_skew_seconds,
@@ -228,9 +252,16 @@ function camelizeDeep(value: unknown): unknown {
   if (value === null || typeof value !== "object") return value;
   if (value instanceof Date) return value;
 
+  const obj = value as Record<string, unknown>;
+  const insideCalcBlock = isCalcBlock(obj);
+
   const out: Record<string, unknown> = {};
-  for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
-    out[toCamel(key)] = OPAQUE_VALUE_KEYS.has(key) ? val : camelizeDeep(val);
+  for (const [key, val] of Object.entries(obj)) {
+    // The inner `calc` of a calc block is the engine's own payload and stays verbatim; the block's
+    // surrounding keys are a declared shape and must be mapped. Outside a calc block, a key named
+    // `calc` is an ordinary field with no special meaning.
+    const opaque = OPAQUE_VALUE_KEYS.has(key) || (insideCalcBlock && key === "calc");
+    out[toCamel(key)] = opaque ? val : camelizeDeep(val);
   }
   return out;
 }

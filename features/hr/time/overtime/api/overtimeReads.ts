@@ -68,27 +68,42 @@ export function listOvertimePreapprovals(
 
 /** Route 31b's read. One request, whichever viewer is looking at it. */
 export function getOvertimePreapproval(
-  requestId: string,
+  preapprovalId: string,
   opts?: HrRpcOptions,
 ): Promise<OvertimePreapprovalRow> {
   return callHrTimeRpc<OvertimePreapprovalRow>(
     "hr_overtime_preapproval_get",
-    { p_request_id: requestId },
+    { p_preapproval_id: preapprovalId },
     opts,
   );
 }
 
+/**
+ * 🚨 **The request is scoped by SHIFTS, not by a position assignment.**
+ *
+ * SPEC-TIME §4.8 proposed `hr.overtime_preapproval` columns `position_assignment_id` and
+ * `threshold_axes text[]`. **Neither was built.** SPEC-DATA-MODEL §7.12 is the keystone that holds
+ * the actual DDL, and what shipped is `shift_ids uuid[]` — verified against the live catalog. The
+ * client was written to §4.8 and sent two parameters the function does not declare while omitting
+ * the one it does, which is a runtime failure on route 31b, not a type error: PostgREST resolves an
+ * RPC by argument NAME, so a wrong name is "function does not exist".
+ *
+ * `thresholdAxes` survives on the READ (`OvertimePreapprovalRow`) because the server derives and
+ * returns it — it is a fact about which resolved thresholds the request crosses, not a stored
+ * column, and that is the right place for it. It is simply not an input.
+ *
+ * **[amendment owed: SPEC-TIME §4.8 — reconcile its proposed columns against §7.12's shipped ones.]**
+ */
 export interface CreateOvertimePreapprovalInput {
   employmentId: string;
   requestKind: "advance" | "retroactive" | "standing";
   coversFrom: string;
   coversTo: string;
   requestedHours: number;
-  positionAssignmentId?: string | null;
+  /** The shifts this overtime will be worked on. The live scope; see the note above. */
+  shiftIds?: string[];
   reasonCategoryId?: string | null;
   reasonNote: string;
-  /** Which resolved threshold prompted this, when the alert's door raised it. */
-  thresholdAxes?: string[];
 }
 
 /**
@@ -112,10 +127,9 @@ export function createOvertimePreapproval(
       p_covers_from: input.coversFrom,
       p_covers_to: input.coversTo,
       p_requested_hours: input.requestedHours,
-      p_position_assignment_id: input.positionAssignmentId ?? null,
       p_reason_category_id: input.reasonCategoryId ?? null,
       p_reason_note: input.reasonNote,
-      p_threshold_axes: input.thresholdAxes ?? [],
+      p_shift_ids: input.shiftIds ?? [],
     },
     opts,
   );
