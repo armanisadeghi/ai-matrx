@@ -660,22 +660,76 @@ export type HrCapabilitySet = {
 
 // ── The audited LIST doors (hr_confidential_list / hr_restricted_list) ──────
 //
-// 🚨 A COUNT THAT CHANGES WITH THE VIEWER IS CORRECT ON THESE DOORS.
-// `hr.incident_excluded()` runs per row on the server, AFTER every allow lane,
-// and it overrides `incident.read`, `hr_owner` AND break-glass. An excluded row
-// is not in `rows` and its count is not in `total`. So two people with identical
-// capabilities can legitimately see different totals for the same filter, and
-// "fixing" that with a shared cache would leak exactly what the veto protects.
-// Never memoize one viewer's page under a viewer-independent key.
-
+/**
+ * 🚨 THIS TYPE WAS FICTION UNTIL 2026-08-27, AND THE CAST IS WHY NOBODY NOTICED.
+ *
+ * It declared `total`, `limit`, `offset` and `capabilities`. **The doors send none
+ * of those.** Verified live against `hr_confidential_list('hr_employer_profile')`
+ * and `hr_restricted_list('hr_incident')`, the envelope is exactly:
+ *
+ *     { granted, rows, row_count, next_cursor, audit_id }
+ *
+ * `service.ts` cast the payload to this shape, and a cast cannot fail — so
+ * `page.total` was `undefined` at every call site. The Employee Relations sweep
+ * read `pageData.total ?? rows.length`, which is the *"pager claiming 0 of 9
+ * rows"* defect in its natural habitat.
+ *
+ * 🚨 AND THESE DOORS ARE CURSOR-PAGED, NOT OFFSET-PAGED. Their fifth argument is
+ * `p_cursor text`, never `p_offset integer`. PostgREST resolves `rpc()` by
+ * argument NAMES, so sending `p_offset` did not page wrongly — it raised
+ * **PGRST202, function not found**, and every Employee Relations and verification
+ * -letter list call failed outright. The broken shape was invisible underneath a
+ * call that never returned a shape at all.
+ *
+ * Rewriting this type — rather than adapting around it — is safe because
+ * `HrAuditedPage` is used nowhere outside this lane: `features/hr/service.ts` and
+ * its two consumers, `people/relations` and `people/verifications`. The
+ * don't-rewrite-types.ts rule exists to protect lanes mid-build against a shared
+ * shape; there are none here, and keeping the fiction would preserve the bug.
+ *
+ * 🚨 A COUNT THAT CHANGES WITH THE VIEWER IS CORRECT ON THESE DOORS.
+ * `hr.incident_excluded()` runs per row on the server, AFTER every allow lane, and
+ * it overrides `incident.read`, `hr_owner` AND break-glass. An excluded row is not
+ * in `rows` and is not counted in `rowCount`. So two people with identical
+ * capabilities can legitimately see different counts for the same filter, and
+ * "fixing" that with a shared cache would leak exactly what the veto protects.
+ * Never memoize one viewer's page under a viewer-independent key.
+ */
 export type HrAuditedPage<T> = {
   rows: T[];
-  /** The FULL result set size AFTER the per-row exclusion — see the note above. */
-  total: number;
-  limit: number;
-  offset: number;
+  /**
+   * 🚨 THE SIZE OF **THIS PAGE**, NOT OF THE RESULT SET. The wire calls it
+   * `row_count` and it equals `rows.length`; the doors do not compute a grand
+   * total, and inventing one by summing pages would be a different number from the
+   * one the server would give. A surface that needs "N results" must sweep to
+   * exhaustion and count what it actually received — which is what
+   * `sweepAuditedList` does.
+   */
+  rowCount: number;
+  /**
+   * The cursor for the NEXT page, or `null` when this was the last one.
+   * `null` is the only end-of-list signal these doors give: a full page with a
+   * `null` cursor is still the end, and a short page with a cursor is not.
+   */
+  nextCursor: string | null;
   /** The `hr.access_audit` row this read wrote. Present on every audited door. */
-  audit_id?: string | null;
-  /** What the server says this viewer may do with these rows. Never a client guess. */
-  capabilities?: string[];
+  auditId: string | null;
+};
+
+/**
+ * The single-row audited doors (`hr_confidential_get` / `hr_restricted_get`).
+ *
+ * Verified live: `{ granted, row, basis, is_self_access, audit_id }`. `basis` and
+ * `is_self_access` were previously undeclared and therefore unreadable — the
+ * second one matters, because a person opening their OWN confidential record is a
+ * materially different audit event from a colleague opening it, and a surface that
+ * cannot tell them apart cannot word the access log honestly.
+ */
+export type HrAuditedRow<T> = {
+  row: T;
+  /** Which allow lane granted this — the server's word, never inferred here. */
+  basis: string | null;
+  /** True when the viewer IS the subject. Never a client-side id comparison. */
+  isSelfAccess: boolean;
+  auditId: string | null;
 };

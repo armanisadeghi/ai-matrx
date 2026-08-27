@@ -59,15 +59,14 @@ async function sweep<T>(
   purpose: string,
 ): Promise<HrResult<{ rows: T[]; total: number }>> {
   const rows: T[] = [];
-  let offset = 0;
-  let total = 0;
+  let cursor: string | null = null;
 
   for (let page = 0; page < SWEEP_MAX_PAGES; page += 1) {
     const result = await fetchHrRestrictedList<T>({
       token,
       filter,
       limit: SWEEP_PAGE,
-      offset,
+      cursor,
       purpose,
     });
     // A refusal ANYWHERE in the sweep is the answer for the whole list. Never
@@ -75,14 +74,13 @@ async function sweep<T>(
     if (!result.ok) return result;
 
     const pageData: HrAuditedPage<T> = result.data;
-    rows.push(...(pageData.rows ?? []));
-    total = pageData.total ?? rows.length;
-    offset += pageData.rows?.length ?? 0;
+    rows.push(...pageData.rows);
+    cursor = pageData.nextCursor;
 
-    if (!pageData.rows?.length || rows.length >= total) break;
+    if (pageData.rows.length === 0 || cursor === null) break;
   }
 
-  return { ok: true, data: { rows, total } };
+  return { ok: true, data: { rows, total: rows.length } };
 }
 
 function labelIncidentKind(kind: string): string {
@@ -263,7 +261,7 @@ export function fetchHrRelationsCase(args: {
   caseKind: HrCaseKind;
   caseId: string;
   justification: string;
-}): Promise<HrResult<{ row: HrCaseDetail; audit_id: string | null }>> {
+}): ReturnType<typeof fetchHrRestricted<HrCaseDetail>> {
   return fetchHrRestricted<HrCaseDetail>({
     token:
       args.caseKind === "incident"

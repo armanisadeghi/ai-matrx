@@ -27,7 +27,7 @@ import {
   fetchHrConfidential,
   fetchHrConfidentialList,
 } from "@/features/hr/service";
-import type { HrAuditedPage, HrResult } from "@/features/hr/types";
+import type { HrAuditedPage, HrAuditedRow, HrResult } from "@/features/hr/types";
 
 import {
   HR_VERIFICATION_ALREADY_DELIVERED,
@@ -41,7 +41,7 @@ export function fetchHrVerificationLetters(args: {
   state?: string | null;
   subjectEmployeeId?: string | null;
   limit?: number;
-  offset?: number;
+  cursor?: string | null;
 }): Promise<HrResult<HrAuditedPage<HrVerificationLetterRow>>> {
   const filter: Record<string, unknown> = {};
   if (args.state) filter.state = args.state;
@@ -51,14 +51,14 @@ export function fetchHrVerificationLetters(args: {
     token: HR_VERIFICATION_TOKEN,
     filter,
     limit: args.limit ?? 100,
-    offset: args.offset ?? 0,
+    cursor: args.cursor ?? null,
     purpose: "verification_letter_queue",
   });
 }
 
 export function fetchHrVerificationLetter(
   letterId: string,
-): Promise<HrResult<{ row: HrVerificationLetterRow; audit_id: string | null }>> {
+): Promise<HrResult<HrAuditedRow<HrVerificationLetterRow>>> {
   return fetchHrConfidential<HrVerificationLetterRow>({
     token: HR_VERIFICATION_TOKEN,
     id: letterId,

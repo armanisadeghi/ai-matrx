@@ -29,6 +29,7 @@ import { supabase } from "@/utils/supabase/client";
 import type {
   HrActivationSeedAck,
   HrAuditedPage,
+  HrAuditedRow,
   HrDirectoryFilter,
   HrDirectoryPage,
   HrEmployeeInviteAcceptAck,
@@ -116,15 +117,29 @@ function isRefusalEnvelope(value: unknown): value is HrRefusalEnvelope {
  * `envelope: true` strips the `granted` flag off the success payload so callers
  * hold a clean shape; `envelope: false` (the raised dialect) passes the object
  * through as-is.
+ *
+ * The transport. Returns the door's payload as what it provably is — a non-null,
+ * non-array object — and **asserts nothing about its fields**.
+ *
+ * 🚨 THIS FUNCTION USED TO END IN `return payload as T`, AND THAT CAST WAS THE BUG
+ * FACTORY. The generated `Function` types cover the ARGUMENTS; every HR return is
+ * `Json`, opaque to `supabase gen types`. So the old signature invited each wrapper
+ * to name a hand-written type that TypeScript would then take on faith. A cast
+ * cannot fail. Where a hand-written type disagreed with the shipped door, the
+ * fields simply arrived `undefined` and the surface rendered a blank, a NaN, or a
+ * zero — at runtime, only once real data existed, and only for whoever happened to
+ * open that page. `HrAuditedPage` is the worked example: it declared `total`,
+ * `limit` and `offset`, the doors send `row_count` and `next_cursor`, and the
+ * Employee Relations queue read `pageData.total ?? rows.length` for weeks.
+ *
+ * Callers now take this `Record<string, unknown>` and MAP it field by field, so the
+ * type each one declares is a statement about the wire that is actually true.
  */
-async function callHr<T>(
+async function callHrRaw(
   fn: string,
   args: Record<string, unknown>,
   options: { envelope: boolean; whatFailed: string },
-): Promise<HrResult<T>> {
-  // The generated Function types cover the ARGUMENTS; every HR return is `Json`,
-  // opaque to `supabase gen types`. The shape is asserted here, once, rather than
-  // at each of the ~20 call sites below.
+): Promise<HrResult<Record<string, unknown>>> {
   const { data, error } = await supabase.rpc(fn as never, args as never);
 
   if (error) {
@@ -166,9 +181,72 @@ async function callHr<T>(
     const { granted: _granted, ...rest } = payload as Record<string, unknown> & {
       granted?: boolean;
     };
-    return { ok: true, data: rest as T };
+    return { ok: true, data: rest };
   }
-  return { ok: true, data: payload as T };
+  return { ok: true, data: payload as Record<string, unknown> };
+}
+
+/**
+ * The verified-aligned lane.
+ *
+ * 🚨 THIS IS STILL A CAST, AND IT IS ONLY LEGITIMATE WHERE THE HEADER ABOVE THE
+ * CALL SITE RECORDS THAT THE TYPE WAS DIFFED AGAINST THE LIVE DOOR. Every use
+ * below carries a `verified aligned <date>` note naming what was compared. Do not
+ * reach for this for a new door: map it, and earn the annotation by checking.
+ *
+ * The diff that justified these was mechanical, not a reading — each door was
+ * called against the sandbox employer with real rows and its top-level keys were
+ * set-compared with the declared type's fields, in both directions.
+ */
+async function callHrAligned<T>(
+  fn: string,
+  args: Record<string, unknown>,
+  options: { envelope: boolean; whatFailed: string },
+): Promise<HrResult<T>> {
+  const result = await callHrRaw(fn, args, options);
+  return result.ok ? { ok: true, data: result.data as T } : result;
+}
+
+/**
+ * Every write door's acknowledgement.
+ *
+ * `HrWriteAck` is `Record<string, unknown> & { ok?: true }` — deliberately an open
+ * bag, because the ~28 writers each answer with their own fields and the surfaces
+ * read them by name at the point of use. That makes it the one shape here that a
+ * field-by-field mapper cannot improve: there is no field list to map to.
+ *
+ * So this does the only two things that are actually checkable — it confirms the
+ * envelope's `ok` really is `true` rather than assuming it, and it hands back a
+ * plain object. **Nothing is cast off the wire.**
+ *
+ * A body that comes back `ok: false` should already have been turned into a
+ * refusal by `isRefusalEnvelope` upstream; if one ever slips past — a writer that
+ * says `ok: false` with no `reason` — it is caught here rather than being reported
+ * to the user as a success.
+ */
+function mapWriteAck(
+  result: HrResult<Record<string, unknown>>,
+  whatFailed: string,
+): HrResult<HrWriteAck> {
+  if (!result.ok) return result;
+  const row = result.data;
+  if ("ok" in row && row.ok !== true) {
+    return failed(
+      `${whatFailed} did not go through, and the server did not say why. ` +
+        "Nothing was changed. Retry, and if it keeps happening the HR write door needs a look.",
+      null,
+    );
+  }
+  return { ok: true, data: { ...row } as HrWriteAck };
+}
+
+/** A write door: the transport, then the `ok` check. Never a cast. */
+async function callHrWrite(
+  fn: string,
+  args: Record<string, unknown>,
+  options: { envelope: boolean; whatFailed: string },
+): Promise<HrResult<HrWriteAck>> {
+  return mapWriteAck(await callHrRaw(fn, args, options), options.whatFailed);
 }
 
 // ── Read doors — LIVE ───────────────────────────────────────────────────────
@@ -187,7 +265,7 @@ async function callHr<T>(
 export function fetchHrContext(
   organizationId?: string | null,
 ): Promise<HrResult<HrMyContext>> {
-  return callHr<HrMyContext>(
+  return callHrAligned<HrMyContext>(
     "hr_my_context",
     { p_organization_id: organizationId ?? null },
     { envelope: false, whatFailed: "Your HR employers" },
@@ -206,7 +284,7 @@ export function fetchHrDirectory(args: {
   sort?: HrDirectorySort;
   direction?: "asc" | "desc";
 }): Promise<HrResult<HrDirectoryPage>> {
-  return callHr<HrDirectoryPage>(
+  return callHrAligned<HrDirectoryPage>(
     "hr_directory_list",
     {
       p_organization_id: args.organizationId,
@@ -228,7 +306,7 @@ export function fetchHrOrgChart(args: {
   organizationId: string;
   on?: string | null;
 }): Promise<HrResult<HrOrgChart>> {
-  return callHr<HrOrgChart>(
+  return callHrAligned<HrOrgChart>(
     "hr_org_chart",
     { p_organization_id: args.organizationId, p_on: args.on ?? null },
     { envelope: false, whatFailed: "The org chart" },
@@ -245,7 +323,7 @@ export function fetchHrEmployeeProfile(args: {
   employeeId: string;
   asOf?: string | null;
 }): Promise<HrResult<HrEmployeeProfile>> {
-  return callHr<HrEmployeeProfile>(
+  return callHrAligned<HrEmployeeProfile>(
     "hr_employee_profile",
     { p_employee_id: args.employeeId, p_as_of: args.asOf ?? null },
     { envelope: true, whatFailed: "This employee record" },
@@ -256,7 +334,7 @@ export function fetchHrEmployeeProfile(args: {
 export function fetchHrEmploymentHistory(
   employeeId: string,
 ): Promise<HrResult<HrEmploymentHistory>> {
-  return callHr<HrEmploymentHistory>(
+  return callHrAligned<HrEmploymentHistory>(
     "hr_employment_history",
     { p_employee_id: employeeId },
     { envelope: true, whatFailed: "This person's employment history" },
@@ -267,7 +345,7 @@ export function fetchHrEmploymentHistory(
 export function fetchHrPendingChanges(
   employmentId: string,
 ): Promise<HrResult<HrPendingChanges>> {
-  return callHr<HrPendingChanges>(
+  return callHrAligned<HrPendingChanges>(
     "hr_pending_changes",
     { p_employment_id: employmentId },
     { envelope: true, whatFailed: "Pending changes" },
@@ -278,7 +356,7 @@ export function fetchHrPendingChanges(
 export function fetchHrStructure(
   organizationId: string,
 ): Promise<HrResult<HrStructure>> {
-  return callHr<HrStructure>(
+  return callHrAligned<HrStructure>(
     "hr_structure_list",
     { p_organization_id: organizationId },
     { envelope: false, whatFailed: "This employer's departments, locations and job titles" },
@@ -294,7 +372,7 @@ export function fetchHrKnobs(args: {
   organizationId: string;
   overriddenOnly?: boolean;
 }): Promise<HrResult<HrKnobIndex>> {
-  return callHr<HrKnobIndex>(
+  return callHrAligned<HrKnobIndex>(
     "hr_knob_index",
     {
       p_organization_id: args.organizationId,
@@ -304,6 +382,60 @@ export function fetchHrKnobs(args: {
   );
 }
 
+// ── The audited doors: mapped, because their declared shapes were fiction ────
+
+/**
+ * 🚨 MAPPED, NOT CAST — AND THE MAPPING IS WHY THE PAGER STOPS LYING.
+ *
+ * Diffed against the live doors on 2026-08-27 (`hr_confidential_list` with
+ * `hr_employer_profile`, `hr_restricted_list` with `hr_incident`, both against the
+ * sandbox employer). The envelope is:
+ *
+ *     { granted, rows, row_count, next_cursor, audit_id }
+ *
+ * `HrAuditedPage` declared `total`, `limit`, `offset` and `capabilities`. **Not one
+ * of those exists on the wire.** Because the old transport cast the payload,
+ * `page.total` was `undefined` everywhere and the Employee Relations sweep fell
+ * back to `pageData.total ?? rows.length`.
+ *
+ * 🚨 `row_count` IS THIS PAGE'S SIZE, NOT THE RESULT SET'S. The doors do not
+ * compute a grand total, so nothing here manufactures one — a fabricated count on
+ * an audited queue is precisely the kind of confident wrong number this sweep
+ * exists to kill. A surface that needs "N results" sweeps to exhaustion and counts
+ * what it actually received.
+ */
+function mapAuditedPage<T>(raw: Record<string, unknown>): HrAuditedPage<T> {
+  const rows = Array.isArray(raw.rows) ? (raw.rows as T[]) : [];
+  return {
+    rows,
+    // Read from the wire, but never allowed to disagree with what we actually hold:
+    // a count that exceeds the rows in hand would be a claim we cannot support.
+    rowCount: typeof raw.row_count === "number" ? raw.row_count : rows.length,
+    // `null` is the end-of-list signal. An empty string is not a cursor.
+    nextCursor:
+      typeof raw.next_cursor === "string" && raw.next_cursor ? raw.next_cursor : null,
+    auditId: typeof raw.audit_id === "string" ? raw.audit_id : null,
+  };
+}
+
+/**
+ * The single-row audited doors. Verified live 2026-08-27:
+ * `{ granted, row, basis, is_self_access, audit_id }`.
+ *
+ * `basis` and `is_self_access` were undeclared and therefore unreadable. The second
+ * one is not cosmetic: a person opening their OWN confidential record is a
+ * different audit event from a colleague opening it, and a surface that cannot tell
+ * them apart cannot word the access log honestly.
+ */
+function mapAuditedRow<T>(raw: Record<string, unknown>): HrAuditedRow<T> {
+  return {
+    row: (raw.row ?? {}) as T,
+    basis: typeof raw.basis === "string" ? raw.basis : null,
+    isSelfAccess: raw.is_self_access === true,
+    auditId: typeof raw.audit_id === "string" ? raw.audit_id : null,
+  };
+}
+
 // ── Audited confidential / restricted doors — LIVE ──────────────────────────
 
 /**
@@ -311,16 +443,17 @@ export function fetchHrKnobs(args: {
  * without a real purpose is an audit finding, so callers pass what they are doing
  * ("profile", "verification_letter"), never a constant.
  */
-export function fetchHrConfidential<T = Record<string, unknown>>(args: {
+export async function fetchHrConfidential<T = Record<string, unknown>>(args: {
   token: string;
   id: string;
   purpose: string;
-}): Promise<HrResult<{ row: T; audit_id: string | null }>> {
-  return callHr<{ row: T; audit_id: string | null }>(
+}): Promise<HrResult<HrAuditedRow<T>>> {
+  const result = await callHrRaw(
     "hr_confidential_get",
     { p_token: args.token, p_id: args.id, p_purpose: args.purpose },
     { envelope: true, whatFailed: "That record" },
   );
+  return result.ok ? { ok: true, data: mapAuditedRow<T>(result.data) } : result;
 }
 
 /**
@@ -330,25 +463,33 @@ export function fetchHrConfidential<T = Record<string, unknown>>(args: {
  * PostgREST's exposed schema list, and even if it were, every read of this tier
  * must land in `hr.access_audit`. This door and `fetchHrConfidential` are the
  * only two ways a browser sees one of these rows.
+ *
+ * 🚨 THIS DOOR IS CURSOR-PAGED. Its fifth argument is `p_cursor text` — there is no
+ * `p_offset`. Sending one did not page wrongly; PostgREST resolves `rpc()` by
+ * argument NAMES, so it raised **PGRST202 "function not found"** and this call
+ * failed outright every time it ran. Pass the previous page's `nextCursor`, or
+ * `null` for the first page.
  */
-export function fetchHrConfidentialList<T = Record<string, unknown>>(args: {
+export async function fetchHrConfidentialList<T = Record<string, unknown>>(args: {
   token: string;
   filter?: Record<string, unknown>;
   limit?: number;
-  offset?: number;
+  /** The previous page's `nextCursor`. `null`/omitted starts at the beginning. */
+  cursor?: string | null;
   purpose: string;
 }): Promise<HrResult<HrAuditedPage<T>>> {
-  return callHr<HrAuditedPage<T>>(
+  const result = await callHrRaw(
     "hr_confidential_list",
     {
       p_token: args.token,
       p_filter: args.filter ?? {},
       p_limit: args.limit ?? 100,
-      p_offset: args.offset ?? 0,
+      p_cursor: args.cursor ?? null,
       p_purpose: args.purpose,
     },
     { envelope: true, whatFailed: "That list" },
   );
+  return result.ok ? { ok: true, data: mapAuditedPage<T>(result.data) } : result;
 }
 
 /**
@@ -363,35 +504,43 @@ export function fetchHrConfidentialList<T = Record<string, unknown>>(args: {
  * Unlike `fetchHrRestricted` (one row) this door takes no `justification`: a
  * queue read is not a targeted read of a named person's file. The `purpose` is
  * still recorded.
+ *
+ * 🚨 THIS DOOR IS CURSOR-PAGED. Its fifth argument is `p_cursor text` — there is no
+ * `p_offset`. Sending one did not page wrongly; PostgREST resolves `rpc()` by
+ * argument NAMES, so it raised **PGRST202 "function not found"** and this call
+ * failed outright every time it ran. Pass the previous page's `nextCursor`, or
+ * `null` for the first page.
  */
-export function fetchHrRestrictedList<T = Record<string, unknown>>(args: {
+export async function fetchHrRestrictedList<T = Record<string, unknown>>(args: {
   token: string;
   filter?: Record<string, unknown>;
   limit?: number;
-  offset?: number;
+  /** The previous page's `nextCursor`. `null`/omitted starts at the beginning. */
+  cursor?: string | null;
   purpose: string;
 }): Promise<HrResult<HrAuditedPage<T>>> {
-  return callHr<HrAuditedPage<T>>(
+  const result = await callHrRaw(
     "hr_restricted_list",
     {
       p_token: args.token,
       p_filter: args.filter ?? {},
       p_limit: args.limit ?? 100,
-      p_offset: args.offset ?? 0,
+      p_cursor: args.cursor ?? null,
       p_purpose: args.purpose,
     },
     { envelope: true, whatFailed: "That list" },
   );
+  return result.ok ? { ok: true, data: mapAuditedPage<T>(result.data) } : result;
 }
 
 /** A Restricted-tier row. `justification` is REQUIRED and is shown in the subject's access log. */
-export function fetchHrRestricted<T = Record<string, unknown>>(args: {
+export async function fetchHrRestricted<T = Record<string, unknown>>(args: {
   token: string;
   id: string;
   purpose: string;
   justification: string;
-}): Promise<HrResult<{ row: T; audit_id: string | null }>> {
-  return callHr<{ row: T; audit_id: string | null }>(
+}): Promise<HrResult<HrAuditedRow<T>>> {
+  const result = await callHrRaw(
     "hr_restricted_get",
     {
       p_token: args.token,
@@ -401,6 +550,7 @@ export function fetchHrRestricted<T = Record<string, unknown>>(args: {
     },
     { envelope: true, whatFailed: "That record" },
   );
+  return result.ok ? { ok: true, data: mapAuditedRow<T>(result.data) } : result;
 }
 
 /**
@@ -415,7 +565,7 @@ export function hrBreakGlass(args: {
   purpose: string;
   justification: string;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_break_glass",
     {
       p_token: args.token,
@@ -433,7 +583,7 @@ export function explainHrAccess(args: {
   token: string;
   id: string;
 }): Promise<HrResult<Record<string, unknown>>> {
-  return callHr<Record<string, unknown>>(
+  return callHrRaw(
     "hr_access_explain",
     { p_user: args.userId, p_token: args.token, p_id: args.id },
     { envelope: true, whatFailed: "The access explanation" },
@@ -450,7 +600,7 @@ export function explainHrAccess(args: {
 export function activateHrEmployer(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_activate_employer",
     { p_payload: payload },
     { envelope: true, whatFailed: "HR setup" },
@@ -469,7 +619,7 @@ export function activateHrEmployer(
 export function createHrEmployee(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>("hr_employee_create", { p_payload: payload }, {
+  return callHrWrite("hr_employee_create", { p_payload: payload }, {
     envelope: true,
     whatFailed: "Creating this employee",
   });
@@ -479,7 +629,7 @@ export function updateHrEmployee(args: {
   employeeId: string;
   patch: Record<string, unknown>;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_employee_update",
     { p_employee_id: args.employeeId, p_patch: args.patch },
     { envelope: true, whatFailed: "Saving this change" },
@@ -492,7 +642,7 @@ export function updateHrSelf(args: {
   id: string;
   patch: Record<string, unknown>;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_self_update",
     { p_token: args.token, p_id: args.id, p_patch: args.patch },
     { envelope: true, whatFailed: "Saving your change" },
@@ -503,7 +653,7 @@ export function updateHrSelf(args: {
 export function recordHrPositionChange(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>("hr_position_change", { p_payload: payload }, {
+  return callHrWrite("hr_position_change", { p_payload: payload }, {
     envelope: true,
     whatFailed: "This position change",
   });
@@ -513,7 +663,7 @@ export function recordHrPositionChange(
 export function upsertHrCompensation(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>("hr_compensation_upsert", { p_payload: payload }, {
+  return callHrWrite("hr_compensation_upsert", { p_payload: payload }, {
     envelope: true,
     whatFailed: "This compensation change",
   });
@@ -529,7 +679,7 @@ export function cancelHrPendingChange(args: {
   id: string;
   reason: string;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_pending_change_cancel",
     { p_kind: args.kind, p_id: args.id, p_reason: args.reason },
     { envelope: true, whatFailed: "Cancelling this scheduled change" },
@@ -539,7 +689,7 @@ export function cancelHrPendingChange(args: {
 export function recordHrSeparation(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>("hr_separation_record", { p_payload: payload }, {
+  return callHrWrite("hr_separation_record", { p_payload: payload }, {
     envelope: true,
     whatFailed: "This separation",
   });
@@ -548,7 +698,7 @@ export function recordHrSeparation(
 export function upsertHrEngagement(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>("hr_engagement_upsert", { p_payload: payload }, {
+  return callHrWrite("hr_engagement_upsert", { p_payload: payload }, {
     envelope: true,
     whatFailed: "This engagement",
   });
@@ -557,7 +707,7 @@ export function upsertHrEngagement(
 export function upsertHrEmergencyContact(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>("hr_emergency_contact_upsert", { p_payload: payload }, {
+  return callHrWrite("hr_emergency_contact_upsert", { p_payload: payload }, {
     envelope: true,
     whatFailed: "This emergency contact",
   });
@@ -566,7 +716,7 @@ export function upsertHrEmergencyContact(
 export function upsertHrExternalIdentity(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>("hr_external_identity_upsert", { p_payload: payload }, {
+  return callHrWrite("hr_external_identity_upsert", { p_payload: payload }, {
     envelope: true,
     whatFailed: "This external system id",
   });
@@ -577,7 +727,7 @@ export function scanHrDuplicates(args: {
   organizationId: string;
   probe: Record<string, unknown>;
 }): Promise<HrResult<Record<string, unknown>>> {
-  return callHr<Record<string, unknown>>(
+  return callHrRaw(
     "hr_duplicate_scan",
     { p_organization_id: args.organizationId, p_probe: args.probe },
     { envelope: true, whatFailed: "The duplicate check" },
@@ -587,7 +737,7 @@ export function scanHrDuplicates(args: {
 export function createHrIncident(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>("hr_incident_create", { p_payload: payload }, {
+  return callHrWrite("hr_incident_create", { p_payload: payload }, {
     envelope: true,
     whatFailed: "This incident report",
   });
@@ -596,7 +746,7 @@ export function createHrIncident(
 export function issueHrCorrectiveAction(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>("hr_corrective_action_issue", { p_payload: payload }, {
+  return callHrWrite("hr_corrective_action_issue", { p_payload: payload }, {
     envelope: true,
     whatFailed: "This corrective action",
   });
@@ -605,7 +755,7 @@ export function issueHrCorrectiveAction(
 export function createHrVerificationRequest(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>("hr_verification_request_create", { p_payload: payload }, {
+  return callHrWrite("hr_verification_request_create", { p_payload: payload }, {
     envelope: true,
     whatFailed: "This verification request",
   });
@@ -630,7 +780,7 @@ export function advanceHrIncident(args: {
   resolvedAt?: string | null;
   referralNote?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_incident_advance",
     {
       p_incident_id: args.incidentId,
@@ -659,7 +809,7 @@ export function addHrIncidentParty(args: {
   externalName?: string | null;
   note?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_incident_party_add",
     {
       p_incident_id: args.incidentId,
@@ -680,7 +830,7 @@ export function addHrRestrictedNote(args: {
   body: string;
   redactedSummary?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_restricted_note_add",
     {
       p_target_token: args.targetToken,
@@ -703,7 +853,7 @@ export function setHrOshaDetermination(args: {
   privacyCase: boolean;
   basis: string;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_incident_osha_set",
     {
       p_incident_id: args.incidentId,
@@ -731,7 +881,7 @@ export function acknowledgeHrCorrectiveAction(args: {
   employeeStatement?: string | null;
   refusalNote?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_corrective_action_acknowledge",
     {
       p_corrective_action_id: args.correctiveActionId,
@@ -751,7 +901,7 @@ export function recordHrCorrectiveActionOutcome(args: {
   outcome: string;
   note?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_corrective_action_outcome",
     {
       p_corrective_action_id: args.correctiveActionId,
@@ -770,7 +920,7 @@ export function recordHrCorrectiveActionOutcome(args: {
 export function fetchHrIncidentStatus(
   incidentId: string,
 ): Promise<HrResult<Record<string, unknown>>> {
-  return callHr<Record<string, unknown>>(
+  return callHrRaw(
     "hr_incident_status",
     { p_incident_id: incidentId },
     { envelope: true, whatFailed: "The status of your report" },
@@ -789,7 +939,7 @@ export function setHrVerificationConsent(args: {
   granted: boolean;
   note?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_verification_consent_set",
     {
       p_letter_id: args.letterId,
@@ -806,7 +956,7 @@ export function denyHrVerification(args: {
   denialBasis: string;
   note?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_verification_deny",
     {
       p_letter_id: args.letterId,
@@ -823,7 +973,7 @@ export function deliverHrVerification(args: {
   method: string;
   recipient?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_verification_deliver",
     {
       p_letter_id: args.letterId,
@@ -867,7 +1017,19 @@ export function fetchHrMyCompensation(args: {
     currency: string | null;
   }>
 > {
-  return callHr(
+  // 🚨 THIS DOOR IS NOT SHIPPED. Verified 2026-08-27 against `pg_proc` on the live
+  // database: there is NO `public.hr_my_compensation`, under any signature. The call
+  // therefore returns PGRST202 "function not found", which `callHrRaw` turns into a
+  // `failed` result — so the type below describes the envelope this door WILL send,
+  // not one that has ever been observed. It is a specification, and it is the only
+  // wrapper in this file that is not backed by a live door.
+  //
+  // This one has NO callers at all — route 5's pay surface reads its own context. It is kept
+  // rather than deleted because SPEC-EMPLOYEES §5 specifies the surface and this is the agreed
+  // shape for it; if route 5 ships reading something else, delete this instead of adapting it.
+  // Do NOT read this as verified-aligned; when the door ships, call it against real
+  // data and either confirm the shape or map it.
+  return callHrAligned(
     "hr_my_compensation",
     { p_employment_id: args.employmentId, p_as_of: args.asOf ?? null },
     { envelope: true, whatFailed: "Your pay record" },
@@ -902,7 +1064,19 @@ export function fetchHrEmployeeByParty(args: {
     hire_date: string | null;
   }>
 > {
-  return callHr(
+  // 🚨 THIS DOOR IS NOT SHIPPED. Verified 2026-08-27 against `pg_proc` on the live
+  // database: there is NO `public.hr_employee_by_party`, under any signature. The call
+  // therefore returns PGRST202 "function not found", which `callHrRaw` turns into a
+  // `failed` result — so the type below describes the envelope this door WILL send,
+  // not one that has ever been observed. It is a specification, and it is the only
+  // wrapper in this file that is not backed by a live door.
+  //
+  // `PartyEmployeeCard` (D5) calls this and handles the failure correctly — its own comment
+  // names "a door that is not live" as one of the cases that resolve to NOTHING, so the CRM
+  // party surface renders the card ABSENT rather than broken. §1.3's correct fallback.
+  // Do NOT read this as verified-aligned; when the door ships, call it against real
+  // data and either confirm the shape or map it.
+  return callHrAligned(
     "hr_employee_by_party",
     { p_organization_id: args.organizationId, p_party_id: args.partyId },
     { envelope: true, whatFailed: "This person's employee record" },
@@ -935,7 +1109,18 @@ export function fetchHrMemberEmployeeLinks(args: {
     can_link: boolean;
   }>
 > {
-  return callHr(
+  // 🚨 THIS DOOR IS NOT SHIPPED. Verified 2026-08-27 against `pg_proc` on the live
+  // database: there is NO `public.hr_member_employee_links`, under any signature. The call
+  // therefore returns PGRST202 "function not found", which `callHrRaw` turns into a
+  // `failed` result — so the type below describes the envelope this door WILL send,
+  // not one that has ever been observed. It is a specification, and it is the only
+  // wrapper in this file that is not backed by a live door.
+  //
+  // `MemberEmployeeSeam` calls this and renders the seam ABSENT until the door ships — which
+  // its own header already says is the correct fallback under §1.3.
+  // Do NOT read this as verified-aligned; when the door ships, call it against real
+  // data and either confirm the shape or map it.
+  return callHrAligned(
     "hr_member_employee_links",
     { p_organization_id: args.organizationId, p_user_ids: args.userIds },
     { envelope: true, whatFailed: "The employee links for these members" },
@@ -963,7 +1148,10 @@ export function fetchHrOrgSummary(
     can_enable: boolean;
   }>
 > {
-  return callHr(
+  // verified aligned 2026-08-27: called live against the sandbox employer; the door returns
+  // exactly {organization_id, module_enabled, is_activated, headcount, prehire_count,
+  // pending_approvals, can_enable} — set-compared with the type above, both directions.
+  return callHrAligned(
     "hr_org_summary",
     { p_organization_id: organizationId },
     { envelope: true, whatFailed: "This organization's HR summary" },
@@ -1000,7 +1188,11 @@ export function enableHrModule(args: {
     next: "activation_wizard" | "module_off";
   }>
 > {
-  return callHr(
+  // verified aligned 2026-08-27 from `pg_proc.prosrc` rather than by calling it, because
+  // calling it would flip a real organization's module. The success envelope builds
+  // {ok, organization_id, module_enabled, is_activated, records_retained, next}; `ok` is the
+  // only field it sends that this type does not name, and no caller needs it.
+  return callHrAligned(
     "hr_module_set_enabled",
     { p_organization_id: args.organizationId, p_enabled: args.enabled },
     { envelope: false, whatFailed: "Switching HR on for this organization" },
@@ -1012,7 +1204,7 @@ export function upsertHrStructure(args: {
   kind: string;
   payload: Record<string, unknown>;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_structure_upsert",
     { p_kind: args.kind, p_payload: args.payload },
     { envelope: true, whatFailed: "Saving this" },
@@ -1068,7 +1260,7 @@ export async function setHrEmploymentPayGroup(args: {
   employmentId: string;
   payGroupId: string | null;
 }): Promise<HrResult<HrPayGroupAssignmentAck>> {
-  const result = await callHr<Record<string, unknown>>(
+  const result = await callHrRaw(
     "hr_employment_set_pay_group",
     { p_employment_id: args.employmentId, p_pay_group_id: args.payGroupId },
     { envelope: true, whatFailed: "This person's pay group" },
@@ -1110,7 +1302,7 @@ export async function setHrEmploymentPayGroup(args: {
 export async function seedHrActivation(
   organizationId: string,
 ): Promise<HrResult<HrActivationSeedAck>> {
-  const result = await callHr<Record<string, unknown>>(
+  const result = await callHrRaw(
     "hr_activation_seed",
     { p_organization_id: organizationId },
     { envelope: true, whatFailed: "The starting codes and calendars" },
@@ -1158,7 +1350,7 @@ export async function inviteHrEmployeeLogin(args: {
   employeeId: string;
   email?: string | null;
 }): Promise<HrResult<HrEmployeeInviteAck>> {
-  const result = await callHr<Record<string, unknown>>(
+  const result = await callHrRaw(
     "hr_employee_invite",
     {
       p_employee_id: args.employeeId,
@@ -1200,7 +1392,7 @@ export async function inviteHrEmployeeLogin(args: {
 export async function acceptHrEmployeeInvite(
   token: string,
 ): Promise<HrResult<HrEmployeeInviteAcceptAck>> {
-  const result = await callHr<Record<string, unknown>>(
+  const result = await callHrRaw(
     "hr_invite_accept",
     { p_token: token },
     { envelope: true, whatFailed: "This invitation" },
@@ -1228,7 +1420,7 @@ export function setHrKnob(args: {
   key: string;
   value: unknown;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_knob_set",
     {
       p_organization_id: args.organizationId,
@@ -1246,7 +1438,7 @@ export function clearHrKnob(args: {
   feature: string;
   key: string;
 }): Promise<HrResult<HrWriteAck>> {
-  return callHr<HrWriteAck>(
+  return callHrWrite(
     "hr_knob_clear",
     {
       p_organization_id: args.organizationId,
