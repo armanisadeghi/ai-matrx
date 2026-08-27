@@ -19,7 +19,7 @@ interface TreeProps {
 
 export default function TaxonomyTree({ nodes, onOpenDialog, onDelete }: TreeProps) {
   return (
-    <div className="rounded-xl border border-border bg-card">
+    <div className="matrx-touch-targets rounded-xl border border-border bg-card">
       {nodes.map((domain, index) => (
         <TreeRow
           key={domain.id}
@@ -119,7 +119,7 @@ function TreeRow({
             </a>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100">
           {node.level !== "subfeature" && (
             <Button
               variant="ghost"

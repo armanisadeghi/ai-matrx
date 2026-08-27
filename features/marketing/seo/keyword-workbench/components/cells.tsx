@@ -83,7 +83,7 @@ export function StampCell({
         : `Choose a ${dimension.label} value.`;
   return (
     <span
-      className="group/cell flex min-w-0 items-center gap-1"
+      className="matrx-touch-targets group/cell flex min-w-0 items-center gap-1"
       title={title}
       onClick={(event) => event.stopPropagation()}
     >
@@ -108,7 +108,7 @@ export function StampCell({
           onClick={onFilter}
           aria-label={`Filter to ${dimension.label}: ${label}`}
           title={`Filter to ${dimension.label}: ${label}`}
-          className="shrink-0 rounded p-0.5 text-muted-foreground opacity-0 transition-opacity hover:bg-accent hover:text-foreground focus-visible:opacity-100 group-hover/cell:opacity-100"
+          className="shrink-0 rounded p-0.5 text-muted-foreground opacity-100 transition-opacity hover:bg-accent hover:text-foreground [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/cell:opacity-100 focus-visible:opacity-100"
         >
           <Filter className="h-3 w-3" />
         </button>

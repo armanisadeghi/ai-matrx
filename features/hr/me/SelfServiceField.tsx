@@ -164,7 +164,7 @@ export function SelfServiceField({
   }
 
   return (
-    <div className={cn("group min-w-0 space-y-0.5", className)}>
+    <div className={cn("matrx-touch-targets group min-w-0 space-y-0.5", className)}>
       <div className="text-xs font-medium text-muted-foreground">{heading}</div>
       <div className="flex min-w-0 items-center gap-2">
         <span className="min-w-0 break-words text-sm font-medium text-foreground">
@@ -177,7 +177,7 @@ export function SelfServiceField({
             type="button"
             variant="ghost"
             size="sm"
-            className="h-8 w-8 shrink-0 p-0 opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+            className="h-8 w-8 shrink-0 p-0 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
             aria-label={`Change ${heading.toLowerCase()}`}
             onClick={() => setEditing(true)}
           >

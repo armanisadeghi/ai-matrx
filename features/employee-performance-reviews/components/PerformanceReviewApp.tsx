@@ -315,7 +315,7 @@ export default function PerformanceReviewApp({
       getWriteHandlers={getSurfaceWriteHandlers}
       isEditable
     >
-      <div className="flex h-full overflow-hidden bg-textured">
+      <div className="matrx-touch-targets flex h-full overflow-hidden bg-textured">
         {/* ── Sidebar ─────────────────────────────────────────────────────── */}
         <aside className="hidden w-72 flex-none flex-col border-r border-border bg-card/60 print:hidden lg:flex">
           <div className="flex items-center gap-2 border-b border-border p-4">
@@ -379,7 +379,7 @@ export default function PerformanceReviewApp({
                           e.stopPropagation();
                           store.deleteReview(rev.id);
                         }}
-                        className="h-7 w-7 flex-none text-muted-foreground opacity-0 transition-opacity hover:text-destructive group-hover:opacity-100"
+                        className="h-7 w-7 flex-none text-muted-foreground opacity-100 transition-opacity hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                         aria-label="Delete review"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

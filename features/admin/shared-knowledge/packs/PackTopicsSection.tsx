@@ -222,7 +222,7 @@ export function PackTopicsSection({ detail, onChanged }: { detail: AdminPackDeta
   });
 
   return (
-    <div className="space-y-2">
+    <div className="matrx-touch-targets space-y-2">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
           {detail.topics.length} topics valued. Children inherit a parent&apos;s worth; value as high in the tree as it is true.
@@ -293,10 +293,10 @@ export function PackTopicsSection({ detail, onChanged }: { detail: AdminPackDeta
                     <span className="text-sm font-semibold tabular-nums text-foreground">{t.weight ?? "—"}</span>
                     {canAuthor ? (
                       <>
-                        <Button size="sm" variant="ghost" className="h-7 px-1.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setEditingId(t.item_id)} aria-label={`Edit ${t.name}`}>
+                        <Button size="sm" variant="ghost" className="h-7 px-1.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setEditingId(t.item_id)} aria-label={`Edit ${t.name}`}>
                           <Pencil className="size-3.5" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-7 px-1.5 text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setDeleteTarget(t)} aria-label={`Remove ${t.name}`}>
+                        <Button size="sm" variant="ghost" className="h-7 px-1.5 text-muted-foreground opacity-100 transition-opacity hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setDeleteTarget(t)} aria-label={`Remove ${t.name}`}>
                           <Trash2 className="size-3.5" />
                         </Button>
                       </>

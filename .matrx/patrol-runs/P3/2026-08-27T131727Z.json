@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P3",
+  "runId": "2026-08-27T131727Z",
+  "baseSha": "2cfc5d15ffbb1886572f97f7ea58451dadcc1aa6",
+  "createdAt": "2026-08-27T13:20:45.327Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-27T13:20:45.327Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "P3 structural-novelty, open-sighting, and periodic full mobile scan started from current origin/main.",
+      "evidence": [
+        "Prior P3 candidate is delivered in v0.4.980; its authority-ref projection is reconciled separately.",
+        "Baseline type-check, doctrine, viewport-unit, h-screen, pinch-zoom, inline-font, and fixed-bottom detectors are clean; unrelated patrol-manifest drift is recorded separately.",
+        "Structural novelty since the prior candidate is 177 route leaves and 754 direct client TSX files; targeted route-root and hover-hidden triage is active."
+      ],
+      "previousEventHash": null,
+      "eventHash": "cfcc560136f39ca3696a0e8269038aa7840be71aef67a184908e94e22ad59d77"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-27T13:21:34.688Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Applied a bounded eight-file P3 batch for 11 hover-hidden touch actions and eight missing coarse-pointer touch-floor roots.",
+      "evidence": [
+        "Each action is visible by default and hidden only inside hover:hover; each dense root consumes the established .matrx-touch-targets primitive.",
+        "No desktop dimensions, product behavior, permissions, data contracts, or interaction handlers changed."
+      ],
+      "previousEventHash": "cfcc560136f39ca3696a0e8269038aa7840be71aef67a184908e94e22ad59d77",
+      "eventHash": "8876feb7baad04bcf661924b0515100ccc7da4f66e786d5e1a39cb22136e8116"
+    }
+  ]
+}

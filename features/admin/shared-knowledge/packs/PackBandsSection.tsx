@@ -223,10 +223,10 @@ function AreaEditor({
 function RowActions({ onEdit, onDelete, label }: { onEdit: () => void; onDelete: () => void; label: string }) {
   return (
     <div className="flex shrink-0 items-center">
-      <Button size="sm" variant="ghost" className="h-7 px-1.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onClick={onEdit} aria-label={`Edit ${label}`}>
+      <Button size="sm" variant="ghost" className="h-7 px-1.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={onEdit} aria-label={`Edit ${label}`}>
         <Pencil className="size-3.5" />
       </Button>
-      <Button size="sm" variant="ghost" className="h-7 px-1.5 text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100" onClick={onDelete} aria-label={`Remove ${label}`}>
+      <Button size="sm" variant="ghost" className="h-7 px-1.5 text-muted-foreground opacity-100 transition-opacity hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={onDelete} aria-label={`Remove ${label}`}>
         <Trash2 className="size-3.5" />
       </Button>
     </div>
@@ -309,7 +309,7 @@ export function PackBandsSection({ detail, onChanged }: { detail: AdminPackDetai
   );
 
   return (
-    <div className="space-y-5">
+    <div className="matrx-touch-targets space-y-5">
       {bandBlock("value_band", "Value bands", "The vocabulary this industry scores into. min_score = the lowest computed score that lands in the band; they must not collide.", detail.value_bands)}
       {bandBlock("geo_band", "Geo bands", "How far from home still counts. ×0 means the business cannot serve that traffic at all.", detail.geo_bands)}
       <section className="space-y-1.5">

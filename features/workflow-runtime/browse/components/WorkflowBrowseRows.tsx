@@ -41,7 +41,7 @@ export function WorkflowBrowseRows({
   const compact = density === "compact";
 
   return (
-    <div className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
+    <div className="matrx-touch-targets divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
       {rows.map((row) => {
         const href = hrefFor(row);
         const nameClass = cn(
@@ -155,7 +155,7 @@ export function WorkflowBrowseRows({
                 onClick={(e) => e.stopPropagation()}
                 // Reserved space, revealed on hover/focus — the row never
                 // reflows when the kebab appears.
-                className="shrink-0 rounded p-1 text-muted-foreground opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+                className="shrink-0 rounded p-1 text-muted-foreground opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
               >
                 <MoreVertical className="h-4 w-4" />
               </button>

@@ -388,7 +388,7 @@ export function PackMeaningSection({
   ).length;
 
   return (
-    <div className="space-y-2">
+    <div className="matrx-touch-targets space-y-2">
       <div className="flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">
           {detail.meaning.length} answers ·{" "}
@@ -485,7 +485,7 @@ export function PackMeaningSection({
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 px-1.5 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                          className="h-7 px-1.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                           onClick={() => setEditingId(item.item_id)}
                           aria-label={`Edit ${item.label}`}
                         >
@@ -494,7 +494,7 @@ export function PackMeaningSection({
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 px-1.5 text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100 focus-visible:opacity-100"
+                          className="h-7 px-1.5 text-muted-foreground opacity-100 transition-opacity hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                           onClick={() => setDeleteTarget(item)}
                           aria-label={`Remove ${item.label}`}
                         >
