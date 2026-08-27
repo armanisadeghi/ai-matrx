@@ -142,6 +142,12 @@ const EXPECTED_CHECKS = [
   // access log that credits a robot for what a named human did is read as evidence, so the
   // contradiction is not allowed to accumulate. Fix the CALL, not the row.
   "audit_actor_type_matches_named_user",
+  // T-41 (hr_l3_52). SPEC-ACCESS's DEAD-DOOR RULE: a capability token declared by an endpoint and
+  // held by no role refuses EVERYONE, so it passes every leak-shaped test and surfaces only as a
+  // 403 nobody can clear. T-41 was specified on 2026-08-26 after L13 shipped five of them and was
+  // never built; time.recompute was the sixteenth. Asserted as a token-set difference, never as
+  // "can role X do Y". The 15 still-dead tokens ride a dated allowlist printed on every run.
+  "no_dead_capability_doors",
 ] as const;
 
 interface ConformanceRow {
