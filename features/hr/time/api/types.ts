@@ -862,16 +862,28 @@ export interface KioskDeviceSession {
  * disclosure.
  */
 export interface KioskPunchResult {
-  employeeDisplayName: string;
-  punchKind: PunchKind;
-  occurredAtLocal: string;
-  tz: string;
+  /** 🚨 The punching employee's display name and NOTHING else about them. Never a roster. */
+  employeeDisplayName: string | null;
   replayed: boolean;
-  /** "Photo recorded" / "Location recorded" — the confirmation states what was captured (§4.9). */
-  capturedNotices: string[];
-  /** A real second punch was suspected. ONE door: "That's not right" → a manager-attended correction. */
-  duplicateSuspected: { previousPunchLocalTime: string; message: string } | null;
-  attestationRequired: boolean;
+  /** The five fields a wall tablet is allowed to know about the punch it just wrote. */
+  punch: {
+    id: string | null;
+    punchKind: PunchKind | null;
+    /** An INSTANT. Render it in `tz` — the server does not pre-format it. */
+    occurredAt: string | null;
+    localWorkDate: string | null;
+    tz: string | null;
+  };
+  /** The clock state the punch produced, as a bare word. Deliberately not the full envelope. */
+  resultingState: ClockPhase | null;
+  /**
+   * 🚨 **A BOOLEAN, not an object.** The door answers `exists(... detector = 'near_duplicate')`.
+   * It carries no previous-punch time and no message, so the duplicate card states the fact and
+   * offers its one door — it does not invent "you already clocked in at 8:02am".
+   */
+  duplicateSuspected: boolean;
+  /** The auto-dismiss knob, resolved per organization and sent with the answer. */
+  confirmDismissSeconds: number | null;
 }
 
 /**

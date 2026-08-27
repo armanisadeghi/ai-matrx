@@ -610,8 +610,45 @@ export interface KioskPunchInput {
  * another HR field. There is **no optimistic UI on the kiosk**: the confirmation card appears only
  * after the server answered, because a card that appears first lets a worker walk away unpunched.
  */
-export function kioskPunch(input: KioskPunchInput, opts?: HrRpcOptions): Promise<KioskPunchResult> {
-  return callHrTimeRpc<KioskPunchResult>(
+/**
+ * 🚨 **MAPPED, NOT CAST — the fifth instance of this lane's standing defect.**
+ *
+ * `hr_kiosk_punch` answers `{ok, employee_display_name, replayed, punch:{id, punch_kind,
+ * occurred_at, local_work_date, tz}, resulting_state, duplicate_suspected, confirm_dismiss_seconds}`
+ * — verified live 2026-08-27. The declared type had `punchKind`, `occurredAtLocal`, `tz`,
+ * `capturedNotices` and an OBJECT `duplicateSuspected` at the top level; none of those exist. Cast
+ * straight onto it, `result.punchKind` was `undefined`, `punchKindPresentation` returned undefined,
+ * and reading `.pastTense` **crashed the tablet into an error boundary at the moment of the punch**
+ * — after the row was already written, so the worker had punched and been shown a crash.
+ */
+function mapKioskPunchResult(raw: unknown): KioskPunchResult {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const punch = (r.punch ?? {}) as Record<string, unknown>;
+  const str = (v: unknown): string | null => (typeof v === "string" && v ? v : null);
+
+  return {
+    employeeDisplayName: str(r.employeeDisplayName),
+    replayed: r.replayed === true,
+    punch: {
+      id: str(punch.id),
+      punchKind: (str(punch.punchKind) as KioskPunchResult["punch"]["punchKind"]) ?? null,
+      occurredAt: str(punch.occurredAt),
+      localWorkDate: str(punch.localWorkDate),
+      tz: str(punch.tz),
+    },
+    resultingState: (str(r.resultingState) as KioskPunchResult["resultingState"]) ?? null,
+    // A boolean on the wire. Never an object.
+    duplicateSuspected: r.duplicateSuspected === true,
+    confirmDismissSeconds:
+      typeof r.confirmDismissSeconds === "number" ? r.confirmDismissSeconds : null,
+  };
+}
+
+export async function kioskPunch(
+  input: KioskPunchInput,
+  opts?: HrRpcOptions,
+): Promise<KioskPunchResult> {
+  const raw = await callHrTimeRpc<unknown>(
     "hr_kiosk_punch",
     {
       p_session_token: input.sessionToken,
@@ -625,4 +662,5 @@ export function kioskPunch(input: KioskPunchInput, opts?: HrRpcOptions): Promise
     },
     opts,
   );
+  return mapKioskPunchResult(raw);
 }

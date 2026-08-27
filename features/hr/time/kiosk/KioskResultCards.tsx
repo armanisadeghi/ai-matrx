@@ -18,6 +18,7 @@ import { AlertTriangle, CheckCircle2, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import type { KioskPunchResult } from "@/features/hr/time/api/types";
+import { formatStampedTimeWithZone } from "@/features/hr/time/clock/stampedTime";
 import { punchKindPresentation } from "@/features/hr/time/clock/punchVocabulary";
 
 /**
@@ -26,12 +27,13 @@ import { punchKindPresentation } from "@/features/hr/time/clock/punchVocabulary"
  * Rendering a replay as an error is how a correctly-working idempotency key looks like a broken
  * time clock to the person standing in front of it.
  *
- * 🚨 The time is `occurredAtLocal` — **already formatted by the server in the punch's stamped
- * zone**. The kiosk does not re-format it and must not: a tablet whose OS zone is misconfigured
- * would otherwise print a time the timesheet disagrees with (§9 rule 1).
+ * 🚨 The time is rendered in the punch's **stamped `tz`**, which the door returns beside the
+ * instant (`punch.occurred_at`, `punch.tz`). It is deliberately NOT the tablet's own zone: a tablet
+ * whose OS zone is misconfigured would otherwise print a time the timesheet disagrees with
+ * (§9 rule 1) — and this device's clock is exactly the thing already under suspicion.
  */
 export function KioskConfirmationCard({ result }: { result: KioskPunchResult }) {
-  const presentation = punchKindPresentation(result.punchKind);
+  const presentation = punchKindPresentation(result.punch.punchKind);
 
   return (
     <div className="flex flex-col items-center gap-6 rounded-2xl border border-border bg-card p-10 text-center">
@@ -39,7 +41,10 @@ export function KioskConfirmationCard({ result }: { result: KioskPunchResult }) 
       <div className="flex flex-col gap-2">
         <p className="text-4xl font-semibold text-foreground">{result.employeeDisplayName}</p>
         <p className="text-3xl text-foreground">
-          {presentation.pastTense} at {result.occurredAtLocal}
+          {presentation.pastTense}
+          {result.punch.occurredAt && result.punch.tz
+            ? ` at ${formatStampedTimeWithZone(result.punch.occurredAt, result.punch.tz)}`
+            : ""}
         </p>
       </div>
 
@@ -49,32 +54,18 @@ export function KioskConfirmationCard({ result }: { result: KioskPunchResult }) 
         </p>
       )}
 
-      {/* §4.9: the confirmation states what was captured, at the moment it happened. */}
-      {result.capturedNotices.length > 0 && (
-        <ul className="flex flex-col items-center gap-1">
-          {result.capturedNotices.map((notice) => (
-            <li key={notice} className="flex items-center gap-2 text-xl text-muted-foreground">
-              <MapPin className="size-5" />
-              {notice}
-            </li>
-          ))}
-        </ul>
-      )}
-
       {/*
-        The server says an attestation is still owed. 🚨 The kiosk CANNOT collect it: an attestation
-        must show the total it is asking about and the meal rule it is asking under (L3-47, §3.2),
-        and `KioskPunchResult` carries neither — nor is there a kiosk-callable clock-state RPC to
-        get them from. Inventing a card without the numbers would be an attestation to an unstated
-        number, which §3.2 says is not an attestation. So the tablet says so plainly and the
-        contract gap is carried as a named debt rather than papered over.
+        🚨 §4.9 wants the confirmation to state what was captured ("Photo recorded"). The door does
+        NOT send it — `hr_kiosk_punch` returns the display name, the punch's five fields, the
+        resulting state and the duplicate flag, and nothing about capture. Rather than print a
+        notice the server never confirmed, the kiosk says nothing here and the gap is reported.
       */}
-      {result.attestationRequired && (
-        <p className="max-w-lg text-xl text-muted-foreground">
-          You still need to confirm your hours and breaks for today. Do that on your own phone or
-          computer, or ask your manager.
-        </p>
-      )}
+      {/*
+        🚨 An owed break attestation is NOT on this door either — the earlier `attestationRequired`
+        field never existed on the wire. §3.2's card must show the total it is asking about and the
+        meal rule it asks under, and the kiosk can reach neither, so there was never a card to show;
+        now there is not a phantom flag for one either. Carried as a named debt.
+      */}
     </div>
   );
 }
@@ -114,8 +105,15 @@ export function KioskDuplicateCard({
       <AlertTriangle className="size-20 text-muted-foreground" />
       <div className="flex flex-col gap-2">
         <p className="text-4xl font-semibold text-foreground">{result.employeeDisplayName}</p>
-        {/* The server's own sentence: "You already clocked in at 8:02am." */}
-        <p className="text-3xl text-foreground">{duplicate.message}</p>
+        {/*
+          🚨 The door sends a BOOLEAN — `exists(... detector = 'near_duplicate')` — and no previous
+          punch time. The card therefore states the fact it actually has and does NOT invent
+          "you already clocked in at 8:02am"; a fabricated time on a record a manager will act on is
+          worse than a plainer sentence.
+        */}
+        <p className="text-3xl text-foreground">
+          This looks like a second punch a moment after your last one.
+        </p>
       </div>
 
       <div className="flex w-full flex-col gap-3">
@@ -169,9 +167,11 @@ export function KioskDisputeInstructions({
         <p className="text-2xl text-foreground">
           {/* The PAST-tense register, not the button label: this is a report of what happened, and
               "clock in at 8:03 AM" reads as an instruction rather than a record. */}
-          {result.employeeDisplayName} — {punchKindPresentation(result.punchKind).pastTense.toLowerCase()}{" "}
-          at {result.occurredAtLocal}
-          {duplicate ? `, and again at ${duplicate.previousPunchLocalTime}` : ""}.
+          {result.employeeDisplayName} — {punchKindPresentation(result.punch.punchKind).pastTense.toLowerCase()}{" "}
+          {result.punch.occurredAt && result.punch.tz
+            ? `at ${formatStampedTimeWithZone(result.punch.occurredAt, result.punch.tz)}`
+            : "just now"}
+          {duplicate ? ", twice in quick succession" : ""}.
         </p>
       </div>
       <Button

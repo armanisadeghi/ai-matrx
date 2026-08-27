@@ -48,8 +48,27 @@ const PUNCH_KIND_PRESENTATION: Record<PunchKind, PunchKindPresentation> = {
   transfer: { label: "Transfer", pastTense: "Transferred", icon: Repeat, emphasis: "secondary" },
 };
 
-export function punchKindPresentation(kind: PunchKind): PunchKindPresentation {
-  return PUNCH_KIND_PRESENTATION[kind];
+/**
+ * 🚨 **TOTAL BY CONSTRUCTION — this lookup crashed a wall tablet mid-punch.**
+ *
+ * `KioskConfirmationCard` did `punchKindPresentation(result.punchKind).pastTense` against a result
+ * that was cast rather than mapped, so `punchKind` was `undefined`, this returned `undefined`, and
+ * reading `.pastTense` threw the tablet into an error boundary — **after the punch row was already
+ * written.** The worker had punched and been shown a crash.
+ *
+ * Mapping the payload is the real fix. This is the second line of defence, and the fallback is
+ * deliberately neutral: it names no act, because guessing which one happened on a time record is
+ * worse than saying "recorded".
+ */
+export function punchKindPresentation(kind: PunchKind | null | undefined): PunchKindPresentation {
+  return (
+    (kind ? PUNCH_KIND_PRESENTATION[kind] : undefined) ?? {
+      label: "Record",
+      pastTense: "Recorded",
+      icon: Repeat,
+      emphasis: "secondary",
+    }
+  );
 }
 
 export interface ClockPhasePresentation {

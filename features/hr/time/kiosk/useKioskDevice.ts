@@ -95,6 +95,13 @@ function kioskRefusalSentence(reason: string): string {
   }
 }
 
+/**
+ * How often a tablet that is paired-but-not-yet-approved re-asks. See the `device_pending_approval`
+ * branch for why this is the one constant here: before trust exists the server hands the device no
+ * configuration, so there is nothing to read. Once trusted, `kiosk_heartbeat_seconds` governs.
+ */
+const PENDING_RECHECK_SECONDS = 10;
+
 export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): KioskDevice {
   const [view, setView] = useState<KioskDeviceView>({ kind: "loading" });
   const [skew, setSkew] = useState<KioskClockSkew | null>(null);
@@ -175,6 +182,23 @@ export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): Kios
           const trustState = cause.details.trust_state;
 
           if (reason === "device_pending_approval") {
+            /*
+             * 🚨 START THE RE-CHECK, OR THE SCREEN IS LYING.
+             *
+             * The waiting screen promises "it will start working on its own once an administrator
+             * approves it", and §3.3's flowchart resumes the moment trust is granted. The poll
+             * interval used to come from the authenticate SUCCESS response — but a pending device
+             * is now a REFUSAL, which carries `trust_state` and `server_time` and no config at all.
+             * So without this the interval stayed null, the poll never ran, and a correctly paired
+             * tablet sat on that screen forever while its row said `trusted`. Found by watching a
+             * real tablet fail to resume, not by reading.
+             *
+             * `PENDING_RECHECK_SECONDS` is a **bootstrap** interval and the one place in this lane
+             * with a constant, because there is genuinely no config to read before trust exists.
+             * The moment the device is trusted, the server's own `heartbeatSeconds` takes over
+             * (`setTrustPollSeconds` on the success path below) and this value is never used again.
+             */
+            setTrustPollSeconds((current) => current ?? PENDING_RECHECK_SECONDS);
             setView({ kind: "awaiting-trust", identity });
             return;
           }
@@ -254,10 +278,54 @@ export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): Kios
             setView({ kind: "bricked", trustState: beat.trustState });
           }
         })
-        .catch(() => {
+        .catch((cause: unknown) => {
           if (!live) return;
-          // A missed heartbeat is a network fact, not a trust decision. The tablet keeps its
-          // session and stops accepting punches until it can reach the server again — it never
+
+          /*
+           * 🚨 A REFUSAL IS NOT A NETWORK FAILURE, AND READING IT AS ONE HID THE BRICK.
+           *
+           * `hr_kiosk_session_heartbeat` answers a withdrawn device with
+           * `{ok:false, reason:'device_not_trusted'}` — which the transport throws. This catch used
+           * to label every throw "offline", so revoking a tablet mid-session showed the person
+           * *"This tablet is offline. Your punch was not recorded"* instead of the brick, and the
+           * heartbeat kept running against a session the server had already ended. A revoked device
+           * telling its user it has a connectivity problem is the worst of both: it is not
+           * bricked, and it is not honest.
+           *
+           * The server ends the session on this path too, so there is nothing left to keep.
+           */
+          if (cause instanceof HrRpcError) {
+            const reason =
+              typeof cause.details.reason === "string" ? cause.details.reason : cause.code;
+            const trustState = String(cause.details.trust_state ?? "revoked");
+
+            if (reason === "device_not_trusted") {
+              window.clearInterval(id);
+              setView({
+                kind: "bricked",
+                trustState: isBrickingTrust(trustState) ? trustState : "revoked",
+              });
+              return;
+            }
+            if (reason === "device_pending_approval") {
+              window.clearInterval(id);
+              setView({ kind: "awaiting-trust", identity: ready.identity });
+              return;
+            }
+            if (reason === "session_not_valid") {
+              /*
+               * The session expired or was ended — but the DEVICE may still be perfectly trusted.
+               * Re-authenticate rather than bricking: a tablet that goes dark because its 12-hour
+               * device session lapsed overnight is a tablet nobody can clock in on at 6am.
+               */
+              window.clearInterval(id);
+              setTrustPollToken((n) => n + 1);
+              return;
+            }
+          }
+
+          // A genuinely missed heartbeat is a network fact, not a trust decision. The tablet keeps
+          // its session and stops accepting punches until it can reach the server again — it never
           // guesses that it is still trusted, and it never guesses that it is not.
           setOffline(true);
         });
