@@ -214,6 +214,9 @@ export type HrFailureAction = "retry" | "resolve" | "abandon" | "reassign";
 /** `public.hr_wf_instance` — the decision panel's read. */
 export type HrInstanceDetail = {
     instance: Record<string, unknown>;
+    /** Lifted from the decorated steps by the door — null when withheld from this viewer. */
+    subject_label?: string | null;
+    subject_withheld?: boolean;
     steps: Record<string, unknown>[];
     decisions: Record<string, unknown>[];
     events: Record<string, unknown>[];

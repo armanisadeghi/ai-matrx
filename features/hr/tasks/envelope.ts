@@ -328,6 +328,8 @@ export function parseInstance(source: Obj): HrInstanceDetail {
     }
     return {
         instance,
+        subject_label: optStr(source, "subject_label"),
+        subject_withheld: optBool(source, "subject_withheld"),
         steps: objects(rpc, source, "steps"),
         decisions: objects(rpc, source, "decisions"),
         events: objects(rpc, source, "events"),

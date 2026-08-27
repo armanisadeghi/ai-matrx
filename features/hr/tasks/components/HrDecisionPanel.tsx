@@ -189,8 +189,20 @@ export function HrDecisionPanel({
                     <>
                         <header className="space-y-1">
                             <h1 className="text-lg font-semibold text-foreground">
-                                {str(instance, "flow_key")}
+                                {/* 🚨 The person, not just the flow. An approver who cannot see
+                                    whose pay change this is is being asked for a signature, not a
+                                    decision (T-L10-5). The door decides whether they may be told;
+                                    this only renders the answer. */}
+                                {detail.subject_label
+                                    ? `${str(instance, "flow_key")} — ${detail.subject_label}`
+                                    : str(instance, "flow_key")}
                             </h1>
+                            {detail.subject_withheld ? (
+                                <p className="text-xs text-muted-foreground">
+                                    The subject is not shown to you — this flow is restricted and
+                                    you are not one of its approvers.
+                                </p>
+                            ) : null}
                             <p className="text-sm text-muted-foreground">
                                 {str(instance, "state")}
                                 {str(instance, "state_reason")
