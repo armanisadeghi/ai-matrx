@@ -1,27 +1,22 @@
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
 import { HrLoading } from "@/features/hr/shared/HrStates";
 import { HrStructurePanel } from "@/features/hr/settings/structure/HrStructurePanel";
 
 /**
- * Route 69 (SPEC-UI-IA §3.11). The tab bar, the activation gate and the
- * HR-admin gate all live in `HrSettingsShell`, which the panel mounts — a route file
- * that repeated any of them would be a second gate that can disagree with the first.
+ * Route 69 (SPEC-UI-IA §3.11). Supports `?focus=<id>` — the profile's department, location and job-title doors land here.
+ *
+ * No `PageHeader` here: `HrShell` — mounted by this section's `layout.tsx` through
+ * `HrSettingsChrome` — already injects the route header, and a second one collides
+ * with it. The layout also owns the tab bar, the activation gate and the HR-admin
+ * gate, so this file is only the panel.
  */
 export const metadata = { title: "Structure" };
 
 export default function Page() {
-    return (
-        <>
-            <PageHeader>
-                <h1 className="text-sm font-semibold">Structure</h1>
-            </PageHeader>
-            <div className="h-full overflow-hidden">
-                <Suspense fallback={<HrLoading variant="panel" rows={6} />}>
-                    <HrStructurePanel />
-                </Suspense>
-            </div>
-        </>
-    );
+  return (
+    <Suspense fallback={<HrLoading variant="panel" rows={6} />}>
+      <HrStructurePanel />
+    </Suspense>
+  );
 }

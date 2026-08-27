@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
 import { HrLoading } from "@/features/hr/shared/HrStates";
 import { HrLanePanel } from "@/features/hr/settings/components/HrLanePanel";
 import { HrFlowTypeDefaults } from "@/features/hr/settings/workflows/HrFlowTypeDefaults";
@@ -17,22 +16,15 @@ import { HrFlowTypeDefaults } from "@/features/hr/settings/workflows/HrFlowTypeD
 export const metadata = { title: "Approvals" };
 
 export default function Page() {
-    return (
-        <>
-            <PageHeader>
-                <h1 className="text-sm font-semibold">Approvals</h1>
-            </PageHeader>
-            <div className="h-full overflow-hidden">
-                <Suspense fallback={<HrLoading variant="panel" rows={6} />}>
-                    <HrLanePanel
-                        section="workflows"
-                        features={["hr.workflow", "hr.approvals"]}
-                        promise="An editor for each flow's approval chain: who decides, in what order, in parallel or in sequence, who substitutes when they are away, what escalates and when — with never-approve-your-own-request enforced by the engine rather than by a rule somebody remembers."
-                    >
-                        <HrFlowTypeDefaults />
-                    </HrLanePanel>
-                </Suspense>
-            </div>
-        </>
-    );
+  return (
+    <Suspense fallback={<HrLoading variant="panel" rows={6} />}>
+      <HrLanePanel
+        section="workflows"
+        features={["hr.workflow", "hr.approvals"]}
+        promise="An editor for each flow's approval chain: who decides, in what order, in parallel or in sequence, who substitutes when they are away, what escalates and when — with never-approve-your-own-request enforced by the engine rather than by a rule somebody remembers."
+      >
+        <HrFlowTypeDefaults />
+      </HrLanePanel>
+    </Suspense>
+  );
 }
