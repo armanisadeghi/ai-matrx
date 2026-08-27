@@ -54,8 +54,9 @@ in the same change.
 10. **Dialog on desktop, Drawer on mobile**, branched in the surface. `dvh` not `vh` under
     `app/(a)/files/`; `pb-safe` on fixed bottoms; 16px inputs. Tablet list rows reserve space for
     a visible 44px **More** control; mobile rows expose a 44px **Actions** control plus the canonical
-    ContextMenuV3 long-press path. Picker footer Cancel/confirm controls are 44px in every host.
-    Row activation ignores portal-rendered menu events. No
+    ContextMenuV3 long-press path. File/folder row menus keep Rename, Move, and Delete parity;
+    picker and action-dialog controls are 44px at tablet/mobile widths. Row activation ignores
+    portal-rendered menu events. No
     `window.alert/confirm/prompt`.
 11. **Core components never know their host** — no imports from `app/`,
     `features/window-panels/`, or `useIsMobile`; no core component opens a Dialog directly.
@@ -84,6 +85,9 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-27 — Tablet file actions regain Move and the 44px dialog floor.** The shared file menu
+  now opens its canonical picker without requiring a host callback; Rename/Delete actions remain
+  44px at tablet/mobile widths for both files and folders.
 - **2026-08-27 — Expected asset-envelope access refusals stay out of the incident queue.** A
   `403 permission_denied` or `404 file_not_found` from `GET /files/{id}/asset` remains typed UI
   access-state control flow; genuine asset endpoint faults are still captured.

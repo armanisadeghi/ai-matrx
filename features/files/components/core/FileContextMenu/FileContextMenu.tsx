@@ -19,6 +19,7 @@ import { PDF_SURFACES } from "@/features/pdf/surfaces/registry";
 import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import {
   ArchiveRestore,
+  BrainCircuit,
   Copy,
   CopyPlus,
   Download,
@@ -35,7 +36,6 @@ import {
   RotateCw,
   Scissors,
   Share2,
-  Sparkles,
   Telescope,
   Trash2,
   Users,
@@ -139,6 +139,29 @@ export function FileContextMenu({
   // built-in RenameDialog so renaming works everywhere the menu is mounted.
   const handleRename = onRename ?? (() => setRenameOpen(true));
   const file = filesById[fileId];
+  const handleMove = useCallback(async () => {
+    if (onMove) {
+      onMove();
+      return;
+    }
+    if (!file) return;
+
+    const target = await openFolderPicker({ title: "Move to…" });
+    if (target === undefined || target === file.parentFolderId) return;
+
+    setBusy("move");
+    try {
+      await actions.move(target);
+    } catch (error) {
+      const { toast } = await import("@/lib/toast");
+      toast.error("Move failed", {
+        description:
+          error instanceof Error ? error.message : "The file was not moved.",
+      });
+    } finally {
+      setBusy(null);
+    }
+  }, [actions, file, onMove]);
   // Virtual files (Notes / Agent Apps / Code Snippets / etc.) don't go
   // through the Python `/files/{id}` REST contract, so any action that
   // depends on a signed S3 URL (Download / Copy link / Duplicate) or on
@@ -198,9 +221,7 @@ export function FileContextMenu({
     setBusy("download");
     try {
       await runBatch(async (id) => {
-        const res = await dispatch(
-          getFileUrlThunk({ fileId: id }),
-        );
+        const res = await dispatch(getFileUrlThunk({ fileId: id }));
         const url = (res as { payload?: { url?: string } } | undefined)?.payload
           ?.url;
         if (!url) return;
@@ -365,12 +386,14 @@ export function FileContextMenu({
     // Imported here rather than at module scope for the same reason `toast` is:
     // this handler is only reachable on user action, and the file is a heavy
     // client component.
-    const { toastDoor } = await import(
-      "@/components/official/entity-ref/toastDoor"
+    const { toastDoor } =
+      await import("@/components/official/entity-ref/toastDoor");
+    const tid = toast.loading(
+      `Reprocessing ${ids.length} files for Knowledge…`,
+      {
+        description: "Running serially to avoid pool saturation.",
+      },
     );
-    const tid = toast.loading(`Reprocessing ${ids.length} files for Knowledge…`, {
-      description: "Running serially to avoid pool saturation.",
-    });
     let done = 0;
     for (const id of ids) {
       try {
@@ -398,11 +421,14 @@ export function FileContextMenu({
         });
       }
     }
-    toast.success(`${done} of ${ids.length} files queued for Knowledge ingestion`, {
-      id: tid,
-      description:
-        "Watch the per-file Document tab for progress. Reload the file list when done to see the new viewer links.",
-    });
+    toast.success(
+      `${done} of ${ids.length} files queued for Knowledge ingestion`,
+      {
+        id: tid,
+        description:
+          "Watch the per-file Document tab for progress. Reload the file list when done to see the new viewer links.",
+      },
+    );
   }, [batchFileIds, fileId]);
 
   // "Open in 4-pane Knowledge viewer" — looks up the processed_documents row
@@ -416,7 +442,11 @@ export function FileContextMenu({
         found: boolean;
       }>(`/api/document/by-cld-file/${encodeURIComponent(fileId)}`);
       if (data.found && data.document_id) {
-        window.open(`/knowledge/viewer/${data.document_id}`, "_blank", "noopener");
+        window.open(
+          `/knowledge/viewer/${data.document_id}`,
+          "_blank",
+          "noopener",
+        );
       } else {
         const { toast } = await import("@/lib/toast");
         toast.info("Not yet processed for Knowledge", {
@@ -632,12 +662,13 @@ export function FileContextMenu({
                   {FILE_CONTEXT_MENU_LABEL}
                 </DropdownMenuItem>
               ) : null}
-              {onMove ? (
-                <DropdownMenuItem onClick={onMove}>
-                  <FolderInput className="mr-2 h-4 w-4" />
-                  Move…
-                </DropdownMenuItem>
-              ) : null}
+              <DropdownMenuItem
+                onClick={() => void handleMove()}
+                disabled={busy !== null}
+              >
+                <FolderInput className="mr-2 h-4 w-4" />
+                Move…
+              </DropdownMenuItem>
               {!isVirtual ? (
                 <>
                   <DropdownMenuItem
@@ -715,7 +746,7 @@ export function FileContextMenu({
                   <DropdownMenuItem
                     onClick={() => void handleOpenKnowledgeAssets()}
                   >
-                    <Sparkles className="mr-2 h-4 w-4" />
+                    <BrainCircuit className="mr-2 h-4 w-4" />
                     Knowledge assets
                   </DropdownMenuItem>
                   <DropdownMenuItem
@@ -785,8 +816,11 @@ export function FileContextMenu({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="max-lg:min-h-11">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
+              className="max-lg:min-h-11"
               onClick={() => {
                 setConfirmOpen(false);
                 void (async () => {
@@ -819,8 +853,13 @@ export function FileContextMenu({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void handleBatchDelete()}>
+            <AlertDialogCancel className="max-lg:min-h-11">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="max-lg:min-h-11"
+              onClick={() => void handleBatchDelete()}
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -453,10 +453,15 @@ export function RenameDialog({
         <div className="space-y-3">{fields}</div>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy} onClick={() => setError(null)}>
+          <AlertDialogCancel
+            className="max-lg:min-h-11"
+            disabled={busy}
+            onClick={() => setError(null)}
+          >
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
+            className="max-lg:min-h-11"
             onClick={(e) => {
               e.preventDefault();
               void handleSubmit();

@@ -99,7 +99,8 @@ export function FolderContextMenu({
   const isVirtual = folder?.source.kind === "virtual";
 
   const cmd =
-    typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(navigator.platform)
+    typeof navigator !== "undefined" &&
+    /Mac|iPhone|iPad/i.test(navigator.platform)
       ? "⌘"
       : "Ctrl";
 
@@ -349,14 +350,16 @@ export function FolderContextMenu({
             <p className="text-xs text-destructive">{deleteError}</p>
           ) : null}
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="max-lg:min-h-11" disabled={deleting}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 void handleDelete();
               }}
               disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="max-lg:min-h-11 bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleting ? "Deleting…" : "Delete"}
             </AlertDialogAction>
