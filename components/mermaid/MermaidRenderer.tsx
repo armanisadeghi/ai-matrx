@@ -12,7 +12,7 @@
  *  - The original source is never mutated; fixes affect only what renders.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState } from "react";
 
 console.log(
   "%c[MERMAID IMPORT TEST] components/mermaid/MermaidRenderer.tsx",
@@ -27,7 +27,13 @@ import { cn } from "@/lib/utils";
 import { detectDiagramType, extractMermaidTitle } from "./diagram-type";
 import { getCatalogEntry } from "./catalog";
 import { MermaidViewport } from "./MermaidViewport";
-import { preloadMermaid, renderMermaid, validateMermaid } from "./runtime";
+import {
+  MermaidRenderSupersededError,
+  preloadMermaid,
+  renderMermaid,
+  supersedeMermaidRender,
+  validateMermaid,
+} from "./runtime";
 import {
   humanizeMermaidError,
   parseWithLadder,
@@ -69,6 +75,7 @@ export function MermaidRenderer({
   const [lastGoodSvg, setLastGoodSvg] = useState<string | null>(null);
   const [failure, setFailure] = useState<LadderResult | null>(null);
   const epochRef = useRef(0);
+  const rendererId = useId();
   const onLadderResultRef = useRef(onLadderResult);
   useEffect(() => {
     onLadderResultRef.current = onLadderResult;
@@ -94,7 +101,7 @@ export function MermaidRenderer({
           if (!isStreamActive) {
             let directRenderError: unknown;
             try {
-              const { svg } = await renderMermaid(trimmed, options);
+              const { svg } = await renderMermaid(trimmed, options, rendererId);
               if (epoch !== epochRef.current) return;
               setLastGoodSvg(svg);
               setFailure(null);
@@ -114,7 +121,11 @@ export function MermaidRenderer({
           if (epoch !== epochRef.current) return;
           onLadderResultRef.current?.(ladder);
           if (ladder.valid) {
-            const { svg } = await renderMermaid(ladder.source, options);
+            const { svg } = await renderMermaid(
+              ladder.source,
+              options,
+              rendererId,
+            );
             if (epoch !== epochRef.current) return;
             setLastGoodSvg(svg);
             setFailure(null);
@@ -123,6 +134,7 @@ export function MermaidRenderer({
           }
           // streaming + invalid → keep last good, stay quiet
         } catch (err) {
+          if (err instanceof MermaidRenderSupersededError) return;
           // validate said ok but render threw (parse/render mismatch exists
           // for some grammars) — treat like a ladder failure on complete.
           if (epoch !== epochRef.current) return;
@@ -144,8 +156,11 @@ export function MermaidRenderer({
       },
       isStreamActive ? STREAMING_DEBOUNCE_MS : SETTLED_DEBOUNCE_MS,
     );
-    return () => clearTimeout(timer);
-  }, [source, optionsKey, isStreamActive]);
+    return () => {
+      clearTimeout(timer);
+      supersedeMermaidRender(rendererId);
+    };
+  }, [source, optionsKey, isStreamActive, rendererId]);
 
   const diagramType = detectDiagramType(source);
   const label = getCatalogEntry(diagramType).label;

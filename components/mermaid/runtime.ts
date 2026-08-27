@@ -33,7 +33,19 @@ let renderChain: Promise<unknown> = Promise.resolve();
 let idCounter = 0;
 const MAX_RENDER_CACHE_ENTRIES = 12;
 const renderCache = new Map<string, { svg: string }>();
-const inFlightRenders = new Map<string, Promise<{ svg: string }>>();
+interface InFlightRender {
+  promise: Promise<{ svg: string }>;
+  consumers: Set<string | null>;
+}
+const inFlightRenders = new Map<string, InFlightRender>();
+const latestRenderByConsumer = new Map<string, string>();
+
+export class MermaidRenderSupersededError extends Error {
+  constructor() {
+    super("Mermaid render superseded by newer source");
+    this.name = "MermaidRenderSupersededError";
+  }
+}
 
 function baseConfig(): MermaidConfig {
   return {
@@ -158,8 +170,10 @@ async function doRender(
 export function renderMermaid(
   source: string,
   opts: MermaidRenderOptions,
+  consumerId?: string,
 ): Promise<{ svg: string }> {
   const cacheKey = `${renderOptionsKey(opts)}\u0000${source}`;
+  if (consumerId) latestRenderByConsumer.set(consumerId, cacheKey);
   const cached = renderCache.get(cacheKey);
   if (cached) {
     // Refresh insertion order so the bounded cache behaves as an LRU.
@@ -168,10 +182,20 @@ export function renderMermaid(
     return Promise.resolve(cached);
   }
   const inFlight = inFlightRenders.get(cacheKey);
-  if (inFlight) return inFlight;
+  if (inFlight) {
+    inFlight.consumers.add(consumerId ?? null);
+    return inFlight.promise;
+  }
 
+  const consumers = new Set<string | null>([consumerId ?? null]);
   const task = renderChain
-    .then(() => doRender(source, opts))
+    .then(() => {
+      const stillWanted = [...consumers].some(
+        (id) => id === null || latestRenderByConsumer.get(id) === cacheKey,
+      );
+      if (!stillWanted) throw new MermaidRenderSupersededError();
+      return doRender(source, opts);
+    })
     .then((result) => {
       renderCache.set(cacheKey, result);
       while (renderCache.size > MAX_RENDER_CACHE_ENTRIES) {
@@ -184,7 +208,12 @@ export function renderMermaid(
     .finally(() => {
       inFlightRenders.delete(cacheKey);
     });
-  inFlightRenders.set(cacheKey, task);
+  inFlightRenders.set(cacheKey, { promise: task, consumers });
   renderChain = task.catch(() => {});
   return task;
+}
+
+/** Mark a mounted renderer's queued work stale before its next debounce fires. */
+export function supersedeMermaidRender(consumerId: string): void {
+  latestRenderByConsumer.delete(consumerId);
 }
