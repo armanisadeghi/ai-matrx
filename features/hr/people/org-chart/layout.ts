@@ -27,9 +27,9 @@
 //     legible as a change rather than a redraw.
 
 export const NODE_WIDTH = 210;
-export const NODE_HEIGHT = 68;
+export const NODE_HEIGHT = 88;
 export const NODE_GAP_X = 22;
-export const LEVEL_GAP_Y = 104;
+export const LEVEL_GAP_Y = 124;
 
 export type OrgLayoutInput = {
   /** Stable key. `employment_id` — a person may hold two spells over time. */
@@ -90,7 +90,9 @@ export function layoutOrgChart(args: {
 
   for (const node of args.nodes) {
     const parent =
-      node.managerId && present.has(node.managerId) && node.managerId !== node.id
+      node.managerId &&
+      present.has(node.managerId) &&
+      node.managerId !== node.id
         ? node.managerId
         : null;
     if (parent) {
@@ -122,11 +124,7 @@ export function layoutOrgChart(args: {
   let maxDepth = 0;
 
   /** Returns the node's centre x. */
-  const walk = (
-    id: string,
-    depth: number,
-    onPath: Set<string>,
-  ): number => {
+  const walk = (id: string, depth: number, onPath: Set<string>): number => {
     maxDepth = Math.max(maxDepth, depth);
     const input = byId.get(id);
     const kids = orderSiblings(childrenOf.get(id) ?? []);
@@ -154,8 +152,7 @@ export function layoutOrgChart(args: {
     onPath.delete(id);
 
     if (childCentres.length > 0) {
-      centre =
-        (childCentres[0] + childCentres[childCentres.length - 1]) / 2;
+      centre = (childCentres[0] + childCentres[childCentres.length - 1]) / 2;
     } else {
       centre = cursorX + NODE_WIDTH / 2;
       cursorX += NODE_WIDTH + NODE_GAP_X;
@@ -205,7 +202,8 @@ export function layoutOrgChart(args: {
     .map((line) => ({ from: line.from, to: line.to, dotted: true }));
 
   const width =
-    nodes.reduce((max, node) => Math.max(max, node.x + NODE_WIDTH), 0) + NODE_GAP_X;
+    nodes.reduce((max, node) => Math.max(max, node.x + NODE_WIDTH), 0) +
+    NODE_GAP_X;
   const height = (maxDepth + 1) * LEVEL_GAP_Y;
 
   return {

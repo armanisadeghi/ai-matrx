@@ -24,7 +24,11 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 import { HR_PROFILE_TAB_LABELS, type HrProfileTab } from "../../constants";
-import { hrEmployeeCustomTabHref, hrEmployeeHref, type HrOrgRef } from "../../routes";
+import {
+  hrEmployeeCustomTabHref,
+  hrEmployeeHref,
+  type HrOrgRef,
+} from "../../routes";
 
 function isBuiltInTab(segment: string): segment is HrProfileTab {
   return segment in HR_PROFILE_TAB_LABELS;
@@ -39,7 +43,9 @@ function humanise(segment: string): string {
 }
 
 export function profileTabLabel(segment: string): string {
-  return isBuiltInTab(segment) ? HR_PROFILE_TAB_LABELS[segment] : humanise(segment);
+  return isBuiltInTab(segment)
+    ? HR_PROFILE_TAB_LABELS[segment]
+    : humanise(segment);
 }
 
 export function profileTabHref(
@@ -84,7 +90,7 @@ export function ProfileTabBar({
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors sm:min-h-8",
+              "inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-md px-3 text-sm font-medium transition-colors lg:min-h-8",
               active
                 ? "bg-accent text-accent-foreground"
                 : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",

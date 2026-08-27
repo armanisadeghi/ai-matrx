@@ -146,7 +146,8 @@ export function HrNewEmployee({
     setForm((current) => ({ ...current, ...patch }));
 
   const { locations, departments, jobTitles } = activeStructure(structure);
-  const chosenLocation = locations.find((l) => l.id === form.location_id) ?? null;
+  const chosenLocation =
+    locations.find((l) => l.id === form.location_id) ?? null;
 
   const isContractor = form.worker_class === "contractor";
 
@@ -159,7 +160,10 @@ export function HrNewEmployee({
     });
   }
   if (!form.location_id) {
-    problems.push({ field: "location_id", sentence: "A position needs a location." });
+    problems.push({
+      field: "location_id",
+      sentence: "A position needs a location.",
+    });
   }
   if (chosenLocation && !chosenLocation.jurisdiction_id) {
     problems.push({
@@ -183,7 +187,8 @@ export function HrNewEmployee({
   if (mode === "new-person" && !form.legal_last_name.trim()) {
     problems.push({
       field: "legal_last_name",
-      sentence: "A legal last name is required — it is what tax artifacts carry.",
+      sentence:
+        "A legal last name is required — it is what tax artifacts carry.",
     });
   }
 
@@ -301,8 +306,7 @@ export function HrNewEmployee({
     // `rehire_eligible` and its note — everything that panel needs.
     if (ack.refusal.reason === "rehire_required") {
       const existing = ack.refusal.payload.existing as
-        | { employee_id?: string; spells?: HrPriorEmployment[] }
-        | undefined;
+        { employee_id?: string; spells?: HrPriorEmployment[] } | undefined;
       setRehire({
         spells: existing?.spells ?? [],
         employeeId: existing?.employee_id ?? null,
@@ -339,7 +343,7 @@ export function HrNewEmployee({
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="min-h-11 sm:min-h-9"
+                className="min-h-11 lg:min-h-9"
                 onClick={() => setMode(null)}
               >
                 <ArrowLeft className="mr-2 h-4 w-4" aria-hidden />
@@ -378,7 +382,8 @@ export function HrNewEmployee({
                     legal_first_name:
                       form.legal_first_name || name.split(" ")[0] || "",
                     legal_last_name:
-                      form.legal_last_name || name.split(" ").slice(1).join(" "),
+                      form.legal_last_name ||
+                      name.split(" ").slice(1).join(" "),
                   })
                 }
               />
@@ -396,7 +401,7 @@ export function HrNewEmployee({
                     onChange={(event) =>
                       set({ legal_first_name: event.target.value })
                     }
-                    className="h-11 sm:h-9"
+                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field
@@ -408,7 +413,7 @@ export function HrNewEmployee({
                     onChange={(event) =>
                       set({ legal_last_name: event.target.value })
                     }
-                    className="h-11 sm:h-9"
+                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field
@@ -420,30 +425,35 @@ export function HrNewEmployee({
                     onChange={(event) =>
                       set({ preferred_first_name: event.target.value })
                     }
-                    className="h-11 sm:h-9"
+                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field label="Work email">
                   <Input
                     type="email"
                     value={form.work_email}
-                    onChange={(event) => set({ work_email: event.target.value })}
-                    className="h-11 sm:h-9"
+                    onChange={(event) =>
+                      set({ work_email: event.target.value })
+                    }
+                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field label="Work phone">
                   <Input
                     value={form.work_phone}
-                    onChange={(event) => set({ work_phone: event.target.value })}
-                    className="h-11 sm:h-9"
+                    onChange={(event) =>
+                      set({ work_phone: event.target.value })
+                    }
+                    className="h-11 lg:h-9"
                   />
                 </Field>
               </Grid>
 
               {/* THE NO-LOGIN CASE, STATED. */}
               <p className="text-xs text-muted-foreground">
-                A platform login is optional. Someone who only ever clocks in at a
-                kiosk never needs one, and nothing in HR assumes they have one.
+                A platform login is optional. Someone who only ever clocks in at
+                a kiosk never needs one, and nothing in HR assumes they have
+                one.
               </p>
             </Fieldset>
 
@@ -462,7 +472,7 @@ export function HrNewEmployee({
                     type="date"
                     value={form.hire_date}
                     onChange={(event) => set({ hire_date: event.target.value })}
-                    className="h-11 sm:h-9"
+                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field label="Worker class">
@@ -470,7 +480,7 @@ export function HrNewEmployee({
                     value={form.worker_class}
                     onValueChange={(value) => set({ worker_class: value })}
                   >
-                    <SelectTrigger className="h-11 sm:h-9">
+                    <SelectTrigger className="h-11 lg:h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -497,17 +507,19 @@ export function HrNewEmployee({
                       set({
                         job_title_id: value,
                         flsa_status:
-                          form.flsa_status === "nonexempt" && title?.default_flsa_status
+                          form.flsa_status === "nonexempt" &&
+                          title?.default_flsa_status
                             ? title.default_flsa_status
                             : form.flsa_status,
                         pay_basis:
-                          form.pay_basis === "hourly" && title?.default_pay_basis
+                          form.pay_basis === "hourly" &&
+                          title?.default_pay_basis
                             ? title.default_pay_basis
                             : form.pay_basis,
                       });
                     }}
                   >
-                    <SelectTrigger className="h-11 sm:h-9">
+                    <SelectTrigger className="h-11 lg:h-9">
                       <SelectValue placeholder="Pick a job title" />
                     </SelectTrigger>
                     <SelectContent>
@@ -525,7 +537,7 @@ export function HrNewEmployee({
                     value={form.department_id}
                     onValueChange={(value) => set({ department_id: value })}
                   >
-                    <SelectTrigger className="h-11 sm:h-9">
+                    <SelectTrigger className="h-11 lg:h-9">
                       <SelectValue placeholder="Pick a department" />
                     </SelectTrigger>
                     <SelectContent>
@@ -551,7 +563,7 @@ export function HrNewEmployee({
                     value={form.location_id}
                     onValueChange={(value) => set({ location_id: value })}
                   >
-                    <SelectTrigger className="h-11 sm:h-9">
+                    <SelectTrigger className="h-11 lg:h-9">
                       <SelectValue placeholder="Pick a location" />
                     </SelectTrigger>
                     <SelectContent>
@@ -569,7 +581,7 @@ export function HrNewEmployee({
                     value={form.flsa_status}
                     onValueChange={(value) => set({ flsa_status: value })}
                   >
-                    <SelectTrigger className="h-11 sm:h-9">
+                    <SelectTrigger className="h-11 lg:h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -590,7 +602,7 @@ export function HrNewEmployee({
                         set({ flsa_exemption_basis: event.target.value })
                       }
                       placeholder="executive, administrative, professional…"
-                      className="h-11 sm:h-9"
+                      className="h-11 lg:h-9"
                     />
                   </Field>
                 ) : null}
@@ -603,7 +615,7 @@ export function HrNewEmployee({
                     max="2"
                     value={form.fte}
                     onChange={(event) => set({ fte: event.target.value })}
-                    className="h-11 sm:h-9"
+                    className="h-11 lg:h-9"
                   />
                 </Field>
               </Grid>
@@ -615,7 +627,12 @@ export function HrNewEmployee({
                     {chosenLocation.name} has no jurisdiction, so nobody can be
                     scheduled, stamped or paid against it.
                   </p>
-                  <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="outline"
+                    className="min-h-11 lg:min-h-9"
+                  >
                     <Link
                       href={hrSettingsHref("structure", {
                         org: orgRef,
@@ -643,7 +660,7 @@ export function HrNewEmployee({
                         set({ platform_of_record: event.target.value })
                       }
                       placeholder="direct, upwork, an agency…"
-                      className="h-11 sm:h-9"
+                      className="h-11 lg:h-9"
                     />
                   </Field>
                   <Field label="Their id there">
@@ -652,14 +669,16 @@ export function HrNewEmployee({
                       onChange={(event) =>
                         set({ platform_external_id: event.target.value })
                       }
-                      className="h-11 sm:h-9"
+                      className="h-11 lg:h-9"
                     />
                   </Field>
                   <Field label="Link">
                     <Input
                       value={form.platform_url}
-                      onChange={(event) => set({ platform_url: event.target.value })}
-                      className="h-11 sm:h-9"
+                      onChange={(event) =>
+                        set({ platform_url: event.target.value })
+                      }
+                      className="h-11 lg:h-9"
                     />
                   </Field>
                 </Grid>
@@ -683,7 +702,7 @@ export function HrNewEmployee({
                     onChange={(event) =>
                       set({ compensation_amount: event.target.value })
                     }
-                    className="h-11 sm:h-9"
+                    className="h-11 lg:h-9"
                   />
                 </Field>
                 <Field label="Basis">
@@ -691,7 +710,7 @@ export function HrNewEmployee({
                     value={form.pay_basis}
                     onValueChange={(value) => set({ pay_basis: value })}
                   >
-                    <SelectTrigger className="h-11 sm:h-9">
+                    <SelectTrigger className="h-11 lg:h-9">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -744,7 +763,7 @@ export function HrNewEmployee({
                 type="button"
                 onClick={() => void submit()}
                 disabled={!canSubmit}
-                className="min-h-11 sm:min-h-9"
+                className="min-h-11 lg:min-h-9"
               >
                 {saving
                   ? "Saving…"
@@ -752,7 +771,7 @@ export function HrNewEmployee({
                     ? "Check for duplicates and create"
                     : "Create"}
               </Button>
-              <Button asChild variant="ghost" className="min-h-11 sm:min-h-9">
+              <Button asChild variant="ghost" className="min-h-11 lg:min-h-9">
                 <Link href={hrPeopleHref({ org: orgRef })}>Cancel</Link>
               </Button>
               {problems.length > 0 ? (
@@ -851,7 +870,9 @@ function MemberPicker({
   value: string;
   onPick: (userId: string, email: string, name: string | null) => void;
 }) {
-  const { members, loading } = useOrganizationMembers(organizationId ?? undefined);
+  const { members, loading } = useOrganizationMembers(
+    organizationId ?? undefined,
+  );
 
   return (
     <Fieldset
@@ -882,9 +903,14 @@ function MemberPicker({
                   value === member.userId && "bg-accent",
                 )}
               >
-                <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <Link2
+                  className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
                 <span className="min-w-0 truncate">
-                  {member.user?.displayName ?? member.user?.email ?? member.userId}
+                  {member.user?.displayName ??
+                    member.user?.email ??
+                    member.userId}
                 </span>
               </button>
             </li>
@@ -948,7 +974,7 @@ function PartyPicker({
         value={term}
         onChange={(event) => setTerm(event.target.value)}
         placeholder="Search by name"
-        className="h-11 max-w-sm sm:h-9"
+        className="h-11 max-w-sm lg:h-9"
       />
       <ul className="max-h-64 space-y-1 overflow-y-auto">
         {results.map((row) => (
@@ -1027,12 +1053,17 @@ function Created({
           : "Everything else in HR keys off this record from here."}
       </p>
       <div className="flex flex-wrap gap-2">
-        <Button asChild size="sm" className="min-h-11 sm:min-h-9">
+        <Button asChild size="sm" className="min-h-11 lg:min-h-9">
           <Link href={hrEmployeeHref(employeeId, "job", { org })}>
             Open their record
           </Link>
         </Button>
-        <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+        <Button
+          asChild
+          size="sm"
+          variant="outline"
+          className="min-h-11 lg:min-h-9"
+        >
           <Link href={hrPeopleHref({ org })}>Back to the directory</Link>
         </Button>
       </div>
@@ -1050,7 +1081,9 @@ function RefusalNotice({
   // The server hands back a door for the two refusals a form cannot fix.
   const door =
     refusal.door ??
-    (refusal.reason === "not_activated" ? hrSettingsHref("employer", { org }) : null);
+    (refusal.reason === "not_activated"
+      ? hrSettingsHref("employer", { org })
+      : null);
 
   return (
     <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2">
@@ -1058,7 +1091,12 @@ function RefusalNotice({
         {refusal.detail || "That wasn't accepted, and nothing was created."}
       </p>
       {door ? (
-        <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+        <Button
+          asChild
+          size="sm"
+          variant="outline"
+          className="min-h-11 lg:min-h-9"
+        >
           <Link href={door}>Go fix that</Link>
         </Button>
       ) : null}
@@ -1082,7 +1120,9 @@ function Fieldset({
       <div className="space-y-0.5">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
         {description ? (
-          <p className="max-w-prose text-xs text-muted-foreground">{description}</p>
+          <p className="max-w-prose text-xs text-muted-foreground">
+            {description}
+          </p>
         ) : null}
       </div>
       {children}
@@ -1109,8 +1149,10 @@ function Field({
 }) {
   return (
     <div className="min-w-0 space-y-1.5">
-      <Label className="text-xs font-medium">{label}</Label>
-      {children}
+      <Label className="block space-y-1.5">
+        <span className="block text-xs font-medium">{label}</span>
+        {children}
+      </Label>
       {error ? (
         <p className="text-xs text-destructive">{error}</p>
       ) : hint ? (

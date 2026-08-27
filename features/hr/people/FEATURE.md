@@ -76,6 +76,9 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
 
 ## Change Log
 
+- `2026-08-26` — Historical org-chart counts no longer open contradictory current-team lists;
+  tablet/mobile chart controls, profile tabs, and new-employee fields meet the touch and label
+  contracts.
 - `2026-08-26` — Profiles now treat a missing confidential row as `not_collected`; the audited
   private door is called only when that optional row exists.
 - `2026-08-26` — Built routes 10–14 (HRB-013, lane L1). Filed D271–D274.

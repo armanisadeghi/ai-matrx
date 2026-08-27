@@ -63,7 +63,11 @@ import { useHrPersona } from "../../shared/useHrPersona";
 import { useHrRequest } from "../shared/useHrRequest";
 import { fetchHrOrgChart } from "../../service";
 import { hrEmployeeHref, hrOrgChartHref, hrPeopleHref } from "../../routes";
-import type { HrDenied, HrFailed, HrOrgChart as HrOrgChartData } from "../../types";
+import type {
+  HrDenied,
+  HrFailed,
+  HrOrgChart as HrOrgChartData,
+} from "../../types";
 import { formatFullDate } from "../shared/HrStatusChip";
 import { HrWorkerClassChip } from "../shared/HrWorkerClassChip";
 import { downloadOrgChartCsv, orgChartExportName } from "./orgChartExport";
@@ -151,7 +155,8 @@ export function HrOrgChart() {
     nodes.map((node) => [node.employment_id, node.employee_id]),
   );
   const focusEmployment = focusParam
-    ? (nodes.find((node) => node.employee_id === focusParam)?.employment_id ?? null)
+    ? (nodes.find((node) => node.employee_id === focusParam)?.employment_id ??
+      null)
     : null;
 
   // Focus expands ancestry: a focused node inside a collapsed branch is a node
@@ -186,12 +191,17 @@ export function HrOrgChart() {
 
   const cycleEmployments = new Set(data?.cycles ?? []);
   const setAsOf = (value: string | null) => {
-    router.push(hrOrgChartHref({ org: orgRef, focus: focusParam, asOf: value }));
+    router.push(
+      hrOrgChartHref({ org: orgRef, focus: focusParam, asOf: value }),
+    );
   };
 
   const historyAvailable = data?.history_available ?? false;
   const asOf = data?.as_of ?? null;
-  const isHistorical = Boolean(asOf && data?.requested_on && asOf !== data.requested_on);
+  const isHistorical = Boolean(
+    asOf && data?.requested_on && asOf !== data.requested_on,
+  );
+  const isAsOfView = asOfParam !== null;
 
   return (
     <HrPageState
@@ -219,7 +229,7 @@ export function HrOrgChart() {
                 value={asOfParam ?? asOf ?? ""}
                 min={data?.earliest_known_on ?? undefined}
                 onChange={(event) => setAsOf(event.target.value || null)}
-                className="h-9 w-[10.5rem]"
+                className="h-11 w-[10.5rem] lg:h-9"
               />
               {quickAsOfChips().map((chip) => (
                 <Button
@@ -227,7 +237,7 @@ export function HrOrgChart() {
                   type="button"
                   size="sm"
                   variant="ghost"
-                  className="min-h-11 text-xs sm:min-h-8"
+                  className="min-h-11 text-xs lg:min-h-8"
                   onClick={() => setAsOf(chip.value)}
                 >
                   {chip.label}
@@ -237,7 +247,7 @@ export function HrOrgChart() {
           ) : null}
 
           <div className="ml-auto flex flex-wrap items-center gap-2">
-            <div className="flex items-center gap-1.5">
+            <div className="flex min-h-11 items-center gap-1.5 lg:min-h-0">
               <Switch
                 id="hr-dotted-lines"
                 checked={showDotted}
@@ -258,7 +268,7 @@ export function HrOrgChart() {
                 variant="ghost"
                 size="icon"
                 aria-label="Zoom out"
-                className="h-11 w-11 sm:h-8 sm:w-8"
+                className="h-11 w-11 lg:h-8 lg:w-8"
                 onClick={() => setZoom((z) => Math.max(0.4, z - 0.15))}
               >
                 <Minus className="h-3.5 w-3.5" aria-hidden />
@@ -271,7 +281,7 @@ export function HrOrgChart() {
                 variant="ghost"
                 size="icon"
                 aria-label="Zoom in"
-                className="h-11 w-11 sm:h-8 sm:w-8"
+                className="h-11 w-11 lg:h-8 lg:w-8"
                 onClick={() => setZoom((z) => Math.min(1.6, z + 0.15))}
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden />
@@ -282,7 +292,7 @@ export function HrOrgChart() {
               type="button"
               size="sm"
               variant="outline"
-              className="min-h-11 sm:min-h-8"
+              className="min-h-11 lg:min-h-8"
               onClick={() =>
                 setCollapsed(
                   collapsed.size > 0
@@ -304,7 +314,7 @@ export function HrOrgChart() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="min-h-11 sm:min-h-8"
+                  className="min-h-11 lg:min-h-8"
                 >
                   <Download className="mr-2 h-4 w-4" aria-hidden />
                   Export
@@ -368,17 +378,20 @@ export function HrOrgChart() {
 
         {/* ── The natural-language query box ────────────────────────────── */}
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2 sm:px-4">
-          <BrainCircuit className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          <BrainCircuit
+            className="h-4 w-4 shrink-0 text-muted-foreground"
+            aria-hidden
+          />
           <Input
             disabled
             placeholder="Ask this chart a question — “who reports to Dana two levels down”"
             aria-label="Ask the org chart a question"
-            className="h-9 max-w-md"
+            className="h-11 max-w-md lg:h-9"
           />
           <button
             type="button"
             onClick={() => void announceComingSoon("hr.people.org-chart-query")}
-            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            className="inline-flex min-h-11 items-center text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground lg:min-h-0"
           >
             Why is this off?
           </button>
@@ -388,11 +401,7 @@ export function HrOrgChart() {
         {nodes.length === 0 ? (
           <NoManagerData org={orgRef} canFix={can("identity.write")} />
         ) : focusEmployment === null && focusParam ? (
-          <NotEmployedOnDate
-            asOf={asOf}
-            employeeId={focusParam}
-            org={orgRef}
-          />
+          <NotEmployedOnDate asOf={asOf} employeeId={focusParam} org={orgRef} />
         ) : (
           <div className="min-h-0 flex-1 overflow-auto p-4">
             <div
@@ -411,9 +420,7 @@ export function HrOrgChart() {
               >
                 <ChartEdges layout={layout} />
                 {layout.nodes.map((placed) => {
-                  const node = nodes.find(
-                    (n) => n.employment_id === placed.id,
-                  );
+                  const node = nodes.find((n) => n.employment_id === placed.id);
                   if (!node) return null;
                   const employeeId = employmentToEmployee.get(placed.id) ?? "";
                   return (
@@ -439,10 +446,14 @@ export function HrOrgChart() {
                       department={node.department}
                       workerClass={node.worker_class}
                       href={hrEmployeeHref(employeeId, null, { org: orgRef })}
-                      reportsHref={hrPeopleHref({
-                        org: orgRef,
-                        managerEmployeeId: employeeId,
-                      })}
+                      reportsHref={
+                        isAsOfView
+                          ? null
+                          : hrPeopleHref({
+                              org: orgRef,
+                              managerEmployeeId: employeeId,
+                            })
+                      }
                       canFixCycle={can("identity.write")}
                     />
                   );
@@ -512,7 +523,7 @@ function ChartNode(props: {
   department: string | null;
   workerClass: string | null;
   href: string;
-  reportsHref: string;
+  reportsHref: string | null;
   canFixCycle: boolean;
 }) {
   return (
@@ -559,7 +570,7 @@ function ChartNode(props: {
                   ? `Expand ${props.name}'s team`
                   : `Collapse ${props.name}'s team`
               }
-              className="inline-flex items-center gap-0.5 rounded-sm text-[0.6875rem] text-muted-foreground hover:text-foreground"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-sm text-[0.6875rem] text-muted-foreground hover:text-foreground lg:h-4 lg:w-4"
             >
               {props.collapsed ? (
                 <ChevronRight className="h-3 w-3" aria-hidden />
@@ -567,13 +578,23 @@ function ChartNode(props: {
                 <ChevronDown className="h-3 w-3" aria-hidden />
               )}
             </button>
-            {/* A COUNT IS A DOOR. */}
-            <Link
-              href={props.reportsHref}
-              className="text-[0.6875rem] text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
-            >
-              {props.childCount} {props.childCount === 1 ? "report" : "reports"}
-            </Link>
+            {props.reportsHref ? (
+              <Link
+                href={props.reportsHref}
+                className="inline-flex min-h-11 min-w-11 items-center text-[0.6875rem] text-muted-foreground underline-offset-2 hover:text-primary hover:underline lg:min-h-0 lg:min-w-0"
+              >
+                {props.childCount}{" "}
+                {props.childCount === 1 ? "report" : "reports"}
+              </Link>
+            ) : (
+              <span
+                className="text-[0.6875rem] text-muted-foreground"
+                title="Historical count — open today's chart to browse this team."
+              >
+                {props.childCount}{" "}
+                {props.childCount === 1 ? "report" : "reports"}
+              </span>
+            )}
           </>
         ) : null}
 
@@ -606,7 +627,12 @@ function UnplacedTray({
   org,
   employmentToEmployee,
 }: {
-  unplaced: { employment_id: string; employee_id: string; display_name: string; reason: string }[];
+  unplaced: {
+    employment_id: string;
+    employee_id: string;
+    display_name: string;
+    reason: string;
+  }[];
   org: string | null;
   employmentToEmployee: Map<string, string>;
 }) {
@@ -619,7 +645,8 @@ function UnplacedTray({
           Not yet placed ({unplaced.length})
         </span>
         <span className="text-xs text-muted-foreground">
-          These people are employed here but have no reporting line on this date.
+          These people are employed here but have no reporting line on this
+          date.
         </span>
       </div>
       <ul className="mt-1.5 flex flex-wrap gap-1.5">
@@ -633,7 +660,7 @@ function UnplacedTray({
                 "job",
                 { org },
               )}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground hover:bg-accent"
+              className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground hover:bg-accent lg:min-h-0"
               title={person.reason}
             >
               {person.display_name}
@@ -646,7 +673,13 @@ function UnplacedTray({
 }
 
 /** Never an empty canvas. */
-function NoManagerData({ org, canFix }: { org: string | null; canFix: boolean }) {
+function NoManagerData({
+  org,
+  canFix,
+}: {
+  org: string | null;
+  canFix: boolean;
+}) {
   return (
     <div className="flex min-h-0 flex-1 items-start justify-center p-4 sm:p-6">
       <div className="w-full max-w-xl rounded-lg border border-border bg-card p-4 sm:p-6">
@@ -659,14 +692,19 @@ function NoManagerData({ org, canFix }: { org: string | null; canFix: boolean })
           managers, this fills in — nothing here has to be drawn by hand.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="min-h-11 lg:min-h-9"
+          >
             <Link href={hrPeopleHref({ org })}>Open the directory</Link>
           </Button>
           {canFix ? (
             <Button
               type="button"
               size="sm"
-              className="min-h-11 sm:min-h-9"
+              className="min-h-11 lg:min-h-9"
               onClick={() =>
                 void announceComingSoon("hr.people.bulk-manager-assignment")
               }
@@ -705,12 +743,17 @@ function NotEmployedOnDate({
           employment dates are on their Job &amp; reporting tab.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button asChild size="sm" className="min-h-11 sm:min-h-9">
+          <Button asChild size="sm" className="min-h-11 lg:min-h-9">
             <Link href={hrEmployeeHref(employeeId, "job", { org })}>
               See their employment dates
             </Link>
           </Button>
-          <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="min-h-11 lg:min-h-9"
+          >
             <Link href={hrOrgChartHref({ org, focus: employeeId })}>
               Show today&apos;s chart
             </Link>
