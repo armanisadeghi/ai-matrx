@@ -66,6 +66,42 @@
       },
       "previousEventHash": "5f03b60a348f8bc56b12e5bc6a67259c2479981826f3a5e87570e0dfc5dfab95",
       "eventHash": "2ecaabfb9488bba29d04b0a4b88ef5af8f95eea66b7b109fe59b4643d71c9467"
+    },
+    {
+      "sequence": 5,
+      "state": "certifying",
+      "at": "2026-08-27T13:25:59.209Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Escaped-delivery candidate f28850472b is under independent exact-SHA adversarial certification.",
+      "evidence": [
+        "Product bytes are identical to the post-change type/gate-checked batch; candidate preservation on main does not substitute for certification."
+      ],
+      "previousEventHash": "2ecaabfb9488bba29d04b0a4b88ef5af8f95eea66b7b109fe59b4643d71c9467",
+      "eventHash": "d0571fee68c3b04a0a101d1d9555cfdb5aad6326abbcbc002b1b7a1116abe05e"
+    },
+    {
+      "sequence": 6,
+      "state": "certified",
+      "at": "2026-08-27T13:32:46.182Z",
+      "actor": "/root/p3_certifier",
+      "summary": "CERTIFIED exact candidate f28850472b; no concrete batch-caused defect.",
+      "evidence": [
+        "Independent adversarial review verified 19 of 19 repairs across eight product files and found no regression."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "f28850472b2c617b9adcb53aeb43e37c2d96471a",
+        "certifierTaskId": "/root/p3_certifier",
+        "checks": [
+          "Exact candidate identity and 11 plus 8 finding arithmetic",
+          "Touch-visible defaults and hover:hover-only desktop hiding",
+          "Keyboard focus visibility and unchanged handlers/contracts",
+          "Coarse-pointer-only 44px floor and unchanged desktop density",
+          "Tailwind compilation and baseline-delta gates"
+        ]
+      },
+      "previousEventHash": "d0571fee68c3b04a0a101d1d9555cfdb5aad6326abbcbc002b1b7a1116abe05e",
+      "eventHash": "44aaf55d56697b524948131838231f0d5ff4afabb6b8c8e0f8d4fe1fd7366e51"
     }
   ]
 }

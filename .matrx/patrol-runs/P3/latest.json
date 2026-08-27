@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "2026-08-27T131727Z",
-  "state": "escaped_delivery",
-  "updatedAt": "2026-08-27T13:25:46.945Z",
-  "summary": "Recorded candidate preservation on main before independent certification.",
+  "state": "certified",
+  "updatedAt": "2026-08-27T13:32:46.182Z",
+  "summary": "CERTIFIED exact candidate f28850472b; no concrete batch-caused defect.",
   "source": "2026-08-27T131727Z.json",
-  "eventHash": "2ecaabfb9488bba29d04b0a4b88ef5af8f95eea66b7b109fe59b4643d71c9467"
+  "eventHash": "44aaf55d56697b524948131838231f0d5ff4afabb6b8c8e0f8d4fe1fd7366e51"
 }
