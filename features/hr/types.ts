@@ -261,7 +261,7 @@ export type HrOrgChartNode = {
    *
    * What this flag changes here is the DOOR: a withheld node must not link to a
    * profile the viewer cannot open. Everything else about the node — its
-   * position, its edges, its reports — renders exactly as any other, which is
+   * position, its edges, its reports — renders exactly like every other, which is
    * the whole point of the exception.
    *
    * Optional because a door that does not send it means "not withheld", which is
