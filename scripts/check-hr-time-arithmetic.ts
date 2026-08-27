@@ -225,6 +225,32 @@ function blankStringLiterals(line: string): string {
 }
 
 /**
+ * Blank a time field that appears as a PROPERTY KEY or a TYPE MEMBER — `coversTo:`, `endedAt?:`,
+ * `startedAt: string | null`. Length is preserved so reported columns stay honest.
+ *
+ * 🚨 THE RULE, STATED STRUCTURALLY: **a property key is a declaration, never an operand.**
+ * `{ coversFrom: x, coversTo: y }` declares two fields; it computes nothing. Blanking string
+ * CONTENTS (above) happened to defuse the fixture case that first exposed this, because the minus
+ * the matcher found was a hyphen inside an ISO date — but that was luck, not a rule. A key followed
+ * by any non-string value would have matched just the same, and every future fixture would be a
+ * fresh coin toss.
+ *
+ * So the two passes do different jobs and both are needed: one removes text that only LOOKS like
+ * code, this one removes names that are being DEFINED rather than used. What survives both is an
+ * actual operand, which is the only thing this gate should ever have been reading.
+ *
+ * Deliberately NOT narrowed to object literals: a TypeScript interface member (`endedAt: string`)
+ * is a declaration by the same argument, and an `as const` map, a destructuring default and a type
+ * alias all read identically. There is no arithmetic on the left of a colon in any of them.
+ */
+function blankPropertyKeys(line: string): string {
+  return line.replace(
+    new RegExp(`\\b${TIME_FIELD}\\b(\\??\\s*:)`, "gi"),
+    (match, tail: string) => `${" ".repeat(match.length - tail.length)}${tail}`,
+  );
+}
+
+/**
  * A line that only TALKS about the defect is not the defect. Every doc block in this lane quotes
  * `ended_at − started_at` on purpose — the law is written down beside the code it binds — so a gate
  * that reported those would report the very comments that keep the rule alive.
@@ -260,7 +286,9 @@ function scanFile(fullPath: string): void {
     const marker = ALLOW_MARKER.exec(line);
     const hasReason = Boolean(marker?.[1]?.trim());
     // Patterns run against CODE, not against string contents. The reported text stays the original.
-    const code = blankStringLiterals(line);
+    // Two passes, two different jobs: drop text that only LOOKS like code, then drop names that
+    // are being DECLARED rather than used. What survives both is an actual operand.
+    const code = blankPropertyKeys(blankStringLiterals(line));
 
     for (const rule of RULES) {
       if (rule.exempt?.test(code)) continue;
