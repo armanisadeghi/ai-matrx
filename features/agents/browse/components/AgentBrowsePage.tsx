@@ -57,11 +57,18 @@ export interface AgentBrowsePageProps {
    * bindings) from this very same controller.
    */
   surface?: EntityListSurface<AgentBrowseRow>;
+  /**
+   * Forwarded to the shell. `(core)` scrolls behind a transparent glass header
+   * and must pad for it; `/administration` already begins below the header, so
+   * the admin System Agents route passes false.
+   */
+  clearsShellHeader?: boolean;
 }
 
 export function AgentBrowsePage({
   defaultScope,
   surface,
+  clearsShellHeader,
 }: AgentBrowsePageProps) {
   // ANY Matrx admin (developer / senior_admin / super_admin) — the same bar the
   // /administration route tree uses. Hiding the tab is a convenience for
@@ -94,6 +101,7 @@ export function AgentBrowsePage({
       config={agentListConfig}
       scopes={isAdmin ? AGENT_LIST_SCOPES_ADMIN : AGENT_LIST_SCOPES}
       defaultScope={defaultScope}
+      clearsShellHeader={clearsShellHeader}
       surface={
         surface ??
         (isAdmin ? AGENT_BROWSE_SURFACE_ADMIN : AGENT_BROWSE_SURFACE)

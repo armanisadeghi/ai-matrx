@@ -14,6 +14,7 @@
 
 import type { ReactNode } from "react";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
+import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import {
   SurfaceRuntimeProvider,
@@ -115,6 +116,16 @@ export interface EntityListPageProps<TRow> {
    * The tabs still switch away from it.
    */
   defaultScope?: ListScope;
+  /**
+   * Whether the static top chrome must clear the glass shell header.
+   *
+   * TRUE on `(core)`, where `.shell-main` is pulled up under a transparent
+   * header and content scrolls behind it — the padding is what keeps the scope
+   * tabs reachable. FALSE under `/administration`, where `styles/shell.css`
+   * cancels that pull and the content already begins below the header; padding
+   * there is pure dead space above the tabs.
+   */
+  clearsShellHeader?: boolean;
 }
 
 export function EntityListPage<TRow>({
@@ -125,6 +136,7 @@ export function EntityListPage<TRow>({
   surface,
   scopes,
   defaultScope,
+  clearsShellHeader = true,
 }: EntityListPageProps<TRow>) {
   const visibleScopes = scopes ?? config.scopes;
   const defaultHidden = defaultHiddenColumns(config.columns);
@@ -285,7 +297,14 @@ export function EntityListPage<TRow>({
         pt-[var(--shell-header-h)] (never a hardcoded pt-12). Only the list body
         below scrolls behind the glass.
       */}
-      <div className="shrink-0 space-y-1.5 px-3 pt-[calc(var(--shell-header-h)+0.5rem)] pb-2 sm:space-y-2">
+      <div
+        className={cn(
+          "shrink-0 space-y-1.5 px-3 pb-2 sm:space-y-2",
+          clearsShellHeader
+            ? "pt-[calc(var(--shell-header-h)+0.5rem)]"
+            : "pt-2",
+        )}
+      >
         {typeof notice === "function" ? notice(list) : notice}
         <div className="flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
           <div className="min-w-0 flex-1 sm:flex-none">

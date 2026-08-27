@@ -26,6 +26,7 @@ export default function AdminSystemAgentsListPage() {
       <AgentBrowsePage
         defaultScope={{ kind: "system" }}
         surface={ADMIN_SYSTEM_AGENTS_LIST_SURFACE}
+        clearsShellHeader={false}
       />
     </>
   );

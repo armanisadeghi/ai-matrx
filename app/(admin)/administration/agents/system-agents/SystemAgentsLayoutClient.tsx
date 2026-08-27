@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   List,
   Loader2,
+  Network,
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -58,6 +59,16 @@ const NAV_ITEMS = [
     label: "Apps",
     href: "/administration/agents/system-agents/apps",
     icon: AppWindow,
+  },
+  // Leaves this hub on purpose. Orchestras have exactly ONE home
+  // (`/agents/orchestras`); a second admin copy of that surface is precisely
+  // the drift this route was just cured of. An admin builds a SYSTEM Orchestra
+  // there by choosing a builtin as the conductor — the picker's System tab —
+  // and the missing piece was never a page, it was this link.
+  {
+    label: "Orchestras",
+    href: "/agents/orchestras",
+    icon: Network,
   },
 ];
 
