@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "700352a15459";
+export const KIND_REGISTRY_FINGERPRINT = "5263c01ce882";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -6905,19 +6905,19 @@ export interface DigitalPrReputationBriefV1 {
 }
 
 /**
- * Kind `directory_create_result` (registry v3).
+ * Kind `directory_create_result` (registry v5).
  */
 export interface DirectoryCreateResult {
   path?: string | null;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "directory_create_result";
+  __kind?: "directory_create_result";
   created?: string;
 }
 
 /**
- * Kind `directory_entry` (registry v4).
+ * Kind `directory_entry` (registry v6).
  */
 export interface DirectoryEntry {
   name?: string;
@@ -6927,12 +6927,12 @@ export interface DirectoryEntry {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "directory_entry";
+  __kind?: "directory_entry";
   is_dir?: boolean;
 }
 
 /**
- * Kind `directory_listing` (registry v4).
+ * Kind `directory_listing` (registry v6).
  */
 export interface DirectoryListing {
   path?: string;
@@ -6941,7 +6941,7 @@ export interface DirectoryListing {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "directory_listing";
+  __kind?: "directory_listing";
   entries?: DirectoryEntry[];
   pattern?: string | null;
   recursive?: boolean | null;
@@ -7208,14 +7208,14 @@ export interface FileDownloadResult {
 }
 
 /**
- * Kind `file_edit_applied` (registry v3).
+ * Kind `file_edit_applied` (registry v5).
  */
 export interface FileEditApplied {
   mode?: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_edit_applied";
+  __kind?: "file_edit_applied";
   edit_index?: number;
   added_chars?: number | null;
   delta_chars?: number | null;
@@ -7223,27 +7223,27 @@ export interface FileEditApplied {
 }
 
 /**
- * Kind `file_edit_failure` (registry v3).
+ * Kind `file_edit_failure` (registry v5).
  */
 export interface FileEditFailure {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_edit_failure";
+  __kind?: "file_edit_failure";
   reason?: string;
   edit_index?: number;
   old_text_preview?: string;
 }
 
 /**
- * Kind `file_edit_result` (registry v4).
+ * Kind `file_edit_result` (registry v6).
  */
 export interface FileEditResult {
   path?: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_edit_result";
+  __kind?: "file_edit_result";
   replaced?: number;
   size_after?: number | null;
   size_before?: number | null;
@@ -7251,14 +7251,14 @@ export interface FileEditResult {
 }
 
 /**
- * Kind `file_patch_result` (registry v4).
+ * Kind `file_patch_result` (registry v6).
  */
 export interface FilePatchResult {
   path?: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_patch_result";
+  __kind?: "file_patch_result";
   created?: boolean;
   size_after?: number | null;
   size_before?: number | null;
@@ -7267,7 +7267,7 @@ export interface FilePatchResult {
 }
 
 /**
- * Kind `file_read_result` (registry v3).
+ * Kind `file_read_result` (registry v5).
  */
 export interface FileReadResult {
   path?: string;
@@ -7276,7 +7276,7 @@ export interface FileReadResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_read_result";
+  __kind?: "file_read_result";
   offset?: number | null;
   content?: string;
   truncated?: boolean;
@@ -7284,7 +7284,7 @@ export interface FileReadResult {
 }
 
 /**
- * Kind `file_search_match` (registry v3).
+ * Kind `file_search_match` (registry v5).
  */
 export interface FileSearchMatch {
   path?: string;
@@ -7292,12 +7292,12 @@ export interface FileSearchMatch {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_search_match";
+  __kind?: "file_search_match";
   matches?: string[];
 }
 
 /**
- * Kind `file_search_results` (registry v3).
+ * Kind `file_search_results` (registry v5).
  */
 export interface FileSearchResults {
   path?: string | null;
@@ -7305,7 +7305,7 @@ export interface FileSearchResults {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_search_results";
+  __kind?: "file_search_results";
   pattern?: string | null;
   results?: FileSearchMatch[];
   content_search?: boolean | null;
@@ -14617,14 +14617,14 @@ export interface Timeline {
 /**
  * What a ``bundle:list_<name>`` lister returns after swapping the toolset.
  *  *
- *  * Kind `tool_bundle_listing` (registry v3).
+ *  * Kind `tool_bundle_listing` (registry v5).
  */
 export interface ToolBundleListing {
   count?: number;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "tool_bundle_listing";
+  __kind?: "tool_bundle_listing";
   bundle?: string;
   server_slug?: string | null;
   tools_loaded?: string[];
