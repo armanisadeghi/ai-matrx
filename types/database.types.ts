@@ -42358,7 +42358,7 @@ export type Database = {
         Args: { p_at: string; p_employment_id: string; p_user: string }
         Returns: Json
       }
-      _clock_knob: { Args: { p_default: Json; p_key: string }; Returns: Json }
+      _clock_knob: { Args: { p_default?: Json; p_key: string }; Returns: Json }
       _desired_grants_for_employment: {
         Args: { p_at?: string; p_employment_id: string }
         Returns: {
@@ -42429,6 +42429,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _earning_code_id: {
+        Args: { p_code: string; p_organization_id: string }
+        Returns: string
+      }
       _employment_expiry: { Args: { p_employment_id: string }; Returns: string }
       _governance_refusal: {
         Args: {
@@ -42441,7 +42445,18 @@ export type Database = {
         }
         Returns: Json
       }
+      _kiosk_admin_gate: { Args: { p_organization_id: string }; Returns: Json }
+      _kiosk_device_config: { Args: { p_device_id: string }; Returns: Json }
+      _kiosk_device_row: { Args: { p_id: string }; Returns: Json }
       _knob: { Args: { p_feature: string; p_key: string }; Returns: Json }
+      _l1_apply_compensation: {
+        Args: { p_instance?: string; p_org: string; p_payload: Json }
+        Returns: Json
+      }
+      _l1_apply_position: {
+        Args: { p_instance?: string; p_org: string; p_payload: Json }
+        Returns: Json
+      }
       _l1_capabilities: {
         Args: { p_at: string; p_org: string; p_user: string }
         Returns: string[]
@@ -42463,6 +42478,10 @@ export type Database = {
       _l1_self_employment: {
         Args: { p_at: string; p_org: string; p_user: string }
         Returns: string
+      }
+      _l1_settings_gate: {
+        Args: { p_action: string; p_org: string; p_token: string }
+        Returns: Json
       }
       _l1_viewer: {
         Args: { p_at: string; p_employee_id: string; p_user: string }
@@ -42509,6 +42528,10 @@ export type Database = {
           veto_applies: boolean
         }[]
       }
+      _notify_channels: {
+        Args: { p_event_key: string; p_organization_id: string }
+        Returns: string[]
+      }
       _org_row_less_protective: {
         Args: { p_class: string; p_org: Json; p_sys: Json }
         Returns: Json
@@ -42531,12 +42554,56 @@ export type Database = {
         Args: { p_employment_id: string }
         Returns: Json
       }
+      _punch_capability: {
+        Args: {
+          p_at: string
+          p_capability: string
+          p_organization_id?: string
+          p_subject_employment: string
+          p_user: string
+        }
+        Returns: boolean
+      }
+      _punch_chain_conflict: {
+        Args: {
+          p_add: Json
+          p_date: string
+          p_employment_id: string
+          p_void_ids: string[]
+        }
+        Returns: string
+      }
       _punch_elapsed: {
         Args: { p_employment_id: string; p_now?: string }
         Returns: Json
       }
+      _punch_ip_visible: {
+        Args: {
+          p_at: string
+          p_employment_id: string
+          p_mine: string[]
+          p_user: string
+        }
+        Returns: boolean
+      }
       _punch_kind_rank: { Args: { p_kind: string }; Returns: number }
       _punch_knob: { Args: { p_default: Json; p_key: string }; Returns: Json }
+      _punch_next_state: {
+        Args: { p_break_paid: boolean; p_kind: string; p_state: string }
+        Returns: string
+      }
+      _punch_notify_edited: {
+        Args: {
+          p_actor_user: string
+          p_change: Json
+          p_employment_id: string
+          p_organization_id: string
+          p_reason: string
+          p_replacement_punch_id: string
+          p_voided_punch_id: string
+        }
+        Returns: number
+      }
       _punch_open_chain: {
         Args: { p_employment_id: string }
         Returns: {
@@ -42554,6 +42621,10 @@ export type Database = {
       _punch_orphan_threshold_hours: {
         Args: { p_juris: Json; p_organization_id: string }
         Returns: number
+      }
+      _punch_period_lock: {
+        Args: { p_date: string; p_employment_id: string }
+        Returns: Json
       }
       _punch_raise_exception: {
         Args: {
@@ -42615,6 +42686,28 @@ export type Database = {
       _subject_jurisdiction_key: {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: string
+      }
+      _time_actor_employment: {
+        Args: { p_organization_id: string; p_user: string }
+        Returns: string
+      }
+      _time_exception_allowed_resolutions: {
+        Args: { p_severity: string }
+        Returns: string[]
+      }
+      _time_exception_json: { Args: { p_id: string }; Returns: Json }
+      _time_has_timecard_approve: {
+        Args: { p_at?: string; p_organization_id: string; p_user: string }
+        Returns: boolean
+      }
+      _time_interval_json: { Args: { p_id: string }; Returns: Json }
+      _time_ok: { Args: { p_data: Json }; Returns: Json }
+      _time_ot_preapproval_json: { Args: { p_id: string }; Returns: Json }
+      _time_page: { Args: { p_page: Json }; Returns: Record<string, unknown> }
+      _time_punch_enabled_worker_classes: { Args: never; Returns: string[] }
+      _time_refusal: {
+        Args: { p_code: string; p_details?: Json; p_message: string }
+        Returns: Json
       }
       _wf_absent: {
         Args: { p_at?: string; p_employment_id: string }
@@ -42772,6 +42865,10 @@ export type Database = {
         Args: { p_id: string; p_token: string; p_user: string }
         Returns: Json
       }
+      address_change_wf_apply: {
+        Args: { p_instance_id: string }
+        Returns: Json
+      }
       alert_recipients: {
         Args: {
           p_alert_family: string
@@ -42792,6 +42889,19 @@ export type Database = {
         }[]
       }
       arm_write: { Args: never; Returns: undefined }
+      attendance_exception_list: {
+        Args: { p_filters?: Json; p_page?: Json }
+        Returns: Json
+      }
+      attendance_exception_resolve: {
+        Args: {
+          p_exception_id: string
+          p_note?: string
+          p_premium_earning_code_id?: string
+          p_resolution_state: string
+        }
+        Returns: Json
+      }
       can_approve: {
         Args: {
           p_action_type: string
@@ -42806,6 +42916,7 @@ export type Database = {
         Args: {
           p_at?: string
           p_capability: string
+          p_organization_id?: string
           p_subject_employment?: string
           p_user: string
         }
@@ -42857,6 +42968,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      corrective_ack_wf_apply: {
+        Args: { p_instance_id: string }
+        Returns: Json
       }
       derive_grants_bulk: {
         Args: { p_at?: string; p_employment_ids: string[] }
@@ -43093,6 +43208,28 @@ export type Database = {
         }
         Returns: Json
       }
+      kiosk_device_list: { Args: { p_organization_id: string }; Returns: Json }
+      kiosk_device_set_capture: {
+        Args: {
+          p_device_id: string
+          p_require_geo: boolean
+          p_require_photo: boolean
+        }
+        Returns: Json
+      }
+      kiosk_device_set_trust: {
+        Args: { p_device_id: string; p_reason: string; p_trust_state: string }
+        Returns: Json
+      }
+      kiosk_pairing_code_create: {
+        Args: {
+          p_device_id?: string
+          p_device_name: string
+          p_location_id: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
       manager_as_of: {
         Args: { p_employment_id: string; p_on: string }
         Returns: string
@@ -43117,11 +43254,60 @@ export type Database = {
           manager_employment_id: string
         }[]
       }
+      ot_preapproval_wf_apply: {
+        Args: { p_instance_id: string }
+        Returns: Json
+      }
+      ot_preapproval_wf_conflict: {
+        Args: { p_instance_id: string }
+        Returns: Json
+      }
+      ot_preapproval_wf_digest: {
+        Args: { p_target_id: string; p_target_token: string }
+        Returns: string
+      }
+      ot_preapproval_wf_validate: {
+        Args: { p_instance_id: string }
+        Returns: Json
+      }
+      overtime_preapproval_create: {
+        Args: {
+          p_covers_from: string
+          p_covers_to: string
+          p_employment_id: string
+          p_reason_category_id?: string
+          p_reason_note?: string
+          p_request_kind?: string
+          p_requested_hours: number
+          p_shift_ids?: string[]
+        }
+        Returns: Json
+      }
+      overtime_preapproval_get: {
+        Args: { p_preapproval_id: string }
+        Returns: Json
+      }
+      overtime_preapproval_list: {
+        Args: { p_filters?: Json; p_page?: Json }
+        Returns: Json
+      }
+      pay_change_wf_apply: { Args: { p_instance_id: string }; Returns: Json }
+      pay_change_wf_validate: { Args: { p_instance_id: string }; Returns: Json }
+      pay_period_get: { Args: { p_pay_period_id: string }; Returns: Json }
+      pay_period_list: {
+        Args: { p_filters?: Json; p_page?: Json }
+        Returns: Json
+      }
+      pay_period_transition: {
+        Args: { p_pay_period_id: string; p_reason?: string; p_to_state: string }
+        Returns: Json
+      }
       population_contains: {
         Args: {
           p_at?: string
           p_employment_id: string
           p_holder_employment_id?: string
+          p_organization_id?: string
           p_scope_employment_ids?: string[]
           p_scope_id: string
           p_scope_kind: string
@@ -43172,6 +43358,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      position_change_wf_apply: {
+        Args: { p_instance_id: string }
+        Returns: Json
+      }
+      position_change_wf_validate: {
+        Args: { p_instance_id: string }
+        Returns: Json
       }
       position_subtree: {
         Args: { p_at?: string; p_holder_employment_id: string }
@@ -43225,6 +43419,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      profile_edit_wf_apply: { Args: { p_instance_id: string }; Returns: Json }
       provider_binding_resolve: {
         Args: {
           p_organization_id: string
@@ -43322,6 +43517,11 @@ export type Database = {
           webhook_secret_ref: string
         }[]
       }
+      punch_correct: {
+        Args: { p_new_values: Json; p_punch_ids: string[]; p_reason: string }
+        Returns: Json
+      }
+      punch_edit_notify_debt: { Args: never; Returns: Json }
       punch_knobs_missing: {
         Args: never
         Returns: {
@@ -43349,6 +43549,23 @@ export type Database = {
         }
         Returns: Json
       }
+      punch_register: {
+        Args: { p_filters?: Json; p_page?: Json }
+        Returns: Json
+      }
+      punch_void: {
+        Args: { p_punch_id: string; p_reason: string }
+        Returns: Json
+      }
+      punch_write_path_conformance: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: Json
+          ok: boolean
+          severity: string
+        }[]
+      }
       raise_compliance_exception: {
         Args: {
           p_class: string
@@ -43369,6 +43586,16 @@ export type Database = {
           p_justification?: string
           p_purpose: string
           p_token: string
+        }
+        Returns: Json
+      }
+      recompute_apply: {
+        Args: {
+          p_employment_id: string
+          p_engine?: Json
+          p_idempotency_key?: string
+          p_intervals: Json
+          p_workweek: Json
         }
         Returns: Json
       }
@@ -43405,6 +43632,31 @@ export type Database = {
         Args: { p_employment_id: string }
         Returns: number
       }
+      time_adjustment_create: {
+        Args: {
+          p_amount_delta?: number
+          p_earning_code_id: string
+          p_employment_id: string
+          p_hours_delta: number
+          p_original_pay_period_id: string
+          p_reason_category_id?: string
+          p_reason_note?: string
+          p_work_date: string
+        }
+        Returns: Json
+      }
+      time_adjustment_list: {
+        Args: { p_filters?: Json; p_page?: Json }
+        Returns: Json
+      }
+      time_adjustment_wf_apply: {
+        Args: { p_instance_id: string }
+        Returns: Json
+      }
+      time_adjustment_wf_validate: {
+        Args: { p_instance_id: string }
+        Returns: Json
+      }
       time_rounding_config_check: {
         Args: {
           p_as_of?: string
@@ -43413,6 +43665,25 @@ export type Database = {
           p_rounding_minutes: number
           p_rounding_mode: string
         }
+        Returns: Json
+      }
+      timecard_attestation_sweep: {
+        Args: { p_dry_run?: boolean; p_pay_period_id: string }
+        Returns: Json
+      }
+      timecard_wf_apply: { Args: { p_instance_id: string }; Returns: Json }
+      timecard_wf_conflict: { Args: { p_instance_id: string }; Returns: Json }
+      timecard_wf_digest: {
+        Args: { p_target_id: string; p_target_token: string }
+        Returns: string
+      }
+      timecard_wf_validate: { Args: { p_instance_id: string }; Returns: Json }
+      timesheet_get: {
+        Args: { p_employment_id: string; p_pay_period_id: string }
+        Returns: Json
+      }
+      timesheet_period_grid: {
+        Args: { p_filters?: Json; p_page?: Json; p_pay_period_id: string }
         Returns: Json
       }
       transfer_restricted_note: {
@@ -55230,6 +55501,15 @@ export type Database = {
       }
       __dump_schema_ddl: { Args: { p_schema: string }; Returns: string }
       __dump_schema_routines: { Args: { p_schema: string }; Returns: string }
+      __hr_punch_write_path_conformance: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: Json
+          ok: boolean
+          severity: string
+        }[]
+      }
       __plpgsql_show_dependency_tb:
         | {
             Args: {
@@ -60071,6 +60351,20 @@ export type Database = {
         Returns: Json
       }
       hr_activate_employer: { Args: { p_payload: Json }; Returns: Json }
+      hr_activation_seed: { Args: { p_organization_id: string }; Returns: Json }
+      hr_attendance_exception_list: {
+        Args: { p_filters?: Json; p_page?: Json }
+        Returns: Json
+      }
+      hr_attendance_exception_resolve: {
+        Args: {
+          p_exception_id: string
+          p_note?: string
+          p_premium_earning_code_id?: string
+          p_resolution_state: string
+        }
+        Returns: Json
+      }
       hr_authority_delegate: {
         Args: { p_delegation_id: string }
         Returns: Json
@@ -60119,6 +60413,13 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_calendar_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_clock_state: { Args: { p_employment_id: string }; Returns: Json }
+      hr_code_upsert: {
+        Args: { p_kind: string; p_payload: Json }
+        Returns: Json
+      }
+      hr_compensation_upsert: { Args: { p_payload: Json }; Returns: Json }
       hr_confidential_get: {
         Args: { p_id: string; p_purpose?: string; p_token: string }
         Returns: Json
@@ -60131,6 +60432,11 @@ export type Database = {
           p_purpose?: string
           p_token: string
         }
+        Returns: Json
+      }
+      hr_corrective_action_issue: { Args: { p_payload: Json }; Returns: Json }
+      hr_corrective_action_outcome: {
+        Args: { p_id: string; p_outcome: string; p_payload?: Json }
         Returns: Json
       }
       hr_directory_list: {
@@ -60163,12 +60469,71 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_employer_profile_update: { Args: { p_payload: Json }; Returns: Json }
       hr_employment_history: { Args: { p_employee_id: string }; Returns: Json }
       hr_engagement_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_establishment_upsert: { Args: { p_payload: Json }; Returns: Json }
       hr_external_identity_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_holiday_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_incident_advance: {
+        Args: { p_incident_id: string; p_payload?: Json; p_state: string }
+        Returns: Json
+      }
+      hr_incident_assign: {
+        Args: {
+          p_employment_id: string
+          p_incident_id: string
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      hr_incident_create: { Args: { p_payload: Json }; Returns: Json }
+      hr_incident_party_add: { Args: { p_payload: Json }; Returns: Json }
       hr_incident_status: { Args: { p_incident_id: string }; Returns: Json }
       hr_kiosk_authenticate: {
         Args: { p_device_id: string; p_device_secret: string }
+        Returns: Json
+      }
+      hr_kiosk_claim_pairing: {
+        Args: { p_device_fingerprint?: string; p_pairing_code: string }
+        Returns: Json
+      }
+      hr_kiosk_device_list: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      hr_kiosk_device_set_capture: {
+        Args: {
+          p_device_id: string
+          p_require_geo?: boolean
+          p_require_photo?: boolean
+        }
+        Returns: Json
+      }
+      hr_kiosk_device_set_trust: {
+        Args: { p_device_id: string; p_reason: string; p_trust_state: string }
+        Returns: Json
+      }
+      hr_kiosk_pairing_code_create: {
+        Args: {
+          p_device_id?: string
+          p_device_name?: string
+          p_location_id?: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      hr_kiosk_punch: {
+        Args: {
+          p_attestation?: Json
+          p_device_reported_at: string
+          p_employee_pin: string
+          p_geo?: Json
+          p_idempotency_key: string
+          p_kind: string
+          p_photo_file_id?: string
+          p_session_token: string
+        }
         Returns: Json
       }
       hr_kiosk_session_close: {
@@ -60187,8 +60552,29 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_knob_clear: {
+        Args: {
+          p_feature: string
+          p_key: string
+          p_organization_id: string
+          p_scope_id?: string
+          p_scope_kind?: string
+        }
+        Returns: Json
+      }
       hr_knob_index: {
         Args: { p_organization_id: string; p_overridden_only?: boolean }
+        Returns: Json
+      }
+      hr_knob_set: {
+        Args: {
+          p_feature: string
+          p_key: string
+          p_organization_id: string
+          p_scope_id?: string
+          p_scope_kind?: string
+          p_value: Json
+        }
         Returns: Json
       }
       hr_mint_investigation_token: {
@@ -60214,6 +60600,37 @@ export type Database = {
         Args: { p_on?: string; p_organization_id: string }
         Returns: Json
       }
+      hr_overtime_preapproval_create: {
+        Args: {
+          p_covers_from: string
+          p_covers_to: string
+          p_employment_id: string
+          p_reason_category_id?: string
+          p_reason_note?: string
+          p_request_kind?: string
+          p_requested_hours: number
+          p_shift_ids?: string[]
+        }
+        Returns: Json
+      }
+      hr_overtime_preapproval_get: {
+        Args: { p_preapproval_id: string }
+        Returns: Json
+      }
+      hr_overtime_preapproval_list: {
+        Args: { p_filters?: Json; p_page?: Json }
+        Returns: Json
+      }
+      hr_pay_group_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_pay_period_get: { Args: { p_pay_period_id: string }; Returns: Json }
+      hr_pay_period_list: {
+        Args: { p_filters?: Json; p_page?: Json }
+        Returns: Json
+      }
+      hr_pay_period_transition: {
+        Args: { p_pay_period_id: string; p_reason?: string; p_to_state: string }
+        Returns: Json
+      }
       hr_payroll_export_list: {
         Args: {
           p_limit?: number
@@ -60222,7 +60639,53 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_pending_change_cancel: {
+        Args: { p_id: string; p_kind: string; p_reason?: string }
+        Returns: Json
+      }
       hr_pending_changes: { Args: { p_employment_id: string }; Returns: Json }
+      hr_position_change: { Args: { p_payload: Json }; Returns: Json }
+      hr_punch_correct: {
+        Args: { p_new_values: Json; p_punch_ids: string[]; p_reason: string }
+        Returns: Json
+      }
+      hr_punch_record: {
+        Args: {
+          p_attestation?: Json
+          p_employment_id: string
+          p_geo?: Json
+          p_idempotency_key: string
+          p_kind: string
+          p_kiosk_session_id?: string
+          p_occurred_at: string
+          p_photo_file_id?: string
+          p_source: string
+        }
+        Returns: Json
+      }
+      hr_punch_register: {
+        Args: { p_filters?: Json; p_page?: Json }
+        Returns: Json
+      }
+      hr_punch_void: {
+        Args: { p_punch_id: string; p_reason: string }
+        Returns: Json
+      }
+      hr_recompute_apply: {
+        Args: {
+          p_employment_id: string
+          p_engine?: Json
+          p_idempotency_key?: string
+          p_intervals: Json
+          p_workweek: Json
+        }
+        Returns: Json
+      }
+      hr_relations_list: {
+        Args: { p_filter?: Json; p_limit?: number; p_organization_id: string }
+        Returns: Json
+      }
+      hr_reporting_line_upsert: { Args: { p_payload: Json }; Returns: Json }
       hr_restricted_get: {
         Args: {
           p_id: string
@@ -60242,6 +60705,7 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_restricted_note_add: { Args: { p_payload: Json }; Returns: Json }
       hr_role_assign: {
         Args: {
           p_effective_from?: string
@@ -60263,11 +60727,38 @@ export type Database = {
         Args: { p_id: string; p_patch: Json; p_token: string }
         Returns: Json
       }
+      hr_separation_record: { Args: { p_payload: Json }; Returns: Json }
       hr_set_employment_pin: {
         Args: { p_employment_id: string; p_pin: string }
         Returns: Json
       }
+      hr_structure_deactivate: {
+        Args: { p_id: string; p_kind: string }
+        Returns: Json
+      }
       hr_structure_list: { Args: { p_organization_id: string }; Returns: Json }
+      hr_structure_upsert: {
+        Args: { p_kind: string; p_payload: Json }
+        Returns: Json
+      }
+      hr_tax_registration_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_time_adjustment_create: {
+        Args: {
+          p_amount_delta?: number
+          p_earning_code_id: string
+          p_employment_id: string
+          p_hours_delta: number
+          p_original_pay_period_id: string
+          p_reason_category_id?: string
+          p_reason_note?: string
+          p_work_date: string
+        }
+        Returns: Json
+      }
+      hr_time_adjustment_list: {
+        Args: { p_filters?: Json; p_page?: Json }
+        Returns: Json
+      }
       hr_time_rounding_config_check: {
         Args: {
           p_as_of?: string
@@ -60276,6 +60767,40 @@ export type Database = {
           p_rounding_minutes: number
           p_rounding_mode: string
         }
+        Returns: Json
+      }
+      hr_timesheet_get: {
+        Args: { p_employment_id: string; p_pay_period_id: string }
+        Returns: Json
+      }
+      hr_timesheet_period_grid: {
+        Args: { p_filters?: Json; p_page?: Json; p_pay_period_id: string }
+        Returns: Json
+      }
+      hr_transfer: { Args: { p_payload: Json }; Returns: Json }
+      hr_verification_consent: {
+        Args: { p_granted: boolean; p_id: string; p_note?: string }
+        Returns: Json
+      }
+      hr_verification_deliver: {
+        Args: { p_id: string; p_method: string; p_payload?: Json }
+        Returns: Json
+      }
+      hr_verification_deny: {
+        Args: { p_basis: string; p_id: string }
+        Returns: Json
+      }
+      hr_verification_generate_apply: {
+        Args: {
+          p_file_id: string
+          p_generated_at?: string
+          p_letter_id: string
+          p_snapshot: Json
+        }
+        Returns: Json
+      }
+      hr_verification_request_create: {
+        Args: { p_payload: Json }
         Returns: Json
       }
       hr_wf_bulk_decide: {
@@ -60332,6 +60857,19 @@ export type Database = {
         Args: { p_result: Json; p_step_id: string; p_verified?: boolean }
         Returns: Json
       }
+      hr_wf_request: {
+        Args: {
+          p_as_draft?: boolean
+          p_flow_key: string
+          p_idempotency_key?: string
+          p_organization_id: string
+          p_payload?: Json
+          p_subject_employment_id?: string
+          p_target_id: string
+          p_target_token: string
+        }
+        Returns: Json
+      }
       hr_wf_resolve_failure: {
         Args: { p_action: string; p_failure_id: string; p_note?: string }
         Returns: Json
@@ -60340,6 +60878,7 @@ export type Database = {
         Args: { p_instance_id: string; p_payload?: Json }
         Returns: Json
       }
+      hr_wf_submit: { Args: { p_instance_id: string }; Returns: Json }
       hr_wf_withdraw: {
         Args: { p_instance_id: string; p_reason?: string }
         Returns: Json

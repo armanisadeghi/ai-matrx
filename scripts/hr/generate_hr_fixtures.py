@@ -530,6 +530,95 @@ def static_edge(note, body):
     return build
 
 
+# ------------------------------------------------------- contract overrides (NOT §6.4 edge cases)
+def contract_overrides():
+    """Bodies the STUB SCHEMA CANNOT EXPRESS, so synthesis would produce a contract violation.
+
+    Same tuple shape as `edge_cases()`, merged into the same table, and deliberately kept separate
+    so the §6.4 mandatory-edge list stays exactly seventeen rows.
+
+    🚨 WHY OVERRIDING `happy` IS RIGHT HERE AND WRONG ALMOST EVERYWHERE ELSE. This generator
+    synthesises `happy` from the response schema on purpose: a hand-typed body drifts from the
+    contract silently, and the synthesised one cannot. But synthesis can only honour what the schema
+    can SAY, and JSON Schema cannot say *"`available` is false whenever `key` is one of these two"*.
+    So for the format registry the synthesiser picked the first enum value (`quickbooks_online`),
+    paired it with the generic `label` string ("Generic CSV") and the default `available: true`, and
+    produced a row that contradicts §4.3/OI-1 on all three counts at once — a fixture that taught
+    every client the opposite of the rule it exists to enforce.
+
+    The override below is transcribed from SPEC-CONTRACTS §4.3's own table, so the fixture now says
+    what the contract says. If §4.3 changes, THIS is the line that must change with it.
+    """
+    return [
+        ("hr_exports_formats_list", "happy", 200, static_edge(
+            "§4.3's registry as the contract actually specifies it. Schema synthesis cannot express "
+            "OI-1 (both QuickBooks mappers ship available:false) and produced a self-contradicting "
+            "row: key=quickbooks_online, label='Generic CSV', available=true. Hand-authored from the "
+            "§4.3 table instead — and it is the fixture that makes an unavailable format, with its "
+            "reason, renderable in a browser.",
+            {"formats": [
+                {"key": "generic_csv", "label": "Generic CSV",
+                 "delivery": ["file"], "media_type": "text/csv",
+                 "columns": [
+                     {"name": "employee_number", "source": "hr.employment.employee_number",
+                      "required": True},
+                     {"name": "earning_code", "source": "hr.payroll_export_line.earning_code",
+                      "required": True},
+                     {"name": "hours", "source": "hr.work_interval.hours", "required": True},
+                 ],
+                 "requires_mapping": [],
+                 "supports_rates": True, "supports_adjustment_lines": True,
+                 "available": True,
+                 "notes": "The floor and the default. Full line grain with our own identifiers, no "
+                          "mapping required — what you use on day one, before any integration."},
+                {"key": "json", "label": "JSON (full line detail)",
+                 "delivery": ["file", "api"], "media_type": "application/json",
+                 "requires_mapping": [],
+                 "supports_rates": True, "supports_adjustment_lines": True,
+                 "available": True,
+                 "notes": "The machine format: every payroll export line plus the envelope, for an "
+                          "org's own integration."},
+                {"key": "adp_csv", "label": "ADP paydata import",
+                 "delivery": ["file"], "media_type": "text/csv",
+                 "columns": [
+                     {"name": "Co Code", "source": "mapping.adp_co_code", "required": True},
+                     {"name": "Batch ID", "source": "mapping.adp_batch_id", "required": True},
+                     {"name": "File #", "source": "mapping.external_employee_id", "required": True},
+                 ],
+                 "requires_mapping": ["adp_co_code", "adp_batch_id", "external_employee_id"],
+                 "supports_rates": True, "supports_adjustment_lines": True,
+                 "available": True,
+                 "notes": "Co Code, Batch ID and File # are columns 1-3 in that order. Your ADP "
+                          "administrator supplies all three — we will not guess them."},
+                {"key": "gusto_csv", "label": "Gusto Smart Import",
+                 "delivery": ["file"], "media_type": "text/csv",
+                 "requires_mapping": ["external_earning_code"],
+                 "supports_rates": False, "supports_adjustment_lines": True,
+                 "available": True,
+                 "notes": "Best-effort, and labelled that way on purpose: Gusto fuzzy-matches "
+                          "columns rather than publishing a template, so this mapper is proven by a "
+                          "real import rather than by a specification."},
+                # 🚨 OI-1 — the two rows this whole override exists for.
+                {"key": "quickbooks_online", "label": "QuickBooks Online",
+                 "delivery": ["file"], "media_type": "text/csv",
+                 "requires_mapping": ["external_employee_id", "external_earning_code"],
+                 "supports_rates": True, "supports_adjustment_lines": True,
+                 "available": False,
+                 "notes": "Not available yet. Intuit does not publish the Time Activities column "
+                          "spec, so the mapper has to be derived from the QBO import wizard's own "
+                          "sample file before we will produce a file anyone pays from."},
+                {"key": "quickbooks_iif", "label": "QuickBooks Desktop (IIF)",
+                 "delivery": ["file"], "media_type": "application/octet-stream",
+                 "requires_mapping": ["external_employee_id", "external_earning_code"],
+                 "supports_rates": True, "supports_adjustment_lines": True,
+                 "available": False,
+                 "notes": "Not available yet. The IIF timesheet header token (!TIMEACCT or "
+                          "!TIMEACT) has to be verified against a real QuickBooks Desktop import "
+                          "first — the wrong token produces a file that fails on their side."},
+            ]})),
+    ]
+
+
 def from_rule_fixture(code, note, shape, flags=None, incomplete=None, jurisdiction=None):
     """Render a calc edge fixture FROM `hr.jurisdiction_rule_test`, never hand-typed (§6.4)."""
     def build(rows):

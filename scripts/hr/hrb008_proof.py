@@ -415,17 +415,30 @@ async def main():
                 people[mgr]["employment"], people[key]["employment"])
 
         # ================================================================= §8.2 TIMECARD
+        # 🚨 §8.2 NODE A IS PART OF THE FIXTURE: "Pay period ends — hr.pay_period moves to
+        # submitted" HAPPENS BEFORE "the engine opens one timecard_attestation instance". The L3
+        # lane made that structural after this suite was first written — hr.timecard_wf_validate
+        # (the flow type's validate_fn, NULL when C4 shipped) raises the hard finding
+        # `period_not_submitted` while the period is still `open`, and hr.wf_request correctly
+        # closes the instance `rejected_at_intake` with no step at all. A fixture that leaves the
+        # period open is therefore asserting against a request the engine is RIGHT to refuse.
+        # The period runs to yesterday, so submitting it is legal in both directions.
+        await as_owner()
+        await conn.execute("update hr.pay_period set state='submitted' where id=$1", pp)
         await as_user(people["alice"]["uid"])
         ra = await j("select hr.wf_request('timecard_attestation','hr_pay_period_employment',$1,$2,$3::jsonb)",
                      ppe, org, json.dumps({"total_hours": 80, "exception_count": 0}))
         att_inst = ra.get("instance_id")
         await as_owner()
+        rec("§8.2 attestation", "a submitted period makes the timecard decidable — the request clears intake and opens its step",
+            ra.get("state") == "active",
+            f"state={ra.get('state')} findings={json.dumps(ra.get('findings') or {})[:200]}")
         att_step = await conn.fetchrow(
             "select id, resolution_path, resolved_approver_ids from hr.workflow_step "
             "where workflow_instance_id=$1 and state='active'", att_inst)
         rec("§8.2 attestation", "the ONLY v1 allows_self step routes to the employee themselves",
-            att_step and list(att_step["resolved_approver_ids"]) == [people["alice"]["employment"]],
-            att_step["resolution_path"] if att_step else None)
+            att_step is not None and list(att_step["resolved_approver_ids"]) == [people["alice"]["employment"]],
+            att_step["resolution_path"] if att_step else json.dumps(ra)[:220])
 
         # somebody ELSE cannot attest for you: allows_self makes SELF the only true case
         await as_user(people["bob"]["uid"])
@@ -448,18 +461,28 @@ async def main():
         # (the no-reason refusal is proven on the termination HR-review step below, which is open
         #  and carries requires_reason = true)
 
-        # the manager approval flow on the SAME employment row, and the employment-grain rejection
-        await as_user(people["bob"]["uid"])
-        re_ = await j("select hr.wf_request('timecard_approval','hr_pay_period_employment',$1,$2,$3::jsonb)",
-                      ppe, org, json.dumps({"exception_count": 0, "ot_hours": 0}))
-        tc_inst = re_.get("instance_id")
+        # 🚨 §8.2 E/F → H: THE ENGINE OPENS THE MANAGER-APPROVAL INSTANCE ITSELF. The attestation's
+        # apply hook (hr.timecard_wf_apply, L3 — NULL when C4 shipped) advances the flow, so a
+        # second hr.wf_request here is refused WF_BINDING_OPEN by the exclusive binding, exactly as
+        # §1.6 promises. The proof follows the instance the engine built rather than racing it.
         await as_owner()
+        tc_inst = await conn.fetchval(
+            "select workflow_instance_id from hr.workflow_binding "
+            "where target_token='hr_pay_period_employment' and target_id=$1 "
+            "and flow_key='timecard_approval' and is_open", ppe)
+        rec("§8.2 grain", "attesting advances the flow: the engine opens the manager-approval instance on the SAME employment row",
+            tc_inst is not None)
         tc_step = await conn.fetchrow(
             "select id, resolved_approver_ids from hr.workflow_step where workflow_instance_id=$1 and state='active'",
             tc_inst)
         rec("§8.2 grain", "the timecard flow targets hr_pay_period_employment — ONE EMPLOYMENT, not the period",
             await conn.fetchval("select target_token='hr_pay_period_employment' from hr.workflow_instance where id=$1",
                                 tc_inst))
+        rec("§8.2 attestation", "🚨 and the employee's disagreement TRAVELS — it is on the manager's instance verbatim, never overwritten",
+            await conn.fetchval(
+                "select validation_findings->'advisory' @> jsonb_build_array(jsonb_build_object("
+                "'code','open_disagreement','dispute_note','Thursday shows 6h; I worked 8h.')) "
+                "from hr.workflow_instance where id=$1", tc_inst))
         pp_state_before = await conn.fetchval("select state from hr.pay_period where id=$1", pp)
         await as_user(people["bob"]["uid"])
         rf = await j("select hr.wf_decide($1,'rejected','Thursday needs a correction before I approve.')",
@@ -744,26 +767,55 @@ async def main():
                 "select count(*) >= 0 from hr.workflow_decision where workflow_instance_id=$1",
                 rv.get("instance_id")))
 
-        # ================================================================= LEDGER IMMUTABILITY
-        # 🚨 FINDING, recorded rather than papered over: `hr.privileged_write` is set with
-        # is_local = true, which scopes it to the TRANSACTION, not to the function. So once ANY
-        # definer HR RPC has run, the write guard stays disarmed for the rest of that transaction.
-        # In production each PostgREST call is its own transaction, so the live exposure is narrow —
-        # but the guard is weaker than it reads, and it is HRB-007's (C3) pattern, not this lane's.
-        # Probed both ways below: with the flag as a definer call leaves it, and reset, which is the
-        # state a real client request actually starts in.
+        # ================================================================= WRITE-GUARD SCOPE
+        # 🚨 THIS WAS THIS SUITE'S SIXTH FINDING AND IT IS NOW A GUARANTEE. The engine used to arm
+        # the guard with `set_config('hr.privileged_write','on',true)`, whose is_local => true
+        # scopes it to the TRANSACTION, not the statement — so one engine RPC left every hr.* table
+        # writable for the rest of that transaction, ledgers included. The access lane shipped the
+        # fix (`hr.arm_write()`: a statement-scoped, unforgeable token that never degrades a caller
+        # who already holds a legacy arm — HRB-007, hr_c3_00/hr_c3_11), and hr_c4_08 moved all 20
+        # `hr.wf_*` / `hr._wf_*` writers onto it. Measured here from a COLD flag, because that is
+        # the state a real PostgREST request starts in, and as SEPARATE statements, because a
+        # statement-scoped arm is by definition invisible inside one.
+        await as_owner()
+        lrg = await conn.fetchval(
+            "insert into hr.leave_request (organization_id, employment_id, leave_policy_id, starts_on, "
+            "ends_on, requested_hours, state, engine_key, engine_version) "
+            "values ($1,$2,$3,current_date + 400, current_date + 400, 8,'submitted','proof','1') returning id",
+            org, people["alice"]["employment"], lp)
+        await conn.execute("select set_config('hr.privileged_write','',true)")   # COLD
+        await as_user(people["alice"]["uid"])
+        rg = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
+                     lrg, org, json.dumps({"total_hours": 8}))
+        guard_flag = await conn.fetchval("select current_setting('hr.privileged_write', true)")
+        await conn.execute("reset role")
+        await conn.execute("select set_config('request.jwt.claims','',true)")
+        rec("§ write-guard scope", "an engine RPC arms ITSELF — with nothing armed ambiently it still writes its instance row",
+            await conn.fetchval("select count(*)=1 from hr.workflow_instance where id=$1", rg.get("instance_id")),
+            json.dumps(rg)[:160])
+        rec("§ write-guard scope",
+            "🚨 and it leaves NO transaction-wide arm behind — the legacy `on` literal is gone from the engine",
+            (guard_flag or "") not in ("on", "true", "1", "yes") and (guard_flag or "") != "",
+            f"flag={guard_flag!r}")
+        # the other half: the arm died with the statement that issued it, so the NEXT statement in
+        # the SAME transaction cannot write hr.* — run as the connection owner so RLS is not in the
+        # picture and the write guard is the only thing that can refuse.
         sp0 = conn.transaction()
         await sp0.start()
-        await conn.execute("set local role authenticated")
-        leaked = True
+        guard_refused, guard_state = False, None
         try:
-            await conn.execute("delete from hr.workflow_binding where workflow_instance_id=$1", inst)
-        except Exception:
-            leaked = False
+            await conn.execute("delete from hr.workflow_binding where workflow_instance_id=$1",
+                               rg.get("instance_id"))
+            guard_state = "no error — the delete went through"
+        except Exception as e:
+            guard_refused = getattr(e, "sqlstate", None) == "42501"
+            guard_state = f"{type(e).__name__} {getattr(e, 'sqlstate', None)}"
         await sp0.rollback()
-        rec("FINDING", "hr.privileged_write is TRANSACTION-scoped, so a definer call disarms the write guard for the rest of it",
-            leaked, "recorded as a debt owned by the access lane (HRB-007); narrow in production because PostgREST is one transaction per call")
+        rec("§ write-guard scope",
+            "🚨 the NEXT statement in the same transaction is REFUSED 42501 — a definer call no longer disarms the guard",
+            guard_refused, guard_state)
 
+        # ================================================================= LEDGER IMMUTABILITY
         await conn.execute("reset role")
         await conn.execute("select set_config('hr.privileged_write','off',true)")
         # a refused write ABORTS the surrounding transaction, so each probe gets its own savepoint

@@ -1617,6 +1617,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — REQUIRED when mode="authoritative" (the call writes result rows and a calculation snapshot); optional when mode="prospective", which writes no domain row. Enforced by the handler, because OpenAPI cannot express a requirement conditional on a body field. §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -1691,6 +1693,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — REQUIRED when mode="authoritative" (the call writes result rows and a calculation snapshot); optional when mode="prospective", which writes no domain row. Enforced by the handler, because OpenAPI cannot express a requirement conditional on a body field. §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -1765,6 +1769,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — REQUIRED when mode="authoritative" (the call writes result rows and a calculation snapshot); optional when mode="prospective", which writes no domain row. Enforced by the handler, because OpenAPI cannot express a requirement conditional on a body field. §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -1839,6 +1845,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — REQUIRED when mode="authoritative" (the call writes result rows and a calculation snapshot); optional when mode="prospective", which writes no domain row. Enforced by the handler, because OpenAPI cannot express a requirement conditional on a body field. §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -1913,6 +1921,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — REQUIRED when mode="authoritative" (the call writes result rows and a calculation snapshot); optional when mode="prospective", which writes no domain row. Enforced by the handler, because OpenAPI cannot express a requirement conditional on a body field. §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -1987,6 +1997,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — REQUIRED when mode="authoritative" (the call writes result rows and a calculation snapshot); optional when mode="prospective", which writes no domain row. Enforced by the handler, because OpenAPI cannot express a requirement conditional on a body field. §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -2061,6 +2073,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — REQUIRED when mode="authoritative" (the call writes result rows and a calculation snapshot); optional when mode="prospective", which writes no domain row. Enforced by the handler, because OpenAPI cannot express a requirement conditional on a body field. §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -2135,6 +2149,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — REQUIRED when mode="authoritative" (the call writes result rows and a calculation snapshot); optional when mode="prospective", which writes no domain row. Enforced by the handler, because OpenAPI cannot express a requirement conditional on a body field. §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -2209,6 +2225,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — REQUIRED when mode="authoritative" (the call writes result rows and a calculation snapshot); optional when mode="prospective", which writes no domain row. Enforced by the handler, because OpenAPI cannot express a requirement conditional on a body field. §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key"?: string;
             };
             path?: never;
             cookie?: never;
@@ -3831,6 +3849,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key": string;
             };
             path: {
                 export_id: string;
@@ -3936,6 +3956,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key": string;
             };
             path: {
                 export_id: string;
@@ -4318,6 +4340,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key": string;
             };
             path: {
                 seam: string;
@@ -4419,6 +4443,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key": string;
             };
             path: {
                 seam: string;
@@ -4679,6 +4705,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key": string;
             };
             path: {
                 check_id: string;
@@ -4768,6 +4796,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key": string;
             };
             path: {
                 check_id: string;
@@ -4938,6 +4968,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key": string;
             };
             path: {
                 report_id: string;
@@ -5029,6 +5061,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key": string;
             };
             path: {
                 letter_id: string;
@@ -5290,6 +5324,8 @@ export interface operations {
                 "X-Organization-Id": string;
                 /** @description Client-generated; must be a valid UUID or the server mints one. */
                 "X-Request-Id"?: string;
+                /** @description §1.4 — required on every mutating POST. A replay with the same key returns the stored outcome verbatim plus X-Idempotency-Replayed: true; the same key with a DIFFERENT body is 409 hr_idempotency_conflict. */
+                "X-Idempotency-Key": string;
             };
             path?: never;
             cookie?: never;
