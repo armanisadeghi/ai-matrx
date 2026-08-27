@@ -178,6 +178,11 @@ RLS admits the kiosk nowhere: `hr.punch` carries **zero `anon` table grants**, a
 `SECURITY DEFINER` functions are the only door, with the device secret and the employee PIN as the
 two factors on it.
 
+**A correctly proven pending device keeps its secret.** `hr_kiosk_authenticate` returns
+`device_pending_approval` after validating that secret; only an unknown, unpaired, malformed, or
+wrong secret returns the uniform `device_not_authenticated` refusal and permits the client to clear
+the stored identity. Suspended and revoked devices return `device_not_trusted`.
+
 ### Four kiosk decisions a future agent will otherwise undo
 
 1. **The idle screen offers every punch kind, and that is not drift from `allowedKinds`.** The web
@@ -260,6 +265,10 @@ settings-tab entry are batched to lane L1 under the EXECUTION §3 shared-surface
 shaped so that page is one line: `<KioskDevicesPanel source={...} />`.
 
 ## Change Log
+
+- 2026-08-27 — Pending kiosks preserve their one-time device secret after proving possession;
+  authenticate and heartbeat now distinguish approval-waiting, untrusted, and unauthenticated
+  states without weakening the uniform wrong-secret refusal.
 
 - 2026-08-27 — Routes 6, 34, 35 and 36 wired and walked through every ugly state in a browser.
   Records the four kiosk decisions above with the three contract debts they rest on, and why one
