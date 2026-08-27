@@ -178,6 +178,45 @@ RLS admits the kiosk nowhere: `hr.punch` carries **zero `anon` table grants**, a
 `SECURITY DEFINER` functions are the only door, with the device secret and the employee PIN as the
 two factors on it.
 
+### Four kiosk decisions a future agent will otherwise undo
+
+1. **The idle screen offers every punch kind, and that is not drift from `allowedKinds`.** The web
+   clock renders `clockState.allowedKinds` because it has a subject; the kiosk **has no subject
+   until the PIN is validated inside `hr_kiosk_punch`**, and there is no kiosk-callable clock-state
+   RPC. Asking one would mean identifying an employee *before* authenticating them — the exact
+   disclosure the PIN exists to prevent. §2.1 already rules which half is the contract: *"the
+   button's absence is courtesy; the server's refusal is the contract."* Only the contract half is
+   available here.
+2. **The key's employment segment is a per-intent nonce** (`kiosk/useKioskPunch.ts`). The declared
+   composition is `<device_or_session>:<employment>:<kind>:<local_iso_minute>`, and the kiosk cannot
+   know the employment. The device id alone would collapse two people's same-minute punches onto one
+   row **at a shift change**, and anything PIN-derived would put a brute-forceable 4-digit
+   fingerprint into a durable, HR-readable index. A nonce held across retries preserves the retry
+   guarantee and gives up only cross-page-load dedup, which the key never provided anywhere.
+   🚨 **DEBT:** `hr_kiosk_punch` should re-scope the key server-side once it has resolved the
+   employment. Also owed: `KioskDeviceSession.config` carries `locationName` but no IANA `tz`, so
+   the key's minute is minted against the tablet's own zone.
+3. **The duplicate card's one door instructs; it does not write.** §3.3 says *"That's not right"*
+   opens a manager-attended correction. `hr_punch_correct` is a manager's, authenticated RPC, and
+   putting it behind an anon device token would be a second, weaker path into an immutable ledger.
+   So the door hands over the exact facts a manager needs and returns to idle. 🚨 **DEBT:** a
+   device-callable dispute RPC before that door can do more than instruct.
+4. 🚨 **The kiosk cannot collect the clock-out attestation, and does not pretend to.** L3-47 requires
+   the card to show the total it is asking about and the meal rule it asks under;
+   `KioskPunchResult` carries `attestationRequired` and **neither of those numbers**, and there is no
+   kiosk clock-state read to get them from. A card without them would be *an attestation to an
+   unstated number*, which §3.2 says is not an attestation. The confirmation states plainly that one
+   is still owed. 🚨 **DEBT:** `hr_kiosk_punch` must return the attestation block the way
+   `hr_clock_state` does before route 36 can satisfy L3-47.
+
+**One fixture field is read fresh and must stay that way.** `hr_kiosk_authenticate.happy` and
+`hr_kiosk_session_heartbeat.happy` compute `serverTime` in a getter. Every other value in
+`api/mock/registry.ts` is frozen on purpose, but the kiosk **measures its own clock against this one
+and refuses the punch beyond `maxClockSkewSeconds`** — frozen at 2026-03-17 it reports a skew of
+months, so nothing downstream of authentication is reachable at all: not the PIN result, not the
+confirmation, not the replay, not the duplicate card. It is one clock reading, verbatim, exactly as
+a live server would answer; it simulates nothing.
+
 ## Looking at the states nobody wants to discover in production
 
 The four-case fixture discipline only pays for itself if the ugly cases can be **opened**. Three
@@ -221,6 +260,14 @@ settings-tab entry are batched to lane L1 under the EXECUTION §3 shared-surface
 shaped so that page is one line: `<KioskDevicesPanel source={...} />`.
 
 ## Change Log
+
+- 2026-08-27 — Routes 6, 34, 35 and 36 wired and walked through every ugly state in a browser.
+  Records the four kiosk decisions above with the three contract debts they rest on, and why one
+  fixture field is read fresh. Two defects fixed at the source: routes 6 and 34 hand-rolled two of
+  `useHrContext`'s five states and rendered nothing at all for a viewer whose employer had not
+  resolved (both now wrap `HrPageState`), and both carried an in-body `<h1>` that collided with the
+  glass header at 375px. Also collapses a **duplicate** route-75a panel set that two sessions built
+  simultaneously — `KioskDevicesPanel` is the one that survived.
 
 - 2026-08-27 — The punch widget, the `(kiosk)` group and the route-75a panels. Records the three
   mock-lane query parameters and **why the read and the write need separate ones**; and why
