@@ -14,7 +14,9 @@ no page reimplements them.
   do not also render `ExportMenu` beside it. A menu item copies, or opens a
   modal (`onSelect` / hosted `modal` on an `AiVariant`; `onSelect` on an
   export item). `groomer` and `aiCustom` already host their own workspaces.
-  Every size keeps a 44px phone/tablet tap target and collapses at `lg+`.
+  On phone/tablet, the group has no shared frame or dividers: only the quiet
+  icon controls show, each with a non-shrinking 44px tap target. Compact
+  segmented chrome returns at `lg+`.
   `size`: `"xs"` (dense cards / per-field), `"icon"` (rows/toolbars), `"sm"`
   (header). Stops click propagation by default. **Pass `json`** for
   structured data; it is an AI-menu item, never a fourth button. The AI
@@ -24,8 +26,9 @@ no page reimplements them.
   across surfaces; do not substitute a bot, face, star, or sparkle.
 - `buildAgentPayload` — the xml-ish envelope (live URL/route/timestamp + full
   JSON dump).
-- `CopyActionGroup` — shared border, even-width cells, dividers. Used by
-  `CopyButtons` whenever two or more segments are visible.
+- `CopyActionGroup` — even-width, non-shrinking cells; visually unboxed on
+  touch layouts and segmented on desktop. Used by `CopyButtons` whenever two
+  or more segments are visible.
 - `ExportMenu` + `export.ts` (`jsonExportItem` / `csvExportItem` /
   `textExportItem`, `rowsToCsv`) — the **Download** dropdown. Prefer
   `CopyButtons export={{ items, sheetRows }}` so it sits in the group.
