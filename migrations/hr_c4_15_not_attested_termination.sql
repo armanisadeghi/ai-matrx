@@ -1,89 +1,82 @@
 -- HR domain C4 — migration 15 (register item HRB-008 follow-up, lane workflow-engine; round-5 T1).
 --
--- 🚨 THE LOGIN-LESS ATTESTATION ROUTES BUT CAN NEVER TERMINATE. §8.2 NODE G HAD NO MECHANISM.
+-- 🚨 THE TERMINATION MECHANISM ALREADY EXISTED. IT WAS WAITING ON REMINDERS THAT CAN NEVER BE SENT.
 --
--- Measured on the real G2V instance before writing a line (2026-08-27) — and the first finding
--- CORRECTS the report this migration was asked for:
+-- Two premise corrections first, both measured before a line was written (2026-08-27):
 --
---   instance 470e7247…  state=ACTIVE  current_step_order=10
---   step     effd7456…  state=ACTIVE  resolved_approver_ids=[ca9e12da…]  resolved_user_ids={}
---   hr.wf_resolve_approvers(step) RIGHT NOW → {"granted": true, ... "no_reach":[{"why":"no_login"}]}
+-- **A. There is no futile retry loop and no live `no_login` refusal.** The real G2V instance reads
+-- `state=ACTIVE`, step `ACTIVE`, `current_step_order=10`, and `hr.wf_resolve_approvers` on that
+-- step returns `{"granted": true, … "no_reach":[{"why":"no_login"}]}` RIGHT NOW. The retry
+-- SUCCEEDED at 10:45 (`routed: failed → active`). The `why: no_login` still on screen lives in the
+-- FAILURE ROW'S `detail` — the frozen snapshot of the original 10:09 failure, which
+-- `hr.wf_resolve_failure` never rewrites. `attempt_count 2` / `state retrying` is a real defect,
+-- but a different one: **a successful retry never closes its own row**, so a fixed problem shows
+-- forever as a "failure assigned to me" with a stale reason attached (§8 below).
 --
--- **There is no futile retry loop and no live `no_login` refusal.** The retry SUCCEEDED at 10:45
--- (`routed: failed → active`). The `why: no_login` still visible is inside the FAILURE ROW'S
--- `detail`, which is the frozen snapshot of the ORIGINAL 10:09 failure — `hr.wf_resolve_failure`
--- never rewrites it. `attempt_count 2` / `state retrying` is the second real defect: **a successful
--- retry never closes its own failure row**, so /hr/tasks shows a permanent "failure assigned to me"
--- for a problem that is fixed, with a stale reason attached. Both are fixed below.
+-- **B. §8.2 node G is BUILT, by the L3 lane, and it is not schedule-gated.**
+-- `hr.timecard_attestation_sweep(p_pay_period_id, p_dry_run)` is explicitly a human-run door —
+-- *"The attestation sweep is run by a person, on purpose. There is no schedule behind it."* — gated
+-- on `payroll.read`, and it does exactly node G: closes the step `skipped` with
+-- `state_reason='not_attested'` (RD 12 there: deliberately NOT `expired`, because `hr._wf_join`
+-- parks anything outside `approved|auto_approved|skipped` and would strand the timecard with no
+-- manager step at all), and notifies with `flagged_to: manager`. `hr.timecard_wf_apply` then writes
+-- `attestation_outcome='not_attested'` and OPENS the manager's approval anyway. **So no new step
+-- state, no `_wf_join` change and no second path were needed, and none are made here.**
 --
--- What IS true, and is the crown blocker: the step is `active`, routed to somebody who cannot act,
--- and nothing can ever close it. §8.2 node G — *"reminders, then the step auto-closes as
--- not_attested and is flagged to the manager, NEVER silently attested"* — had no mechanism at all:
+-- What actually blocks it is one predicate:
 --
---   · `not_attested` was not a legal `hr.workflow_step.state` (the CHECK admits eleven values and
---     that is not one of them);
---   · `hr._wf_join` treats any non-optional step not in (`approved`,`auto_approved`,`skipped`) as
---     unfavourable and returns WITHOUT deciding the instance — so even if a step could close that
---     way, the instance would hang one inch from the end;
---   · nothing anywhere recognised that a self-step resolved to a subject with no reach is
---     STRUCTURALLY unactionable rather than transiently failed, so the only offered remedy was to
---     retry it forever.
+--     and ws.reminders_sent >= d.reminder_max
 --
--- 🚨 EVERYTHING PAST THE JOIN WAS ALREADY BUILT AND IS NOT TOUCHED HERE. `hr.timecard_wf_apply`
--- already handles exactly this case (L3 RD 3): no decision row → `attestation_outcome =
--- 'not_attested'` + the manager note on `hr.pay_period_employment.metadata`, `attested_at` left
--- NULL, row state left alone — and then it opens the `timecard_approval` instance ANYWAY, carrying
--- `attestation_outcome: 'not_attested'` in its payload. So the manager gets a real approval step on
--- a flagged timecard, approves it, the row becomes `approved`, and hr_c4_13's completion gate lets
--- the period through. The whole product outcome the coordinator asked for falls out of unblocking
--- the join — no special case in the gate, no second path.
+-- 🚨 **Reminders are sent by `hr.wf_tick`, which IS deploy/schedule-gated — so the human door waits
+-- on an automation that has not run.** And for this population it can never help anyway: the
+-- reminders would be addressed to somebody with no login, no inbox row and no notification target.
+-- The sweep was waiting for three messages that cannot be sent to a person who cannot receive them.
 --
 -- ===================================================================================
 -- RECORDED TECHNICAL DECISIONS
 --
--- 1. 🚨 ONE TRANSITION, `hr._wf_not_attested`, SO THE TICK CANNOT FORK FROM THE HUMAN PATH.
---    The requirement was explicit: the deadline-driven automation and the human resolution must be
---    the same transition. It is one SECURITY DEFINER function that closes the step, records the
---    event, and flags the manager. `hr.wf_resolve_failure` calls it with an actor; the tick's
---    future pass calls it with NULL and gets `actor_type='automation'`. There is no second copy to
---    drift.
+-- 1. 🚨 REMINDERS TO NOBODY ARE NOT A PRECONDITION THAT CAN EVER BE MET. A step whose
+--    `resolved_user_ids` is empty has no reachable approver at all — the resolver has said so in
+--    `resolution_evidence.no_reach` since hr_c4_11. Such a step becomes sweep-eligible on the
+--    DUE-HOURS CLOCK ALONE. Every other step keeps the reminder precondition exactly as it was:
+--    where somebody CAN be nudged, they still get all their nudges first. The returned rows now
+--    carry `eligible_because` so the operator can see which rule admitted each one.
 --
--- 2. IT REFUSES ON A STEP THAT IS NOT A SELF-STEP, AND ON ONE THAT WAS ACTUALLY DECIDED.
---    `not_attested` means *"the person whose own record this is never acted"*. There is no such
---    outcome for an approval somebody else owes — that is escalated or reassigned. And a step
---    carrying any `hr.workflow_decision` row is refused outright, so this can never overwrite a
---    real act. Both are hard refusals, not knobs.
+-- 2. ONE TRANSITION, `hr._wf_not_attested`, SO THE HUMAN DOOR AND THE SWEEP CANNOT FORK.
+--    The requirement was explicit. The sweep's two statements are extracted verbatim into one
+--    SECURITY DEFINER function, and the sweep is repointed at it — so this is a refactor to a
+--    single implementation, not a second one. `hr.wf_resolve_failure`'s new `not_attested` action
+--    calls the same function, and a future tick pass calls it with a NULL actor and gets
+--    `actor_type='automation'`. There is nothing to drift.
 --
--- 3. THE STRUCTURALLY-UNACTIONABLE CASE GETS ITS OWN FAILURE CLASS, AND IT IS NOT RETRYABLE.
+-- 3. IT REFUSES ON A NON-SELF STEP AND ON ONE THAT WAS ACTUALLY DECIDED. `not_attested` means
+--    *"the person whose own record this is never acted"*; there is no such outcome for an approval
+--    somebody else owes — that is escalated or reassigned. A step carrying any
+--    `hr.workflow_decision` row is refused outright, so this can never overwrite a real act.
+--
+-- 4. THE STRUCTURALLY-UNACTIONABLE CASE GETS ITS OWN FAILURE CLASS, AND IT IS NOT RETRYABLE.
 --    `unactionable_no_reach` is raised by `hr.wf_activate_step` when a step resolves candidates but
---    NONE of them can be reached (no login → no `iam.permissions` grant, no `workspace.tasks` row,
---    no way to call `hr.wf_decide`). It is a STATE, not a transient error: retrying re-runs the
---    same resolver over the same unchanged facts. The class declares `retryable: false` and the
---    door refuses `retry` on it by name, telling the operator what it DOES offer instead.
---    The step still activates and is still honestly `active` — it IS routed; it is the reach that
---    is missing, and `resolution_evidence.no_reach` has said so since hr_c4_11.
+--    none can be reached. It is a STATE, not a transient error: retrying re-runs the same resolver
+--    over the same unchanged facts, which is precisely the loop the report described. The class
+--    declares `retryable: false` and the door refuses `retry` on it BY NAME, telling the operator
+--    what it does offer instead. The step still activates and is still honestly `active` — it IS
+--    routed; it is the reach that is missing.
 --
--- 4. 🚨 THE LEGAL RESOLUTIONS NOW LIVE ON THE VOCABULARY ROW, WHICH IS ALSO THE UI CONTRACT.
+-- 5. 🚨 THE LEGAL RESOLUTIONS MOVE ONTO THE VOCABULARY ROW, WHICH IS ALSO THE UI CONTRACT.
 --    §1.8 makes `failure_class` a `platform.categories` dimension; each row's `metadata` now carries
---    `resolutions` (and `retryable`). `hr.wf_resolve_failure` validates against THAT instead of a
---    hardcoded `in ('retry','resolve','abandon','reassign')`, and a refusal returns
---    `available_actions`. Verified against the frontend: `p_action` is plain `string` end to end
---    (`features/hr/tasks/service.ts` → `resolveFailure`, and the generated
---    `hr_wf_resolve_failure` Args type), there is no closed union anywhere to extend, and the
---    control that would send it is currently unreferenced. So a new action needs NO frontend type
---    change, and the door can now TELL the page which buttons to render instead of the page
---    guessing.
+--    `resolutions` and `retryable`. `hr.wf_resolve_failure` validates against THAT instead of a
+--    hardcoded `in ('retry','resolve','abandon','reassign')`, and every refusal returns
+--    `available_actions`. Verified against the frontend before choosing this shape: `p_action` is
+--    plain `string` end to end (`features/hr/tasks/service.ts` → `resolveFailure`, and the generated
+--    `hr_wf_resolve_failure` Args type), there is NO closed union anywhere to extend, and the
+--    wrapper that would send it is currently unreferenced — the "Failures assigned to me" section
+--    renders bare links with no action controls. So a new action costs the frontend no type change,
+--    and the door can now TELL the page which buttons to draw instead of the page hardcoding them.
 --
--- 5. A SUCCESSFUL RETRY RESOLVES ITS OWN ROW; A FAILED ONE REFRESHES ITS EVIDENCE. Leaving every
---    retried row in `retrying` forever is what made a fixed problem look permanently broken, and
---    leaving `detail` frozen at the first attempt is what made a stale reason look like a live one.
+-- 6. A SUCCESSFUL RETRY RESOLVES ITS OWN ROW; A FAILED ONE REFRESHES ITS EVIDENCE (premise A).
 --
--- 6. `not_attested` IS A FAVOURABLE CLOSE FOR THE JOIN — safely, because only `hr._wf_not_attested`
---    can write it and that function only accepts self-steps. It cannot leak into leave, pay or
---    termination flows: none of their steps set `allows_self`.
---
--- Authority: SPEC-WORKFLOW-ENGINE §8.2 node G, §1.8 (the class vocabulary), §1.9 (the tick's
--- passes), §3.2; SPEC-TIME §7.1. Applied live as `hr_c4_15_not_attested_termination`. Idempotent.
+-- Authority: SPEC-WORKFLOW-ENGINE §8.2 node G, §1.8, §1.9; SPEC-TIME §7.1 and hr_l3_26 RD 12.
+-- Applied live as `hr_c4_15_not_attested_termination`. Idempotent.
 
 set local statement_timeout = '600s';
 set local lock_timeout = '30s';
@@ -96,35 +89,8 @@ begin
   perform set_config('matrx.hr_c4_15_cert_bad_before', v_bad::text, true);
 end $$;
 
--- ============================================================ 1. `not_attested` becomes legal
-do $$
-declare v_con text;
-begin
-  if exists (select 1 from pg_constraint c
-              join pg_class t on t.oid = c.conrelid
-              join pg_namespace n on n.oid = t.relnamespace
-             where n.nspname = 'hr' and t.relname = 'workflow_step' and c.contype = 'c'
-               and pg_get_constraintdef(c.oid) like '%not_attested%') then
-    raise notice 'hr_c4_15: hr.workflow_step.state already admits not_attested';
-    return;
-  end if;
-  select c.conname into v_con from pg_constraint c
-    join pg_class t on t.oid = c.conrelid
-    join pg_namespace n on n.oid = t.relnamespace
-   where n.nspname = 'hr' and t.relname = 'workflow_step' and c.contype = 'c'
-     and pg_get_constraintdef(c.oid) like '%(state = ANY%';
-  if v_con is null then
-    raise exception 'hr_c4_15: cannot find the state CHECK on hr.workflow_step';
-  end if;
-  execute format('alter table hr.workflow_step drop constraint %I', v_con);
-  execute format($f$alter table hr.workflow_step add constraint %I check (state = any (array[
-      'pending','active','approved','auto_approved','rejected','returned','skipped',
-      'expired','cancelled','unroutable','awaiting_result','not_attested']))$f$, v_con);
-  raise notice 'hr_c4_15: hr.workflow_step.state now admits not_attested';
-end $$;
-
--- ============================================================ 2. the class vocabulary (§1.8)
--- `position` is a Postgres col_name keyword; it is quoted so the column list parses as identifiers.
+-- ============================================================ 1. the class vocabulary (§1.8, RD 4/5)
+-- `position` is a Postgres col_name keyword; quoted so the column list parses as identifiers.
 insert into platform.categories (organization_id, dimension, name, slug, is_system, "position",
                                  metadata, visibility)
 select '39c38960-d30c-4840-b0c1-c9960de95582'::uuid, 'hr_workflow_failure_class',
@@ -150,7 +116,11 @@ update platform.categories
    and slug <> 'unactionable_no_reach'
    and not (metadata ? 'resolutions');
 
--- ============================================================ 3. THE ONE TRANSITION (RD 1)
+-- ============================================================ 2. THE ONE TRANSITION (RD 2)
+-- Lifted verbatim from hr.timecard_attestation_sweep, which is repointed at it in §3. `skipped`
+-- with state_reason `not_attested` is L3's RD 12 and is kept exactly: hr._wf_join parks anything
+-- outside ('approved','auto_approved','skipped'), so any other state would strand the timecard
+-- with no manager step at all.
 create or replace function hr._wf_not_attested(p_step uuid,
                                                p_actor uuid default null,
                                                p_note text default null)
@@ -161,7 +131,7 @@ declare
   st   hr.workflow_step%rowtype;
   sd   hr.workflow_step_definition%rowtype;
   inst hr.workflow_instance%rowtype;
-  v_mgr uuid; v_mgr_uid uuid; v_res jsonb;
+  v_emp uuid; v_res jsonb;
 begin
   select * into st from hr.workflow_step where id = p_step;
   if not found then
@@ -170,13 +140,12 @@ begin
   select * into sd   from hr.workflow_step_definition where id = st.step_definition_id;
   select * into inst from hr.workflow_instance        where id = st.workflow_instance_id;
 
-  -- RD 2: `not_attested` is the SUBJECT's own non-action. It has no meaning on a step somebody
-  -- else owes — that is escalated or reassigned, never marked as if the subject had ignored it.
+  -- RD 3: `not_attested` is the SUBJECT's own non-action.
   if not sd.allows_self then
     return jsonb_build_object('granted', false, 'reason', 'not_a_self_step',
       'detail', 'not_attested closes a step the SUBJECT was to take themselves; an approval somebody else owes is escalated or reassigned');
   end if;
-  if st.state not in ('active','unroutable') then
+  if st.state <> 'active' then
     return jsonb_build_object('granted', false, 'reason', 'WF_STEP_CLOSED',
       'detail', format('this step is %s and can no longer be closed as not_attested', st.state));
   end if;
@@ -186,101 +155,103 @@ begin
       'detail', 'this step carries a decision; it was acted on and must not be recorded as not_attested');
   end if;
 
+  v_emp := inst.subject_employment_id;
   perform hr.arm_write();
-  perform hr._wf_event(inst.id, p_step, 'timeout_applied', st.state, 'not_attested',
+
+  -- 🚨 `skipped`, NOT `expired` (hr_l3_26 RD 12). attested_at stays NULL; nothing attested on the
+  -- employee's behalf. state_reason carries the fact that nobody did.
+  v_res := hr._wf_close_step(p_step, 'skipped', 'not_attested');
+  perform hr._wf_notify(inst.id, p_step, 'hr.time.attestation_overdue',
+                        'timeout_warning', null, v_emp,
+                        jsonb_build_object('outcome', 'not_attested',
+                                           'flagged_to', 'manager',
+                                           'attested', false,
+                                           'closed_by', case when p_actor is null
+                                                             then 'sweep' else 'failure_lane' end,
+                                           'note', p_note));
+  perform hr._wf_event(inst.id, p_step, 'timeout_applied', 'active', 'skipped',
                        case when p_actor is null then 'automation' else 'hr_admin' end,
                        p_actor, null,
                        jsonb_build_object(
                          'outcome', 'not_attested', 'note', p_note,
-                         'law', '§8.2 node G: the step closes as not_attested and is flagged to the manager. NOTHING attested on the employee''s behalf.'));
+                         'law', '§8.2 node G: closed as not_attested and flagged to the manager. NOTHING attested on the employee''s behalf.'));
 
-  -- §8.2 node G's other half: the manager is FLAGGED. hr.timecard_wf_apply writes the flag onto
-  -- hr.pay_period_employment.metadata; this is the notice, sent where there is somebody to send it.
-  v_mgr := hr.manager_as_of(inst.subject_employment_id, current_date);
-  if v_mgr is not null then
-    v_mgr_uid := hr._wf_login_of(v_mgr);
-    if v_mgr_uid is not null then
-      perform hr._wf_notify(inst.id, p_step, 'hr.workflow.request_needs_attention', 'outcome',
-                            v_mgr_uid, v_mgr,
-                            jsonb_build_object('outcome', 'not_attested', 'reason', p_note));
-    end if;
-  end if;
-
-  -- the close drives the join, which drives apply. hr.timecard_wf_apply then records
-  -- attestation_outcome='not_attested' and opens the manager's approval on the flagged timecard.
-  v_res := hr._wf_close_step(p_step, 'not_attested',
-                             coalesce(nullif(btrim(p_note),''), 'closed as not_attested'));
-  return jsonb_build_object('granted', true, 'state', 'not_attested', 'step_id', p_step,
-                            'manager_employment_id', v_mgr,
-                            'manager_notified', v_mgr_uid is not null,
-                            'close', v_res);
+  return jsonb_build_object('granted', true, 'state', 'skipped', 'outcome', 'not_attested',
+                            'step_id', p_step, 'subject_employment_id', v_emp, 'close', v_res);
 end
 $fn$;
 
 revoke all on function hr._wf_not_attested(uuid, uuid, text) from public, anon, authenticated;
 
 comment on function hr._wf_not_attested is
-  'SPEC-WORKFLOW-ENGINE §8.2 node G — THE single not_attested transition, shared by the human failure-lane resolution (hr.wf_resolve_failure, actor supplied) and the tick''s future deadline pass (actor NULL → actor_type=automation), so the two can never fork. Refuses on a non-self step and on any step carrying a decision. Closes the step, records the event, flags the manager; hr.timecard_wf_apply does the rest.';
+  'SPEC-WORKFLOW-ENGINE §8.2 node G — THE single not_attested transition, shared by hr.timecard_attestation_sweep (actor NULL) and hr.wf_resolve_failure''s not_attested action (actor supplied), so the human door and the sweep cannot fork. Closes the step `skipped` with state_reason `not_attested` (hr_l3_26 RD 12 — any other state strands the timecard at hr._wf_join), notifies the manager, and refuses on a non-self step or one carrying a decision.';
 
--- ============================================================ 4. the join lets it through (RD 6)
+-- ============================================================ 3. the sweep uses it, and stops
+--                                                                waiting for unsendable reminders
 do $mig$
 declare
-  v_oid oid; v_def text;
-  v_old constant text := $o$     and s.state not in ('approved','auto_approved','skipped');$o$;
-  v_rep constant text := $o$     -- `not_attested` is favourable ENOUGH for the instance to reach apply, where the flow type's
-     -- own apply_fn decides what it means (for a timecard: the manager is flagged and their
-     -- approval step opens). Safe by construction — only hr._wf_not_attested writes this state and
-     -- it accepts self-steps only, so no leave, pay or termination step can ever carry it.
-     and s.state not in ('approved','auto_approved','skipped','not_attested');$o$;
+  v_oid oid; v_def text; v_new text;
+
+  v_pred_old constant text := $o$       and ws.reminders_sent >= d.reminder_max$o$;
+  v_pred_new constant text := $o$       -- 🚨 RD 1: REMINDERS TO NOBODY ARE NOT A PRECONDITION THAT CAN EVER BE MET. Reminders come
+       -- from hr.wf_tick, which is deploy/schedule-gated — and for a step with no reachable
+       -- approver they could never help anyway: there is no login, no inbox row and no
+       -- notification target to send them to. Such a step is eligible on the DUE-HOURS CLOCK
+       -- ALONE. Every other step keeps the reminder precondition exactly as it was.
+       and (ws.reminders_sent >= d.reminder_max
+            or coalesce(cardinality(ws.resolved_user_ids), 0) = 0)$o$;
+
+  v_row_old constant text := $o$      'action', case when p_dry_run then 'would close as not_attested'
+                     else 'closed as not_attested' end);$o$;
+  v_row_new constant text := $o$      'action', case when p_dry_run then 'would close as not_attested'
+                     else 'closed as not_attested' end,
+      'reachable_approvers', coalesce(cardinality(r.resolved_user_ids), 0),
+      'eligible_because', case when coalesce(cardinality(r.resolved_user_ids), 0) = 0
+                               then 'no reachable approver — reminders could never be delivered'
+                               else 'the reminder ladder is exhausted' end);$o$;
+
+  v_sel_old constant text := $o$    select ws.id step_id, ws.workflow_instance_id, ws.activated_at, ws.reminders_sent,$o$;
+  v_sel_new constant text := $o$    select ws.id step_id, ws.workflow_instance_id, ws.activated_at, ws.reminders_sent,
+           ws.resolved_user_ids,$o$;
+
+  v_do_old constant text := $o$      -- 🚨 RD 12: `skipped`, NOT `expired`. hr._wf_join parks a non-optional step that closed
+      -- outside ('approved','auto_approved','skipped') WITHOUT applying, which would strand the
+      -- timecard with no manager step at all. §7.1 routes the no-action case straight on to the
+      -- manager. attested_at stays NULL; state_reason carries the fact that nobody attested.
+      perform hr._wf_close_step(r.step_id, 'skipped', 'not_attested');
+      perform hr._wf_notify(r.workflow_instance_id, r.step_id, 'hr.time.attestation_overdue',
+                            'timeout_warning', null, r.employment_id,
+                            jsonb_build_object('outcome', 'not_attested',
+                                               'flagged_to', 'manager',
+                                               'attested', false));$o$;
+  v_do_new constant text := $o$      -- 🚨 RD 2: ONE TRANSITION. This used to inline the close and the notice; the failure-lane
+      -- door (hr.wf_resolve_failure, action `not_attested`) must take the SAME transition, so both
+      -- now call hr._wf_not_attested and there is no second implementation to drift. RD 12 —
+      -- `skipped`, not `expired` — lives inside it, unchanged.
+      perform hr._wf_not_attested(r.step_id, null, 'closed by the attestation sweep');$o$;
 begin
   select p.oid into v_oid from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname = 'hr' and p.proname = '_wf_join';
+   where n.nspname = 'hr' and p.proname = 'timecard_attestation_sweep';
+  if v_oid is null then raise exception 'hr_c4_15: hr.timecard_attestation_sweep does not exist'; end if;
   v_def := pg_get_functiondef(v_oid);
-  if position(v_rep in v_def) > 0 then
-    raise notice 'hr_c4_15: hr._wf_join already passes not_attested';
+  if position(v_do_new in v_def) > 0 then
+    raise notice 'hr_c4_15: the sweep already delegates to hr._wf_not_attested';
   else
-    if position(v_old in v_def) = 0 then
-      raise exception 'hr_c4_15: hr._wf_join does not carry the expected favourable set — refusing to half-apply';
+    if position(v_pred_old in v_def) = 0 or position(v_row_old in v_def) = 0
+       or position(v_sel_old in v_def) = 0 or position(v_do_old in v_def) = 0 then
+      raise exception 'hr_c4_15: hr.timecard_attestation_sweep does not carry the expected text — refusing to half-apply';
     end if;
-    execute replace(v_def, v_old, v_rep);
-    raise notice 'hr_c4_15: hr._wf_join now lets a not_attested step reach apply';
+    v_new := replace(v_def, v_sel_old,  v_sel_new);
+    v_new := replace(v_new, v_pred_old, v_pred_new);
+    v_new := replace(v_new, v_row_old,  v_row_new);
+    v_new := replace(v_new, v_do_old,   v_do_new);
+    execute v_new;
+    raise notice 'hr_c4_15: the sweep delegates to hr._wf_not_attested and no longer waits for unsendable reminders';
   end if;
 end
 $mig$;
 
--- ============================================================ 5. the projection outcome
-do $mig$
-declare
-  v_oid oid; v_def text;
-  v_old constant text := $o$  v_outcome := case p_state when 'approved' then 'completed'
-                            when 'auto_approved' then 'completed'
-                            when 'rejected' then 'completed'
-                            when 'returned' then 'completed'
-                            else 'superseded' end;$o$;
-  v_rep constant text := $o$  v_outcome := case p_state when 'approved' then 'completed'
-                            when 'auto_approved' then 'completed'
-                            when 'rejected' then 'completed'
-                            when 'returned' then 'completed'
-                            -- the person never acted: the task was IGNORED, not superseded
-                            when 'not_attested' then 'ignored'
-                            else 'superseded' end;$o$;
-begin
-  select p.oid into v_oid from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname = 'hr' and p.proname = '_wf_close_step';
-  v_def := pg_get_functiondef(v_oid);
-  if position(v_rep in v_def) > 0 then
-    raise notice 'hr_c4_15: hr._wf_close_step already maps not_attested';
-  else
-    if position(v_old in v_def) = 0 then
-      raise exception 'hr_c4_15: hr._wf_close_step does not carry the expected outcome map — refusing to half-apply';
-    end if;
-    execute replace(v_def, v_old, v_rep);
-    raise notice 'hr_c4_15: hr._wf_close_step maps not_attested to the `ignored` task outcome';
-  end if;
-end
-$mig$;
-
--- ============================================================ 6. the unactionable failure is RAISED
+-- ============================================================ 4. the unactionable failure is RAISED
 do $mig$
 declare
   v_oid oid; v_def text;
@@ -289,11 +260,11 @@ declare
   v_rep constant text := $o$  perform hr._wf_grant_step(p_step);
   perform hr._wf_project_step(p_step);
 
-  -- 🚨 RD 3: RESOLVED IS NOT THE SAME AS REACHABLE. When a step resolves candidates but NONE of
-  -- them holds a login, there is no grant to issue, no inbox row to project and no way for any of
-  -- them to call hr.wf_decide — the step is STRUCTURALLY unactionable, not transiently failed, and
-  -- retrying re-runs the same resolver over the same facts. It is raised as a worked failure a
-  -- human owns (§1.8) rather than left to sit `active` until a deadline nobody is watching.
+  -- 🚨 RD 4: RESOLVED IS NOT THE SAME AS REACHABLE. When a step resolves candidates but NONE holds
+  -- a login, there is no grant to issue, no inbox row to project and no way for any of them to call
+  -- hr.wf_decide — the step is STRUCTURALLY unactionable, not transiently failed, and retrying
+  -- re-runs the same resolver over the same facts. It is raised as a worked failure a human owns
+  -- (§1.8) rather than left sitting `active` behind a deadline nobody is watching.
   if v_cands <> '{}' and coalesce(cardinality(v_users), 0) = 0
      and (v_res ->> 'resolution_path') is distinct from 'external_result' then
     perform hr._wf_failure(inst.id, p_step, 'unactionable_no_reach',
@@ -322,7 +293,7 @@ begin
 end
 $mig$;
 
--- ============================================================ 7. the door: actions from the class
+-- ============================================================ 5. the door: actions from the class
 do $mig$
 declare
   v_oid oid; v_def text; v_new text;
@@ -333,9 +304,9 @@ declare
   v_act_old constant text := $o$  if p_action not in ('retry','resolve','abandon','reassign') then
     return jsonb_build_object('granted', false, 'reason', 'unknown_action');
   end if;$o$;
-  v_act_new constant text := $o$  -- 🚨 RD 4: THE LEGAL RESOLUTIONS LIVE ON THE CLASS'S VOCABULARY ROW (§1.8), not in a literal
-  -- here. That one place is also what the task page should render its buttons from, which is why
-  -- a refusal hands back `available_actions` instead of just saying no.
+  v_act_new constant text := $o$  -- 🚨 RD 5: THE LEGAL RESOLUTIONS LIVE ON THE CLASS'S VOCABULARY ROW (§1.8), not in a literal
+  -- here — and that one place is what the task page should draw its buttons from, which is why a
+  -- refusal hands back `available_actions` instead of only saying no.
   select coalesce(c.metadata -> 'resolutions',
                   jsonb_build_array('retry','resolve','abandon','reassign'))
     into v_actions
@@ -352,8 +323,8 @@ declare
   end if;$o$;
 
   v_na_old constant text := $o$  if p_action = 'retry' then$o$;
-  v_na_new constant text := $o$  -- §8.2 node G, taken by a human through the failure lane. The SAME transition the tick's
-  -- deadline pass will call — one function, no fork (RD 1).
+  v_na_new constant text := $o$  -- §8.2 node G, taken by a human through the failure lane — the SAME transition
+  -- hr.timecard_attestation_sweep takes, by calling the same function (RD 2).
   if p_action = 'not_attested' then
     if f.workflow_step_id is null then
       return jsonb_build_object('granted', false, 'reason', 'no_step',
@@ -387,28 +358,28 @@ begin
 end
 $mig$;
 
--- ============================================================ 8. a retry that works CLOSES its row
+-- ============================================================ 6. a retry that works CLOSES its row
 do $mig$
 declare
   v_oid oid; v_def text;
   v_old constant text := $o$    return jsonb_build_object('granted', true, 'action', p_action, 'retry', v_res);$o$;
-  v_rep constant text := $o$    -- 🚨 RD 5: A SUCCESSFUL RETRY RESOLVES ITS OWN ROW. Leaving every retried failure in
+  v_rep constant text := $o$    -- 🚨 RD 6: A SUCCESSFUL RETRY RESOLVES ITS OWN ROW. Leaving every retried failure in
     -- `retrying` forever is what made a FIXED problem show as a permanent "failure assigned to me",
-    -- and leaving `detail` frozen at the first attempt is what made a stale reason look live.
+    -- and leaving `detail` frozen at the first attempt is what made a stale reason look live —
+    -- which is exactly how this round's report read `why: no_login` off a step that had already
+    -- routed successfully.
     perform hr.arm_write();
     if coalesce((v_res ->> 'granted')::boolean, false) then
       update hr.workflow_failure
          set state = 'resolved', resolved_at = now(), resolved_by = v_uid,
              detail = coalesce(detail,'{}'::jsonb)
-                      || jsonb_build_object('retry_succeeded_at', now(),
-                                            'retry_result', v_res)
+                      || jsonb_build_object('retry_succeeded_at', now(), 'retry_result', v_res)
        where id = p_failure_id;
     else
       update hr.workflow_failure
          set state = 'open',
              detail = coalesce(detail,'{}'::jsonb)
-                      || jsonb_build_object('last_retry_at', now(),
-                                            'last_retry_result', v_res)
+                      || jsonb_build_object('last_retry_at', now(), 'last_retry_result', v_res)
                       || coalesce(v_res -> 'evidence', '{}'::jsonb)
        where id = p_failure_id;
     end if;
@@ -431,17 +402,11 @@ begin
 end
 $mig$;
 
--- ============================================================ 9. post-conditions
+-- ============================================================ 7. post-conditions
 do $$
 declare v_src text; v_bad integer; v_bad_before integer;
 begin
-  if not exists (select 1 from pg_constraint c
-                  join pg_class t on t.oid = c.conrelid
-                  join pg_namespace n on n.oid = t.relnamespace
-                 where n.nspname = 'hr' and t.relname = 'workflow_step' and c.contype = 'c'
-                   and pg_get_constraintdef(c.oid) like '%not_attested%') then
-    raise exception 'hr_c4_15: hr.workflow_step.state still refuses not_attested';
-  end if;
+  -- RD 4/5: the class exists, is not retryable, and every class declares its resolutions
   if not exists (select 1 from platform.categories
                   where dimension = 'hr_workflow_failure_class'
                     and slug = 'unactionable_no_reach' and deleted_at is null
@@ -455,6 +420,7 @@ begin
     raise exception 'hr_c4_15: % failure class(es) do not declare their resolutions', v_bad;
   end if;
 
+  -- RD 2: ONE implementation. Nothing but hr._wf_not_attested may take the transition.
   if not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
                   where n.nspname = 'hr' and p.proname = '_wf_not_attested' and p.prosecdef) then
     raise exception 'hr_c4_15: hr._wf_not_attested is missing or is not SECURITY DEFINER';
@@ -463,36 +429,43 @@ begin
      or has_function_privilege('anon', 'hr._wf_not_attested(uuid,uuid,text)', 'execute') then
     raise exception 'hr_c4_15: hr._wf_not_attested is callable by a client role';
   end if;
-  -- RD 1: exactly ONE place performs the transition
   select count(*) into v_bad from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'hr' and p.proname <> '_wf_not_attested'
      and p.prosrc ~ '_wf_close_step\([^)]*''not_attested''';
   if v_bad > 0 then
-    raise exception 'hr_c4_15: % function(s) besides hr._wf_not_attested close a step as not_attested', v_bad;
+    raise exception 'hr_c4_15: % function(s) besides hr._wf_not_attested still inline the not_attested close', v_bad;
   end if;
-  -- RD 2: the self-step and already-decided guards are present
   select p.prosrc into v_src from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'hr' and p.proname = '_wf_not_attested';
   if v_src !~ 'not sd\.allows_self' or v_src !~ 'WF_ALREADY_DECIDED' then
     raise exception 'hr_c4_15: hr._wf_not_attested lost its self-step or already-decided guard';
   end if;
-
-  select p.prosrc into v_src from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where n.nspname = 'hr' and p.proname = '_wf_join';
-  if v_src !~ '''not_attested''' then
-    raise exception 'hr_c4_15: hr._wf_join still stops on a not_attested step';
+  -- RD 12 is preserved inside it: `skipped`, never `expired`
+  if v_src !~ '_wf_close_step\(p_step, ''skipped'', ''not_attested''\)' then
+    raise exception 'hr_c4_15: hr._wf_not_attested no longer closes the step as skipped/not_attested';
   end if;
 
+  -- RD 1: the sweep no longer waits on reminders that cannot be sent, and delegates
+  select p.prosrc into v_src from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'hr' and p.proname = 'timecard_attestation_sweep';
+  if v_src !~ 'hr\._wf_not_attested\(r\.step_id' then
+    raise exception 'hr_c4_15: the sweep still inlines its own transition';
+  end if;
+  if v_src !~ 'cardinality\(ws\.resolved_user_ids\), 0\) = 0' then
+    raise exception 'hr_c4_15: the sweep still requires reminders that can never be sent';
+  end if;
+  if v_src !~ 'ws\.reminders_sent >= d\.reminder_max' then
+    raise exception 'hr_c4_15: the sweep dropped the reminder ladder for reachable approvers';
+  end if;
+
+  -- RD 5 / RD 6 on the door
   select p.prosrc into v_src from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'hr' and p.proname = 'wf_resolve_failure';
   if v_src ~ 'p_action not in \(''retry'',''resolve'',''abandon'',''reassign''\)' then
     raise exception 'hr_c4_15: hr.wf_resolve_failure still validates against a hardcoded action list';
   end if;
-  if v_src !~ 'available_actions' then
-    raise exception 'hr_c4_15: hr.wf_resolve_failure does not tell the caller what it offers';
-  end if;
-  if v_src !~ 'retry_succeeded_at' then
-    raise exception 'hr_c4_15: a successful retry still does not resolve its own row';
+  if v_src !~ 'available_actions' or v_src !~ 'retry_succeeded_at' then
+    raise exception 'hr_c4_15: the door does not report what it offers, or a retry still cannot close its row';
   end if;
   if v_src !~ 'binding_reclaimed' then
     raise exception 'hr_c4_15: hr_c4_12''s binding reclaim was lost';
@@ -525,7 +498,7 @@ begin
     from platform.entity_types e, lateral iam.canonical_certify('hr', e.table_name, e.token) c
    where e.schema_name = 'hr' and c.category <> 'broken_dependent_fn';
   if v_bad > 0 then
-    raise exception 'hr_c4_15: % hr CONFORMANCE finding(s) — the CHECK rewrite disturbed a table property', v_bad;
+    raise exception 'hr_c4_15: % hr CONFORMANCE finding(s)', v_bad;
   end if;
   select count(*) into v_bad from platform.entity_types e
    where e.schema_name = 'hr' and not iam.canonical_certify_ok(e.schema_name, e.table_name, e.token);
