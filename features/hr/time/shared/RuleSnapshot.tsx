@@ -16,12 +16,12 @@
  * body (`features/window-panels/FEATURE.md` § A PANEL WRAPS THE CANONICAL COMPONENT).
  */
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { DataRowWindow } from "@/components/official/matrx-data-table/DataRowWindow";
 import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { revealWindow } from "@/lib/redux/slices/windowManagerSlice";
 import { cn } from "@/lib/utils";
 import { viewerTimeZone } from "../clock/stampedTime";
@@ -29,6 +29,11 @@ import { viewerTimeZone } from "../clock/stampedTime";
 import type { CalcBlock } from "../api/types";
 import { formatDateTimeInTz } from "./format";
 import { IncompleteFactSentences } from "./MoneyAndFlags";
+import {
+  describeSnapshotRequest,
+  ruleSnapshotTrail,
+  RULE_SNAPSHOT_MODULE_ID,
+} from "./ruleSnapshotDebug";
 
 export interface RuleSnapshotRequest {
   /** What figure is being explained — "Overtime, 5.00 hours". */
@@ -45,6 +50,8 @@ export interface RuleSnapshotRequest {
 interface RuleSnapshotApi {
   open: (request: RuleSnapshotRequest) => void;
   close: () => void;
+  /** Which module instance PROVIDED this api — compared against the consumer's in the trail. */
+  moduleId: string;
 }
 
 const RuleSnapshotContext = createContext<RuleSnapshotApi | null>(null);
@@ -55,6 +62,16 @@ const RuleSnapshotContext = createContext<RuleSnapshotApi | null>(null);
  */
 export function useRuleSnapshot(): RuleSnapshotApi {
   const api = useContext(RuleSnapshotContext);
+  /*
+   * Stage 2. If this reports a DIFFERENT `moduleId` than `provider:render` does, the module is
+   * loaded twice and the door is talking to a context nobody provides — the whole mystery.
+   */
+  ruleSnapshotTrail("door:context-resolved", {
+    resolved: api != null,
+    providerModuleId: api?.moduleId ?? null,
+    consumerModuleId: RULE_SNAPSHOT_MODULE_ID,
+    sameInstance: api?.moduleId === RULE_SNAPSHOT_MODULE_ID,
+  });
   if (!api) {
     throw new Error(
       "useRuleSnapshot() outside <RuleSnapshotProvider>. Every surface rendering an OT, DT or " +
@@ -70,6 +87,9 @@ const WINDOW_ID = "hr-time-rule-snapshot";
 export function RuleSnapshotProvider({ children }: { children: ReactNode }) {
   const [request, setRequest] = useState<RuleSnapshotRequest | null>(null);
   const dispatch = useAppDispatch();
+  const windowRegistered = useAppSelector(
+    (state) => state.windowManager.windows[WINDOW_ID] !== undefined,
+  );
 
   /**
    * 🚨 OPENING IS NOT ENOUGH — THE WINDOW MUST BE REVEALED (G2 T-4).
@@ -89,6 +109,8 @@ export function RuleSnapshotProvider({ children }: { children: ReactNode }) {
    * makes this the path from a wage figure to the rule behind it.
    */
   function open(next: RuleSnapshotRequest) {
+    // Stage 3 — and the data the handler actually read at click time.
+    ruleSnapshotTrail("provider:open-called", describeSnapshotRequest(next));
     setRequest(next);
     if (typeof window !== "undefined") {
       dispatch(
@@ -98,11 +120,45 @@ export function RuleSnapshotProvider({ children }: { children: ReactNode }) {
           viewportHeight: window.innerHeight,
         }),
       );
+      // Stage 5.
+      ruleSnapshotTrail("provider:reveal-dispatched", {
+        windowId: WINDOW_ID,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
+      });
     }
   }
 
+  // Stage 4 — did the provider actually re-render with an open request?
+  ruleSnapshotTrail("provider:render", {
+    open: request !== null,
+    title: request?.title ?? null,
+    windowRegistered,
+  });
+
+  /*
+   * Stage 7 — is the window in the window manager one tick after opening? The failing environment
+   * reports NO `hr-time-rule-snapshot` window anywhere, so this line distinguishes "we never asked
+   * for one" from "we asked and it was not created".
+   */
+  useEffect(() => {
+    if (request === null) return;
+    const timer = setTimeout(() => {
+      ruleSnapshotTrail("window:registration-check", {
+        windowId: WINDOW_ID,
+        registeredInWindowManager: windowRegistered,
+        panelInDom: typeof document !== "undefined"
+          ? document.querySelector('[class*="WindowPanel-module"]') !== null
+          : null,
+      });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [request, windowRegistered]);
+
   return (
-    <RuleSnapshotContext.Provider value={{ open, close: () => setRequest(null) }}>
+    <RuleSnapshotContext.Provider
+      value={{ open, close: () => setRequest(null), moduleId: RULE_SNAPSHOT_MODULE_ID }}
+    >
       {children}
       <DataRowWindow
         isOpen={request !== null}
@@ -119,7 +175,10 @@ export function RuleSnapshotProvider({ children }: { children: ReactNode }) {
               resetKeys={[request]}
               fallback={(error) => <RuleSnapshotFailure error={error} />}
             >
-              <RuleSnapshotBody request={request} />
+              <>
+                <WindowBodyMountProbe title={request.title} />
+                <RuleSnapshotBody request={request} />
+              </>
             </ErrorBoundaryWithCapture>
           ) : null
         }
@@ -148,6 +207,23 @@ function RuleSnapshotFailure({ error }: { error: Error }) {
       </p>
     </div>
   );
+}
+
+/**
+ * Stage 6 — proof that the WINDOW BODY actually mounted.
+ *
+ * This is the stage that separates the two remaining explanations. If stages 1–5 log and this one
+ * never does, `DataRowWindow` / `WindowPanel` declined to render — the request reached the provider
+ * and the window still was not created. If this DOES log while no panel is visible, the window
+ * exists and something downstream is hiding it.
+ *
+ * It renders nothing.
+ */
+function WindowBodyMountProbe({ title }: { title: string }) {
+  useEffect(() => {
+    ruleSnapshotTrail("window:body-mounted", { title });
+  }, [title]);
+  return null;
 }
 
 function RuleSnapshotBody({ request }: { request: RuleSnapshotRequest }) {
@@ -413,7 +489,11 @@ export function RuleSnapshotDoor({
   return (
     <button
       type="button"
-      onClick={() => snapshot.open(request)}
+      onClick={() => {
+        // Stage 1 — the earliest observable point after a real pointer event.
+        ruleSnapshotTrail("door:click", describeSnapshotRequest(request));
+        snapshot.open(request);
+      }}
       aria-label={ariaLabel ?? `How ${request.title} was calculated`}
       className={cn(
         "rounded px-1 tabular-nums underline decoration-dotted underline-offset-4",
