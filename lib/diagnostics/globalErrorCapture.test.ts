@@ -6,6 +6,7 @@ import {
 } from "./errorCaptureStore";
 import {
   buildConsoleCaptureInput,
+  isExpectedNextNavigationRecovery,
   serializeForErrorCapture,
 } from "./globalErrorCapture";
 
@@ -72,5 +73,29 @@ describe("global console error serialization", () => {
       source: "console-error",
       message: "plain console failure",
     });
+  });
+
+  it("recognizes Next's successful RSC-to-document navigation fallback", () => {
+    expect(
+      isExpectedNextNavigationRecovery([
+        "Failed to fetch RSC payload for https://www.aimatrx.com/administration/agents/system-agents/agents/agent-1/build. Falling back to browser navigation.",
+        new TypeError("Failed to fetch"),
+      ]),
+    ).toBe(true);
+  });
+
+  it("does not hide similar application fetch failures", () => {
+    expect(
+      isExpectedNextNavigationRecovery([
+        "Failed to fetch agent payload. Falling back to browser navigation.",
+        new TypeError("Failed to fetch"),
+      ]),
+    ).toBe(false);
+    expect(
+      isExpectedNextNavigationRecovery([
+        "Failed to fetch RSC payload for /agents/agent-1/build. Falling back to browser navigation.",
+        new Error("request failed"),
+      ]),
+    ).toBe(false);
   });
 });

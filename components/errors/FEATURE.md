@@ -15,6 +15,7 @@ Status: **live**. Owns app-level error boundaries, explicit chunk-load recovery,
 | Pre-hydration guard | `ChunkRecoveryBootScript.tsx` (inline `<head>` script) | Explicit chunk fetch failure **before** React boots → one loop-guarded reload (lossless). **After** boot (`__MATRX_APP_BOOTED__`, set by `NewVersionWatcher`) → dispatches `matrx:chunk-load-error`; the watcher offers a cause-neutral Refresh prompt. |
 | Boundaries | `ErrorBoundaryView.tsx` (all route `error.tsx` delegate here), `app/global-error.tsx`, `MarkdownErrorBoundary.tsx` | Explicit chunk-load failure → calm recovery prompt/event, never an Error Inspector render defect. Non-chunk errors → normal error UI + Error Inspector capture. |
 | Detection helpers | `chunk-load-recovery.ts` | `CHUNK_LOAD_ERROR_PATTERNS` (THE explicit-fetch pattern set), `hasChunkLoadErrorSignature()`, `isChunkLoadError()`, `notifyChunkLoadError()`, `CHUNK_LOAD_ERROR_EVENT`, `APP_BOOTED_FLAG`. Generic runtime errors never enter this path. The boot script is the ONE allowed inline pattern copy; keep it in sync. |
+| Router fallback | `lib/diagnostics/globalErrorCapture.ts` | Next's exact “Failed to fetch RSC payload … Falling back to browser navigation” console event stays in the browser console but never persists as `system_error`; the full-document fallback is the recovery. Similar application fetch failures remain red. |
 | Overlay chunks | `features/overlays/boundary/lazyOverlay.tsx` | Per-overlay boundary + hung-import timeout; reload there is a user-clicked last-resort button only. |
 | Auth landing | `components/auth/HardRedirectForm.tsx` | Password login/signup success lands via **full-document navigation** (`window.location.assign`), never a soft server-action `redirect()`. A stale /login tab's old runtime otherwise soft-navigates and 404s on the destination's chunks — /welcome (the universal first landing) was the top victim. Auth actions return `{ hardRedirect }` on success; error paths keep `redirect()`. |
 
@@ -29,6 +30,7 @@ Status: **live**. Owns app-level error boundaries, explicit chunk-load recovery,
 
 ## Change Log
 
+- 2026-08-27 — Excluded Next's exact successful RSC-to-document navigation fallback from durable error capture while retaining nearby application fetch failures.
 - 2026-08-26 — Nested Markdown boundaries route explicit lazy-renderer chunk failures to `NewVersionWatcher` instead of misclassifying them as Markdown render defects.
 - 2026-08-23 — Removed the false “page is out of date” diagnosis. Turbopack’s generic `module factory is not available` runtime failure can occur on fresh loads; it is no longer classified or suppressed as deploy skew, while explicit chunk failures use cause-neutral recovery copy. Detection, pre-boot handling, overlays, boundaries, and regression tests now share that contract.
 - 2026-08-22 — Centralized explicit chunk-fetch signatures in `CHUNK_LOAD_ERROR_PATTERNS` for route and overlay boundaries. A generic Turbopack runtime-integrity message was temporarily included and was removed on 2026-08-23 because it did not prove deploy skew.

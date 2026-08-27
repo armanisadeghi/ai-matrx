@@ -132,6 +132,21 @@ export function buildConsoleCaptureInput(args: unknown[]): CaptureInput {
   };
 }
 
+/** Next recovered this RSC transport loss by performing a document navigation. */
+export function isExpectedNextNavigationRecovery(
+  args: readonly unknown[],
+): boolean {
+  const [message, cause] = args;
+  return (
+    typeof message === "string" &&
+    message.startsWith("Failed to fetch RSC payload for ") &&
+    message.includes("Falling back to browser navigation.") &&
+    cause instanceof Error &&
+    cause.name === "TypeError" &&
+    cause.message === "Failed to fetch"
+  );
+}
+
 /**
  * Install the global error listeners. Idempotent and browser-only — safe to
  * call from any client effect; subsequent calls are no-ops.
@@ -218,6 +233,7 @@ export function installGlobalErrorCapture(): void {
       if (inConsoleCapture) return; // never recurse into our own capture
       try {
         if (isKnownThirdPartyNoise(args)) return;
+        if (isExpectedNextNavigationRecovery(args)) return;
         if (args.some((arg) => isChunkLoadError(arg))) return;
         inConsoleCapture = true;
         captureError(buildConsoleCaptureInput(args));
