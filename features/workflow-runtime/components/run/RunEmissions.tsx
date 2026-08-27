@@ -101,6 +101,10 @@ function EmissionCard({
           runId={runId}
           seq={emission.seq ?? index}
           isPersisted={emission.persisted}
+          presentation={emission.presentation}
+          kind={emission.kind}
+          kindOk={emission.kindOk}
+          metadata={emission.metadata}
         />
       </div>
     </section>

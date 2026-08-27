@@ -35,8 +35,16 @@ jest.mock("../fetchEmitRendererRow", () => ({
   fetchEmitRendererRow: (ref: string) => mockFetch(ref),
 }));
 
-// A frozen fixture matching the backend `node_emitted` contract exactly.
+/**
+ * A fixture of the FULL backend `node_emitted` contract. `NodeEmittedEvent` is
+ * the generated type now (re-exported from `types/python-generated/`), so an
+ * object literal here cannot go stale silently: when the Python event grows a
+ * field, this fixture stops compiling. That is deliberate — the four fields
+ * below (`presentation` / `kind` / `kind_ok` / `metadata`) were on the wire and
+ * missing from the hand mirror for exactly as long as nothing forced them.
+ */
 const FIXTURE_EVENT: NodeEmittedEvent = {
+  ts: "2026-08-27T00:00:00Z",
   event: "node_emitted",
   run_id: "run-123",
   step: 4,
@@ -47,6 +55,10 @@ const FIXTURE_EVENT: NodeEmittedEvent = {
   component_ref: "workflow_status_card",
   surface: "matrx-user/workflow",
   title: "Status",
+  presentation: "panel",
+  kind: "status_report",
+  kind_ok: true,
+  metadata: { __ir: { verified: true } },
 };
 
 function propsFromEvent(event: NodeEmittedEvent, seq: number): EmitRendererProps {
@@ -58,8 +70,29 @@ function propsFromEvent(event: NodeEmittedEvent, seq: number): EmitRendererProps
     runId: event.run_id,
     seq,
     isPersisted: false,
+    presentation: event.presentation,
+    kind: event.kind,
+    kindOk: event.kind_ok,
+    metadata: event.metadata,
   };
 }
+
+describe("the emit props contract carries the whole wire event", () => {
+  it("hands a renderer every field the server sends", () => {
+    const props = propsFromEvent(FIXTURE_EVENT, 1);
+    expect(props).toMatchObject({
+      presentation: "panel",
+      kind: "status_report",
+      kindOk: true,
+      metadata: { __ir: { verified: true } },
+    });
+  });
+
+  it("keeps the metadata envelope whole — `__ir` is never stripped", () => {
+    const props = propsFromEvent(FIXTURE_EVENT, 1);
+    expect(props.metadata?.__ir).toEqual({ verified: true });
+  });
+});
 
 describe("compileEmitRenderer (reused Babel sandbox)", () => {
   it("compiles an agent-authored emit component using only the allow-list", () => {

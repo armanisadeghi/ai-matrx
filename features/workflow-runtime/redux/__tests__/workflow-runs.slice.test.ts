@@ -699,6 +699,73 @@ describe("workflow-runs slice", () => {
     expect(new Set(emissions.map((e) => e.seq)).size).toBe(2);
   });
 
+  test("node_emitted folds presentation / kind / kind_ok / metadata through", () => {
+    // These four rode the wire and were dropped by the fold for as long as the
+    // local mirror of `NodeEmittedEvent` stopped at `title`. `metadata` is the
+    // costly one — it carries the verified Content-IR envelope under `__ir`.
+    let state = attached();
+    state = apply(
+      state,
+      {
+        event: "node_emitted",
+        run_id: RUN_ID,
+        node_id: "emit",
+        step: 2,
+        attempt: 1,
+        mode: "restructured",
+        payload: { __kind: "study_pack", cards: [] },
+        component_ref: null,
+        surface: "matrx-user/workflow",
+        title: "Study pack",
+        presentation: "showcase",
+        kind: "study_pack",
+        kind_ok: true,
+        metadata: { __ir: { verified: true, kind: "study_pack" }, source: "node" },
+        ts: "t-kinded",
+      } as WorkflowRunEvent,
+      { seq: 42 },
+    );
+
+    const emission = state.byRunId[RUN_ID]?.emissions[0];
+    expect(emission).toMatchObject({
+      presentation: "showcase",
+      kind: "study_pack",
+      kindOk: true,
+    });
+    // Stored WHOLE — the fold never destructures or strips the envelope.
+    expect(emission?.metadata).toEqual({
+      __ir: { verified: true, kind: "study_pack" },
+      source: "node",
+    });
+  });
+
+  test("node_emitted floors the kind-aware fields when an older server omits them", () => {
+    // A server that predates the kind-aware emitter sends none of the four.
+    // The floor must mean "not stated" — never a fabricated kind, and never
+    // an undefined that leaks into a renderer prop.
+    let state = attached();
+    state = apply(state, {
+      event: "node_emitted",
+      run_id: RUN_ID,
+      node_id: "emit",
+      step: 1,
+      attempt: 1,
+      mode: "summary",
+      payload: { value: 1 },
+      component_ref: null,
+      surface: "matrx-user/workflow",
+      title: "Old server",
+      ts: "t-old",
+    } as unknown as WorkflowRunEvent);
+
+    expect(state.byRunId[RUN_ID]?.emissions[0]).toMatchObject({
+      presentation: "panel",
+      kind: null,
+      kindOk: null,
+      metadata: null,
+    });
+  });
+
   test("work_set_progress keeps the latest wave and refuses a rollback", () => {
     let state = attached();
     const wave = (n: number, done: boolean): WorkflowRunEvent =>

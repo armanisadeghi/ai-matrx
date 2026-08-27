@@ -24,6 +24,15 @@ without ending the run and without being a deliverable. The engine fires a
 | `component_ref` | a `tool_ui.tool_name` to render with — or null for the generic viewer |
 | `surface` | always `matrx-user/workflow` (`surface.ts`) |
 | `title` | the author's human label |
+| `presentation` | `panel` (inline, beside the run) / `showcase` (the emission is the point) |
+| `kind` | the registered content-IR kind of the payload, or null when unkinded |
+| `kind_ok` | did the payload validate against that kind's schema? null = not checked |
+| `metadata` | emitter metadata — carries the **verified Content-IR envelope under `__ir`** |
+
+The last four are NOT new on the wire; they were new to this repo on 2026-08-27.
+They rode every `node_emitted` event while `types.ts` hand-mirrored a shape that
+stopped at `title`, so the fold dropped them and no renderer could ever see a
+`kind`. The mirror is gone — see the `types.ts` row below.
 
 **Emit is NEVER load-bearing.** The producer swallows its own failures, and so
 does this side: a missing row, a compile failure, or a component that throws
@@ -41,7 +50,7 @@ all degrade to `GenericEmitRenderer`. Nothing here can take a run surface down.
 | Cache + invalidation | `emitRendererCache.ts` | Positive / negative / in-flight, session-scoped. Registers on `INVALIDATION_KEYS.dbToolRenderers` and bumps a monotonic per-ref version. |
 | Repaint hook | `useEmitRendererVersion.ts` | `useSyncExternalStore` over that version — a mounted emission re-resolves when an agent edits the row. |
 | Surface constant | `surface.ts` | `matrx-user/workflow`. |
-| Types | `types.ts` | `NodeEmittedEvent` (FROZEN — mirrors the backend) + `EmitRendererProps` (payload-shaped, deliberately NOT `ToolRendererProps`). |
+| Types | `types.ts` | `NodeEmittedEvent` **RE-EXPORTED** from `types/python-generated/workflow-events.ts` (never mirrored — see invariant 6) + `EmitMode`/`EmitPresentation` derived from it + `EmitRendererProps` (payload-shaped, deliberately NOT `ToolRendererProps`). |
 | **The consumer** | `../workflow-runtime/components/run/RunEmissions.tsx` | Renders `run.emissions` in arrival order through `DbEmitRenderer`. Mounted in `RunStage` (above the deliverables) and in `WorkflowRunBoard` (Tier 0). |
 
 ## Invariants (violating any of these is a defect)
@@ -70,6 +79,18 @@ all degrade to `GenericEmitRenderer`. Nothing here can take a run surface down.
    `GenericEmitRenderer`.
 5. **No second surface.** A renderer row is resolved against
    `matrx-user/workflow` and nothing else.
+6. 🚨 **The wire shape is NEVER hand-mirrored here.** `types.ts` re-exports
+   `NodeEmittedEvent` from `types/python-generated/workflow-events.ts` (the
+   artifact `pnpm sync-types` regenerates from the Python source of truth), and
+   `EmitMode` / `EmitPresentation` are index-accesses off it. A local copy —
+   even one captioned "FROZEN — matches the backend contract byte-for-byte" —
+   is frozen against nothing, because nothing imports the contract it claims to
+   match. That comment sat above a four-field-short interface for the whole life
+   of the kind-aware emitter. The import is `import type`, which TypeScript
+   erases completely, so it adds NO module edge and cannot interact with
+   invariant 1's boundary; the generated file imports nothing itself.
+   `EmitRendererProps` types its wire-derived fields off `NodeEmittedEvent` for
+   the same reason.
 
 ## The gap that existed (why this doc exists)
 
@@ -121,3 +142,40 @@ remainder; a title still outranks `message` and leaves it visible. Guarded by
   emission (`features/assists/FEATURE.md`). No row was hand-seeded here — that
   chip is the intended author, and hand-seeding one would have pre-empted the
   path this feature exists to prove.
+
+## Tests — and how they reach CI
+
+`__tests__/emitRenderer.test.tsx` (sandbox + cache + invalidation + the props
+contract) and `__tests__/emit-bundle-boundary.test.ts` (the D115 guard, invariant
+1) run per-PR through **`pnpm test:workflow-runtime`**, whose jest paths are
+`features/workflow-runtime features/workflow-emit`. Until 2026-08-27 that script
+named only `features/workflow-runtime`, so the D115 guard — the one test standing
+between this feature and a repeat of the incident that OOM-killed 12 straight
+Vercel builds — ran only when a human happened to type it. If you ever move or
+rename these suites, move the path in that script in the same commit; the CI step
+in `.github/workflows/ci.yml` invokes the script by name and will not notice.
+
+## Change Log
+
+### 2026-08-27 — the wire mirror is gone, and the D115 guard now runs in CI
+
+- **`NodeEmittedEvent` is re-exported, not mirrored** (invariant 6). The local
+  interface was captioned "FROZEN — matches the backend contract byte-for-byte"
+  and ended at `title`, four fields behind the server: `presentation`, `kind`,
+  `kind_ok`, `metadata` (the last carrying the verified Content-IR envelope under
+  `__ir`). `types.ts` now type-imports the generated shape; `EmitMode` and the
+  new `EmitPresentation` derive from it. A field added on the Python side reaches
+  this feature for free; a field removed is a type error, not a silent drop.
+- **`EmitRendererProps` carries all four** as optional-but-populated fields
+  (`presentation`, `kind`, `kindOk`, `metadata`), typed off `NodeEmittedEvent`.
+  Optional so a renderer compiled before they existed still type-checks; the
+  platform consumer (`workflow-runtime`'s `RunEmissions`) always populates them.
+  **No rendering behavior changed** — routing a kinded emission to its kind
+  component is a later phase; this commit only stops throwing the data away.
+- **`pnpm test:workflow-runtime` now also runs `features/workflow-emit`**, so the
+  bundle-boundary guard is a per-PR gate instead of an honour-system one. The CI
+  step and the nine gate names in `CLAUDE.md` are unchanged — one script's paths
+  widened, so `check:doc-claims` needed nothing.
+- `emitRenderer.test.tsx`'s fixture is now the FULL event (it cannot compile if
+  the generated type grows again) plus two assertions that the props contract
+  hands a renderer every wire field and keeps `metadata.__ir` whole.
