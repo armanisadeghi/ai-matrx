@@ -41,6 +41,8 @@
  * described by naming a React component is a defect in the build, exactly as it is in the spec.
  */
 
+import type { components } from "@/types/python-generated/api-types";
+
 // ---------------------------------------------------------------------------------------------
 // Vocabularies — text + CHECK in Postgres, never enums. Verified live 2026-08-26.
 // ---------------------------------------------------------------------------------------------
@@ -203,10 +205,7 @@ export interface CalcFlag {
 }
 
 /** A required applicability fact the resolver did not have. Rendered, never swallowed. */
-export interface IncompleteFact {
-  class: string;
-  fact: string;
-}
+export type IncompleteFact = components["schemas"]["IncompleteFact"];
 
 /**
  * 🚨 **Money is ABSENT when a contributing rule is advisory** — never a zero, never a dash, never
