@@ -174,6 +174,17 @@ end $$;
 do $mig$
 declare
   v_oid oid; v_def text;
+  v_up_old constant text := $o$          and e2.login_user_id is not null
+          and hr.can_approve(e2.login_user_id, v_pf_action, v_tbl, p_target_id))$o$;
+  v_up_new constant text := $o$          and e2.login_user_id is not null
+          -- §2.2 eligibility rule 2: where the flow type marks the requester an interested party,
+          -- the resolver will strike them. A pre-flight that counted them would wave through
+          -- exactly the case it exists to catch.
+          and not (coalesce(ft.requester_is_interested_party, false)
+                   and v_requester is not null
+                   and em2.id = v_requester
+                   and v_requester is distinct from v_subject)
+          and hr.can_approve(e2.login_user_id, v_pf_action, v_tbl, p_target_id))$o$;
   v_dec_old constant text := $o$  v_tbl text; v_subject uuid; v_digest text; v_version integer; sd record; v_org uuid;$o$;
   v_dec_new constant text := $o$  v_tbl text; v_subject uuid; v_digest text; v_version integer; sd record; v_org uuid;
   v_pf_action text; v_pf_step text;$o$;
@@ -199,6 +210,14 @@ declare
         where em2.organization_id = p_organization_id
           and em2.deleted_at is null and em2.status = 'active'
           and e2.login_user_id is not null
+          -- §2.2 eligibility rule 2: where the flow type marks the requester an interested party,
+          -- the resolver will strike them. A pre-flight that counted them would wave through
+          -- exactly the case it exists to catch — the sole authority holder proposing a pay change
+          -- for somebody else, which then fails approver_ineligible after the fact.
+          and not (coalesce(ft.requester_is_interested_party, false)
+                   and v_requester is not null
+                   and em2.id = v_requester
+                   and v_requester is distinct from v_subject)
           and hr.can_approve(e2.login_user_id, v_pf_action, v_tbl, p_target_id))
   then
     return jsonb_build_object(
@@ -215,8 +234,21 @@ begin
   select p.oid into v_oid from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'hr' and p.proname = 'wf_request';
   v_def := pg_get_functiondef(v_oid);
-  if position($chk$WF_NO_POSSIBLE_APPROVER$chk$ in v_def) > 0 then
-    raise notice 'hr_c4_21: hr.wf_request already pre-flights';
+  -- the marker is the TIGHTENED predicate: an earlier run installed a pre-flight that counted a
+  -- requester §2.2 rule 2 will strike, and keying on the older marker would leave it standing.
+  -- 🚨 THREE STATES. An earlier run installed a pre-flight that COUNTED a requester §2.2 rule 2
+  -- will strike — so the sole authority holder proposing somebody else's pay change sailed through
+  -- the front door and failed approver_ineligible a moment later, which is the exact case the
+  -- pre-flight exists to catch. Upgrading has to patch the predicate WITHOUT re-running the declare,
+  -- or plpgsql refuses the duplicate v_pf_action.
+  if position($chk$requester_is_interested_party, false)$chk$ in v_def) > 0 then
+    raise notice 'hr_c4_21: hr.wf_request already pre-flights, requester-aware';
+  elsif position($chk$WF_NO_POSSIBLE_APPROVER$chk$ in v_def) > 0 then
+    if position(v_up_old in v_def) = 0 then
+      raise exception 'hr_c4_21: hr.wf_request carries a pre-flight in a shape this file does not recognise';
+    end if;
+    execute replace(v_def, v_up_old, v_up_new);
+    raise notice 'hr_c4_21: hr.wf_request''s pre-flight no longer counts a requester the resolver will strike';
   else
     if position(v_dec_old in v_def) = 0 or position(v_old in v_def) = 0 then
       raise exception 'hr_c4_21: hr.wf_request does not carry the expected declare/binding text — refusing to half-apply';
@@ -312,6 +344,9 @@ begin
   end if;
   if v_src !~ 'not sd2\.allows_self' or v_src !~ 'autonomy_mode, 4\) not in \(1, 2\)' then
     raise exception 'hr_c4_21: the pre-flight does not skip self-steps and auto-decide modes';
+  end if;
+  if v_src !~ 'requester_is_interested_party, false\)' then
+    raise exception 'hr_c4_21: the pre-flight counts a requester the resolver will strike (§2.2 rule 2)';
   end if;
   -- the post-hoc machinery is untouched
   if (select p.prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace

@@ -1412,38 +1412,85 @@ async def main():
                 "select hr.can_approve($1,'pay_change_approve','hr.employment',$2)",
                 act_uid, act_emp2))
 
-        # ---- revoke the founding authority and the next submission refuses AT THE FRONT DOOR
+        # ---- revoke the founding authority and the next submission refuses AT THE FRONT DOOR.
+        # 🚨 THE SHAPE MATTERS: it has to be an action nobody can reach by ANY rung. A subject with
+        # NO manager still resolves through RULE 3 (top-of-chart -> the org owner), so the pre-flight
+        # rightly lets that through. Check 28's actual shape is a subject WITH a manager on a
+        # `require_second_actor` action: RULE 2 has no authority row, RULE 2b is the wrong tier, and
+        # RULE 3 is gated off precisely because a manager exists.
+        act_jt = await conn.fetchval(
+            "insert into hr.job_title (organization_id, title, eeo1_job_category) "
+            "values ($1,'Associate','professionals') returning id", act_org)
+        act_jur = await conn.fetchval(
+            "select id from hr.jurisdiction where deleted_at is null order by level, key limit 1")
+        act_loc = await conn.fetchval(
+            "insert into hr.location (organization_id, name, tz, jurisdiction_id) "
+            "values ($1,'HQ','America/Los_Angeles',$2) returning id", act_org, act_jur)
+        act_dept = await conn.fetchval(
+            "insert into hr.department (organization_id, name) values ($1,'Ops') returning id", act_org)
+        act_pa = await conn.fetchval(
+            "insert into hr.position_assignment (organization_id, employment_id, job_title_id, "
+            "department_id, location_id, worker_class, flsa_status, pay_basis, schedule_class, "
+            "effective_from, manager_employment_id) "
+            "values ($1,$2,$3,$4,$5,'employee','nonexempt','hourly','full_time',current_date - 90,$6) returning id",
+            act_org, act_emp2, act_jt, act_dept, act_loc, act_owner_emp)
+        rec("§4.2 pre-flight", "the shape is real: with the founding rows in place the owner CAN approve this managed employee's pay change",
+            await conn.fetchval(
+                "select hr.can_approve($1,'pay_change_approve','hr.position_assignment',$2)",
+                act_uid, act_pa))
         await conn.execute(
             "update hr.approval_authority set is_active=false where organization_id=$1", act_org)
-        act_lp = await conn.fetchval(
-            "insert into hr.leave_policy (organization_id, name, leave_kind, accrual_method) "
-            "values ($1,'PTO','pto','unlimited') returning id", act_org)
-        act_lr = await conn.fetchval(
-            "insert into hr.leave_request (organization_id, employment_id, leave_policy_id, starts_on, "
-            "ends_on, requested_hours, state, engine_key, engine_version) "
-            "values ($1,$2,$3,current_date + 30, current_date + 30, 8,'submitted','proof','1') returning id",
-            act_org, act_emp2, act_lp)
+        rec("§4.2 pre-flight", "revoke it and nobody in the org can — no authority row, wrong tier for the manager rung, and top-of-chart is gated off by the manager",
+            not await conn.fetchval(
+                "select hr.can_approve($1,'pay_change_approve','hr.position_assignment',$2)",
+                act_uid, act_pa))
         before_n = await conn.fetchval(
             "select count(*) from hr.workflow_instance where organization_id=$1", act_org)
         await as_user(act_uid)
-        pf = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", act_lr, act_org)
+        pf = await j("select hr.wf_request('pay_change','hr_position_assignment',$1,$2)", act_pa, act_org)
         await as_owner()
-        rec("§4.2 pre-flight", "🚨 with nobody able to approve, the SUBMISSION is refused at the front door — named condition, not a post-hoc failure",
+        rec("§4.2 pre-flight", "🚨 the SUBMISSION is refused at the front door — the named condition, not a post-hoc approver_ineligible",
             pf.get("granted") is False and pf.get("reason") == "WF_NO_POSSIBLE_APPROVER",
-            json.dumps(pf)[:220])
+            json.dumps(pf)[:240])
         rec("§4.2 pre-flight", "and it names the DOOR and the action, so the requester knows what to ask for",
-            pf.get("door") == "hr_authority_grant" and pf.get("action_type") is not None,
+            pf.get("door") == "hr_authority_grant"
+            and pf.get("action_type") == "pay_change_approve",
             f"door={pf.get('door')} action={pf.get('action_type')}")
         rec("§4.2 pre-flight", "🚨 and NOTHING was minted — a refusal at the front door writes no instance to fail later",
             await conn.fetchval(
                 "select count(*) from hr.workflow_instance where organization_id=$1", act_org) == before_n)
-        # the post-hoc machinery is untouched: restore the authority and the same request routes
+        # 🚨 AND THE FRONT DOOR KNOWS §2.2 RULE 2 TOO. pay_change marks the requester an interested
+        # party, so the resolver strikes them — a pre-flight that merely counted approvers would
+        # wave the SOLE holder's own proposal through and fail it a moment later. Measured: with the
+        # authority restored but Fay both proposing and holding it, the front door still refuses.
         await conn.execute(
             "update hr.approval_authority set is_active=true where organization_id=$1", act_org)
         await as_user(act_uid)
-        pf2 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", act_lr, act_org)
+        pf_self = await j("select hr.wf_request('pay_change','hr_position_assignment',$1,$2)", act_pa, act_org)
         await as_owner()
-        rec("§4.2 pre-flight", "grant the authority back and the very same submission goes through — the refusal was about reach, never the request",
+        rec("§4.2 pre-flight", "🚨 the sole holder PROPOSING the pay change is refused at the front door too — §2.2 rule 2 strikes the requester, and the pre-flight knows it",
+            pf_self.get("granted") is False and pf_self.get("reason") == "WF_NO_POSSIBLE_APPROVER",
+            json.dumps(pf_self)[:200])
+        # and with a requester who is NOT the approver, the very same request goes through
+        gil_uid = await conn.fetchval(
+            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+            "email_confirmed_at, created_at, updated_at) values "
+            "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
+            "$1,'x',now(),now(),now()) returning id", f"gil.{uuid.uuid4().hex[:8]}@example.invalid")
+        gil_party = await conn.fetchval(
+            "insert into crm.party (organization_id, party_kind, display_name) "
+            "values ($1,'person','Gil Manager') returning id", act_org)
+        gil_e = await conn.fetchval(
+            "insert into hr.employee (organization_id, party_id, login_user_id, employee_number, "
+            "legal_first_name, legal_last_name, display_name) values ($1,$2,$3,'EMP-gil','Gil','Manager','Gil Manager') "
+            "returning id", act_org, gil_party, gil_uid)
+        await conn.execute(
+            "insert into hr.employment (organization_id, employee_id, employer_profile_id, hire_date, status) "
+            "values ($1,$2,$3,current_date - 200,'active')", act_org, gil_e, act_er)
+        await as_user(gil_uid)
+        pf2 = await j("select hr.wf_request('pay_change','hr_position_assignment',$1,$2)", act_pa, act_org)
+        await as_owner()
+        rec("§4.2 pre-flight", "and proposed by somebody who is NOT the approver, the very same request goes through — the refusal was always about reach",
             pf2.get("granted") is True, json.dumps(pf2)[:200])
 
         # ================================================================= §4.2 DOOR GRANTS
