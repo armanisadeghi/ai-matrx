@@ -148,6 +148,13 @@ const EXPECTED_CHECKS = [
   // never built; time.recompute was the sixteenth. Asserted as a token-set difference, never as
   // "can role X do Y". The 15 still-dead tokens ride a dated allowlist printed on every run.
   "no_dead_capability_doors",
+  // hr_l3_55. Three seeded jurisdiction rules gated on flsa_status eq "non_exempt" while the live
+  // CHECK permits only exempt / nonexempt, so overtime had never applied to anybody in any org —
+  // and the 67-fixture suite stayed GREEN throughout, because nine fixtures asserted the same
+  // unstorable token. Rule and test agreed with each other and neither agreed with the database.
+  // Allowed sets are parsed from the live CHECK at check time, so this cannot drift from the
+  // schema it polices; superseded rows keep the old token so snapshots stay readable.
+  "rule_vocabulary_is_storable",
 ] as const;
 
 interface ConformanceRow {
