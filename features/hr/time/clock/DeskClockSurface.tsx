@@ -40,17 +40,21 @@ export function DeskClockSurface({
   const [subject, setSubject] = useState<PunchSubject | null>(null);
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pb-safe pt-4">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold text-foreground">Shared time clock</h1>
-        <p className="text-sm text-muted-foreground">
-          {/*
-            Stated in words, at the top, permanently. An operator who does not know their name is on
-            every punch they record cannot make an informed decision about recording one.
-          */}
-          Punches recorded here are stamped as entered by you, on behalf of the person you choose.
-        </p>
-      </header>
+    /*
+      No in-body `<h1>` (`core-route-headers`, failure class 3): the route's identity is the
+      `<PageHeader>` injection, and a second title collides with the glass header on a phone.
+      `pt-[var(--shell-header-h)]` so the disclosure below clears the glass instead of scrolling
+      under it — never a hardcoded offset.
+    */
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-4 pb-safe pt-[var(--shell-header-h)]">
+      {/*
+        NOT a title block: this is the operator's disclosure and it stays. An operator who does not
+        know their own name goes on every punch they record cannot make an informed decision about
+        recording one, so it is stated in words, at the top, permanently.
+      */}
+      <p className="text-sm text-muted-foreground">
+        Punches recorded here are stamped as entered by you, on behalf of the person you choose.
+      </p>
 
       {/*
         ♻️ **The context's own states are `HrPageState`'s.** An earlier revision hand-rolled loading

@@ -7,12 +7,15 @@
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { MyClockSurface } from "@/features/hr/time/clock/MyClockSurface";
-import { mockCaseFromParam } from "@/features/hr/time/clock/mockCaseParam";
+import {
+  mockCaseFromParam,
+  mockEmploymentIdFromParam,
+} from "@/features/hr/time/clock/mockCaseParam";
 
 export default async function MyClockPage({
   searchParams,
 }: {
-  searchParams: Promise<{ case?: string }>;
+  searchParams: Promise<{ case?: string; punchCase?: string; employmentId?: string }>;
 }) {
   const params = await searchParams;
 
@@ -23,7 +26,11 @@ export default async function MyClockPage({
       </PageHeader>
       <div className="flex h-full flex-col overflow-hidden">
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <MyClockSurface mockCase={mockCaseFromParam(params.case)} />
+          <MyClockSurface
+            mockCase={mockCaseFromParam(params.case)}
+            punchMockCase={mockCaseFromParam(params.punchCase)}
+            mockEmploymentId={mockEmploymentIdFromParam(params.employmentId)}
+          />
         </div>
       </div>
     </>

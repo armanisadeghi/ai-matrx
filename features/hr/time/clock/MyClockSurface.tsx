@@ -47,16 +47,19 @@ export function MyClockSurface({
   const employmentId = hr.active?.employment_id ?? mockEmploymentId ?? null;
 
   return (
-    // pb-safe keeps the primary punch control clear of the iOS home indicator — an employee
-    // clocking out one-handed should not have to fight the gesture bar for it.
-    <div className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 pb-safe pt-4 sm:max-w-lg">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold text-foreground">My time clock</h1>
-        <p className="text-sm text-muted-foreground">
-          Record your own time. Your hours are calculated from these punches.
-        </p>
-      </header>
+    /*
+      🚨 **NO IN-BODY TITLE BLOCK** (`core-route-headers`, failure class 3). The route's identity is
+      the `<PageHeader>` injection; an `<h1>` here is a second title that, on a phone, renders
+      *underneath* the glass header and collides with it — which is exactly what it did before this
+      was fixed. The subtitle went with it: "your hours are calculated from these punches" is said
+      where it matters, beside the number, by `LIVE_DISPLAY_DISCLAIMER`.
 
+      `pt-[var(--shell-header-h)]` and never a hardcoded offset: the first thing on this surface is
+      a card an employee reads and a control they press, and content like that must clear the glass
+      rather than scroll behind it (failure class 4). `pb-safe` keeps the primary punch control off
+      the iOS home indicator — clocking out one-handed should not be a fight with the gesture bar.
+    */
+    <div className="mx-auto flex w-full max-w-md flex-col gap-5 px-4 pb-safe pt-[var(--shell-header-h)] sm:max-w-lg">
       {/*
         `requireEmployer` is false only when a subject is already in hand: the employer picker is
         the right answer to "we do not know which employer you mean", and a mock stand-in has

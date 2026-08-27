@@ -15,8 +15,14 @@ export default async function KioskDevicePage({
   searchParams,
 }: {
   params: Promise<{ deviceId: string }>;
-  searchParams: Promise<{ case?: string }>;
+  searchParams: Promise<{ case?: string; punchCase?: string }>;
 }) {
   const [{ deviceId }, search] = await Promise.all([params, searchParams]);
-  return <KioskPunchSurface deviceId={deviceId} mockCase={mockCaseFromParam(search.case)} />;
+  return (
+    <KioskPunchSurface
+      deviceId={deviceId}
+      mockCase={mockCaseFromParam(search.case)}
+      punchMockCase={mockCaseFromParam(search.punchCase)}
+    />
+  );
 }
