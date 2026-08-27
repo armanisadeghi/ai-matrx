@@ -43979,6 +43979,16 @@ export type Database = {
         }
         Returns: Json
       }
+      rollup_overtime_undisclosed: {
+        Args: never
+        Returns: {
+          employment_id: string
+          marker_shape: string
+          pay_period_id: string
+          rollup_overtime: number
+          workweek_overtime: number
+        }[]
+      }
       rpc_calculation_snapshot_get: {
         Args: { p_snapshot_id: string }
         Returns: Json

@@ -79,23 +79,34 @@ $mig$;
 
 -- ⚠️ `get diagnostics` now follows the conditional cleanup, so it would report THAT statement's
 -- row count instead of the rollup update's. Re-anchor it on the update it is actually about.
+--
+-- 🚨 IDEMPOTENT BY CONSTRUCTION, NOT BY A GUARD. The first cut of this block guarded on a marker
+-- string it never actually wrote, so it re-ran on every replay and inserted ANOTHER
+-- `get diagnostics` line each time -- four of them accumulated in the live function before the
+-- replay harness caught it. Remove-all-then-insert-one cannot do that, however many times it runs,
+-- and it also converges a database that already took the duplicates.
 do $mig$
-declare v_def text;
+declare v_def text; v_line constant text :=
+  '  get diagnostics v_hit = row_count;   -- hr_l3_59: captured HERE, about the update above';
 begin
   v_def := pg_get_functiondef('hr._ppe_rollup_refresh(uuid,uuid,text,text,uuid)'::regprocedure);
-  if position('  v_hit_captured boolean' in v_def) > 0 then
-    raise notice 'hr_l3_59: the row count is already captured before the cleanup';
-    return;
+
+  -- 1. strip every capture line this migration has ever inserted (replace() hits all occurrences)
+  v_def := replace(v_def, v_line || E'\n', '');
+
+  -- 2. insert exactly one, immediately after the rollup update it describes
+  if position('  -- hr_l3_59 decision 2: jsonb_build_object writes the KEY' in v_def) = 0 then
+    raise exception 'hr_l3_59: the cleanup block is missing; run section 1 first';
   end if;
-  -- capture the rollup update's row count immediately, before anything else can overwrite it
   v_def := replace(v_def,
     '  -- hr_l3_59 decision 2: jsonb_build_object writes the KEY',
-    '  get diagnostics v_hit = row_count;   -- hr_l3_59: captured HERE, about the update above' || E'\n' ||
-    '  -- hr_l3_59 decision 2: jsonb_build_object writes the KEY');
-  -- and retire the trailing one, which now describes the cleanup
+    v_line || E'\n' || '  -- hr_l3_59 decision 2: jsonb_build_object writes the KEY');
+
+  -- 3. retire the trailing one, which after section 1 describes the cleanup rather than the rollup
   v_def := replace(v_def,
     '  end if;' || E'\n\n' || '  get diagnostics v_hit = row_count;',
-    '  end if;' || E'\n' || '  -- v_hit_captured boolean: the count was taken above, before the cleanup');
+    '  end if;' || E'\n' || '  -- the row count was taken above, before the cleanup');
+
   execute v_def;
 end
 $mig$;
