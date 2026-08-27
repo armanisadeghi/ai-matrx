@@ -26,7 +26,7 @@
  * NO CLIENT COMPUTES ANYTHING: every count, date and frequency here is the server's.
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AlertTriangle, CalendarPlus, CheckCircle2, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,14 +39,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
+import {
+  payFrequencyWords,
+  payGroupOptions,
+  useHrStructure,
+} from "@/features/hr/people/shared/useHrStructure";
 import { formatLocalDate } from "../../shared/format";
 import { HrRpcError } from "../../api/rpc";
-import type { PayPeriodRow } from "../../api/types";
 import { generatePayPeriods, type GeneratePeriodsResult } from "../api/periodReads";
 
 export interface GeneratePeriodsPanelProps {
-  /** The periods currently listed — the only place this lane can learn which pay groups exist. */
-  rows: PayPeriodRow[];
+  /** The employer whose pay groups these are. HR is strictly single-employer. */
+  organizationId: string | null;
   mockCase?: HrFixtureCase;
   onGenerated: () => void;
 }
@@ -57,26 +61,28 @@ interface Refusal {
 }
 
 export function GeneratePeriodsPanel({
-  rows,
+  organizationId,
   mockCase,
   onGenerated,
 }: GeneratePeriodsPanelProps) {
   /**
-   * The pay groups this viewer can see, derived from the periods already listed.
+   * 🚨 THE PAY GROUPS COME FROM THE EMPLOYER, NOT FROM THE ROWS ON SCREEN.
    *
-   * ⚠️ DEBT, stated rather than hidden: there is **no pay-group list RPC** reachable from a browser
-   * (`hr` is not exposed to PostgREST and only `hr_pay_group_upsert` exists in `public`). So a pay
-   * group that has NEVER had a period generated does not appear here — which is precisely the
-   * bootstrap case this button is for. Owed to whoever owns pay-group settings: a
-   * `public.hr_pay_group_list` reader, or a Generate control on the pay-group settings surface.
+   * This picker used to be derived from the periods already listed, which broke the one case the
+   * button exists for: a pay group that has **never had a period generated** has no rows to derive
+   * from, so it could not be selected, so its calendar could never be created. A chicken-and-egg
+   * bootstrap failure.
+   *
+   * `fetchHrStructure` is the live door L1 already ships — the same read behind the new-hire form's
+   * pay-group select — and `payGroupOptions` narrows its rows at RUNTIME (a row missing an id is
+   * dropped rather than becoming an option that writes `undefined`). It is the same principle
+   * `useHrStructure`'s own header states about facet lists: *"which pay groups exist" is a question
+   * about the employer, not about the rows currently on screen.*
    */
-  const payGroups = useMemo(() => {
-    const byId = new Map<string, string>();
-    for (const row of rows) {
-      if (row.payGroupId && !byId.has(row.payGroupId)) byId.set(row.payGroupId, row.payGroupName);
-    }
-    return [...byId.entries()].map(([id, name]) => ({ id, name }));
-  }, [rows]);
+  const structure = useHrStructure(organizationId);
+  // Inactive groups are returned by the helper on purpose, and filtered HERE: a deactivated pay
+  // group is not a calendar anybody should be generating.
+  const payGroups = payGroupOptions(structure.data).filter((g) => g.isActive);
 
   const [payGroupId, setPayGroupId] = useState<string>("");
   // Defaults to today. The door itself defaults to `current_date` when this is null; sending the
@@ -135,9 +141,12 @@ export function GeneratePeriodsPanel({
           >
             Pay group
           </label>
-          {payGroups.length === 0 ? (
-            <p className="mt-1 text-[12px] text-muted-foreground">
-              No pay group is visible yet. A group appears here once it has at least one period.
+          {structure.isLoading ? (
+            <p className="mt-1 text-[12px] text-muted-foreground">Loading pay groups…</p>
+          ) : payGroups.length === 0 ? (
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+              This employer has no active pay group yet. A payroll calendar is generated from a pay
+              group&apos;s frequency, so one has to exist before there is anything to generate.
             </p>
           ) : (
             <Select value={selected} onValueChange={setPayGroupId}>
@@ -145,11 +154,17 @@ export function GeneratePeriodsPanel({
                 <SelectValue placeholder="Choose a pay group" />
               </SelectTrigger>
               <SelectContent>
-                {payGroups.map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    {group.name}
-                  </SelectItem>
-                ))}
+                {payGroups.map((group) => {
+                  const frequency = payFrequencyWords(group.payFrequency);
+                  return (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                      {frequency ? (
+                        <span className="ml-2 text-muted-foreground">{frequency}</span>
+                      ) : null}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           )}
@@ -243,7 +258,7 @@ export function GeneratePeriodsPanel({
               {result.payFrequency} · anchored on{" "}
               {formatLocalDate(result.firstPeriodStartOn, { year: true })} · generated through{" "}
               {formatLocalDate(result.throughDate, { year: true })} ·{" "}
-              {result.totalPeriods} periods in total.
+              {result.totalPeriods} {result.totalPeriods === 1 ? "period" : "periods"} in total.
             </p>
             {result.enrolledRows > 0 ? (
               <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">

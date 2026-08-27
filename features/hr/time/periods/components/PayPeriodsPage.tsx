@@ -67,7 +67,7 @@ export function PayPeriodsPage() {
         */}
         <div className="mb-4">
           <GeneratePeriodsPanel
-            rows={page?.rows ?? []}
+            organizationId={hr.active?.organization_id ?? null}
             mockCase={mockCase}
             onGenerated={reload}
           />
