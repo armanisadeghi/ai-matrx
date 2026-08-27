@@ -1,4 +1,5 @@
 import { GOOGLE_SEARCH_CONSOLE_SCOPES } from "@/lib/googleScopes";
+import type { components } from "@/types/python-generated/api-types";
 
 /** @deprecated Import the capability bundle from `@/lib/googleScopes`. */
 export const GOOGLE_CONNECTION_SCOPES = GOOGLE_SEARCH_CONSOLE_SCOPES;
@@ -92,40 +93,12 @@ export interface YouTubeChannelPreview {
   recent_videos: YouTubeVideoPreview[];
 }
 
-export interface GoogleAdsCustomer {
-  customer_id: string;
-  login_customer_id: string;
-  descriptive_name: string;
-  manager: boolean;
-  test_account: boolean;
-  level: number;
-  status: string | null;
-  currency_code: string | null;
-  time_zone: string | null;
-}
+export type GoogleAdsCustomer = components["schemas"]["GoogleAdsCustomer"];
 
-export interface GoogleAdsCustomerInventory {
-  customers: GoogleAdsCustomer[];
-  api_version: string;
-  access_mode: "read_only";
-}
+export type GoogleAdsCustomerInventory =
+  components["schemas"]["GoogleAdsCustomerInventory"];
 
-export interface GoogleAdsCampaignMetric {
-  campaign_id: string;
-  campaign_name: string;
-  status: string | null;
-  impressions: number;
-  clicks: number;
-  cost_micros: number;
-  conversions: number;
-  conversion_value: number;
-}
+export type GoogleAdsCampaignMetric =
+  components["schemas"]["GoogleAdsCampaignMetric"];
 
-export interface GoogleAdsReport {
-  customer: GoogleAdsCustomer;
-  start_date: string;
-  end_date: string;
-  campaigns: GoogleAdsCampaignMetric[];
-  api_version: string;
-  access_mode: "read_only";
-}
+export type GoogleAdsReport = components["schemas"]["GoogleAdsReport"];

@@ -47,7 +47,10 @@ function number(value: number, maximumFractionDigits = 0): string {
   );
 }
 
-function currency(valueMicros: number, currencyCode: string | null): string {
+function currency(
+  valueMicros: number,
+  currencyCode: string | null | undefined,
+): string {
   return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency: currencyCode || "USD",

@@ -36,6 +36,8 @@ production Google connection merely to force the unapproved scope.
 
 ## Change log
 
+- **2026-08-27** — Replaced four local Google Ads response mirrors with direct aliases to the
+  generated live API contract; currency formatting now accepts the contract's optional currency.
 - **2026-08-27** — Built the internal-test reporting path: minimum scope registry, canonical Google
   connection authorization, server-side account discovery, deliberate account selection, bounded
   campaign report, provider configuration errors, and read-only UI evidence.
