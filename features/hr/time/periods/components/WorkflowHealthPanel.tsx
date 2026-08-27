@@ -36,29 +36,14 @@ import { AlertTriangle, CheckCircle2, CircleDashed, Clock, ShieldAlert } from "l
 import { cn } from "@/lib/utils";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { Button } from "@/components/ui/button";
-import type {
-  PeriodWorkflowHealth,
-  PeriodWorkflowRow,
-  RowHealth,
-} from "../api/periodReads";
-
-/** The label a person reads. Never the token. */
-export const HEALTH_LABEL: Record<RowHealth, string> = {
-  awaiting: "Awaiting decision",
-  stuck: "Stuck",
-  no_flow: "Not started",
-  done: "Done",
-};
-
-/** One sentence about what this health MEANS for the period getting paid. */
-export const HEALTH_MEANING: Record<RowHealth, string> = {
-  awaiting: "Somebody has been asked and the flow is alive. This one is genuinely waiting on a person.",
-  stuck:
-    "The flow behind this timecard has failed. Waiting will not move it — it needs a human before this period can be approved.",
-  no_flow:
-    "No attestation has been started for this timecard. Nobody has been asked, so nobody is late.",
-  done: "Decided. Nothing further is waiting on this row.",
-};
+import type { PeriodWorkflowHealth, RowHealth } from "../api/periodReads";
+// The vocabulary lives in a React-free module so the headless proof can assert it.
+import {
+  HEALTH_LABEL,
+  HEALTH_MEANING,
+  failureWords,
+  isManagerFlagged,
+} from "../workflowHealth";
 
 const HEALTH_TONE: Record<RowHealth, string> = {
   awaiting: "bg-primary/10 text-primary border-primary/30",
@@ -73,38 +58,6 @@ const HEALTH_ICON: Record<RowHealth, typeof Clock> = {
   no_flow: CircleDashed,
   done: CheckCircle2,
 };
-
-/**
- * Failure classes in words.
- *
- * 🚨 `not_attested` is the engine's coming terminal for "the deadline passed and the employee never
- * attested". SPEC-TIME §7.1 is explicit that this is **never silently attested** — it closes as
- * not-attested and is FLAGGED TO THE MANAGER. Its wording is here already so that the moment the
- * engine starts emitting it, the surface says the right thing instead of printing a raw token.
- */
-const FAILURE_WORDS: Record<string, string> = {
-  approver_ineligible:
-    "the person who should decide cannot — they are not eligible to act on this timecard",
-  not_attested:
-    "the attestation deadline passed without the employee attesting — this was never treated as agreed, and it is flagged for a manager",
-  no_approver_resolved: "nobody could be resolved to decide this",
-  approver_inactive: "the person who should decide is no longer active",
-  subject_excluded: "the person who would decide is a party to this record and cannot act on it",
-};
-
-export function failureWords(failureClass: string | null): string | null {
-  if (!failureClass) return null;
-  return (
-    FAILURE_WORDS[failureClass] ??
-    // Rendered, not swallowed. An unrecognised class is still a real failure.
-    `the flow raised "${failureClass.replace(/_/g, " ")}", which this screen does not have wording for yet`
-  );
-}
-
-/** 🚨 The engine's not-attested terminal — flagged to a manager, never treated as agreement. */
-export function isManagerFlagged(row: PeriodWorkflowRow): boolean {
-  return row.failureClass === "not_attested" || row.instanceState === "not_attested";
-}
 
 export interface WorkflowHealthPanelProps {
   workflow: PeriodWorkflowHealth;
