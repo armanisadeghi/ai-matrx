@@ -357,3 +357,122 @@ export async function listTimeAdjustments(
   );
   return mapPaged(raw, mapTimeAdjustmentRow);
 }
+
+// ---------------------------------------------------------------------------------------------
+// The calendar generator — `hr.pay_period_generate`
+// ---------------------------------------------------------------------------------------------
+
+/** One period the generator created on this run. */
+export interface GeneratedPeriod {
+  payPeriodId: string;
+  sequenceNumber: number;
+  periodStartOn: string;
+  periodEndOn: string;
+}
+
+/**
+ * 🚨 DRIFT. A stored period whose dates disagree with the pay group's frequency.
+ *
+ * The generator **never rewrites one** — a period that has already been submitted, approved or
+ * exported is evidence, and silently re-dating it would move somebody's hours between pay periods
+ * after the fact. It reports the disagreement and leaves the row alone, so a human reconciles it
+ * deliberately. The surface must therefore render these as prominently as the successes.
+ */
+export interface PeriodConflict {
+  sequenceNumber: number;
+  payPeriodId: string;
+  state: string;
+  stored: { periodStartOn: string; periodEndOn: string };
+  generated: { periodStartOn: string; periodEndOn: string };
+}
+
+export interface GeneratePeriodsResult {
+  payGroupId: string;
+  payFrequency: string;
+  firstPeriodStartOn: string;
+  throughDate: string;
+  created: GeneratedPeriod[];
+  createdCount: number;
+  /** Already present and already correct. Re-running is idempotent, and this is the proof. */
+  unchangedCount: number;
+  conflicts: PeriodConflict[];
+  conflictCount: number;
+  totalPeriods: number;
+  /**
+   * 🚨 Roster rows written across every non-terminal period of this group. **A period with no
+   * roster is a calendar, not a payroll** — the door backfills eligible employments idempotently,
+   * so a re-run repairs a group whose periods existed but were empty.
+   */
+  enrolledRows: number;
+  /** The server's own sentence about the conflicts, present only when there are any. */
+  note: string | null;
+}
+
+function mapGeneratedPeriod(raw: unknown): GeneratedPeriod {
+  const r = rec(raw);
+  return {
+    payPeriodId: str(r.payPeriodId),
+    sequenceNumber: num(r.sequenceNumber, 0),
+    periodStartOn: str(r.periodStartOn),
+    periodEndOn: str(r.periodEndOn),
+  };
+}
+
+function mapConflict(raw: unknown): PeriodConflict {
+  const r = rec(raw);
+  const stored = rec(r.stored);
+  const generated = rec(r.generated);
+  return {
+    sequenceNumber: num(r.sequenceNumber, 0),
+    payPeriodId: str(r.payPeriodId),
+    state: str(r.state),
+    stored: { periodStartOn: str(stored.periodStartOn), periodEndOn: str(stored.periodEndOn) },
+    generated: {
+      periodStartOn: str(generated.periodStartOn),
+      periodEndOn: str(generated.periodEndOn),
+    },
+  };
+}
+
+/**
+ * Generate this pay group's payroll calendar through a date.
+ *
+ * 🚨 IDEMPOTENT BY DESIGN, AND THAT IS WHY THE COUNTS ARE RENDERED RATHER THAN A "DONE" TOAST.
+ * A second run creates nothing and reports everything as unchanged; the honest answer to "did that
+ * do anything?" is *"12 created, 4 already existed"*, and a surface that says only "Generated"
+ * cannot tell those apart. The door also backfills pay-period rosters on every run.
+ *
+ * Refuses **by name**, and each refusal is a different situation the surface must not flatten:
+ * `hr_pay_group_not_found` (unknown, or another tenant's — deliberately the same answer so this
+ * cannot be used to probe), `hr_period_generate_authority_required` (payroll.read, org-scoped),
+ * `hr_through_date_before_anchor`, and `hr_through_date_too_far` (ten years past the anchor).
+ * They arrive as {@link HrRpcError} with the server's own sentence, which is rendered verbatim.
+ */
+export async function generatePayPeriods(
+  payGroupId: string,
+  throughDate: string | null,
+  opts?: HrRpcOptions,
+): Promise<GeneratePeriodsResult> {
+  const raw = await callHrTimeRpc<unknown>(
+    "hr_pay_period_generate",
+    { p_pay_group_id: payGroupId, p_through_date: throughDate },
+    opts,
+  );
+  const r = rec(raw);
+  const created = Array.isArray(r.created) ? r.created : [];
+  const conflicts = Array.isArray(r.conflicts) ? r.conflicts : [];
+  return {
+    payGroupId: str(r.payGroupId),
+    payFrequency: str(r.payFrequency),
+    firstPeriodStartOn: str(r.firstPeriodStartOn),
+    throughDate: str(r.throughDate),
+    created: created.map(mapGeneratedPeriod),
+    createdCount: num(r.createdCount, created.length),
+    unchangedCount: num(r.unchangedCount, 0),
+    conflicts: conflicts.map(mapConflict),
+    conflictCount: num(r.conflictCount, conflicts.length),
+    totalPeriods: num(r.totalPeriods, 0),
+    enrolledRows: num(r.enrolledRows, 0),
+    note: strOrNull(r.note),
+  };
+}

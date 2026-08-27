@@ -106,6 +106,11 @@ export function DeskClockSurface({
                 employmentId={subject.employmentId}
                 /* 🚨 The client half of `actor_type='manager'`. Never `web` on this route. */
                 source="manager_entry"
+                /*
+                  🚨 The manager lane is the only place date + time entry is offered. It is what
+                  makes the lane more than a door: the shift somebody forgot to clock.
+                */
+                allowBackdating
                 deviceOrSession={webPunchSessionSegment()}
                 mockCase={HR_MOCK_ENABLED ? mockCase : undefined}
                 punchMockCase={HR_MOCK_ENABLED ? punchMockCase : undefined}

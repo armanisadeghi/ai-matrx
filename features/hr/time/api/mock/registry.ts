@@ -1871,4 +1871,78 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
       details: { pay_period_id: PERIOD, state: "locked" },
     },
   },
+
+  // The calendar generator. Four cases chosen so the surface's four distinct renderings can be SEEN:
+  // a real first run, an idempotent no-op, a by-name refusal, and drift that must never be silent.
+  hr_pay_period_generate: {
+    happy: {
+      ok: true,
+      data: {
+        payGroupId: "44444444-0000-4000-8000-000000000001",
+        organizationId: "55555555-0000-4000-8000-000000000001",
+        payFrequency: "biweekly",
+        firstPeriodStartOn: "2026-01-07",
+        throughDate: "2026-08-27",
+        created: [
+          { payPeriodId: "33333333-3333-4333-8333-333333333341", sequenceNumber: 15, periodStartOn: "2026-07-15", periodEndOn: "2026-07-28" },
+          { payPeriodId: "33333333-3333-4333-8333-333333333342", sequenceNumber: 16, periodStartOn: "2026-07-29", periodEndOn: "2026-08-11" },
+        ],
+        createdCount: 12,
+        unchangedCount: 4,
+        conflicts: [],
+        conflictCount: 0,
+        totalPeriods: 16,
+        enrolledRows: 288,
+        note: null,
+      },
+    },
+    // 🚨 THE IDEMPOTENT RE-RUN. Everything already existed — the surface must say so rather than
+    // reporting a success that looks identical to a first run.
+    empty: {
+      ok: true,
+      data: {
+        payGroupId: "44444444-0000-4000-8000-000000000001",
+        organizationId: "55555555-0000-4000-8000-000000000001",
+        payFrequency: "biweekly",
+        firstPeriodStartOn: "2026-01-07",
+        throughDate: "2026-08-27",
+        created: [], createdCount: 0, unchangedCount: 16,
+        conflicts: [], conflictCount: 0, totalPeriods: 16, enrolledRows: 0, note: null,
+      },
+    },
+    // Refused BY NAME: payroll.read, org-scoped. The sentence is the server's.
+    error: {
+      ok: false,
+      error: "hr_period_generate_authority_required",
+      message: "payroll.read not held in this organization",
+      user_message:
+        "Generating the payroll calendar is an HR or payroll admin act. You do not hold payroll.read in this organization.",
+      details: { capability_required: "payroll.read" },
+    },
+    // 🚨 DRIFT. A stored period disagrees with the frequency. The door does NOT rewrite it — an
+    // approved period is evidence — so the surface shows both dates and asks for a human.
+    edge: {
+      ok: true,
+      data: {
+        payGroupId: "44444444-0000-4000-8000-000000000001",
+        organizationId: "55555555-0000-4000-8000-000000000001",
+        payFrequency: "biweekly",
+        firstPeriodStartOn: "2026-01-07",
+        throughDate: "2026-08-27",
+        created: [], createdCount: 3, unchangedCount: 11,
+        conflicts: [
+          {
+            sequenceNumber: 6, payPeriodId: "33333333-3333-4333-8333-333333333333",
+            state: "approved",
+            stored: { periodStartOn: "2026-03-01", periodEndOn: "2026-03-15" },
+            generated: { periodStartOn: "2026-03-04", periodEndOn: "2026-03-17" },
+          },
+        ],
+        conflictCount: 1,
+        totalPeriods: 15,
+        enrolledRows: 12,
+        note: "One or more existing periods have dates that disagree with this pay group's frequency. They were NOT changed - a period that has already been submitted, approved or exported is evidence. Reconcile them deliberately.",
+      },
+    },
+  },
 };

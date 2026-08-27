@@ -42695,6 +42695,10 @@ export type Database = {
         Args: { p_class: string; p_org: Json; p_sys: Json }
         Returns: Json
       }
+      _period_for_day: {
+        Args: { p_employment_id: string; p_local_work_date: string }
+        Returns: string
+      }
       _project_row: {
         Args: {
           p_id: string

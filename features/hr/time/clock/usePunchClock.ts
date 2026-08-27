@@ -105,8 +105,15 @@ export interface PunchClock {
   stateReceivedAtMs: number;
   busy: boolean;
   confirmation: PunchConfirmation | null;
-  /** Start a punch. Mints ONE intent and holds it for every retry of this intent. */
-  punch: (kind: PunchKind) => void;
+  /**
+   * Start a punch. Mints ONE intent and holds it for every retry of this intent.
+   *
+   * `at` is the instant the punch **happened**, for the manager-entry lane's back-dated entry. It
+   * flows into `mintPunchIntent`, which puts it in BOTH the request's `occurredAt` and the
+   * idempotency key's local-minute segment — so two back-dated entries for different times are two
+   * distinct keys and cannot be collapsed into one punch. Omitted means now.
+   */
+  punch: (kind: PunchKind, at?: Date) => void;
   /** 🚨 Reuses the same intent — same idempotency key, same instant. Never re-mints. */
   retry: () => void;
   /** Submit the clock-out attestation. Never refuses on a "no" answer (§3.2). */
@@ -251,7 +258,7 @@ export function usePunchClock(input: UsePunchClockInput): PunchClock {
     }
   }
 
-  async function beginPunch(kind: PunchKind, currentState: ClockState) {
+  async function beginPunch(kind: PunchKind, currentState: ClockState, at?: Date) {
     // ONE mint per user intent. Every path below carries this object; none re-mints.
     let intent = mintPunchIntent({
       kind,
@@ -259,6 +266,11 @@ export function usePunchClock(input: UsePunchClockInput): PunchClock {
       deviceOrSession,
       // `tz` is nullable on the real envelope; the browser zone is the only honest fallback.
       tz: currentState.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+      /*
+       * The chosen instant for a back-dated manager entry, or now. It reaches the idempotency
+       * key as well as the request, so two back-dated entries cannot be deduped into one.
+       */
+      at,
     });
 
     setBusy(true);
@@ -289,10 +301,10 @@ export function usePunchClock(input: UsePunchClockInput): PunchClock {
     busy,
     confirmation,
 
-    punch: (kind: PunchKind) => {
+    punch: (kind: PunchKind, at?: Date) => {
       if (!state || busy) return;
       setConfirmation(null);
-      void beginPunch(kind, state);
+      void beginPunch(kind, state, at);
     },
 
     retry: () => {

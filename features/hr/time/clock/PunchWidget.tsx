@@ -28,7 +28,10 @@ import { PunchActionGrid } from "./PunchActionGrid";
 import { PunchConfirmationCard } from "./PunchConfirmationCard";
 import { PunchBlockedCard, PunchErrorCard, PunchOfflineCard } from "./PunchStateCards";
 import { PunchStatusPanel } from "./PunchStatusPanel";
+import { PunchWhenControl, type PunchWhenValue } from "./PunchWhenControl";
+import { localWallTimeToInstant, timeNowInZone, todayInZone } from "./wallTime";
 import { usePunchClock } from "./usePunchClock";
+import { useState } from "react";
 
 export interface PunchWidgetProps {
   /** `null` until a subject is resolved — route 6 resolves it from the session, route 34 by search. */
@@ -46,6 +49,15 @@ export interface PunchWidgetProps {
   mockCase?: HrFixtureCase;
   /** Mock-lane case for the punch write — see `usePunchClock`. */
   punchMockCase?: HrFixtureCase;
+  /**
+   * Offer date + time entry — route 34's manager lane only.
+   *
+   * 🚨 Deliberately NOT available on route 6. An employee back-dating their own punch is the thing
+   * the `manager_entry` lane exists to keep away from the employee's own clock, and
+   * `hr.punch_record` refuses a self-punch through that lane outright
+   * (`hr_manager_entry_is_self`).
+   */
+  allowBackdating?: boolean;
 }
 
 export function PunchWidget({
@@ -55,6 +67,7 @@ export function PunchWidget({
   subjectName,
   mockCase,
   punchMockCase,
+  allowBackdating = false,
 }: PunchWidgetProps) {
   const clock = usePunchClock({
     employmentId,
@@ -64,6 +77,22 @@ export function PunchWidget({
     punchMockCase,
   });
   const { view } = clock;
+  const [when, setWhen] = useState<PunchWhenValue>({ localDate: null, localTime: null });
+
+  const zone =
+    (view.kind === "ready" || view.kind === "attesting" ? view.state.tz : null) ??
+    Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+  /*
+   * Resolve the chosen wall time into the instant the punch happened, in the EMPLOYMENT's zone.
+   * `undefined` means "now" and lets `mintPunchIntent` stamp it — the default, and the only
+   * behaviour on route 6.
+   */
+  function punchAt(): Date | undefined {
+    if (!allowBackdating || !when.localDate || !when.localTime) return undefined;
+    const instant = localWallTimeToInstant(when.localDate, when.localTime, zone);
+    return instant ? new Date(instant) : undefined;
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -143,7 +172,23 @@ export function PunchWidget({
               onDismiss={clock.dismissConfirmation}
             />
           )}
-          <PunchActionGrid state={view.state} busy={clock.busy} onPunch={clock.punch} />
+          {allowBackdating && (
+            <PunchWhenControl
+              value={when}
+              timeZone={zone}
+              disabled={clock.busy}
+              onChange={setWhen}
+              onUseNow={() => setWhen({ localDate: null, localTime: null })}
+              onChooseTime={() =>
+                setWhen({ localDate: todayInZone(zone), localTime: timeNowInZone(zone) })
+              }
+            />
+          )}
+          <PunchActionGrid
+            state={view.state}
+            busy={clock.busy}
+            onPunch={(kind) => clock.punch(kind, punchAt())}
+          />
         </>
       )}
     </div>

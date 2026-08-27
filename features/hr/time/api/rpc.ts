@@ -54,6 +54,9 @@ export type HrTimeRpcName =
   | "hr_timesheet_period_grid"
   | "hr_pay_period_list"
   | "hr_pay_period_get"
+  // The calendar generator. Routes 32/33 are its named caller (SPEC-TIME §7.1 as amended); before
+  // this it had no UI at all and the export drive had to call the door directly.
+  | "hr_pay_period_generate"
   | "hr_pay_period_transition"
   | "hr_time_adjustment_create"
   | "hr_time_adjustment_list"

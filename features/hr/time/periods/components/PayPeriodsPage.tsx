@@ -23,6 +23,7 @@ import { useSearchParams } from "next/navigation";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { ExportRunList } from "@/features/hr/exports/components/ExportRunList";
+import { GeneratePeriodsPanel } from "./GeneratePeriodsPanel";
 import { hrTimePeriodHref } from "@/features/hr/routes";
 import { usePayPeriods } from "../hooks/usePayPeriods";
 import { PayPeriodsTable } from "./PayPeriodsTable";
@@ -38,7 +39,7 @@ export function useMockCase(): HrFixtureCase | undefined {
 export function PayPeriodsPage() {
   const hr = useHrContext();
   const mockCase = useMockCase();
-  const { page, isLoading, failure } = usePayPeriods({}, { page: 1, pageSize: 50 }, mockCase);
+  const { page, isLoading, failure, reload } = usePayPeriods({}, { page: 1, pageSize: 50 }, mockCase);
 
   return (
     <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
@@ -58,6 +59,19 @@ export function PayPeriodsPage() {
             {failure.userMessage}
           </p>
         ) : null}
+
+        {/*
+          The calendar generator. It sits ABOVE the table because an empty table is the single most
+          common reason somebody opens this page, and the door that fixes that should not be below
+          the emptiness it explains.
+        */}
+        <div className="mb-4">
+          <GeneratePeriodsPanel
+            rows={page?.rows ?? []}
+            mockCase={mockCase}
+            onGenerated={reload}
+          />
+        </div>
 
         <PayPeriodsTable
           rows={page?.rows ?? []}
