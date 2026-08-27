@@ -307,7 +307,7 @@ export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): Kios
               });
               return;
             }
-            if (reason === "device_pending_approval") {
+            if (reason === "device_pending_approval" && ready) {
               window.clearInterval(id);
               setView({ kind: "awaiting-trust", identity: ready.identity });
               return;
