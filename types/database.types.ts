@@ -60488,6 +60488,10 @@ export type Database = {
       }
       hr_employer_profile_update: { Args: { p_payload: Json }; Returns: Json }
       hr_employment_history: { Args: { p_employee_id: string }; Returns: Json }
+      hr_employment_set_pay_group: {
+        Args: { p_employment_id: string; p_pay_group_id: string }
+        Returns: Json
+      }
       hr_engagement_upsert: { Args: { p_payload: Json }; Returns: Json }
       hr_establishment_upsert: { Args: { p_payload: Json }; Returns: Json }
       hr_external_identity_upsert: { Args: { p_payload: Json }; Returns: Json }
