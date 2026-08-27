@@ -25,6 +25,10 @@ const previewerActionBar = readFileSync(
   ),
   "utf8",
 );
+const fileTabsBody = readFileSync(
+  join(__dirname, "../../files/components/surfaces/FileTabsBody.tsx"),
+  "utf8",
+);
 
 describe("PDF annotation surface responsive contract", () => {
   it("keeps tablet and mobile annotation controls at the 44px floor", () => {
@@ -38,6 +42,7 @@ describe("PDF annotation surface responsive contract", () => {
     expect(previewerActionBar).toContain(
       "max-lg:h-11 max-lg:w-11 max-lg:min-w-11 max-lg:shrink-0",
     );
+    expect(fileTabsBody).toContain("max-lg:min-h-11");
   });
 
   it("keeps the mobile Studio mode row inside the viewport", () => {

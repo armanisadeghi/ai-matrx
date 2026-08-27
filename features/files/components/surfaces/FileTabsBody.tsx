@@ -505,7 +505,7 @@ function TabButton({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-1.5 border-b-2 text-xs font-medium transition-colors",
+        "flex max-lg:min-h-11 items-center gap-1.5 border-b-2 text-xs font-medium transition-colors",
         density === "compact" ? "px-3 py-1.5" : "px-4 py-2",
         active
           ? "border-primary text-foreground"
