@@ -67,6 +67,8 @@ import { HrPageState } from "../../shared/HrStates";
 import { useHrContext } from "../../shared/useHrContext";
 import { useHrPersona } from "../../shared/useHrPersona";
 import { createHrEmployee, scanHrDuplicates } from "../../service";
+import { fingerprintHrSsn, storeHrSsn } from "../identity/storeSsn";
+import { useBackendApi } from "@/hooks/useBackendApi";
 import { hrEmployeeHref, hrPeopleHref, hrSettingsHref } from "../../routes";
 import { HR_WORKER_CLASSES } from "../../constants";
 import {
@@ -99,6 +101,7 @@ export function HrNewEmployee({
   };
 }) {
   const router = useRouter();
+  const api = useBackendApi();
   const { active, orgRef } = useHrContext();
   const { can } = useHrPersona();
   const organizationId = active?.organization_id ?? null;
@@ -138,6 +141,7 @@ export function HrNewEmployee({
     link_user_id: prefill.userId ?? "",
     hire_date: "",
     pay_group_id: "",
+    ssn: "",
     job_title_id: "",
     department_id: "",
     location_id: "",
@@ -223,6 +227,29 @@ export function HrNewEmployee({
   // ── The duplicate scan, BEFORE submit ──────────────────────────────────
   const runScan = async () => {
     if (!organizationId) return null;
+
+    /*
+      🚨 THE `ssn_hmac` LEG REPORTED `skipped` ON EVERY HIRE UNTIL THIS CALL EXISTED.
+      `hr_duplicate_scan` matches on `p_probe.ssn_hmac_hex` and the HMAC key never
+      enters the database (SPEC-ACCESS §4.5), so only aidream can compute it — and
+      only through a call that stores NOTHING, because at probe time the candidate
+      has no `hr.employee` row to seal a value against.
+
+      A fingerprint that fails does NOT fail the hire: the scan still runs on the
+      other legs and honestly reports `ssn_hmac` as skipped, which is what it did
+      before. Refusing to hire because an optional duplicate leg was unavailable
+      would be a worse answer than the one the scan already knows how to give.
+    */
+    let ssnHmacHex: string | null = null;
+    if (form.ssn.trim()) {
+      const fp = await fingerprintHrSsn({
+        request: api.fetch,
+        organizationId,
+        ssn: form.ssn,
+      });
+      if (fp.kind === "fingerprinted") ssnHmacHex = fp.ssnHmacHex;
+    }
+
     const result = await scanHrDuplicates({
       organizationId,
       probe: {
@@ -230,6 +257,7 @@ export function HrNewEmployee({
           `${form.preferred_first_name || form.legal_first_name} ${form.legal_last_name}`.trim(),
         work_email: form.work_email || null,
         party_id: form.party_id || null,
+        ...(ssnHmacHex ? { ssn_hmac_hex: ssnHmacHex } : {}),
       },
     });
     const ack = readWriteAck<HrDuplicateScan>(
@@ -313,7 +341,35 @@ export function HrNewEmployee({
     );
 
     if (ack.ok) {
-      setCreated({ employeeId: String(ack.data.employee_id) });
+      const employeeId = String(ack.data.employee_id);
+
+      /*
+        🚨 THE NUMBER IS SEALED AFTER THE PERSON EXISTS, because it is stored AGAINST
+        an employee and there is no employee until the write above returns.
+
+        If this fails the hire still stands — the person was created and undoing that
+        to report a secondary failure would be far worse. So it says exactly what
+        happened and where to finish it, rather than a green toast that implies the
+        number was saved when it was not.
+      */
+      if (form.ssn.trim()) {
+        const sealed = await storeHrSsn({
+          request: api.fetch,
+          employeeId,
+          organizationId,
+          ssn: form.ssn,
+        });
+        setForm((prev) => ({ ...prev, ssn: "" }));
+        if (sealed.kind !== "stored") {
+          setCreated({ employeeId });
+          toast.error(
+            `${form.legal_first_name || "The employee"} was created, but the Social Security number was not saved: ${sealed.message} You can add it on their profile.`,
+          );
+          return;
+        }
+      }
+
+      setCreated({ employeeId });
       toast.success("Employee created.");
       return;
     }
@@ -462,6 +518,26 @@ export function HrNewEmployee({
                       set({ work_phone: event.target.value })
                     }
                     className="h-11 lg:h-9"
+                  />
+                </Field>
+
+                {/*
+                  🚨 OPTIONAL, MASKED, AND SEALED SERVER-SIDE — never held here and
+                  never echoed. Typing it also turns on the duplicate check's
+                  strongest leg: the scan matches on a keyed digest of this number,
+                  which is the one identifier two records of the same person share
+                  even when the names and emails differ.
+                */}
+                <Field label="Social Security number">
+                  <Input
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={form.ssn}
+                    onChange={(event) => set({ ssn: event.target.value })}
+                    placeholder="Optional — 000-00-0000"
+                    className="h-11 font-mono lg:h-9"
                   />
                 </Field>
               </Grid>

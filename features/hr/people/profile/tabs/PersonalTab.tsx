@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 
 import {
   SensitiveFieldList,
+  SensitiveGrid,
   SensitiveSection,
 } from "../../../shared/SensitiveField";
 import type { HrFieldSpec } from "../../../shared/useVisibleFields";
@@ -40,7 +41,7 @@ import type {
   HrProfilePrivate,
 } from "../../../types";
 import { formatFullDate } from "../../shared/HrStatusChip";
-import { SsnRevealDoor } from "../../identity/SsnRevealDoor";
+import { SsnField } from "../../identity/SsnField";
 import { MoreSection } from "../MoreSection";
 import { PlatformAccessSection } from "../PlatformAccessSection";
 
@@ -69,14 +70,14 @@ const CONTACT_FIELDS: readonly HrFieldSpec<HrProfilePersonal>[] = [
   },
 ];
 
+/*
+  🚨 `ssn_last4` IS DELIBERATELY NOT IN THIS LIST. It is the only private field with
+  three states rather than two — nothing on file and you may record one, nothing on
+  file and you may not, or a number on file with an audited way to see it — and a
+  spec-driven row can only render "value or empty label". It gets its own row below,
+  inside the same grid, so it still reads as one field among the others.
+*/
 const PRIVATE_FIELDS: readonly HrFieldSpec<HrProfilePrivate>[] = [
-  {
-    name: "ssn_last4",
-    label: "Social Security number",
-    hint: "Last four digits. The full number is behind an audited request.",
-    format: (value) => (value ? `•••-••-${String(value)}` : null),
-    emptyLabel: "Not collected",
-  },
   {
     name: "home_address_effective_from",
     label: "Home address effective from",
@@ -154,22 +155,37 @@ export function PersonalTab({
             />
           ) : null}
 
-          <SensitiveFieldList source={priv} specs={PRIVATE_FIELDS} />
-
           {/*
-            The SSN door. Present only when the last-4 key itself is — §1.3 decides
-            that on the WIRE, so a viewer the server did not send `ssn_last4` to
-            never sees the control, and `SsnRevealDoor` then withholds it again for
-            anyone without `ssn.reveal`.
+            🚨 THE WIRE DECIDES WHETHER THIS ROW EXISTS AT ALL. `"ssn_last4" in priv`
+            is the server's own §1.3 verdict — a viewer it did not send the key to
+            (a peer) gets no row, no label and no control, because the whole
+            `private` block never reached them. `SsnField` then decides which of its
+            three states to show, and `SsnRevealDoor` withholds the reveal again for
+            anyone without `ssn.reveal`. Three gates, none of them redundant: the
+            wire, the field policy, and the reveal capability.
           */}
-          {"ssn_last4" in priv ? (
-            <SsnRevealDoor
-              employeeId={profile.header.employee_id}
-              organizationId={profile.organization_id}
-              capabilities={profile.capabilities}
-              viewer={profile.viewer}
-            />
-          ) : null}
+          <SensitiveGrid>
+            {"ssn_last4" in priv ? (
+              <div className="min-w-0 space-y-0.5">
+                <div className="text-xs font-medium text-muted-foreground">
+                  Social Security number
+                </div>
+                <SsnField
+                  employeeId={profile.header.employee_id}
+                  organizationId={profile.organization_id}
+                  capabilities={profile.capabilities}
+                  viewer={profile.viewer}
+                  last4={
+                    typeof priv.ssn_last4 === "string" && priv.ssn_last4
+                      ? priv.ssn_last4
+                      : null
+                  }
+                />
+              </div>
+            ) : null}
+          </SensitiveGrid>
+
+          <SensitiveFieldList source={priv} specs={PRIVATE_FIELDS} />
 
           <HomeAddress priv={priv} />
         </section>
