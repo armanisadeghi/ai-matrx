@@ -1,3 +1,26 @@
+-- ⛔ SUPERSEDED 2026-08-26 by `hr_l1_04_relations_and_verification` (HRB-013 / lane L1).
+-- DO NOT REPLAY THIS FILE: it would fail with "cannot change return type of existing function".
+--
+-- This file's diagnosis was right and L1 adopted it wholesale — `hr.arm_write()` is
+-- STATEMENT-scoped, so arming from Python and writing in the next round trip could never have
+-- worked, and the fix is a definer RPC that arms inside its own body. L1's `_apply` docstring now
+-- carries that finding with the credit.
+--
+-- Two things diverged, and the live function is L1's:
+--   1. RETURN TYPE. This one returns `integer` (a rowcount); L1's returns the **jsonb refusal
+--      envelope** every other `public.hr_*` door returns. `create or replace` cannot change a
+--      return type, so these could never have merged silently — and aidream's caller tested the
+--      result with `if not updated`, which is always false against a non-empty dict, so a refusal
+--      would have been reported as a generated letter. Fixed in aidream `a218de2cd`.
+--   2. GATES. This one has neither the §4.9 consent gate nor the delivered-letter refusal. §4.9
+--      requires the consent check in THREE places — the table CHECK, the aidream handler, and
+--      this RPC — because an income letter without consent must be impossible rather than
+--      discouraged.
+--
+-- `p_generated_at` survives as an OPTIONAL fourth parameter defaulting to `now()`, so both the
+-- three-argument and four-argument call sites still resolve.
+-- Left in place rather than deleted: it is the record of where the arm_write finding came from.
+
 -- HR L13 — migration 6 (register item HRB-025, lane lane-l13-export), written for L1's lane.
 --
 -- `public.hr_verification_generate_apply` — the privileged writer SPEC-EMPLOYEES already names,
