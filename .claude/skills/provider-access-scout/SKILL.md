@@ -117,6 +117,39 @@ Business ease never overrides an active tool/browser confirmation boundary. Exte
 creation, persistent API/OAuth key creation, representational submissions, and sent messages still
 pause at the action boundary required by the current environment.
 
+## Account-creation packet
+
+**A scouted account path is executable, not a homepage.** When access requires an account,
+organization, workspace, developer console, seller tenant, or business portfolio, append one
+`ACCOUNT CREATION PACKET` to the live task before scouting is complete:
+
+```text
+Bundle: <stable shared account prerequisite; name every campaign it unlocks>
+Exact signup page:
+Exact login/developer-console page:
+Recommended identity and authentication method:
+Required account/workspace/business type:
+Prerequisites and immutable fields:
+Free sandbox/dev tenant vs paid/live tenant:
+Human-only ceremony:
+Agent-ready when:
+Autonomous continuation:
+Official sources (verified YYYY-MM-DD):
+```
+
+Use the deepest official URL that starts the actual enrollment; a provider homepage is insufficient
+when a stable signup or developer-console URL exists. Deduplicate shared prerequisites: one Meta
+developer account may unlock several Meta campaigns, while TikTok for Developers and TikTok for
+Business remain separate bundles. State whether `info@aimatrx.com` with Google SSO works; when it
+does not, name the exact approved identity class and Vault custody plan. Never invent a shared human
+identity to satisfy a provider that requires a real person.
+
+Do not ask Arman to create an account an agent can create after action-time confirmation. Put a
+provider-enforced identity, CAPTCHA, hardware key, legal document, payment decision, or immutable
+business fact in `Human-only ceremony`; routine SSO, mailbox codes, password generation, MFA/Vault
+work, and ordinary consent remain agent work. `Agent-ready when` must be an observable portal state
+that lets the next agent continue without rediscovery.
+
 ## Required scouting record
 
 Update the task case card and append a dated scouting section containing:
