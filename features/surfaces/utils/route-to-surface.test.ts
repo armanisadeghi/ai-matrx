@@ -199,6 +199,20 @@ describe("Organization performance-review surface resolution", () => {
   });
 });
 
+describe("CRM record surface resolution", () => {
+  const PARTY_ID = "4c1efc60-cb0f-46bb-b6ad-8ef67f943c6e";
+
+  it("resolves the exact party leaf before the CRM list prefix", () => {
+    expect(surfaceFromPathname(`/crm/${PARTY_ID}`)).toBe(
+      "matrx-user/crm-record",
+    );
+    expect(surfaceFromPathname("/crm")).toBe("matrx-user/crm");
+    expect(surfaceFromPathname(`/crm/deals/${PARTY_ID}`)).toBe(
+      "matrx-user/crm",
+    );
+  });
+});
+
 describe("Agent surface resolution (nested [id])", () => {
   const A = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
 

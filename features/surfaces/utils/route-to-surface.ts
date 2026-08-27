@@ -553,6 +553,19 @@ export function surfaceFromPathname(
     return "matrx-admin/agent-review-item";
   }
 
+  // ONE CRM party record is the exact dynamic leaf `/crm/[partyId]`. It must
+  // resolve before the broad `/crm` list prefix or the header rejects the
+  // mounted record runtime as a name mismatch and exposes list values/targets
+  // on a record page. Nested workspaces such as `/crm/deals/[id]` have more
+  // segments and deliberately do not match this record surface.
+  if (
+    /^\/crm\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/?$/i.test(
+      stripped,
+    )
+  ) {
+    return "matrx-user/crm-record";
+  }
+
   const marketing = resolveMarketingSurface(stripped);
   if (marketing) return marketing;
 
