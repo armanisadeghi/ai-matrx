@@ -23,8 +23,10 @@
 -- 2. NOTHING IS SUMMED, HERE OR ANYWHERE. Base, shift differential and each allowance keep their
 --    own window and come back as separate rows. A summed figure is not true on any given day and
 --    somebody will eventually quote it in a wage claim. `currency` is returned only when the
---    concurrent components AGREE on one; where they disagree it is null rather than whichever one
---    sorted first, because a confidently wrong currency is worse than none.
+--    record's rows AGREE on one; where they disagree it is null rather than whichever one sorted
+--    first, because a confidently wrong currency is worse than none. It is read across the whole
+--    record, not just the components in force today, so somebody whose only row is next month's
+--    raise is not shown a pay page with no currency on it.
 -- 3. A VOLUNTEER GETS A REFUSAL, NOT AN EMPTY PAY PAGE. No compensation row means the door answers
 --    `{granted:false, reason:'no_record'}`, the nav item is absent, and nobody is shown a pay
 --    screen with nothing on it and left wondering whether their pay was deleted.
@@ -105,9 +107,13 @@ begin
 
   if v_history is null then
     -- decision 3: a volunteer has no pay record; refuse rather than render an empty pay page
+    -- `basis` stays 'self', not 'refused': the caller's basis for reaching this record WAS being
+    -- the subject, and `hr.access_audit` enforces exactly that (access_audit_self_basis:
+    -- is_self_access implies basis = 'self'). What failed is that the record does not exist,
+    -- which is what `granted = false` plus the denial reason say.
     v_audit := hr._record_access_audit(
       p_organization_id => v_org, p_action => 'denied', p_target_token => 'hr_compensation',
-      p_purpose => 'self_service', p_basis => 'refused', p_granted => false, p_row_count => 0,
+      p_purpose => 'self_service', p_basis => 'self', p_granted => false, p_row_count => 0,
       p_subject_employment_id => p_employment_id, p_sensitivity_tier => 'confidential',
       p_is_self_access => true,
       p_denial_reason => 'no_compensation_record for this employment');
