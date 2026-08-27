@@ -52,11 +52,21 @@ export function HrTaskTable({
                         {row.title ?? row.flow_label ?? row.flow_key}
                     </Link>
                     <div className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                        {/* The icon marks a restricted flow. It does NOT mean the name is
+                            hidden — an approver holding the decision is entitled to it
+                            (T-L10-5), and the door says which case this is. */}
                         {row.sensitivity_tier === "restricted" ? (
                             <EyeOff
                                 className="h-3 w-3 shrink-0"
-                                aria-label="Restricted — details are only shown on the record itself"
+                                aria-label={
+                                    row.subject_withheld
+                                        ? "Restricted — the subject is not shown to you"
+                                        : "Restricted — visible to you because you hold this decision"
+                                }
                             />
+                        ) : null}
+                        {row.subject_withheld ? (
+                            <span className="shrink-0">Subject withheld</span>
                         ) : null}
                         <span className="truncate">{row.step_label ?? row.step_key}</span>
                     </div>

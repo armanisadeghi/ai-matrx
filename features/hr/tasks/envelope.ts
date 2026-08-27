@@ -241,9 +241,10 @@ function parseRow(rpc: string, source: Obj): HrInboxRow {
         title: optStr(source, "title"),
         flow_label: optStr(source, "flow_label"),
         step_label: optStr(source, "step_label"),
-        // 🚨 JSON null on a restricted-tier row and it MUST survive as null. `?? ""` here would
-        // turn "you are not being told" into "this flow has no subject".
+        // 🚨 JSON null and it MUST survive as null. `?? ""` here would turn "you are not being
+        // told" into "this flow has no subject" — which is why the door sends the two apart.
         subject_label: optStr(source, "subject_label"),
+        subject_withheld: optBool(source, "subject_withheld"),
         target_token: optStr(source, "target_token"),
         target_id: optStr(source, "target_id"),
         allow_bulk_decide: optBool(source, "allow_bulk_decide"),

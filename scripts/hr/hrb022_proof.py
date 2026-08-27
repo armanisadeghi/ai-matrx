@@ -429,26 +429,53 @@ async def main():
                 prow is not None, f"{len(carol_mine.get('needs_my_decision') or [])} row(s)")
             if prow is not None:
                 title = prow.get("title") or ""
-                rec("C sensitivity", "🚨 T-L10-5: the restricted-tier title ENDS WITH ' — 1 item'",
-                    title.endswith(" — 1 item"), repr(title))
-                rec("C sensitivity", "🚨 T-L10-5: the restricted-tier title names NO employee",
-                    all(n not in title for n in
-                        [people["alice"]["name"], "Alice", "Requester"]), repr(title))
-                rec("C sensitivity", "subject_label is JSON null — redacted, not omitted",
-                    "subject_label" in prow and prow["subject_label"] is None,
-                    f"present={'subject_label' in prow} value={prow.get('subject_label')!r}")
+                subject = people["alice"]["name"]
+                # 🚨 THESE ASSERTIONS WERE INVERTED UNTIL 2026-08-27, AND THE INVERSION SHIPPED
+                # THE BUG. hr_c4_07 made one display rule serve both the workspace.tasks mirror
+                # and /hr/tasks, and this suite then asserted the two titles were IDENTICAL and
+                # called that evidence. T-L10-5 says the opposite in one sentence: the general
+                # /tasks list is contentless, while /hr/tasks shows the FULL item to that same
+                # authorized approver. A pay-change approver was being asked to approve a raise
+                # for nobody in particular, and the proof was holding the door.
+                rec("C sensitivity", "🚨 T-L10-5: the APPROVER's /hr/tasks row NAMES the subject — "
+                                     "holding the decision entitles you to know whose it is",
+                    subject in title, repr(title))
+                rec("C sensitivity", "🚨 T-L10-5: subject_label is the real name for the approver",
+                    prow.get("subject_label") == subject, repr(prow.get("subject_label")))
+                rec("C sensitivity", "and subject_withheld is FALSE for the entitled approver",
+                    prow.get("subject_withheld") is False, repr(prow.get("subject_withheld")))
 
                 await as_owner()
                 mirror = await conn.fetchval(
                     "select t.title from workspace.tasks t join hr.workflow_step s "
                     "on s.workspace_task_id = t.id where s.id = $1", pay_step)
-                rec("C sensitivity", "🚨 the workspace.tasks mirror title is the IDENTICAL STRING — "
-                                     "both surfaces read hr._wf_display",
-                    mirror is not None and mirror == title,
+                rec("C sensitivity", "🚨 T-L10-5: the workspace.tasks mirror stays CONTENTLESS — "
+                                     "'internal'-visibility machinery gets no name",
+                    mirror is not None and mirror.endswith(" — 1 item") and subject not in mirror,
+                    f"mirror={mirror!r}")
+                rec("C sensitivity", "🚨 and the two DIFFER — the split survived the projection",
+                    mirror is not None and mirror != title,
                     f"inbox={title!r} mirror={mirror!r}")
                 if mirror is None:
                     gap("C mirror comparison",
                         "no workspace.tasks row is linked to the restricted step (workspace_task_id null)")
+
+                # the colleague half of T-L10-5: reaching a row and being told whose it is are
+                # different permissions, so a queue-scope viewer without standing gets neither.
+                await as_user(people["dave"]["uid"])
+                dave_view = harvest(await j("select public.hr_wf_inbox('mine')"))
+                rec("C sensitivity", "🚨 T-L10-5: a colleague without the capability sees the "
+                                     "restricted step NOWHERE",
+                    all(r.get("step_id") != str(pay_step)
+                        for r in (dave_view.get("needs_my_decision") or [])
+                        + (dave_view.get("scope_rows") or [])),
+                    f"{len(dave_view.get('needs_my_decision') or [])} row(s)")
+                await as_owner()
+                withheld = await conn.fetchval(
+                    "select (hr._wf_display($1, false) ->> 'subject_label') is null", pay_step)
+                rec("C sensitivity", "and the display rule withholds the name from a caller with "
+                                     "no standing at all",
+                    withheld is True, f"subject_label null for an unauthenticated reader = {withheld}")
         elif restricted is not None:
             gap("C restricted projection",
                 "the restricted-tier instance did not produce an active step, so its title could not be read")
@@ -461,7 +488,10 @@ async def main():
                 "on s.workspace_task_id = t.id where s.id = $1", lstep1)
             rec("C sensitivity", "a NON-restricted title DOES carry the subject's display name",
                 people["alice"]["name"] in (row1.get("title") or ""), repr(row1.get("title")))
-            rec("C sensitivity", "and the mirror carries the IDENTICAL non-restricted string",
+            # A NON-restricted flow has nothing to withhold, so here the two SHOULD match — which
+            # is what makes the restricted pair above a deliberate split rather than a bug.
+            rec("C sensitivity", "and a NON-restricted mirror carries the identical string — "
+                                 "nothing to withhold, nothing withheld",
                 mirror1 is not None and mirror1 == row1.get("title"),
                 f"inbox={row1.get('title')!r} mirror={mirror1!r}")
             rec("C sensitivity", "subject_label on the non-restricted row is the subject, not null",

@@ -62,8 +62,13 @@ export type HrInboxRow = {
     title?: string | null;
     flow_label?: string | null;
     step_label?: string | null;
-    /** NULL on a restricted-tier row — the split survives the projection. */
+    /**
+     * The subject's name. NULL when the viewer is not entitled to it OR the subject opted out of
+     * the directory — `subject_withheld` tells the two apart from "this flow has no subject".
+     */
     subject_label?: string | null;
+    /** True when a restricted-tier row is deliberately withholding the name from THIS viewer. */
+    subject_withheld?: boolean;
     target_token?: string | null;
     target_id?: string | null;
     allow_bulk_decide?: boolean;
