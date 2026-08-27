@@ -10,12 +10,12 @@
     "mode": "sync",
     "spec": "SPEC-CONTRACTS §6.4",
     "generated_by": "scripts/hr/generate_hr_fixtures.py",
-    "note": "Every optional field populated — a UI built only against minimal responses breaks on real data."
+    "note": "§4.3's registry as the contract actually specifies it. Schema synthesis cannot express OI-1 (both QuickBooks mappers ship available:false) and produced a self-contradicting row: key=quickbooks_online, label='Generic CSV', available=true. Hand-authored from the §4.3 table instead — and it is the fixture that makes an unavailable format, with its reason, renderable in a browser."
   },
   "body": {
     "formats": [
       {
-        "key": "quickbooks_online",
+        "key": "generic_csv",
         "label": "Generic CSV",
         "delivery": [
           "file"
@@ -23,18 +23,121 @@
         "media_type": "text/csv",
         "columns": [
           {
-            "name": "Employee Handbook 2026.pdf",
+            "name": "employee_number",
+            "source": "hr.employment.employee_number",
+            "required": true
+          },
+          {
+            "name": "earning_code",
+            "source": "hr.payroll_export_line.earning_code",
+            "required": true
+          },
+          {
+            "name": "hours",
             "source": "hr.work_interval.hours",
             "required": true
           }
         ],
+        "requires_mapping": [],
+        "supports_rates": true,
+        "supports_adjustment_lines": true,
+        "available": true,
+        "notes": "The floor and the default. Full line grain with our own identifiers, no mapping required — what you use on day one, before any integration."
+      },
+      {
+        "key": "json",
+        "label": "JSON (full line detail)",
+        "delivery": [
+          "file",
+          "api"
+        ],
+        "media_type": "application/json",
+        "requires_mapping": [],
+        "supports_rates": true,
+        "supports_adjustment_lines": true,
+        "available": true,
+        "notes": "The machine format: every payroll export line plus the envelope, for an org's own integration."
+      },
+      {
+        "key": "adp_csv",
+        "label": "ADP paydata import",
+        "delivery": [
+          "file"
+        ],
+        "media_type": "text/csv",
+        "columns": [
+          {
+            "name": "Co Code",
+            "source": "mapping.adp_co_code",
+            "required": true
+          },
+          {
+            "name": "Batch ID",
+            "source": "mapping.adp_batch_id",
+            "required": true
+          },
+          {
+            "name": "File #",
+            "source": "mapping.external_employee_id",
+            "required": true
+          }
+        ],
         "requires_mapping": [
-          "requires_mapping-6"
+          "adp_co_code",
+          "adp_batch_id",
+          "external_employee_id"
         ],
         "supports_rates": true,
         "supports_adjustment_lines": true,
         "available": true,
-        "notes": "Full line grain, our own identifiers, no mapping required."
+        "notes": "Co Code, Batch ID and File # are columns 1-3 in that order. Your ADP administrator supplies all three — we will not guess them."
+      },
+      {
+        "key": "gusto_csv",
+        "label": "Gusto Smart Import",
+        "delivery": [
+          "file"
+        ],
+        "media_type": "text/csv",
+        "requires_mapping": [
+          "external_earning_code"
+        ],
+        "supports_rates": false,
+        "supports_adjustment_lines": true,
+        "available": true,
+        "notes": "Best-effort, and labelled that way on purpose: Gusto fuzzy-matches columns rather than publishing a template, so this mapper is proven by a real import rather than by a specification."
+      },
+      {
+        "key": "quickbooks_online",
+        "label": "QuickBooks Online",
+        "delivery": [
+          "file"
+        ],
+        "media_type": "text/csv",
+        "requires_mapping": [
+          "external_employee_id",
+          "external_earning_code"
+        ],
+        "supports_rates": true,
+        "supports_adjustment_lines": true,
+        "available": false,
+        "notes": "Not available yet. Intuit does not publish the Time Activities column spec, so the mapper has to be derived from the QBO import wizard's own sample file before we will produce a file anyone pays from."
+      },
+      {
+        "key": "quickbooks_iif",
+        "label": "QuickBooks Desktop (IIF)",
+        "delivery": [
+          "file"
+        ],
+        "media_type": "application/octet-stream",
+        "requires_mapping": [
+          "external_employee_id",
+          "external_earning_code"
+        ],
+        "supports_rates": true,
+        "supports_adjustment_lines": true,
+        "available": false,
+        "notes": "Not available yet. The IIF timesheet header token (!TIMEACCT or !TIMEACT) has to be verified against a real QuickBooks Desktop import first — the wrong token produces a file that fails on their side."
       }
     ]
   }

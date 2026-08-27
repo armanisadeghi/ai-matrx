@@ -744,7 +744,9 @@ async def main():
     spec = json.loads(STUB.read_text(encoding="utf-8"))
     COMPONENTS.update(spec["components"]["schemas"])
 
-    edges = edge_cases()
+    # §6.4's seventeen mandatory edges, PLUS the bodies the stub schema cannot express (§4.3/OI-1).
+    # Same tuple shape, one table, but kept as two functions so the mandatory list stays countable.
+    edges = edge_cases() + contract_overrides()
     codes = ["OT-CA-01", "OT-BOUND-01", "FW-CHI-01", "MIN-01", "I9-FED-03"]
     rule_rows = await load_rule_fixtures(codes)
     missing = [c for c in codes if c not in rule_rows]
