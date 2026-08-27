@@ -1,5 +1,5 @@
 {
-  "generated_for": "961-kinds+6462cf1fc8dd",
+  "generated_for": "986-kinds+b62d70864a98",
   "columns": [
     "definition",
     "example",
@@ -1677,6 +1677,21 @@
       }
     },
     {
+      "kind": "calculation_result",
+      "is_active": false,
+      "family": "tool_execution",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "card_detail",
       "is_active": true,
       "family": "user_authored",
@@ -1857,6 +1872,81 @@
       }
     },
     {
+      "kind": "cms_asset_result",
+      "is_active": false,
+      "family": "cms",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "cms_collection_result",
+      "is_active": false,
+      "family": "cms",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "cms_component_result",
+      "is_active": false,
+      "family": "cms",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "cms_data_result",
+      "is_active": false,
+      "family": "cms",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "cms_inspect_report",
+      "is_active": false,
+      "family": "cms",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "cms_nav_link",
       "is_active": false,
       "family": "content_plan",
@@ -1881,6 +1971,36 @@
         "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "cms_page_candidates",
+      "is_active": false,
+      "family": "cms",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "cms_page_result",
+      "is_active": false,
+      "family": "cms",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -2004,6 +2124,21 @@
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "cms_site_result",
+      "is_active": false,
+      "family": "cms",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -4017,6 +4152,21 @@
       }
     },
     {
+      "kind": "follow_up_question",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "formatted_datetime",
       "is_active": true,
       "family": "primitive",
@@ -4446,6 +4596,21 @@
         "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "ide_state_fields",
+      "is_active": false,
+      "family": "tool_execution",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -5361,6 +5526,21 @@
         "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "market_listing",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -7587,6 +7767,21 @@
       }
     },
     {
+      "kind": "podcast.legacy_script_stage.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "podcast.live_rewrite.offer",
       "is_active": false,
       "family": "provision_offer",
@@ -7917,6 +8112,36 @@
       }
     },
     {
+      "kind": "product_image",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "product_knowledge_item",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "product_research_report",
       "is_active": true,
       "family": "user_authored",
@@ -8034,6 +8259,21 @@
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "proof_runs.judge_case.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -8991,6 +9231,36 @@
         "gate_structural": "missing",
         "component": "missing",
         "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "resell_analysis",
+      "is_active": false,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "resell_research_report",
+      "is_active": true,
+      "family": "user_authored",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
         "skill": "missing",
         "content_block": "missing",
         "surface": "warn"
@@ -10482,6 +10752,21 @@
       }
     },
     {
+      "kind": "seo.site_evidence.offer",
+      "is_active": false,
+      "family": "provision_offer",
+      "assets": {
+        "definition": "ok",
+        "example": "missing",
+        "gate_structural": "missing",
+        "component": "missing",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "seo.site_intake.offer",
       "is_active": false,
       "family": "provision_offer",
@@ -10560,6 +10845,21 @@
       "kind": "serp_placement",
       "is_active": true,
       "family": "seo_rank",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "shell_execution",
+      "is_active": false,
+      "family": "tool_execution",
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -11229,6 +11529,21 @@
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
+      }
+    },
+    {
+      "kind": "text_analysis",
+      "is_active": false,
+      "family": "text_tools",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "missing",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
       }
     },
     {
@@ -12017,8 +12332,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12032,8 +12347,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12047,8 +12362,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12062,8 +12377,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12077,8 +12392,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12092,8 +12407,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12107,8 +12422,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12122,8 +12437,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12137,8 +12452,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12152,8 +12467,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12167,8 +12482,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12182,8 +12497,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12197,8 +12512,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12212,8 +12527,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12227,8 +12542,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12242,8 +12557,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12257,8 +12572,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -12272,8 +12587,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13112,8 +13427,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13127,8 +13442,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13142,8 +13457,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13157,8 +13472,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13172,8 +13487,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13187,8 +13502,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13202,8 +13517,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13217,8 +13532,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13232,8 +13547,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13247,8 +13562,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13262,8 +13577,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13277,8 +13592,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13292,8 +13607,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13307,8 +13622,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13322,8 +13637,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13337,8 +13652,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13352,8 +13667,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13367,8 +13682,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13382,8 +13697,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13397,8 +13712,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13412,8 +13727,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13427,8 +13742,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13442,8 +13757,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13457,8 +13772,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13472,8 +13787,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13487,8 +13802,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13502,8 +13817,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13517,8 +13832,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13532,8 +13847,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13547,8 +13862,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13562,8 +13877,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13577,8 +13892,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13592,8 +13907,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13607,8 +13922,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13622,8 +13937,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13637,8 +13952,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13652,8 +13967,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13667,8 +13982,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13682,8 +13997,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13697,8 +14012,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13712,8 +14027,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13727,8 +14042,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13742,8 +14057,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13772,8 +14087,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13787,8 +14102,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13832,8 +14147,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13847,8 +14162,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13862,8 +14177,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13877,8 +14192,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13892,8 +14207,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13907,8 +14222,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13922,8 +14237,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13937,8 +14252,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13952,8 +14267,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13967,8 +14282,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13982,8 +14297,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -13997,8 +14312,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -14012,8 +14327,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -14027,8 +14342,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -14042,8 +14357,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -14057,8 +14372,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -14072,8 +14387,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -14087,8 +14402,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -14102,8 +14417,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -14117,8 +14432,8 @@
       "family": "web_analysis_item",
       "assets": {
         "definition": "ok",
-        "example": "missing",
-        "gate_structural": "missing",
+        "example": "ok",
+        "gate_structural": "ok",
         "component": "ok",
         "loading": "ok",
         "skill": "missing",
@@ -14157,6 +14472,51 @@
       }
     },
     {
+      "kind": "wheel_choice",
+      "is_active": false,
+      "family": "tool_execution",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "wheel_image",
+      "is_active": false,
+      "family": "tool_execution",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "wheel_spin_result",
+      "is_active": false,
+      "family": "tool_execution",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
       "kind": "wine_tasting",
       "is_active": true,
       "family": "user_authored",
@@ -14175,6 +14535,21 @@
       "kind": "word_count_result",
       "is_active": true,
       "family": "primitive",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "loading": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "word_frequency",
+      "is_active": false,
+      "family": "text_tools",
       "assets": {
         "definition": "ok",
         "example": "ok",
@@ -15095,6 +15470,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "calculation_result",
+      "message": "kind \"calculation_result\" has no content block referencing \"__kind\": \"calculation_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "card_detail",
       "message": "kind \"card_detail\" has no content block referencing \"__kind\": \"card_detail\""
     },
@@ -15149,8 +15530,50 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "cms_asset_result",
+      "message": "kind \"cms_asset_result\" has no content block referencing \"__kind\": \"cms_asset_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "cms_collection_result",
+      "message": "kind \"cms_collection_result\" has no content block referencing \"__kind\": \"cms_collection_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "cms_component_result",
+      "message": "kind \"cms_component_result\" has no content block referencing \"__kind\": \"cms_component_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "cms_data_result",
+      "message": "kind \"cms_data_result\" has no content block referencing \"__kind\": \"cms_data_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "cms_inspect_report",
+      "message": "kind \"cms_inspect_report\" has no content block referencing \"__kind\": \"cms_inspect_report\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "cms_page_build",
       "message": "kind \"cms_page_build\" has no content block referencing \"__kind\": \"cms_page_build\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "cms_page_candidates",
+      "message": "kind \"cms_page_candidates\" has no content block referencing \"__kind\": \"cms_page_candidates\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "cms_page_result",
+      "message": "kind \"cms_page_result\" has no content block referencing \"__kind\": \"cms_page_result\""
     },
     {
       "severity": "yellow",
@@ -15163,6 +15586,12 @@
       "code": "no-content-block",
       "kind": "cms_reconcile_report",
       "message": "kind \"cms_reconcile_report\" has no content block referencing \"__kind\": \"cms_reconcile_report\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "cms_site_result",
+      "message": "kind \"cms_site_result\" has no content block referencing \"__kind\": \"cms_site_result\""
     },
     {
       "severity": "yellow",
@@ -15809,6 +16238,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "follow_up_question",
+      "message": "kind \"follow_up_question\" has no content block referencing \"__kind\": \"follow_up_question\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "formatted_datetime",
       "message": "kind \"formatted_datetime\" has no content block referencing \"__kind\": \"formatted_datetime\""
     },
@@ -15937,6 +16372,12 @@
       "code": "no-content-block",
       "kind": "human_text_answer",
       "message": "kind \"human_text_answer\" has no content block referencing \"__kind\": \"human_text_answer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "ide_state_fields",
+      "message": "kind \"ide_state_fields\" has no content block referencing \"__kind\": \"ide_state_fields\""
     },
     {
       "severity": "yellow",
@@ -16207,6 +16648,12 @@
       "code": "no-content-block",
       "kind": "markdown",
       "message": "kind \"markdown\" has no content block referencing \"__kind\": \"markdown\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "market_listing",
+      "message": "kind \"market_listing\" has no content block referencing \"__kind\": \"market_listing\""
     },
     {
       "severity": "yellow",
@@ -16865,6 +17312,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "podcast.legacy_script_stage.offer",
+      "message": "kind \"podcast.legacy_script_stage.offer\" has no content block referencing \"__kind\": \"podcast.legacy_script_stage.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "podcast.live_rewrite.offer",
       "message": "kind \"podcast.live_rewrite.offer\" has no content block referencing \"__kind\": \"podcast.live_rewrite.offer\""
     },
@@ -16973,6 +17426,18 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "product_image",
+      "message": "kind \"product_image\" has no content block referencing \"__kind\": \"product_image\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "product_knowledge_item",
+      "message": "kind \"product_knowledge_item\" has no content block referencing \"__kind\": \"product_knowledge_item\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "product_research_report",
       "message": "kind \"product_research_report\" has no content block referencing \"__kind\": \"product_research_report\""
     },
@@ -16993,6 +17458,12 @@
       "code": "no-content-block",
       "kind": "proof_recording",
       "message": "kind \"proof_recording\" has no content block referencing \"__kind\": \"proof_recording\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "proof_runs.judge_case.offer",
+      "message": "kind \"proof_runs.judge_case.offer\" has no content block referencing \"__kind\": \"proof_runs.judge_case.offer\""
     },
     {
       "severity": "yellow",
@@ -17257,6 +17728,18 @@
       "code": "no-content-block",
       "kind": "research.topic_setup.offer",
       "message": "kind \"research.topic_setup.offer\" has no content block referencing \"__kind\": \"research.topic_setup.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "resell_analysis",
+      "message": "kind \"resell_analysis\" has no content block referencing \"__kind\": \"resell_analysis\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "resell_research_report",
+      "message": "kind \"resell_research_report\" has no content block referencing \"__kind\": \"resell_research_report\""
     },
     {
       "severity": "yellow",
@@ -17807,6 +18290,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "seo.site_evidence.offer",
+      "message": "kind \"seo.site_evidence.offer\" has no content block referencing \"__kind\": \"seo.site_evidence.offer\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "seo.site_intake.offer",
       "message": "kind \"seo.site_intake.offer\" has no content block referencing \"__kind\": \"seo.site_intake.offer\""
     },
@@ -17839,6 +18328,12 @@
       "code": "no-content-block",
       "kind": "serp_placement",
       "message": "kind \"serp_placement\" has no content block referencing \"__kind\": \"serp_placement\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "shell_execution",
+      "message": "kind \"shell_execution\" has no content block referencing \"__kind\": \"shell_execution\""
     },
     {
       "severity": "yellow",
@@ -17965,6 +18460,12 @@
       "code": "no-content-block",
       "kind": "test_card",
       "message": "kind \"test_card\" has no content block referencing \"__kind\": \"test_card\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "text_analysis",
+      "message": "kind \"text_analysis\" has no content block referencing \"__kind\": \"text_analysis\""
     },
     {
       "severity": "yellow",
@@ -19031,8 +19532,32 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "wheel_choice",
+      "message": "kind \"wheel_choice\" has no content block referencing \"__kind\": \"wheel_choice\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "wheel_image",
+      "message": "kind \"wheel_image\" has no content block referencing \"__kind\": \"wheel_image\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "wheel_spin_result",
+      "message": "kind \"wheel_spin_result\" has no content block referencing \"__kind\": \"wheel_spin_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "word_count_result",
       "message": "kind \"word_count_result\" has no content block referencing \"__kind\": \"word_count_result\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "word_frequency",
+      "message": "kind \"word_frequency\" has no content block referencing \"__kind\": \"word_frequency\""
     },
     {
       "severity": "yellow",
@@ -19955,6 +20480,12 @@
     {
       "severity": "yellow",
       "code": "no-example",
+      "kind": "podcast.legacy_script_stage.offer",
+      "message": "kind \"podcast.legacy_script_stage.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
       "kind": "podcast.live_rewrite.offer",
       "message": "kind \"podcast.live_rewrite.offer\" has no example (no kind_example row, no interim sample_data)"
     },
@@ -20029,6 +20560,12 @@
       "code": "no-example",
       "kind": "podcast.video_render.offer",
       "message": "kind \"podcast.video_render.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
+      "kind": "proof_runs.judge_case.offer",
+      "message": "kind \"proof_runs.judge_case.offer\" has no example (no kind_example row, no interim sample_data)"
     },
     {
       "severity": "yellow",
@@ -20285,6 +20822,12 @@
     {
       "severity": "yellow",
       "code": "no-example",
+      "kind": "seo.site_evidence.offer",
+      "message": "kind \"seo.site_evidence.offer\" has no example (no kind_example row, no interim sample_data)"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-example",
       "kind": "seo.site_intake.offer",
       "message": "kind \"seo.site_intake.offer\" has no example (no kind_example row, no interim sample_data)"
     },
@@ -20365,114 +20908,6 @@
       "code": "no-example",
       "kind": "war_room.thread_context.offer",
       "message": "kind \"war_room.thread_context.offer\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_a11y_lab_basics_v1",
-      "message": "kind \"web_a11y_lab_basics_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_anchor_text_descriptiveness_v1",
-      "message": "kind \"web_anchor_text_descriptiveness_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_asset_delivery_v1",
-      "message": "kind \"web_asset_delivery_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_broken_external_links_v1",
-      "message": "kind \"web_broken_external_links_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_broken_images_v1",
-      "message": "kind \"web_broken_images_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_broken_internal_links_v1",
-      "message": "kind \"web_broken_internal_links_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_broken_page_4xx_v1",
-      "message": "kind \"web_broken_page_4xx_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_caching_policy_v1",
-      "message": "kind \"web_caching_policy_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_canonical_conflicts_v1",
-      "message": "kind \"web_canonical_conflicts_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_canonical_presence_v1",
-      "message": "kind \"web_canonical_presence_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_content_depth_v1",
-      "message": "kind \"web_content_depth_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_content_freshness_v1",
-      "message": "kind \"web_content_freshness_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_content_quality_eeat_v1",
-      "message": "kind \"web_content_quality_eeat_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_crawl_depth_v1",
-      "message": "kind \"web_crawl_depth_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_cwv_cls_v1",
-      "message": "kind \"web_cwv_cls_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_cwv_inp_tbt_v1",
-      "message": "kind \"web_cwv_inp_tbt_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_cwv_lcp_v1",
-      "message": "kind \"web_cwv_lcp_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_duplicate_content_exact_v1",
-      "message": "kind \"web_duplicate_content_exact_v1\" has no example (no kind_example row, no interim sample_data)"
     },
     {
       "severity": "yellow",
@@ -20663,396 +21098,6 @@
     {
       "severity": "yellow",
       "code": "no-example",
-      "kind": "web_excessive_outlinks_v1",
-      "message": "kind \"web_excessive_outlinks_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_grammar_spelling_v1",
-      "message": "kind \"web_grammar_spelling_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_gsc_ctr_opportunity_v1",
-      "message": "kind \"web_gsc_ctr_opportunity_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_gsc_index_coverage_v1",
-      "message": "kind \"web_gsc_index_coverage_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_gsc_keyword_cannibalization_v1",
-      "message": "kind \"web_gsc_keyword_cannibalization_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_gsc_performance_decay_v1",
-      "message": "kind \"web_gsc_performance_decay_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_h1_presence_v1",
-      "message": "kind \"web_h1_presence_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_heading_hierarchy_v1",
-      "message": "kind \"web_heading_hierarchy_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_host_protocol_consistency_v1",
-      "message": "kind \"web_host_protocol_consistency_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_hreflang_reciprocity_v1",
-      "message": "kind \"web_hreflang_reciprocity_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_hreflang_validity_v1",
-      "message": "kind \"web_hreflang_validity_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_hsts_policy_v1",
-      "message": "kind \"web_hsts_policy_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_html_lang_validity_v1",
-      "message": "kind \"web_html_lang_validity_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_https_enforcement_v1",
-      "message": "kind \"web_https_enforcement_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_image_alt_presence_v1",
-      "message": "kind \"web_image_alt_presence_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_image_alt_quality_v1",
-      "message": "kind \"web_image_alt_quality_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_image_dimension_attrs_v1",
-      "message": "kind \"web_image_dimension_attrs_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_image_lazy_loading_v1",
-      "message": "kind \"web_image_lazy_loading_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_image_modern_format_v1",
-      "message": "kind \"web_image_modern_format_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_image_oversized_v1",
-      "message": "kind \"web_image_oversized_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_internal_inlink_coverage_v1",
-      "message": "kind \"web_internal_inlink_coverage_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_internal_link_equity_v1",
-      "message": "kind \"web_internal_link_equity_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_internal_redirect_links_v1",
-      "message": "kind \"web_internal_redirect_links_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_intrusive_interstitials_v1",
-      "message": "kind \"web_intrusive_interstitials_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_keyword_topical_coverage_v1",
-      "message": "kind \"web_keyword_topical_coverage_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_local_business_markup_v1",
-      "message": "kind \"web_local_business_markup_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_meta_description_duplication_v1",
-      "message": "kind \"web_meta_description_duplication_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_meta_description_length_v1",
-      "message": "kind \"web_meta_description_length_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_meta_description_presence_v1",
-      "message": "kind \"web_meta_description_presence_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_meta_refresh_redirect_v1",
-      "message": "kind \"web_meta_refresh_redirect_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_meta_robots_conflicts_v1",
-      "message": "kind \"web_meta_robots_conflicts_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_mixed_content_v1",
-      "message": "kind \"web_mixed_content_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_mobile_render_quality_v1",
-      "message": "kind \"web_mobile_render_quality_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_mobile_usability_lab_v1",
-      "message": "kind \"web_mobile_usability_lab_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_near_duplicate_content_v1",
-      "message": "kind \"web_near_duplicate_content_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_nofollow_internal_links_v1",
-      "message": "kind \"web_nofollow_internal_links_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_og_image_validity_v1",
-      "message": "kind \"web_og_image_validity_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_orphan_pages_v1",
-      "message": "kind \"web_orphan_pages_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_page_weight_v1",
-      "message": "kind \"web_page_weight_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_pagination_markup_v1",
-      "message": "kind \"web_pagination_markup_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_readability_v1",
-      "message": "kind \"web_readability_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_redirect_chain_v1",
-      "message": "kind \"web_redirect_chain_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_redirect_loop_v1",
-      "message": "kind \"web_redirect_loop_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_robots_txt_health_v1",
-      "message": "kind \"web_robots_txt_health_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_search_intent_alignment_v1",
-      "message": "kind \"web_search_intent_alignment_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_security_headers_v1",
-      "message": "kind \"web_security_headers_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_serp_snippet_quality_v1",
-      "message": "kind \"web_serp_snippet_quality_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_server_error_5xx_v1",
-      "message": "kind \"web_server_error_5xx_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_sitemap_coverage_v1",
-      "message": "kind \"web_sitemap_coverage_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_sitemap_health_v1",
-      "message": "kind \"web_sitemap_health_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_social_meta_completeness_v1",
-      "message": "kind \"web_social_meta_completeness_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_soft_404_detection_v1",
-      "message": "kind \"web_soft_404_detection_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_structured_data_coverage_v1",
-      "message": "kind \"web_structured_data_coverage_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_structured_data_validity_v1",
-      "message": "kind \"web_structured_data_validity_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_temporary_redirect_usage_v1",
-      "message": "kind \"web_temporary_redirect_usage_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_text_html_ratio_v1",
-      "message": "kind \"web_text_html_ratio_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_thin_content_v1",
-      "message": "kind \"web_thin_content_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_title_duplication_v1",
-      "message": "kind \"web_title_duplication_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_title_keyword_alignment_v1",
-      "message": "kind \"web_title_keyword_alignment_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_title_length_v1",
-      "message": "kind \"web_title_length_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_title_presence_v1",
-      "message": "kind \"web_title_presence_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_tls_certificate_v1",
-      "message": "kind \"web_tls_certificate_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_ttfb_server_response_v1",
-      "message": "kind \"web_ttfb_server_response_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_url_design_quality_v1",
-      "message": "kind \"web_url_design_quality_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
-      "kind": "web_viewport_meta_v1",
-      "message": "kind \"web_viewport_meta_v1\" has no example (no kind_example row, no interim sample_data)"
-    },
-    {
-      "severity": "yellow",
-      "code": "no-example",
       "kind": "web.endpoint_family_judge.offer",
       "message": "kind \"web.endpoint_family_judge.offer\" has no example (no kind_example row, no interim sample_data)"
     },
@@ -21149,6 +21194,12 @@
     {
       "severity": "yellow",
       "code": "no-loading-component",
+      "kind": "ide_state_fields",
+      "message": "kind \"ide_state_fields\" renders but declares no loading_component, and its schema is not distinctive enough to derive one — while it streams the user really does see the shapeless generic skeleton; set metadata.loading_component to a loading-library slug"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-loading-component",
       "kind": "node_outcome",
       "message": "kind \"node_outcome\" renders but declares no loading_component, and its schema is not distinctive enough to derive one — while it streams the user really does see the shapeless generic skeleton; set metadata.loading_component to a loading-library slug"
     },
@@ -21229,6 +21280,12 @@
       "code": "no-loading-component",
       "kind": "study_tip",
       "message": "kind \"study_tip\" renders but declares no loading_component, and its schema is not distinctive enough to derive one — while it streams the user really does see the shapeless generic skeleton; set metadata.loading_component to a loading-library slug"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-loading-component",
+      "kind": "text_analysis",
+      "message": "kind \"text_analysis\" renders but declares no loading_component, and its schema is not distinctive enough to derive one — while it streams the user really does see the shapeless generic skeleton; set metadata.loading_component to a loading-library slug"
     },
     {
       "severity": "yellow",
@@ -21791,6 +21848,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "calculation_result",
+      "message": "kind \"calculation_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "categorization_result",
       "message": "kind \"categorization_result\" has no render_block skill teaching it"
     },
@@ -21815,8 +21878,50 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "cms_asset_result",
+      "message": "kind \"cms_asset_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "cms_collection_result",
+      "message": "kind \"cms_collection_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "cms_component_result",
+      "message": "kind \"cms_component_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "cms_data_result",
+      "message": "kind \"cms_data_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "cms_inspect_report",
+      "message": "kind \"cms_inspect_report\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "cms_page_build",
       "message": "kind \"cms_page_build\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "cms_page_candidates",
+      "message": "kind \"cms_page_candidates\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "cms_page_result",
+      "message": "kind \"cms_page_result\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -21829,6 +21934,12 @@
       "code": "no-skill",
       "kind": "cms_reconcile_report",
       "message": "kind \"cms_reconcile_report\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "cms_site_result",
+      "message": "kind \"cms_site_result\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -22475,6 +22586,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "follow_up_question",
+      "message": "kind \"follow_up_question\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "formatted_datetime",
       "message": "kind \"formatted_datetime\" has no render_block skill teaching it"
     },
@@ -22591,6 +22708,12 @@
       "code": "no-skill",
       "kind": "human_text_answer",
       "message": "kind \"human_text_answer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "ide_state_fields",
+      "message": "kind \"ide_state_fields\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -22819,6 +22942,12 @@
       "code": "no-skill",
       "kind": "markdown",
       "message": "kind \"markdown\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "market_listing",
+      "message": "kind \"market_listing\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -23375,6 +23504,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "podcast.legacy_script_stage.offer",
+      "message": "kind \"podcast.legacy_script_stage.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "podcast.live_rewrite.offer",
       "message": "kind \"podcast.live_rewrite.offer\" has no render_block skill teaching it"
     },
@@ -23483,6 +23618,18 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "product_image",
+      "message": "kind \"product_image\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "product_knowledge_item",
+      "message": "kind \"product_knowledge_item\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "proof_attestation",
       "message": "kind \"proof_attestation\" has no render_block skill teaching it"
     },
@@ -23497,6 +23644,12 @@
       "code": "no-skill",
       "kind": "proof_recording",
       "message": "kind \"proof_recording\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "proof_runs.judge_case.offer",
+      "message": "kind \"proof_runs.judge_case.offer\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -23755,6 +23908,18 @@
       "code": "no-skill",
       "kind": "research.topic_setup.offer",
       "message": "kind \"research.topic_setup.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "resell_analysis",
+      "message": "kind \"resell_analysis\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "resell_research_report",
+      "message": "kind \"resell_research_report\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -24245,6 +24410,12 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "seo.site_evidence.offer",
+      "message": "kind \"seo.site_evidence.offer\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "seo.site_intake.offer",
       "message": "kind \"seo.site_intake.offer\" has no render_block skill teaching it"
     },
@@ -24271,6 +24442,12 @@
       "code": "no-skill",
       "kind": "serp_placement",
       "message": "kind \"serp_placement\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "shell_execution",
+      "message": "kind \"shell_execution\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -24373,6 +24550,12 @@
       "code": "no-skill",
       "kind": "template_render_result",
       "message": "kind \"template_render_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "text_analysis",
+      "message": "kind \"text_analysis\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
@@ -25421,8 +25604,32 @@
     {
       "severity": "yellow",
       "code": "no-skill",
+      "kind": "wheel_choice",
+      "message": "kind \"wheel_choice\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "wheel_image",
+      "message": "kind \"wheel_image\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "wheel_spin_result",
+      "message": "kind \"wheel_spin_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
       "kind": "word_count_result",
       "message": "kind \"word_count_result\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "word_frequency",
+      "message": "kind \"word_frequency\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",
