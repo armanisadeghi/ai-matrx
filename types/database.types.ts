@@ -21116,7 +21116,6 @@ export type Database = {
           organization_id: string
           public_key: string
           retired_at: string | null
-          secret_key: string
           updated_at: string
           updated_by: string | null
           version: number
@@ -21135,7 +21134,6 @@ export type Database = {
           organization_id: string
           public_key: string
           retired_at?: string | null
-          secret_key: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -21154,7 +21152,6 @@ export type Database = {
           organization_id?: string
           public_key?: string
           retired_at?: string | null
-          secret_key?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -27390,10 +27387,8 @@ export type Database = {
         Row: {
           actor_id: string | null
           actor_type: string
-          applicability_facts: Json
           as_of_date: string
           calculation_kind: string
-          clamps: Json
           computed_at: string
           created_at: string
           created_by: string | null
@@ -27401,14 +27396,11 @@ export type Database = {
           engine_key: string
           engine_version: string
           id: string
-          inputs: Json
           jurisdiction_key: string
           metadata: Json
           organization_id: string
-          outputs: Json
           prospective: boolean
           recalculation_batch_id: string | null
-          resolution: Json
           subject_id: string
           subject_type: string
           superseded_by_id: string | null
@@ -27420,10 +27412,8 @@ export type Database = {
         Insert: {
           actor_id?: string | null
           actor_type: string
-          applicability_facts?: Json
           as_of_date: string
           calculation_kind: string
-          clamps?: Json
           computed_at?: string
           created_at?: string
           created_by?: string | null
@@ -27431,14 +27421,11 @@ export type Database = {
           engine_key: string
           engine_version: string
           id?: string
-          inputs?: Json
           jurisdiction_key: string
           metadata?: Json
           organization_id: string
-          outputs?: Json
           prospective?: boolean
           recalculation_batch_id?: string | null
-          resolution?: Json
           subject_id: string
           subject_type: string
           superseded_by_id?: string | null
@@ -27450,10 +27437,8 @@ export type Database = {
         Update: {
           actor_id?: string | null
           actor_type?: string
-          applicability_facts?: Json
           as_of_date?: string
           calculation_kind?: string
-          clamps?: Json
           computed_at?: string
           created_at?: string
           created_by?: string | null
@@ -27461,14 +27446,11 @@ export type Database = {
           engine_key?: string
           engine_version?: string
           id?: string
-          inputs?: Json
           jurisdiction_key?: string
           metadata?: Json
           organization_id?: string
-          outputs?: Json
           prospective?: boolean
           recalculation_batch_id?: string | null
-          resolution?: Json
           subject_id?: string
           subject_type?: string
           superseded_by_id?: string | null
@@ -29864,7 +29846,6 @@ export type Database = {
           actor_token_id: string | null
           actor_type: string
           actor_user_id: string | null
-          application_id: string | null
           collected_at: string
           collection_surface: string
           created_at: string
@@ -29872,14 +29853,12 @@ export type Database = {
           declined_to_answer: boolean
           deleted_at: string | null
           disability_status_category_id: string | null
-          employment_id: string | null
           ethnicity_category_id: string | null
           gender_category_id: string | null
           id: string
           legal_hold_count: number
           metadata: Json
           organization_id: string
-          posting_id: string | null
           race_category_ids: string[]
           record_class_key: string
           retention_trigger_at: string | null
@@ -29899,7 +29878,6 @@ export type Database = {
           actor_token_id?: string | null
           actor_type: string
           actor_user_id?: string | null
-          application_id?: string | null
           collected_at?: string
           collection_surface?: string
           created_at?: string
@@ -29907,14 +29885,12 @@ export type Database = {
           declined_to_answer?: boolean
           deleted_at?: string | null
           disability_status_category_id?: string | null
-          employment_id?: string | null
           ethnicity_category_id?: string | null
           gender_category_id?: string | null
           id?: string
           legal_hold_count?: number
           metadata?: Json
           organization_id: string
-          posting_id?: string | null
           race_category_ids?: string[]
           record_class_key?: string
           retention_trigger_at?: string | null
@@ -29934,7 +29910,6 @@ export type Database = {
           actor_token_id?: string | null
           actor_type?: string
           actor_user_id?: string | null
-          application_id?: string | null
           collected_at?: string
           collection_surface?: string
           created_at?: string
@@ -29942,14 +29917,12 @@ export type Database = {
           declined_to_answer?: boolean
           deleted_at?: string | null
           disability_status_category_id?: string | null
-          employment_id?: string | null
           ethnicity_category_id?: string | null
           gender_category_id?: string | null
           id?: string
           legal_hold_count?: number
           metadata?: Json
           organization_id?: string
-          posting_id?: string | null
           race_category_ids?: string[]
           record_class_key?: string
           retention_trigger_at?: string | null
@@ -30304,16 +30277,12 @@ export type Database = {
           legal_hold_count: number
           mailing_address: Json
           metadata: Json
-          national_id_ciphertext: string | null
           national_id_kind: string | null
           organization_id: string
           personal_email: string | null
           personal_phone: string | null
           record_class_key: string
           retention_trigger_at: string | null
-          ssn_ciphertext: string | null
-          ssn_hmac: string | null
-          ssn_key_id: string | null
           ssn_last4: string | null
           updated_at: string
           updated_by: string | null
@@ -30334,16 +30303,12 @@ export type Database = {
           legal_hold_count?: number
           mailing_address?: Json
           metadata?: Json
-          national_id_ciphertext?: string | null
           national_id_kind?: string | null
           organization_id: string
           personal_email?: string | null
           personal_phone?: string | null
           record_class_key?: string
           retention_trigger_at?: string | null
-          ssn_ciphertext?: string | null
-          ssn_hmac?: string | null
-          ssn_key_id?: string | null
           ssn_last4?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -30364,16 +30329,12 @@ export type Database = {
           legal_hold_count?: number
           mailing_address?: Json
           metadata?: Json
-          national_id_ciphertext?: string | null
           national_id_kind?: string | null
           organization_id?: string
           personal_email?: string | null
           personal_phone?: string | null
           record_class_key?: string
           retention_trigger_at?: string | null
-          ssn_ciphertext?: string | null
-          ssn_hmac?: string | null
-          ssn_key_id?: string | null
           ssn_last4?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -30414,7 +30375,6 @@ export type Database = {
           created_by: string | null
           dba_name: string | null
           deleted_at: string | null
-          ein: string
           entity_form: string | null
           everify_required_states: string[]
           formation_state: string | null
@@ -30443,7 +30403,6 @@ export type Database = {
           created_by?: string | null
           dba_name?: string | null
           deleted_at?: string | null
-          ein: string
           entity_form?: string | null
           everify_required_states?: string[]
           formation_state?: string | null
@@ -30472,7 +30431,6 @@ export type Database = {
           created_by?: string | null
           dba_name?: string | null
           deleted_at?: string | null
-          ein?: string
           entity_form?: string | null
           everify_required_states?: string[]
           formation_state?: string | null
@@ -30697,8 +30655,6 @@ export type Database = {
           metadata: Json
           must_reset: boolean
           organization_id: string
-          pin_algo: string
-          pin_hash: string
           pin_length: number
           revoked_at: string | null
           revoked_reason: string | null
@@ -30723,8 +30679,6 @@ export type Database = {
           metadata?: Json
           must_reset?: boolean
           organization_id: string
-          pin_algo?: string
-          pin_hash: string
           pin_length?: number
           revoked_at?: string | null
           revoked_reason?: string | null
@@ -30749,8 +30703,6 @@ export type Database = {
           metadata?: Json
           must_reset?: boolean
           organization_id?: string
-          pin_algo?: string
-          pin_hash?: string
           pin_length?: number
           revoked_at?: string | null
           revoked_reason?: string | null
@@ -31479,7 +31431,6 @@ export type Database = {
           deleted_at: string | null
           emergency_room: boolean | null
           establishment_id: string | null
-          excluded_actor_ids: string[]
           follow_up_on: string | null
           hospitalized_overnight: boolean | null
           id: string
@@ -31533,7 +31484,6 @@ export type Database = {
           deleted_at?: string | null
           emergency_room?: boolean | null
           establishment_id?: string | null
-          excluded_actor_ids?: string[]
           follow_up_on?: string | null
           hospitalized_overnight?: boolean | null
           id?: string
@@ -31587,7 +31537,6 @@ export type Database = {
           deleted_at?: string | null
           emergency_room?: boolean | null
           establishment_id?: string | null
-          excluded_actor_ids?: string[]
           follow_up_on?: string | null
           hospitalized_overnight?: boolean | null
           id?: string
@@ -32414,7 +32363,6 @@ export type Database = {
           deleted_at: string | null
           device_fingerprint: string | null
           device_name: string
-          device_secret_hash: string
           device_secret_set_at: string
           id: string
           last_seen_at: string | null
@@ -32425,7 +32373,6 @@ export type Database = {
           organization_id: string
           pairing_claimed_at: string | null
           pairing_code_expires_at: string | null
-          pairing_code_hash: string | null
           registered_by_employment_id: string | null
           require_geo: boolean
           require_photo: boolean
@@ -32444,7 +32391,6 @@ export type Database = {
           deleted_at?: string | null
           device_fingerprint?: string | null
           device_name: string
-          device_secret_hash: string
           device_secret_set_at?: string
           id?: string
           last_seen_at?: string | null
@@ -32455,7 +32401,6 @@ export type Database = {
           organization_id: string
           pairing_claimed_at?: string | null
           pairing_code_expires_at?: string | null
-          pairing_code_hash?: string | null
           registered_by_employment_id?: string | null
           require_geo?: boolean
           require_photo?: boolean
@@ -32474,7 +32419,6 @@ export type Database = {
           deleted_at?: string | null
           device_fingerprint?: string | null
           device_name?: string
-          device_secret_hash?: string
           device_secret_set_at?: string
           id?: string
           last_seen_at?: string | null
@@ -32485,7 +32429,6 @@ export type Database = {
           organization_id?: string
           pairing_claimed_at?: string | null
           pairing_code_expires_at?: string | null
-          pairing_code_hash?: string | null
           registered_by_employment_id?: string | null
           require_geo?: boolean
           require_photo?: boolean
@@ -32543,7 +32486,6 @@ export type Database = {
           override_reason: string | null
           photo_file_id: string | null
           punch_count: number
-          session_token_hash: string
           started_at: string
           updated_at: string
           updated_by: string | null
@@ -32573,7 +32515,6 @@ export type Database = {
           override_reason?: string | null
           photo_file_id?: string | null
           punch_count?: number
-          session_token_hash: string
           started_at?: string
           updated_at?: string
           updated_by?: string | null
@@ -32603,7 +32544,6 @@ export type Database = {
           override_reason?: string | null
           photo_file_id?: string | null
           punch_count?: number
-          session_token_hash?: string
           started_at?: string
           updated_at?: string
           updated_by?: string | null
@@ -33028,7 +32968,6 @@ export type Database = {
           actor_token_id: string | null
           actor_type: string
           actor_user_id: string | null
-          amount: number | null
           balance_after: number
           calc: Json
           computed_at: string
@@ -33046,7 +32985,6 @@ export type Database = {
           note: string | null
           occurred_on: string
           organization_id: string
-          rate: number | null
           reverses_entry_id: string | null
           rule_version_ids: string[]
           source_work_interval_id: string | null
@@ -33064,7 +33002,6 @@ export type Database = {
           actor_token_id?: string | null
           actor_type: string
           actor_user_id?: string | null
-          amount?: number | null
           balance_after: number
           calc?: Json
           computed_at?: string
@@ -33082,7 +33019,6 @@ export type Database = {
           note?: string | null
           occurred_on: string
           organization_id: string
-          rate?: number | null
           reverses_entry_id?: string | null
           rule_version_ids?: string[]
           source_work_interval_id?: string | null
@@ -33100,7 +33036,6 @@ export type Database = {
           actor_token_id?: string | null
           actor_type?: string
           actor_user_id?: string | null
-          amount?: number | null
           balance_after?: number
           calc?: Json
           computed_at?: string
@@ -33118,7 +33053,6 @@ export type Database = {
           note?: string | null
           occurred_on?: string
           organization_id?: string
-          rate?: number | null
           reverses_entry_id?: string | null
           rule_version_ids?: string[]
           source_work_interval_id?: string | null
@@ -35801,11 +35735,9 @@ export type Database = {
           bound_at: string
           bound_reason: string | null
           capabilities: string[]
-          connector: Json
           connector_kind: string
           created_at: string
           created_by: string | null
-          credential_ref: string | null
           deleted_at: string | null
           display_name: string
           id: string
@@ -35820,17 +35752,14 @@ export type Database = {
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
-          webhook_secret_ref: string | null
         }
         Insert: {
           bound_at?: string
           bound_reason?: string | null
           capabilities?: string[]
-          connector?: Json
           connector_kind?: string
           created_at?: string
           created_by?: string | null
-          credential_ref?: string | null
           deleted_at?: string | null
           display_name: string
           id?: string
@@ -35845,17 +35774,14 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
-          webhook_secret_ref?: string | null
         }
         Update: {
           bound_at?: string
           bound_reason?: string | null
           capabilities?: string[]
-          connector?: Json
           connector_kind?: string
           created_at?: string
           created_by?: string | null
-          credential_ref?: string | null
           deleted_at?: string | null
           display_name?: string
           id?: string
@@ -35870,7 +35796,6 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
-          webhook_secret_ref?: string | null
         }
         Relationships: []
       }
