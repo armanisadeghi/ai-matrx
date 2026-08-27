@@ -128,6 +128,14 @@ const EXPECTED_CHECKS = [
   // This one is a grep and cannot see a date laundered through a local variable — it catches the
   // copy-paste that put the pattern in seven doors, not every possible spelling of it.
   "read_authority_is_as_of_now",
+  // The finality lane (hr_l3_48). hr.punch_void enqueued no recompute and left
+  // hr.workweek.is_final = true, so a void between finality and export shipped PRE-VOID hours in
+  // the payroll file — permanently, and with the function returning `is_stale: true` while
+  // pointing at a recompute door it never called. Every writer of hr.punch must drop the flag for
+  // that week in the same transaction; only hr.recompute_apply, which re-derives the hours, may
+  // ever set it back.
+  "punch_writers_unfinalize_their_week",
+  "only_recompute_marks_a_week_final",
 ] as const;
 
 interface ConformanceRow {
