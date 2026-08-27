@@ -33,6 +33,12 @@
  *   pnpm check:hr-punch-write-path            # loud, exit 0
  *   pnpm check:hr-punch-write-path:strict     # exit 1 on ANY finding (CI/release)
  *
+ * WHERE THE STRICT LANE RUNS: .github/workflows/ci.yml, job `hr-punch`, on
+ * every PR/push (credential-gated; UNMEASURED without the secret is a hard
+ * fail). release.sh runs the release gates `--advisory || true`, so the CI job
+ * is the only invocation that can actually block — deleting it re-opens
+ * HRB-015, and check-doc-claims.ts's `per-pr-ci` claim guards against that.
+ *
  * 🚨 UNMEASURED IS NOT PASSED. Two degenerate outcomes are treated as FAILURES,
  * never as a green light:
  *   1. The live pull failed (no creds, DB unreachable, RPC missing/revoked) —

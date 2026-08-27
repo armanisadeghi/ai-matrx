@@ -316,11 +316,12 @@ else
         # HR PUNCH WRITE PATH — BLOCKING in --strict (see the strict list above for
         # why RLS does not prevent a client-direct `insert into hr.punch`). Listed
         # here with `:strict` ON PURPOSE for the same reason component-created-by
-        # is below: release.sh runs THIS list (`--advisory || true`) and nothing in
-        # the repo runs --strict automatically, so a bare invocation would exit 0
-        # and print a silent green [OK]. With `:strict` the checker exits 1,
-        # run_gate prints a red [FAIL] with the offenders, and advisory mode still
-        # exits 0 — scream, never block.
+        # is below: release.sh runs THIS list (`--advisory || true`), so a bare
+        # invocation would exit 0 and print a silent green [OK]. With `:strict`
+        # the checker exits 1, run_gate prints a red [FAIL] with the offenders,
+        # and advisory mode still exits 0 — scream, never block. The lane that
+        # actually FAILS is per-PR CI: ci.yml's `hr-punch` job runs
+        # check:hr-punch-write-path:strict on every PR/push (HRB-015, 2026-08-26).
         "HR punch write path (client-direct insert into hr.punch)|pnpm check:hr-punch-write-path:strict"
         # Time-bounded DDL that can expire on the calendar — partition runway,
         # catch-all partitions that started receiving rows, stalled pg_cron

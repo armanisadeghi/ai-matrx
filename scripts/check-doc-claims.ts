@@ -388,7 +388,7 @@ const claims: Claim[] = [
   },
   {
     id: "per-pr-ci",
-    claim: "per-PR CI runs the marker law, the one-type law, the Kind Directives shim containment, org context, type-check, and the content-IR + workflow-runtime suites",
+    claim: "per-PR CI runs the marker law, the one-type law, the Kind Directives shim containment, the HR punch write-path strict lane, org context, type-check, and the content-IR + workflow-runtime suites",
     where: "CLAUDE.md § Repo doctrine (Nothing runs at commit time)",
     check: () => {
       // The claim in CLAUDE.md is now the opposite of what it used to be: for
@@ -403,6 +403,11 @@ const claims: Claim[] = [
         "check:kind-marker-law",
         "check:kind-type-twins",
         "check:kind-types",
+        // The strict lane of the hr.punch write-path gate. release.sh runs the
+        // release gates `--advisory || true`, so this CI step is the ONLY
+        // invocation that can actually fail — deleting it silently re-opens
+        // HRB-015 (a "blocking" gate invoked by nothing).
+        "check:hr-punch-write-path:strict",
         "check:legacy-shim-containment",
         "check:organization-context",
         "pnpm type-check",

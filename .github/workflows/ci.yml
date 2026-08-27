@@ -115,6 +115,48 @@ jobs:
           pnpm check:kind-types
 
   # ---------------------------------------------------------------------------
+  # hr-punch — the STRICT lane of the HR punch write-path conformance gate.
+  # hr.punch is a `component` table, so RLS admits any parent-editor insert;
+  # what actually holds the door is structural and live-only (hr absent from
+  # PostgREST's exposed schemas, zero anon grants, an enumerated set of
+  # sanctioned SECURITY DEFINER writers with pinned search_paths) — facts tsc
+  # and code review cannot see. SPEC-TIME §15 named wiring that query into CI
+  # as the only thing standing between us and a client-direct insert path.
+  #
+  # Until 2026-08-26 the `:strict` variant was invoked by NOTHING: release.sh
+  # runs run-release-gates.sh `--advisory || true`, so the "blocking" gate
+  # screamed and blocked nothing (HRB-015; same family as the component-
+  # created-by gate that hid 229 violations behind a green [OK]). This job is
+  # the strict lane. Credential-gated like kind-registry above, and for the
+  # same reason it hard-fails as UNMEASURED when the secret is absent: the
+  # checker treats an unreachable DB or an empty/short result as a finding,
+  # never as a pass. Falsifiability proven 2026-08-26: a planted unsanctioned
+  # inserter function made `--strict` exit 1 naming it; dropped, green again.
+  # ---------------------------------------------------------------------------
+  hr-punch:
+    name: HR punch write path (UNMEASURED without the secret)
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: No client-direct insert path into hr.punch
+        run: |
+          if [ -z "$SUPABASE_SECRET_KEY" ]; then
+            echo "::error title=UNMEASURED — the hr.punch write path was NOT verified::SUPABASE_SECRET_KEY is not configured for this repo, so pnpm check:hr-punch-write-path:strict could not run and a client-direct insert path into hr.punch may exist unnoticed. This job reports UNMEASURED, never success: a gate that cannot reach its dependency fails, it does not degrade to a warning that reads as a pass (THE STRICTNESS LAW clause 7). Fix: add the SUPABASE_SECRET_KEY and NEXT_PUBLIC_SUPABASE_URL repo secrets."
+            exit 2
+          fi
+          pnpm check:hr-punch-write-path:strict
+
+  # ---------------------------------------------------------------------------
   # type-check — `next.config.js` sets `ignoreBuildErrors: true`, so a green
   # build proves NOTHING about types and Vercel will happily deploy a repo full
   # of type errors. `pnpm type-check` is the only type gate this repo has.
