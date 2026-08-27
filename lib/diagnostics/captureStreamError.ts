@@ -261,6 +261,8 @@ export interface StreamClientErrorInput {
   kind?: string;
   conversationId?: string;
   requestId?: string;
+  /** Original throw, used to suppress a parser-level duplicate capture. */
+  cause?: unknown;
 }
 
 /**
@@ -270,6 +272,8 @@ export interface StreamClientErrorInput {
  */
 export function captureStreamClientError(input: StreamClientErrorInput): void {
   try {
+    if (wasStreamErrorCaptured(input.cause)) return;
+    const { cause: _cause, ...capturedInput } = input;
     captureError({
       source: "agent-stream-client-error",
       relation: input.kind ? `stream:${input.kind}` : "stream",
@@ -279,7 +283,7 @@ export function captureStreamClientError(input: StreamClientErrorInput): void {
       name: input.name,
       conversationId: input.conversationId,
       requestId: input.requestId,
-      raw: input,
+      raw: capturedInput,
     });
   } catch {
     /* never break error handling */

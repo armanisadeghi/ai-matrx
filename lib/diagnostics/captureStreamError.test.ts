@@ -3,6 +3,7 @@ import {
   getSnapshot,
 } from "@/lib/diagnostics/errorCaptureStore";
 import {
+  captureStreamClientError,
   captureStreamTransportError,
   wasStreamErrorCaptured,
 } from "@/lib/diagnostics/captureStreamError";
@@ -52,5 +53,28 @@ describe("captureStreamTransportError", () => {
     expect(wasStreamErrorCaptured(new Error("something else"))).toBe(false);
     expect(wasStreamErrorCaptured(undefined)).toBe(false);
     expect(wasStreamErrorCaptured("network error")).toBe(false);
+  });
+
+  it("does not recapture a parser-recorded transport loss at the stream runner", () => {
+    const error = new BackendApiError({
+      code: "stream_transport_lost",
+      detail: "network error",
+      userMessage: "The connection dropped. Reconnecting now.",
+    });
+
+    captureStreamTransportError(error, { conversationId: "conv-1" });
+    captureStreamClientError({
+      cause: error,
+      errorType: "transport_lost",
+      message: error.message,
+      conversationId: "conv-1",
+      requestId: "request-1",
+    });
+
+    expect(getSnapshot()).toHaveLength(1);
+    expect(getSnapshot()[0]).toMatchObject({
+      source: "agent-stream-transport",
+      code: "stream_transport_lost",
+    });
   });
 });

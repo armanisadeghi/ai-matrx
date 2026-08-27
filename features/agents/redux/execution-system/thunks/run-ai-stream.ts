@@ -665,6 +665,7 @@ export async function runAiStream(
     // total-timeout, fetch failure) is a server-origin failure the admin wants
     // to see, but it arrives as a thrown exception, not a stream event.
     captureStreamClientError({
+      cause: error,
       errorType,
       message,
       userMessage: isConnectionLoss ? connectionLossMessage : undefined,
