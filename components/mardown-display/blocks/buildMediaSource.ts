@@ -30,25 +30,34 @@ export function pickStr(v: unknown): string | undefined {
 
 /**
  * Build the strongest `FileSource` from a media block's `serverData`.
- * Identity (`file_id`) beats opaque URLs so the handler always picks the
- * durable lane when possible. Returns null when nothing resolvable — a part
- * carrying no `file_id` and no usable URL has no client-renderable source.
+ * A permanent Matrx CDN URL wins because public media needs no authenticated
+ * hop. Otherwise identity (`file_id`) beats opaque URLs so the handler can
+ * resolve the durable authenticated lane. Expiring URLs are never rendered.
  */
 export function buildMediaSource(
   sd: Record<string, unknown>,
   mime?: string,
 ): FileSource | null {
-  const directId = pickStr(sd.fileId) ?? pickStr(sd.file_id);
-  if (directId && UUID_RE.test(directId)) {
-    return { kind: "file_id", fileId: directId, mime };
-  }
-
   const urlish = [
     pickStr(sd.cdnUrl) ?? pickStr(sd.cdn_url),
     pickStr(sd.downloadUrl) ?? pickStr(sd.download_url),
     pickStr(sd.url) ?? pickStr(sd.file_url),
     pickStr(sd.externalUrl) ?? pickStr(sd.external_url),
   ].filter((u): u is string => !!u);
+
+  // Public Matrx media should render straight from the permanent CDN. Older
+  // persisted audio/video parts put this URL in `url` rather than `cdn_url`,
+  // so recognize the canonical host in every URL slot. Never classify a
+  // signed URL as public even if a malformed producer put it on that host.
+  const publicCdn = urlish.find(isPermanentMatrxCdnUrl);
+  if (publicCdn) {
+    return { kind: "public_cdn", url: publicCdn, mime };
+  }
+
+  const directId = pickStr(sd.fileId) ?? pickStr(sd.file_id);
+  if (directId && UUID_RE.test(directId)) {
+    return { kind: "file_id", fileId: directId, mime };
+  }
 
   // 1. Last-resort identity recovery, scoped to OUR OWN user-files S3 host
   //    (`…/{user_id}/{file_id}?…`). Producers now carry `file_id` explicitly
@@ -68,10 +77,18 @@ export function buildMediaSource(
   const durable = urlish.find((u) => isDurableMediaUrl(u));
   if (durable) return { kind: "external_url", url: durable, mime };
 
-  // 3. Last resort: an expiring URL with no recoverable identity. Still try to
-  //    play it (the durability gap is a tracked known defect).
-  const last = urlish[0];
-  if (last) return { kind: "external_url", url: last, mime };
-
+  // An expiring URL with no recoverable identity is intentionally unusable.
+  // Rendering it would expose a signed bearer credential and guarantee a
+  // broken historical message after expiry. Producers must provide file_id or
+  // a permanent URL.
   return null;
+}
+
+function isPermanentMatrxCdnUrl(url: string): boolean {
+  if (!isDurableMediaUrl(url)) return false;
+  try {
+    return /(^|\.)cdn\.matrxserver\.com$/i.test(new URL(url).hostname);
+  } catch {
+    return false;
+  }
 }

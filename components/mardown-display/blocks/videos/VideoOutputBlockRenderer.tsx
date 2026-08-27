@@ -42,7 +42,7 @@ const VideoOutputBlockRenderer: React.FC<VideoOutputBlockRendererProps> = ({
   const ref =
     source.kind === "file_id"
       ? fileIdToMediaRef(source.fileId, mime)
-      : source.kind === "external_url"
+      : source.kind === "external_url" || source.kind === "public_cdn"
         ? urlToMediaRef(source.url, mime)
         : null;
   if (!ref) return null;

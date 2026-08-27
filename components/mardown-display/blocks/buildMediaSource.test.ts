@@ -16,7 +16,7 @@ describe("buildMediaSource", () => {
     });
   });
 
-  it("prefers an explicit file_id over any URL on the block", () => {
+  it("prefers an explicit file_id over a non-Matrx URL on the block", () => {
     expect(
       buildMediaSource(
         {
@@ -30,6 +30,35 @@ describe("buildMediaSource", () => {
       fileId: "11111111-2222-3333-4444-555555555555",
       mime: "audio/mpeg",
     });
+  });
+
+  it("prefers the permanent Matrx CDN for a public file over its file_id", () => {
+    const url =
+      "https://cdn.matrxserver.com/owner/11111111-2222-3333-4444-555555555555?v=abc123";
+    expect(
+      buildMediaSource(
+        {
+          file_id: "11111111-2222-3333-4444-555555555555",
+          url,
+        },
+        "video/mp4",
+      ),
+    ).toEqual({
+      kind: "public_cdn",
+      url,
+      mime: "video/mp4",
+    });
+  });
+
+  it("never renders an unrecoverable signed URL", () => {
+    expect(
+      buildMediaSource(
+        {
+          url: "https://third-party.example/video.mp4?X-Amz-Signature=secret&X-Amz-Expires=60",
+        },
+        "video/mp4",
+      ),
+    ).toBeNull();
   });
 
   it("does NOT invent a file_id from a durable public URL that merely ends in a uuid", () => {
