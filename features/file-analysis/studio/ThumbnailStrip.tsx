@@ -219,7 +219,7 @@ function ThumbnailItem({
           aria-label={
             excluded ? "Include in extraction" : "Exclude from extraction"
           }
-          className="ml-auto flex items-center justify-center opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 disabled:opacity-100 max-lg:h-11 max-lg:w-11 max-lg:opacity-100"
+          className="ml-auto flex items-center justify-center opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100 disabled:opacity-100 max-lg:h-11 max-lg:min-w-11 max-lg:shrink-0 max-lg:opacity-100"
           title={excluded ? "Include in extraction" : "Exclude from extraction"}
         >
           {toggling ? (

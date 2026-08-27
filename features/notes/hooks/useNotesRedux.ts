@@ -168,7 +168,7 @@ export function useNotesRedux() {
 
   const copyNoteFn = useCallback(
     async (id: string): Promise<Note> => {
-      return await dispatch(copyNoteThunk(id)).unwrap();
+      return await dispatch(copyNoteThunk({ noteId: id })).unwrap();
     },
     [dispatch],
   );

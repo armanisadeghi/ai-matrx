@@ -550,12 +550,13 @@ export const deleteNote = createAsyncThunk<void, string>(
 
 /**
  * Duplicate a note. Creates a new note with the same content, tags, folder,
- * and label + " (Copy)". The invoking Notes instance owns opening/focusing
- * the returned row; this thunk must not write the retired global tab state.
+ * and label + " (Copy)". Live Notes surfaces pass their instance id so the
+ * copy opens in the actual tab strip. The optional fallback preserves the
+ * legacy useNotesRedux contract until that zero-mounter shell is retired.
  */
 export const copyNote = createAsyncThunk<
   Note,
-  { noteId: string; instanceId: string }
+  { noteId: string; instanceId?: string }
 >("notes/copyNote", async ({ noteId, instanceId }, { dispatch, getState }) => {
   const state = getState() as RootState;
   const record = state.notes.notes[noteId] as NoteRecord | undefined;
@@ -605,9 +606,14 @@ export const copyNote = createAsyncThunk<
       fetchStatus: "full",
     }),
   );
-  dispatch(markTabInteraction({ instanceId }));
-  dispatch(addInstanceTab({ instanceId, noteId: note.id }));
-  dispatch(setInstanceActiveTab({ instanceId, noteId: note.id }));
+  if (instanceId) {
+    dispatch(markTabInteraction({ instanceId }));
+    dispatch(addInstanceTab({ instanceId, noteId: note.id }));
+    dispatch(setInstanceActiveTab({ instanceId, noteId: note.id }));
+  } else {
+    dispatch(addTab(note.id));
+    dispatch(setActiveNote(note.id));
+  }
 
   return note;
 });

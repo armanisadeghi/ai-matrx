@@ -72,6 +72,13 @@ export function useOpenArtifactInCanvas() {
             artifactId: result.artifactId,
             type: input.canvasType,
             metadata: {
+              // Caller extras first — per-type render options (mermaid theme /
+              // look / layout), AI-rail intent, anything a renderer needs. They
+              // used to be passed to persistence and then dropped on the floor
+              // here, which is why type-specific blocks kept their own bespoke
+              // `openCanvas` opener instead of using this canonical one.
+              ...input.metadata,
+              // Identity always wins over caller extras.
               title: input.title,
               canvasItemId: result.artifactId,
               conversationId: input.conversationId ?? undefined,
