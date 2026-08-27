@@ -1065,18 +1065,14 @@ export function fetchHrMyCompensation(args: {
     currency: string | null;
   }>
 > {
-  // 🚨 THIS DOOR IS NOT SHIPPED. Verified 2026-08-27 against `pg_proc` on the live
-  // database: there is NO `public.hr_my_compensation`, under any signature. The call
-  // therefore returns PGRST202 "function not found", which `callHrRaw` turns into a
-  // `failed` result — so the type below describes the envelope this door WILL send,
-  // not one that has ever been observed. It is a specification, and it is the only
-  // wrapper in this file that is not backed by a live door.
-  //
-  // This one has NO callers at all — route 5's pay surface reads its own context. It is kept
-  // rather than deleted because SPEC-EMPLOYEES §5 specifies the surface and this is the agreed
-  // shape for it; if route 5 ships reading something else, delete this instead of adapting it.
-  // Do NOT read this as verified-aligned; when the door ships, call it against real
-  // data and either confirm the shape or map it.
+  // verified aligned 2026-08-27 — the door SHIPPED and was called live. Success envelope
+  // is {granted, as_of, current, history, currency, audit_id}; `granted` is stripped by
+  // the envelope and `audit_id` is the one field it sends that this type does not name.
+  // Both refusal arms were exercised against real employments: `not_self` (this is the
+  // self lane only — somebody else's pay is a different, audited read about a different
+  // person) and `no_record`, which is exactly the volunteer case the header describes:
+  // no pay record means a refusal and an ABSENT nav item, never an empty pay page.
+  // VOLATILE and it audits, so F1's class stays closed.
   return callHrAligned(
     "hr_my_compensation",
     { p_employment_id: args.employmentId, p_as_of: args.asOf ?? null },
@@ -1112,18 +1108,11 @@ export function fetchHrEmployeeByParty(args: {
     hire_date: string | null;
   }>
 > {
-  // 🚨 THIS DOOR IS NOT SHIPPED. Verified 2026-08-27 against `pg_proc` on the live
-  // database: there is NO `public.hr_employee_by_party`, under any signature. The call
-  // therefore returns PGRST202 "function not found", which `callHrRaw` turns into a
-  // `failed` result — so the type below describes the envelope this door WILL send,
-  // not one that has ever been observed. It is a specification, and it is the only
-  // wrapper in this file that is not backed by a live door.
-  //
-  // `PartyEmployeeCard` (D5) calls this and handles the failure correctly — its own comment
-  // names "a door that is not live" as one of the cases that resolve to NOTHING, so the CRM
-  // party surface renders the card ABSENT rather than broken. §1.3's correct fallback.
-  // Do NOT read this as verified-aligned; when the door ships, call it against real
-  // data and either confirm the shape or map it.
+  // verified aligned 2026-08-27 — the door SHIPPED and was called live against a real CRM
+  // party. It returned exactly {employee_id, display_name, directory_status, job_title,
+  // department, manager_employee_id, manager_name, hire_date} plus `granted`, which the
+  // envelope strips: a field-for-field match with the type below, in both directions.
+  // Directory tier only, as §4.5 requires — nothing confidential reaches a CRM surface.
   return callHrAligned(
     "hr_employee_by_party",
     { p_organization_id: args.organizationId, p_party_id: args.partyId },
@@ -1157,17 +1146,15 @@ export function fetchHrMemberEmployeeLinks(args: {
     can_link: boolean;
   }>
 > {
-  // 🚨 THIS DOOR IS NOT SHIPPED. Verified 2026-08-27 against `pg_proc` on the live
-  // database: there is NO `public.hr_member_employee_links`, under any signature. The call
-  // therefore returns PGRST202 "function not found", which `callHrRaw` turns into a
-  // `failed` result — so the type below describes the envelope this door WILL send,
-  // not one that has ever been observed. It is a specification, and it is the only
-  // wrapper in this file that is not backed by a live door.
+  // verified aligned 2026-08-27 — the door SHIPPED and was called live with real user ids.
+  // Envelope {granted, links, can_link}; each link is exactly {user_id, employee_id,
+  // display_name, directory_status, marked_not_employee}.
   //
-  // `MemberEmployeeSeam` calls this and renders the seam ABSENT until the door ships — which
-  // its own header already says is the correct fallback under §1.3.
-  // Do NOT read this as verified-aligned; when the door ships, call it against real
-  // data and either confirm the shape or map it.
+  // 🚨 `marked_not_employee` IS FALSE FOR EVERYONE, BY DESIGN, UNTIL ITS STORE SHIPS.
+  // Nothing records the "this member is deliberately not an employee" decision yet, so the
+  // door answers the only honest thing it can. The seam's "Not an employee" branch is
+  // therefore DOCUMENTED-UNREACHABLE, not broken — do not "fix" it by inferring the flag
+  // from a null `employee_id`, which would state a decision nobody made.
   return callHrAligned(
     "hr_member_employee_links",
     { p_organization_id: args.organizationId, p_user_ids: args.userIds },
