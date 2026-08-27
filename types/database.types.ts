@@ -4398,6 +4398,7 @@ export type Database = {
       }
     }
     Functions: {
+      broken_functions_snapshot_age: { Args: never; Returns: string }
       classify_broken_function: {
         Args: {
           p_func_oid: unknown
@@ -4414,6 +4415,7 @@ export type Database = {
         Args: { p_proconfig: string[] }
         Returns: string
       }
+      function_broken_live: { Args: { p_func_oid: unknown }; Returns: boolean }
       is_m2m_shape: { Args: { p_rel: unknown }; Returns: boolean }
       probe_library_grant_publish: { Args: never; Returns: number }
       refresh: { Args: never; Returns: string }
