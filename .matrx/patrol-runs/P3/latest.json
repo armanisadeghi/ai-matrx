@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "2026-08-17T131440Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-17T13:35:37.418Z",
-  "summary": "Certified P3 mobile-friendly repair batch queued for fast integration with exact candidate ancestry preserved.",
+  "state": "delivered",
+  "updatedAt": "2026-08-27T13:17:28.504Z",
+  "summary": "Delivered certified P3 candidate through main and the serialized release lane.",
   "source": "2026-08-17T131440Z.json",
-  "eventHash": "c0b07e33ae62d4ba6eee47b6161c6791f9f12bb04cc2975bf47b52d00b726c7e"
+  "eventHash": "ef3938287142176b52d394d36b45ae3ccbdc867fbca5ec3912c5a99a70cf7d3f"
 }
