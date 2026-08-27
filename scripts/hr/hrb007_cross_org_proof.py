@@ -1,4 +1,4 @@
-"""HRB-007 CROSS-ORG CAPABILITY PROOF — the tenant boundary in hr.capability, proven live.
+"""HRB-007 ACCESS-BOUNDARY PROOF — the tenant boundary AND the write-guard scope, proven live.
 
 Run:  cd /Users/armanisadeghi/code/aidream && .venv/bin/python \
         /Users/armanisadeghi/code/matrx-frontend/scripts/hr/hrb007_cross_org_proof.py
@@ -11,7 +11,16 @@ ssn.reveal over org B's employments, and `hr_confidential_get` handed over org B
 the L3 punch builder, reproduced, and closed in migration
 `hr_c3_13_cross_org_capability_boundary` by enforcing the boundary INSIDE both functions.
 
-This is the permanent regression test for that boundary. It builds a complete employment in a
+PHASE 2 covers the write-guard scope, the other boundary this lane owns, re-sighted independently
+by the L10 inbox proof and by HRB-008's sixth finding. `hr.privileged_write` is set with
+is_local = true, which Postgres scopes to the TRANSACTION, not the statement — so a definer call
+used to leave the guard disarmed for the rest of it. `hr.arm_write()` now issues a statement-scoped,
+unforgeable token, and — the part L10 measured — it NEVER overwrites a caller's existing legacy arm,
+because writing `hr.employment` fires the derivation trigger, which arms internally, and a callee
+that downgrades its caller refuses the caller's NEXT write. Both directions are asserted here: the
+arm must not survive its statement, and it must not be degraded by a callee.
+
+This is the permanent regression test for both boundaries. It builds a complete employment in a
 SECOND tenant inside ONE transaction that is ALWAYS ROLLED BACK, aims every capability an org-A
 owner holds at it, and asserts every one is refused — plus the control, that org-A standing still
 works inside org A. A green run means the boundary is enforced; a red run means it is not.
@@ -241,4 +250,73 @@ async def main():
         await conn.close()
 
 
+async def phase2():
+    """The write-guard scope. Issued as SEPARATE statements in ONE transaction, because that is
+    what a real caller does — and because a DO block cannot show it: a DO block IS one statement,
+    so a statement-scoped token stays valid for its whole body (which is exactly what lets
+    hr_activate_employer write six tables under one arm)."""
+    ORG = "f9cb3e35-2a65-4f2a-8525-088d6551071c"
+    conn = await asyncpg.connect(**DSN)
+    tx = conn.transaction()
+    await tx.start()
+    out = []
+    try:
+        # ---- the arm must not survive its statement
+        await conn.fetchval(
+            "with a as (select hr.arm_write()) "
+            "insert into hr.job_title (organization_id, title, code, eeo1_job_category) "
+            "select $1,'Guard probe A','GPA','professionals' from a returning id", ORG)
+        out.append(("a privileged write inside ONE statement succeeds", True))
+        await conn.execute("savepoint sp1")
+        try:
+            await conn.execute(
+                "insert into hr.job_title (organization_id, title, code, eeo1_job_category) "
+                "values ($1,'Guard probe B','GPB','professionals')", ORG)
+            out.append(("a subsequent same-transaction direct write is REFUSED", False))
+        except asyncpg.PostgresError as e:
+            await conn.execute("rollback to savepoint sp1")
+            out.append((f"a subsequent same-transaction direct write is REFUSED ({e.sqlstate})", True))
+
+        # ---- and a callee must not degrade its caller's legacy arm
+        await conn.execute("select set_config('hr.privileged_write','on',false)")
+        pty = await conn.fetchval("insert into crm.party (organization_id, party_kind, display_name) "
+                                  "values ($1,'person','Guard probe') returning id", ORG)
+        prof = await conn.fetchval("insert into hr.employer_profile (organization_id, legal_name, ein) "
+                                   "values ($1,'Guard Co','00-0000000') returning id", ORG)
+        emp = await conn.fetchval(
+            "insert into hr.employee (organization_id, party_id, employee_number, legal_first_name, "
+            "legal_last_name, display_name) values ($1,$2,'GP-1','G','Probe','G Probe') returning id", ORG, pty)
+        await conn.execute(
+            "insert into hr.employment (organization_id, employee_id, employer_profile_id, hire_date, status) "
+            "values ($1,$2,$3,current_date-10,'active')", ORG, emp, prof)
+        flag = await conn.fetchval("select current_setting('hr.privileged_write', true)")
+        out.append(("writing hr.employment leaves the caller's legacy arm intact", flag == "on"))
+        await conn.execute("savepoint sp2")
+        try:
+            await conn.execute(
+                "insert into hr.job_title (organization_id, title, code, eeo1_job_category) "
+                "values ($1,'Guard probe C','GPC','professionals')", ORG)
+            out.append(("the NEXT hr.* write under that same arm still succeeds", True))
+        except asyncpg.PostgresError as e:
+            await conn.execute("rollback to savepoint sp2")
+            out.append((f"the NEXT hr.* write under that same arm still succeeds ({e.sqlstate})", False))
+    finally:
+        await tx.rollback()
+        left = await conn.fetchval("select count(*) from hr.job_title where code like 'GP%'")
+        out.append((f"rows left behind after rollback = {left}", left == 0))
+        await conn.close()
+
+    bad = 0
+    for name, ok in out:
+        bad += 0 if ok else 1
+        print(f"  [{'PASS' if ok else 'FAIL'}] {name}")
+    print()
+    if bad:
+        print(f"WRITE-GUARD SCOPE: {bad} FAILING assertion(s)")
+        sys.exit(1)
+    print(f"WRITE-GUARD SCOPE: all {len(out)} assertions pass; database left byte-identical (rolled back)")
+
+
 asyncio.run(main())
+print()
+asyncio.run(phase2())
