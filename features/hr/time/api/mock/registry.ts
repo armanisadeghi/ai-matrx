@@ -718,7 +718,11 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
                     isCurrent: true,
                     supersededById: null,
                     calc: CALC_OK,
-                    money: MONEY_OK,
+                    // Its OWN amount. Reusing the regular line's put $292.50 beside 3 hours at $28
+                    // on screen — a figure a reader can see is wrong, which teaches them to distrust
+                    // every other figure on the page. Fixtures have to be arithmetically plausible
+                    // for a screenshot of one to mean anything.
+                    money: { amount: 114.38, moneyWithheld: false, flags: [] },
                   },
                   {
                     // 🚨 THE ADVISORY PREMIUM LINE. Hours show. The amount is ABSENT — not 0, not —.
@@ -1328,23 +1332,40 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
   },
 
   hr_kiosk_authenticate: {
+    /**
+     * 🚨 `serverTime` IS READ FRESH, AND IT IS THE ONE FIELD IN THIS FILE THAT MUST BE.
+     *
+     * Every other value here is frozen on purpose — a fixture you cannot reason about is not a
+     * fixture. `serverTime` is different in kind: its entire meaning is *"the server's clock, now"*,
+     * and the kiosk measures its own clock against it and **refuses the punch** beyond
+     * `maxClockSkewSeconds` (SPEC-TIME §3.3). Frozen at 2026-03-17, this fixture reports a skew of
+     * months, so every kiosk punch built against it hits the clock-wrong refusal and **nothing
+     * downstream of authentication is reachable at all** — not the PIN pad's result, not the
+     * confirmation, not the replay, not the duplicate card.
+     *
+     * This is not business logic and it simulates nothing: the getter returns one clock reading,
+     * verbatim, exactly as a live server would. (The frozen form is still worth having, and it is
+     * what proved the skew refusal renders — see `../../kiosk/FEATURE.md`.)
+     */
     happy: {
       ok: true,
-      data: {
-        sessionToken: "ksess_2c9f7a1e5b3d8046",
-        expiresAt: "2026-03-18T04:00:00Z",
-        trustState: "trusted",
-        serverTime: "2026-03-17T16:00:00Z",
-        configVersion: "v3",
-        config: {
-          requirePhoto: false,
-          requireGeo: false,
-          maxClockSkewSeconds: 300,
-          pinLength: 4,
-          confirmDismissSeconds: 5,
-          heartbeatSeconds: 60,
-          locationName: "Fremont",
-        },
+      get data() {
+        return {
+          sessionToken: "ksess_2c9f7a1e5b3d8046",
+          expiresAt: new Date(Date.now() + 8 * 3600_000).toISOString(),
+          trustState: "trusted",
+          serverTime: new Date().toISOString(),
+          configVersion: "v3",
+          config: {
+            requirePhoto: false,
+            requireGeo: false,
+            maxClockSkewSeconds: 300,
+            pinLength: 4,
+            confirmDismissSeconds: 5,
+            heartbeatSeconds: 60,
+            locationName: "Fremont",
+          },
+        };
       },
     },
     // Untrusted: paired but not yet trusted. No punching until an administrator trusts it.
@@ -1382,7 +1403,14 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
   },
 
   hr_kiosk_session_heartbeat: {
-    happy: { ok: true, data: { trustState: "trusted", serverTime: "2026-03-17T16:01:00Z", configVersion: "v3" } },
+    // Same reasoning as `hr_kiosk_authenticate.happy`: the heartbeat's job is to RE-SYNC the clock,
+    // and a heartbeat that hands back a frozen instant re-introduces the skew refusal every minute.
+    happy: {
+      ok: true,
+      get data() {
+        return { trustState: "trusted", serverTime: new Date().toISOString(), configVersion: "v3" };
+      },
+    },
     edge: { ok: true, data: { trustState: "revoked", serverTime: "2026-03-17T16:01:00Z", configVersion: "v3" } },
     empty: { ok: true, data: { trustState: "suspended", serverTime: "2026-03-17T16:01:00Z", configVersion: "v3" } },
     error: { ok: false, error: "hr_validation_error", message: "session invalid", user_message: "This tablet needs to be set up again.", details: {} },

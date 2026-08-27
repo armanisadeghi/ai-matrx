@@ -119,11 +119,19 @@ export function PunchErrorCard({
   intent,
   busy,
   onRetry,
+  onReload,
 }: {
   error: PunchClockError;
   intent: PunchIntent | null;
   busy: boolean;
   onRetry: () => void;
+  /**
+   * Re-runs `hr_clock_state`. Used when the error has NO intent behind it — the initial read
+   * failed, so there is no punch to retry and the surface would otherwise be a dead end: a
+   * sentence, no controls, and nothing to press. An employee who cannot even reload is an employee
+   * who has to find another way to clock in.
+   */
+  onReload: () => void;
 }) {
   return (
     <section className="rounded-xl border border-destructive/40 bg-card p-6">
@@ -131,6 +139,18 @@ export function PunchErrorCard({
         <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive" />
         <div className="flex flex-col gap-4">
           <p className="text-base text-foreground">{error.userMessage}</p>
+          {!intent && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              onClick={onReload}
+              className="min-h-[48px] w-fit gap-2"
+            >
+              <RotateCcw className="size-4" />
+              Try again
+            </Button>
+          )}
           {intent && error.retryable && (
             <div className="flex flex-col gap-2">
               <Button

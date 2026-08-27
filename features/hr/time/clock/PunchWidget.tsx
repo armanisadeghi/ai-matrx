@@ -42,8 +42,10 @@ export interface PunchWidgetProps {
   deviceOrSession: string;
   /** Shown above the widget on route 34 so an operator can never punch for the wrong person. */
   subjectName?: string | null;
-  /** Mock-lane case selector. Inert unless `NEXT_PUBLIC_HR_MOCK=1`. */
+  /** Mock-lane case for the clock-state read. Inert unless `NEXT_PUBLIC_HR_MOCK=1`. */
   mockCase?: HrFixtureCase;
+  /** Mock-lane case for the punch write — see `usePunchClock`. */
+  punchMockCase?: HrFixtureCase;
 }
 
 export function PunchWidget({
@@ -52,8 +54,15 @@ export function PunchWidget({
   deviceOrSession,
   subjectName,
   mockCase,
+  punchMockCase,
 }: PunchWidgetProps) {
-  const clock = usePunchClock({ employmentId, source, deviceOrSession, mockCase });
+  const clock = usePunchClock({
+    employmentId,
+    source,
+    deviceOrSession,
+    mockCase,
+    punchMockCase,
+  });
   const { view } = clock;
 
   return (
@@ -98,6 +107,7 @@ export function PunchWidget({
             intent={view.intent}
             busy={clock.busy}
             onRetry={clock.retry}
+            onReload={clock.reload}
           />
         </>
       )}

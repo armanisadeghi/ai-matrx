@@ -167,7 +167,9 @@ export function KioskDisputeInstructions({
       </p>
       <div className="w-full rounded-xl border border-border bg-muted/40 p-6 text-left">
         <p className="text-2xl text-foreground">
-          {result.employeeDisplayName} — {punchKindPresentation(result.punchKind).label.toLowerCase()}{" "}
+          {/* The PAST-tense register, not the button label: this is a report of what happened, and
+              "clock in at 8:03 AM" reads as an instruction rather than a record. */}
+          {result.employeeDisplayName} — {punchKindPresentation(result.punchKind).pastTense.toLowerCase()}{" "}
           at {result.occurredAtLocal}
           {duplicate ? `, and again at ${duplicate.previousPunchLocalTime}` : ""}.
         </p>

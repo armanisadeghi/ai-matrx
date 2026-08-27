@@ -24,3 +24,26 @@ export function mockCaseFromParam(value: string | string[] | undefined): HrFixtu
   if (!raw || !CASES.has(raw)) return undefined;
   return raw as HrFixtureCase;
 }
+
+/**
+ * A stand-in subject for `/hr/me/clock`, so the widget's eight states can actually be **looked at**.
+ *
+ * 🚨 **INERT UNLESS `NEXT_PUBLIC_HR_MOCK=1`** — the same single gate as {@link mockCaseFromParam}.
+ * With the flag off this returns `undefined` and the parameter does nothing, so it can never be used
+ * to point a live surface at somebody else's employment. The real subject is always
+ * `hr_my_context`'s `active.employment_id`.
+ *
+ * Why it is needed at all: the platform's own test administrator is not an *employee* of any
+ * organisation — `active.employment_id` is legitimately `null` for them, and route 6 correctly
+ * renders "you do not have an active job here today" instead of a clock. That is the right product
+ * behaviour and the wrong verification behaviour: without a subject the widget never mounts, and the
+ * `blocked` / `offline` / replay states nobody wants to discover in production stay unlooked-at.
+ * D15's independent verifier has the same problem, and this is what lets them do the pass.
+ */
+export function mockEmploymentIdFromParam(
+  value: string | string[] | undefined,
+): string | undefined {
+  if (!HR_MOCK_ENABLED) return undefined;
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw && raw.trim() !== "" ? raw : undefined;
+}

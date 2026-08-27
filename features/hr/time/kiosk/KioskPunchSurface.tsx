@@ -43,13 +43,23 @@ import {
 import { useKioskDevice } from "./useKioskDevice";
 import { useKioskPunch } from "./useKioskPunch";
 
-export function KioskPunchSurface({
-  deviceId,
-  mockCase,
-}: {
+export interface KioskPunchSurfaceProps {
   deviceId: string;
+  /** Which fixture the DEVICE lane answers with — `hr_kiosk_authenticate` / `…_heartbeat`. */
   mockCase?: HrFixtureCase;
-}) {
+  /**
+   * Which fixture the PUNCH lane answers with, steered separately.
+   *
+   * A single selector cannot reach the states that matter: `edge` on the device lane is the
+   * **revoked** tablet, which bricks the route, and `edge` on the punch lane is the
+   * **duplicate-suspected** card — so one parameter for both makes the duplicate card literally
+   * unreachable, and an ugly state nobody can look at is an ugly state nobody has checked. Inert
+   * unless `NEXT_PUBLIC_HR_MOCK=1`, like every other selector in this lane.
+   */
+  punchMockCase?: HrFixtureCase;
+}
+
+export function KioskPunchSurface({ deviceId, mockCase, punchMockCase }: KioskPunchSurfaceProps) {
   const device = useKioskDevice(deviceId, mockCase);
 
   // The device states are terminal for the surface — nothing below them renders.
@@ -82,7 +92,7 @@ export function KioskPunchSurface({
       deviceId={deviceId}
       device={device}
       view={device.view}
-      mockCase={mockCase}
+      mockCase={punchMockCase}
     />
   );
 }

@@ -18,17 +18,24 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, UserRoundX } from "lucide-react";
+import { UserRoundX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { HR_MOCK_ENABLED, type HrFixtureCase } from "@/features/hr/mock/transport";
+import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { webPunchSessionSegment } from "@/features/hr/time/api/idempotencyKey";
 
 import { EmployeeSearchSelect, type PunchSubject } from "./EmployeeSearchSelect";
 import { PunchWidget } from "./PunchWidget";
 
-export function DeskClockSurface({ mockCase }: { mockCase?: HrFixtureCase }) {
+export function DeskClockSurface({
+  mockCase,
+  punchMockCase,
+}: {
+  mockCase?: HrFixtureCase;
+  punchMockCase?: HrFixtureCase;
+}) {
   const hr = useHrContext();
   const [subject, setSubject] = useState<PunchSubject | null>(null);
 
@@ -45,23 +52,17 @@ export function DeskClockSurface({ mockCase }: { mockCase?: HrFixtureCase }) {
         </p>
       </header>
 
-      {hr.isLoading && (
-        <div className="flex min-h-40 items-center justify-center rounded-xl border border-border bg-card">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
-        </div>
-      )}
-
-      {!hr.isLoading && hr.error && (
-        <section className="rounded-xl border border-border bg-card p-6">
-          <p className="text-base text-foreground">
-            {hr.error.kind === "denied"
-              ? (hr.error.detail ?? "You do not have access to this organization's time clock.")
-              : hr.error.message}
-          </p>
-        </section>
-      )}
-
-      {!hr.isLoading && !hr.error && hr.active && (
+      {/*
+        ♻️ **The context's own states are `HrPageState`'s.** An earlier revision hand-rolled loading
+        and error here and then rendered the body only `&& hr.active` — so a viewer whose employer
+        had not resolved got this heading and **nothing else at all**: no picker, no sentence, no
+        way forward. `useHrContext`'s documented rule 4 is that a null `active` renders
+        `<HrEmployerPicker>` AS THE PAGE, and `HrPageState` is where lane L1 already does that,
+        along with module-off and not-yet-activated. Reproducing two of five states by hand is how
+        the other three go missing.
+      */}
+      <HrPageState operation="The shared time clock" personaHomeHref="/hr">
+        {hr.active && (
         <>
           {!subject && (
             <EmployeeSearchSelect
@@ -103,11 +104,13 @@ export function DeskClockSurface({ mockCase }: { mockCase?: HrFixtureCase }) {
                 source="manager_entry"
                 deviceOrSession={webPunchSessionSegment()}
                 mockCase={HR_MOCK_ENABLED ? mockCase : undefined}
+                punchMockCase={HR_MOCK_ENABLED ? punchMockCase : undefined}
               />
             </>
           )}
         </>
-      )}
+        )}
+      </HrPageState>
     </div>
   );
 }

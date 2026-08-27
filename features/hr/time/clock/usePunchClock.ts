@@ -85,8 +85,16 @@ export interface UsePunchClockInput {
   source: PunchSource;
   /** The mandatory device/session segment of the idempotency key. */
   deviceOrSession: string;
-  /** Mock-lane case selector. Ignored entirely when `NEXT_PUBLIC_HR_MOCK` is not `1`. */
+  /** Mock-lane case for `hr_clock_state`. Ignored entirely when `NEXT_PUBLIC_HR_MOCK` is not `1`. */
   mockCase?: HrFixtureCase;
+  /**
+   * Mock-lane case for `hr_punch_record` only. Split from {@link mockCase} because the two most
+   * important punch fixtures live behind states the clock-state fixture would never let you reach:
+   * `edge` on the punch is the **idempotent replay that must render as a success**, while `edge` on
+   * the clock state is `blocked`, which renders no punch control at all. One selector for both makes
+   * the replay unreachable, which is how it goes unlooked-at until production.
+   */
+  punchMockCase?: HrFixtureCase;
 }
 
 export interface PunchClock {
@@ -125,7 +133,7 @@ function browserIsOffline(): boolean {
 }
 
 export function usePunchClock(input: UsePunchClockInput): PunchClock {
-  const { employmentId, source, deviceOrSession, mockCase } = input;
+  const { employmentId, source, deviceOrSession, mockCase, punchMockCase } = input;
 
   const [state, setState] = useState<ClockState | null>(null);
   const [stateReceivedAtMs, setStateReceivedAtMs] = useState(0);
@@ -212,7 +220,7 @@ export function usePunchClock(input: UsePunchClockInput): PunchClock {
           geo: intent.geo,
           attestation: intent.attestation as Record<string, unknown> | null,
         },
-        { mockCase },
+        { mockCase: punchMockCase ?? mockCase },
       );
 
       setState(result.clockState);
