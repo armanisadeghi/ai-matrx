@@ -120,6 +120,18 @@
       },
       "previousEventHash": "44aaf55d56697b524948131838231f0d5ff4afabb6b8c8e0f8d4fe1fd7366e51",
       "eventHash": "a1f1bd5c0ea8a643fdb7c16ac52d6696db5c8f9482033e2c093aeeea1cf0a4ab"
+    },
+    {
+      "sequence": 8,
+      "state": "closed",
+      "at": "2026-08-27T13:32:57.493Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Closed P3 run after exact-SHA certification, delivery reconciliation, and durable routing of remaining evidence tasks.",
+      "evidence": [
+        "19 findings fixed, 0 approvals, 0 exceptions; provider-sync and broad hover classification remain open as missing-evidence/detector tasks."
+      ],
+      "previousEventHash": "a1f1bd5c0ea8a643fdb7c16ac52d6696db5c8f9482033e2c093aeeea1cf0a4ab",
+      "eventHash": "7bc17712d6c2425c52e18be90a3336e0d74ddddf9186b6a619bbc7d142f440b5"
     }
   ]
 }

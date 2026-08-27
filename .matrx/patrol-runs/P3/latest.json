@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "2026-08-27T131727Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-27T13:32:51.703Z",
-  "summary": "Reconciled the certified escaped-delivery candidate through main and release v0.4.1307.",
+  "state": "closed",
+  "updatedAt": "2026-08-27T13:32:57.493Z",
+  "summary": "Closed P3 run after exact-SHA certification, delivery reconciliation, and durable routing of remaining evidence tasks.",
   "source": "2026-08-27T131727Z.json",
-  "eventHash": "a1f1bd5c0ea8a643fdb7c16ac52d6696db5c8f9482033e2c093aeeea1cf0a4ab"
+  "eventHash": "7bc17712d6c2425c52e18be90a3336e0d74ddddf9186b6a619bbc7d142f440b5"
 }
