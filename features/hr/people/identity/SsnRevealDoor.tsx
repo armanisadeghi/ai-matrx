@@ -155,7 +155,7 @@ export function SsnRevealDoor({
                   disabled={busy}
                 />
               </div>
-              {outcome ? <RefusalLine outcome={outcome} /> : null}
+              {outcome ? <RefusalLine outcome={outcome} isSelf={isSelf} /> : null}
             </div>
           )}
 
@@ -220,14 +220,24 @@ function RevealedValue({
  * for a contractor who supplied only a W-9. Rendering it as an error would send an
  * HR admin looking for a bug that is not there.
  */
-function RefusalLine({ outcome }: { outcome: HrSsnRevealOutcome }) {
+function RefusalLine({
+  outcome,
+  isSelf,
+}: {
+  outcome: HrSsnRevealOutcome;
+  isSelf: boolean;
+}) {
   if (outcome.kind === "revealed") return null;
 
   const text =
     outcome.kind === "not_stored"
-      ? "No Social Security number is on record for this person. Nothing was shown, and your request is in their access log."
+      ? isSelf
+        ? "There is no Social Security number on your record. Nothing was shown, and your request is in your access log."
+        : "No Social Security number is on record for this person. Nothing was shown, and your request is in their access log."
       : outcome.kind === "denied"
-        ? "You do not have permission to see this person's Social Security number. The attempt is in their access log."
+        ? isSelf
+          ? "You do not have permission to see this. The attempt is in your access log."
+          : "You do not have permission to see this person's Social Security number. The attempt is in their access log."
         : outcome.kind === "justification_too_short"
           ? outcome.minChars !== null
             ? `Say a little more — at least ${outcome.minChars} characters${
