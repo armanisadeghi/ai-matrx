@@ -50,8 +50,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 
-import { upsertHrStructure } from "../../service";
-import { isHrDenied } from "../../types";
+import { seedHrActivation, upsertHrStructure } from "../../service";
+import { isHrDenied, type HrActivationSeedAck } from "../../types";
 import { useHrContext } from "../../shared/useHrContext";
 import { useHrSettingsStructure } from "../hooks/useHrSettingsStructure";
 import { HrSettingsShell } from "../HrSettingsShell";
@@ -92,6 +92,15 @@ export function HrCodesPanel() {
       onRetry={refresh}
     >
       <div className="space-y-6 p-4 sm:p-6">
+        {/* 🚨 THE RECOVERY DOOR FOR AN EMPLOYER ACTIVATED BEFORE THE SEEDS WERE
+            WIRED IN. Activation now runs `hr_activation_seed` itself, but every
+            employer switched on before that runs with ZERO earning codes — and
+            `hr.work_interval.earning_code_id` is NOT NULL, so those employers
+            cannot write an hour for anybody. The wizard is unreachable once an
+            employer exists, so without this the only fix is a database call. */}
+        {!isLoading && organizationId && (structure?.earning_codes.length ?? 0) === 0 ? (
+          <SeedStartingCodes organizationId={organizationId} onSeeded={refresh} />
+        ) : null}
         <EarningCodesSection
           codes={structure?.earning_codes ?? []}
           organizationId={organizationId}
@@ -104,6 +113,109 @@ export function HrCodesPanel() {
         />
       </div>
     </HrSettingsShell>
+  );
+}
+
+// ── The seeds, for an employer that has none ────────────────────────────────
+
+/**
+ * Run `public.hr_activation_seed` for an employer that ended up with no earning
+ * codes — an org activated before activation itself ran the seeds.
+ *
+ * 🚨 IT REPORTS WHAT THE ENVELOPE SAYS IT CREATED, NEVER THE LIST IT WOULD HAVE
+ * CREATED. The door is idempotent, so a second press honestly reports zeros; a
+ * hard-coded "14 earning codes" would be a lie every time after the first.
+ */
+function SeedStartingCodes({
+  organizationId,
+  onSeeded,
+}: {
+  organizationId: string;
+  onSeeded: () => void;
+}) {
+  const [running, setRunning] = useState(false);
+  const [report, setReport] = useState<HrActivationSeedAck | null>(null);
+  const [refusal, setRefusal] = useState<string | null>(null);
+
+  const run = async () => {
+    setRunning(true);
+    setRefusal(null);
+    const result = await seedHrActivation(organizationId);
+    setRunning(false);
+    if (!result.ok) {
+      setRefusal(
+        isHrDenied(result)
+          ? (result.detail ??
+            (result.reason === "not_activated"
+              ? "Starting codes belong to an employer of record, and this organization has not been set up as one yet."
+              : "Creating the starting codes isn't yours here."))
+          : result.message,
+      );
+      return;
+    }
+    setReport(result.data);
+    toast.success("Starting codes created.");
+    onSeeded();
+  };
+
+  return (
+    <section className="rounded-lg border border-border bg-card">
+      <header className="flex items-start gap-3 border-b border-border p-4">
+        <Sprout className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 space-y-1">
+          <h2 className="text-sm font-semibold text-foreground">
+            This employer has no earning codes
+          </h2>
+          <p className="max-w-prose text-sm text-muted-foreground">
+            Every hour written anywhere in HR is written against an earning code, so
+            until this employer has some, nobody here can have a timesheet. Setup
+            creates them for new employers; this employer was switched on before it
+            did.
+          </p>
+        </div>
+      </header>
+      <div className="space-y-3 p-4">
+        {report ? (
+          <ul className="space-y-1 text-sm text-foreground">
+            <li>{report.earningCodesCreated} earning codes created</li>
+            <li>{report.deductionCodesCreated} deduction codes created</li>
+            <li>
+              {report.holidayCalendarId
+                ? `A default holiday calendar with ${report.holidaysCreated} holidays`
+                : "No holiday calendar was created — this employer already had one."}
+            </li>
+            {report.tipCodesSeededNotEnabled.length > 0 ? (
+              <li className="text-muted-foreground">
+                {report.tipCodesSeededNotEnabled.join(", ")} — seeded, not enabled.
+                Tip credit is a jurisdiction minefield, so these stay switched off
+                until this employer turns them on deliberately.
+              </li>
+            ) : null}
+          </ul>
+        ) : null}
+        {refusal ? <p className="text-sm text-destructive">{refusal}</p> : null}
+        <Button
+          type="button"
+          size="sm"
+          className="min-h-11 sm:min-h-9"
+          disabled={running}
+          onClick={run}
+        >
+          {running ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <Sprout className="mr-2 h-4 w-4" aria-hidden />
+          )}
+          {report ? "Run it again" : "Create the starting codes"}
+        </Button>
+        {report ? (
+          <p className="text-xs text-muted-foreground">
+            Safe to run again — it creates nothing twice, and a second run reports
+            zeros.
+          </p>
+        ) : null}
+      </div>
+    </section>
   );
 }
 
@@ -222,7 +334,7 @@ function EarningCodesSection({
           emptyState={{
             title: "No earning codes yet",
             description:
-              "Setup does not create any, so a timesheet has no vocabulary to write against. Regular, overtime and PTO are the three most employers start with.",
+              "A timesheet has no vocabulary to write against until this employer has some. Setup creates the standard set for new employers — use the panel above to create them here, or add your own.",
           }}
           detail={{
             title: (row) => `${row.code} — ${row.name}`,
