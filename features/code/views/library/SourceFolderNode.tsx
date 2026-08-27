@@ -1,9 +1,13 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { ChevronRight, RefreshCw } from "lucide-react";
+import { ChevronRight, MoreHorizontal, RefreshCw } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { createClient } from "@/utils/supabase/client";
 import { extractErrorMessage } from "@/utils/errors";
@@ -132,58 +136,97 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
     },
     [reload],
   );
+  const sourceMenuSections: ContextMenuExtraSection[] = [
+    {
+      id: "library-source-actions",
+      anchor: "after-clipboard",
+      items: [
+        {
+          kind: "item",
+          id: "library-source-refresh",
+          label: "Refresh",
+          icon: RefreshCw,
+          onSelect: () => void reload(),
+        },
+      ],
+    },
+  ];
 
   return (
     <div className="select-none">
-      <div
-        role="treeitem"
-        aria-expanded={expanded}
-        tabIndex={0}
-        onClick={toggle}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            toggle();
-          }
-        }}
-        className={cn(
-          "group flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
-          ROW_HEIGHT,
-          TEXT_BODY,
-          HOVER_ROW,
-        )}
-        style={{ paddingLeft: 8 + depth * 12 }}
-        title={adapter.label}
+      <NonEditableContextMenu
+        sourceFeature="code-editor"
+        contextData={{ content: adapter.label }}
+        contentSource={{ type: "raw" }}
+        extraSections={sourceMenuSections}
+        enableFloatingIcon={false}
       >
-        <ChevronRight
-          size={12}
+        <div
+          role="treeitem"
+          aria-expanded={expanded}
+          aria-selected={false}
+          tabIndex={0}
+          onClick={toggle}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggle();
+            }
+          }}
           className={cn(
-            "shrink-0 text-neutral-500 transition-transform",
-            expanded && "rotate-90",
+            "group flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
+            ROW_HEIGHT,
+            "max-lg:h-11",
+            TEXT_BODY,
+            HOVER_ROW,
           )}
-        />
-        <Icon size={14} className="shrink-0 text-purple-500" />
-        <span className="truncate">{adapter.label}</span>
-        {status === "ready" && (
-          <span className="ml-1 text-[10px] text-neutral-500">
-            {entries.length}
-          </span>
-        )}
-        {status === "ready" && (
-          <button
+          style={{ paddingLeft: 8 + depth * 12 }}
+          title={adapter.label}
+        >
+          <ChevronRight
+            size={12}
+            className={cn(
+              "shrink-0 text-neutral-500 transition-transform",
+              expanded && "rotate-90",
+            )}
+          />
+          <Icon size={14} className="shrink-0 text-purple-500" />
+          <span className="min-w-0 flex-1 truncate">{adapter.label}</span>
+          {status === "ready" && (
+            <span className="ml-1 text-[10px] text-neutral-500">
+              {entries.length}
+            </span>
+          )}
+          {status === "ready" && (
+            <button
+              type="button"
+              onClick={handleReload}
+              className="hidden shrink-0 rounded-sm p-0.5 text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-800 lg:group-hover:inline-flex dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+              title="Refresh"
+              aria-label={`Refresh ${adapter.label}`}
+            >
+              <RefreshCw
+                size={11}
+                className={status !== "ready" ? "animate-spin" : undefined}
+              />
+            </button>
+          )}
+          <Button
             type="button"
-            onClick={handleReload}
-            className="ml-auto hidden shrink-0 rounded-sm p-0.5 text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-800 group-hover:inline-flex dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-            title="Refresh"
-            aria-label={`Refresh ${adapter.label}`}
+            variant="ghost"
+            size="sm"
+            className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+            aria-label={`Actions for ${adapter.label}`}
+            aria-haspopup="menu"
+            onClick={(event) => {
+              event.stopPropagation();
+              openContextMenuForElement(event.currentTarget.parentElement);
+            }}
           >
-            <RefreshCw
-              size={11}
-              className={status !== "ready" ? "animate-spin" : undefined}
-            />
-          </button>
-        )}
-      </div>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </div>
+      </NonEditableContextMenu>
 
       {expanded && (
         <div role="group">

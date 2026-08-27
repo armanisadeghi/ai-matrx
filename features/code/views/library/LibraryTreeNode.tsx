@@ -1,10 +1,24 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronRight, FilePlus, Folder, FolderOpen } from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  ChevronRight,
+  FilePlus,
+  Folder,
+  FolderOpen,
+  MoreHorizontal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 import {
   makeSelectChildFolders,
   makeSelectFilesInFolder,
@@ -134,6 +148,7 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
           className={cn(
             "flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
             ROW_HEIGHT,
+            "max-lg:h-11",
             TEXT_BODY,
             HOVER_ROW,
             focused && ACTIVE_ROW,
@@ -154,7 +169,21 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
           ) : (
             <Folder size={14} className="shrink-0 text-blue-500" />
           )}
-          <span className="truncate">{folder.name}</span>
+          <span className="min-w-0 flex-1 truncate">{folder.name}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+            aria-label={`Actions for ${folder.name}`}
+            aria-haspopup="menu"
+            onClick={(event) => {
+              event.stopPropagation();
+              openContextMenuForElement(event.currentTarget.parentElement);
+            }}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
         </div>
       </NonEditableContextMenu>
 
@@ -173,6 +202,20 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
           {files.map((file) => {
             const tabId = libraryTabId(file.id);
             const active = activeTabId === tabId;
+            const fileMenuSections: ContextMenuExtraSection[] = [
+              {
+                id: "library-file-actions",
+                anchor: "after-clipboard",
+                items: [
+                  {
+                    kind: "item",
+                    id: "library-file-open",
+                    label: "Open",
+                    onSelect: () => onOpenFile(file.id),
+                  },
+                ],
+              },
+            ];
             return (
               <NonEditableContextMenu
                 key={file.id}
@@ -184,6 +227,7 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
                   id: file.id,
                   title: file.name,
                 }}
+                extraSections={fileMenuSections}
                 enableFloatingIcon={false}
               >
                 <div
@@ -200,6 +244,7 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
                   className={cn(
                     "flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
                     ROW_HEIGHT,
+                    "max-lg:h-11",
                     TEXT_BODY,
                     HOVER_ROW,
                     active && ACTIVE_ROW,
@@ -209,13 +254,29 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
                 >
                   <span className="inline-block w-3" />
                   <FileIcon name={file.name} kind="file" />
-                  <span className="truncate">{file.name}</span>
+                  <span className="min-w-0 flex-1 truncate">{file.name}</span>
                   {file._dirty && (
                     <span
                       className="ml-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-400 dark:bg-neutral-500"
                       aria-label="Unsaved changes"
                     />
                   )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+                    aria-label={`Actions for ${file.name}`}
+                    aria-haspopup="menu"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openContextMenuForElement(
+                        event.currentTarget.parentElement,
+                      );
+                    }}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
                 </div>
               </NonEditableContextMenu>
             );

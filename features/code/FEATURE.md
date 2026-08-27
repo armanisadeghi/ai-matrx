@@ -147,6 +147,7 @@ container.
 
 ## Change log
 
+- `2026-08-27` — **The responsive/menu contract now covers the live Code Library tree, not only sandbox and expanded source-entry rows.** `My Files`, persisted file/folder rows, and registered source roots use the canonical v3 wrapper and `openContextMenuForElement`; every one exposes a 44px tablet/mobile Actions control, and source roots carry their real Refresh action.
 - `2026-08-26` — **Code-tree context actions are reachable on every review breakpoint.** Nested file/folder and code-library source rows open the canonical v3 menu again on desktop. At tablet/mobile widths each row exposes a visible 44px overflow control that opens that same menu, and the resizable explorer now holds a `12rem` minimum instead of shrinking to roughly 136px at 768px.
 - `2026-08-23` — **Made sandbox organization identity end-to-end explicit.**
   All three create surfaces carry the selected app-context organization; shared

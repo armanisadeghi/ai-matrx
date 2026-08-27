@@ -1,10 +1,17 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronRight, FilePlus, FolderHeart } from "lucide-react";
+import {
+  ChevronRight,
+  FilePlus,
+  FolderHeart,
+  MoreHorizontal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 import {
   loadCodeFilesList,
   loadCodeFolders,
@@ -238,6 +245,7 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
           className={cn(
             "flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
             ROW_HEIGHT,
+            "max-lg:h-11",
             TEXT_BODY,
             HOVER_ROW,
           )}
@@ -252,7 +260,21 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
             )}
           />
           <FolderHeart size={14} className="shrink-0 text-emerald-500" />
-          <span className="truncate">My Files</span>
+          <span className="min-w-0 flex-1 truncate">My Files</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+            aria-label="Actions for My Files"
+            aria-haspopup="menu"
+            onClick={(event) => {
+              event.stopPropagation();
+              openContextMenuForElement(event.currentTarget.parentElement);
+            }}
+          >
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
         </div>
       </NonEditableContextMenu>
 
@@ -292,6 +314,20 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
           {rootFiles.map((file) => {
             const tabId = libraryTabId(file.id);
             const active = activeTabId === tabId;
+            const fileMenuSections: ContextMenuExtraSection[] = [
+              {
+                id: "library-file-actions",
+                anchor: "after-clipboard",
+                items: [
+                  {
+                    kind: "item",
+                    id: "library-file-open",
+                    label: "Open",
+                    onSelect: () => openFile(file.id),
+                  },
+                ],
+              },
+            ];
             return (
               <NonEditableContextMenu
                 key={file.id}
@@ -303,6 +339,7 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
                   id: file.id,
                   title: file.name,
                 }}
+                extraSections={fileMenuSections}
                 enableFloatingIcon={false}
               >
                 <div
@@ -319,6 +356,7 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
                   className={cn(
                     "flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
                     ROW_HEIGHT,
+                    "max-lg:h-11",
                     TEXT_BODY,
                     HOVER_ROW,
                     active && ACTIVE_ROW,
@@ -328,13 +366,29 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
                 >
                   <span className="inline-block w-3" />
                   <FileIcon name={file.name} kind="file" />
-                  <span className="truncate">{file.name}</span>
+                  <span className="min-w-0 flex-1 truncate">{file.name}</span>
                   {file._dirty && (
                     <span
                       className="ml-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-400 dark:bg-neutral-500"
                       aria-label="Unsaved changes"
                     />
                   )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+                    aria-label={`Actions for ${file.name}`}
+                    aria-haspopup="menu"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openContextMenuForElement(
+                        event.currentTarget.parentElement,
+                      );
+                    }}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
                 </div>
               </NonEditableContextMenu>
             );
