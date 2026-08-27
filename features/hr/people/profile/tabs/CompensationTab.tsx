@@ -29,15 +29,14 @@
 // registers the gap (`hr.people.compensation-history`).
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { cn } from "@/lib/utils";
 
-import { fetchHrStructure } from "../../../service";
 import { hrStructureFocusHref, type HrOrgRef } from "../../../routes";
-import type { HrEmployeeProfile, HrJobTitle } from "../../../types";
+import type { HrEmployeeProfile } from "../../../types";
+import { useHrStructure } from "../../shared/useHrStructure";
 
 export function CompensationTab({
   profile,
@@ -72,31 +71,16 @@ function BandOnly({
   profile: HrEmployeeProfile;
   org: HrOrgRef;
 }) {
-  const [title, setTitle] = useState<HrJobTitle | null>(null);
-  const [resolved, setResolved] = useState(false);
-
   const jobTitleId = profile.header.job_title_id;
+  const structure = useHrStructure(
+    jobTitleId ? profile.organization_id : null,
+  );
 
-  useEffect(() => {
-    if (!jobTitleId) {
-      setResolved(true);
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      const result = await fetchHrStructure(profile.organization_id);
-      if (cancelled) return;
-      if (result.ok) {
-        setTitle(result.data.job_titles.find((t) => t.id === jobTitleId) ?? null);
-      }
-      setResolved(true);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [jobTitleId, profile.organization_id]);
+  const title = jobTitleId
+    ? (structure.data?.job_titles.find((t) => t.id === jobTitleId) ?? null)
+    : null;
 
-  if (!resolved) return null;
+  if (jobTitleId && structure.isLoading) return null;
 
   // 🚨 `pay_range_min` / `pay_range_max` are ABSENT (undefined) on the payload
   // for a viewer without `comp.read` — never zero, never masked. `in` is the

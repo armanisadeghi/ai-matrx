@@ -11,11 +11,20 @@
 //     browser hanging even if the server ever missed one.
 //
 //  2. 🚨 NODES THAT PERSIST ACROSS AN AS-OF CHANGE KEEP THEIR PLACE. Changing
-//     the date re-fetches; it does NOT re-lay-out from scratch (§5.2). Sibling
-//     ORDER is seeded from the previous layout — anyone who was there before
-//     stays in the same relative slot, and only genuinely new people are
-//     appended. The change is then legible as a change instead of the whole
-//     chart shuffling and the user having to re-find everyone.
+//     the date re-fetches; it does NOT re-lay-out from scratch (§5.2).
+//
+//     That is achieved by making sibling order a DETERMINISTIC FUNCTION OF THE
+//     PERSON, not of the fetch: siblings sort by `sortKey` (their display name),
+//     so anyone who is under the same manager on both dates lands in the same
+//     relative slot on both. The alternative — remembering last render's
+//     positions in state — was tried and rejected: it makes the layout depend on
+//     which chart you happened to look at first, which means two people opening
+//     the same URL see different charts. A pure function of the data does not
+//     have that problem, needs no state, and is testable.
+//
+//     What MOVES is exactly what changed: someone whose manager changed slides
+//     under their new manager, and the CSS transition on the node makes that
+//     legible as a change rather than a redraw.
 
 export const NODE_WIDTH = 210;
 export const NODE_HEIGHT = 68;
@@ -26,6 +35,11 @@ export type OrgLayoutInput = {
   /** Stable key. `employment_id` — a person may hold two spells over time. */
   id: string;
   managerId: string | null;
+  /**
+   * What siblings are ordered by. The display name, so a person's slot is a
+   * property of the PERSON and not of which date you loaded first. See rule 2.
+   */
+  sortKey: string;
 };
 
 export type OrgLayoutNode = {
@@ -58,19 +72,17 @@ export type OrgLayout = {
 };
 
 /**
- * Lay a forest out top-down.
+ * Lay a forest out top-down. Pure: the same input always produces the same
+ * chart, on any machine, in any order of loading.
  *
- * `collapsed` is the set of node ids whose subtree is hidden. `previousOrder`
- * maps a node id to the x it had in the last layout — see property 2 above.
+ * `collapsed` is the set of node ids whose subtree is hidden.
  */
 export function layoutOrgChart(args: {
   nodes: readonly OrgLayoutInput[];
   collapsed?: ReadonlySet<string>;
-  previousOrder?: ReadonlyMap<string, number>;
   dottedLines?: readonly { from: string; to: string }[];
 }): OrgLayout {
   const collapsed = args.collapsed ?? new Set<string>();
-  const previousOrder = args.previousOrder ?? new Map<string, number>();
 
   const present = new Set(args.nodes.map((n) => n.id));
   const childrenOf = new Map<string, string[]>();
@@ -90,20 +102,18 @@ export function layoutOrgChart(args: {
     }
   }
 
-  // Sibling order: previously-seen nodes first, in their previous left-to-right
-  // order; genuinely new nodes after them, alphabetically stable by id so the
-  // result is deterministic.
+  const byId = new Map(args.nodes.map((n) => [n.id, n]));
+
+  // Sibling order is a property of the PEOPLE, so it survives an as-of change.
+  // The id is the tie-breaker, so two people with the same name still land in a
+  // stable, repeatable order.
   const orderSiblings = (ids: string[]): string[] =>
     [...ids].sort((a, b) => {
-      const pa = previousOrder.get(a);
-      const pb = previousOrder.get(b);
-      if (pa !== undefined && pb !== undefined) return pa - pb;
-      if (pa !== undefined) return -1;
-      if (pb !== undefined) return 1;
-      return a < b ? -1 : a > b ? 1 : 0;
+      const ka = byId.get(a)?.sortKey ?? a;
+      const kb = byId.get(b)?.sortKey ?? b;
+      const byKey = ka.localeCompare(kb);
+      return byKey !== 0 ? byKey : a < b ? -1 : a > b ? 1 : 0;
     });
-
-  const byId = new Map(args.nodes.map((n) => [n.id, n]));
   const placed = new Map<string, OrgLayoutNode>();
   const edges: OrgLayoutEdge[] = [];
   const suppressedCycleEdges: OrgLayoutEdge[] = [];
@@ -205,11 +215,6 @@ export function layoutOrgChart(args: {
     height,
     suppressedCycleEdges,
   };
-}
-
-/** The x-order to carry into the NEXT layout, so persisting nodes keep their slot. */
-export function orderFromLayout(layout: OrgLayout): Map<string, number> {
-  return new Map(layout.nodes.map((node) => [node.id, node.x]));
 }
 
 /** Every ancestor of `id`, nearest first. Used by focus, which expands ancestry. */

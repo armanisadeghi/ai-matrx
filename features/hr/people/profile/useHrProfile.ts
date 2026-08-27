@@ -21,8 +21,6 @@
 // exist" from "you may not see it", and nothing here may recover the difference.
 // That is the leak the envelope exists to prevent.
 
-import { useCallback, useEffect, useState } from "react";
-
 import {
   fetchHrEmployeeProfile,
   fetchHrEmploymentHistory,
@@ -33,6 +31,7 @@ import type {
   HrEmploymentHistory,
   HrFailed,
 } from "../../types";
+import { useHrRequest } from "../shared/useHrRequest";
 
 export type HrProfileState = {
   profile: HrEmployeeProfile | null;
@@ -43,54 +42,36 @@ export type HrProfileState = {
   refresh: () => void;
 };
 
+type ProfileRequest = { employeeId: string; asOf: string | null };
+
+/** Module-level, so the read hook's dependency array holds a stable reference. */
+function runProfile(args: ProfileRequest) {
+  return fetchHrEmployeeProfile(args);
+}
+
 export function useHrProfile(args: {
   employeeId: string | null;
   asOf?: string | null;
 }): HrProfileState {
   const { employeeId, asOf = null } = args;
 
-  const [profile, setProfile] = useState<HrEmployeeProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [denied, setDenied] = useState<HrDenied | null>(null);
-  const [error, setError] = useState<HrFailed | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
+  const request =
+    employeeId === null
+      ? null
+      : JSON.stringify({ employeeId, asOf } satisfies ProfileRequest);
 
-  const refresh = useCallback(() => setReloadToken((n) => n + 1), []);
+  const state = useHrRequest<ProfileRequest, HrEmployeeProfile>(
+    request,
+    runProfile,
+  );
 
-  useEffect(() => {
-    if (!employeeId) {
-      setIsLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setIsLoading(true);
-
-    void (async () => {
-      const result = await fetchHrEmployeeProfile({ employeeId, asOf });
-      if (cancelled) return;
-
-      if (result.ok) {
-        setProfile(result.data);
-        setDenied(null);
-        setError(null);
-      } else if (result.kind === "denied") {
-        setProfile(null);
-        setDenied(result);
-        setError(null);
-      } else {
-        setProfile(null);
-        setDenied(null);
-        setError(result);
-      }
-      setIsLoading(false);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [employeeId, asOf, reloadToken]);
-
-  return { profile, isLoading, denied, error, refresh };
+  return {
+    profile: state.data,
+    isLoading: state.isLoading,
+    denied: state.denied,
+    error: state.error,
+    refresh: state.refresh,
+  };
 }
 
 // ── The Job tab's second read ───────────────────────────────────────────────
@@ -109,48 +90,26 @@ export type HrHistoryState = {
  * engagement for a viewer who opened Personal would be a per-visit cost paid by
  * everyone for one tab.
  */
+function runHistory(args: { employeeId: string }) {
+  return fetchHrEmploymentHistory(args.employeeId);
+}
+
 export function useHrEmploymentHistory(employeeId: string | null): HrHistoryState {
-  const [history, setHistory] = useState<HrEmploymentHistory | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [denied, setDenied] = useState<HrDenied | null>(null);
-  const [error, setError] = useState<HrFailed | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
+  const request =
+    employeeId === null ? null : JSON.stringify({ employeeId });
 
-  const refresh = useCallback(() => setReloadToken((n) => n + 1), []);
+  const state = useHrRequest<{ employeeId: string }, HrEmploymentHistory>(
+    request,
+    runHistory,
+  );
 
-  useEffect(() => {
-    if (!employeeId) {
-      setIsLoading(false);
-      return;
-    }
-    let cancelled = false;
-    setIsLoading(true);
-
-    void (async () => {
-      const result = await fetchHrEmploymentHistory(employeeId);
-      if (cancelled) return;
-      if (result.ok) {
-        setHistory(result.data);
-        setDenied(null);
-        setError(null);
-      } else if (result.kind === "denied") {
-        setHistory(null);
-        setDenied(result);
-        setError(null);
-      } else {
-        setHistory(null);
-        setDenied(null);
-        setError(result);
-      }
-      setIsLoading(false);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [employeeId, reloadToken]);
-
-  return { history, isLoading, denied, error, refresh };
+  return {
+    history: state.data,
+    isLoading: state.isLoading,
+    denied: state.denied,
+    error: state.error,
+    refresh: state.refresh,
+  };
 }
 
 // ── Reading the loosely-typed halves of the history payload ─────────────────

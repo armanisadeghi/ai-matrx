@@ -27,7 +27,7 @@
 // registered, so the box renders honestly disabled with a registered promise
 // behind it rather than pretending to work or silently vanishing.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -60,6 +60,7 @@ import { cn } from "@/lib/utils";
 import { HrPageState } from "../../shared/HrStates";
 import { useHrContext } from "../../shared/useHrContext";
 import { useHrPersona } from "../../shared/useHrPersona";
+import { useHrRequest } from "../shared/useHrRequest";
 import { fetchHrOrgChart } from "../../service";
 import { hrEmployeeHref, hrOrgChartHref, hrPeopleHref } from "../../routes";
 import type { HrDenied, HrFailed, HrOrgChart as HrOrgChartData } from "../../types";
@@ -72,49 +73,32 @@ import {
   NODE_WIDTH,
   ancestorsOf,
   layoutOrgChart,
-  orderFromLayout,
   type OrgLayout,
 } from "./layout";
 
 // ── The fetch ───────────────────────────────────────────────────────────────
 
+type ChartRequest = { organizationId: string; on: string | null };
+
+/** Module-level, so the read hook's dependency array holds a stable reference. */
+function runChart(args: ChartRequest) {
+  return fetchHrOrgChart(args);
+}
+
 function useOrgChart(organizationId: string | null, on: string | null) {
-  const [data, setData] = useState<HrOrgChartData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
-  const [error, setError] = useState<HrDenied | HrFailed | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
+  const request =
+    organizationId === null
+      ? null
+      : JSON.stringify({ organizationId, on } satisfies ChartRequest);
 
-  useEffect(() => {
-    if (!organizationId) return;
-    let cancelled = false;
-    setIsFetching(true);
-
-    (async () => {
-      const result = await fetchHrOrgChart({ organizationId, on });
-      if (cancelled) return;
-      if (result.ok) {
-        setData(result.data);
-        setError(null);
-      } else {
-        setData(null);
-        setError(result);
-      }
-      setIsLoading(false);
-      setIsFetching(false);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId, on, reloadToken]);
+  const state = useHrRequest<ChartRequest, HrOrgChartData>(request, runChart);
 
   return {
-    data,
-    isLoading,
-    isFetching,
-    error,
-    refresh: () => setReloadToken((n) => n + 1),
+    data: state.data,
+    isLoading: state.isLoading,
+    isFetching: state.isFetching,
+    error: (state.denied ?? state.error) as HrDenied | HrFailed | null,
+    refresh: state.refresh,
   };
 }
 
@@ -154,11 +138,9 @@ export function HrOrgChart() {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [showDotted, setShowDotted] = useState(false);
   const [zoom, setZoom] = useState(1);
+  // The NL query's answer, when the mandate is wired: a highlighted set of
+  // nodes ON THIS CHART, never a chat reply. Held here so the chart owns it.
   const [highlighted] = useState<Set<string>>(new Set());
-  // Carried across an as-of change so persisting nodes keep their slot.
-  const [previousOrder, setPreviousOrder] = useState<Map<string, number>>(
-    new Map(),
-  );
 
   const data = chart.data;
   const nodes = data?.nodes ?? [];
@@ -181,13 +163,19 @@ export function HrOrgChart() {
     }
   }
 
+  // 🚨 THE LAYOUT IS PURE, AND THAT IS WHAT KEEPS NODES IN PLACE ACROSS AN
+  // AS-OF CHANGE. Sibling order is a function of the people (their names), not
+  // of what was on screen a moment ago — so anyone under the same manager on
+  // both dates occupies the same slot on both, and the only thing that moves is
+  // the thing that actually changed. See `layout.ts` rule 2 for why the
+  // remember-last-render alternative was rejected.
   const layout: OrgLayout = layoutOrgChart({
     nodes: nodes.map((node) => ({
       id: node.employment_id,
       managerId: node.manager_employment_id,
+      sortKey: node.display_name,
     })),
     collapsed: effectiveCollapsed,
-    previousOrder,
     dottedLines: showDotted
       ? (data?.dotted_lines ?? []).map((line) => ({
           from: line.manager_employment_id,
@@ -195,15 +183,6 @@ export function HrOrgChart() {
         }))
       : [],
   });
-
-  // Record the order this render produced, so the NEXT as-of change starts from
-  // it. Written after layout, in an effect, never during render.
-  useEffect(() => {
-    if (!data) return;
-    setPreviousOrder(orderFromLayout(layout));
-    // The layout is a pure function of `data` + the two view sets; keying the
-    // effect on the node id list is what makes "the same chart" not re-write it.
-  }, [data?.as_of, data?.nodes.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cycleEmployments = new Set(data?.cycles ?? []);
   const setAsOf = (value: string | null) => {

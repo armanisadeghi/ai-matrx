@@ -37,6 +37,8 @@ import {
   useUrlSearchParams,
 } from "@/lib/url-state/useUrlState";
 
+import { useHrRequest } from "../shared/useHrRequest";
+
 import {
   HR_DIRECTORY_SORTS,
   HR_DIRECTORY_STATUSES,
@@ -365,16 +367,23 @@ function toFilter(
  */
 export const HR_HIRE_RANGE_SERVER_FILTER_LIVE = false;
 
-/** Exactly what one page request is. Serialized as the effect's dependency. */
+/**
+ * Exactly what one page request is. Serialized as the read hook's dependency —
+ * see `useHrRequest` for why a string, and not an object, is the honest dep.
+ */
 type HrDirectoryRequest = {
-  organizationId: string | null;
+  organizationId: string;
   filter: HrDirectoryFilter;
   limit: number;
   offset: number;
   sort: HrDirectorySort;
   direction: "asc" | "desc";
-  reloadToken: number;
 };
+
+/** Module-level, so the hook's dependency array holds a stable reference. */
+function runDirectory(args: HrDirectoryRequest) {
+  return fetchHrDirectory(args);
+}
 
 export function useHrDirectory(args: {
   organizationId: string | null;
@@ -393,68 +402,34 @@ export function useHrDirectory(args: {
     myEmploymentId,
   } = args;
 
-  const [page, setPage] = useState<HrDirectoryPage | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
-  const [error, setError] = useState<HrDenied | HrFailed | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
+  const request =
+    organizationId === null
+      ? null
+      : JSON.stringify({
+          organizationId,
+          filter: toFilter(queryState, {
+            myTeam,
+            hiredFrom,
+            hiredTo,
+            myEmploymentId,
+          }),
+          limit: queryState.pageSize,
+          offset: (queryState.page - 1) * queryState.pageSize,
+          sort: toDirectorySort(queryState.sort?.id),
+          direction: queryState.sort?.direction ?? "asc",
+        } satisfies HrDirectoryRequest);
 
-  const refresh = useCallback(() => setReloadToken((n) => n + 1), []);
+  const state = useHrRequest<HrDirectoryRequest, HrDirectoryPage>(
+    request,
+    runDirectory,
+  );
 
-  // 🚨 THE REQUEST IS SERIALIZED ON PURPOSE, and the effect parses it back.
-  //
-  // `queryState.columnFilters` is rebuilt from the URL on every render, so a
-  // fresh object identity arrives every time this hook runs. An effect that
-  // depended on it would re-fetch, set state, re-render, and re-fetch forever.
-  // Serializing gives the effect a STRING dependency that changes only when the
-  // query genuinely changed — with a complete, honest dependency array and no
-  // suppressed lint rule and no ref written during render.
-  const request = JSON.stringify({
-    organizationId,
-    filter: toFilter(queryState, { myTeam, hiredFrom, hiredTo, myEmploymentId }),
-    limit: queryState.pageSize,
-    offset: (queryState.page - 1) * queryState.pageSize,
-    sort: toDirectorySort(queryState.sort?.id),
-    direction: queryState.sort?.direction ?? "asc",
-    reloadToken,
-  } satisfies HrDirectoryRequest);
-
-  useEffect(() => {
-    const parsed: HrDirectoryRequest = JSON.parse(request);
-    if (!parsed.organizationId) return;
-    const organization = parsed.organizationId;
-
-    let cancelled = false;
-    setIsFetching(true);
-
-    (async () => {
-      const result = await fetchHrDirectory({
-        organizationId: organization,
-        filter: parsed.filter,
-        limit: parsed.limit,
-        offset: parsed.offset,
-        sort: parsed.sort,
-        direction: parsed.direction,
-      });
-      if (cancelled) return;
-
-      if (result.ok) {
-        setPage(result.data);
-        setError(null);
-      } else {
-        // A refusal REPLACES the rows. Keeping a previous page on screen behind
-        // a refusal would show data the server just declined to serve.
-        setPage(null);
-        setError(result);
-      }
-      setIsLoading(false);
-      setIsFetching(false);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [request]);
-
-  return { page, isLoading, isFetching, error, refresh };
+  return {
+    page: state.data,
+    isLoading: state.isLoading,
+    isFetching: state.isFetching,
+    // Denied and failed both reach the surface, which renders them differently.
+    error: state.denied ?? state.error,
+    refresh: state.refresh,
+  };
 }

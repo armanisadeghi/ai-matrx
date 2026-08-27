@@ -25,7 +25,7 @@
 // refusal that matters comes back in the envelope, including
 // `location_without_jurisdiction`, which arrives with its own door.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Info } from "lucide-react";
 
@@ -46,9 +46,9 @@ import {
   EffectiveDatedForm,
   useEffectiveDating,
 } from "../../shared/EffectiveDatedForm";
-import { fetchHrStructure, recordHrPositionChange } from "../../service";
+import { recordHrPositionChange } from "../../service";
 import { hrSettingsHref } from "../../routes";
-import type { HrJobTitle, HrLocation, HrStructure } from "../../types";
+import { activeStructure, useHrStructure } from "../shared/useHrStructure";
 
 type Row = Record<string, unknown>;
 
@@ -75,7 +75,8 @@ export function ChangePositionForm({
   onCancel: () => void;
 }) {
   const dating = useEffectiveDating();
-  const [structure, setStructure] = useState<HrStructure | null>(null);
+  const structureRead = useHrStructure(organizationId);
+  const structure = structureRead.data;
   const [submitting, setSubmitting] = useState(false);
   const [refusal, setRefusal] = useState<{
     reason: string;
@@ -100,28 +101,15 @@ export function ChangePositionForm({
   );
   const [changeReason, setChangeReason] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const result = await fetchHrStructure(organizationId);
-      if (!cancelled && result.ok) setStructure(result.data);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId]);
-
-  const jobTitles: HrJobTitle[] = structure?.job_titles.filter((t) => t.is_active) ?? [];
-  const locations: HrLocation[] = structure?.locations.filter((l) => l.is_active) ?? [];
-  const departments = structure?.departments.filter((d) => d.is_active) ?? [];
+  const { jobTitles, locations, departments } = activeStructure(structure);
 
   const currentLocationId = str(currentAssignment, "location_id");
   const currentLocation = locations.find((l) => l.id === currentLocationId) ?? null;
   const nextLocation = locations.find((l) => l.id === locationId) ?? null;
   const jurisdictionMoves =
-    Boolean(nextLocation) &&
-    Boolean(currentLocation) &&
-    nextLocation!.jurisdiction_id !== currentLocation!.jurisdiction_id;
+    nextLocation !== null &&
+    currentLocation !== null &&
+    nextLocation.jurisdiction_id !== currentLocation.jurisdiction_id;
 
   const chosenTitle = jobTitles.find((t) => t.id === jobTitleId) ?? null;
   const titleSuggestsFlsa =
@@ -134,7 +122,7 @@ export function ChangePositionForm({
   const exemptWithoutBasis =
     flsaStatus === "exempt" && exemptionBasis.trim() === "";
   const locationWithoutJurisdiction =
-    Boolean(nextLocation) && !nextLocation!.jurisdiction_id;
+    nextLocation !== null && !nextLocation.jurisdiction_id;
 
   const blocked =
     fteInvalid || exemptWithoutBasis || locationWithoutJurisdiction || !jobTitleId;

@@ -546,6 +546,12 @@ function ExternalIdentities({ rows }: { rows: Row[] }) {
                   {externalId}
                 </a>
               ) : (
+                // Not a door, deliberately: this is SOMEBODY ELSE'S id in
+                // SOMEBODY ELSE'S system. We hold no route for it and inventing
+                // one would open the wrong record. When the row carries a URL
+                // (above) it IS a door. `matrx/no-bare-id-text` flags this on
+                // the variable name; the rule is right about our ids and does
+                // not apply to a foreign one.
                 <span className="font-mono text-xs text-muted-foreground">
                   {externalId}
                 </span>

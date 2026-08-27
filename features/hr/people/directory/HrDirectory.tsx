@@ -21,7 +21,7 @@
 //  5. CONTRACTORS ARE MARKED QUIETLY, AS A FACT (Arman's Q3 ruling) — one small
 //     neutral chip. The marketplace of record shows only inside the Job tab.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   Download,
@@ -41,16 +41,13 @@ import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { cn } from "@/lib/utils";
 
-import {
-  HrError,
-  HrLoading,
-  HrPageState,
-} from "../../shared/HrStates";
+import { HrError, HrPageState } from "../../shared/HrStates";
 import { useHrContext } from "../../shared/useHrContext";
 import { useHrPersona } from "../../shared/useHrPersona";
 import { fetchHrOrgChart, fetchHrStructure } from "../../service";
-import { hrPeopleHref, hrPeopleNewHref } from "../../routes";
-import type { HrDirectoryRow } from "../../types";
+import { hrPeopleNewHref } from "../../routes";
+import type { HrDirectoryRow, HrResult } from "../../types";
+import { useHrRequest } from "../shared/useHrRequest";
 import { HrDirectoryCardGrid } from "./HrDirectoryCards";
 import {
   buildHrDirectoryColumns,
@@ -58,11 +55,7 @@ import {
   makeFacetLabelLookup,
   type HrDirectoryFacetOptions,
 } from "./directoryColumns";
-import {
-  HR_DIRECTORY_TABLE_ID,
-  useHrDirectory,
-  useHrDirectoryUrlState,
-} from "./useHrDirectory";
+import { useHrDirectory, useHrDirectoryUrlState } from "./useHrDirectory";
 import { useHrEmployeeMenu } from "./useHrEmployeeMenu";
 
 // ── Server-side facet options ───────────────────────────────────────────────
@@ -77,76 +70,75 @@ import { useHrEmployeeMenu } from "./useHrEmployeeMenu";
 // and the narrowing stays reachable through the doors. It never renders an
 // options list that is quietly incomplete.
 
+type FacetRequest = { organizationId: string };
+
+/** Module-level, so the read hook's dependency array holds a stable reference. */
+async function runFacets(
+  args: FacetRequest,
+): Promise<HrResult<{ facets: HrDirectoryFacetOptions; degraded: boolean }>> {
+  const [structure, chart] = await Promise.all([
+    fetchHrStructure(args.organizationId),
+    fetchHrOrgChart({ organizationId: args.organizationId }),
+  ]);
+
+  const facets: HrDirectoryFacetOptions = {
+    departments: [],
+    locations: [],
+    jobTitles: [],
+    managers: [],
+  };
+
+  if (structure.ok) {
+    facets.departments = structure.data.departments
+      .filter((d) => d.is_active)
+      .map((d) => ({ value: d.id, label: d.name }));
+    facets.locations = structure.data.locations
+      .filter((l) => l.is_active)
+      .map((l) => ({ value: l.id, label: l.name }));
+    facets.jobTitles = structure.data.job_titles
+      .filter((t) => t.is_active)
+      .map((t) => ({ value: t.id, label: t.title }));
+  }
+
+  if (chart.ok) {
+    const byEmployment = new Map(
+      chart.data.nodes.map((node) => [node.employment_id, node]),
+    );
+    const managerIds = new Set(
+      chart.data.nodes
+        .map((node) => node.manager_employment_id)
+        .filter((id): id is string => Boolean(id)),
+    );
+    facets.managers = [...managerIds]
+      .map((employmentId) => byEmployment.get(employmentId))
+      .filter((node): node is NonNullable<typeof node> => Boolean(node))
+      .map((node) => ({ value: node.employee_id, label: node.display_name }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  // A refused facet source is NOT an error state for the directory — the list
+  // still works, with fewer ways to narrow it, and the surface says so.
+  return { ok: true, data: { facets, degraded: !structure.ok } };
+}
+
 function useHrDirectoryFacets(organizationId: string | null): {
   facets: HrDirectoryFacetOptions;
   degraded: boolean;
 } {
-  const [facets, setFacets] = useState<HrDirectoryFacetOptions>(
-    EMPTY_FACET_OPTIONS,
-  );
-  const [degraded, setDegraded] = useState(false);
+  const request =
+    organizationId === null
+      ? null
+      : JSON.stringify({ organizationId } satisfies FacetRequest);
 
-  useEffect(() => {
-    if (!organizationId) return;
-    let cancelled = false;
+  const state = useHrRequest<
+    FacetRequest,
+    { facets: HrDirectoryFacetOptions; degraded: boolean }
+  >(request, runFacets);
 
-    (async () => {
-      const [structure, chart] = await Promise.all([
-        fetchHrStructure(organizationId),
-        fetchHrOrgChart({ organizationId }),
-      ]);
-      if (cancelled) return;
-
-      const next: HrDirectoryFacetOptions = {
-        departments: [],
-        locations: [],
-        jobTitles: [],
-        managers: [],
-      };
-
-      if (structure.ok) {
-        next.departments = structure.data.departments
-          .filter((d) => d.is_active)
-          .map((d) => ({ value: d.id, label: d.name }));
-        next.locations = structure.data.locations
-          .filter((l) => l.is_active)
-          .map((l) => ({ value: l.id, label: l.name }));
-        next.jobTitles = structure.data.job_titles
-          .filter((t) => t.is_active)
-          .map((t) => ({ value: t.id, label: t.title }));
-      }
-
-      if (chart.ok) {
-        const byEmployment = new Map(
-          chart.data.nodes.map((node) => [node.employment_id, node]),
-        );
-        const managerIds = new Set(
-          chart.data.nodes
-            .map((node) => node.manager_employment_id)
-            .filter((id): id is string => Boolean(id)),
-        );
-        next.managers = [...managerIds]
-          .map((employmentId) => byEmployment.get(employmentId))
-          .filter((node): node is NonNullable<typeof node> => Boolean(node))
-          .map((node) => ({
-            value: node.employee_id,
-            label: node.display_name,
-          }))
-          .sort((a, b) => a.label.localeCompare(b.label));
-      }
-
-      setFacets(next);
-      // "Degraded" is stated out loud, never hidden — the built-in columns are
-      // there and the surface says which narrowing it could not offer.
-      setDegraded(!structure.ok);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId]);
-
-  return { facets, degraded };
+  return {
+    facets: state.data?.facets ?? EMPTY_FACET_OPTIONS,
+    degraded: state.data?.degraded ?? false,
+  };
 }
 
 // ── The surface ─────────────────────────────────────────────────────────────
@@ -619,6 +611,3 @@ function CardPager({
   );
 }
 
-/** Re-exported so the route file has one import. */
-export { HR_DIRECTORY_TABLE_ID };
-export { HrLoading };

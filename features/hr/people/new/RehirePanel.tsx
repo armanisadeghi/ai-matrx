@@ -76,16 +76,12 @@ export function RehirePanel({
   const last = decisive(spells);
   const eligible = last?.rehire_eligible ?? null;
 
-  const gap = (() => {
-    if (!last?.termination_date) return null;
-    const then = new Date(`${last.termination_date.slice(0, 10)}T00:00:00`);
-    if (Number.isNaN(then.getTime())) return null;
-    const months = Math.max(
-      0,
-      Math.round((Date.now() - then.getTime()) / (30.44 * 86_400_000)),
-    );
-    return months;
-  })();
+  // 🚨 THE GAP IS STATED AS A DATE, NOT AS "N MONTHS AGO", ON PURPOSE.
+  // §4.6 is explicit that this spec TRIGGERS sick-leave reinstatement and never
+  // computes it — the window, the hours and the rule version belong to Leave &
+  // PTO and to the jurisdiction rules. A months-ago figure rendered here would
+  // read as the answer to "does reinstatement apply?", which it is not, and
+  // which nothing on this screen is entitled to say.
 
   return (
     <section className="space-y-3 rounded-lg border border-border bg-card p-3">
@@ -100,8 +96,10 @@ export function RehirePanel({
             spell to it. Their training transcript, credentials and benefits
             follow the person. Timesheets, leave and reviews belong to the old
             spell and stay there.
-            {gap !== null
-              ? ` They left about ${gap} ${gap === 1 ? "month" : "months"} ago.`
+            {last?.termination_date
+              ? ` They last left on ${formatFullDate(last.termination_date)};
+                 whether any sick-leave balance is reinstated is decided by the
+                 leave rules for their jurisdiction, not here.`
               : ""}
           </p>
         </div>

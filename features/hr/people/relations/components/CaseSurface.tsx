@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, Lock, Scale } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { hrRelationsHref } from "@/features/hr/routes";
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
@@ -252,7 +253,16 @@ export function CaseSurface({
             <ul className="mt-2 space-y-1">
               {detail.attachments.map((file) => (
                 <li key={file.file_id} className="text-sm text-foreground">
-                  {file.name ?? file.file_id}
+                  {/* Evidence is a FILE and a file opens — Open, new tab and
+                      peek, from the registry. A named record with no door is
+                      exactly the dead end the law forbids, and on an
+                      investigation file it is also a piece of evidence nobody
+                      can reach. */}
+                  <EntityRef
+                    token="file"
+                    id={file.file_id}
+                    name={file.name ?? file.file_id}
+                  />
                 </li>
               ))}
             </ul>

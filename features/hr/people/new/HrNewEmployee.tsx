@@ -66,14 +66,10 @@ import { cn } from "@/lib/utils";
 import { HrPageState } from "../../shared/HrStates";
 import { useHrContext } from "../../shared/useHrContext";
 import { useHrPersona } from "../../shared/useHrPersona";
-import {
-  createHrEmployee,
-  fetchHrStructure,
-  scanHrDuplicates,
-} from "../../service";
+import { createHrEmployee, scanHrDuplicates } from "../../service";
 import { hrEmployeeHref, hrPeopleHref, hrSettingsHref } from "../../routes";
 import { HR_WORKER_CLASSES } from "../../constants";
-import type { HrStructure } from "../../types";
+import { activeStructure, useHrStructure } from "../shared/useHrStructure";
 import { readWriteAck, type HrWriteRefusal } from "./writeAck";
 import { DuplicatePanel, type HrDuplicateScan } from "./DuplicatePanel";
 import { RehirePanel, type HrPriorEmployment } from "./RehirePanel";
@@ -107,7 +103,7 @@ export function HrNewEmployee({
           : null,
   );
 
-  const [structure, setStructure] = useState<HrStructure | null>(null);
+  const structure = useHrStructure(organizationId).data;
   const [saving, setSaving] = useState(false);
   const [created, setCreated] = useState<{ employeeId: string } | null>(null);
   const [refusal, setRefusal] = useState<HrWriteRefusal | null>(null);
@@ -149,21 +145,7 @@ export function HrNewEmployee({
   const set = (patch: Partial<typeof form>) =>
     setForm((current) => ({ ...current, ...patch }));
 
-  useEffect(() => {
-    if (!organizationId) return;
-    let cancelled = false;
-    void (async () => {
-      const result = await fetchHrStructure(organizationId);
-      if (!cancelled && result.ok) setStructure(result.data);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [organizationId]);
-
-  const locations = structure?.locations.filter((l) => l.is_active) ?? [];
-  const departments = structure?.departments.filter((d) => d.is_active) ?? [];
-  const jobTitles = structure?.job_titles.filter((t) => t.is_active) ?? [];
+  const { locations, departments, jobTitles } = activeStructure(structure);
   const chosenLocation = locations.find((l) => l.id === form.location_id) ?? null;
 
   const isContractor = form.worker_class === "contractor";
@@ -918,15 +900,18 @@ function PartyPicker({
   onPick: (partyId: string, name: string) => void;
 }) {
   const [term, setTerm] = useState("");
-  const [results, setResults] = useState<
-    { id: string; display_name: string | null }[]
-  >([]);
+  // Keyed by the search that produced it, so a stale result set for a term the
+  // user has already changed is simply not rendered — no synchronous clear in
+  // the effect, and no flash of the previous person's matches.
+  const [found, setFound] = useState<{
+    term: string;
+    rows: { id: string; display_name: string | null }[];
+  } | null>(null);
+
+  const searchable = Boolean(organizationId) && term.trim().length >= 2;
 
   useEffect(() => {
-    if (!organizationId || term.trim().length < 2) {
-      setResults([]);
-      return;
-    }
+    if (!organizationId || !searchable) return;
     let cancelled = false;
     const timer = window.setTimeout(() => {
       void (async () => {
@@ -935,9 +920,9 @@ function PartyPicker({
             orgId: organizationId,
             search: term,
           });
-          if (!cancelled) setResults(rows);
+          if (!cancelled) setFound({ term, rows });
         } catch {
-          if (!cancelled) setResults([]);
+          if (!cancelled) setFound({ term, rows: [] });
         }
       })();
     }, 250);
@@ -945,7 +930,9 @@ function PartyPicker({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [organizationId, term]);
+  }, [organizationId, term, searchable]);
+
+  const results = searchable && found?.term === term ? found.rows : [];
 
   return (
     <Fieldset
@@ -1134,5 +1121,3 @@ function problemFor(
 ): string | null {
   return problems.find((problem) => problem.field === field)?.sentence ?? null;
 }
-
-export { Checkbox };
