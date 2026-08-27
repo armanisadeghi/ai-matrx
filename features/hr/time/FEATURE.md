@@ -178,7 +178,56 @@ RLS admits the kiosk nowhere: `hr.punch` carries **zero `anon` table grants**, a
 `SECURITY DEFINER` functions are the only door, with the device secret and the employee PIN as the
 two factors on it.
 
+## Looking at the states nobody wants to discover in production
+
+The four-case fixture discipline only pays for itself if the ugly cases can be **opened**. Three
+dev-only query parameters exist for that, all of them parsed in one place
+(`clock/mockCaseParam.ts`) and all **inert unless `NEXT_PUBLIC_HR_MOCK=1`** — with the flag off they
+do nothing, so none of them can ever steer a live surface into a fixture.
+
+| Parameter | On | What it selects |
+|---|---|---|
+| `?case=` | routes 6, 34, 35, 36 | the fixture for the **read** — `hr_clock_state`, or the kiosk's `hr_kiosk_authenticate` |
+| `?punchCase=` | routes 6, 34, 36 | the fixture for the **write** — `hr_punch_record` / `hr_kiosk_punch` |
+| `?employmentId=` | route 6 | a stand-in subject |
+
+The read and the write need **separate** selectors, and that is not a convenience. The two most
+important punch fixtures sit behind states the read fixture would never let you reach: `edge` on the
+punch is the *idempotent replay that must render as a success*, while `edge` on the clock state is
+`blocked`, which renders no punch control at all. One selector for both makes the replay
+unreachable — which is how it stays unlooked-at until a real employee double-taps.
+
+`?employmentId=` exists because the platform's own test administrator is **not an employee of any
+organisation**: `hr_my_context` returns `active.employment_id = null`, and route 6 correctly renders
+*"you do not have an active job here today"* instead of a clock. Right product behaviour, useless
+verification behaviour — without a subject the widget never mounts. D15's independent verifier hits
+the same wall.
+
+Worked example: `/hr/me/clock?employmentId=<id>&punchCase=edge` → clock out → answer the attestation
+→ the replay confirmation, *"This was already recorded — we did not record it twice."*
+
+## `devices/` is built against an interface because the contracts do not exist
+
+Route 75a needs four administrator-side operations and **not one of them exists**. The lane's kiosk
+RPCs are the *device's* anon-callable half; there is no administrator counterpart, and R-L3 U-09
+records that `hr.kiosk_device` has no pairing-code columns at all, so `hr_kiosk_claim_pairing`
+currently has nothing to read. The panels therefore take an injected `KioskDeviceAdminSource` and
+the owed contracts are written down in the shape the UI needs, rather than being guessed at later:
+`hr_kiosk_device_list`, `hr_kiosk_pairing_code_create`, `hr_kiosk_device_set_trust`,
+`hr_kiosk_device_set_capture`. Nothing here fabricates an RPC call that would fail at runtime.
+
+🚨 **The route file `app/(core)/hr/settings/devices/page.tsx` is NOT this lane's** — it and its
+settings-tab entry are batched to lane L1 under the EXECUTION §3 shared-surface rule. The panel is
+shaped so that page is one line: `<KioskDevicesPanel source={...} />`.
+
 ## Change Log
+
+- 2026-08-27 — The punch widget, the `(kiosk)` group and the route-75a panels. Records the three
+  mock-lane query parameters and **why the read and the write need separate ones**; and why
+  `devices/` is built against an injected source with four contracts owed rather than a fabricated
+  RPC. Also records that `clock/punchVocabulary.ts` is deliberately NOT a duplicate of
+  `shared/vocabulary.ts` — imperative control labels ("Start break") versus noun row labels
+  ("Break start") — so the two are not merged into one wrong set.
 
 - 2026-08-27 — Records the wire's real envelope after both halves were misread in the first build
   (no `data` wrapper; `error` is an object), the snake→camel seam and the opaque-key rule that goes
