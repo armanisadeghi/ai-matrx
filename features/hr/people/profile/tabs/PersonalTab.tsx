@@ -234,17 +234,21 @@ export function PersonalTab({
             field="directory_opt_out"
             label="Hide me from the staff directory"
             /*
-              🚨 THIS SENTENCE PROMISES ONLY WHAT THE SERVER ACTUALLY DOES.
-              It said "the directory or the org chart" until it was tested:
-              `hr_directory_list` filters on `directory_opt_out`, and
-              `hr_org_chart` does not mention the column at all — verified live,
-              where a peer's directory dropped from 10 people to 9 while the org
-              chart still showed her. Whether the chart SHOULD suppress is a real
-              question (she has two direct reports, and hiding a manager leaves
-              them dangling), and it is open on the register — but a privacy
-              control must never claim a protection that is not there.
+              🚨 THIS SENTENCE PROMISES ONLY WHAT THE SERVER ACTUALLY DOES, AND IT
+              HAS BEEN NARROWED AND WIDENED ONCE EACH AS THAT CHANGED. It claimed
+              the org chart before the chart honoured it, was cut back to the
+              directory alone when testing showed it did not, and now says both —
+              because `hr_org_chart` suppresses the name for anyone but HR and the
+              subject, verified live on this record.
+
+              🚨 AND IT DOES NOT OVERSTATE THE CHART. She is not REMOVED from it:
+              her node stays and her reports stay attached, because a gap in a
+              reporting tree tells everyone exactly who is missing and where. What
+              goes is the name. Saying "hidden from the org chart" would be the
+              comfortable sentence and the wrong one — she would look at it, see her
+              own position still drawn, and rightly conclude the toggle lied.
             */
-            description="Colleagues will not find you in the staff directory. HR, your manager and anyone who needs your record for work still see you — this hides you from browsing, not from your employer."
+            description="Colleagues will not find you in the staff directory, and your name is hidden on the org chart — your position still shows there, because removing it would tell everyone exactly who is missing. HR, your manager and anyone who needs your record for work still see you: this hides you from browsing, not from your employer."
             value={personal.directory_opt_out === true}
             saving={selfUpdate.saving}
             onSave={(field, next) => selfUpdate.save(field, next)}
