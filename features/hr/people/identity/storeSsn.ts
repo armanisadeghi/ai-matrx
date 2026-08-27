@@ -44,14 +44,17 @@ export type HrSsnFingerprintOutcome =
 
 type BackendFetch = (endpoint: string, options?: RequestInit) => Promise<Response>;
 
+function isUnknownRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function readErrorCode(payload: unknown): string | null {
-  if (!payload || typeof payload !== "object") return null;
-  const record = payload as Record<string, unknown>;
+  if (!isUnknownRecord(payload)) return null;
   for (const key of ["code", "error", "detail", "error_code"]) {
-    const value = record[key];
+    const value = payload[key];
     if (typeof value === "string") return value;
-    if (value && typeof value === "object") {
-      const nested = (value as Record<string, unknown>).code;
+    if (isUnknownRecord(value)) {
+      const nested = value.code;
       if (typeof nested === "string") return nested;
     }
   }
@@ -59,8 +62,8 @@ function readErrorCode(payload: unknown): string | null {
 }
 
 function readUserMessage(payload: unknown, fallback: string): string {
-  if (!payload || typeof payload !== "object") return fallback;
-  const value = (payload as Record<string, unknown>).user_message;
+  if (!isUnknownRecord(payload)) return fallback;
+  const value = payload.user_message;
   return typeof value === "string" && value.trim() ? value : fallback;
 }
 
@@ -156,8 +159,13 @@ export async function storeHrSsn(args: {
     };
   }
 
-  const record = (payload ?? {}) as Record<string, unknown>;
-  const last4 = readText(record, "ssn_last4");
+  if (!isUnknownRecord(payload)) {
+    return {
+      kind: "failed",
+      message: "The server saved the number but returned an invalid response.",
+    };
+  }
+  const last4 = readText(payload, "ssn_last4");
   if (!last4) {
     // A 200 with no hint is a contract breach, not an empty state. Say so rather
     // than switching the panel to a last-4 display with nothing to display.
@@ -169,8 +177,8 @@ export async function storeHrSsn(args: {
   return {
     kind: "stored",
     last4,
-    created: record.created === true,
-    auditId: readText(record, "audit_id"),
+    created: payload.created === true,
+    auditId: readText(payload, "audit_id"),
   };
 }
 
@@ -234,7 +242,7 @@ export async function fingerprintHrSsn(args: {
     return { kind: "failed", message: "The duplicate check could not run." };
   }
 
-  const hex = readText((payload ?? {}) as Record<string, unknown>, "ssn_hmac_hex");
+  const hex = isUnknownRecord(payload) ? readText(payload, "ssn_hmac_hex") : null;
   if (!hex) {
     return { kind: "failed", message: "The duplicate check returned no fingerprint." };
   }
