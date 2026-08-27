@@ -244,6 +244,23 @@ function ResolvedView({
   );
 }
 
+/**
+ * A scope-type label is an ARRAY when two scopes of that type are active at once
+ * (a conversation on two Clients, a task on two Repositories) — resolve_full_context
+ * stopped collapsing those to one name. Flatten so every active scope stays visible;
+ * keeping only the plain strings would silently hide exactly the multi-scope case.
+ */
+function flattenScopeLabels(raw: unknown): string[] {
+  if (!raw || typeof raw !== "object") return [];
+  return Object.values(raw as Record<string, unknown>).flatMap((v) =>
+    Array.isArray(v)
+      ? v.filter((x): x is string => typeof x === "string")
+      : typeof v === "string"
+        ? [v]
+        : [],
+  );
+}
+
 function ResolvedBody({
   data,
   agentId,
@@ -251,13 +268,10 @@ function ResolvedBody({
   data: ContextPreviewResponse;
   agentId?: string;
 }) {
-  const scopeLabels = useMemo(() => {
-    const raw = data.scope_labels;
-    if (!raw || typeof raw !== "object") return [] as string[];
-    return Object.values(raw as Record<string, unknown>).filter(
-      (v): v is string => typeof v === "string",
-    );
-  }, [data.scope_labels]);
+  const scopeLabels = useMemo(
+    () => flattenScopeLabels(data.scope_labels),
+    [data.scope_labels],
+  );
 
   const block = data.injected_block ?? null;
 
@@ -394,7 +408,6 @@ export function ContextPreviewPanel({
     const data = preview.data;
     const asRecord = (v: unknown): Record<string, unknown> | undefined =>
       v && typeof v === "object" ? (v as Record<string, unknown>) : undefined;
-    const scopeLabels = asRecord(data?.scope_labels);
     return createContextPreviewScope({
       active_view: view,
       preview_status: preview.status,
@@ -405,10 +418,8 @@ export function ContextPreviewPanel({
           ? data.block_byte_length
           : undefined,
       block_producer: data?.block_producer ?? undefined,
-      scope_labels: scopeLabels
-        ? Object.values(scopeLabels).filter(
-            (v): v is string => typeof v === "string",
-          )
+      scope_labels: data?.scope_labels
+        ? flattenScopeLabels(data.scope_labels)
         : undefined,
       resolved_preview: asRecord(data),
       variables_direct: asRecord(data?.variables?.direct),
