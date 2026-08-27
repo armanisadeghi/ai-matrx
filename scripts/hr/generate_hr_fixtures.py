@@ -5,6 +5,10 @@
       uv run python /Users/armanisadeghi/code/matrx-frontend/scripts/hr/generate_hr_fixtures.py
     ... --check     # rebuild and diff without writing (the §7.3 drift gate)
 
+    Needs `asyncpg` (renders five calc edges from hr.jurisdiction_rule_test), which the system
+    python lacks — a bare `python3` run dies with ModuleNotFoundError; the script is not broken,
+    run it under aidream's uv env exactly as above.
+
 §6.4: **four fixtures per endpoint, minimum — happy, empty, error, edge** — living at
 `features/hr/__fixtures__/<family>/<operation>.<case>.json` and loaded by BOTH the mock transport
 and the client tests, *"so a fixture that drifts from the contract breaks a test rather than
