@@ -855,6 +855,44 @@ async def main():
             await sp.rollback()
             rec("AD-11 ledger", label, ok, outcome)
 
+        # ================================================================= §4.2 DOOR GRANTS
+        # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
+        # GRANT, so hr_c4_07's door assertion would stay green on a surface reachable only because
+        # nobody had run `REVOKE EXECUTE … FROM PUBLIC` yet — and the day somebody did, the whole
+        # workflow surface would 403 with every test still passing. These four read the ACL itself.
+        await as_owner()
+        rec("§4.2 doors", "no public.hr_wf_* door is reachable through the PUBLIC default grant",
+            await conn.fetchval(
+                "select count(*)=0 from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='public' and p.proname like 'hr\\_wf\\_%' "
+                "and (p.proacl is null or exists (select 1 from unnest(p.proacl) a where a::text like '=X/%'))"))
+        doors_total = await conn.fetchval(
+            "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+            "where n.nspname='public' and p.proname like 'hr\\_wf\\_%'")
+        doors_granted = await conn.fetchval(
+            "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+            "where n.nspname='public' and p.proname like 'hr\\_wf\\_%' "
+            "and exists (select 1 from unnest(p.proacl) a where a::text like 'authenticated=X/%')")
+        rec("§4.2 doors", "every door carries an EXPLICIT authenticated grant, not an inherited one",
+            doors_total > 0 and doors_granted == doors_total, f"{doors_granted}/{doors_total}")
+        await as_user(people["bob"]["uid"])
+        door_env = await j("select public.hr_wf_decide($1,'approved')", str(uuid.uuid4()))
+        rec("§4.2 doors", "a real authenticated caller EXECUTES public.hr_wf_decide and gets an envelope",
+            isinstance(door_env, dict) and door_env.get("granted") is False, door_env.get("reason"))
+        sp_anon = conn.transaction()
+        await sp_anon.start()
+        anon_refused, anon_state = False, None
+        try:
+            await conn.execute("set local role anon")
+            await conn.fetchval("select public.hr_wf_decide($1,'approved')", uuid.uuid4())
+            anon_state = "no error — anon reached the door"
+        except Exception as e:
+            anon_refused = getattr(e, "sqlstate", None) == "42501"
+            anon_state = f"{type(e).__name__} {getattr(e, 'sqlstate', None)}"
+        await sp_anon.rollback()
+        rec("§4.2 doors", "🚨 and anon is REFUSED 42501 — the surface is authenticated-only",
+            anon_refused, anon_state)
+
         # ================================================================= CENSUS
         await as_owner()
         cert = await conn.fetch(
