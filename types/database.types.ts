@@ -42989,6 +42989,10 @@ export type Database = {
         Returns: string[]
       }
       _time_exception_json: { Args: { p_id: string }; Returns: Json }
+      _time_grid_reach: {
+        Args: { p_at: string; p_pay_period_id: string; p_user: string }
+        Returns: boolean
+      }
       _time_has_timecard_approve: {
         Args: { p_at?: string; p_organization_id: string; p_user: string }
         Returns: boolean

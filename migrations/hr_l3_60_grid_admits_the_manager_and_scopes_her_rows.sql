@@ -55,6 +55,13 @@
 -- 4. THE AUTHORITY LANE IS KEPT AS A DISJUNCT, NOT REPLACED. An explicit `timecard_approve` holder
 --    who somehow lacks `time.read` still gates in through `hr._time_has_timecard_approve`. Removing
 --    it would narrow the door while widening it, and the ruling only widens.
+-- 7. THE ROW SCOPE ADMITS WHAT YOU MAY APPROVE AS WELL AS WHAT YOU MAY READ. Scoping on
+--    `time.read` alone would let an explicit `timecard_approve` holder through the gate and then
+--    show them nothing — a granted, empty grid with no explanation, which is a worse answer than a
+--    refusal. Measured while proving this: the only two actively-employed logins in the fixture org
+--    are HR and the manager, so an authority-only holder had to be constructed to see it at all.
+--    The approve disjunct is `hr.can_approve` — the resolver's own predicate, which the ruling
+--    names — so gate and rows stay one question: you see what you may read or act on.
 -- 5. THE REFUSAL NOW DESCRIBES WHAT IS ACTUALLY CHECKED. It said "timecard_approve authority
 --    somewhere in this pay group, or HR" — which was already the wrong sentence for a manager, and
 --    would be a worse one now. It names the manager lane too, and keeps naming the date.
@@ -119,10 +126,14 @@ begin
   v_def := replace(v_def,
     '     where ppe.pay_period_id = p_pay_period_id',
     '     where ppe.pay_period_id = p_pay_period_id' || E'\n' ||
-    '       -- 🚨 hr_l3_60 decision 2: the grid shows exactly the rows this reader could open one at' || E'\n' ||
-    '       -- a time. Before this it showed every enrolled row to anyone who passed the gate, so' || E'\n' ||
-    '       -- admitting a manager without scoping would hand her timecards she cannot open.' || E'\n' ||
-    '       and hr.capability(v_uid, ''time.read'', ppe.employment_id, current_date)');
+    '       -- 🚨 hr_l3_60 decision 2: a row is shown when the reader could open that timesheet one' || E'\n' ||
+    '       -- at a time, OR may approve it. Before this the grid showed every enrolled row to' || E'\n' ||
+    '       -- anyone who passed the gate, so admitting a manager without scoping would hand her' || E'\n' ||
+    '       -- timecards she cannot open. The approve disjunct is decision 7: an explicit authority' || E'\n' ||
+    '       -- holder who lacks time.read would otherwise gate in to an empty grid.' || E'\n' ||
+    '       and (hr.capability(v_uid, ''time.read'', ppe.employment_id, current_date)' || E'\n' ||
+    '            or hr.can_approve(v_uid, ''timecard_approve'', ''hr.pay_period_employment'',' || E'\n' ||
+    '                              ppe.id, current_date))');
 
   execute v_def;
 end
@@ -142,8 +153,9 @@ begin
     raise exception 'hr_l3_60: the manager lane was not added to the gate';
   end if;
   -- decision 2: the rows are scoped
-  if position('and hr.capability(v_uid, ''time.read'', ppe.employment_id, current_date)' in v_src) = 0 then
-    raise exception 'hr_l3_60: the row set is still unscoped';
+  if position('hr.capability(v_uid, ''time.read'', ppe.employment_id, current_date)' in v_src) = 0
+     or position('hr.can_approve(v_uid, ''timecard_approve''' in v_src) = 0 then
+    raise exception 'hr_l3_60: the row set is unscoped, or drops the approve disjunct';
   end if;
   -- decision 1: no second copy of the fallback chain anywhere in the grid
   if v_src ~ 'reporting_line|top_of_chart|manager_as_of' then
