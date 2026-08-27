@@ -100,6 +100,10 @@ const EXPECTED_CHECKS = [
   // The client door surface (hr_l3_15). `hr` is not PostgREST-exposed, so every client-called HR
   // RPC is a public.hr_* wrapper; this check fences their shape and publishes the live inventory.
   "client_doors_well_formed",
+  // The premium invariant (hr_l3_18), asserted over the ROWS: at most one current premium_only
+  // interval per (employment, day, earning code). Two sanctioned writers can emit one for the same
+  // exception; this survives a change to either. It catches a DOUBLE premium, never a missing one.
+  "premium_line_not_doubled",
 ] as const;
 
 interface ConformanceRow {
