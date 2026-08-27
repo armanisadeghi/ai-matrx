@@ -261,7 +261,7 @@ export function PartyNotes({
                 key={comment.id}
                 className="group group/item rounded border border-border bg-muted/20 px-2 py-1.5"
               >
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-center gap-2">
                   <span className="text-[11px] font-medium text-foreground">
                     {comment.author.displayName ??
                       comment.author.email ??
@@ -286,7 +286,7 @@ export function PartyNotes({
                       type="button"
                       aria-label="Delete note"
                       onClick={() => void remove(comment)}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
+                      className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive lg:h-5 lg:w-5 lg:opacity-0 lg:group-hover:opacity-100"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>

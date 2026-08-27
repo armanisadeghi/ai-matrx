@@ -391,25 +391,27 @@ export function InteractionTimeline({
                     </Link>
                   )}
                 </div>
-                {copyParent && (
-                  <CrmRecordCopyButtons
-                    revealFrom="item"
-                    label={`${copyView.subject} activity`}
-                    human={() => formatInteractionCopy(copyView)}
-                    agent={() =>
-                      interactionAgentPayload(copyParent, row, copyView)
-                    }
-                    json={() => copyView}
-                  />
-                )}
-                <button
-                  type="button"
-                  aria-label="Delete entry"
-                  onClick={() => void remove(row)}
-                  className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                <span className="flex shrink-0 items-center gap-0.5">
+                  {copyParent && (
+                    <CrmRecordCopyButtons
+                      revealFrom="item"
+                      label={`${copyView.subject} activity`}
+                      human={() => formatInteractionCopy(copyView)}
+                      agent={() =>
+                        interactionAgentPayload(copyParent, row, copyView)
+                      }
+                      json={() => copyView}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    aria-label="Delete entry"
+                    onClick={() => void remove(row)}
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive lg:h-5 lg:w-5 lg:opacity-0 lg:group-hover:opacity-100"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </span>
               </li>
             );
           })}
