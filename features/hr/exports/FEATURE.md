@@ -110,6 +110,9 @@ recorded here so the next reader does not "fix" one.
   `public.hr_payroll_export_list(p_organization_id, p_pay_period_id, p_limit)`, which returns
   `{"granted": true, "exports": [...]}` or `{"granted": false, "reason", "capability"}`.
 - `hr.payroll_export` / `hr.payroll_export_line` — append-only; the server's, not read directly.
+- Provider-seam definers that project registry-excluded binding fields are **service-role only**;
+  clients use the secret-free `hr.provider_bindings_list` door. The type proof checks both grants
+  and projections because generated types cannot encode function privileges.
 
 **Key types** (`features/hr/exports/types.ts`)
 - Every HTTP shape is **derived** from `types/python-generated/hr-contracts.api-types.ts`. A
@@ -245,6 +248,8 @@ build is the contract-drift detector** — fix `types.ts` to match, never narrow
 
 ## Change log
 
+- `2026-08-26` — made provider-seam definers that project excluded binding fields server-only,
+  narrowed the webhook candidate projection, and added a falsifiable grant/projection type proof.
 - `2026-08-26` — lane-l13-export: initial build. Nine frozen operations, the history RPC, the run
   panel and run list, the four named preconditions, the three state dialogs, the artifact
   envelope, routes 32/33 mounted. Closed the `X-Organization-Id` gap in `hr-contract-client`.
