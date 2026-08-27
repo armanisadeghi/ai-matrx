@@ -18,6 +18,9 @@
  *   • **Every decision function THIS LANE owns**, asserting the LAWS rather than the shapes: approval
  *     is refused with an open timecard and permitted over a disagreement, reopen states it does not
  *     re-pay, and unapproved overtime is never described with a payment word.
+ *   • **The cross-tenant guard on the export history door**, asserted against the SQL itself: an
+ *     org-A payroll admin must not be able to list org-B's exports, which turns on `hr.capability`
+ *     being given the organization rather than being asked ambiently.
  *   • **The export laws AT THE CONTRACT**, since the export components are lane L13's: the 409 that
  *     refuses to supersede an acknowledged file, the 422 that refuses a whole run over an advisory
  *     rule, the 400 that blocks unmapped identifiers before generation, and the `partial` run whose
@@ -222,6 +225,42 @@ async function main(): Promise<void> {
     "…and declares which identifiers it requires mapped",
     serverFormats.every((f) => Array.isArray(f.requires_mapping)),
   );
+
+  // ── Law: an org-A payroll admin cannot list org-B exports through the history door. ─────────
+  //
+  // This is a SQL fact, so it is asserted where the SQL lives rather than by pretending a fixture
+  // proved it. `hr.capability(uid, cap)` with no organization answers "does this user hold it in
+  // ANY org" after the HRB-007 cross-org hardening, so an ambient call in the export reader is a
+  // cross-tenant grant. Both the declaring file and the fix must carry the SCOPED form — if either
+  // reverts, re-applying it reopens the hole, and this check goes red before that ships.
+  const SQL_FILES = [
+    "migrations/hr_l13_02_export_grain_and_reader.sql",
+    "migrations/hr_l3_05_export_list_org_scope.sql",
+  ];
+  const AMBIENT = /hr\.capability\s*\(\s*v_user\s*,\s*'payroll\.read'\s*\)/;
+  const SCOPED = "hr.capability(v_user, 'payroll.read', null, current_date, p_organization_id)";
+  for (const rel of SQL_FILES) {
+    const full = resolve(__dirname, "../../../../..", rel);
+    const sql = existsSync(full) ? readFileSync(full, "utf8") : "";
+    ok(`${rel} exists`, sql.length > 0);
+    // Two exclusions, both named rather than loosened:
+    //   • COMMENT lines quote the ambient form on purpose, to explain what was wrong. Reporting
+    //     those would report the very explanation that keeps it fixed.
+    //   • The `v_old_call` DECLARATION in the fix migration holds the ambient string as the thing
+    //     it searches for and replaces. That is a search pattern, not a call — and the migration
+    //     would be unable to find and repair a regression without it.
+    const code = sql
+      .split("\n")
+      .filter((line) => {
+        const trimmed = line.trimStart();
+        if (trimmed.startsWith("--")) return false;
+        if (trimmed.startsWith("v_old_call constant text")) return false;
+        return true;
+      })
+      .join("\n");
+    ok(`${rel} · no ambient payroll.read capability call`, !AMBIENT.test(code));
+    ok(`${rel} · scopes payroll.read to p_organization_id`, code.includes(SCOPED));
+  }
 
   // ── Law: unapproved overtime is PAID. No payment word may appear in this vocabulary. ─────────
   const FORBIDDEN = ["unpaid", "withheld", "withhold", "not paid", "on hold", "pending pay", "zeroed"];

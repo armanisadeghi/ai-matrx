@@ -121,7 +121,18 @@ begin
     return jsonb_build_object('granted', false, 'reason', 'no_employment_in_organization');
   end if;
 
-  if not hr.capability(v_user, 'payroll.read') then
+  -- 🚨 THE ORGANIZATION IS NOT OPTIONAL. After the HRB-007 cross-org hardening,
+  -- `hr.capability(uid, cap)` with no org answers "does this user hold it in ANY org" — so the
+  -- ambient form let a payroll administrator at org A satisfy this test while asking for org B's
+  -- export history. The `v_mine` check above only proves the caller WORKS at org B; working
+  -- somewhere and being allowed to read its payroll are different facts, and payroll history names
+  -- people, hours and money. The capability is therefore resolved against the org being read.
+  --
+  -- Scoped by lane L3 / HRB-015 on 2026-08-26 at the coordinator's direction. It is repeated here,
+  -- in the file that DECLARES the function, because the live fix was applied by
+  -- migrations/hr_l3_05_export_list_org_scope.sql and a re-apply of THIS file would otherwise
+  -- silently reopen the hole it closed.
+  if not hr.capability(v_user, 'payroll.read', null, current_date, p_organization_id) then
     return jsonb_build_object('granted', false, 'reason', 'hr_capability_denied',
                               'capability', 'payroll.read');
   end if;
