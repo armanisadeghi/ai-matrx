@@ -96,7 +96,9 @@
 -- Applied live as `hr_c4_20_predicate_speaks_the_rungs_the_resolver_walks`. Idempotent.
 
 set local statement_timeout = '600s';
-set local lock_timeout = '30s';
+-- the shared checkout has many concurrent writers; the one ALTER here waits rather than
+-- losing a whole idempotent file to a transient lock.
+set local lock_timeout = '120s';
 
 do $$
 declare v_bad integer;
