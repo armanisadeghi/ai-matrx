@@ -60,6 +60,11 @@ import {
   previewPayrollExport,
 } from "../service";
 import { toExportFailure, type ExportFailure } from "../errors";
+import {
+  AmountWithheldNote,
+  ExportAmount,
+  hasAmountAuthority,
+} from "../money";
 import type { ExportFormat, ExportPreviewResult } from "../types";
 import { ExportPreconditionAlert } from "./ExportPreconditionAlert";
 
@@ -146,28 +151,22 @@ function FormatOption({
 }
 
 function PreviewSummary({ preview }: { preview: ExportPreviewResult }) {
-  // 🚨 ABSENT WINS — no label, no dash, no reserved slot (coordinator ruling, 2026-08-27).
+  // 🚨 THREE STATES, NOT TWO (coordinator ruling, 2026-08-27 — superseding the earlier two-state
+  // reading, which collapsed "withheld" into "absent" and so said nothing at all).
   //
-  // An earlier version showed the slot whenever the KEY was present and dashed the value when it
-  // was null, on the reasoning that "a present key that is empty is a different fact". It is not a
-  // distinction a reader can act on, and it leaks: **an empty slot labelled "Total amount"
-  // advertises that there is a figure here you are not allowed to see** — which is exactly what the
-  // D19 pay wall exists to avoid. It is the same law the inbox scopes follow: absent, not disabled.
+  //   key absent            → NO SLOT. The reader has no pay authority (D19 / SPEC-UI-IA §4.2).
+  //                           An empty box labelled "Total amount" is itself a disclosure.
+  //   key present, null     → THE SENTENCE. A contributing rule is still advisory, so the server
+  //                           would not compute it. Never a dash, never a zero — the hours are
+  //                           correct and payable, and only words can say that.
+  //   key present, a value  → the server's decimal string, verbatim.
   //
-  // So the slot renders only when there is a real amount to put in it. This now matches
-  // `ExportRunList`, which drops the whole column when no row carries the key. (Inside a column that
-  // IS shown, a null cell still dashes — a table cell must occupy its grid position, and a missing
-  // <td> would misalign the row. A definition-list entry has no such obligation, so it simply goes.)
-  //
-  // NOTE this is the PAY-AUTHORITY lane, not the advisory-rule lane. Where money is withheld
-  // because a contributing rule is `advisory`, the requirement is the opposite: the hours show, the
-  // amount is omitted, and a human sentence with a door to the rule is rendered — never silence.
-  // That is `features/hr/time/shared/MoneyAndFlags.tsx`, and nothing here should be copied onto it.
-  const showsAmounts =
-    "total_amount" in preview &&
-    preview.total_amount !== null &&
-    preview.total_amount !== undefined &&
-    preview.total_amount !== "";
+  // The rule itself lives in `../money` so this panel and `<ExportRunList>` cannot drift.
+  const showsAmounts = hasAmountAuthority(preview);
+  const amountWithheld = showsAmounts && !preview.total_amount;
+  // A per-line amount can be withheld while the total is not (one advisory rule touching one
+  // earning code), so the note is shown when ANY figure on this preview is missing.
+  const anyLineWithheld = preview.by_earning_code.some((line) => !line.amount);
   return (
     <div className="space-y-3">
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -192,10 +191,15 @@ function PreviewSummary({ preview }: { preview: ExportPreviewResult }) {
         {showsAmounts ? (
           <div>
             <dt className="text-xs text-muted-foreground">Total amount</dt>
-            <dd className="font-mono text-lg text-foreground">{preview.total_amount}</dd>
+            <dd className="text-lg text-foreground">
+              <ExportAmount value={preview.total_amount} />
+            </dd>
           </div>
         ) : null}
       </dl>
+
+      {/* Said once, with room for the whole sentence, rather than crammed into every cell. */}
+      {amountWithheld || anyLineWithheld ? <AmountWithheldNote /> : null}
 
       {preview.by_earning_code.length > 0 ? (
         <div className="overflow-x-auto rounded-md border border-border">
@@ -225,8 +229,10 @@ function PreviewSummary({ preview }: { preview: ExportPreviewResult }) {
                     {line.hours}
                   </td>
                   {showsAmounts ? (
-                    <td className="px-3 py-1.5 text-right font-mono text-foreground">
-                      {line.amount ?? "—"}
+                    // A cell must hold its grid position, so the withheld marker goes here and the
+                    // full sentence is rendered once above — but it is never a bare dash.
+                    <td className="px-3 py-1.5 text-right text-foreground">
+                      <ExportAmount value={line.amount} />
                     </td>
                   ) : null}
                 </tr>

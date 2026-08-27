@@ -15,21 +15,24 @@
  *    period silently never gets exported. The denial is rendered BY NAME, with the capability in
  *    it, and the table is not drawn at all.
  *
- * 2. 🚨 **AN ACKNOWLEDGED ROW'S SUPERSEDE CONTROL IS VISIBLY UNAVAILABLE, WITH THE REASON IN
- *    WORDS.** §4.5 answers `409 hr_export_already_acknowledged`, and there are exactly two wrong
- *    ways to handle that: an enabled button that 409s (the user learns the rule from a failure),
- *    and a silently missing button (the user learns nothing and assumes a bug). Both are the same
- *    mistake — discovering a payroll rule from the UI's behaviour instead of from its words. So
- *    every state that cannot supersede renders the entry DISABLED with its own `disabledReason`,
- *    and there are four different reasons because there are four different situations.
+ * 2. 🚨 **AN ACKNOWLEDGED ROW HAS NO SUPERSEDE CONTROL — AND THE REASON IS SAID IN WORDS WHERE THE
+ *    CONTROL WOULD HAVE BEEN.** §4.5 answers `409 hr_export_already_acknowledged`. There are three
+ *    ways to handle that and two of them are wrong: an enabled button that 409s (the user learns
+ *    the rule from a failure), and a silently missing button (the user learns nothing and assumes
+ *    a bug). A *disabled* button reads as "not right now" — and on the one rule that prevents
+ *    paying people twice, the UI must never imply the state could change. So the action is ABSENT
+ *    and its place is taken by the sentence: the menu's header carries it, and so does the row's
+ *    detail panel. Four states, four different sentences, because they are four different
+ *    situations. (Coordinator ruling, 2026-08-27, superseding the disabled-with-reason build.)
  *
  * 3. 🚨 **NO CLIENT COMPUTES MONEY OR HOURS.** `total_hours` and `total_amount` arrive as DECIMAL
  *    STRINGS and are displayed as decimal strings. Sorting a column is a comparison, not a
  *    computation, and it is done on a zero-PADDED STRING key ({@link decimalSortKey}) rather than
  *    by parsing to a float — binary floating point cannot represent 241880.12, and the one place
- *    that error is unacceptable is the file payroll is about to pay people from. `total_amount:
- *    null` renders as "—" and never as 0: a format that carries no money column is not a format
- *    whose money is zero.
+ *    that error is unacceptable is the file payroll is about to pay people from. The three-state
+ *    money rule (key absent → no column · present-and-null → the withheld SENTENCE, never a dash
+ *    and never a zero · a value → verbatim) lives in `../money` so this list and `<ExportRunPanel>`
+ *    cannot drift.
  *
  * 4. **EVERY COLUMN SORTS AND FILTERS** (repo law for `MatrxDataTable`), including the two decimal
  *    columns and the artifact column, which filters on whether a file exists at all.
@@ -81,6 +84,7 @@ import type {
   ExportEnvelope,
   PayrollExportHistoryRow,
 } from "../types";
+import { ExportAmount, hasAmountAuthority } from "../money";
 import { ExportAcknowledgeDialog } from "./ExportAcknowledgeDialog";
 import { ExportArtifactDownload } from "./ExportArtifactDownload";
 import { ExportFailDialog } from "./ExportFailDialog";
@@ -131,9 +135,12 @@ const CAN_FAIL: ReadonlySet<string> = new Set(["generated", "sent"]);
 const CAN_SUPERSEDE: ReadonlySet<string> = new Set(["generated", "failed"]);
 
 /**
- * 🚨 WHY THE SUPERSEDE CONTROL IS DISABLED, IN THE USER'S OWN LANGUAGE — per state, because the
+ * 🚨 WHY THIS VERSION CANNOT BE REPLACED, IN THE USER'S OWN LANGUAGE — per state, because the
  * situations are genuinely different and one generic sentence would be wrong three times out of
  * four. This is rule 2 at the top of the file, made concrete.
+ *
+ * These sentences REPLACE the control; they do not annotate a greyed one. Rendered as the menu's
+ * header description, which is exactly where the action would otherwise have been offered.
  */
 const SUPERSEDE_BLOCKED_BECAUSE: Record<string, string> = {
   acknowledged:
@@ -142,6 +149,12 @@ const SUPERSEDE_BLOCKED_BECAUSE: Record<string, string> = {
   superseded:
     "This version has already been replaced by a newer one. Replace the newest version instead.",
 };
+
+/** The sentence for a row that cannot be replaced, or `null` when the action IS on offer. */
+function supersedeBlockedReason(row: PayrollExportHistoryRow): string | null {
+  if (CAN_SUPERSEDE.has(row.delivery_state)) return null;
+  return SUPERSEDE_BLOCKED_BECAUSE[row.delivery_state] ?? null;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 // Decimal display + sorting, WITHOUT ever producing a float (rule 3).
@@ -159,7 +172,9 @@ const SUPERSEDE_BLOCKED_BECAUSE: Record<string, string> = {
  * it reads "9.5" and "9.45" as 9 vs 9 then 5 vs 45 and puts 9.5 first. Correct today only because
  * every figure in this lane happens to arrive at two decimal places.)
  */
-export function decimalSortKey(value: string | null | undefined): string | null {
+export function decimalSortKey(
+  value: string | null | undefined,
+): string | null {
   if (value == null || value === "") return null;
   const negative = value.trim().startsWith("-");
   const bare = value.trim().replace(/^[+-]/, "");
@@ -170,7 +185,15 @@ export function decimalSortKey(value: string | null | undefined): string | null 
   return `${negative ? "0" : "1"}${key}`;
 }
 
-/** The server's own figure, verbatim. `null` is "—" and is NOT zero. */
+/**
+ * The server's own figure, verbatim.
+ *
+ * 🚨 HOURS ONLY. Money never comes through here — it goes through `<ExportAmount>` in `../money`,
+ * because a missing AMOUNT is a withheld figure that must be explained in a sentence, while a
+ * missing hours value is simply a value the row does not carry. `total_hours` is the one figure the
+ * export lane can always stand behind: the whole premise of a withheld amount is that *the hours
+ * are correct and are payable*.
+ */
 function decimalText(value: string | null | undefined): string {
   return value == null || value === "" ? "—" : value;
 }
@@ -204,30 +227,38 @@ function ExportArtifactSection({
   row: PayrollExportHistoryRow;
   mockCase?: HrFixtureCase;
 }) {
-  const [envelope, setEnvelope] = useState<ExportEnvelope | null>(null);
-  const [failure, setFailure] = useState<ExportFailure | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const requestKey = `${row.export_id}:${mockCase ?? "live"}`;
+  const [artifactState, setArtifactState] = useState<{
+    requestKey: string;
+    envelope: ExportEnvelope | null;
+    failure: ExportFailure | null;
+  }>({ requestKey, envelope: null, failure: null });
+  const isCurrent = artifactState.requestKey === requestKey;
+  const envelope = isCurrent ? artifactState.envelope : null;
+  const failure = isCurrent ? artifactState.failure : null;
+  const isLoading = !isCurrent || (envelope === null && failure === null);
 
   useEffect(() => {
+    if (!row.artifact_file_id) return;
     let cancelled = false;
-    setIsLoading(true);
-    setFailure(null);
     getExportArtifact(row.export_id, { mockCase })
       .then((next) => {
-        if (!cancelled) setEnvelope(next);
+        if (!cancelled) {
+          setArtifactState({ requestKey, envelope: next, failure: null });
+        }
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setEnvelope(null);
-        setFailure(toExportFailure(err));
-      })
-      .finally(() => {
-        if (!cancelled) setIsLoading(false);
+        setArtifactState({
+          requestKey,
+          envelope: null,
+          failure: toExportFailure(err),
+        });
       });
     return () => {
       cancelled = true;
     };
-  }, [row.export_id, mockCase]);
+  }, [row.artifact_file_id, row.export_id, mockCase, requestKey]);
 
   if (!row.artifact_file_id) {
     return (
@@ -297,6 +328,17 @@ function ExportRunDetail({
         </Alert>
       ) : null}
 
+      {/*
+        🚨 The reason this version cannot be replaced, stated as a fact of the record — the same
+        sentence the row menu carries in place of the action. A reader who opens the panel to work
+        out "why can I not rebuild this?" gets the answer here without hunting for a missing button.
+      */}
+      {supersedeBlockedReason(row) ? (
+        <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+          {supersedeBlockedReason(row)}
+        </p>
+      ) : null}
+
       <dl className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-[auto_1fr]">
         <dt className="text-muted-foreground">Pay period</dt>
         <dd>
@@ -314,10 +356,15 @@ function ExportRunDetail({
           {decimalText(row.total_hours)}
         </dd>
 
-        <dt className="text-muted-foreground">Total amount</dt>
-        <dd className="font-mono text-foreground">
-          {decimalText(row.total_amount)}
-        </dd>
+        {/* Key absent → no row at all (D19 pay wall). Present-but-null → the sentence, never a dash. */}
+        {hasAmountAuthority(row) ? (
+          <>
+            <dt className="text-muted-foreground">Total amount</dt>
+            <dd className="text-foreground">
+              <ExportAmount value={row.total_amount} />
+            </dd>
+          </>
+        ) : null}
 
         <dt className="text-muted-foreground">Built</dt>
         <dd className="text-foreground">
@@ -327,7 +374,9 @@ function ExportRunDetail({
         {row.sent_at ? (
           <>
             <dt className="text-muted-foreground">Sent</dt>
-            <dd className="text-foreground">{formatGeneratedAt(row.sent_at)}</dd>
+            <dd className="text-foreground">
+              {formatGeneratedAt(row.sent_at)}
+            </dd>
           </>
         ) : null}
 
@@ -343,9 +392,7 @@ function ExportRunDetail({
         {row.supersedes_export_id ? (
           <>
             <dt className="text-muted-foreground">Replaces</dt>
-            <dd className="font-mono text-foreground">
-              version before this one ({row.supersedes_export_id})
-            </dd>
+            <dd className="text-foreground">Version before this one</dd>
           </>
         ) : null}
       </dl>
@@ -374,10 +421,7 @@ function ExportRunDetail({
           <ul className="mt-2 flex flex-wrap gap-2">
             {row.disputes_carried.map((dispute) => (
               <li key={dispute.employment_id}>
-                <HrIdentityDoor
-                  kind="employment"
-                  id={dispute.employment_id}
-                />
+                <HrIdentityDoor kind="employment" id={dispute.employment_id} />
               </li>
             ))}
           </ul>
@@ -396,9 +440,10 @@ function ExportRunDetail({
 // The list
 // ─────────────────────────────────────────────────────────────────────────────────────────────
 
-type PendingDialog =
-  | { kind: "acknowledge" | "fail" | "supersede"; row: PayrollExportHistoryRow }
-  | null;
+type PendingDialog = {
+  kind: "acknowledge" | "fail" | "supersede";
+  row: PayrollExportHistoryRow;
+} | null;
 
 export function ExportRunList({
   payPeriodId,
@@ -504,7 +549,9 @@ export function ExportRunList({
         key,
         { mockCase },
       );
-      toast.success(`The failure is on version ${row.export_version}'s record.`);
+      toast.success(
+        `The failure is on version ${row.export_version}'s record.`,
+      );
     });
   };
 
@@ -523,67 +570,84 @@ export function ExportRunList({
   const menuFor = (
     row: PayrollExportHistoryRow,
     openDetail: () => void,
-  ): ItemMenuConfig => ({
-    sections: [
-      {
-        id: "file",
-        items: [
-          {
-            id: "download",
-            label: "Open the file and its checksum",
-            icon: Download,
-            disabled: !CAN_DOWNLOAD.has(row.delivery_state) || !row.artifact_file_id,
-            disabledReason: !row.artifact_file_id
-              ? "This version was never built into a file."
-              : "A replaced version's file is kept as a record but is not offered for download.",
-            onSelect: openDetail,
-          },
-        ],
-      },
-      {
-        id: "state",
-        label: "What payroll did with it",
-        items: [
-          {
-            id: "acknowledge",
-            label: "Record that payroll accepted it",
-            icon: CheckCircle2,
-            disabled: !CAN_ACKNOWLEDGE.has(row.delivery_state),
-            disabledReason:
-              row.delivery_state === "acknowledged"
-                ? "Already recorded as accepted."
-                : "Only a file that has been built or sent can be marked accepted.",
-            onSelect: () => setDialog({ kind: "acknowledge", row }),
-          },
-          {
-            id: "fail",
-            label: "Record that it failed",
-            icon: AlertTriangle,
-            disabled: !CAN_FAIL.has(row.delivery_state),
-            disabledReason:
-              row.delivery_state === "failed"
-                ? "This version's failure is already recorded."
-                : "Only a file that has been built or sent can be marked failed.",
-            onSelect: () => setDialog({ kind: "fail", row }),
-          },
-        ],
-      },
-      {
-        id: "replace",
-        items: [
-          {
-            id: "supersede",
-            label: "Replace it with a new file",
-            icon: Layers,
-            // 🚨 RULE 2. Never silently absent, never enabled-then-409: disabled, with the reason.
-            disabled: !CAN_SUPERSEDE.has(row.delivery_state),
-            disabledReason: SUPERSEDE_BLOCKED_BECAUSE[row.delivery_state],
-            onSelect: () => setDialog({ kind: "supersede", row }),
-          },
-        ],
-      },
-    ],
-  });
+  ): ItemMenuConfig => {
+    const cannotReplaceBecause = supersedeBlockedReason(row);
+    return {
+      // 🚨 THE REASON REPLACES THE CONTROL. Where this version cannot be replaced, the menu carries
+      // the sentence in its header — the place the action would otherwise have been offered — and the
+      // action itself is ABSENT below. See `SUPERSEDE_BLOCKED_BECAUSE`.
+      header: cannotReplaceBecause
+        ? {
+            title: `Version ${row.export_version}`,
+            description: cannotReplaceBecause,
+          }
+        : undefined,
+      sections: [
+        {
+          id: "file",
+          items: [
+            {
+              id: "download",
+              label: "Open the file and its checksum",
+              icon: Download,
+              disabled:
+                !CAN_DOWNLOAD.has(row.delivery_state) || !row.artifact_file_id,
+              disabledReason: !row.artifact_file_id
+                ? "This version was never built into a file."
+                : "A replaced version's file is kept as a record but is not offered for download.",
+              onSelect: openDetail,
+            },
+          ],
+        },
+        {
+          id: "state",
+          label: "What payroll did with it",
+          items: [
+            {
+              id: "acknowledge",
+              label: "Record that payroll accepted it",
+              icon: CheckCircle2,
+              disabled: !CAN_ACKNOWLEDGE.has(row.delivery_state),
+              disabledReason:
+                row.delivery_state === "acknowledged"
+                  ? "Already recorded as accepted."
+                  : "Only a file that has been built or sent can be marked accepted.",
+              onSelect: () => setDialog({ kind: "acknowledge", row }),
+            },
+            {
+              id: "fail",
+              label: "Record that it failed",
+              icon: AlertTriangle,
+              disabled: !CAN_FAIL.has(row.delivery_state),
+              disabledReason:
+                row.delivery_state === "failed"
+                  ? "This version's failure is already recorded."
+                  : "Only a file that has been built or sent can be marked failed.",
+              onSelect: () => setDialog({ kind: "fail", row }),
+            },
+          ],
+        },
+        // 🚨 RULE 2, AS RULED 2026-08-27: the control is ABSENT, not disabled — and the reason is
+        // stated in the header above. A disabled control implies the state could still change; on the
+        // one rule that prevents paying people twice, the UI must not suggest that it might.
+        // An empty `items` array makes `ItemMenu` drop the section entirely, so this is the whole
+        // mechanism: offer the action, or say why there is no action — never a greyed ghost of one.
+        {
+          id: "replace",
+          items: CAN_SUPERSEDE.has(row.delivery_state)
+            ? [
+                {
+                  id: "supersede",
+                  label: "Replace it with a new file",
+                  icon: Layers,
+                  onSelect: () => setDialog({ kind: "supersede", row }),
+                },
+              ]
+            : [],
+        },
+      ],
+    };
+  };
 
   const columns: MatrxColumnDef<PayrollExportHistoryRow>[] = [
     // On the org-wide list an export without its period names nothing a person can act on, so the
@@ -626,7 +690,9 @@ export function ExportRunList({
       header: "Format",
       filter: "select",
       cell: (row) => (
-        <span className="text-foreground">{formatToken(row.export_format)}</span>
+        <span className="text-foreground">
+          {formatToken(row.export_format)}
+        </span>
       ),
     },
     {
@@ -673,9 +739,11 @@ export function ExportRunList({
     // all not a header over blank cells: a heading with nothing under it tells the viewer what
     // exists and taunts them with it. The rule's own mechanical test is `name in source` — the
     // reader returns ONLY the keys this viewer may see — so an absent key means no column at all.
-    // A key that is PRESENT and null is the other fact entirely (you may see amounts; this format
-    // carries none) and renders as "—", never as 0.
-    ...(rows.some((row) => "total_amount" in row)
+    // A key that is PRESENT and null is the other fact entirely — the reader MAY see amounts, but
+    // this figure was withheld because a contributing rule is still advisory. That renders as the
+    // withheld marker (with the full sentence on its title and in the row's panel), 🚨 never as a
+    // dash and never as 0: the hours are correct and payable, and both of those spellings lie.
+    ...(rows.some((row) => hasAmountAuthority(row))
       ? [
           {
             id: "total_amount",
@@ -685,9 +753,7 @@ export function ExportRunList({
             filter: "text" as const,
             align: "right" as const,
             cell: (row: PayrollExportHistoryRow) => (
-              <span className="font-mono text-foreground">
-                {decimalText(row.total_amount)}
-              </span>
+              <ExportAmount value={row.total_amount} />
             ),
           },
         ]
@@ -728,7 +794,9 @@ export function ExportRunList({
             className="font-mono text-xs text-muted-foreground"
             title={row.artifact_sha256 ?? undefined}
           >
-            {row.artifact_sha256 ? row.artifact_sha256.slice(0, 10) : "attached"}
+            {row.artifact_sha256
+              ? row.artifact_sha256.slice(0, 10)
+              : "attached"}
           </span>
         ) : (
           <span className="text-muted-foreground">No file</span>
@@ -741,7 +809,9 @@ export function ExportRunList({
     return (
       <Alert variant="destructive">
         <ShieldAlert className="h-4 w-4" aria-hidden />
-        <AlertTitle>You cannot see payroll exports for this employer</AlertTitle>
+        <AlertTitle>
+          You cannot see payroll exports for this employer
+        </AlertTitle>
         <AlertDescription>
           <p>{history.result.reason}</p>
           {history.result.capability ? (
@@ -750,8 +820,8 @@ export function ExportRunList({
               <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
                 {history.result.capability}
               </span>{" "}
-              permission. Ask whoever administers HR for this employer to add
-              it to your access role.
+              permission. Ask whoever administers HR for this employer to add it
+              to your access role.
             </p>
           ) : null}
           <p className="mt-2 text-xs">
@@ -791,9 +861,7 @@ export function ExportRunList({
       {newestFailed ? (
         <Alert variant="destructive">
           <FileWarning className="h-4 w-4" aria-hidden />
-          <AlertTitle>
-            The most recent export for this period failed
-          </AlertTitle>
+          <AlertTitle>The most recent export for this period failed</AlertTitle>
           <AlertDescription>
             <p>
               {newestFailed.failure_reason ??
