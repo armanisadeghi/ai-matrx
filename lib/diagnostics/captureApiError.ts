@@ -75,7 +75,7 @@ export function captureApiError(
     const machineCode = backendType ?? backendCode ?? error.code;
     const expectedFileReadRefusal =
       ctx.method.toUpperCase() === "GET" &&
-      /^\/files\/[^/]+(?:\/analysis)?$/.test(ctx.path) &&
+      /^\/files\/[^/]+(?:\/(?:analysis|asset))?$/.test(ctx.path) &&
       ((error.status === 403 && machineCode === "permission_denied") ||
         (error.status === 404 && machineCode === "file_not_found"));
 

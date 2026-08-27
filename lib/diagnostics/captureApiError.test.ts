@@ -244,6 +244,7 @@ describe("captureApiError", () => {
 
   it.each([
     [403, "permission_denied", "/files/file-id"],
+    [403, "permission_denied", "/files/file-id/asset"],
     [404, "file_not_found", "/files/file-id/analysis"],
   ])(
     "keeps expected file read refusal %s %s out of persistence",
@@ -265,6 +266,24 @@ describe("captureApiError", () => {
       expect(getSnapshot()).toHaveLength(0);
     },
   );
+
+  it("still persists a non-access failure from the file asset endpoint", () => {
+    captureApiError(
+      {
+        type: "http_error",
+        status: 500,
+        message: "Asset envelope failed.",
+        serverDetail: { error: "internal_error" },
+      },
+      {
+        url: "https://files.matrxserver.com/files/file-id/asset",
+        method: "GET",
+        path: "/files/file-id/asset",
+      },
+    );
+
+    expect(getSnapshot()).toHaveLength(1);
+  });
 
   it("still persists a file service failure that is not an access-state refusal", () => {
     captureApiError(

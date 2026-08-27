@@ -84,6 +84,9 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-27 — Expected asset-envelope access refusals stay out of the incident queue.** A
+  `403 permission_denied` or `404 file_not_found` from `GET /files/{id}/asset` remains typed UI
+  access-state control flow; genuine asset endpoint faults are still captured.
 - **2026-08-27 — Picker footer actions meet the 44px touch floor.** Cancel and confirm controls in
   the shared file/folder picker now keep the same 44px minimum height in Dialog and Drawer hosts.
 - **2026-08-27 — Mobile row Rename actions open the canonical editor.** The mobile Files surface
