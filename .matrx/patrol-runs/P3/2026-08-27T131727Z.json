@@ -31,6 +31,107 @@
       ],
       "previousEventHash": "cfcc560136f39ca3696a0e8269038aa7840be71aef67a184908e94e22ad59d77",
       "eventHash": "8876feb7baad04bcf661924b0515100ccc7da4f66e786d5e1a39cb22136e8116"
+    },
+    {
+      "sequence": 3,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-27T13:25:46.460Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Exact detached worktree lifecycle failed during post-change proof; the coherent candidate was preserved externally.",
+      "evidence": [
+        "Both detached automation worktrees were removed externally after baseline capture; no product regression caused the removals."
+      ],
+      "blocker": {
+        "prerequisite": "stable automation worktree lifecycle",
+        "preservedRef": "refs/heads/main",
+        "preservedSha": "f28850472b2c617b9adcb53aeb43e37c2d96471a"
+      },
+      "previousEventHash": "8876feb7baad04bcf661924b0515100ccc7da4f66e786d5e1a39cb22136e8116",
+      "eventHash": "5f03b60a348f8bc56b12e5bc6a67259c2479981826f3a5e87570e0dfc5dfab95"
+    },
+    {
+      "sequence": 4,
+      "state": "escaped_delivery",
+      "at": "2026-08-27T13:25:46.945Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Recorded candidate preservation on main before independent certification.",
+      "evidence": [
+        "Exact candidate f28850472b contains eight product files and the fixing-state run record; no release tag contains it."
+      ],
+      "escape": {
+        "candidateSha": "f28850472b2c617b9adcb53aeb43e37c2d96471a",
+        "integratedSha": "f28850472b2c617b9adcb53aeb43e37c2d96471a",
+        "release": "unreleased",
+        "reason": "The automation worktree was removed externally and the integration controller preserved its coherent patch on origin/main before the certification transition completed."
+      },
+      "previousEventHash": "5f03b60a348f8bc56b12e5bc6a67259c2479981826f3a5e87570e0dfc5dfab95",
+      "eventHash": "2ecaabfb9488bba29d04b0a4b88ef5af8f95eea66b7b109fe59b4643d71c9467"
+    },
+    {
+      "sequence": 5,
+      "state": "certifying",
+      "at": "2026-08-27T13:25:59.209Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Escaped-delivery candidate f28850472b is under independent exact-SHA adversarial certification.",
+      "evidence": [
+        "Product bytes are identical to the post-change type/gate-checked batch; candidate preservation on main does not substitute for certification."
+      ],
+      "previousEventHash": "2ecaabfb9488bba29d04b0a4b88ef5af8f95eea66b7b109fe59b4643d71c9467",
+      "eventHash": "d0571fee68c3b04a0a101d1d9555cfdb5aad6326abbcbc002b1b7a1116abe05e"
+    },
+    {
+      "sequence": 6,
+      "state": "certified",
+      "at": "2026-08-27T13:32:46.182Z",
+      "actor": "/root/p3_certifier",
+      "summary": "CERTIFIED exact candidate f28850472b; no concrete batch-caused defect.",
+      "evidence": [
+        "Independent adversarial review verified 19 of 19 repairs across eight product files and found no regression."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "f28850472b2c617b9adcb53aeb43e37c2d96471a",
+        "certifierTaskId": "/root/p3_certifier",
+        "checks": [
+          "Exact candidate identity and 11 plus 8 finding arithmetic",
+          "Touch-visible defaults and hover:hover-only desktop hiding",
+          "Keyboard focus visibility and unchanged handlers/contracts",
+          "Coarse-pointer-only 44px floor and unchanged desktop density",
+          "Tailwind compilation and baseline-delta gates"
+        ]
+      },
+      "previousEventHash": "d0571fee68c3b04a0a101d1d9555cfdb5aad6326abbcbc002b1b7a1116abe05e",
+      "eventHash": "44aaf55d56697b524948131838231f0d5ff4afabb6b8c8e0f8d4fe1fd7366e51"
+    },
+    {
+      "sequence": 7,
+      "state": "delivered",
+      "at": "2026-08-27T13:32:51.703Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Reconciled the certified escaped-delivery candidate through main and release v0.4.1307.",
+      "evidence": [
+        "Exact candidate is an ancestor of origin/main and v0.4.1307; escaped delivery preceded certification and is preserved in history."
+      ],
+      "delivery": {
+        "candidateSha": "f28850472b2c617b9adcb53aeb43e37c2d96471a",
+        "preservedRef": "refs/heads/patrol-runs/P3/2026-08-27T131727Z",
+        "integratedSha": "f28850472b2c617b9adcb53aeb43e37c2d96471a",
+        "release": "v0.4.1307"
+      },
+      "previousEventHash": "44aaf55d56697b524948131838231f0d5ff4afabb6b8c8e0f8d4fe1fd7366e51",
+      "eventHash": "a1f1bd5c0ea8a643fdb7c16ac52d6696db5c8f9482033e2c093aeeea1cf0a4ab"
+    },
+    {
+      "sequence": 8,
+      "state": "closed",
+      "at": "2026-08-27T13:32:57.493Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Closed P3 run after exact-SHA certification, delivery reconciliation, and durable routing of remaining evidence tasks.",
+      "evidence": [
+        "19 findings fixed, 0 approvals, 0 exceptions; provider-sync and broad hover classification remain open as missing-evidence/detector tasks."
+      ],
+      "previousEventHash": "a1f1bd5c0ea8a643fdb7c16ac52d6696db5c8f9482033e2c093aeeea1cf0a4ab",
+      "eventHash": "7bc17712d6c2425c52e18be90a3336e0d74ddddf9186b6a619bbc7d142f440b5"
     }
   ]
 }

@@ -1,149 +1,114 @@
 # P3 Mobile-Friendly UI Patrol
 
-- **Run date:** 2026-08-17 (America/Los_Angeles)
-- **Run id:** `2026-08-17T131440Z`
-- **Base:** `244042ddc314ba7995e3d8e8a3ed79aae9e5baca` (`v0.4.762`)
-- **Run kind:** structural-novelty scope + open-sighting verification + periodic full viewport/fixed-bottom pass
-- **Current state:** certified exact candidate integrated to `origin/main`; delivery remains queued for the serialized release lane
-- **Findings:** 16 verified occurrences in 14 files
-- **Fixed in candidate:** 16
+- **Run date:** 2026-08-27 (America/Los_Angeles)
+- **Run id:** `2026-08-27T131727Z`
+- **Base:** `2cfc5d15ffbb1886572f97f7ea58451dadcc1aa6` (`v0.4.1306` ancestry)
+- **Run kind:** structural-novelty scope + open-sighting verification + periodic full viewport/safe-area pass
+- **Current state:** escaped-delivery candidate preserved on `origin/main`; independent exact-SHA certification in progress
+- **Findings:** 19 verified occurrences in 8 files
+- **Fixed in candidate:** 19
 - **Approvals needed:** 0
-- **Degradation:** none; the exact-worktree preview lease was unavailable, so bounded static/component proof is recorded for the certifier
+- **Degradation:** two detached automation worktrees were removed externally; the exact-checkout browser navigation then timed out. Product changes remain preserved and bounded static/type/gate evidence is complete.
 
 ## Resume reconciliation
 
-The prior 2026-08-13 P3 product candidate was not stranded. Its integrated
-equivalent `03e81104d` is an ancestor of this run's base and the current release.
-No P3 permanent record existed because the lifecycle machinery landed later;
-this run starts the first hash-chained P3 record without rewriting history.
+The prior P3 candidate `e8a5e84287f0d68962bcbcd067419432d706fcc2`
+was already an ancestor of `origin/main` and release `v0.4.980`. Its permanent
+authority record now carries the missing `delivered` event.
+
+This run began in the detached automation worktree at base `2cfc5d15ff`. That
+worktree and one exact replacement were removed externally after baseline
+capture. The integration controller preserved the coherent fixing-state batch
+as `f28850472b2c617b9adcb53aeb43e37c2d96471a` on `origin/main` before
+certification. The permanent record therefore names the infrastructure block
+and escaped delivery explicitly; integration is not being treated as proof.
 
 ## Scope scanned
 
-Structural novelty since the preceding P3 product commit `03e81104d`:
+Structural novelty since the preceding certified candidate:
 
-- 39 added route leaves
-- 209 added direct client TSX files
-- 7 added top-level feature directories: `change-policy`, `github-integration`,
-  `hindsight`, `purpose`, `review-walk`, `vision-interview`, and
-  `workflow-runtime`
+- 177 added route leaves (1,217 current; SHA-256 `b496f1096b12b8e576f25656f7b07e0f702db5b8fbe77fe2e7dad287ce0d468c`)
+- 754 added direct client TSX files
+- 11 net-new top-level feature directories (138 current; SHA-256 `2ebbc9373a2253eeaf669f3aae26f0be45b4b8dd4256a6fea12c67c3354bcea8`)
 - all open P3 sightings
-- a full runtime viewport-unit pass and full fixed-bottom pass
+- a periodic full runtime pass for numeric `vh`, `h-screen`, pinch-zoom config, inline sub-16px font sizes, and fixed-bottom safe-area candidates
+- targeted triage of new hover-hidden candidates and direct client route roots
 
-Current structural baseline:
-
-- 1,040 route leaves; SHA-256
-  `368b7c993bbfe789832d02b014ce6cb4e14538bcdff060ace569bded3ec706fe`
-- 5,148 direct client TSX files; SHA-256
-  `80849c202e5b1bb0b04119db47620eb11d2ea9da2a4af04b904e714cf77c58a5`
-- 127 top-level feature directories; SHA-256
-  `4b4bae4fbfc127b30253daf3dca3aa878b745efc8792f6b4c3e04ce3e886921d`
+The full mechanical viewport/config pass is clean: no live numeric `vh`, no
+`h-screen`, no inline sub-16px font size, correct `userScalable: true` /
+`maximumScale: 5`, and no verified fixed-bottom safe-area defect.
 
 ## Verified findings and standing-authority repairs
 
-### Dynamic viewport units — 10 code tokens in 9 files
+### Hover-hidden touch actions — 11 occurrences
 
-The durable numeric-unit detector found 21 raw lines. Triage identified 10 live
-code tokens, six expressions in the confirmed zero-consumer resizable
-prototype, and five comments/explanatory references. The live code tokens are
-now `dvh` with every
-numeric value and every other property unchanged:
+Eleven real edit, delete, filter, and row-menu actions were unconditionally
+`opacity-0` and depended on `group-hover` to become visible. They occurred in:
 
-- one new expertise dialog max-height
-- one new public growth-loop ring constraint
-- four floating-window defaults/overrides
-- the keyword-research feed cap
-- two AI Visibility live-window openings
-- the content-plan brief window
+- Industry pack bands (2)
+- Industry pack meaning (2)
+- Industry pack topics (2)
+- Taxonomy tree row actions (1)
+- Performance review delete (1)
+- HR self-service edit (1)
+- Keyword Workbench filter (1)
+- Workflow browse row menu (1)
 
-The changed-file legacy viewport detector moved 10 → 0 and the durable full
-numeric-unit detector moved 21 → 8. The eight remaining matches are the six
-zero-consumer prototype expressions and two current comments after related
-comments were made truthful.
+Every action is now visible by default. Desktop hover-capable devices retain
+the dense reveal behavior through `[@media(hover:hover)]`; focus visibility is
+preserved. Event handlers, labels, permissions, and desktop dimensions are
+unchanged.
 
-### Established touch floor — 4 structurally new surfaces
+### Coarse-pointer touch floor — 8 surface roots
 
-These surfaces contain concrete sub-44px controls and/or sub-16px text inputs.
-Each now consumes the existing `.matrx-touch-targets` subtree primitive, which
-applies only on coarse pointers and therefore leaves desktop density unchanged:
-
-- Admin Launchpad
-- Gemini embedding lab
-- Vision Interview room
-- Workflow Runtime demo
-
-### Hover-only actions — 2 occurrences in one surface
-
-Vision Interview's **Reopen/Defer** and **Accept as risk** actions were invisible
-on touch devices. They are now visible by default and hidden-until-hover only
-inside `@media (hover:hover)`, preserving the desktop interaction while making
-the actions reachable on touch.
-
-## Fixed-bottom review
-
-The full detector returned 31 candidates. No new safe-area defect was verified:
-bottom bars already use `pb-safe`/`env(...)`, delegate safe padding to their
-content, are full-height sidebars rather than bottom action bars, or belong to
-zero-consumer prototypes. The canonical drawer and toast primitives remain
-protected by their existing safe-area defaults.
+The same eight dense roots now consume the existing `.matrx-touch-targets`
+primitive. It applies only under `pointer: coarse`, raises controls to the 44px
+minimum, and leaves mouse/desktop density unchanged.
 
 ## Baseline-delta verification
 
-- `pnpm type-check`: PASS → PASS
-- `pnpm check:page-headers`: 7 warnings → the same 7
-- `pnpm check:ui-primitives`: 24 warnings → the same 24
-- `pnpm check:doctrine`: PASS → PASS
+- `pnpm type-check`: PASS -> PASS
+- `pnpm check:doctrine`: PASS -> PASS
+- `pnpm check:page-headers`: 7 warnings -> the same 7
+- `pnpm check:ui-primitives`: 25 warnings -> the same 25
 - `pnpm check:tsconfig`: PASS with the same two notes
-- `pnpm test:window-panels`: 19 suites / 164 tests passed
+- `pnpm check:patrol-contracts`: unchanged baseline failure limited to other patrol/fleet automation drift; P3 has no manifest drift
+- scoped ESLint: the same two baseline errors before and after (`PackTopicsSection.tsx:67`, `TaxonomyTree.tsx:113`); neither changed line is involved
+- PostCSS/Tailwind compilation: PASS, 1,649,911 generated CSS bytes
+- changed-file assertions: 8 touch-floor roots, 11 `hover:hover` hides, 11 matching hover reveals, 0 unconditional hover-hidden action matches
 - `git diff --check`: PASS
-- changed-file legacy viewport detector: 10 → 0
-- touch-floor roots asserted: 4
-- touch-visible hover-capability repairs asserted: 2
-- scoped ESLint: one pre-existing `react-hooks/set-state-in-effect` error at
-  `PackDriftDialog.tsx:96`; this batch changes only its viewport class at line
-  127, so the diagnostic is unchanged baseline debt
 
-The exact-worktree managed preview start was attempted twice and correctly
-refused the foreign lease owned by `/Users/armanisadeghi/code/matrx-frontend`.
-That server was not reused or stopped. The candidate therefore carries the
-constitution-approved bounded fallback: exact token delta, CSS media-query
-semantics, unchanged desktop selectors, focused window-panel tests, and the
-full baseline→post gate comparison.
+The managed preview is owned by the requested checkout but was already at
+approximately 25 GB RSS. A 375x812 in-app Browser navigation timed out; the
+owned tab was closed and viewport override reset. No foreign preview, Chrome,
+or user tab was used. Under the baseline-delta constitution this is
+infrastructure evidence, not a product rejection.
 
 ## Open routing
 
-- `/administration/ai/ai-models/provider-sync` remains an open visual sighting:
-  its 375×812 compressed/overlapping header could not be re-verified against
-  this exact worktree while the preview lease was occupied. It remains a
-  missing-current-evidence item, not an exception and not a product rejection.
-- The broad hover-only detector currently returns 225 files. This run verified
-  and repaired the two real actions in `OpenQuestionsPanel`; decorative icons
-  in the other structurally new matches were not findings. The wider backlog
-  remains a detector/triage task until each control can be distinguished from
-  decorative hover polish.
+- `/administration/ai/ai-models/provider-sync` remains open: the prior 375x812
+  compressed-header sighting could not be re-verified because the exact
+  checkout navigation timed out. It remains a missing-current-evidence task,
+  not an exception.
+- The broad hover-only backlog remains a detector/triage task. This run repaired
+  all 11 verified real actions in the structurally new candidate set; decorative
+  hover polish and responsive desktop-only actions were not counted.
 
-No exception was proposed, approved, suppressed, or allowlisted. No legitimate
-product-layout choice requiring Arman was found.
+No exception was proposed, suppressed, or allowlisted. No product-layout choice
+requiring Arman was found.
 
 ## Certification
 
-The first exact candidate was **REJECTED** because this report said 15 findings
-instead of 16 and misstated the durable detector's 21 → 8 line delta. The
-product diff passed every adversarial check, but no partial certification was
-granted. The second exact candidate was **REJECTED** because one append-only
-fixing event inaccurately called that reviewed product diff “certified.” The
-record now carries an appended clarification without rewriting history.
-Independent adversarial review then **CERTIFIED** exact candidate
-`e8a5e84287f0d68962bcbcd067419432d706fcc2`: product files remained
-byte-identical to the tested batch, the hash chain and finding arithmetic were
-correct, and no concrete batch-caused defect remained. The certified candidate
-is an ancestor of integrated main commit
-`2cd1c2b1e3c97c4e4d47a1e4b11182dca1da652f`; the permanent record remains
-`delivery_queued` for the serialized release lane.
+Independent adversarial review is evaluating exact candidate
+`f28850472b2c617b9adcb53aeb43e37c2d96471a`. Integration preservation occurred
+before certification and is recorded as escaped delivery; it does not imply a
+verdict.
 
 ## Recursive learning
 
-This run proved that `.matrx-touch-targets` is the safe platform-level repair
-for a newly added dense surface: one coarse-pointer-only root fixes both the
-44px target floor and 16px input floor without changing desktop density. The
-smallest next detector improvement is to flag new route roots containing
-sub-floor controls or form typography when no ancestor opts into that class.
+This run proved the hover detector becomes useful when it requires a real
+interactive element plus unconditional `opacity-0`/`group-hover`, and that the
+same nearest-root `.matrx-touch-targets` repair safely closes the paired target
+floor. The smallest next improvement is a P3 detector that reports interactive
+hover-hidden controls separately from decorative icons and asserts the nearest
+coarse-pointer floor.
