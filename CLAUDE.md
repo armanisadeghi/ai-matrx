@@ -90,6 +90,7 @@ Arman plus dozens of agents edit this ONE checkout at once. `git add <your files
 | `(dev)` | Internal demos/tests (demos.aimatrx.com). Every new demo: `(dev)/demos/<name>/page.dev.tsx` (route leaves are `*.dev.tsx`; helpers keep plain `.tsx`). |
 | `(public)` | Marketing / legal / share / education / canvas. |
 | `(auth-pages)` | Login / signup. 🚨 A user bounced to auth NEVER loses their destination — ONE primitive owns it: [`utils/auth/FEATURE.md`](./utils/auth/FEATURE.md); read it before touching any auth page or `/login` redirect. |
+| `(kiosk)` | Shared-tablet HR punch surface (`/kiosk/[deviceId]`). The actor is a paired **device**, never a user — no session, no `AppShell`, no nav, deliberately ungated; it is not a `(core)` page and never gets auth or shell (see `app/(kiosk)/layout.tsx`). |
 | `(popup)` | Unused popup demo — fate undecided (D127). |
 | `(oauth-review)` | Google OAuth verification review surface. |
 

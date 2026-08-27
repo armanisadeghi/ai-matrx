@@ -15,6 +15,18 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D270 — two `next.config.js` redirects land on 404s (2026-08-26)
+
+Found while sweeping all 176 redirect destinations against on-disk routes (the `check:doc-claims`
+route-groups fix line). Two destinations resolve to no page:
+
+- `/administration/content-templates` (+`/:path*`) → `/administration/utilities/content-templates` — no such directory; `app/(admin)/administration/utilities/` has `message-templates` and `content-blocks`, so the intended target is probably one of those.
+- `/dynamic-imports` (+`/:path*`) → `/demos/dynamic-imports` — `app/(dev)/demos/dynamic-imports/` exists but holds only `Dynamic*.tsx` components, no `page.dev.tsx`.
+
+Neither chains onward to a live route (verified: no redirect has these as its source). The fix is
+the owning lane's call: repoint the destination or delete the redirect pair (`next.config.js` says
+never keep a redirect whose destination is not a route this app compiles).
+
 ### D269 — `client_excluded_columns` is still emitted into `database.types.ts` for 4 non-HR tables (2026-08-26)
 
 `platform.entity_types.client_excluded_columns` was a registry declaration with NO mechanism behind
