@@ -107,7 +107,6 @@ export function ExceptionsQueue({
           // A work DATE, not an instant — `from`/`to` bracket the single day.
           from: day ?? undefined,
           to: day ?? undefined,
-          search: query.search || undefined,
           ...readFilters(query),
         },
         {
@@ -185,6 +184,7 @@ export function ExceptionsQueue({
                 onStateChange: setQuery,
               }}
               pageSize={prefs.pageSize}
+              toolbar={{ search: false }}
               selection={
                 readOnly
                   ? undefined
