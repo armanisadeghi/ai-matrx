@@ -243,7 +243,31 @@ export type HrDirectoryPage = {
 export type HrOrgChartNode = {
   employment_id: string;
   employee_id: string;
+  /**
+   * 🚨 ALWAYS PRESENT, EVEN WHEN THE IDENTITY IS WITHHELD. For a person who has
+   * opted out of the directory, the server puts the WORDED STATEMENT here — not
+   * an empty string, not a masked form of the name. §4.2's rule for the chart is
+   * *name withheld, structure intact*: never a masked field, and never a gap
+   * where a node should be, because a hole in a reporting tree is itself a
+   * disclosure — everyone can see exactly who is missing and where.
+   */
   display_name: string;
+  /**
+   * 🚨 THE ONLY FLAG THE CLIENT NEEDS, AND THE SERVER OWNS THE SENTENCE.
+   * True when `display_name` is a disclosure statement rather than a name. The
+   * wording comes from `hr.employees.disclosure_existence_statements` (§1.3's one
+   * permitted disclosure), which is an ORG-CONFIGURABLE knob — so composing it
+   * server-side is what lets an employer reword it without a client release.
+   *
+   * What this flag changes here is the DOOR: a withheld node must not link to a
+   * profile the viewer cannot open. Everything else about the node — its
+   * position, its edges, its reports — renders exactly as any other, which is
+   * the whole point of the exception.
+   *
+   * Optional because a door that does not send it means "not withheld", which is
+   * every node today and stays correct once the chart half ships.
+   */
+  name_withheld?: boolean;
   job_title_id: string | null;
   job_title: string | null;
   department_id: string | null;

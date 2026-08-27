@@ -446,7 +446,13 @@ export function HrOrgChart() {
                       jobTitle={node.job_title}
                       department={node.department}
                       workerClass={node.worker_class}
-                      href={hrEmployeeHref(employeeId, null, { org: orgRef })}
+                      nameWithheld={node.name_withheld === true}
+                      // No door for a withheld node — see `ChartNode.href`.
+                      href={
+                        node.name_withheld === true
+                          ? null
+                          : hrEmployeeHref(employeeId, null, { org: orgRef })
+                      }
                       reportsHref={
                         isAsOfView
                           ? null
@@ -523,10 +529,20 @@ function ChartNode(props: {
   jobTitle: string | null;
   department: string | null;
   workerClass: string | null;
-  href: string;
+  /**
+   * 🚨 NULL FOR A WITHHELD NODE. A person who opted out of the directory has a
+   * node — structure is not the thing being hidden — but no door, because the
+   * viewer cannot open their record and a link that refuses is a worse answer
+   * than no link. Nothing else about the node changes.
+   */
+  href: string | null;
   reportsHref: string | null;
+  /** True when `name` is a disclosure statement rather than somebody's name. */
+  nameWithheld: boolean;
   canFixCycle: boolean;
 }) {
+  // The team-toggle label reads about a person, and there is no person to name.
+  const teamLabel = props.nameWithheld ? "this team" : `${props.name}'s team`;
   return (
     <div
       className={cn(
@@ -548,15 +564,35 @@ function ChartNode(props: {
       }}
     >
       <div className="flex min-w-0 items-center gap-1">
-        <Link
-          href={props.href}
-          className="flex min-h-11 min-w-0 flex-1 flex-col justify-center text-foreground underline-offset-2 hover:text-primary hover:underline lg:min-h-0"
-        >
-          <span className="truncate text-xs font-semibold">{props.name}</span>
-          <span className="truncate text-[0.6875rem] font-normal text-muted-foreground">
-            {[props.jobTitle, props.department].filter(Boolean).join(" · ")}
-          </span>
-        </Link>
+        {props.href ? (
+          <Link
+            href={props.href}
+            className="flex min-h-11 min-w-0 flex-1 flex-col justify-center text-foreground underline-offset-2 hover:text-primary hover:underline lg:min-h-0"
+          >
+            <span className="truncate text-xs font-semibold">{props.name}</span>
+            <span className="truncate text-[0.6875rem] font-normal text-muted-foreground">
+              {[props.jobTitle, props.department].filter(Boolean).join(" · ")}
+            </span>
+          </Link>
+        ) : (
+          /*
+            The withheld node. It is a STATEMENT, not a name, so it is not
+            truncated to one line and not styled as a person — and it carries no
+            door. The subtitle still renders whatever the server chose to send:
+            if the door withholds the job title too, nothing appears, and that is
+            the server's decision to make rather than this component's.
+          */
+          <div className="flex min-h-11 min-w-0 flex-1 flex-col justify-center lg:min-h-0">
+            <span className="text-[0.6875rem] italic leading-snug text-muted-foreground">
+              {props.name}
+            </span>
+            {[props.jobTitle, props.department].filter(Boolean).length > 0 ? (
+              <span className="truncate text-[0.6875rem] font-normal text-muted-foreground">
+                {[props.jobTitle, props.department].filter(Boolean).join(" · ")}
+              </span>
+            ) : null}
+          </div>
+        )}
         <HrWorkerClassChip workerClass={props.workerClass} />
       </div>
 
@@ -568,8 +604,8 @@ function ChartNode(props: {
               onClick={props.onToggle}
               aria-label={
                 props.collapsed
-                  ? `Expand ${props.name}'s team`
-                  : `Collapse ${props.name}'s team`
+                  ? `Expand ${teamLabel}`
+                  : `Collapse ${teamLabel}`
               }
               className="inline-flex h-11 w-11 items-center justify-center rounded-sm text-[0.6875rem] text-muted-foreground hover:text-foreground lg:h-4 lg:w-4"
             >
