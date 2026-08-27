@@ -44,6 +44,7 @@ import {
   formatRate,
   formatWeekStart,
 } from "../shared/format";
+import { ExceptionSentenceList } from "../shared/ExceptionDoor";
 import { FigureNotices, MoneyAmount } from "../shared/MoneyAndFlags";
 import { PunchChain } from "../shared/PunchChain";
 import { RuleSnapshotDoor } from "../shared/RuleSnapshot";
@@ -385,18 +386,9 @@ function DayRow({
           inline={viewer === "employee"}
         />
 
-        {day.exceptions.length > 0 ? (
-          <ul className="space-y-1">
-            {day.exceptions.map((exc) => (
-              <li
-                key={exc.id}
-                className="rounded-md border border-amber-500/40 bg-amber-500/5 px-2.5 py-1.5 text-xs"
-              >
-                {exc.message}
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        {/* Each raised exception is a DOOR onto its own row in route 31, not a sentence the
+            reader has to go and act on from memory. */}
+        <ExceptionSentenceList exceptions={day.exceptions} />
 
         {open ? (
           <div className="space-y-3 pt-1">

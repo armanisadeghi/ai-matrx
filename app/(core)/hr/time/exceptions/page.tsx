@@ -34,11 +34,13 @@ const KINDS = new Set<string>([
 export default async function AttendanceExceptionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ kind?: string; employment?: string }>;
+  searchParams: Promise<{ kind?: string; employment?: string; day?: string }>;
 }) {
-  const { kind, employment } = await searchParams;
+  const { kind, employment, day } = await searchParams;
   const validKind =
     kind && KINDS.has(kind) ? (kind as AttendanceExceptionKind) : null;
+  // A `local_work_date`. Anything else is ignored rather than forwarded to the server.
+  const validDay = day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null;
 
   return (
     <>
@@ -51,7 +53,11 @@ export default async function AttendanceExceptionsPage({
             <div className="h-full animate-pulse bg-card/40" aria-label="Loading the queue" />
           }
         >
-          <ExceptionsQueue kind={validKind} employmentId={employment ?? null} />
+          <ExceptionsQueue
+            kind={validKind}
+            employmentId={employment ?? null}
+            day={validDay}
+          />
         </Suspense>
       </div>
     </>

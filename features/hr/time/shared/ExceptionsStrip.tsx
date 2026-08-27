@@ -36,6 +36,7 @@ import type {
   ExceptionResolutionState,
 } from "../api/types";
 import { SeverityChip } from "./badges";
+import { ExceptionSentence } from "./ExceptionDoor";
 import { formatLocalDate, pluralize } from "./format";
 import { RefusalNotice } from "./RefusalNotice";
 import {
@@ -209,8 +210,8 @@ function InlineExceptionRow({
           {formatLocalDate(exception.localWorkDate, { weekday: true })}
         </span>
       </div>
-      {/* The server's sentence, not a token. */}
-      <p className="mt-1">{exception.message}</p>
+      {/* The server's sentence, not a token — and a door onto this exception's own row. */}
+      <ExceptionSentence exception={exception} tone="bare" className="mt-1" />
       <ExceptionResolveControls
         exception={exception}
         mockCase={mockCase}

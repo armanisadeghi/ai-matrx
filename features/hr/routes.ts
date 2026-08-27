@@ -282,15 +282,22 @@ export function hrPunchesHref(
     group: filters?.group,
   });
 }
-/** Route 31 — the attendance-exception queue. `kind` pre-filters it from an exceptions strip. */
+/**
+ * Route 31 — the attendance-exception queue. `kind` pre-filters it from an exceptions strip.
+ *
+ * `day` is a **`local_work_date`** (`2026-03-17`), not an instant: an exception belongs to the work
+ * date its punch was attributed to, so a cross-midnight shift's exception lands on the clock-in's
+ * date and filtering by a timestamp would miss it.
+ */
 export function hrTimeExceptionsHref(
   org?: HrOrgRef,
-  filters?: { kind?: string; period?: string; employment?: string },
+  filters?: { kind?: string; period?: string; employment?: string; day?: string },
 ): string {
   return hrUrl("/hr/time/exceptions", org, {
     kind: filters?.kind,
     period: filters?.period,
     employment: filters?.employment,
+    day: filters?.day,
   });
 }
 /**

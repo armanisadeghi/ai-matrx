@@ -55,6 +55,7 @@ import type {
   Paged,
 } from "../api/types";
 import { SeverityChip } from "../shared/badges";
+import { ExceptionSentence } from "../shared/ExceptionDoor";
 import { ExceptionResolveControls } from "../shared/ExceptionsStrip";
 import { formatLocalDate, formatVariance, pluralize } from "../shared/format";
 import { HrTimeReadState, RefusalNotice } from "../shared/RefusalNotice";
@@ -70,11 +71,17 @@ const HR_BULK_ACKNOWLEDGE_MAX = 50;
 export function ExceptionsQueue({
   kind,
   employmentId,
+  /**
+   * A single `local_work_date`, from an exception door on the clock, the timesheet or the strip.
+   * It narrows to that ONE day so the reader lands on the row they clicked, not on the queue.
+   */
+  day,
   /** An employee sees their own exceptions read-only (§2.6 role variations). */
   readOnly = false,
 }: {
   kind?: AttendanceExceptionKind | null;
   employmentId?: string | null;
+  day?: string | null;
   readOnly?: boolean;
 }) {
   const mockCase = useHrMockCase();
@@ -96,6 +103,9 @@ export function ExceptionsQueue({
         {
           exceptionKinds: kind ? [kind] : undefined,
           employmentIds: employmentId ? [employmentId] : undefined,
+          // A work DATE, not an instant — `from`/`to` bracket the single day.
+          from: day ?? undefined,
+          to: day ?? undefined,
           search: query.search || undefined,
           ...readFilters(query),
         },
@@ -112,7 +122,7 @@ export function ExceptionsQueue({
         },
         { mockCase, signal },
       ),
-    [kind, employmentId, query, mockCase],
+    [kind, employmentId, day, query, mockCase],
   );
 
   const rows = queue.data?.rows ?? [];
@@ -125,9 +135,19 @@ export function ExceptionsQueue({
           Every row here was raised by a rule, not by a person and not by a model. What you decide is
           recorded against the row.
         </p>
-        {kind ? (
+        {kind || day || employmentId ? (
           <p className="text-xs">
-            Filtered to <span className="font-medium">{EXCEPTION_KIND_LABELS[kind]}</span> ·{" "}
+            Filtered to{" "}
+            <span className="font-medium">
+              {[
+                kind ? EXCEPTION_KIND_LABELS[kind] : null,
+                day ? formatLocalDate(day, { weekday: true, year: true }) : null,
+                employmentId ? "one person" : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>{" "}
+            ·{" "}
             <Link href={hrTimeExceptionsHref()} className="underline underline-offset-4">
               show everything
             </Link>
@@ -347,7 +367,7 @@ function MobileExceptionRow({
         {formatLocalDate(exception.localWorkDate, { weekday: true })} ·{" "}
         {EXCEPTION_KIND_LABELS[exception.exceptionKind]}
       </p>
-      <p className="text-xs">{exception.message}</p>
+      <ExceptionSentence exception={exception} tone="bare" />
       {!readOnly ? (
         <ExceptionResolveControls
           exception={exception}

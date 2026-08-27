@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { getTimesheet } from "../api/service";
 import type { Timesheet } from "../api/types";
 import { DisagreementBlock } from "../shared/DisagreementBlock";
+import { ExceptionSentenceList } from "../shared/ExceptionDoor";
 import { HrTimeReadState } from "../shared/RefusalNotice";
 import { RuleSnapshotProvider } from "../shared/RuleSnapshot";
 import { useHrMockCase, useHrTimeQuery } from "../shared/useHrTimeQuery";
@@ -139,16 +140,9 @@ function MyTimesheetBody({
           <p className="text-xs text-muted-foreground">
             Your manager resolves these. You can add a comment from your HR tasks.
           </p>
-          <ul className="mt-2 space-y-1.5">
-            {timesheet.openExceptions.map((exc) => (
-              <li
-                key={exc.id}
-                className="rounded-md border border-border bg-muted/40 px-2.5 py-2 text-xs"
-              >
-                {exc.message}
-              </li>
-            ))}
-          </ul>
+          {/* An employee reading "no meal break was provided" must be able to open the record
+              of it — read-only for them, but reachable. */}
+          <ExceptionSentenceList exceptions={timesheet.openExceptions} className="mt-2" />
         </section>
       ) : null}
 
