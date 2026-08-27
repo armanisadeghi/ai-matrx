@@ -65,8 +65,7 @@ export function applyAiModelFilters<T extends AiModelComparisonRow>(
   }
   if (filters.is_deprecated !== undefined) {
     result = result.filter(
-      (model) =>
-        (model.is_deprecated ?? false) === filters.is_deprecated,
+      (model) => (model.is_deprecated ?? false) === filters.is_deprecated,
     );
   }
   if (filters.is_primary !== undefined) {
@@ -93,9 +92,7 @@ export function applyAiModelFilters<T extends AiModelComparisonRow>(
   }
   if (filters.max_tokens_min !== undefined) {
     const maxTokensMin = filters.max_tokens_min;
-    result = result.filter(
-      (model) => (model.max_tokens ?? 0) >= maxTokensMin,
-    );
+    result = result.filter((model) => (model.max_tokens ?? 0) >= maxTokensMin);
   }
   if (filters.max_tokens_max !== undefined) {
     const maxTokensMax = filters.max_tokens_max;
@@ -113,7 +110,11 @@ export function sortAiModels<T extends AiModelComparisonRow>(
   dir: "asc" | "desc",
 ): T[] {
   const field = sort === "provider" ? "maker" : sort;
-  if (field === "input_price" || field === "output_price") {
+  if (
+    field === "input_price" ||
+    field === "cached_input_price" ||
+    field === "output_price"
+  ) {
     return [...models].sort((a, b) => {
       const aPrice = a.preferred_pricing?.[field];
       const bPrice = b.preferred_pricing?.[field];
@@ -145,9 +146,9 @@ export function sortAiModels<T extends AiModelComparisonRow>(
 }
 
 export function applyFiltersForCount(
-    models: AiModel[],
-    q: string,
-    filters: AiModelFilters,
+  models: AiModel[],
+  q: string,
+  filters: AiModelFilters,
 ): number {
   return applyAiModelFilters(models, q, filters).length;
 }

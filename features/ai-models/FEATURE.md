@@ -34,6 +34,8 @@ must obey.
 - **Agents reference models by UUID only** (`agent.definition.model_id`). Never hard-code a provider
   model string at a call site, and never render an FK raw — use `AiModelRef`.
 - **Pricing is edited in exactly ONE place: the offering.** The model detail Pricing tab is read-only.
+  The Models and Offerings tables render the same input/cached-input/output provider-price columns;
+  Models shows the preferred available offering and Offerings shows each exact route.
   Every tier needs a `usage_basis`; validate with `validatePricingTiers` (`usageBasis.ts`, the mirror
   of the server's `usage_config.USAGE_BASIS_SPECS` — keep them in sync). Fail-closed rule: media
   output AND null basis AND NOT `token_billed` ⇒ pricing bug. **Billing never reads a model name** —
@@ -63,5 +65,7 @@ must obey.
 
 ## Change log
 
+- `2026-08-26` — Restored directly comparable input, cached-input, and output provider pricing on
+  both admin catalog tables, with each value labeled by its real billing unit.
 - `2026-08-25` — Restored the admin registry's single mobile scrollport so sticky identity and
   action cells remain pinned while the wide table scrolls.

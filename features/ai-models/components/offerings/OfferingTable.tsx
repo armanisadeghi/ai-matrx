@@ -18,6 +18,10 @@ import { AdminAuditTable } from "@/features/administration/canonicalization/comp
 import type { AuditColumnDef } from "@/features/administration/canonicalization/components/AdminAuditTable";
 import type { AiApi, AiEndpoint, AiModel, AiOffering } from "../../types";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import {
+  ProviderPriceCell,
+  type ProviderPriceField,
+} from "../ProviderPriceCell";
 
 interface OfferingTableProps {
   offerings: AiOffering[];
@@ -57,6 +61,10 @@ export default function OfferingTable({
     const a = apis.find((x) => x.id === id);
     return a?.display_name || id;
   };
+  const priceFor = (offering: AiOffering, field: ProviderPriceField) =>
+    offering.pricing[0]?.[field] ?? null;
+  const usageBasisFor = (offering: AiOffering) =>
+    offering.pricing[0]?.usage_basis ?? offering.usage_basis;
 
   const columns: AuditColumnDef<AiOffering>[] = [
     {
@@ -105,6 +113,51 @@ export default function OfferingTable({
       getValue: (o) => o.priority,
       width: "90px",
       align: "right",
+    },
+    {
+      key: "input_price",
+      label: "Input Price",
+      type: "number",
+      getValue: (o) => priceFor(o, "input_price"),
+      width: "140px",
+      align: "right",
+      render: (o) => (
+        <ProviderPriceCell
+          value={priceFor(o, "input_price")}
+          usageBasis={usageBasisFor(o)}
+          field="input_price"
+        />
+      ),
+    },
+    {
+      key: "cached_input_price",
+      label: "Cached Input",
+      type: "number",
+      getValue: (o) => priceFor(o, "cached_input_price"),
+      width: "150px",
+      align: "right",
+      render: (o) => (
+        <ProviderPriceCell
+          value={priceFor(o, "cached_input_price")}
+          usageBasis={usageBasisFor(o)}
+          field="cached_input_price"
+        />
+      ),
+    },
+    {
+      key: "output_price",
+      label: "Output Price",
+      type: "number",
+      getValue: (o) => priceFor(o, "output_price"),
+      width: "140px",
+      align: "right",
+      render: (o) => (
+        <ProviderPriceCell
+          value={priceFor(o, "output_price")}
+          usageBasis={usageBasisFor(o)}
+          field="output_price"
+        />
+      ),
     },
     {
       key: "is_available",

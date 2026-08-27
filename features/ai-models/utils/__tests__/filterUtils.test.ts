@@ -118,9 +118,7 @@ describe("AI model comparison filtering", () => {
       output_capability: "text",
     });
     expect(
-      sortAiModels(textModels, "output_price", "asc").map(
-        (model) => model.id,
-      ),
+      sortAiModels(textModels, "output_price", "asc").map((model) => model.id),
     ).toEqual(["gamma", "alpha"]);
   });
 
@@ -128,5 +126,13 @@ describe("AI model comparison filtering", () => {
     expect(
       sortAiModels(models, "output_price", "desc").map((model) => model.id),
     ).toEqual(["alpha", "gamma", "beta", "delta"]);
+  });
+
+  it("sorts models by preferred cached-input price", () => {
+    expect(
+      sortAiModels(models, "cached_input_price", "asc").map(
+        (model) => model.id,
+      ),
+    ).toEqual(["beta", "gamma", "alpha", "delta"]);
   });
 });

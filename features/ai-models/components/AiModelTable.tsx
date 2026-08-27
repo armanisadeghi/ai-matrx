@@ -55,10 +55,13 @@ import { cn } from "@/lib/utils";
 import { MOBILE_TABLE_FROZEN_SECOND } from "@/components/official/mobile-table/mobileTable";
 import { parseCapabilities } from "../capabilities/parse";
 import { isContentType, type ContentType } from "../capabilities/types";
-import { priceFieldLabel } from "../usageBasis";
 import { applyAiModelFilters, sortAiModels } from "../utils/filterUtils";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { aiProviderHref } from "../doors";
+import {
+  ProviderPriceCell,
+  type ProviderPriceField,
+} from "./ProviderPriceCell";
 
 // ─── Provider Colors ──────────────────────────────────────────────────────────
 
@@ -139,34 +142,20 @@ function ModalityBadges({ values }: { values: ContentType[] }) {
   );
 }
 
-function formatPrice(value: number): string {
-  if (value === 0) return "$0";
-  if (value < 0.01) return `$${value.toPrecision(2)}`;
-  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
-}
-
 function PriceCell({
   item,
   field,
 }: {
   item: AiModel;
-  field: "input_price" | "output_price";
+  field: ProviderPriceField;
 }) {
   const value = item.preferred_pricing?.[field];
-  if (value === null || value === undefined) {
-    return <span className="text-xs text-muted-foreground">—</span>;
-  }
-  const unit = priceFieldLabel(item.preferred_pricing?.usage_basis, field);
   return (
-    <span
-      className="block text-right text-xs tabular-nums"
-      title={`${formatPrice(value)} · ${unit}`}
-    >
-      <span className="font-medium">{formatPrice(value)}</span>
-      <span className="ml-1 text-[10px] text-muted-foreground">
-        {unit.replace("$ / ", "/")}
-      </span>
-    </span>
+    <ProviderPriceCell
+      value={value}
+      usageBasis={item.preferred_pricing?.usage_basis}
+      field={field}
+    />
   );
 }
 
@@ -227,6 +216,30 @@ const COLUMNS: ColDef[] = [
         {item.name}
       </span>
     ),
+  },
+  {
+    key: "input_price",
+    header: "Input Price",
+    width: "w-[130px] min-w-[120px]",
+    sortable: true,
+    className: "text-right",
+    render: (item) => <PriceCell item={item} field="input_price" />,
+  },
+  {
+    key: "cached_input_price",
+    header: "Cached Input",
+    width: "w-[140px] min-w-[130px]",
+    sortable: true,
+    className: "text-right",
+    render: (item) => <PriceCell item={item} field="cached_input_price" />,
+  },
+  {
+    key: "output_price",
+    header: "Output Price",
+    width: "w-[130px] min-w-[120px]",
+    sortable: true,
+    className: "text-right",
+    render: (item) => <PriceCell item={item} field="output_price" />,
   },
   {
     key: "maker",
@@ -293,22 +306,6 @@ const COLUMNS: ColDef[] = [
         }
       />
     ),
-  },
-  {
-    key: "input_price",
-    header: "Input Price",
-    width: "w-[130px] min-w-[120px]",
-    sortable: true,
-    className: "text-right",
-    render: (item) => <PriceCell item={item} field="input_price" />,
-  },
-  {
-    key: "output_price",
-    header: "Output Price",
-    width: "w-[130px] min-w-[120px]",
-    sortable: true,
-    className: "text-right",
-    render: (item) => <PriceCell item={item} field="output_price" />,
   },
   {
     key: "context_window",
