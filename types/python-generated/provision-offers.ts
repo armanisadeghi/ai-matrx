@@ -1111,6 +1111,29 @@ export interface PodcastAudioStageOffer {
   __kind?: "podcast.audio_stage.offer";
   content: string;
   audio_style?: string;
+  script_full?: string;
+  resolved_speaker_cast?: unknown;
+  tts_provider?: string;
+  dialogue_turn_count?: number;
+  truncate_audio_for_testing?: boolean;
+  show_id?: string;
+  podcast_type?: string;
+  input_data_type?: string;
+  host_count?: number;
+  speaker_cast?: unknown;
+  speaker_names_list?: string[];
+  first_show_info_text?: string;
+  post_prep_option?: string;
+  dictionary?: unknown;
+  tts_quality?: string;
+  run_mode?: string;
+  source_file_urls?: (string | {
+  [key: string]: unknown;
+  file_id?: string;
+  url?: string;
+  file_uri?: string;
+  mime_type?: string;
+})[];
 }
 
 /** Offered shape of provision `podcast.chaptering` (kind `podcast.chaptering.offer`). */
@@ -1132,6 +1155,37 @@ export interface PodcastFeatureImagePromptOffer {
 export interface PodcastImageRenderOffer {
   __kind?: "podcast.image_render.offer";
   image_description: string;
+}
+
+/** Offered shape of provision `podcast.legacy_script_stage` (kind `podcast.legacy_script_stage.offer`). */
+export interface PodcastLegacyScriptStageOffer {
+  __kind?: "podcast.legacy_script_stage.offer";
+  podcast_topic_or_content: string;
+  prepared_content?: string;
+  audio_style?: string;
+  is_legacy_band?: boolean;
+  prepared_content_is_script?: boolean;
+  prepared_content_char_count?: number;
+  show_id?: string;
+  podcast_type?: string;
+  input_data_type?: string;
+  host_count?: number;
+  speaker_cast?: unknown;
+  speaker_names_list?: string[];
+  target_audience?: string;
+  audience_guidance?: string;
+  first_show_info_text?: string;
+  post_prep_option?: string;
+  dictionary?: unknown;
+  tts_quality?: string;
+  run_mode?: string;
+  source_file_urls?: (string | {
+  [key: string]: unknown;
+  file_id?: string;
+  url?: string;
+  file_uri?: string;
+  mime_type?: string;
+})[];
 }
 
 /** Offered shape of provision `podcast.live_session` (kind `podcast.live_session.offer`). */
@@ -1170,6 +1224,19 @@ export interface PodcastPrepExtractionOffer {
   file_uri?: string;
   mime_type?: string;
 })[];
+  source_file_count?: number;
+  prep_user_message?: string;
+  show_id?: string;
+  podcast_type?: string;
+  input_data_type?: string;
+  host_count?: number;
+  speaker_cast?: unknown;
+  speaker_names_list?: string[];
+  first_show_info_text?: string;
+  post_prep_option?: string;
+  dictionary?: unknown;
+  tts_quality?: string;
+  run_mode?: string;
 }
 
 /** Offered shape of provision `podcast.script_stage` (kind `podcast.script_stage.offer`). */
@@ -1183,6 +1250,31 @@ export interface PodcastScriptStageOffer {
   speaker_names?: string;
   speaker_name?: string;
   speaker_personas?: string;
+  podcast_topic_or_content?: string;
+  audio_style?: string;
+  is_legacy_band?: boolean;
+  prepared_content_is_script?: boolean;
+  prepared_content_char_count?: number;
+  show_id?: string;
+  podcast_type?: string;
+  input_data_type?: string;
+  host_count?: number;
+  speaker_cast?: unknown;
+  speaker_names_list?: string[];
+  target_audience?: string;
+  audience_guidance?: string;
+  first_show_info_text?: string;
+  post_prep_option?: string;
+  dictionary?: unknown;
+  tts_quality?: string;
+  run_mode?: string;
+  source_file_urls?: (string | {
+  [key: string]: unknown;
+  file_id?: string;
+  url?: string;
+  file_uri?: string;
+  mime_type?: string;
+})[];
 }
 
 /** Offered shape of provision `podcast.title_optimization` (kind `podcast.title_optimization.offer`). */
@@ -1192,6 +1284,7 @@ export interface PodcastTitleOptimizationOffer {
   content_summary: string;
   show_metadata_json?: string;
   keywords?: string;
+  episode_script_full?: string;
 }
 
 /** Offered shape of provision `podcast.video_render` (kind `podcast.video_render.offer`). */
@@ -1235,6 +1328,14 @@ export interface PodcastClientYoutubeSourceOffer {
   __kind?: "podcast_client.youtube_source.offer";
   youtube_url: string;
   timestamp_instruction?: string;
+}
+
+/** Offered shape of provision `proof_runs.judge_case` (kind `proof_runs.judge_case.offer`). */
+export interface ProofRunsJudgeCaseOffer {
+  __kind?: "proof_runs.judge_case.offer";
+  rubric: string;
+  actual_output: string;
+  context?: string;
 }
 
 /** Offered shape of provision `purpose.unit_config` (kind `purpose.unit_config.offer`). */
@@ -1651,6 +1752,26 @@ export interface SeoSerpIntentAnalysisOffer {
   analyzer_version: string;
 }
 
+/** Offered shape of provision `seo.site_evidence` (kind `seo.site_evidence.offer`). */
+export interface SeoSiteEvidenceOffer {
+  __kind?: "seo.site_evidence.offer";
+  site_identity?: string;
+  business_guidance?: string;
+  pages_summary?: string;
+  pages_index?: string;
+  gsc_summary?: string;
+  gsc_top_queries?: string;
+  gsc_top_pages?: string;
+  keywords_tracked?: string;
+  topic_tree?: string;
+  backlinks_summary?: string;
+  competitors?: string;
+  findings_open?: string;
+  analysis_scores?: string;
+  evidence_coverage?: string;
+  evidence_bundle?: string;
+}
+
 /** Offered shape of provision `seo.site_intake` (kind `seo.site_intake.offer`). */
 export interface SeoSiteIntakeOffer {
   __kind?: "seo.site_intake.offer";
@@ -1972,6 +2093,7 @@ export interface ProvisionOffers {
   "podcast.chaptering": PodcastChapteringOffer;
   "podcast.feature_image_prompt": PodcastFeatureImagePromptOffer;
   "podcast.image_render": PodcastImageRenderOffer;
+  "podcast.legacy_script_stage": PodcastLegacyScriptStageOffer;
   "podcast.live_session": PodcastLiveSessionOffer;
   "podcast.metadata_stage": PodcastMetadataStageOffer;
   "podcast.post_prep": PodcastPostPrepOffer;
@@ -1983,6 +2105,7 @@ export interface ProvisionOffers {
   "podcast_client.topic_idea_request": PodcastClientTopicIdeaRequestOffer;
   "podcast_client.web_source": PodcastClientWebSourceOffer;
   "podcast_client.youtube_source": PodcastClientYoutubeSourceOffer;
+  "proof_runs.judge_case": ProofRunsJudgeCaseOffer;
   "purpose.unit_config": PurposeUnitConfigOffer;
   "rag.chunk_context": RagChunkContextOffer;
   "rag.page_cleaning": RagPageCleaningOffer;
@@ -2025,6 +2148,7 @@ export interface ProvisionOffers {
   "seo.press_story_analysis": SeoPressStoryAnalysisOffer;
   "seo.reputation_intelligence": SeoReputationIntelligenceOffer;
   "seo.serp_intent_analysis": SeoSerpIntentAnalysisOffer;
+  "seo.site_evidence": SeoSiteEvidenceOffer;
   "seo.site_intake": SeoSiteIntakeOffer;
   "seo.site_strategy_interview": SeoSiteStrategyInterviewOffer;
   "seo.starter_pack_proposal": SeoStarterPackProposalOffer;
@@ -2167,6 +2291,7 @@ export const PROVISION_OFFER_KINDS = {
   "podcast.chaptering": "podcast.chaptering.offer",
   "podcast.feature_image_prompt": "podcast.feature_image_prompt.offer",
   "podcast.image_render": "podcast.image_render.offer",
+  "podcast.legacy_script_stage": "podcast.legacy_script_stage.offer",
   "podcast.live_session": "podcast.live_session.offer",
   "podcast.metadata_stage": "podcast.metadata_stage.offer",
   "podcast.post_prep": "podcast.post_prep.offer",
@@ -2178,6 +2303,7 @@ export const PROVISION_OFFER_KINDS = {
   "podcast_client.topic_idea_request": "podcast_client.topic_idea_request.offer",
   "podcast_client.web_source": "podcast_client.web_source.offer",
   "podcast_client.youtube_source": "podcast_client.youtube_source.offer",
+  "proof_runs.judge_case": "proof_runs.judge_case.offer",
   "purpose.unit_config": "purpose.unit_config.offer",
   "rag.chunk_context": "rag.chunk_context.offer",
   "rag.page_cleaning": "rag.page_cleaning.offer",
@@ -2220,6 +2346,7 @@ export const PROVISION_OFFER_KINDS = {
   "seo.press_story_analysis": "seo.press_story_analysis.offer",
   "seo.reputation_intelligence": "seo.reputation_intelligence.offer",
   "seo.serp_intent_analysis": "seo.serp_intent_analysis.offer",
+  "seo.site_evidence": "seo.site_evidence.offer",
   "seo.site_intake": "seo.site_intake.offer",
   "seo.site_strategy_interview": "seo.site_strategy_interview.offer",
   "seo.starter_pack_proposal": "seo.starter_pack_proposal.offer",
