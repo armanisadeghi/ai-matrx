@@ -71,6 +71,30 @@ function isBrickingTrust(state: string): state is "suspended" | "revoked" {
   return state === "suspended" || state === "revoked";
 }
 
+/**
+ * 🚨 **NO RAW REFUSAL TOKEN EVER REACHES A TABLET.** F7's law — a machine code is not page text —
+ * applies to the kiosk exactly as it does to the punch register, and a break-room screen is the
+ * worst possible place to break it: the reader is an employee at 5am, not an administrator.
+ *
+ * Every sentence is deliberately uniform about *why*. `device_not_authenticated` covers a wrong
+ * device id AND a wrong secret by design, so the wording must not imply which — and it must not
+ * imply the tablet is broken when an administrator simply has to act.
+ */
+function kioskRefusalSentence(reason: string): string {
+  switch (reason) {
+    case "device_not_authenticated":
+      return "This tablet is not set up for time clocking. Ask an administrator to pair it again.";
+    case "device_suspended":
+    case "device_revoked":
+      return "This tablet is no longer in service. Please tell your manager.";
+    case "kiosk_disabled":
+      return "Time clock tablets are switched off for this employer. Ask an administrator.";
+    default:
+      // Still a sentence, never the code. An unknown reason is our gap, not the employee's problem.
+      return "This tablet cannot be used for time clocking right now. Ask an administrator.";
+  }
+}
+
 export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): KioskDevice {
   const [view, setView] = useState<KioskDeviceView>({ kind: "loading" });
   const [skew, setSkew] = useState<KioskClockSkew | null>(null);
@@ -125,9 +149,57 @@ export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): Kios
       .catch((cause: unknown) => {
         if (!live) return;
         if (cause instanceof HrRpcError) {
-          // The server does not recognise this secret. Holding onto it produces a tablet stuck in a
-          // refusal loop forever, so the identity goes and the screen says to pair it again.
-          clearKioskIdentity();
+          /*
+           * 🚨 R1: THIS BRANCH USED TO DESTROY A VALID SECRET.
+           *
+           * It read EVERY refusal as "the server does not recognise this secret", called
+           * `clearKioskIdentity()`, and rendered `cause.userMessage` — which for the kiosk family
+           * was the transport's template string `"hr_kiosk_authenticate refused"`. So a correctly
+           * paired tablet waiting for approval **wiped the one secret it can never be issued
+           * again**, the `awaiting-trust` branch above became unreachable code, and the person
+           * standing there was shown a machine token.
+           *
+           * The server now distinguishes the three cases (verified live against
+           * `public.hr_kiosk_authenticate`), and clearing is correct for exactly ONE of them:
+           *
+           *   device_not_authenticated  unknown id, unpaired placeholder, or wrong secret. Two keys,
+           *                             byte-identical for all four causes, so it leaks nothing —
+           *                             and it is the only FATAL one. The secret is genuinely dead;
+           *                             holding it strands the tablet in a refusal loop.
+           *   device_pending_approval   the caller PROVED possession and is simply not approved yet.
+           *                             Keep the secret, wait, poll.
+           *   device_not_trusted        proven, then withdrawn. Brick — the same word the heartbeat
+           *                             already used for suspended/revoked.
+           */
+          const reason = typeof cause.details.reason === "string" ? cause.details.reason : cause.code;
+          const trustState = cause.details.trust_state;
+
+          if (reason === "device_pending_approval") {
+            setView({ kind: "awaiting-trust", identity });
+            return;
+          }
+
+          if (reason === "device_not_trusted") {
+            const state = String(trustState);
+            setView({
+              kind: "bricked",
+              trustState: isBrickingTrust(state) ? state : "revoked",
+            });
+            return;
+          }
+
+          if (reason === "device_not_authenticated") {
+            // The one fatal case, and the only one that may destroy the secret.
+            clearKioskIdentity();
+            setView({ kind: "refused", message: kioskRefusalSentence(reason) });
+            return;
+          }
+
+          /*
+           * An unknown reason. Keep the secret — see the asymmetry above — and say something a
+           * person can act on. `userMessage` is the server's own sentence where it sent one, and a
+           * worded generic otherwise; the transport no longer lets a raw token through (F7).
+           */
           setView({ kind: "refused", message: cause.userMessage });
           return;
         }

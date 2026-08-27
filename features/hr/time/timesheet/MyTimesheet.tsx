@@ -27,6 +27,7 @@ import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { cn } from "@/lib/utils";
 
 import { getTimesheet } from "../api/service";
+import { fromLiveTimesheet } from "./fromLiveTimesheet";
 import type { Timesheet } from "../api/types";
 import { DisagreementBlock } from "../shared/DisagreementBlock";
 import { ExceptionSentenceList } from "../shared/ExceptionDoor";
@@ -49,7 +50,12 @@ export function MyTimesheet({
   const ready = Boolean(employmentId && payPeriodId);
 
   const query = useHrTimeQuery<Timesheet>(
-    (signal) => getTimesheet(employmentId as string, payPeriodId as string, { mockCase, signal }),
+    // The live envelope is structurally different from `types.ts`; `fromLiveTimesheet` is the seam.
+    (signal) =>
+      getTimesheet(employmentId as string, payPeriodId as string, {
+        mockCase,
+        signal,
+      }).then(fromLiveTimesheet),
     [employmentId, payPeriodId, mockCase],
     ready,
   );

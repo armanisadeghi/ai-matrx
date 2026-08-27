@@ -874,6 +874,24 @@ export interface KioskPunchResult {
   attestationRequired: boolean;
 }
 
+/**
+ * What `hr_kiosk_session_open` answers with — the **person-bound** interaction session (§1.2's
+ * second row: TTL in MINUTES, not the device session's hours).
+ *
+ * 🚨 **THIS IS THE PIN-ACCEPT STEP, AND IT OWNS LOCKOUT.** `hr_kiosk_punch` re-checks the PIN but
+ * counts nothing; the attempt counter and the `pin_lockout_minutes` window live here. A kiosk that
+ * punches without opening a session has no lockout at all.
+ *
+ * 🚨 **A PIN ALONE IDENTIFIES NOBODY** (§1.2). It is a secret, not an identifier, and two employees
+ * may hold the same four digits — so the door takes the **employee number and then the PIN**, and
+ * answers one indistinguishable failure for a wrong number or a wrong PIN.
+ */
+export interface KioskPersonSession {
+  kioskSessionId: string;
+  employmentId: string;
+  expiresAt: string;
+}
+
 export interface KioskDeviceRow {
   id: string;
   deviceName: string;

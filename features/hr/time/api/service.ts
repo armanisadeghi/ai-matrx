@@ -28,6 +28,7 @@ import type {
   ExceptionResolutionState,
   KioskDeviceSession,
   KioskPairingResult,
+  KioskPersonSession,
   KioskPunchResult,
   Paged,
   PayPeriodState,
@@ -515,6 +516,72 @@ export function heartbeatKioskSession(
   opts?: HrRpcOptions,
 ): Promise<{ trustState: string; serverTime: string; configVersion: string }> {
   return callHrTimeRpc("hr_kiosk_session_heartbeat", { p_session_token: sessionToken }, opts);
+}
+
+/**
+ * Bind a person to the device session — **the PIN-accept step** (§1.2, §3.3).
+ *
+ * 🚨 Takes the **employee number AND the PIN**, because a PIN alone identifies nobody: it is a
+ * secret, not an identifier, and two employees may hold the same four digits. The door answers ONE
+ * indistinguishable refusal for a wrong number and a wrong PIN, so the pad can never be used to
+ * discover whether an employee number exists.
+ *
+ * 🚨 This call owns the lockout counter. `kioskPunch` re-checks the PIN but counts nothing, so a
+ * kiosk that skips this step has no lockout at all — R3.
+ */
+export function openKioskSession(
+  sessionToken: string,
+  employeeNumber: string,
+  employmentPin: string,
+  opts?: HrRpcOptions,
+): Promise<KioskPersonSession> {
+  return callHrTimeRpc<KioskPersonSession>(
+    "hr_kiosk_session_open",
+    {
+      p_session_token: sessionToken,
+      p_employee_number: employeeNumber,
+      p_employment_pin: employmentPin,
+    },
+    opts,
+  );
+}
+
+/**
+ * End the person-bound session. §3.3's flowchart closes it on the confirmation card — a wall tablet
+ * must not sit with somebody's identity live on it while the next person walks up.
+ */
+export function closeKioskSession(
+  sessionToken: string,
+  reason = "completed",
+  opts?: HrRpcOptions,
+): Promise<unknown> {
+  return callHrTimeRpc<unknown>(
+    "hr_kiosk_session_close",
+    { p_session_token: sessionToken, p_reason: reason },
+    opts,
+  );
+}
+
+/**
+ * Set or rotate an employment's kiosk PIN.
+ *
+ * 🚨 **The PIN is never returned, never logged and cannot be read back** — the function stores a
+ * bcrypt hash and answers `{granted, employment_pin_id, audit_id}`. A previous PIN is retired with
+ * `revoked_at` and a rotated row; it is never edited and never deleted.
+ *
+ * Authority is **an HR writer OR the subject themselves**, enforced server-side, which is why this
+ * is reachable from the employee's own clock surface and not only from an admin screen.
+ */
+export function setEmploymentPin(
+  employmentId: string,
+  pin: string,
+  opts?: HrRpcOptions,
+): Promise<{ granted?: boolean; employmentPinId?: string; auditId?: string }> {
+  return callHrTimeRpc(
+    "hr_set_employment_pin",
+    { p_employment_id: employmentId, p_pin: pin },
+    opts,
+  );
 }
 
 export interface KioskPunchInput {

@@ -48,17 +48,34 @@ import { useEffect, useState } from "react";
 
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { HrRpcError } from "@/features/hr/time/api/rpc";
-import { kioskPunch } from "@/features/hr/time/api/service";
+import {
+  closeKioskSession,
+  kioskPunch,
+  openKioskSession,
+} from "@/features/hr/time/api/service";
 import type { KioskPunchResult, PunchKind } from "@/features/hr/time/api/types";
-import { mintPunchIntent, retryPunchIntent, type PunchIntent } from "@/features/hr/time/clock/punchIntent";
+import { mintPunchIntent, type PunchIntent } from "@/features/hr/time/clock/punchIntent";
 
 import { KIOSK_SKEW_REFUSAL, skewCorrectedNow, type KioskClockSkew } from "./kioskSkew";
 import type { TrustedKioskSession } from "./useKioskDevice";
 
 export type KioskPunchView =
   | { kind: "idle" }
-  /** The act is chosen; the PIN pad is up. Nothing has been sent. */
-  | { kind: "pin"; punchKind: PunchKind }
+  /**
+   * The act is chosen; the pad asks for the **employee number and then the PIN**. Nothing sent yet.
+   *
+   * 🚨 **A PIN ALONE IDENTIFIES NOBODY** (§1.2, §3.3). It is a secret, not an identifier, and two
+   * employees may hold the same four digits. The pad used to collect a PIN only and hand it to
+   * `hr_kiosk_punch`, which cannot resolve a person from it — R2.
+   */
+  | { kind: "identify"; punchKind: PunchKind }
+  /** `hr_kiosk_session_open` in flight — the PIN-accept step. Visibly unfinished. */
+  | { kind: "opening"; punchKind: PunchKind }
+  /**
+   * 🚨 Lockout, owned by `hr_kiosk_session_open` (R3). The wording never reveals whether the
+   * employee number or the PIN was the wrong one, nor whether either exists.
+   */
+  | { kind: "locked"; lockedUntil: string | null }
   /** 🚨 Visibly unfinished. Never a confirmation. */
   | { kind: "submitting"; punchKind: PunchKind }
   | { kind: "confirmed"; result: KioskPunchResult }
@@ -73,12 +90,17 @@ export type KioskPunchView =
 
 export interface KioskPunch {
   view: KioskPunchView;
-  /** Choose the act. Mints the one intent this punch will carry through every attempt. */
+  /** Choose the act. The pad comes up next; nothing is sent until the person is identified. */
   begin: (punchKind: PunchKind) => void;
-  /** Send it. The PIN is passed in and never stored anywhere in this hook. */
-  submit: (pin: string) => void;
-  /** 🚨 Same intent, same key — one more attempt at the SAME punch, never a second one. */
-  retry: (pin: string) => void;
+  /**
+   * Identify and punch: opens the person-bound session with the employee number + PIN, then writes
+   * the punch against it and closes the session.
+   *
+   * 🚨 Neither the number nor the PIN is ever stored in React state — both are arguments that live
+   * only for the duration of this call. A wall tablet must not hold somebody's credentials in a
+   * component that the next person walks up to.
+   */
+  submit: (employeeNumber: string, pin: string) => void;
   /** The duplicate card's ONE door. Opens instructions; it never writes a second punch. */
   dispute: () => void;
   /** Back to idle from anywhere. The tablet must never sit on a person's name. */
@@ -147,6 +169,18 @@ export function useKioskPunch({
         },
         { mockCase },
       );
+      /*
+       * 🚨 The person-bound session ends the moment the punch resolves (§3.3's flowchart closes it
+       * on the confirmation card). A wall tablet must never sit with one employee's identity live on
+       * it while the next person walks up — that is the whole reason this session's TTL is measured
+       * in MINUTES while the device session's is measured in hours (§1.2).
+       *
+       * Fire-and-forget deliberately: the punch is already written and the confirmation is owed to
+       * the person standing there. A failed close expires on its own within minutes; blocking the
+       * card on it would trade a guaranteed harm for a bounded one.
+       */
+      void closeKioskSession(session.sessionToken, "completed", { mockCase }).catch(() => {});
+
       // A replay is a SUCCESS: `result.replayed` renders the same confirmation with one extra line.
       setView(
         result.duplicateSuspected
@@ -163,6 +197,48 @@ export function useKioskPunch({
     }
   }
 
+  /**
+   * 🚨 **ONE INDISTINGUISHABLE FAILURE** (§1.2, §3.3). A wrong employee number and a wrong PIN
+   * produce the same sentence, so the pad can never be used to discover who works here. The server
+   * answers `not_authenticated` for both on purpose; this must not helpfully elaborate.
+   */
+  async function identifyThenPunch(current: PunchIntent, employeeNumber: string, pin: string) {
+    if (offline) {
+      setView({ kind: "offline" });
+      return;
+    }
+    if (skew?.beyondMax) {
+      setView({ kind: "clock-wrong" });
+      return;
+    }
+    if (!employeeNumber || !pin) return;
+
+    setView({ kind: "opening", punchKind: current.kind });
+    try {
+      await openKioskSession(session.sessionToken, employeeNumber, pin, { mockCase });
+    } catch (cause: unknown) {
+      if (cause instanceof HrRpcError) {
+        const reason = typeof cause.details.reason === "string" ? cause.details.reason : cause.code;
+        if (reason === "locked") {
+          const until = cause.details.locked_until;
+          setView({ kind: "locked", lockedUntil: typeof until === "string" ? until : null });
+          return;
+        }
+        // Uniform. Never "no such employee number", never "wrong PIN".
+        setView({
+          kind: "refused",
+          message: "That did not work. Check your employee number and PIN, or ask your manager.",
+        });
+        return;
+      }
+      setView({ kind: "offline" });
+      return;
+    }
+
+    // The person is bound to the device session; the punch goes against it.
+    await send(current, pin);
+  }
+
   return {
     view,
 
@@ -176,17 +252,21 @@ export function useKioskPunch({
         at: skewCorrectedNow(skew),
       });
       setIntent(minted);
-      setView({ kind: "pin", punchKind });
+      setView({ kind: "identify", punchKind });
     },
 
-    submit: (pin: string) => {
-      if (!intent || view.kind !== "pin") return;
-      void send(intent, pin);
-    },
-
-    retry: (pin: string) => {
-      if (!intent) return;
-      void send(retryPunchIntent(intent), pin);
+    /**
+     * 🚨 R2 + R3. The pad hands over the **employee number and the PIN**, and this opens the
+     * person-bound session before it punches.
+     *
+     * `hr_kiosk_session_open` is the PIN-accept step and **it owns the lockout counter** —
+     * `hr_kiosk_punch` re-checks the PIN but counts nothing. A kiosk that punched directly, as this
+     * one did, had no lockout at all: a PIN could be guessed forever, four digits at a time, on an
+     * unattended tablet.
+     */
+    submit: (employeeNumber: string, pin: string) => {
+      if (!intent || view.kind !== "identify") return;
+      void identifyThenPunch(intent, employeeNumber.trim(), pin);
     },
 
     dispute: () =>
@@ -216,7 +296,7 @@ export function useKioskPunch({
  * mints a key against the wrong minute — harmless to the punch itself (the server stamps the truth
  * from the location), but it weakens the retry guarantee across a minute boundary.
  */
-function kioskKeyTimeZone(): string {
+export function kioskKeyTimeZone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 }
 

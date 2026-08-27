@@ -46,14 +46,9 @@ import {
 } from "@/features/hr/routes";
 
 import { getPeriodGrid } from "../api/service";
-import { getPayPeriod } from "../periods/api/periodReads";
+import { fromLivePeriodGrid, type LivePeriodGrid } from "./fromLiveTimesheet";
 import { listAttendanceExceptions } from "../exceptions/api";
-import type {
-  AttendanceExceptionRow,
-  PayPeriodRow,
-  Paged,
-  PeriodGridRow,
-} from "../api/types";
+import type { AttendanceExceptionRow, Paged, PeriodGridRow } from "../api/types";
 import { PeriodStateChip, RowStateChip } from "../shared/badges";
 import { ExceptionsStrip } from "../shared/ExceptionsStrip";
 import { formatHours, formatVariance, pluralize } from "../shared/format";
@@ -91,7 +86,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
   const [bulkOpen, setBulkOpen] = useState(false);
   const [rawFor, setRawFor] = useState<PeriodGridRow | null>(null);
 
-  const grid = useHrTimeQuery<Paged<PeriodGridRow>>(
+  const grid = useHrTimeQuery<LivePeriodGrid>(
     (signal) =>
       getPeriodGrid(
         payPeriodId as string,
@@ -119,7 +114,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
               ],
         },
         { mockCase, signal },
-      ),
+      ).then(fromLivePeriodGrid),
     [payPeriodId, query, mockCase],
     Boolean(payPeriodId),
   );
@@ -147,12 +142,6 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
     Boolean(payPeriodId),
   );
 
-  /** The HEADER's period — a different state machine from the rows, read from the periods lane. */
-  const period = useHrTimeQuery<PayPeriodRow>(
-    (signal) => getPayPeriod(payPeriodId as string, { mockCase, signal }),
-    [payPeriodId, mockCase],
-    Boolean(payPeriodId),
-  );
 
   if (!payPeriodId) return <NoPeriodChosen />;
 
@@ -162,7 +151,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
   return (
     <RuleSnapshotProvider>
       <div className="flex h-full min-h-0 flex-col gap-3 px-3 py-3 sm:px-4">
-        {period.data ? <PeriodGridHeader period={period.data} /> : null}
+        {grid.data ? <PeriodGridHeader grid={grid.data} /> : null}
 
         <HrTimeReadState loading={grid.loading} error={grid.error}>
           <>
@@ -504,16 +493,24 @@ function MobileRow({ row }: { row: PeriodGridRow }) {
  * 🚨 THE HEADER — where the two state machines are told apart, with the progress figure §6.4
  * requires so they can never be confused.
  */
-export function PeriodGridHeader({ period }: { period: PayPeriodRow }) {
+/**
+ * 🚨 THE HEADER — where the two state machines are told apart, with the progress figure §6.4
+ * requires so they can never be confused.
+ *
+ * Both come from the GRID's own response (`pay_period.period_state` and `progress`), not a second
+ * read: one call, one consistent answer. A separate period fetch could disagree with the rows on
+ * screen, which is precisely the confusion D8 is about.
+ */
+export function PeriodGridHeader({ grid }: { grid: LivePeriodGrid }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-      <PeriodStateChip state={period.state} />
+      <PeriodStateChip state={grid.periodState} />
       <span className="text-xs text-muted-foreground">
         {/* "38 of 41 approved" — the count of ROWS, beside the PERIOD's own state. */}
-        {period.counts.approved} of {period.counts.employments} timecards approved
+        {grid.progress.approved} of {grid.progress.total} timecards approved
       </span>
       <Link
-        href={hrTimePeriodHref(period.id)}
+        href={hrTimePeriodHref(grid.periodId)}
         className="text-xs font-medium underline underline-offset-4"
       >
         Move the pay period

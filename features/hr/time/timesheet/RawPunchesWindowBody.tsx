@@ -18,6 +18,7 @@ import Link from "next/link";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 
 import { getTimesheet } from "../api/service";
+import { fromLiveTimesheet } from "./fromLiveTimesheet";
 import type { Timesheet } from "../api/types";
 import { hrTimesheetHref } from "@/features/hr/routes";
 import { formatLocalDate } from "../shared/format";
@@ -35,7 +36,8 @@ export function RawPunchesWindowBody({
   mockCase?: HrFixtureCase;
 }) {
   const query = useHrTimeQuery<Timesheet>(
-    (signal) => getTimesheet(employmentId, payPeriodId, { mockCase, signal }),
+    (signal) =>
+      getTimesheet(employmentId, payPeriodId, { mockCase, signal }).then(fromLiveTimesheet),
     [employmentId, payPeriodId, mockCase],
   );
 

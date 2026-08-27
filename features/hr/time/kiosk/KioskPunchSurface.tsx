@@ -20,8 +20,10 @@
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { geoCaptureBeforeNotice } from "@/features/hr/time/clock/geoCapture";
+import { formatStampedTime } from "@/features/hr/time/clock/stampedTime";
 
 import { KioskFrame } from "./KioskFrame";
 import { KioskIdleScreen } from "./KioskIdleScreen";
@@ -41,7 +43,7 @@ import {
   KioskUnpairedScreen,
 } from "./KioskStateScreens";
 import { useKioskDevice } from "./useKioskDevice";
-import { useKioskPunch } from "./useKioskPunch";
+import { kioskKeyTimeZone, useKioskPunch } from "./useKioskPunch";
 
 export interface KioskPunchSurfaceProps {
   deviceId: string;
@@ -156,7 +158,7 @@ function KioskReadySurface({
         />,
       );
 
-    case "pin":
+    case "identify":
       return frame(
         <KioskPinPad
           punchKind={punch.view.punchKind}
@@ -165,6 +167,36 @@ function KioskReadySurface({
           onSubmit={punch.submit}
           onCancel={punch.dismiss}
         />,
+      );
+
+    // `hr_kiosk_session_open` in flight — the PIN-accept step. Same rule as `submitting`: visibly
+    // unfinished, and nothing here claims a punch happened.
+    case "opening":
+      return frame(
+        <div className="flex flex-col items-center gap-6">
+          <Loader2 className="size-16 animate-spin text-muted-foreground" />
+          <p className="text-2xl text-muted-foreground">Checking…</p>
+        </div>,
+      );
+
+    /*
+     * 🚨 Lockout (R3), owned by `hr_kiosk_session_open`. The wording never says whether the employee
+     * number exists, never says which of the two was wrong, and never says whether a PIN is set —
+     * a lockout screen that distinguishes those is an oracle for guessing who works here.
+     */
+    case "locked":
+      return frame(
+        <div className="flex flex-col items-center gap-6 text-center">
+          <p className="text-4xl font-semibold text-foreground">Too many attempts.</p>
+          <p className="max-w-lg text-2xl text-muted-foreground">
+            {punch.view.lockedUntil
+              ? `Try again after ${formatStampedTime(punch.view.lockedUntil, kioskKeyTimeZone())}, or ask your manager.`
+              : "Try again later, or ask your manager."}
+          </p>
+          <Button onClick={punch.dismiss} className="min-h-[72px] px-10 text-xl">
+            Done
+          </Button>
+        </div>,
       );
 
     // 🚨 Visibly unfinished, and deliberately NOT a confirmation (L3-68). Nothing on this screen

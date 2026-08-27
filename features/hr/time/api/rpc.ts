@@ -84,6 +84,9 @@ export type HrTimeRpcName =
   | "hr_kiosk_session_open"
   | "hr_kiosk_session_close"
   | "hr_kiosk_session_heartbeat"
+  // The kiosk PIN. Set by an HR writer OR by the subject themselves (the function enforces both),
+  // which is why it is on the Time lane's door list and not only an admin one.
+  | "hr_set_employment_pin"
   | "hr_kiosk_punch"
   // the one workflow door this lane uses — the decision RPC is the sole writer BY DESIGN
   | "hr_wf_decide"
@@ -167,6 +170,12 @@ interface HrRpcEnvelope {
   message?: string;
   user_message?: string | null;
   details?: Record<string, unknown> | null;
+  /** The kiosk family's refusal spelling — `{ok:false, reason:'device_not_authenticated'}`. */
+  reason?: string | null;
+  /** Set by `hr_kiosk_session_open` when a PIN lockout is in force. */
+  locked_until?: unknown;
+  /** Set by `hr_kiosk_authenticate` alongside a refusal, so a pending device can be told apart. */
+  trust_state?: unknown;
   /** Present only where a function deliberately nests its payload. Most do not. */
   data?: unknown;
   [key: string]: unknown;
@@ -278,12 +287,40 @@ function refusalFrom(rpc: HrTimeRpcName, envelope: HrRpcEnvelope): HrRpcError {
       details: err.details,
     });
   }
+  /*
+   * 🚨 THE KIOSK FAMILY SPELLS ITS REFUSAL `reason`, AND DROPPING IT PUT A MACHINE TOKEN ON A WALL
+   * TABLET (G2 round-3 R1).
+   *
+   * `hr_kiosk_authenticate`, `_session_open`, `_session_close` and `_claim_pairing` all answer
+   * `{ok:false, reason:'…'}` — no `error` object, no `message`, no `user_message`. This function
+   * read none of those spellings, so `code` collapsed to `hr_validation_error`, the reason was lost
+   * entirely, and `userMessage` fell through to the template string `"hr_kiosk_authenticate
+   * refused"` — which is what an employee standing at a break-room tablet was shown.
+   *
+   * Two consequences, both fixed here: callers can now branch on the real reason (the kiosk has to
+   * tell "this secret is not ours" from "this device is waiting for approval"), and `userMessage` is
+   * never a machine string. F7's law — no raw token as page text — applies to the kiosk too, and a
+   * transport that manufactures one guarantees the surface breaks it.
+   */
+  const reason = typeof envelope.reason === "string" && envelope.reason ? envelope.reason : null;
+  const humanSentence = envelope.user_message ?? envelope.message ?? null;
+
   return new HrRpcError({
     rpc,
-    code: typeof err === "string" && err ? err : "hr_validation_error",
+    code: (typeof err === "string" && err ? err : null) ?? reason ?? "hr_validation_error",
     message: envelope.message ?? `${rpc} refused`,
-    userMessage: envelope.user_message ?? envelope.message,
-    details: envelope.details,
+    /*
+     * Only a genuine sentence, never the `${rpc} refused` template. When the server sent no wording
+     * the caller supplies it from `code` — which is the only party that knows what this surface
+     * should say to this person.
+     */
+    userMessage: humanSentence ?? "That did not work. Ask an administrator for help.",
+    details: {
+      ...(envelope.details ?? {}),
+      ...(reason ? { reason } : {}),
+      ...(envelope.locked_until !== undefined ? { locked_until: envelope.locked_until } : {}),
+      ...(envelope.trust_state !== undefined ? { trust_state: envelope.trust_state } : {}),
+    },
   });
 }
 
