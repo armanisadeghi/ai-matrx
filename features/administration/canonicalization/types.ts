@@ -148,7 +148,12 @@ export interface VerifyCanonicalRow {
   detail: string | null;
 }
 
-/** Row from `iam.canonical_certify(...)` — blocking rows only; empty = perfect. */
+/**
+ * Row from `iam.canonical_certify(...)`. Blocking rows are status FAIL/WARN;
+ * status INFO is reporting only (the `snapshot` row carrying the audit-store
+ * age) and is split out into `certifySnapshotNote` before it reaches the UI —
+ * `certifyBlocking` empty still means perfect.
+ */
 export interface CanonicalCertifyRow {
   category: string;
   status: string;
@@ -160,6 +165,13 @@ export interface VerifyCanonicalResult {
   verifyOk: boolean;
   certifyBlocking: CanonicalCertifyRow[];
   certifyOk: boolean;
+  /**
+   * The `snapshot` / INFO row from `iam.canonical_certify` — which certify
+   * inputs are measured live and how old the one remaining cached lane
+   * (runtime probes) is. Never blocking; shown so nobody has to guess whether
+   * a verdict came from the database or from a stale `audit.refresh()`.
+   */
+  certifySnapshotNote: string | null;
 }
 
 export const CANONICALIZATION_DATASETS = [

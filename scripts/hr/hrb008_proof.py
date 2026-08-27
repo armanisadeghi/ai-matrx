@@ -1277,7 +1277,10 @@ async def main():
             "'workflow_instance','workflow_step','workflow_decision','workflow_event',"
             "'workflow_failure','workflow_binding']) t, "
             "lateral iam.canonical_certify('hr', t, 'hr_'||t) c")
-        conformance = [r for r in conf if r["category"] != "broken_dependent_fn"]
+        # status INFO is `iam.canonical_certify`'s freshness report (which of its
+        # inputs are live, how old the cached runtime-probe lane is), never a finding.
+        conformance = [r for r in conf
+                       if r["category"] != "broken_dependent_fn" and r["status"] != "INFO"]
         foreign_broken = sorted({r["detail"] for r in conf if r["category"] == "broken_dependent_fn"})
         rec("§10 certification", "the 9 hr.workflow_* tables carry ZERO conformance findings",
             not conformance,

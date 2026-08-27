@@ -63,6 +63,7 @@ interface VerifyResult {
   verifyOk: boolean;
   certifyBlocking: CanonicalCertifyRow[];
   certifyOk: boolean;
+  certifySnapshotNote: string | null;
 }
 
 function isVerifyCanonicalRow(v: unknown): v is VerifyCanonicalRow {
@@ -92,7 +93,8 @@ function isVerifyResult(v: unknown): v is VerifyResult {
     typeof r.verifyOk === "boolean" &&
     Array.isArray(r.certifyBlocking) &&
     r.certifyBlocking.every(isCanonicalCertifyRow) &&
-    typeof r.certifyOk === "boolean"
+    typeof r.certifyOk === "boolean" &&
+    (r.certifySnapshotNote === null || typeof r.certifySnapshotNote === "string")
   );
 }
 
@@ -333,6 +335,7 @@ export function VerifyCanonicalPanel() {
             certifyOk: result.certifyOk,
             checks: result.checks,
             certifyBlocking: result.certifyBlocking,
+            certifySnapshotNote: result.certifySnapshotNote,
           }
         : null,
     [result, schema, table, token, variant],
@@ -476,12 +479,28 @@ export function VerifyCanonicalPanel() {
                 copyForAi={VERIFY_BLOCKING_TABLE_COPY}
                 urlStateKey="blocking"
                 toolbarExtra={
-                  <Badge
-                    variant="outline"
-                    className="h-6 shrink-0 whitespace-nowrap text-[10px]"
-                  >
-                    Blocking · {result?.certifyBlocking.length ?? 0}
-                  </Badge>
+                  <>
+                    <Badge
+                      variant="outline"
+                      className="h-6 shrink-0 whitespace-nowrap text-[10px]"
+                    >
+                      Blocking · {result?.certifyBlocking.length ?? 0}
+                    </Badge>
+                    {/*
+                      Where this verdict came from. `broken_dependent_fn` is
+                      measured live by plpgsql_check on every call; only the
+                      runtime-probe lane is still a cached snapshot, so its age
+                      is stated rather than left to be guessed.
+                    */}
+                    {result?.certifySnapshotNote ? (
+                      <span
+                        className="shrink-0 whitespace-nowrap font-mono text-[10px] text-muted-foreground"
+                        title="Freshness of iam.canonical_certify's inputs"
+                      >
+                        {result.certifySnapshotNote}
+                      </span>
+                    ) : null}
+                  </>
                 }
               />
             </div>

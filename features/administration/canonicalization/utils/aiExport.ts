@@ -420,6 +420,8 @@ export interface VerifyRunSnapshot {
   certifyOk: boolean;
   checks: VerifyCanonicalRow[];
   certifyBlocking: CanonicalCertifyRow[];
+  /** Non-blocking freshness note from iam.canonical_certify's `snapshot` row. */
+  certifySnapshotNote: string | null;
 }
 
 export function verifyRunToHuman(snapshot: VerifyRunSnapshot): string {
@@ -434,6 +436,10 @@ export function verifyRunToHuman(snapshot: VerifyRunSnapshot): string {
     `RLS variant: ${snapshot.variant}`,
     `Verify gate: ${snapshot.verifyOk ? "OK" : "NOT OK"} (${failCount} FAIL · ${warnCount} WARN)`,
     `Certify gate: ${snapshot.certifyOk ? "OK" : "NOT OK"} (${snapshot.certifyBlocking.length} blocking)`,
+    // An agent reading this must be able to tell a measurement from a memory.
+    ...(snapshot.certifySnapshotNote
+      ? [`Certify inputs: ${snapshot.certifySnapshotNote}`]
+      : []),
     "",
     "── Checklist ──",
     ...snapshot.checks.map(
@@ -470,6 +476,7 @@ export function verifyRunToAgentInput(
       certifyOk: snapshot.certifyOk,
       checkCount: snapshot.checks.length,
       blockingCount: snapshot.certifyBlocking.length,
+      certifySnapshotNote: snapshot.certifySnapshotNote,
     },
     context: {
       "docs-ref": "docs/db_changes/CANONICAL_DATABASE_SYSTEM.md",

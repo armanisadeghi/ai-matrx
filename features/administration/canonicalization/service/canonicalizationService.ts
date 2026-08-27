@@ -155,17 +155,26 @@ export async function runVerifyCanonical(
   token: string,
   variant?: string | null,
 ): Promise<VerifyCanonicalResult> {
-  const [checks, okRows, certifyBlocking, certifyOkRows] = await Promise.all([
+  const [checks, okRows, certifyRows, certifyOkRows] = await Promise.all([
     runQuery<VerifyCanonicalRow>(buildVerifyCanonicalQuery(schema, table, token, variant)),
     runQuery<{ ok: boolean }>(buildVerifyCanonicalOkQuery(schema, table, token, variant)),
     runQuery<CanonicalCertifyRow>(buildCanonicalCertifyQuery(schema, table, token)),
     runQuery<{ ok: boolean }>(buildCanonicalCertifyOkQuery(schema, table, token)),
   ]);
 
+  // `iam.canonical_certify` emits one non-blocking INFO row reporting which of
+  // its inputs are measured live and how stale the one cached lane is. It is
+  // reporting, not a finding — counting it as blocking would put "1 blocking"
+  // on a perfect table, which is the same class of lie this whole change fixes.
+  const certifyBlocking = certifyRows.filter((r) => r.status !== "INFO");
+  const certifySnapshotNote =
+    certifyRows.find((r) => r.status === "INFO")?.detail ?? null;
+
   return {
     checks,
     verifyOk: okRows[0]?.ok ?? false,
     certifyBlocking,
     certifyOk: certifyOkRows[0]?.ok ?? false,
+    certifySnapshotNote,
   };
 }
