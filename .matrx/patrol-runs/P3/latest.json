@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "2026-08-17T131440Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-17T13:32:18.025Z",
-  "summary": "Clarified candidate is ready for independent exact-SHA re-certification.",
+  "state": "delivered",
+  "updatedAt": "2026-08-27T13:17:28.504Z",
+  "summary": "Delivered certified P3 candidate through main and the serialized release lane.",
   "source": "2026-08-17T131440Z.json",
-  "eventHash": "b6ea2884ce99591bed0f9781ee1ca74348293b0a4c5c5b71bc1961417f88ffcf"
+  "eventHash": "ef3938287142176b52d394d36b45ae3ccbdc867fbca5ec3912c5a99a70cf7d3f"
 }
