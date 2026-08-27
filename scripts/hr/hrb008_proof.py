@@ -1133,6 +1133,27 @@ async def main():
             await conn.fetchval(
                 "select state='approved' and attested_at is null "
                 "from hr.pay_period_employment where id=$1", nr_ppe))
+        # 🚨 THE INSTANCE MUST NOT CONTRADICT ITS OWN TIMECARD. `state` is PROCESS vocabulary
+        # (§3.1: `applying --> completed: apply_fn succeeded`), but `state_reason` used to hardcode
+        # 'completed' — restating the state, carrying zero information, and reading to a human as
+        # an OUTCOME. An instance that closed not_attested said "completed", so a surface reading
+        # the instance alone concluded the attestation had happened. The reason now carries the
+        # apply hook's own word, exactly as the failure branch has always done.
+        rec("§3.1 vocabulary", "🚨 the instance's close reason carries the OUTCOME, not a word that merely restates its state",
+            await conn.fetchval(
+                "select i.state_reason = (ppe.metadata->>'attestation_outcome') "
+                "from hr.workflow_instance i join hr.pay_period_employment ppe on ppe.id=i.target_id "
+                "where i.target_id=$1 and i.flow_key='timecard_attestation'", nr_ppe),
+            str(await conn.fetchval(
+                "select i.state||' / '||coalesce(i.state_reason,'(null)') from hr.workflow_instance i "
+                "where i.target_id=$1 and i.flow_key='timecard_attestation'", nr_ppe)))
+        rec("§3.1 vocabulary", "and no instance anywhere closes with a reason that only repeats its state",
+            await conn.fetchval(
+                "select count(*)=0 from hr.workflow_instance where state_reason in ('completed','closed')"),
+            str(await conn.fetchval(
+                "select string_agg(distinct flow_key, ', ') from hr.workflow_instance "
+                "where state_reason in ('completed','closed')")))
+
         # and the same transition is the SWEEP's, not a second implementation
         rec("§8.2 node G", "🚨 the human door and the deadline sweep take THE SAME transition — one hr._wf_not_attested, nothing to fork",
             await conn.fetchval(
