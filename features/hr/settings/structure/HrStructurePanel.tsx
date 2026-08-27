@@ -1204,45 +1204,57 @@ function JobTitlesSection({
   );
 }
 
+/** `jobTitle === null` is CREATE. The EEO-1 category is required in both modes. */
 function JobTitleEditor({
   jobTitle,
   organizationId,
   orgRef,
   onSaved,
+  onCancel,
 }: {
-  jobTitle: HrJobTitle;
+  jobTitle: HrJobTitle | null;
   organizationId: string | null;
   orgRef: string | null;
   onSaved: () => void;
+  onCancel?: () => void;
 }) {
-  const [title, setTitle] = useState(jobTitle.title);
-  const [code, setCode] = useState(jobTitle.code ?? "");
-  const [family, setFamily] = useState(jobTitle.job_family ?? "");
-  const [level, setLevel] = useState(jobTitle.job_level ?? "");
-  const [eeo1, setEeo1] = useState(jobTitle.eeo1_job_category ?? "");
-  const [isSupervisor, setIsSupervisor] = useState(jobTitle.is_supervisor);
+  const isCreate = jobTitle === null;
+  const uid = useId();
+
+  const [title, setTitle] = useState(jobTitle?.title ?? "");
+  const [code, setCode] = useState(jobTitle?.code ?? "");
+  const [family, setFamily] = useState(jobTitle?.job_family ?? "");
+  const [level, setLevel] = useState(jobTitle?.job_level ?? "");
+  const [eeo1, setEeo1] = useState(jobTitle?.eeo1_job_category ?? "");
+  const [isSupervisor, setIsSupervisor] = useState(jobTitle?.is_supervisor ?? false);
   const [busy, setBusy] = useState(false);
-  const [why, setWhy] = useState<string | null>(null);
+  const [refusal, setRefusal] = useState<WriteRefusal | null>(null);
 
   const save = async () => {
     if (!organizationId) return;
     if (title.trim() === "") {
-      setWhy("A job title needs a title.");
+      setRefusal({ message: "A job title needs a title.", field: "title", door: null });
       return;
     }
+    // 🚨 `hr.job_title.eeo1_job_category` is NOT NULL and the server refuses with
+    // `field: "eeo1_job_category"`. Saying it here names the control immediately.
     if (eeo1.trim() === "") {
-      setWhy(
-        "An EEO-1 job category is required. It is what makes this title reportable, " +
-          "and it is stamped onto every assignment written against it.",
-      );
+      setRefusal({
+        message:
+          "An EEO-1 job category is required. It is what makes this title reportable, " +
+          "and it is stamped onto every assignment written against it — re-mapping it " +
+          "later does not rewrite the assignments already made.",
+        field: "eeo1_job_category",
+        door: null,
+      });
       return;
     }
     setBusy(true);
-    setWhy(null);
+    setRefusal(null);
     const result = await upsertHrStructure({
       kind: "job_title",
       payload: {
-        id: jobTitle.id,
+        ...(jobTitle ? { id: jobTitle.id } : {}),
         organization_id: organizationId,
         title: title.trim(),
         code: code.trim() || null,
@@ -1253,20 +1265,20 @@ function JobTitleEditor({
       },
     });
     setBusy(false);
-    if (!result.ok) {
-      setWhy(
-        isHrDenied(result)
-          ? result.detail || `The server refused this change (${result.reason}).`
-          : result.message,
-      );
+
+    const denial = refusalOf(result, "The server refused this job title");
+    if (denial) {
+      setRefusal(denial);
       return;
     }
-    toast.success(`${title.trim()} is saved.`);
+    toast.success(
+      isCreate ? `${title.trim()} is created.` : `${title.trim()} is saved.`,
+    );
     onSaved();
   };
 
   const toggleActive = async () => {
-    if (!organizationId) return;
+    if (!organizationId || !jobTitle) return;
     if (jobTitle.is_active) {
       const proceed = await confirmDeactivate({
         label: jobTitle.title,
@@ -1285,12 +1297,10 @@ function JobTitleEditor({
       },
     });
     setBusy(false);
-    if (!result.ok) {
-      setWhy(
-        isHrDenied(result)
-          ? result.detail || `The server refused this change (${result.reason}).`
-          : result.message,
-      );
+
+    const denial = refusalOf(result, "The server refused this change");
+    if (denial) {
+      setRefusal(denial);
       return;
     }
     onSaved();
@@ -1298,17 +1308,47 @@ function JobTitleEditor({
 
   return (
     <div className="space-y-4 p-3">
-      <EditorField id="title-name" label="Title" value={title} onChange={setTitle} />
-      <EditorField id="title-code" label="Code" value={code} onChange={setCode} />
-      <EditorField id="title-family" label="Job family" value={family} onChange={setFamily} />
-      <EditorField id="title-level" label="Level" value={level} onChange={setLevel} />
+      <EditorField
+        id={`${uid}-title`}
+        label="Title"
+        required
+        value={title}
+        onChange={setTitle}
+        disabled={busy}
+        invalid={invalidFor(refusal, "title")}
+      />
+      <FieldRefusal refusal={refusal} field="title" />
+      <EditorField
+        id={`${uid}-code`}
+        label="Code"
+        value={code}
+        onChange={setCode}
+        disabled={busy}
+      />
+      <EditorField
+        id={`${uid}-family`}
+        label="Job family"
+        value={family}
+        onChange={setFamily}
+        disabled={busy}
+      />
+      <EditorField
+        id={`${uid}-level`}
+        label="Level"
+        value={level}
+        onChange={setLevel}
+        disabled={busy}
+      />
 
       <div className="space-y-1.5">
-        <Label htmlFor="title-eeo1" className="text-sm font-medium">
+        <Label htmlFor={`${uid}-eeo1`} className="text-sm font-medium">
           EEO-1 job category <span className="text-destructive">*</span>
         </Label>
         <Select value={eeo1} onValueChange={setEeo1}>
-          <SelectTrigger id="title-eeo1">
+          <SelectTrigger
+            id={`${uid}-eeo1`}
+            aria-invalid={invalidFor(refusal, "eeo1_job_category")}
+          >
             <SelectValue placeholder="Choose the EEO-1 category" />
           </SelectTrigger>
           <SelectContent>
@@ -1320,55 +1360,48 @@ function JobTitleEditor({
           </SelectContent>
         </Select>
         <p className="text-sm text-muted-foreground">
-          Fixed by the EEOC — these ten are the whole list. Changing it here does not
+          Fixed by the EEOC — this list is the whole list. It is stamped onto every
+          assignment written against this title, and changing it here does not
           re-categorise assignments already written.
         </p>
+        <FieldRefusal refusal={refusal} field="eeo1_job_category" />
       </div>
 
       <div className="flex items-center gap-3">
         <Switch
-          id="title-supervisor"
+          id={`${uid}-supervisor`}
           checked={isSupervisor}
           disabled={busy}
           onCheckedChange={setIsSupervisor}
         />
-        <Label htmlFor="title-supervisor" className="text-sm">
+        <Label htmlFor={`${uid}-supervisor`} className="text-sm">
           People in this title supervise others
         </Label>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Switch
-          id="title-active"
-          checked={jobTitle.is_active}
-          disabled={busy}
-          onCheckedChange={toggleActive}
-        />
-        <Label htmlFor="title-active" className="text-sm">
-          Offered for new assignments
-        </Label>
-      </div>
-
-      {why ? (
-        <p role="alert" className="text-sm text-destructive">
-          {why}
-        </p>
+      {jobTitle ? (
+        <div className="flex items-center gap-3">
+          <Switch
+            id={`${uid}-active`}
+            checked={jobTitle.is_active}
+            disabled={busy}
+            onCheckedChange={toggleActive}
+          />
+          <Label htmlFor={`${uid}-active`} className="text-sm">
+            Offered for new assignments
+          </Label>
+        </div>
       ) : null}
 
-      <Button
-        type="button"
-        size="sm"
-        onClick={save}
-        disabled={busy}
-        className="min-h-11 sm:min-h-9"
-      >
-        {busy ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Save className="mr-2 h-4 w-4" />
-        )}
-        Save
-      </Button>
+      {refusal ? <RefusalNote refusal={refusal} /> : null}
+
+      <EditorActions
+        isCreate={isCreate}
+        busy={busy}
+        createLabel="Create job title"
+        onSave={save}
+        onCancel={onCancel}
+      />
     </div>
   );
 }
