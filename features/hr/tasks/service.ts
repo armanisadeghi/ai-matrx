@@ -1,22 +1,44 @@
 /**
  * The ONE HR task inbox — every read and write, in one place.
  *
- * 🚨 WHY THESE ARE `public.hr_wf_*` AND NOT `hr.wf_*`: the `hr` schema is not in
- * PostgREST's exposed schema list (verified live 2026-08-26; FREEZE.md D-10), so
- * supabase-js cannot reach `hr.*` at all. `migrations/hr_c4_07_inbox_doors.sql`
- * adds thin `public` doors, exactly as HRB-007 did for the access lane. Reads
- * and writes still go React -> Supabase direct; nothing here routes through
- * Next.js or the Python server.
+ * 🚨 WHY THESE ARE `public.hr_wf_*` AND NOT `hr.wf_*`: the `hr` schema is not in PostgREST's
+ * exposed schema list (verified live 2026-08-26; FREEZE.md D-10), so supabase-js cannot reach
+ * `hr.*` at all. `migrations/hr_c4_07_inbox_doors.sql` adds thin `public` doors, exactly as
+ * HRB-007 did for the access lane. Reads and writes still go React -> Supabase direct; nothing
+ * here routes through Next.js or the Python server.
  *
- * Every function returns the engine's ENVELOPE rather than throwing on a
- * refusal, because a refusal is information the user needs to see in place. A
- * genuine transport failure still throws.
+ * 🚨 AND WHY THERE IS NO CAST IN THIS FILE.
+ *
+ * All 13 doors ARE in `types/database.types.ts` (regenerated after `hr_c4_07` landed), so the RPC
+ * name and every argument are checked by the compiler: a typo is a build error rather than a
+ * runtime PGRST202, and an argument the shipped function does not take goes red. What the
+ * generated types CANNOT promise is the shape inside a `jsonb` return — `Returns: Json` is the
+ * honest answer — so the narrowing is a real runtime check in `envelope.ts`, never `as HrInbox`.
+ * A cast there would make the compiler believe a shape nobody verified, and a key renamed in SQL
+ * would surface as `undefined` in a component three layers away with nothing going red.
+ *
+ * Every door returns the engine's ENVELOPE rather than throwing on a refusal, because a refusal is
+ * information the user needs to see in place. A genuine transport failure still throws, and so
+ * does a door that breaks its own contract (`HrContractError`).
  */
+
+"use client";
 
 import { createClient } from "@/utils/supabase/client";
 
+import {
+    HrContractError,
+    parseAck,
+    parseBulkResult,
+    parseDecideResult,
+    parseEnvelope,
+    parseInbox,
+    parseInstance,
+} from "@/features/hr/tasks/envelope";
 import type {
+    HrAck,
     HrBulkResult,
+    HrDecideResult,
     HrDecision,
     HrEnvelope,
     HrInbox,
@@ -24,147 +46,182 @@ import type {
     HrInstanceDetail,
 } from "@/features/hr/tasks/types";
 
-async function callRpc<T>(
-    fn: string,
-    args: Record<string, unknown>,
-): Promise<HrEnvelope<T>> {
-    const supabase = createClient();
-    // The generated Function types cover the arguments; the jsonb return is
-    // opaque to `supabase gen types`, so the envelope shape is asserted here
-    // once instead of at every call site.
-    const { data, error } = await supabase.rpc(
-        fn as never,
-        args as never,
-    );
-    if (error) throw error;
-    if (data === null || typeof data !== "object") {
-        throw new Error(`${fn} returned ${JSON.stringify(data)} — expected an envelope`);
-    }
-    return data as HrEnvelope<T>;
-}
+export { HrContractError } from "@/features/hr/tasks/envelope";
 
-export function fetchHrInbox(
+/**
+ * `public.hr_wf_inbox` — §5.2's queue, decorated with the §5.1 display rule and the
+ * `hr.workflow_notice` delivery evidence. `hr.wf_pending` stays the queue of record.
+ */
+export async function fetchHrInbox(
     scope: HrInboxScope = "mine",
     options: { employmentId?: string | null; flowKey?: string | null } = {},
 ): Promise<HrEnvelope<HrInbox>> {
-    return callRpc<HrInbox>("hr_wf_inbox", {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("hr_wf_inbox", {
         p_scope: scope,
-        p_employment_id: options.employmentId ?? null,
+        ...(options.employmentId ? { p_employment_id: options.employmentId } : {}),
         p_filters: options.flowKey ? { flow_key: options.flowKey } : {},
     });
+    if (error) throw error;
+    return parseEnvelope("hr_wf_inbox", data, parseInbox);
 }
 
-export function fetchHrInstance(
+/** `public.hr_wf_instance` — the decision panel's read. */
+export async function fetchHrInstance(
     instanceId: string,
 ): Promise<HrEnvelope<HrInstanceDetail>> {
-    return callRpc<HrInstanceDetail>("hr_wf_instance", { p_instance_id: instanceId });
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("hr_wf_instance", {
+        p_instance_id: instanceId,
+    });
+    if (error) throw error;
+    return parseEnvelope("hr_wf_instance", data, parseInstance);
 }
 
 /**
- * One step, one decision. `reason` is mandatory on reject and on any flow whose
- * type sets `requires_reason_on_approve` — the engine refuses without it and the
- * refusal names which, so the UI never has to guess.
+ * One step, one decision. `reason` is mandatory on reject and on any flow whose type sets
+ * `requires_reason_on_approve` — the engine refuses without it and the refusal names which, so the
+ * UI never has to guess.
  */
-export function decideStep(
+export async function decideStep(
     stepId: string,
     decision: HrDecision,
     reason?: string | null,
     payload: Record<string, unknown> = {},
-): Promise<HrEnvelope<Record<string, unknown>>> {
-    return callRpc("hr_wf_decide", {
+): Promise<HrEnvelope<HrDecideResult>> {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("hr_wf_decide", {
         p_step_id: stepId,
         p_decision: decision,
-        p_reason: reason ?? null,
+        ...(reason ? { p_reason: reason } : {}),
         p_payload: payload,
     });
+    if (error) throw error;
+    return parseEnvelope("hr_wf_decide", data, parseDecideResult);
 }
 
 /**
- * §5.2: bulk is refused PER STEP, never all-or-nothing — a step whose target
- * digest moved comes back as a skip with its reason and the rest still go
- * through. The one exception is a flow whose definition forbids bulk at all,
- * which refuses the WHOLE batch (`WF_BULK_FORBIDDEN`) rather than silently
- * splitting it.
+ * §5.2: bulk is refused PER STEP, never all-or-nothing — a step whose target digest moved comes
+ * back as a skip with its reason and the rest still go through. The one exception is a flow whose
+ * definition forbids bulk at all, which refuses the WHOLE batch (`WF_BULK_FORBIDDEN`) rather than
+ * silently splitting it.
  */
-export function bulkDecide(
+export async function bulkDecide(
     stepIds: string[],
     decision: HrDecision,
     reason?: string | null,
 ): Promise<HrEnvelope<HrBulkResult>> {
-    return callRpc<HrBulkResult>("hr_wf_bulk_decide", {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("hr_wf_bulk_decide", {
         p_step_ids: stepIds,
         p_decision: decision,
-        p_reason: reason ?? null,
+        ...(reason ? { p_reason: reason } : {}),
     });
+    if (error) throw error;
+    return parseEnvelope("hr_wf_bulk_decide", data, parseBulkResult);
 }
 
-export function escalateStep(stepId: string, reason?: string | null) {
-    return callRpc("hr_wf_escalate", { p_step_id: stepId, p_reason: reason ?? null });
+export async function escalateStep(
+    stepId: string,
+    reason?: string | null,
+): Promise<HrEnvelope<HrAck>> {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("hr_wf_escalate", {
+        p_step_id: stepId,
+        ...(reason ? { p_reason: reason } : {}),
+    });
+    if (error) throw error;
+    return parseEnvelope("hr_wf_escalate", data, parseAck);
 }
 
-export function reassignStep(
+export async function reassignStep(
     stepId: string,
     toEmploymentId: string,
     reason?: string | null,
-) {
-    return callRpc("hr_wf_reassign_step", {
+): Promise<HrEnvelope<HrAck>> {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("hr_wf_reassign_step", {
         p_step_id: stepId,
         p_to_employment_id: toEmploymentId,
-        p_reason: reason ?? null,
+        ...(reason ? { p_reason: reason } : {}),
     });
+    if (error) throw error;
+    return parseEnvelope("hr_wf_reassign_step", data, parseAck);
 }
 
-export function withdrawInstance(instanceId: string, reason?: string | null) {
-    return callRpc("hr_wf_withdraw", {
+export async function withdrawInstance(
+    instanceId: string,
+    reason?: string | null,
+): Promise<HrEnvelope<HrAck>> {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("hr_wf_withdraw", {
         p_instance_id: instanceId,
-        p_reason: reason ?? null,
+        ...(reason ? { p_reason: reason } : {}),
     });
+    if (error) throw error;
+    return parseEnvelope("hr_wf_withdraw", data, parseAck);
 }
 
-export function cancelInstance(instanceId: string, reason?: string | null) {
-    return callRpc("hr_wf_cancel", { p_instance_id: instanceId, p_reason: reason ?? null });
+export async function cancelInstance(
+    instanceId: string,
+    reason?: string | null,
+): Promise<HrEnvelope<HrAck>> {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("hr_wf_cancel", {
+        p_instance_id: instanceId,
+        ...(reason ? { p_reason: reason } : {}),
+    });
+    if (error) throw error;
+    return parseEnvelope("hr_wf_cancel", data, parseAck);
 }
 
-export function resolveFailure(
+export async function resolveFailure(
     failureId: string,
     action: string,
     note?: string | null,
-) {
-    return callRpc("hr_wf_resolve_failure", {
+): Promise<HrEnvelope<HrAck>> {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("hr_wf_resolve_failure", {
         p_failure_id: failureId,
         p_action: action,
-        p_note: note ?? null,
+        ...(note ? { p_note: note } : {}),
     });
+    if (error) throw error;
+    return parseEnvelope("hr_wf_resolve_failure", data, parseAck);
 }
 
-export function recordStepResult(
+export async function recordStepResult(
     stepId: string,
     result: Record<string, unknown>,
     verified = false,
-) {
-    return callRpc("hr_wf_record_result", {
+): Promise<HrEnvelope<HrAck>> {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("hr_wf_record_result", {
         p_step_id: stepId,
         p_result: result,
         p_verified: verified,
     });
+    if (error) throw error;
+    return parseEnvelope("hr_wf_record_result", data, parseAck);
 }
 
 /**
- * §5.2 / SPEC-NOTIFICATIONS §5.2 — following a deep link stamps `read_at` and
- * `read_channel` on the notice. Idempotent by the spine's own RPC, so a second
- * open is not a second read and a refresh never rewrites the evidence.
+ * §5.2 / SPEC-NOTIFICATIONS §5.2 — following a deep link stamps `read_at` and `read_channel` on
+ * the notice. Idempotent by the spine's own RPC, so a second open is not a second read and a
+ * refresh never rewrites the evidence.
+ *
+ * The spine's own function, in `communication` (which IS exposed to PostgREST). HR builds no
+ * notifier and no second read ledger.
  */
 export async function markNoticeRead(
     notificationId: string,
     channel = "in_app",
 ): Promise<void> {
     const supabase = createClient();
-    // The spine's own RPC, in `communication` (which IS exposed to PostgREST).
-    // HR builds no notifier and no second read ledger.
-    const { error } = await supabase.schema("communication").rpc(
-        "mark_notification_read" as never,
-        { p_notification_id: notificationId, p_channel: channel } as never,
-    );
+    const { error } = await supabase.schema("communication").rpc("mark_notification_read", {
+        p_notification_id: notificationId,
+        p_channel: channel,
+    });
     // A read stamp that fails must never block the person from doing the work.
     if (error) console.warn("mark_notification_read failed", error);
 }

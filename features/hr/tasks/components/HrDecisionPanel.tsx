@@ -72,7 +72,7 @@ export function HrDecisionPanel({
                 setRefusal(envelope);
                 setDetail(null);
             } else {
-                setDetail(envelope);
+                setDetail(envelope.data);
                 setRefusal(null);
             }
         } catch (e) {
@@ -94,8 +94,8 @@ export function HrDecisionPanel({
         if (!loading && detail) approveRef.current?.focus();
     }, [loading, detail]);
 
-    const instance = (detail?.instance ?? {}) as Row;
-    const steps = (detail?.steps ?? []) as Row[];
+    const instance: Row = detail?.instance ?? {};
+    const steps: Row[] = detail?.steps ?? [];
     const step = stepId ? steps.find((s) => s.id === stepId) : steps.find((s) => s.state === "active");
     const restricted = str(instance, "sensitivity_tier") === "restricted";
     const activeStep = step && step.state === "active" ? step : undefined;
@@ -289,7 +289,7 @@ export function HrDecisionPanel({
                                 </p>
                             ) : (
                                 <ul className="divide-y divide-border rounded-lg border border-border bg-card text-sm">
-                                    {(detail.decisions as Row[]).map((d) => (
+                                    {detail.decisions.map((d) => (
                                         <li key={String(d.id)} className="space-y-1 p-3">
                                             <div className="flex gap-2">
                                                 <span className="font-medium">{str(d, "decision")}</span>
@@ -316,7 +316,7 @@ export function HrDecisionPanel({
                             <h2 className="text-sm font-semibold">What was sent about this</h2>
                             <div className="rounded-lg border border-border bg-card p-3">
                                 <HrDeliveryState
-                                    notices={(detail.notices as unknown as HrInboxNotice[]) ?? []}
+                                    notices={detail.notices}
                                 />
                             </div>
                         </section>

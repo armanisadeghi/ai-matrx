@@ -29,7 +29,7 @@ export function useHrInbox(scope: HrInboxScope, flowKey: string | null) {
                     setState({ inbox: null, refusal: envelope, error: null, loading: false });
                     return;
                 }
-                setState({ inbox: envelope, refusal: null, error: null, loading: false });
+                setState({ inbox: envelope.data, refusal: null, error: null, loading: false });
             } catch (e) {
                 setState({
                     inbox: null,

@@ -11,6 +11,7 @@ import { toast } from "@/lib/toast";
 
 import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
 import { HrTaskTable } from "@/features/hr/tasks/components/HrTaskTable";
+import { isScope } from "@/features/hr/tasks/envelope";
 import { useHrInbox } from "@/features/hr/tasks/hooks/useHrInbox";
 import { bulkDecide } from "@/features/hr/tasks/service";
 import { groupByUrgency, relativeDue, URGENCY_LABEL } from "@/features/hr/tasks/urgency";
@@ -70,7 +71,11 @@ function Section({
 export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
     const router = useRouter();
     const params = useSearchParams();
-    const scope = (params.get("scope") as HrInboxScope | null) ?? initialScope;
+    // A query string is user input, so it is VALIDATED, not asserted: `?scope=nonsense` falls back
+    // to the persona default rather than being handed to the door as if it were a real scope.
+    const scopeParam = params.get("scope");
+    const scope: HrInboxScope =
+        scopeParam && isScope(scopeParam) ? scopeParam : initialScope;
     const flowKey = params.get("flow");
 
     const { inbox, refusal, error, loading, reload } = useHrInbox(scope, flowKey);
@@ -102,10 +107,10 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
             }
             // §5.2: the result names EACH step's outcome. A skip is shown with
             // its reason, not folded into a success count.
-            setBulkOutcomes(envelope.results);
+            setBulkOutcomes(envelope.data.results);
             setSelectedIds([]);
             toast.success(
-                `${envelope.succeeded} decided${envelope.skipped ? `, ${envelope.skipped} skipped` : ""}`,
+                `${envelope.data.succeeded} decided${envelope.data.skipped ? `, ${envelope.data.skipped} skipped` : ""}`,
             );
             await reload(true);
         } catch (e) {

@@ -105,20 +105,24 @@ export function HrTaskTable({
                     <span className="text-muted-foreground">{row.priority}</span>
                 ),
         },
-        ...(showDelivery
-            ? ([
-                  {
-                      id: "delivery",
-                      accessorFn: (row) => row.notices?.length ?? 0,
-                      header: "Notified",
-                      sortable: true,
-                      filter: false,
-                      mobileHidden: true,
-                      cell: (row) => <HrDeliveryState notices={row.notices} />,
-                  },
-              ] as MatrxColumnDef<HrInboxRow>[])
-            : []),
     ];
+
+    // Declared as its own typed const rather than an inline literal behind a cast: an inline
+    // array in a spread widens to `{...}[]`, and the cast that used to hide that would also have
+    // hidden a genuinely wrong column definition.
+    const deliveryColumn: MatrxColumnDef<HrInboxRow> = {
+        id: "delivery",
+        // §5.9 wants delivery/read state ON THE ROW. `notices` is undefined on a scope row (only
+        // `needs_my_decision` rows carry evidence) — sorting treats that as 0 notices, which is
+        // true, while the cell renders "No notice sent" rather than an empty space.
+        accessorFn: (row) => row.notices?.length ?? 0,
+        header: "Notified",
+        sortable: true,
+        filter: false,
+        mobileHidden: true,
+        cell: (row) => <HrDeliveryState notices={row.notices} />,
+    };
+    if (showDelivery) columns.push(deliveryColumn);
 
     return (
         <MatrxDataTable<HrInboxRow>

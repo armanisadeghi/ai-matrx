@@ -46,6 +46,40 @@ build lane's call**. If you need a new HR read or write here, add a door, do not
 
 Reads and writes still go **React → Supabase direct**. Nothing routes through Next.js or Python.
 
+## 🚨 NO CAST STANDS BETWEEN `Json` AND A TYPED ENVELOPE
+
+All 13 doors are in `types/database.types.ts`, so `supabase.rpc("hr_wf_inbox", …)` checks the
+**name and every argument** at compile time — a typo is a build error, not a runtime PGRST202.
+What the generated types cannot promise is the shape inside a `jsonb` return (`Returns: Json` is
+the honest answer), so the narrowing is a **real runtime check** in
+[`envelope.ts`](./envelope.ts) and never `data as HrInbox`.
+
+**Why that matters, concretely:** a cast makes the compiler believe a shape nobody verified, so a
+key renamed in SQL arrives as `undefined` in a component three layers away — no error, no red
+type-check, usually a blank cell where a number should be. Every field list in `envelope.ts` was
+read from the **live function bodies** (`pg_proc.prosrc`), not from the spec, because the spec
+describes intent and this layer has to describe what actually comes back.
+
+Four laws it enforces, each with an assertion behind it:
+
+- **Absent fields stay dark.** A key the door did not send is `undefined` — never `0`, `""`, or
+  `[]`. `[]` is reported only when the server actually sent `[]`, which it does, because every
+  list in `hr.wf_pending` is `coalesce(…, '[]'::jsonb)`. Manufacturing an empty array for a
+  missing key turns a broken contract into a confident *"nothing is waiting"*.
+- **A redaction is a null and it stays null.** `subject_label` is JSON `null` on a restricted-tier
+  row; `?? ""` would make *"you are not being told"* look like *"this flow has no subject"*.
+- **Refusals are data**, never thrown (below).
+- **A contract break is loud.** A door omitting a key it promises raises `HrContractError` naming
+  the door and the key.
+
+`HrEnvelope<T>` is `{granted: true, data: T} | HrRefusal` and **not** `(T & {granted:true})`. The
+intersection reads better at a call site and cannot be *built* without a cast — `Object.assign` on
+a generic `T` does not typecheck — so every constructor of one ends up asserting a shape instead of
+proving it. One extra `.data` at seven call sites buys a narrowing the compiler verifies end to end.
+
+**Proof: `pnpm hr:envelope-check`** — 24 assertions over a `hr_wf_inbox` envelope captured verbatim
+from the live database, six of which feed the parser broken input to prove it can fail.
+
 ## 🚨 EVERY `hr.wf_*` CALL RETURNS AN ENVELOPE, AND A REFUSAL IS NOT AN ERROR
 
 `{granted: true, ...}` or `{granted: false, reason, detail, audit_id?}`. The engine **never
@@ -99,6 +133,7 @@ the fix is in that pillar's flow declaration — never a second list on this pag
 | Path | What |
 |---|---|
 | `types.ts` | The envelope contract, written from the shipped RPC bodies. |
+| `envelope.ts` | The ONE seam where `Json` becomes a typed envelope — validated, never cast. |
 | `service.ts` | Every read and write. The only place `public.hr_wf_*` is named. |
 | `urgency.ts` | §5.9's buckets. Local on purpose — "today" is a question about the viewer's clock. |
 | `hooks/useHrInbox.ts` | Load + reload, keeping refusal and transport failure apart. |

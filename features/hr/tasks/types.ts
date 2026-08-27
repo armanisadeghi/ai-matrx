@@ -20,7 +20,14 @@ export type HrRefusal = {
     audit_id?: string | null;
 };
 
-export type HrEnvelope<T> = (T & { granted: true }) | HrRefusal;
+/**
+ * 🚨 The success case carries its payload under `data` rather than being intersected onto the
+ * envelope. `(T & {granted:true})` reads more naturally at a call site and cannot be BUILT without
+ * a cast — `Object.assign` on a generic `T` does not typecheck, so every constructor of one ends
+ * up asserting a shape instead of proving it. One extra `.data` at seven call sites buys a
+ * narrowing that the compiler verifies end to end.
+ */
+export type HrEnvelope<T> = { granted: true; data: T } | HrRefusal;
 
 export function isRefusal<T>(envelope: HrEnvelope<T>): envelope is HrRefusal {
     return envelope?.granted !== true;
@@ -146,6 +153,33 @@ export type HrBulkResult = {
     skipped: number;
 };
 
+/**
+ * `hr.wf_decide`'s success payload. TWO live shapes, one type: the closing decision returns
+ * `{decision_id, decision, step}` and a decision that only advances a quorum returns
+ * `{decision_id, decision, approvals_needed, approvals_received, step_state}`. Which one you get
+ * depends on whether yours was the last approval, and a caller must not have to know that — so the
+ * quorum fields are optional and **absent stays absent** rather than defaulting to 0, which would
+ * read as "no approvals yet" on a step that is already closed.
+ */
+export type HrDecideResult = {
+    decision_id?: string | null;
+    decision?: string | null;
+    step_state?: string | null;
+    approvals_needed?: number;
+    approvals_received?: number;
+};
+
+/**
+ * The success payload of a door whose result this feature does not read beyond "it worked".
+ *
+ * 🚨 Deliberately EMPTY rather than a wide `Record<string, unknown>`. `hr.wf_escalate`,
+ * `wf_withdraw`, `wf_cancel`, `wf_reassign_step`, `wf_record_result` and `wf_resolve_failure` each
+ * return a different success shape (verified against prosrc 2026-08-26) and the panel reads none of
+ * them — it reads `granted`, and renders the refusal when it is false. Declaring fields nobody
+ * consumes is how a type stops being something anyone checks.
+ */
+export type HrAck = Record<string, never>;
+
 /** `public.hr_wf_instance` — the decision panel's read. */
 export type HrInstanceDetail = {
     instance: Record<string, unknown>;
@@ -153,7 +187,8 @@ export type HrInstanceDetail = {
     decisions: Record<string, unknown>[];
     events: Record<string, unknown>[];
     failures: Record<string, unknown>[];
-    notices: Record<string, unknown>[];
+    /** Narrowed to the six delivery-evidence fields the panel renders — see envelope.ts. */
+    notices: HrInboxNotice[];
 };
 
 /** SPEC-UI-IA §5.9 — rows group by urgency before anything else. */
