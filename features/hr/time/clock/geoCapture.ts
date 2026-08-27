@@ -21,8 +21,18 @@
 
 "use client";
 
-import type { ClockState } from "@/features/hr/time/api/types";
 import type { PunchGeo } from "./punchIntent";
+
+/**
+ * What a surface knows about capture before a punch. A standalone shape on purpose: it used to be
+ * `ClockState["capture"]`, and `hr.clock_state` sends no such field (G2 F6). The kiosk supplies it
+ * from its device session config, which genuinely does carry one.
+ */
+export interface CapturePosture {
+  geoRequested: boolean;
+  photoRequested: boolean;
+  maxGeoAccuracyM: number | null;
+}
 
 /** On the confirmation card, verbatim from §4.9's *"Location recorded"*. */
 export const GEO_CAPTURED_NOTICE = "Location recorded";
@@ -31,7 +41,7 @@ export const GEO_CAPTURED_NOTICE = "Location recorded";
  * What the punch control says **before** it is pressed, where capture is on. Never a policy page,
  * never a one-time consent an employee has forgotten (§4.9).
  */
-export function geoCaptureBeforeNotice(capture: ClockState["capture"]): string | null {
+export function geoCaptureBeforeNotice(capture: CapturePosture): string | null {
   if (capture.geoRequested && capture.photoRequested) {
     return "Your location and a photo will be recorded with this punch.";
   }
@@ -62,7 +72,7 @@ const GEO_TIMEOUT_MS = 10_000;
  * here, because a punch is never refused for a location.
  */
 export async function captureGeoIfRequested(
-  capture: ClockState["capture"],
+  capture: CapturePosture,
 ): Promise<GeoCaptureOutcome> {
   if (!capture.geoRequested) return NO_CAPTURE;
   if (typeof navigator === "undefined" || !navigator.geolocation) {

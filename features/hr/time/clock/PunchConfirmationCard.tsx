@@ -20,6 +20,7 @@ import { CheckCircle2, Info, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { formatStampedTimeWithZone } from "./stampedTime";
+import { formatElapsedMinutes } from "./liveElapsed";
 import { punchKindPresentation } from "./punchVocabulary";
 import type { PunchConfirmation } from "./usePunchClock";
 
@@ -45,8 +46,12 @@ export function PunchConfirmationCard({
             {formatStampedTimeWithZone(punch.occurredAt, punch.tz)}
           </p>
           <p className="text-sm text-muted-foreground">
-            {/* Server-computed. This surface never sums a day. */}
-            {clockState.dayTotalHours} hours recorded today.
+            {/*
+              Server-computed elapsed worked time. This surface never sums a day, and the day TOTAL
+              is not on this envelope (G2 F6) — so the server's own figure is shown rather than a
+              manufactured one.
+            */}
+            {formatElapsedMinutes(clockState.elapsedWorkedMinutes)} worked today so far.
           </p>
         </div>
       </div>

@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import type { ClockState, PunchKind } from "@/features/hr/time/api/types";
 
 import { geoCaptureBeforeNotice } from "./geoCapture";
+import { CAPTURE_NOT_ON_THIS_READ } from "./clockStateView";
 import { punchKindPresentation } from "./punchVocabulary";
 
 export interface PunchActionGridProps {
@@ -32,7 +33,13 @@ export interface PunchActionGridProps {
 
 export function PunchActionGrid({ state, busy, onPunch }: PunchActionGridProps) {
   const allowed = state.allowedKinds;
-  const captureNotice = geoCaptureBeforeNotice(state.capture);
+  /*
+    🚨 `hr.clock_state` sends NO capture posture (G2 F6) — `state.capture` was this lane's
+    invention. Absent is treated as OFF, which is the ruled platform default (§4.9) and the
+    fail-safe direction: the worst case is a punch that captures nothing, never an employee
+    recorded without being told first. DEBT: the posture is owed on this envelope.
+  */
+  const captureNotice = geoCaptureBeforeNotice(CAPTURE_NOT_ON_THIS_READ);
 
   if (allowed.length === 0) {
     // Not an error and not an empty grid: the server currently accepts nothing from this person.

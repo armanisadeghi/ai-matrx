@@ -20,11 +20,37 @@ import type { PunchIntent } from "./punchIntent";
 import { punchKindPresentation } from "./punchVocabulary";
 
 /**
+ * The door's label. The envelope carries a path and a `reason_code` but no label, so the wording is
+ * chosen from the code — never from the path, and never the raw token itself: `no_position_assignment`
+ * on a button is a machine talking to a person (the same class of defect as F7).
+ */
+function doorLabel(reasonCode: string | null): string {
+  switch (reasonCode) {
+    case "no_position_assignment":
+      return "Open my profile";
+    case "employment_not_active":
+      return "Open my employment record";
+    case "worker_class_not_enabled":
+      return "Open my engagement";
+    case "web_punch_disabled":
+      return "Open time settings";
+    default:
+      return "Open";
+  }
+}
+
+/**
  * 🚨 `blocked` is a **server fact** and it **always** carries a sentence AND a door (§2.1, L3-44).
  * Worker class not enabled, employment not active, web punch disabled by config, module off — the
- * reason is the server's words, and `href` is where the person goes next. *A blocked employee must
- * never be left with nowhere to go*, because the alternative is a person standing at a screen that
- * has told them no and offered them nothing.
+ * `message` is the server's words, and `door` is where the person goes next. *A blocked employee
+ * must never be left with nowhere to go*, because the alternative is a person standing at a screen
+ * that has told them no and offered them nothing.
+ *
+ * 🚨 **THIS RENDERED EMPTY IN PRODUCTION (G2 F6).** The component read `blocked.reason` and
+ * `blocked.href`; the server sends `blocked.message` and `blocked.door`. Both were `undefined`, the
+ * paragraph rendered blank, and the fall-through below — written for "the server sent a reason with
+ * no door" — fired while the server had sent **both**. The payload was cast, not mapped, so no type
+ * check could see it. `service.ts` maps it by name now; these are the server's field names.
  */
 export function PunchBlockedCard({ blocked }: { blocked: NonNullable<ClockState["blocked"]> }) {
   return (
@@ -33,16 +59,16 @@ export function PunchBlockedCard({ blocked }: { blocked: NonNullable<ClockState[
         <AlertTriangle className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
         <div className="flex flex-col gap-4">
           {/* The server's sentence, verbatim. Never replaced with a generic one. */}
-          <p className="text-base text-foreground">{blocked.reason}</p>
-          {blocked.href && (
+          <p className="text-base text-foreground">{blocked.message}</p>
+          {blocked.door && (
             <Button asChild variant="outline" className="min-h-[48px] w-fit gap-2">
-              <Link href={blocked.href}>
-                {blocked.hrefLabel ?? "Open"}
+              <Link href={blocked.door}>
+                {doorLabel(blocked.reasonCode)}
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
           )}
-          {!blocked.href && (
+          {!blocked.door && (
             /*
               The server sent a reason with no door. That is a defect on the server's side, not a
               reason to leave a person stranded — so the surface still names a human path.

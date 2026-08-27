@@ -306,7 +306,15 @@ export interface AttestationResponse {
   rest?: { count_owed: number; count_taken: number; missed: boolean };
   hours?: {
     confirmed: boolean;
-    shown_total_hours: number;
+    /**
+     * 🚨 **Null where the surface had no day total to show.** `hr.clock_state` does not send one
+     * (G2 F6), and a client that invented a number here would be putting a figure nobody computed
+     * into a legal attestation. Where it is null, {@link shown_elapsed_worked_minutes} carries what
+     * the employee actually saw.
+     */
+    shown_total_hours: number | null;
+    /** The server-computed elapsed worked minutes displayed on the card, verbatim. */
+    shown_elapsed_worked_minutes?: number | null;
     /** Answering "hours are wrong" NEVER blocks a clock-out. It becomes a disagreement. */
     disagreement_note: string | null;
   };

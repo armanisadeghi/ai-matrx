@@ -4,9 +4,12 @@
  * Four rules, and each one is the difference between an attestation and a checkbox:
  *
  * 1. 🚨 **It shows the total it is asking about.** *An attestation to an unstated number is not an
- *    attestation.* The number is `clockState.dayTotalHours` — **server-computed**; this component
- *    does not add up a day, and the figure it displays is the same one it writes into
- *    `hours.shown_total_hours`, so what the employee saw and what was recorded can never disagree.
+ *    attestation.* 🚨 **The server sends NO day total** (G2 F6) — `dayTotalHours` was this lane's
+ *    invention and rendered as "undefined hours" against the live function. What the server does
+ *    send is `elapsed_worked_minutes`, computed server-side over the punch's stamped zone, so that
+ *    is the figure this card states and the figure it records as having stated. It is deliberately
+ *    NOT dressed up as a paid-hours total. The figure displayed and the figure written are the same
+ *    value, so what the employee saw and what was recorded can never disagree.
  * 2. 🚨 **A meal waiver is offered ONLY where `attestation.mealWaiverOffered` is true** — the
  *    resolved rule permits one for that shift length. Where it does not, the option is **absent —
  *    not greyed, not refused after the fact**. Offering a waiver a jurisdiction does not allow and
@@ -27,6 +30,15 @@ import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { formatElapsedMinutes } from "./liveElapsed";
+import {
+  attestationShownMinutes,
+  mealMinimumMinutes,
+  mealRuleResolved,
+  mealWaiverOffered,
+  restBreaksOwed,
+  restRuleResolved,
+} from "./clockStateView";
 import { Textarea } from "@/components/ui/textarea";
 import type { AttestationResponse, ClockState } from "@/features/hr/time/api/types";
 
@@ -83,8 +95,11 @@ export function ClockOutAttestationCard({
   onSubmit,
   onCancel,
 }: ClockOutAttestationCardProps) {
-  const { attestation } = state;
-  const restOwed = attestation.restBreaksOwed ?? 0;
+  const shownMinutes = attestationShownMinutes(state);
+  const shownLabel = formatElapsedMinutes(shownMinutes);
+  const askAboutRest = restRuleResolved(state);
+  const restOwed = restBreaksOwed(state) ?? 0;
+  const waiverOffered = mealWaiverOffered(state);
 
   // `asked_at` is stamped when the card mounts, not when it is submitted — the pair
   // (asked_at, answered_at) is what shows an attestation was read rather than reflexed through.
@@ -97,13 +112,14 @@ export function ClockOutAttestationCard({
   const [hoursConfirmed, setHoursConfirmed] = useState<YesNo>(null);
   const [disagreementNote, setDisagreementNote] = useState("");
 
-  const askAboutMeal = attestation.mealRuleResolved;
+  const askAboutMeal = mealRuleResolved(state);
   const answered =
     hoursConfirmed !== null && (!askAboutMeal || mealWaived || mealProvided !== null);
 
   function submit() {
     const response: AttestationResponse = {
-      prompt_version: attestation.promptVersion ?? "unspecified",
+      // The envelope carries no prompt version; the rule set it was resolved from is named instead.
+      prompt_version: state.jurisdictionKey ?? "unspecified",
       asked_at: askedAt,
       answered_at: new Date().toISOString(),
       ...(askAboutMeal
@@ -117,7 +133,7 @@ export function ClockOutAttestationCard({
             },
           }
         : {}),
-      ...(attestation.restBreaksOwed !== null
+      ...(askAboutRest
         ? {
             rest: {
               count_owed: restOwed,
@@ -128,8 +144,13 @@ export function ClockOutAttestationCard({
         : {}),
       hours: {
         confirmed: hoursConfirmed === "yes",
-        // 🚨 The number the employee was shown, written verbatim into the record.
-        shown_total_hours: state.dayTotalHours,
+        /*
+          🚨 The figure the employee was shown, written verbatim. `shown_total_hours` is null
+          because the server sends no day total on this read and this client will not manufacture
+          one; `shown_elapsed_worked_minutes` is what was actually on screen.
+        */
+        shown_total_hours: null,
+        shown_elapsed_worked_minutes: shownMinutes,
         disagreement_note: disagreementNote.trim() === "" ? null : disagreementNote.trim(),
       },
     };
@@ -148,11 +169,8 @@ export function ClockOutAttestationCard({
 
       {/* Rule 1: the total this attestation is ABOUT, stated. Server-computed, never derived here. */}
       <div className="rounded-lg border border-border bg-muted/40 p-4">
-        <p className="text-sm text-muted-foreground">Hours recorded for today so far</p>
-        <p className="text-3xl font-semibold tabular-nums text-foreground">
-          {state.dayTotalHours}
-          <span className="ml-1 text-base font-normal text-muted-foreground">hours</span>
-        </p>
+        <p className="text-sm text-muted-foreground">Time recorded for today so far</p>
+        <p className="text-3xl font-semibold tabular-nums text-foreground">{shownLabel}</p>
       </div>
 
       {askAboutMeal && (
@@ -184,7 +202,7 @@ export function ClockOutAttestationCard({
             Rule 2: ABSENT, not greyed, where the resolved rule permits no waiver for this shift
             length. `mealWaiverOffered` is the server's answer to that question, not ours.
           */}
-          {attestation.mealWaiverOffered && (
+          {waiverOffered && (
             <div className="flex flex-col gap-2">
               <Button
                 type="button"
@@ -207,7 +225,7 @@ export function ClockOutAttestationCard({
         </div>
       )}
 
-      {attestation.restBreaksOwed !== null && (
+      {askAboutRest && (
         <fieldset className="flex flex-col gap-2">
           <legend className="text-base text-foreground">
             You were owed {restOwed} rest {restOwed === 1 ? "break" : "breaks"} today. How many did
@@ -242,7 +260,7 @@ export function ClockOutAttestationCard({
       )}
 
       <ChoiceRow
-        question={`Are these ${state.dayTotalHours} hours correct?`}
+        question={`Is ${shownLabel} correct for today?`}
         value={hoursConfirmed}
         onChange={setHoursConfirmed}
         yesLabel="Yes, that's right"

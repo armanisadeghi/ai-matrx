@@ -34,6 +34,7 @@ import type {
 } from "@/features/hr/time/api/types";
 
 import { captureGeoIfRequested } from "./geoCapture";
+import { CAPTURE_NOT_ON_THIS_READ } from "./clockStateView";
 import {
   attachAttestation,
   attachGeo,
@@ -256,18 +257,23 @@ export function usePunchClock(input: UsePunchClockInput): PunchClock {
       kind,
       employmentId: currentState.employmentId,
       deviceOrSession,
-      tz: currentState.tz,
+      // `tz` is nullable on the real envelope; the browser zone is the only honest fallback.
+      tz: currentState.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
 
     setBusy(true);
-    const capture = await captureGeoIfRequested(currentState.capture);
+    /*
+      🚨 No capture posture on this envelope (G2 F6). Absent is OFF — the ruled platform default
+      (§4.9) and the fail-safe direction. DEBT: the posture is owed on `hr_clock_state`.
+    */
+    const capture = await captureGeoIfRequested(CAPTURE_NOT_ON_THIS_READ);
     setBusy(false);
     intent = attachGeo(intent, capture.geo, capture.notice);
 
     // The clock-out attestation is collected BEFORE the punch is written, and the card shows the
     // total it is asking about. The punch itself is written when the card is submitted — and it is
     // ALWAYS written, whatever the answers are (§3.2).
-    if (kind === "clock_out" && currentState.attestation.requiredAtClockOut) {
+    if (kind === "clock_out" && currentState.attestationRequiredAtClockOut) {
       setPendingIntent(intent);
       setView({ kind: "attesting", intent, state: currentState });
       return;

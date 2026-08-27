@@ -20,6 +20,8 @@ import {
   LIVE_DISPLAY_DISCLAIMER,
   useLiveElapsedMinutes,
 } from "./liveElapsed";
+import { lastPunchAt, mealMinimumMinutes } from "./clockStateView";
+import { EXCEPTION_KIND_LABELS, labelFor } from "../shared/vocabulary";
 import { breakPayNotice, clockPhasePresentation, mealMinimumNotice } from "./punchVocabulary";
 import { crossZoneNotice, formatStampedTimeWithZone } from "./stampedTime";
 
@@ -43,14 +45,16 @@ export function PunchStatusPanel({
 
   const payNotice = breakPayNotice(state.phase);
   const mealNotice =
-    state.phase === "on_meal" ? mealMinimumNotice(state.attestation.mealMinimumMinutes) : null;
-  const zoneNotice = crossZoneNotice(state.tz);
+    state.phase === "on_meal" ? mealMinimumNotice(mealMinimumMinutes(state)) : null;
+  // `tz` is nullable on the real envelope (a blocked read can answer before a zone resolves).
+  const zoneNotice = state.tz ? crossZoneNotice(state.tz) : null;
+  const lastAt = lastPunchAt(state);
 
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-semibold text-foreground">{presentation.headline}</h2>
-        <Badge variant="secondary">{state.localWorkDate}</Badge>
+        {state.localWorkDate && <Badge variant="secondary">{state.localWorkDate}</Badge>}
       </div>
 
       {presentation.elapsedField && (
@@ -65,16 +69,21 @@ export function PunchStatusPanel({
 
       <dl className="grid grid-cols-2 gap-4">
         <div>
-          <dt className="text-sm text-muted-foreground">Recorded today</dt>
-          {/* Server-computed. Never a sum of anything this browser holds. */}
+          <dt className="text-sm text-muted-foreground">Worked so far today</dt>
+          {/*
+            🚨 The server sends `elapsed_worked_minutes` and NO day total (G2 F6). The old
+            `dayTotalHours` was this lane's invention and rendered as "undefined hours" against the
+            live function. Showing the server's own elapsed figure is the honest replacement; a
+            paid-hours total is owed on this envelope and is NOT manufactured here.
+          */}
           <dd className="text-lg font-medium tabular-nums text-foreground">
-            {state.dayTotalHours} hours
+            {formatElapsedMinutes(state.elapsedWorkedMinutes)}
           </dd>
         </div>
         <div>
           <dt className="text-sm text-muted-foreground">Last punch</dt>
           <dd className="text-lg font-medium text-foreground">
-            {state.lastPunchAt ? formatStampedTimeWithZone(state.lastPunchAt, state.tz) : "None yet"}
+            {lastAt && state.tz ? formatStampedTimeWithZone(lastAt, state.tz) : "None yet"}
           </dd>
         </div>
       </dl>
@@ -91,8 +100,13 @@ export function PunchStatusPanel({
           </p>
           <ul className="flex flex-col gap-1">
             {state.openExceptions.map((exception) => (
+              /*
+                🚨 This read sends no `message` (G2 F6) — it sends `exception_kind`. Labelling it
+                through the shared lexicon is honest; rendering `exception.message` printed an empty
+                line, and printing the raw token would be F7's defect.
+              */
               <li key={exception.id} className="text-sm text-muted-foreground">
-                {exception.message}
+                {labelFor(EXCEPTION_KIND_LABELS, exception.exceptionKind)}
               </li>
             ))}
           </ul>

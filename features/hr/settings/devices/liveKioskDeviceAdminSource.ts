@@ -28,6 +28,7 @@
 import { supabase } from "@/utils/supabase/client";
 import type {
   KioskDeviceAdminSource,
+  KioskLocation,
   KioskPairingCode,
 } from "@/features/hr/time/devices/deviceAdminSource";
 import type { KioskDeviceRow, KioskTrustState } from "@/features/hr/time/api/types";
@@ -134,6 +135,33 @@ export function liveKioskDeviceAdminSource(organizationId: string): KioskDeviceA
       const envelope = unwrap(data, error, "We could not load this organization's time clocks.");
       const rows = envelope.rows;
       return Array.isArray(rows) ? rows.map(toRow) : [];
+    },
+
+    /**
+     * The employer's work locations, from the structure door L1 already owns. **No new contract** —
+     * `hr_structure_list` returns departments, locations, job titles and pay groups in one read, and
+     * the picker takes three fields off the locations array.
+     *
+     * Inactive locations are excluded: offering a tablet a location the employer has retired is a
+     * mistake the picker should not make possible.
+     */
+    async listLocations(): Promise<KioskLocation[]> {
+      const { data, error } = await supabase.rpc("hr_structure_list" as never, {
+        p_organization_id: organizationId,
+      } as never);
+      const envelope = unwrap(data, error, "We could not load this employer's work locations.");
+      // 🚨 This door answers in snake_case — it is not the camelizing Time-lane transport.
+      const rows = envelope.locations;
+      if (!Array.isArray(rows)) return [];
+      return rows
+        .map((raw) => asEnvelope(raw))
+        .filter((r) => r.is_active !== false)
+        .map((r) => ({
+          id: String(r.id ?? ""),
+          name: str(r, "name") ?? "Unnamed location",
+          tz: str(r, "tz"),
+        }))
+        .filter((location) => location.id !== "");
     },
 
     async createPairingCode(input): Promise<KioskPairingCode> {

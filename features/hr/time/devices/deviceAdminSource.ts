@@ -37,9 +37,30 @@ export interface KioskPairingCode {
   expiresAt: string;
 }
 
+/**
+ * A work location a kiosk can belong to. Only what the picker needs — the structure door returns
+ * fifteen fields per location and a device dialog has business with three of them.
+ */
+export interface KioskLocation {
+  id: string;
+  name: string;
+  /** Shown beside the name: a tablet in the wrong timezone files punches on the wrong day. */
+  tz: string | null;
+}
+
 export interface KioskDeviceAdminSource {
   list: () => Promise<KioskDeviceRow[]>;
-  createPairingCode: (input: { deviceName: string; locationId: string | null }) => Promise<KioskPairingCode>;
+  /**
+   * The employer's work locations, for the pairing dialog's picker.
+   *
+   * 🚨 **A KIOSK BELONGS TO A LOCATION, AND THE SERVER ENFORCES IT.** `hr.kiosk_pairing_code_create`
+   * refuses a new device with `hr_kiosk_location_required`: *"A kiosk belongs to a work location:
+   * that is what its punches are checked against and what cross-location flagging compares to."*
+   * The dialog shipped without a picker and hardcoded `null`, so **every pairing was refused and
+   * the kiosk could never be set up at all** (G2 F4). The picker is not a convenience.
+   */
+  listLocations: () => Promise<KioskLocation[]>;
+  createPairingCode: (input: { deviceName: string; locationId: string }) => Promise<KioskPairingCode>;
   /**
    * 🚨 Revocation must take effect on the device within one heartbeat (§3.3). The server is what
    * makes that true; this is only the administrator's half of it.
@@ -129,6 +150,14 @@ export function mockKioskDeviceAdminSource(): KioskDeviceAdminSource {
 
   return {
     list: () => Promise.resolve(rows),
+    listLocations: () =>
+      Promise.resolve([
+        { id: "loc-fremont", name: "Fremont", tz: "America/Los_Angeles" },
+        { id: "loc-hayward", name: "Hayward", tz: "America/Los_Angeles" },
+        // A second zone on purpose: a fleet spanning zones is where "which day is this punch on"
+        // stops being obvious, and the picker names the zone for exactly that reason.
+        { id: "loc-reno", name: "Reno", tz: "America/Denver" },
+      ]),
     createPairingCode: ({ deviceName }) =>
       Promise.resolve({
         deviceId: `ddddddd1-0000-4000-8000-${Math.floor(Math.random() * 1e12)
