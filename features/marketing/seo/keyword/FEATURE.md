@@ -249,6 +249,12 @@ the manifest, emit in `getScope`, re-sync (surface-authoring skill).
 
 ## Change Log
 
+- 2026-08-27 — Kept page-dossier GSC query evidence inside the canonical
+  `seo.gsc_perf_breakdown` RPC while making its `page_eq` UUID branch use the
+  existing `(site_id, page_id)` index. The RPC parses UUID filters once,
+  preserves literal-URL matching as a separate branch, and uses a custom plan
+  so production all-history page reads remain below the statement timeout.
+
 - 2026-08-25 — Repeated external opens of the singleton Keyword Intelligence
   window now add/select the requested phrase in its existing workspace while
   preserving the original pinned target and deduplicated history.
