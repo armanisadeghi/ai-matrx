@@ -15,6 +15,38 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D275 — `hr.wf_request` leaves an orphan `validating` instance when the exclusive binding refuses (2026-08-26)
+
+`hr.wf_request` (live body, verified) inserts the `hr.workflow_instance` row FIRST, then inserts
+`hr.workflow_binding`. On the binding's `unique_violation` it returns the `WF_BINDING_OPEN` refusal
+envelope from inside that block — so the function returns *normally* and the instance INSERT is
+never rolled back. The result is a permanent `hr.workflow_instance` row in state `validating` with
+no binding, no steps and no `created` event. SPEC-WORKFLOW-ENGINE §1.3 says an instance is never
+deleted, so it cannot be cleaned up later, and it will show in the requester's own list (the
+`entity` variant's `std_select` is owner-OR-`iam.has_access`).
+
+Measured 2026-08-26 while fixing the HRB-008 proof: requesting `timecard_approval` on a
+`hr_pay_period_employment` that already had one open left exactly this row behind.
+
+Fix: check `hr.workflow_binding` for an open exclusive row on `(target_token, target_id, flow_key)`
+and return `WF_BINDING_OPEN` **before** the instance insert. Keep the `unique_violation` catch as
+the concurrent-race backstop. Do not fix it by deleting the instance — that would put a hard delete
+of an evidence-class table inside an engine RPC. Owner: C4 workflow-engine lane (HRB-008).
+
+### D276 — `scripts/hr/hrb022_proof.py` asserts a C3 write-guard defect that `hr_c3_11` already fixed (2026-08-26)
+
+One red in `hrb022_proof.py`: *"writing hr.employment overwrites the transaction-scoped
+write-guard literal with a STALE statement-scoped token, refusing the next hr.\* write until
+re-armed"*. That was true, and `migrations/hr_c3_11_arm_write_preserves_caller_arm.sql` fixed it —
+`hr.arm_write()` now leaves an existing legacy arm exactly as it found it, which is why the
+assertion reads `flag after the write = 'on'; next unarmed hr write refused = False`. The proof is
+recording a defect as a live finding after the defect was closed. Same class as the stale HRB-008
+finding flipped in the same session.
+
+Fix: flip the assertion to the shipped semantics — a callee never degrades its caller's arm — the
+way `hrb007_cross_org_proof.py`'s write-guard-scope phase and `hrb008_proof.py`'s
+`§ write-guard scope` group now state it. Owner: the HRB-022 lane, not C4.
+
 ### D271 — `callHr` reads every HR WRITE refusal as a successful write (2026-08-26)
 
 `features/hr/service.ts`'s `callHr` treats a payload as a refusal only when it carries

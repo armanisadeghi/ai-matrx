@@ -488,11 +488,21 @@ async def main():
         rf = await j("select hr.wf_decide($1,'rejected','Thursday needs a correction before I approve.')",
                      tc_step["id"])
         await as_owner()
-        rec("§8.2 grain", "a manager rejection moves ONLY this employment's instance",
-            rf.get("granted") and await conn.fetchval(
-                "select state='rejected' from hr.workflow_instance where id=$1", tc_inst))
+        # 🚨 §8.2 node J2 IS ABOUT THE ROW, NOT THE WORD. `timecard_approval` ships
+        # `on_reject = 'return_to_requester'`, so the engine closes the instance `returned` and
+        # hands it back — asserting the literal state `rejected` here was measuring this suite's
+        # assumption about a flow-type knob rather than the grain rule §8.2 actually states.
+        tc_after = await conn.fetchval("select state from hr.workflow_instance where id=$1", tc_inst)
+        rec("§8.2 grain", "a manager rejection closes THIS employment's instance per the flow type's on_reject",
+            rf.get("granted") and tc_after == "returned",
+            f"state={tc_after} on_reject=return_to_requester")
+        rec("§8.2 grain", "🚨 and ONLY this employment's row moves — it returns to `open` for a fresh attestation",
+            await conn.fetchval("select state='open' from hr.pay_period_employment where id=$1", ppe),
+            await conn.fetchval("select state from hr.pay_period_employment where id=$1", ppe))
         rec("§8.2 grain", "🚨 and the hr.pay_period row is UNTOUCHED — one disputed timecard never un-submits a pay group",
-            pp_state_before == await conn.fetchval("select state from hr.pay_period where id=$1", pp))
+            pp_state_before == "submitted"
+            and pp_state_before == await conn.fetchval("select state from hr.pay_period where id=$1", pp),
+            f"before={pp_state_before} after={await conn.fetchval('select state from hr.pay_period where id=$1', pp)}")
 
 
         # ================================================================= §3.4 VERSIONED TARGET
