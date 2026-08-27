@@ -42807,6 +42807,19 @@ export type Database = {
         Returns: Json
       }
       _punch_state_of: { Args: { p_employment_id: string }; Returns: string }
+      _recompute_enqueue: {
+        Args: {
+          p_employment_id: string
+          p_local_work_date: string
+          p_organization_id: string
+          p_reason: string
+        }
+        Returns: Json
+      }
+      _recompute_workweek_start: {
+        Args: { p_employment_id: string; p_local_work_date: string }
+        Returns: string
+      }
       _reconcile_grants: {
         Args: { p_at: string; p_scope_id: string; p_scope_kind: string }
         Returns: Json
@@ -43761,6 +43774,7 @@ export type Database = {
         }
         Returns: Json
       }
+      recompute_enqueue_debt: { Args: never; Returns: Json }
       resolve_rules: {
         Args: {
           p_as_of: string
