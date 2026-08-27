@@ -9,28 +9,30 @@ replication, and remote reconciliation for registered Redux slices.
 
 Server-rendered HTML and the first client render must observe the same Redux
 state. `StoreProvider` therefore creates the store without reading persisted
-state, then `SyncBootstrap` starts the idempotent sync boot from a passive
-effect. The passive boundary is load-bearing: it runs after descendant
-hydration and layout work, so synchronous local-storage rehydration cannot
-change a streamed or selectively hydrated subtree underneath React.
+state, then `SyncBootstrap` schedules the idempotent sync boot after window
+load at the next browser-idle turn. A parent passive effect is **not** a
+hydration boundary: a streamed Suspense descendant may still hydrate afterward.
 
 The store-owned `boot()` promise includes warm-cache IDB hydration. A
 write-time resolver that depends on hydrated context joins that promise before
 declaring the context missing; `ensureOrgId` is the canonical example.
 
-**Never move sync boot** into store creation, render, `useLayoutEffect`, or an
-inline script. Preferences that genuinely must apply before paint may mutate
-DOM attributes/classes only through `SyncBootScript`; they must not dispatch
-Redux state before hydration.
+**Never move sync boot** into store creation, render, `useLayoutEffect`, an
+un-gated passive effect, or an inline script. Preferences that genuinely must
+apply before paint may mutate DOM attributes/classes only through
+`SyncBootScript`; they must not dispatch Redux state before hydration.
 
 ## Verification
 
 `lib/sync/components/SyncBootstrap.test.tsx` renders the subject on the server,
-hydrates it with `hydrateRoot`, and proves sync boot observes completion of a
-descendant layout effect with no recoverable hydration errors.
+hydrates it with `hydrateRoot`, and proves sync boot remains closed until the
+post-load idle callback, after descendant layout work, with no recoverable
+hydration errors.
 
 ## Change log
 
+- 2026-08-26 — Persisted boot now waits for window load plus browser idle; a parent passive effect
+  can precede selective hydration in a streamed Suspense subtree and still produce React #418.
 - 2026-08-26 — `boot()` now resolves after warm-cache IDB hydration, and
   `ensureOrgId` joins it before firing the loud personal-org fallback.
 - 2026-08-20 — `remote.cacheSatisfies` now also guards the cache-warm after a

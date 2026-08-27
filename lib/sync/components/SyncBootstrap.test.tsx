@@ -40,6 +40,7 @@ function Subject() {
 describe("SyncBootstrap", () => {
   let container: HTMLDivElement;
   let root: Root;
+  let idleCallback: IdleRequestCallback | null;
 
   beforeEach(() => {
     boot.mockClear();
@@ -47,6 +48,12 @@ describe("SyncBootstrap", () => {
     container = document.createElement("div");
     container.innerHTML = renderToString(<Subject />);
     document.body.appendChild(container);
+    idleCallback = null;
+    window.requestIdleCallback = jest.fn((callback: IdleRequestCallback) => {
+      idleCallback = callback;
+      return 1;
+    });
+    window.cancelIdleCallback = jest.fn();
   });
 
   afterEach(async () => {
@@ -56,7 +63,7 @@ describe("SyncBootstrap", () => {
     container.remove();
   });
 
-  it("boots only after descendant hydration and layout work complete", async () => {
+  it("boots only in an idle turn after descendant hydration and layout work complete", async () => {
     expect(boot).not.toHaveBeenCalled();
     const recoverableErrors: unknown[] = [];
 
@@ -64,6 +71,13 @@ describe("SyncBootstrap", () => {
       root = hydrateRoot(container, <Subject />, {
         onRecoverableError: (error) => recoverableErrors.push(error),
       });
+    });
+
+    expect(boot).not.toHaveBeenCalled();
+    expect(idleCallback).not.toBeNull();
+
+    await act(async () => {
+      idleCallback?.({ didTimeout: false, timeRemaining: () => 10 });
     });
 
     expect(boot).toHaveBeenCalledTimes(1);

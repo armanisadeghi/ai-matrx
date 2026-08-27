@@ -5,7 +5,7 @@
 // re-renders, parent key changes). Persisted-state hydration is deliberately
 // NOT performed here: dispatching during the first client render changes the
 // tree React is hydrating and causes React #418. `SyncBootstrap` starts the
-// store-owned, idempotent boot in the post-hydration passive phase instead.
+// store-owned boot after window load at the next browser-idle boundary instead.
 //
 // SSR path: `typeof window === "undefined"` — skip the module cache, create a
 // per-render store via `useRef`. Each request stays isolated; sync boot is not
@@ -107,9 +107,8 @@ export default function StoreProvider({
 
   return (
     <Provider store={storeRef.current}>
-      {/* MUST stay first: descendant hydration/layout work completes before
-          its passive effect runs, while application passive effects have not
-          yet had a chance to write default state over persisted envelopes. */}
+      {/* MUST stay first: it schedules persisted boot after load + browser idle,
+          beyond streamed/selective hydration. */}
       <SyncBootstrap />
       {children}
     </Provider>
