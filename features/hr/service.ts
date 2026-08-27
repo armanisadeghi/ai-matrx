@@ -52,21 +52,58 @@ function denied(
   reason: string,
   detail?: string | null,
   auditId?: string | null,
+  field?: string | null,
+  door?: string | null,
+  payload?: Record<string, unknown> | null,
 ): HrResult<never> {
-  return { ok: false, kind: "denied", reason, detail: detail ?? null, auditId: auditId ?? null };
+  return {
+    ok: false,
+    kind: "denied",
+    reason,
+    detail: detail ?? null,
+    auditId: auditId ?? null,
+    // A write refusal names the offending control and, where one exists, where to go and fix it
+    // (`location_without_jurisdiction` carries `/hr/settings/structure`). Dropping these here is
+    // how "some fields could not be saved" gets rendered instead of the field.
+    field: field ?? null,
+    door: door ?? null,
+    // Whole, because `rehire_required` carries `existing` and that IS §4.6's panel.
+    payload: payload ?? {},
+  };
 }
 
 function failed(message: string, code?: string | null): HrResult<never> {
   return { ok: false, kind: "failed", message, code: code ?? null };
 }
 
+/**
+ * 🚨 THERE ARE **TWO** REFUSAL DIALECTS, AND ONLY CHECKING ONE OF THEM READS EVERY WRITE
+ * REFUSAL AS A SUCCESS.
+ *
+ * The `public.hr_*` doors refuse in two shapes, deliberately:
+ *
+ * - **READ doors** answer `{ granted: false, reason, detail, audit_id }`. `granted` is the
+ *   access verdict, and a read that was refused has no row to return.
+ * - **WRITE doors** answer `{ ok: false, reason, detail, field?, door?, audit_id }` — the
+ *   refusal-envelope law core C3 established: Postgres has no autonomous transactions, so a
+ *   door that wrote its audit row and then RAISED would roll the audit back with the
+ *   exception. Refusal is DATA; only breakage is an exception.
+ *
+ * This helper originally tested `granted === false` only. Against a write refusal —
+ * `{ ok: false, reason: "location_without_jurisdiction" }` — that test is false, the payload
+ * falls through as a success, and `callHr` returns `{ ok: true, data: { ok: false, … } }`.
+ * A call site that checks its own `result.ok` then tells an HR admin that somebody was hired
+ * when **nothing was written**. That is the worst failure this file can produce, and it is
+ * silent.
+ *
+ * Both dialects are refusals. `ok === false` is checked FIRST because a write envelope also
+ * carries `field` and `door`, which the caller needs in order to say which control was wrong
+ * and where to go and fix it.
+ */
 function isRefusalEnvelope(value: unknown): value is HrRefusalEnvelope {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "granted" in value &&
-    (value as { granted: unknown }).granted === false
-  );
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as { granted?: unknown; ok?: unknown };
+  return v.ok === false || v.granted === false;
 }
 
 /**
@@ -111,7 +148,14 @@ async function callHr<T>(
   }
 
   if (isRefusalEnvelope(payload)) {
-    return denied(payload.reason, payload.detail, payload.audit_id);
+    return denied(
+      payload.reason,
+      payload.detail,
+      payload.audit_id,
+      payload.field,
+      payload.door,
+      payload as unknown as Record<string, unknown>,
+    );
   }
 
   if (options.envelope) {

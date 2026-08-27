@@ -1,31 +1,18 @@
 // features/hr/people/new/writeAck.ts
 //
-// 🚨 A DEFECT IN THE SHARED TRANSPORT, HANDLED HERE UNTIL IT IS FIXED THERE.
+// Normalizes every way an HR write can say no into ONE shape for this form.
 //
-// `features/hr/service.ts`'s `callHr` treats a payload as a refusal only when it
-// carries `granted: false`. That is the READ doors' dialect. The WRITE doors —
-// `hr_employee_create`, `hr_position_change`, `hr_transfer`, `hr_compensation_upsert`,
-// `hr_separation_record`, `hr_duplicate_scan` and the rest — speak a THIRD
-// dialect that neither the file's header nor its `isRefusalEnvelope` accounts
-// for:
+// 🚨 THIS FILE USED TO CARRY A TRANSPORT DEFECT, AND NO LONGER DOES — the note is kept because
+// the bug is worth recognising if it ever comes back. `features/hr/service.ts`'s `callHr` tested
+// a payload for `granted: false` only. That is the READ doors' dialect; the WRITE doors answer
+// `{ ok: false, reason, field?, door? }`, so `callHr` fell through to its SUCCESS branch and
+// handed callers `{ok: true, data: {ok: false, …}}`. A call site checking `result.ok` therefore
+// read a REFUSAL AS A SUCCESSFUL WRITE — in this lane, telling an HR admin somebody was hired
+// when nothing was written.
 //
-//     { "ok": false, "reason": "validation", "field": "hire_date", "detail": "…" }
-//     { "ok": false, "reason": "location_without_jurisdiction", "door": "/hr/settings/structure" }
-//     { "ok": false, "reason": "rehire_required", "existing": { … } }
-//
-// Because `granted` is absent, `callHr` falls through to its success branch and
-// hands the caller `{ok: true, data: {ok: false, …}}`. A call site that only
-// checks `result.ok` therefore reads a REFUSAL AS A SUCCESSFUL WRITE — and in
-// this lane that means telling an HR admin somebody was hired when nothing was
-// written.
-//
-// (Verified against the live function bodies 2026-08-26. The same reading also
-// shows `features/hr/service.ts`'s header claim that these writes are "NOT LIVE
-// YET" is stale: every one of them exists in `pg_proc` today. Both findings are
-// in the lane report; the fix belongs in `callHr`, once, not in each caller.)
-//
-// Every write in this lane goes through `readWriteAck` so the bug cannot reach a
-// user from here, and so the fix upstream is a deletion rather than a hunt.
+// Fixed at the source: `isRefusalEnvelope` now accepts both dialects, and `HrDenied` carries
+// `field`, `door` and the whole `payload` (which `rehire_required` needs — its `existing` block
+// IS §4.6's rehire panel). This file is now a thin adapter that knows nothing about dialects.
 
 import type { HrResult } from "../../types";
 
@@ -73,9 +60,9 @@ export function readWriteAck<T extends Record<string, unknown>>(
         refusal: {
           reason: result.reason,
           detail: result.detail ?? fallback,
-          field: null,
-          door: null,
-          payload: {},
+          field: result.field,
+          door: result.door,
+          payload: result.payload,
         },
       };
     }

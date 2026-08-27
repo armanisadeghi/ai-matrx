@@ -49,12 +49,26 @@ export type HrEmployerProfileRow = HrTables["employer_profile"]["Row"];
 // ── The one result type ─────────────────────────────────────────────────────
 
 /** The server's refusal envelope, as the shipped doors write it. */
+/**
+ * A door refused. **Two dialects, both real** — see `isRefusalEnvelope` in `service.ts`.
+ *
+ * READ doors answer with `granted: false` (the access verdict). WRITE doors answer with
+ * `ok: false` — the refusal-envelope law: Postgres has no autonomous transactions, so a door
+ * that wrote its audit row and then RAISED would roll the audit back with the exception.
+ * **Refusal is data; only breakage is an exception.** Anything that tests one flag and not the
+ * other reads half of all refusals as successes.
+ */
 export type HrRefusalEnvelope = {
-  granted: false;
-  /** A stable code — `not_reachable`, `no_standing`, `no_lane`, `WF_BULK_LIMIT`, … */
+  granted?: false;
+  ok?: false;
+  /** A stable code — `not_reachable`, `no_standing`, `location_without_jurisdiction`, … */
   reason: string;
   /** A sentence a human can act on. Render this, never the code alone. */
   detail?: string | null;
+  /** The offending input, on a write refusal. Name it at the control, never in the aggregate. */
+  field?: string | null;
+  /** Where to go and fix it — a write refusal that has a door carries it. */
+  door?: string | null;
   /** Present when the refusal was written to `hr.access_audit`. */
   audit_id?: string | null;
 };
@@ -73,6 +87,21 @@ export type HrDenied = {
   reason: string;
   detail: string | null;
   auditId: string | null;
+  /**
+   * The offending input, on a WRITE refusal — `field: "location_id"` with
+   * `reason: "location_without_jurisdiction"`. Name it AT the control; "some fields could not
+   * be saved" is the defect this replaces (SPEC-EMPLOYEES §7.1 rule 2).
+   */
+  field: string | null;
+  /** Where to go and fix it, where the server named one — e.g. `/hr/settings/structure`. */
+  door: string | null;
+  /**
+   * The refusal envelope, whole. Some refusals carry more than a sentence and the extra IS the
+   * answer: `rehire_required` returns `existing` (the prior spells, their dates, their
+   * `rehire_eligible` and its note), which is the entire content of §4.6's rehire panel.
+   * Flattening a refusal to reason+detail throws that away.
+   */
+  payload: Record<string, unknown>;
 };
 
 /** The call did not reach a decision: transport, gateway, or a genuine server fault. */

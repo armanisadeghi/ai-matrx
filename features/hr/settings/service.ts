@@ -19,8 +19,27 @@ import type {
 
 const PG_INSUFFICIENT_PRIVILEGE = "42501";
 
-function denied(reason: string, detail?: string | null, auditId?: string | null): HrResult<never> {
-  return { ok: false, kind: "denied", reason, detail: detail ?? null, auditId: auditId ?? null };
+function denied(
+  reason: string,
+  detail?: string | null,
+  auditId?: string | null,
+  field?: string | null,
+  door?: string | null,
+  payload?: Record<string, unknown> | null,
+): HrResult<never> {
+  // `field` / `door` / `payload` are the WRITE dialect's half of a refusal — the offending
+  // control, where to go and fix it, and anything extra the envelope carried. Dropping them
+  // renders "some fields could not be saved" instead of naming the field.
+  return {
+    ok: false,
+    kind: "denied",
+    reason,
+    detail: detail ?? null,
+    auditId: auditId ?? null,
+    field: field ?? null,
+    door: door ?? null,
+    payload: payload ?? {},
+  };
 }
 
 function failed(message: string, code?: string | null): HrResult<never> {
