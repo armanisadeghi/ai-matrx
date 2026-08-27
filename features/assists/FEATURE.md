@@ -242,6 +242,8 @@ an assist is personal and addressed to one person by design.
 
 ## Change Log
 
+- 2026-08-27 — **Presentable-assist reads recover the transient anonymous PostgREST boundary.** `listMyPendingAssists` now uses the shared one-shot `runWithSessionRetry` primitive, so a request that reaches the authenticated-only RPC without its browser session re-resolves and retries exactly once; real authenticated permission failures remain faults. A forcing service test pins the 401/42501 recovery sequence.
+
 - 2026-08-25 — **Presentable-assist reads wait for the authenticated Supabase session.** The dock and page strip require auth readiness plus an access token before calling `list_my_presentable_assists`; an idempotent migration restores that RPC's authenticated-only execute grant without widening it to anon.
 
 - 2026-08-24 — Invalid or stale ledger actions remain visibly skipped with a developer warning, but no longer use `console.error`; expected schema-validation fallout must not enter the durable system-error queue.

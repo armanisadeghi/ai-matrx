@@ -12,6 +12,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import type { Json } from "@/types/database.types";
 import {
   toAssist,
@@ -84,9 +85,11 @@ function nowIso(): string {
  */
 export async function listMyPendingAssists(userId: string): Promise<Assist[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("platform")
-    .rpc("list_my_presentable_assists", { p_limit: 50 });
+  const { data, error } = await runWithSessionRetry(() =>
+    supabase
+      .schema("platform")
+      .rpc("list_my_presentable_assists", { p_limit: 50 }),
+  );
   if (error) {
     throw new Error(`[assists] list failed: ${error.message}`);
   }
