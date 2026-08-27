@@ -53,6 +53,44 @@ import type { HrDirectorySort } from "./constants";
 /** Postgres `insufficient_privilege`. The raised dialect's refusal code. */
 const PG_INSUFFICIENT_PRIVILEGE = "42501";
 
+/**
+ * HR is authenticated-only. The server-rendered Redux identity can briefly be
+ * newer than the browser's Supabase session (most often after a session expires
+ * in another tab), so it is not sufficient proof that an RPC will carry a JWT.
+ * Validate the browser session before the ONE context door opens; every other HR
+ * read depends on that context and therefore cannot race ahead as `anon`.
+ */
+export async function validateHrBrowserSession(): Promise<HrResult<true>> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session) {
+    return denied(
+      "no_authenticated_session",
+      "Sign in again to open HR.",
+    );
+  }
+
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error?.name === "AuthSessionMissingError" || !user) {
+    return denied(
+      "no_authenticated_session",
+      "Sign in again to open HR.",
+    );
+  }
+
+  if (error) {
+    return failed("Your HR session could not be validated.", error.name);
+  }
+
+  return { ok: true, data: true };
+}
+
 function denied(
   reason: string,
   detail?: string | null,

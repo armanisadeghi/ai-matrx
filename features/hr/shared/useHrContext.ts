@@ -29,7 +29,7 @@ import { useActiveOrganizationPicker } from "@/features/organizations/hooks/useA
 
 import { HR_ORG_PARAM } from "../constants";
 import type { HrPersona } from "../constants";
-import { fetchHrContext } from "../service";
+import { fetchHrContext, validateHrBrowserSession } from "../service";
 import type {
   HrActiveEmployer,
   HrDenied,
@@ -108,6 +108,17 @@ export function useHrContextResolver(options: { enabled?: boolean } = {}): HrCon
     let cancelled = false;
 
     (async () => {
+      // The SSR-seeded identity can outlive the browser session for one render.
+      // Validate here, before the context RPC that unlocks every other HR read,
+      // so an expired session cannot fan out into anonymous 42501 failures.
+      const session = await validateHrBrowserSession();
+      if (cancelled) return;
+      if (!session.ok) {
+        setError(session);
+        setIsLoading(false);
+        return;
+      }
+
       // Rule 1 wins when it is a uuid; a slug needs the employer list to map it, so
       // it takes the second pass below. Rule 2 is the picker's org.
       const firstAsk = orgParam && isUuid(orgParam) ? orgParam : activeOrgId ?? null;

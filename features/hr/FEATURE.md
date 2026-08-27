@@ -67,6 +67,9 @@ feature. There is no cross-employer HR view, in v1 or later.
   the fix as its action. None opens a chat.
 
 **Services** — `features/hr/service.ts`, one typed function per `public.hr_*` RPC.
+The single HR context resolver validates the browser's Supabase session before
+opening `hr_my_context`; downstream HR reads cannot race a stale SSR identity and
+reach authenticated-only doors as `anon`.
 
 **Redux** — none. HR reads through RPCs; there is no HR slice.
 
@@ -133,6 +136,8 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-08-27** — HR now validates the browser session before its context door,
+  preventing an expired SSR-seeded identity from fanning out into anonymous RPCs.
 - **2026-08-26** — HR settings keeps the starting-code seed result visible after
   the triggered structure refresh, so operators can read the created/skipped counts.
 - **2026-08-26** — L1 shell + primitives layer built: `HrShell`, `HrSubShell`,
