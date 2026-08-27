@@ -128,3 +128,55 @@ Both shapes are read now (SPEC-ACCESS §4.2's denial-names-what-was-missing rule
 None of the R-L1 acceptance targets is claimed here. This file evidences that four **defects** are
 gone, not that any target passes. **The independent verifier re-runs; only its pass closes the
 reopen** (D15 §7.4).
+
+## F3 — pay groups and org structure had no create control
+
+Fixed by a sub-agent (`97316744c8`); verified here in the browser at
+`/hr/settings/pay-groups?org=zzz-throwaway-surface-test-org`:
+
+- a header action **"+ New pay group"**, and — the part that was missing — the **empty state now
+  carries its own "+ New pay group" button**. The verifier's finding was that the empty state
+  *"offers nothing to click"*; it now offers the thing it is explaining.
+- clicking it opens the create form inline, pre-filled (Every two weeks, today, Sunday 12:00 AM)
+  and carrying §2.4 route 70's rule in bold: **"Existing workweeks are not re-cut."**
+
+That agent also caught a wrong claim in the verification report itself. The report says the write
+"exists and works — `upsertHrStructure`, `kind: "pay_group"`". It does not:
+`hr_structure_upsert` accepts `department | location | job_title` only and answers
+`22023 pay_group is not a structure kind`. Pay groups go through `public.hr_pay_group_upsert`.
+The panel now calls the right one.
+
+## 🚨 F3's other half — nothing could be ATTACHED to a pay group
+
+Found while proving F3. The verifier's recorded consequence of F3 is the one that matters:
+*"both live employments carry `pay_group_id = NULL` … this is the single defect that makes P-8
+permanent."* Shipping the create control fixes half of it — creating a pay group and attaching
+nobody to it changes nothing.
+
+**No `public.hr_*` RPC wrote `pay_group_id` at all.** `hr_employee_create` accepts it at hire and
+`hr_structure_list` reads it; nothing else in `public` mentions the column. So every person hired
+before a pay group existed — which was everyone, because the group could not be created — could
+never be attached to one through the product.
+
+`public.hr_employment_set_pay_group` (migration `hr_l1_13_employment_pay_group`) is that writer:
+narrow, audited, and refusing a pay group belonging to a different employer of record, because a
+pay group hangs off `hr.employer_profile` and attaching across employers would cut somebody's
+periods against another company's calendar. The move is **not retroactive** and the envelope says
+so (`existing_periods_recut: false`) — the same rule route 70 states for the workweek boundary.
+
+**Live result — the G2 vertical now has its first step:**
+
+```
+pay group: 6f029464-bfce-45a4-b306-d8cc237886bc  "Sandbox Biweekly"  biweekly
+  Dana Ruiz             → attached  (existing_periods_recut: false)
+  G2R-Marisol Okonkwo   → attached
+  Armani Sadeghi        → attached
+```
+
+## Note on browser evidence
+
+The preview pane was being driven concurrently by another agent throughout this work and hid
+between actions, so some steps were proven through PostgREST rather than by click. Every such step
+says so above, and the transport used is the same one the browser uses. The screenshots that were
+captured — the rendered profile (F1), the pay-groups create affordances and the open create form
+(F3) — are the ones where the affordance itself was the thing under test.
