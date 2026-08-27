@@ -1,7 +1,7 @@
 # Agents Browse — the canonical feature-entry list
 
-**Status:** THE agents list, live at `/agents/all` (round 3). Proving ground for the list shell every feature will adopt.
-**Owner surface:** `app/(core)/agents/all/page.tsx` → `features/agents/browse/`
+**Status:** THE agents list. Live at `/agents/all` AND at `/administration/agents/system-agents/agents` — ONE component, two routes (round 4). Proving ground for the list shell every feature will adopt.
+**Owner surface:** `app/(core)/agents/all/page.tsx` + `app/(admin)/administration/agents/system-agents/agents/page.tsx` → `features/agents/browse/`
 **Cutover:** the previous gallery moved to `/agents/classic`, reachable only from the dismissible `ClassicViewNotice`. `/agents/browse` redirects here. **Delete the notice, its `display.agentsClassicNoticeDismissed` preference, and `/agents/classic` together (~mid-Aug 2026).**
 
 The folder is still named `browse/` (its implementation namespace); the ROUTE is `/agents/all`.
@@ -158,6 +158,58 @@ Org/Owner/Access columns appear only when scope ≠ `mine` — inside "Mine" eve
 
 ---
 
+## One list, two routes (2026-08-26)
+
+The admin System Agents route used to render its own `SystemAgentsGrid`. Same
+table, second UI — and for a year every capability added here (server-side
+facets, sortable AND filterable columns, the one action registry, doors,
+right-click parity, Orchestras) simply never reached the system corpus. That is
+what "we have no way of creating system orchestrators" actually was.
+
+Both routes now render `<AgentBrowsePage>`. They differ by ONE serializable
+word:
+
+| | `/agents/all` | `/administration/agents/system-agents/agents` |
+| --- | --- | --- |
+| `variant` | `"user"` (default) | `"system-admin"` |
+| Opens on | Mine | System |
+| Surface emitted | `matrx-user/agents` | `matrx-admin/system-agents` (roster half) |
+| Clears the glass header | yes | no — `/administration` already begins below it |
+
+**`variant` is a string, not a bag of props, because both callers are SERVER
+components.** Passing the surface object itself 500s the page: "Functions
+cannot be passed directly to Client Components." Everything that differs is
+derived on the client from that one word.
+
+**Where a row opens is a property of the ROW, not the page** (`agentPaths.ts`).
+A builtin opens under the admin System Agents tree from either list; a user
+agent opens at `/agents/[id]`. Every per-row destination — the Name door, Run,
+Build, View, version history, copy-link, the card actions — goes through
+`agentHref`, and `Duplicate` on a builtin produces a builtin. Make this a
+page-level setting and the two routes start drifting again, which is exactly
+how the duplicate grid came to exist.
+
+### The System scope
+
+`system` is a member of the SHARED list-scope vocabulary (`lib/list-scope/`),
+not a local invention: *what does the platform itself ship*, as distinct from
+`public` (*what a tenant published platform-wide*). Two gates, both
+load-bearing:
+
+- The page renders the tab only for a Matrx admin (`selectIsAdmin` — any tier,
+  the same bar `/administration` uses).
+- `agx_list_scoped` re-checks `public.is_platform_admin()` and returns zero
+  system rows to everyone else. **The hidden tab is a convenience, never the
+  security.**
+
+`is_owner` is TRUE for an admin inside this scope — the system corpus is theirs
+to rename, favorite, and delete, and the row affordances read that flag.
+
+A scope string arriving from outside TypeScript is validated against
+`LIST_SCOPE_KINDS`, never a hand-listed subset. The hand-listed one in
+`service.ts` silently dropped `system` on its way from the counts RPC to the
+tab, so the new tab read a permanent "0" beside 400 rows.
+
 ## Files
 
 | File                                                                       | Role |
@@ -212,6 +264,24 @@ hostile at 2,000.
 - Column ORDER and width are not user-controlled yet (visibility is).
 
 ## Change log
+
+- **2026-08-26 (one list, two routes)** — The admin System Agents route now
+  renders THIS list (`variant="system-admin"`); `SystemAgentsGrid` and the
+  `getSystemAgentListSeed` SSR seed behind it were deleted. Added the `system`
+  scope end to end: `agx_list_scoped` / `agx_list_scope_counts`
+  (`migrations/agx_list_scoped_system_scope.sql`), the shared vocabulary, the
+  tab, and `AGENT_LIST_SCOPES_ADMIN`. Row destinations moved to `agentPaths.ts`
+  so a builtin opens in the admin shell from either list, and the `door` is now
+  `hrefFor` rather than the registry token for the same reason. The browse
+  surface is parameterized by the tabs actually rendered
+  (`createAgentBrowseSurface`), so it can neither emit nor accept a scope the
+  page does not show; the admin route emits `matrx-admin/system-agents`
+  instead, projected from the same controller (`adminSurface.ts`).
+  Orchestras: `orchestra_list` stopped gating on `has_org_access(edge org)` —
+  builtins live in the Matrx System org nobody belongs to — and the conductor
+  picker gained the System tab, which together are what make a system
+  Orchestra possible. Verified live end to end: created one from a builtin
+  conductor, saw it listed, removed the artifact.
 
 - **2026-08-25 (pilot surface check)** — Replaced per-table-row desktop-only
   context-menu roots with one delegated pane menu across table, card, and dense

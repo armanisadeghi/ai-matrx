@@ -86,7 +86,7 @@ names on one page.
 | `columns.tsx`                                                                                                   | `EntityColumnSpec<TRow>` + shared cell helpers (`relativeTime`, `timeCell`, `DATE_FILTER_OPTIONS`)                                              |
 | `useEntityList.ts`                                                                                              | The query hook — generation-guarded fetches, debounced search, counts/facets with deliberate dependency keys                                    |
 | `components/EntityListPage.tsx`                                                                                 | The shell. Slots: `notice`, `headerActions`, `emptyAction`, `surface`; feature modals come back from `config.useRowActions`                     |
-| `components/EntityScopeTabs.tsx`                                                                                | THE VIEW LAW tabs — fixed five vocabulary (lib/list-scope), narrowing options from the counts RPC, never Redux                                  |
+| `components/EntityScopeTabs.tsx`                                                                                | THE VIEW LAW tabs — the shared vocabulary (lib/list-scope), narrowing options from the counts RPC, never Redux. WHICH tabs render can be overridden per page (`scopes`) — a scope conditional on who is looking, like admin-only `system`, cannot live in a module-constant config                                  |
 | `components/EntityListToolbar.tsx` / `EntityFilterPanel.tsx` / `EntityColumnPicker.tsx` / `EntityListTable.tsx` | The lifted surface pieces                                                                                                                       |
 
 ## Rules
