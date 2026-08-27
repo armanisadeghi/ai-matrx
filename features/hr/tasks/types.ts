@@ -180,6 +180,32 @@ export type HrDecideResult = {
  */
 export type HrAck = Record<string, never>;
 
+/**
+ * `hr.wf_escalate`'s success payload — which is `hr.wf_activate_step`'s envelope, so it names the
+ * people the step reached rather than merely saying it worked.
+ */
+export type HrEscalateResult = {
+    state?: string | null;
+    reason?: string | null;
+    user_ids?: string[];
+    candidate_count?: number;
+};
+
+/**
+ * `hr.wf_resolve_failure`'s success payload. `outcome` is read from the envelope and stays
+ * undefined until the engine emits it — see envelope.ts for why it is not sent as a parameter.
+ */
+export type HrFailureResolution = {
+    action?: string | null;
+    state?: string | null;
+    outcome?: string | null;
+    retry_granted?: boolean;
+    retry_reason?: string | null;
+};
+
+/** The four actions `hr.wf_resolve_failure` accepts; anything else is `unknown_action`. */
+export type HrFailureAction = "retry" | "resolve" | "abandon" | "reassign";
+
 /** `public.hr_wf_instance` — the decision panel's read. */
 export type HrInstanceDetail = {
     instance: Record<string, unknown>;

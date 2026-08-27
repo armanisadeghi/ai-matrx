@@ -32,12 +32,17 @@ import {
     parseBulkResult,
     parseDecideResult,
     parseEnvelope,
+    parseEscalateResult,
+    parseFailureResolution,
     parseInbox,
     parseInstance,
 } from "@/features/hr/tasks/envelope";
 import type {
     HrAck,
     HrBulkResult,
+    HrEscalateResult,
+    HrFailureAction,
+    HrFailureResolution,
     HrDecideResult,
     HrDecision,
     HrEnvelope,
@@ -121,17 +126,22 @@ export async function bulkDecide(
     return parseEnvelope("hr_wf_bulk_decide", data, parseBulkResult);
 }
 
+/**
+ * §1.9 pass 4 — the escape hatch for a step whose approver cannot act. The engine re-resolves
+ * EXCLUDING the current holders, and if escalation itself resolves to nobody it returns the
+ * activation's refusal (`approver_ineligible`) rather than parking the step silently.
+ */
 export async function escalateStep(
     stepId: string,
     reason?: string | null,
-): Promise<HrEnvelope<HrAck>> {
+): Promise<HrEnvelope<HrEscalateResult>> {
     const supabase = createClient();
     const { data, error } = await supabase.rpc("hr_wf_escalate", {
         p_step_id: stepId,
         ...(reason ? { p_reason: reason } : {}),
     });
     if (error) throw error;
-    return parseEnvelope("hr_wf_escalate", data, parseAck);
+    return parseEnvelope("hr_wf_escalate", data, parseEscalateResult);
 }
 
 export async function reassignStep(
@@ -175,19 +185,24 @@ export async function cancelInstance(
     return parseEnvelope("hr_wf_cancel", data, parseAck);
 }
 
+/**
+ * The failure-resolution terminal. `note` is MANDATORY — the door refuses without it
+ * (`WF_REASON_REQUIRED`: "resolving a failure always records what was done about it"), so it is
+ * sent unconditionally rather than omitted when empty, and the refusal is allowed to speak.
+ */
 export async function resolveFailure(
     failureId: string,
-    action: string,
-    note?: string | null,
-): Promise<HrEnvelope<HrAck>> {
+    action: HrFailureAction,
+    note: string,
+): Promise<HrEnvelope<HrFailureResolution>> {
     const supabase = createClient();
     const { data, error } = await supabase.rpc("hr_wf_resolve_failure", {
         p_failure_id: failureId,
         p_action: action,
-        ...(note ? { p_note: note } : {}),
+        p_note: note,
     });
     if (error) throw error;
-    return parseEnvelope("hr_wf_resolve_failure", data, parseAck);
+    return parseEnvelope("hr_wf_resolve_failure", data, parseFailureResolution);
 }
 
 export async function recordStepResult(

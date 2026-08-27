@@ -30,6 +30,8 @@
 
 import type {
     HrBulkOutcome,
+    HrEscalateResult,
+    HrFailureResolution,
     HrBulkResult,
     HrDecideResult,
     HrEnvelope,
@@ -146,6 +148,44 @@ export function parseEnvelope<T>(
         return refusal;
     }
     return { granted: true, data: parsePayload(data) };
+}
+
+/**
+ * `hr.wf_escalate` returns `hr.wf_activate_step`'s OWN envelope, not an ack of its own — so on
+ * success it carries who the step went to (`user_ids`, `candidates`) or why it went nowhere
+ * (`state: 'skipped'`, `reason`). The inbox reads those and SAYS them: "escalated to 2 people" is
+ * the difference between an escape hatch you can trust and a button that appears to do nothing.
+ */
+export function parseEscalateResult(source: Obj): HrEscalateResult {
+    return {
+        state: optStr(source, "state"),
+        reason: optStr(source, "reason"),
+        user_ids: Array.isArray(source.user_ids)
+            ? source.user_ids.filter((v): v is string => typeof v === "string")
+            : undefined,
+        candidate_count: Array.isArray(source.candidates) ? source.candidates.length : undefined,
+    };
+}
+
+/**
+ * `hr.wf_resolve_failure` returns `{granted, action, ...}` with a per-action tail — `retry` carries
+ * the retry's own envelope, `abandon` closes the instance.
+ *
+ * 🚨 `outcome` is read OPPORTUNISTICALLY and stays undefined until the engine emits it. The
+ * failure-resolution terminal is being wired in parallel (the `not_attested` outcome for the
+ * no-login class), and the live signature today is `(p_failure_id, p_action, p_note)` — three
+ * arguments, no outcome. Reading the field from the ENVELOPE rather than sending a parameter that
+ * does not exist means the client needs no change on the day the engine starts returning it, and
+ * cannot break in the meantime by calling something that is not there.
+ */
+export function parseFailureResolution(source: Obj): HrFailureResolution {
+    return {
+        action: optStr(source, "action"),
+        state: optStr(source, "state"),
+        outcome: optStr(source, "outcome"),
+        retry_granted: isObj(source.retry) ? source.retry.granted === true : undefined,
+        retry_reason: isObj(source.retry) ? optStr(source.retry, "reason") : undefined,
+    };
 }
 
 /** A door whose success payload the inbox does not read beyond "it worked". */

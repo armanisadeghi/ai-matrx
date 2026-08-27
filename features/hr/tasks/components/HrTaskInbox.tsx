@@ -10,6 +10,7 @@ import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog
 import { toast } from "@/lib/toast";
 
 import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
+import { HrFailureResolveDialog } from "@/features/hr/tasks/components/HrFailureResolveDialog";
 import { HrTaskTable } from "@/features/hr/tasks/components/HrTaskTable";
 import { isScope } from "@/features/hr/tasks/envelope";
 import { useHrInbox } from "@/features/hr/tasks/hooks/useHrInbox";
@@ -84,6 +85,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
     const [busy, setBusy] = useState(false);
     const [bulkOutcomes, setBulkOutcomes] = useState<HrBulkOutcome[] | null>(null);
     const [bulkRefusal, setBulkRefusal] = useState<HrRefusal | null>(null);
+    const [failure, setFailure] = useState<{ id: string; failureClass: string } | null>(null);
     const [pending, startTransition] = useTransition();
 
     function setScope(next: HrInboxScope) {
@@ -302,6 +304,23 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                         {row.failure_class}
                                     </Link>
                                     <span className="text-muted-foreground">{row.state}</span>
+                                    {/* A queue that lists what you cannot act on is a permanent
+                                        reminder, not a queue. The terminal opens HERE as well as
+                                        on the request, because the operator is already looking at
+                                        the row. */}
+                                    <Button
+                                        className="ml-auto shrink-0"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() =>
+                                            setFailure({
+                                                id: row.failure_id,
+                                                failureClass: row.failure_class,
+                                            })
+                                        }
+                                    >
+                                        Resolve
+                                    </Button>
                                 </li>
                             ))}
                         </ul>
@@ -373,6 +392,16 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                     </Section>
                 ) : null}
             </div>
+
+            <HrFailureResolveDialog
+                failureId={failure?.id ?? null}
+                failureClass={failure?.failureClass ?? null}
+                open={failure !== null}
+                onOpenChange={(open) => !open && setFailure(null)}
+                // The resolved failure must leave BOTH lists — this section and the request's own
+                // panel — so the reload is the whole point, not a nicety.
+                onResolved={() => reload(true)}
+            />
 
             {/* §5.2: bulk REJECT always requires one reason applied to the whole batch. */}
             <TextInputDialog

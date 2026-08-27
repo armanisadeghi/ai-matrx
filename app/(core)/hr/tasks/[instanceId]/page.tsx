@@ -15,10 +15,10 @@ export default async function HrTaskInstancePage({
     searchParams,
 }: {
     params: Promise<{ instanceId: string }>;
-    searchParams: Promise<{ step?: string; notice?: string }>;
+    searchParams: Promise<{ step?: string; notice?: string; failure?: string }>;
 }) {
     const { instanceId } = await params;
-    const { step, notice } = await searchParams;
+    const { step, notice, failure } = await searchParams;
 
     return (
         <>
@@ -35,6 +35,7 @@ export default async function HrTaskInstancePage({
                         instanceId={instanceId}
                         stepId={step ?? null}
                         noticeId={notice ?? null}
+                        failureId={failure ?? null}
                     />
                 </Suspense>
             </div>

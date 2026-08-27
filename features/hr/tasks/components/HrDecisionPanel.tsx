@@ -7,9 +7,10 @@ import { ArrowLeft, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
+import { HrActionDialog } from "@/features/hr/tasks/components/HrActionDialog";
 import { HrDeliveryState } from "@/features/hr/tasks/components/HrDeliveryState";
+import { HrFailureResolveDialog } from "@/features/hr/tasks/components/HrFailureResolveDialog";
 import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
 import {
     cancelInstance,
@@ -50,10 +51,13 @@ export function HrDecisionPanel({
     instanceId,
     stepId,
     noticeId,
+    failureId,
 }: {
     instanceId: string;
     stepId: string | null;
     noticeId: string | null;
+    /** From `?failure=` — the inbox's failure rows deep-link straight to their terminal. */
+    failureId: string | null;
 }) {
     const [detail, setDetail] = useState<HrInstanceDetail | null>(null);
     const [refusal, setRefusal] = useState<HrRefusal | null>(null);
@@ -63,6 +67,18 @@ export function HrDecisionPanel({
     const [reason, setReason] = useState("");
     const [busy, setBusy] = useState(false);
     const approveRef = useRef<HTMLButtonElement>(null);
+
+    // Every state-changing control owns a locally-mounted dialog. Nothing here goes through the
+    // global imperative confirm(), whose dynamic host can swallow the first click after load.
+    const [escalateOpen, setEscalateOpen] = useState(false);
+    const [escalateReason, setEscalateReason] = useState("");
+    const [escalateOutcome, setEscalateOutcome] = useState<string | null>(null);
+    const [closeAction, setCloseAction] = useState<"withdraw" | "cancel" | null>(null);
+    const [closeReason, setCloseReason] = useState("");
+    const [closeOutcome, setCloseOutcome] = useState<string | null>(null);
+    const [dialogRefusal, setDialogRefusal] = useState<HrRefusal | null>(null);
+    const [dialogBusy, setDialogBusy] = useState(false);
+    const [failureOpen, setFailureOpen] = useState(failureId !== null);
 
     async function load() {
         setLoading(true);
@@ -234,20 +250,11 @@ export function HrDecisionPanel({
                                     <Button
                                         variant="ghost"
                                         disabled={busy}
-                                        onClick={async () => {
-                                            const ok = await confirm({
-                                                title: "Escalate this step?",
-                                                description:
-                                                    "The engine resolves the next approver up the chain and tells both of you. Your own ability to decide it does not go away.",
-                                                confirmLabel: "Escalate",
-                                            });
-                                            if (!ok) return;
-                                            const envelope = await escalateStep(
-                                                String(activeStep.id),
-                                                reason.trim() || null,
-                                            );
-                                            if (isRefusal(envelope)) setActionRefusal(envelope);
-                                            else await load();
+                                        onClick={() => {
+                                            setEscalateReason(reason.trim());
+                                            setDialogRefusal(null);
+                                            setEscalateOutcome(null);
+                                            setEscalateOpen(true);
                                         }}
                                     >
                                         Escalate
@@ -326,21 +333,11 @@ export function HrDecisionPanel({
                                 <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={async () => {
-                                        const ok = await confirm({
-                                            title: "Withdraw this request?",
-                                            description:
-                                                "Withdrawing closes it. The history stays — an instance is evidence and is never deleted.",
-                                            variant: "destructive",
-                                            confirmLabel: "Withdraw",
-                                        });
-                                        if (!ok) return;
-                                        const envelope = await withdrawInstance(
-                                            instanceId,
-                                            reason.trim() || null,
-                                        );
-                                        if (isRefusal(envelope)) setActionRefusal(envelope);
-                                        else await load();
+                                    onClick={() => {
+                                        setCloseReason(reason.trim());
+                                        setDialogRefusal(null);
+                                        setCloseOutcome(null);
+                                        setCloseAction("withdraw");
                                     }}
                                 >
                                     Withdraw
@@ -348,21 +345,11 @@ export function HrDecisionPanel({
                                 <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={async () => {
-                                        const ok = await confirm({
-                                            title: "Cancel this request?",
-                                            description:
-                                                "Cancelling closes it for everyone. The history stays.",
-                                            variant: "destructive",
-                                            confirmLabel: "Cancel request",
-                                        });
-                                        if (!ok) return;
-                                        const envelope = await cancelInstance(
-                                            instanceId,
-                                            reason.trim() || null,
-                                        );
-                                        if (isRefusal(envelope)) setActionRefusal(envelope);
-                                        else await load();
+                                    onClick={() => {
+                                        setCloseReason(reason.trim());
+                                        setDialogRefusal(null);
+                                        setCloseOutcome(null);
+                                        setCloseAction("cancel");
                                     }}
                                 >
                                     Cancel
@@ -372,6 +359,124 @@ export function HrDecisionPanel({
                     </>
                 ) : null}
             </div>
+
+            {/* §1.9 pass 4's escape hatch, with the reason the engine actually stores. */}
+            <HrActionDialog
+                open={escalateOpen}
+                onOpenChange={setEscalateOpen}
+                title="Escalate this step?"
+                description="The engine re-resolves the approver EXCLUDING whoever holds it now, and tells both parties. If escalation itself reaches nobody, it says so rather than parking the step."
+                confirmLabel="Escalate"
+                reason={escalateReason}
+                onReasonChange={setEscalateReason}
+                reasonPlaceholder="Why is this being escalated? Stored on the step and sent to both parties."
+                busy={dialogBusy}
+                refusal={dialogRefusal}
+                outcome={escalateOutcome}
+                onConfirm={async () => {
+                    if (!activeStep) return;
+                    setDialogBusy(true);
+                    setDialogRefusal(null);
+                    try {
+                        const envelope = await escalateStep(
+                            String(activeStep.id),
+                            escalateReason.trim() || null,
+                        );
+                        if (isRefusal(envelope)) {
+                            setDialogRefusal(envelope);
+                            return;
+                        }
+                        const r = envelope.data;
+                        // Name who it reached. "Escalated" with no audience is how an operator
+                        // ends up believing a step moved when it did not.
+                        setEscalateOutcome(
+                            r.state === "skipped"
+                                ? `The step was skipped${r.reason ? ` — ${r.reason}` : ""}.`
+                                : r.user_ids && r.user_ids.length > 0
+                                  ? `Escalated. It now sits with ${r.user_ids.length} approver${
+                                        r.user_ids.length === 1 ? "" : "s"
+                                    }.`
+                                  : "Escalated.",
+                        );
+                        await load();
+                    } catch (e) {
+                        setDialogRefusal({
+                            granted: false,
+                            reason: "transport_failed",
+                            detail: e instanceof Error ? e.message : "The escalation could not be sent.",
+                            audit_id: null,
+                        });
+                    } finally {
+                        setDialogBusy(false);
+                    }
+                }}
+            />
+
+            <HrActionDialog
+                open={closeAction !== null}
+                onOpenChange={(open) => !open && setCloseAction(null)}
+                title={closeAction === "cancel" ? "Cancel this request?" : "Withdraw this request?"}
+                description={
+                    closeAction === "cancel"
+                        ? "Cancelling closes it for everyone. The history stays — an instance is evidence and is never deleted."
+                        : "Withdrawing closes it. The history stays — an instance is evidence and is never deleted."
+                }
+                confirmLabel={closeAction === "cancel" ? "Cancel request" : "Withdraw"}
+                variant="destructive"
+                reason={closeReason}
+                onReasonChange={setCloseReason}
+                reasonMode={closeAction === "cancel" ? "required" : "optional"}
+                reasonPlaceholder="Reason — kept with the instance."
+                busy={dialogBusy}
+                refusal={dialogRefusal}
+                outcome={closeOutcome}
+                onConfirm={async () => {
+                    if (!closeAction) return;
+                    setDialogBusy(true);
+                    setDialogRefusal(null);
+                    try {
+                        const envelope =
+                            closeAction === "cancel"
+                                ? await cancelInstance(instanceId, closeReason.trim() || null)
+                                : await withdrawInstance(instanceId, closeReason.trim() || null);
+                        if (isRefusal(envelope)) {
+                            setDialogRefusal(envelope);
+                            return;
+                        }
+                        setCloseOutcome(
+                            closeAction === "cancel"
+                                ? "Cancelled. The history stays."
+                                : "Withdrawn. The history stays.",
+                        );
+                        await load();
+                    } catch (e) {
+                        setDialogRefusal({
+                            granted: false,
+                            reason: "transport_failed",
+                            detail: e instanceof Error ? e.message : "That could not be sent.",
+                            audit_id: null,
+                        });
+                    } finally {
+                        setDialogBusy(false);
+                    }
+                }}
+            />
+
+            {/* `?failure=` from the inbox's failure rows lands straight on the terminal. */}
+            <HrFailureResolveDialog
+                failureId={failureId}
+                failureClass={
+                    failureId
+                        ? (str(
+                              (detail?.failures ?? []).find((f) => f.id === failureId) ?? {},
+                              "failure_class",
+                          ) ?? null)
+                        : null
+                }
+                open={failureOpen && failureId !== null}
+                onOpenChange={setFailureOpen}
+                onResolved={load}
+            />
         </div>
     );
 }
