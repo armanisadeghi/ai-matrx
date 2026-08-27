@@ -31,6 +31,8 @@ import type {
   HrAuditedPage,
   HrDirectoryFilter,
   HrDirectoryPage,
+  HrEmployeeInviteAcceptAck,
+  HrEmployeeInviteAck,
   HrEmployeeProfile,
   HrEmploymentHistory,
   HrKnobIndex,
@@ -1126,6 +1128,95 @@ export async function seedHrActivation(
       tipCodesSeededNotEnabled: readTextArray(row, "tip_codes_seeded_not_enabled"),
       categoriesDimensions: readText(row, "categories_dimensions"),
       auditId: readText(row, "audit_id"),
+    },
+  };
+}
+
+/**
+ * Issue a platform login invitation to an employee who does not have one.
+ *
+ * 🚨 AN EMPLOYEE IS NOT REQUIRED TO HAVE A LOGIN, AND THIS IS NOT HOW ONE IS
+ * CREATED SILENTLY. The invite is delegated to `iam.inv_create` — the platform's
+ * single invitation primitive — and the link only becomes a login when the
+ * person themselves accepts it while signed in as that email address. Nobody
+ * gains a login because HR clicked a button.
+ *
+ * The `token` comes back to the ISSUING ADMIN on purpose. The platform's own
+ * invite route never exposes it, because it relies on email delivery; where mail
+ * is not configured that leaves no way to hand somebody the link at all. The
+ * token is single-use, expiring, and only ever returned to a caller who has
+ * already passed the `identity.write` gate — the same caller who could read the
+ * person's whole record anyway.
+ *
+ * Refusals, read from the shipped body: `not_reachable` (no such employee),
+ * `already_has_login` (with a `door` to their profile), `validation` on `email`
+ * (nothing to send to — the employee has no work email and none was typed),
+ * `org_role_required_for_login`, and `invite_failed` carrying the platform's own
+ * reason.
+ */
+export async function inviteHrEmployeeLogin(args: {
+  employeeId: string;
+  email?: string | null;
+}): Promise<HrResult<HrEmployeeInviteAck>> {
+  const result = await callHr<Record<string, unknown>>(
+    "hr_employee_invite",
+    {
+      p_employee_id: args.employeeId,
+      p_email: args.email?.trim() ? args.email.trim() : null,
+    },
+    { envelope: true, whatFailed: "The login invitation" },
+  );
+  if (!result.ok) return result;
+
+  const row = result.data;
+  return {
+    ok: true,
+    data: {
+      employeeId: readText(row, "employee_id"),
+      displayName: readText(row, "display_name"),
+      invitationId: readText(row, "invitation_id"),
+      email: readText(row, "email"),
+      expiresAt: readText(row, "expires_at"),
+      token: readText(row, "token"),
+      acceptPath: readText(row, "accept_path"),
+      notice: readText(row, "notice"),
+    },
+  };
+}
+
+/**
+ * Accept an employee login invitation and link the account to the HR record.
+ *
+ * Runs as the person who is signed in — never as an administrator — because the
+ * whole point is that the account doing the accepting is the account that gets
+ * linked. `hr.employee.login_user_id` is set here, which fires
+ * `_zzz_derive_grants` and gives the person their own access for the first time.
+ *
+ * `hr_linked: false` is a SUCCESS, not a failure: the platform invitation was a
+ * plain organization invite with no employee attached to it. The membership is
+ * real, there is simply no HR record to link, and the caller should send the
+ * person to the ordinary destination rather than to `/hr/me`.
+ */
+export async function acceptHrEmployeeInvite(
+  token: string,
+): Promise<HrResult<HrEmployeeInviteAcceptAck>> {
+  const result = await callHr<Record<string, unknown>>(
+    "hr_invite_accept",
+    { p_token: token },
+    { envelope: true, whatFailed: "This invitation" },
+  );
+  if (!result.ok) return result;
+
+  const row = result.data;
+  return {
+    ok: true,
+    data: {
+      hrLinked: row.hr_linked === true,
+      employeeId: readText(row, "employee_id"),
+      organizationId: readText(row, "organization_id"),
+      loginUserId: readText(row, "login_user_id"),
+      grantsRederived: row.grants_rederived === true,
+      door: readText(row, "door"),
     },
   };
 }

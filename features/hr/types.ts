@@ -601,6 +601,49 @@ export type HrActivationSeedAck = {
   auditId: string | null;
 };
 
+/**
+ * `hr_employee_invite`'s success envelope.
+ *
+ * 🚨 `token` AND `acceptPath` ARE HERE BECAUSE MAIL IS NOT GUARANTEED. The
+ * platform's own invite surfaces never expose the token — they assume the email
+ * arrives. Where it does not, an employee could never be given a login at all,
+ * so the door hands the issuing admin the same link the mail would carry. The
+ * surface must present it as what it is: a single-use link that is as good as the
+ * invitation itself, to be sent to that person and nobody else.
+ *
+ * `expiresAt` is not decoration — the link stops working, and an admin who does
+ * not know when will blame the product rather than reissue.
+ */
+export type HrEmployeeInviteAck = {
+  employeeId: string | null;
+  displayName: string | null;
+  invitationId: string | null;
+  email: string | null;
+  expiresAt: string | null;
+  token: string | null;
+  acceptPath: string | null;
+  /** The server's own sentence about delivery. Rendered, never paraphrased. */
+  notice: string | null;
+};
+
+/**
+ * `hr_invite_accept`'s success envelope.
+ *
+ * 🚨 `hrLinked: false` IS A SUCCESS. It means the token was a perfectly good
+ * platform invitation that simply had no employee attached — the membership is
+ * real and the person is in. Treating it as a failure would tell somebody who
+ * just joined an organization that nothing happened.
+ */
+export type HrEmployeeInviteAcceptAck = {
+  hrLinked: boolean;
+  employeeId: string | null;
+  organizationId: string | null;
+  loginUserId: string | null;
+  grantsRederived: boolean;
+  /** Where the server says this person now belongs. Followed, not invented. */
+  door: string | null;
+};
+
 export type HrCapabilitySet = {
   /** Typed at the call site; permissive on the wire, because the server owns the list. */
   can: (capability: HrCapability) => boolean;
