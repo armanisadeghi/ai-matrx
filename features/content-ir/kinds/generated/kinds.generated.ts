@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "8a389db63473";
+export const KIND_REGISTRY_FINGERPRINT = "700352a15459";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -6763,7 +6763,7 @@ export interface CustomScriptResult {
  * forced to the column count. A renderer pads; it must never silently drop a
  * cell it cannot place.
  *  *
- *  * Kind `data_table` (registry v2).
+ *  * Kind `data_table` (registry v3).
  */
 export interface DataTable {
   /**
@@ -10997,7 +10997,7 @@ export interface ProofCheckStatus {
  * 112 live SerpAPI runs spend nothing against every ceiling
  * (`matrx_seo.contracts.SpendSummary`).
  *  *
- *  * Kind `provider_run_receipt` (registry v2).
+ *  * Kind `provider_run_receipt` (registry v3).
  */
 export interface ProviderRunReceipt {
   /**
@@ -11374,7 +11374,7 @@ export interface RagSourceIngestionResult {
  * way to perform. `used_chunk_ids` stays because it is the machine join key;
  * `citations` is what a person reads.
  *  *
- *  * Kind `rag_synthesize_result` (registry v4).
+ *  * Kind `rag_synthesize_result` (registry v5).
  */
 export interface RagSynthesizeResult {
   model?: string;
@@ -11884,7 +11884,7 @@ export interface ResourceCollection {
  * connected it, and `rerank_score` says the reranker agreed. A single opaque
  * score cannot explain a result to the person reading it.
  *  *
- *  * Kind `retrieved_chunk` (registry v2).
+ *  * Kind `retrieved_chunk` (registry v3).
  */
 export interface RetrievedChunk {
   /**
@@ -13790,7 +13790,7 @@ export interface SerpAnalysis {
  * dispatches on the nested `__kind` and renders the canonical component the
  * search pilot already built.
  *  *
- *  * Kind `serp_placement` (registry v2).
+ *  * Kind `serp_placement` (registry v3).
  */
 export interface SerpPlacement {
   /**
@@ -14004,7 +14004,7 @@ export interface SourceAuthorityRankings {
  * distillation laws say it becomes an optional field on ONE shape, never two
  * shapes or a dropped field.
  *  *
- *  * Kind `source_ref` (registry v2).
+ *  * Kind `source_ref` (registry v3).
  */
 export interface SourceRef {
   /**
