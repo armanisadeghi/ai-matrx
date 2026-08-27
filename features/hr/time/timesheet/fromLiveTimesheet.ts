@@ -96,6 +96,14 @@ function calcBlock(v: unknown): CalcBlock {
     engineKey: nstr(c.engineKey),
     engineVersion: nstr(c.engineVersion),
     computedAt: nstr(c.computedAt),
+    // The named law behind the figure. Absent on snapshots written before the door served it.
+    rules: arr(c.rules).map((r) => ({
+      id: str(r.id),
+      name: nstr(r.name),
+      jurisdictionKey: nstr(r.jurisdictionKey),
+      status: nstr(r.status),
+      thresholds: obj(r.thresholds),
+    })),
     calc: obj(c.calc),
     autoCloseEstimate: bool(obj(c.calc).autoCloseEstimate),
     autoCloseRuleId: nstr(obj(c.calc).autoCloseRuleId),
@@ -126,6 +134,27 @@ function money(v: unknown, flagsSource: unknown): MoneyBearing {
   };
 }
 
+/** `hr._interval_time_facts` → the view model. Read verbatim; nothing is computed. */
+function mapTimeFacts(raw: unknown): WorkIntervalRow["timeFacts"] {
+  if (!raw || typeof raw !== "object") return null;
+  const t = obj(raw);
+  const dst = t.dst && typeof t.dst === "object" ? obj(t.dst) : null;
+  return {
+    crossesMidnight: bool(t.crossesMidnight),
+    continuesIntoDate: nstr(t.continuesIntoDate),
+    elapsedHours: nnum(t.elapsedHours) ?? undefined,
+    wallClockHours: nnum(t.wallClockHours) ?? undefined,
+    dst:
+      dst && nstr(dst.sentence)
+        ? {
+            direction: nstr(dst.direction) ?? undefined,
+            atLocal: nstr(dst.atLocal) ?? undefined,
+            sentence: str(dst.sentence),
+          }
+        : null,
+  };
+}
+
 function interval(raw: Live, fallbackDate: string, fallbackTz: string): WorkIntervalRow {
   const code = obj(raw.earningCode);
   const calc = calcBlock(raw.calcRef ?? raw.calc);
@@ -150,6 +179,7 @@ function interval(raw: Live, fallbackDate: string, fallbackTz: string): WorkInte
     hours: num(raw.hours),
     rate: nnum(raw.rate),
     isOvertime: bool(code.isOvertime) || bool(raw.isOvertime),
+    timeFacts: mapTimeFacts(raw.timeFacts),
     roundingAppliedMinutes: num(raw.roundingAppliedMinutes),
     rawStartedAt: nstr(raw.rawStartedAt),
     rawEndedAt: nstr(raw.rawEndedAt),
@@ -209,80 +239,35 @@ export function mapLivePunch(raw: Live, fallbackDate = "", fallbackTz = "UTC"): 
 }
 
 /**
- * 🚨 THE ZONE FACTS `hr_timesheet_get` DOES NOT YET SERVE (G2 round-11, N3 + N4).
+ * 🚨 THE ZONE FACTS ARE THE SERVER'S NOW, AND THIS FILE ONLY READS THEM (§9 rules 3, 4, 7).
  *
- * §9 rule 3 requires a DST day to carry a badge and a sentence, and §9 rule 4 requires a
- * cross-midnight shift to carry `continues into` / `continued from` markers. The read serves
- * NEITHER: there is no `dst` block and no crossing marker on a day or an interval. Until it does,
- * these two facts are recovered from data the read DOES serve — the interval's stored UTC bounds
- * and its stamped `tz`.
+ * This module briefly carried an interim: `Intl`-formatted zone abbreviations compared across an
+ * interval's stored bounds, to recover a DST transition and a midnight crossing the read did not
+ * serve. **That interim is deleted.** `hr._interval_time_facts` now serves `crosses_midnight`,
+ * `continues_into_date` and a composed `dst.sentence` per interval, and §9 rule 7 is explicit that
+ * the renderer reads such facts rather than deriving them.
  *
- * ⚠️ OWED BY THE DOOR, AND NAMED RATHER THAN HIDDEN: §9 rule 3 wants the SERVER's sentence
- * ("clocks moved forward one hour at 2:00 AM …; this shift was 7 hours"), because only the engine
- * knows which rule produced the figure. What is rendered below is strictly weaker and says only
- * what can be known here. `hr.timesheet_get` should serve `dst.sentence`, `crosses_midnight` and
- * `continues_into_date` per §9 rule 7's "the renderer reads them".
+ * The server's sentence is also strictly better than what a client could say: it is composed from
+ * the stored span, so it states BOTH the wall-clock length and the measured length ("this
+ * wall-clock-8 shift measured 9 hours"). A browser knows the zone changed; only the engine knows
+ * what the shift actually measured.
  *
- * 🚨 WHY THIS IS NOT THE ARITHMETIC §9.2 BANS. Nothing here subtracts two instants or derives a
- * duration — the hours figure is, and remains, the server's `wi.hours`. Both helpers do exactly one
- * thing: ask `Intl` to FORMAT a stored instant in its stamped zone, and compare the resulting
- * strings. A calendar date and a zone abbreviation are renderings of a stored fact, not
- * calculations over it. `scripts/check-hr-time-arithmetic.ts` passes on this file.
+ * The ONE thing still derived here is the reciprocal `continued_from` marker, because the read
+ * serves `continues_into_date` and not its mirror. That is a join across days already in this
+ * response — no instant is subtracted and no duration is produced.
  */
-function localDateIn(iso: string, tz: string): string {
-  // `en-CA` yields `YYYY-MM-DD`, which compares correctly as a string against `local_work_date`.
-  return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(iso));
-}
-
-function zoneAbbrevIn(iso: string, tz: string): string {
-  const part = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" })
-    .formatToParts(new Date(iso))
-    .find((x) => x.type === "timeZoneName");
-  return part?.value ?? "";
-}
-
-/**
- * A DST transition INSIDE a shift, evidenced by the stamped zone's abbreviation changing between
- * the interval's own start and end (`PDT` → `PST`, or the reverse). That is the fact; the hours are
- * the server's.
- */
-function dstFromIntervals(intervals: WorkIntervalRow[]): {
-  transition: boolean;
-  sentence: string | null;
-} {
-  for (const iv of intervals) {
-    if (!iv.startedAt || !iv.endedAt) continue;
-    const from = zoneAbbrevIn(iv.startedAt, iv.tz);
-    const to = zoneAbbrevIn(iv.endedAt, iv.tz);
-    if (from && to && from !== to) {
-      const forward = to.includes("D"); // e.g. PST → PDT is spring forward
-      return {
-        transition: true,
-        sentence:
-          `Daylight saving ${forward ? "began" : "ended"} during this shift — the clock changed from ` +
-          `${from} to ${to} while it was running. That is why the hours paid (${iv.hours.toFixed(2)}) ` +
-          `are not what the start and end times appear to add up to. The figure is the payroll ` +
-          `engine's and it is correct.`,
-      };
-    }
-  }
-  return { transition: false, sentence: null };
-}
 
 function day(raw: Live, tz: string): TimesheetDay {
   const date = str(raw.localWorkDate);
   const intervals = arr(raw.intervals).map((i) => interval(i, date, tz));
 
-  /*
-   * 🚨 §9 rule 4 — a shift belongs to the `local_work_date` of its CLOCK-IN, and the cell says it
-   * continues into the next date. The interval's stored end bound, formatted in its stamped zone,
-   * IS that next date; when it differs from the day the interval is filed under, the shift crossed
-   * midnight. The hours stay here and are never repeated on the following day.
-   */
+  // §9 rule 4, read from `time_facts` — never re-derived.
   const continuesInto =
-    intervals
-      .map((iv) => (iv.endedAt ? localDateIn(iv.endedAt, iv.tz) : null))
-      .find((d) => d !== null && d !== date) ?? null;
+    intervals.map((iv) => iv.timeFacts?.continuesIntoDate ?? null).find((d) => d !== null) ?? null;
+
+  // §9 rule 3, the SERVER's composed sentence, printed verbatim.
+  const dstSentence =
+    intervals.map((iv) => iv.timeFacts?.dst?.sentence ?? null).find((x) => x !== null) ?? null;
 
   return {
     localWorkDate: date,
@@ -293,9 +278,8 @@ function day(raw: Live, tz: string): TimesheetDay {
     totalHours: num(raw.dayTotalHours ?? raw.totalHours),
     hoursByCategory: categories(raw.totalsByCategory ?? raw.hoursByCategory),
     roundingAppliedMinutes: num(raw.roundingAppliedMinutes),
-    // N3/N4: recovered from the stored bounds until the read serves them. See the header above.
-    dst: dstFromIntervals(intervals),
-    crossesMidnight: continuesInto !== null,
+    dst: { transition: dstSentence !== null, sentence: dstSentence },
+    crossesMidnight: intervals.some((iv) => iv.timeFacts?.crossesMidnight === true),
     continuesIntoDate: continuesInto,
     // Filled in by `markContinuedDays` once every day is known.
     continuedFromDate: null,
@@ -561,9 +545,16 @@ function mapEditHistory(rows: Live[]): Timesheet["editHistory"] {
 
       return {
         at: voided ?? str(h.occurredAt),
+        /*
+         * 🚨 THE ACTOR'S NAME WHEN THE DOOR SERVES IT, THE ROLE WHEN IT DOES NOT.
+         * `actor_name` is suppression-aware: `hr._subject_display_name` returns NULL for a viewer
+         * who may not see that person, and NULL deliberately keeps the role wording. So the degrade
+         * path is not a fallback for missing data — it is the privacy answer, and it must stay.
+         */
         byName:
-          (ACTOR_ROLE[actorType] ?? (actorType ? humanizeActor(actorType) : "Someone")) +
-          (nstr(actor.actorEmploymentId) ? "" : ""),
+          nstr(actor.actorName) ??
+          ACTOR_ROLE[actorType] ??
+          (actorType ? humanizeActor(actorType) : "Someone"),
         // The employee's own words are never here; a correction reason is the manager's.
         reason: str(h.enteredReason) || str(h.voidedReason) || "No reason was recorded.",
         field: str(h.punchKind).replace(/_/g, " ") || "punch",

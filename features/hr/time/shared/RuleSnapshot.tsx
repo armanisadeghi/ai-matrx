@@ -117,25 +117,7 @@ function RuleSnapshotBody({ request }: { request: RuleSnapshotRequest }) {
             />
           </Section>
 
-          <Section title="Which rule versions applied">
-            {calc.ruleVersionIds.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No rule version was stamped on this figure. That is itself a finding — tell an HR
-                administrator, because a figure without a rule version cannot be defended.
-              </p>
-            ) : (
-              <ul className="space-y-1">
-                {calc.ruleVersionIds.map((id) => (
-                  <li
-                    key={id}
-                    className="rounded border border-border bg-muted/40 px-2 py-1 font-mono text-[11px]"
-                  >
-                    {id}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Section>
+          <RulesSection calc={calc} />
 
           {calc.autoCloseEstimate ? (
             <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
@@ -155,8 +137,6 @@ function RuleSnapshotBody({ request }: { request: RuleSnapshotRequest }) {
           ) : null}
 
           <IncompleteFactSentences calc={calc} />
-
-          <ThresholdSection calc={calc.calc} />
 
           <Section title="The inputs the engine used">
             <KeyValues values={calc.calc} />
@@ -180,42 +160,123 @@ function RuleSnapshotBody({ request }: { request: RuleSnapshotRequest }) {
 }
 
 /**
- * 🚨 THE THRESHOLDS THAT PRODUCED THE FIGURE, PULLED OUT OF THE CALC BAG AND NAMED.
+ * 🚨 WHICH LAW PRODUCED THE FIGURE — names and thresholds, not bare uuids (§0 law 2).
  *
- * §0 law 2 wants "the thresholds applied" reachable from every OT/DT figure. They are in the calc
- * inputs, but buried among snapshot ids and batch ids where nobody reads them — so the ones a
- * person can act on are lifted into their own section, in words. Anything not recognised still
- * renders below, verbatim: this promotes keys, it never hides them.
+ * `calc_ref.rules` now serves each rule version's name, jurisdiction, status and NORMALISED
+ * thresholds, so a reader can see *"California daily overtime · US-CA · after 8 hours"* instead of
+ * `800b1208-1b69-…`. The id stays on screen because it is the evidence a dispute is argued from.
  *
- * ⚠️ OWED BY THE DOOR: rule NAMES. The snapshot carries `rule_version_ids` as bare uuids, and no
- * read serves the human name or the citation for a rule version. Until one does, a person can copy
- * the id but cannot read which law it is.
+ * 🚨 `status: "superseded"` IS RENDERED, NOT FILTERED. A snapshot cites the rule **as it stood when
+ * the figure was computed**, and the server deliberately resolves superseded rows for that reason.
+ * Hiding the qualifier would let a reader believe they are looking at today's law — which is
+ * exactly the wrong conclusion to draw in a wage dispute about a period months old.
+ *
+ * Older snapshots carry only `rule_version_ids`; those still render as ids, because inventing a
+ * name for a rule nobody resolved would be worse than showing the id it was stamped with.
+ */
+/*
+ * ⚠️ CAMELCASE KEYS ON PURPOSE. The server normalises these as `daily_ot_at` / `weekly_ot_at` /
+ * `dt_at`, and the RPC door camelizes every response key on the way in — so by the time a threshold
+ * reaches this map it is `dailyOtAt`. Writing the snake spelling here silently misses every label
+ * and prints the raw key at a reader (seen live before this comment existed).
  */
 const THRESHOLD_LABELS: Record<string, string> = {
-  daily_ot_at: "Daily overtime begins after",
-  daily_dt_at: "Double time begins after",
-  weekly_ot_at: "Weekly overtime begins after",
-  seventh_day_rule: "Seventh consecutive day",
-  jurisdiction_key: "Jurisdiction",
-  workday_start_local: "The workday starts at",
-  week_start_dow: "The workweek starts on",
+  dailyOtAt: "Daily overtime after",
+  weeklyOtAt: "Weekly overtime after",
+  dtAt: "Double time after",
+  multiplier: "Multiplier",
+  seventhDayBeyondHours: "Seventh consecutive day, beyond",
+  seventhDayFirstHours: "Seventh consecutive day, first",
 };
 
-function ThresholdSection({ calc }: { calc: Record<string, unknown> }) {
-  const found = Object.keys(THRESHOLD_LABELS).filter((k) => calc[k] !== undefined && calc[k] !== null);
-  if (found.length === 0) return null;
+/** Hours-valued thresholds read as bare numbers otherwise — "8" is not "after 8 hours". */
+const HOUR_THRESHOLDS = new Set([
+  "dailyOtAt",
+  "weeklyOtAt",
+  "dtAt",
+  "seventhDayBeyondHours",
+  "seventhDayFirstHours",
+]);
+
+function RulesSection({ calc }: { calc: CalcBlock }) {
+  const rules = calc.rules ?? [];
+
+  if (rules.length === 0) {
+    return (
+      <Section title="Which rule versions applied">
+        {calc.ruleVersionIds.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No rule version was stamped on this figure. That is itself a finding — tell an HR
+            administrator, because a figure without a rule version cannot be defended.
+          </p>
+        ) : (
+          <>
+            <p className="mb-1.5 text-xs text-muted-foreground">
+              This snapshot predates named rule evidence, so it carries version identifiers only.
+            </p>
+            <ul className="space-y-1">
+              {calc.ruleVersionIds.map((id) => (
+                <li
+                  key={id}
+                  className="rounded border border-border bg-muted/40 px-2 py-1 font-mono text-[11px]"
+                >
+                  {id}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </Section>
+    );
+  }
+
   return (
-    <Section title="The thresholds that were applied">
-      <dl className="space-y-1">
-        {found.map((key) => (
-          <div key={key} className="flex items-baseline justify-between gap-3 border-b border-border/60 py-1">
-            <dt className="text-xs text-muted-foreground">{THRESHOLD_LABELS[key]}</dt>
-            <dd className="text-right text-xs font-medium">
-              {typeof calc[key] === "object" ? JSON.stringify(calc[key]) : String(calc[key])}
-            </dd>
-          </div>
-        ))}
-      </dl>
+    <Section title="Which rules applied">
+      <ul className="space-y-2">
+        {rules.map((rule) => {
+          const thresholds = Object.entries(rule.thresholds ?? {}).filter(
+            ([, v]) => v !== null && v !== undefined,
+          );
+          return (
+            <li key={rule.id} className="rounded-md border border-border bg-muted/30 px-2.5 py-2">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <span className="text-xs font-medium">{rule.name ?? "Unnamed rule"}</span>
+                <span className="text-[11px] text-muted-foreground">{rule.jurisdictionKey}</span>
+              </div>
+
+              {/* The qualifier. Present only when the server says so. */}
+              {rule.status && rule.status !== "active" ? (
+                <p className="mt-1 rounded border border-amber-500/40 bg-amber-500/5 px-2 py-1 text-[11px]">
+                  This rule is <span className="font-medium">{rule.status}</span> today. It is shown
+                  because it is the version that was in force when this figure was calculated — not
+                  the rule that would apply now.
+                </p>
+              ) : null}
+
+              {thresholds.length > 0 ? (
+                <dl className="mt-1.5 space-y-0.5">
+                  {thresholds.map(([key, value]) => (
+                    <div key={key} className="flex items-baseline justify-between gap-3">
+                      <dt className="text-[11px] text-muted-foreground">
+                        {THRESHOLD_LABELS[key] ?? key.replace(/_/g, " ")}
+                      </dt>
+                      <dd className="text-[11px] font-medium">
+                        {typeof value === "object"
+                          ? JSON.stringify(value)
+                          : HOUR_THRESHOLDS.has(key)
+                            ? `${String(value)} hours`
+                            : String(value)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : null}
+
+              <p className="mt-1 font-mono text-[10px] text-muted-foreground">{rule.id}</p>
+            </li>
+          );
+        })}
+      </ul>
     </Section>
   );
 }
