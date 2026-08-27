@@ -56,8 +56,9 @@ the rules an agent editing THIS directory must obey.
   `ArtifactTypeDef.userEditable` is the ONE edit switch — flag a type only when its editor actually
   exists and saves versions.
 - The slice is **not persisted** — a full page reload empties the canvas. Materialized items store
-  a POINTER (`data: { artifactId }`); legacy `openCanvas` items carry a full payload, so anything
-  reading `content.data` must handle both.
+  a POINTER (`data: { artifactId }`); `CanvasBody` resolves that pointer through `useCanvasItem`
+  before invoking the canonical renderer. Legacy `openCanvas` items carry a full payload, so
+  anything reading `content.data` must handle both.
 - Use `updateCanvasContent` (not `openCanvas`) to change an item already on the canvas — `openCanvas`
   creates a duplicate. `closeCanvas()` keeps items in memory; `clearCanvas()` destroys them.
 - Pass `titleToString(content.metadata?.title)` — never the raw `metadata.title` — to anything that
@@ -75,6 +76,8 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-08-27` — Canvas preview now hydrates materialized `{ artifactId }` pointers from the
+  canonical `canvas_items` row before rendering, with visible loading and retryable failure states.
 - `2026-08-27` — Public snapshot writes now resolve materialized `{ artifactId }` pointers to the
   canonical `canvas_items` payload before publishing, while renderers share the same validated
   pointer reader and fail loudly when content cannot be resolved.

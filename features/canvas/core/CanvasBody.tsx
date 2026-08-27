@@ -21,14 +21,22 @@
 
 import React, { isValidElement } from "react";
 import dynamic from "next/dynamic";
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
+import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { isScratchScope } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import type { CanvasContent } from "@/features/canvas/redux/canvasSlice";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
-import { readArtifactPointerId } from "@/features/canvas/artifact-types/artifactId";
+import {
+  isMaterializedArtifactId,
+  readArtifactPointerId,
+} from "@/features/canvas/artifact-types/artifactId";
+import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import {
   ArtifactRender,
   hasArtifactRenderer,
 } from "@/features/canvas/artifact-types/artifact-renderers";
+import { isJsonObject, type JsonValue } from "@/types/json";
 
 // Blocks that are NOT handled by the unified renderer (code_preview /
 // code_edit_error are NON_PERSISTABLE and have no artifact renderer).
@@ -85,7 +93,158 @@ export interface CanvasBodyProps {
 }
 
 export function CanvasBody({ content }: CanvasBodyProps) {
+  const def = getArtifactDef(content.type);
+  const metadataArtifactId = isMaterializedArtifactId(
+    content.metadata?.canvasItemId,
+  )
+    ? content.metadata?.canvasItemId
+    : undefined;
+  const artifactId =
+    def && hasArtifactRenderer(def.canvasType)
+      ? (metadataArtifactId ?? readArtifactPointerId(content.data))
+      : undefined;
+
+  if (def && artifactId) {
+    return (
+      <PersistedArtifactCanvasBody
+        content={content}
+        artifactId={artifactId}
+        resolveLatest={Boolean(def.userEditable)}
+      />
+    );
+  }
+
   return renderContent(content);
+}
+
+interface StoredArtifactPayload {
+  data: JsonValue;
+  metadata?: Record<string, JsonValue>;
+}
+
+function readStoredArtifactPayload(
+  content: unknown,
+): StoredArtifactPayload | null {
+  if (typeof content === "string") return { data: content };
+  if (!isJsonObject(content)) return null;
+
+  const data = content.data;
+  if (data === undefined || data === null || data === "") return null;
+
+  const storedMetadata = isJsonObject(content.metadata)
+    ? Object.fromEntries(
+        Object.entries(content.metadata).filter(
+          (entry): entry is [string, JsonValue] => entry[1] !== undefined,
+        ),
+      )
+    : undefined;
+
+  return { data, metadata: storedMetadata };
+}
+
+function mergeArtifactMetadata(
+  stored: Record<string, JsonValue> | undefined,
+  session: CanvasContent["metadata"],
+  artifactId: string,
+  artifactVersion: number,
+): Record<string, unknown> {
+  const metadata: Record<string, unknown> = {};
+  if (stored) {
+    for (const [key, value] of Object.entries(stored)) {
+      metadata[key] = value;
+    }
+  }
+  if (session) {
+    for (const [key, value] of Object.entries(session)) {
+      metadata[key] = value;
+    }
+  }
+  metadata.canvasItemId = artifactId;
+  metadata.artifactVersion = artifactVersion;
+  return metadata;
+}
+
+function PersistedArtifactCanvasBody({
+  content,
+  artifactId,
+  resolveLatest,
+}: {
+  content: CanvasContent;
+  artifactId: string;
+  resolveLatest: boolean;
+}) {
+  const { row, loading, error, refetch } = useCanvasItem(artifactId, {
+    resolve: resolveLatest ? "latest" : "exact",
+  });
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center" role="status">
+        <MatrxMiniLoader />
+        <span className="sr-only">Loading saved artifact</span>
+      </div>
+    );
+  }
+
+  const stored = row ? readStoredArtifactPayload(row.content) : null;
+  const persistedDef = row ? getArtifactDef(row.type) : undefined;
+  if (
+    error ||
+    !row ||
+    !stored ||
+    !persistedDef ||
+    !hasArtifactRenderer(persistedDef.canvasType)
+  ) {
+    return (
+      <div className="flex h-full items-center justify-center p-6 text-center">
+        <div className="flex max-w-sm flex-col items-center gap-3 text-muted-foreground">
+          <AlertTriangle className="h-5 w-5 text-amber-500" aria-hidden />
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              Couldn't load the saved artifact
+            </p>
+            <p className="mt-1 text-xs">
+              The Canvas kept its identity, but the saved content was not
+              available.
+            </p>
+          </div>
+          <TapTargetButton
+            icon={<RefreshCw className="h-4 w-4" />}
+            label="Try again"
+            ariaLabel="Try loading the saved artifact again"
+            onClick={refetch}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const metadata = mergeArtifactMetadata(
+    stored.metadata,
+    content.metadata,
+    row.id,
+    row.version,
+  );
+  const conversationId =
+    typeof metadata.conversationId === "string"
+      ? metadata.conversationId
+      : undefined;
+  const messageId =
+    typeof metadata.messageId === "string" ? metadata.messageId : undefined;
+
+  return (
+    <div className="h-full">
+      <ArtifactRender
+        canvasType={persistedDef.canvasType}
+        mode="canvas"
+        data={stored.data}
+        metadata={metadata}
+        artifactId={row.id}
+        conversationId={conversationId}
+        messageId={messageId}
+      />
+    </div>
+  );
 }
 
 /** Convert a possibly-ReactNode title to plain text for fallback uses. */
@@ -164,21 +323,21 @@ function renderContent(content: CanvasContent): React.ReactNode {
   // path; the rest fall through to their legacy case below.
   const _def = getArtifactDef(type);
   if (_def && hasArtifactRenderer(_def.canvasType)) {
-    const meta = content.metadata as
-      | {
-          conversationId?: string;
-          messageId?: string;
-          canvasItemId?: string;
-        }
-      | undefined;
+    const meta = content.metadata;
     const artifactId = meta?.canvasItemId ?? readArtifactPointerId(data);
+    const metadata: Record<string, unknown> = {};
+    if (content.metadata) {
+      for (const [key, value] of Object.entries(content.metadata)) {
+        metadata[key] = value;
+      }
+    }
     return (
       <div className="h-full">
         <ArtifactRender
           canvasType={_def.canvasType}
           mode="canvas"
           data={data}
-          metadata={content.metadata as Record<string, unknown> | undefined}
+          metadata={metadata}
           artifactId={artifactId}
           conversationId={meta?.conversationId}
           messageId={meta?.messageId}

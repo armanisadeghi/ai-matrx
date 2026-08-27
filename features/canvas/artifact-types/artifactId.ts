@@ -41,8 +41,7 @@ export function isMaterializedArtifactId(id?: string | null): boolean {
 export function readArtifactPointerId(data: unknown): string | undefined {
   if (typeof data !== "object" || data === null) return undefined;
   if (!("artifactId" in data)) return undefined;
-  const id = (data as { artifactId?: unknown }).artifactId;
-  return isMaterializedArtifactId(typeof id === "string" ? id : null)
-    ? (id as string)
-    : undefined;
+  const id = data.artifactId;
+  if (typeof id !== "string") return undefined;
+  return isMaterializedArtifactId(id) ? id : undefined;
 }
