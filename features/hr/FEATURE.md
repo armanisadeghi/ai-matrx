@@ -139,6 +139,8 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-08-27** — Self-service writes now preserve the audit basis for subject-owned changes,
+  and successful acknowledgements are read from the server's field-keyed payload.
 - **2026-08-27** — HR now validates the browser session before its context door,
   preventing an expired SSR-seeded identity from fanning out into anonymous RPCs.
 - **2026-08-26** — HR settings keeps the starting-code seed result visible after

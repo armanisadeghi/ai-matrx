@@ -1,6 +1,6 @@
 # FEATURE.md — HR People (routes 10–14)
 
-**Status:** `active` · **Tier:** 1 · **Last updated:** `2026-08-26`
+**Status:** `active` · **Tier:** 1 · **Last updated:** `2026-08-27`
 **Spec:** [SPEC-EMPLOYEES](../../../../common-docs/projects/hr-domain/specs/SPEC-EMPLOYEES.md) §2.2,
 §2.3, §4.1–§4.3, §5, §6, §7.4 ·
 [SPEC-UI-IA](../../../../common-docs/projects/hr-domain/specs/SPEC-UI-IA.md) §3.2, §4, §5.1, §5.2.
@@ -75,6 +75,8 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
 
 ## Change Log
 
+- `2026-08-27` — A person's own profile exposes the server-governed directory privacy switch and
+  refreshes from stored truth after each self-service write.
 - `2026-08-26` — Org-chart dotted-line and person doors retain 44px touch targets below desktop.
 - `2026-08-26` — Historical org-chart counts no longer open contradictory current-team lists;
   tablet/mobile chart controls, profile tabs, and new-employee fields meet the touch and label
