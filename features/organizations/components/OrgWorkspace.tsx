@@ -40,11 +40,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  getOrganizationBySlugOrId,
-  getUserRole,
-  getOrganizationMembers,
   updateOrganization,
 } from "@/features/organizations/service";
+import { loadOrgWorkspaceData } from "@/features/organizations/orgWorkspaceLoader";
 import type { Organization, OrganizationMemberWithUser } from "@/features/organizations/types";
 import {
   validateOrgName,
@@ -124,14 +122,11 @@ export function OrgWorkspace() {
         setLoading(true);
         setError(null);
         setOrganization(null);
-        const org = await getOrganizationBySlugOrId(orgId);
-        if (!org || cancelled) return;
-        setOrganization(org);
-        const [role, orgMembers] = await Promise.all([
-          getUserRole(org.id),
-          getOrganizationMembers(org.id),
-        ]);
+        const { organization: org, role, members: orgMembers } =
+          await loadOrgWorkspaceData(orgId);
         if (cancelled) return;
+        if (!org || !role) return;
+        setOrganization(org);
         setUserRole(role);
         setMembers(orgMembers);
       } catch (err: unknown) {

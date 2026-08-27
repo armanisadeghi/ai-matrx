@@ -58,6 +58,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 **Services**
 
 - `features/organizations/service.ts` — full CRUD: orgs, members, invitations. Uses `supabase` client; invitation create/resend proxy to API routes (email needs server env)
+- `features/organizations/orgWorkspaceLoader.ts` — resolves the organization and proves the caller's membership before invoking the profile-bearing member-directory RPC; a resolvable but unauthorized org goes to `OrganizationAccessGate` without generating a rejected RPC.
 - `features/organizations/userSearch.ts` — `searchUserByEmail()` via the `lookup_user_by_email` RPC (never reads `profiles.email` directly)
 - `features/invitations/emailService.ts` — sends approval/rejection emails for the _invitation-request_ admin flow (separate from org invitations; see Gotchas)
 
@@ -256,6 +257,7 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-08-26` — Serialized organization workspace authorization ahead of the member-directory read, preventing rejected PostgREST calls and duplicate console capture for non-members.
 - `2026-08-26` — Added the organization-home door to the normal nested
   `/organizations/[orgId]/performance-reviews` route. The route resolves the
   organization UUID for its future persistent writer; browser-local draft
