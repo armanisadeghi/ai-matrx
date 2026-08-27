@@ -13,15 +13,9 @@
 // keep the shell.
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import {
-  MePillarPlaceholder,
-  MeSurfaceShell,
-} from "@/features/hr/me/MeSurfaceShell";
-import { COMING_SOON } from "@/lib/coming-soon/registry";
+import { MePillarSurface } from "@/features/hr/me/MeSurfaceShell";
 
 export const metadata = { title: "My schedule" };
-
-const PROMISE = COMING_SOON["hr.me.schedule"];
 
 export default function HrMeSchedulePage() {
   return (
@@ -31,15 +25,18 @@ export default function HrMeSchedulePage() {
       </PageHeader>
       <div className="flex h-full flex-col overflow-hidden">
         <div className="min-h-0 flex-1 overflow-y-auto">
-          <MeSurfaceShell operation="My schedule">
-            {() => (
-              <MePillarPlaceholder
-                title={PROMISE.label}
-                promise={PROMISE.promise}
-                owner="Scheduling"
-              />
-            )}
-          </MeSurfaceShell>
+          {/*
+            🚨 A CLIENT COMPONENT, NOT `MeSurfaceShell` DIRECTLY. This page is a
+            Server Component (it exports `metadata`, which is server-only), and
+            the shell's `children` is a render prop. Passing a function child
+            from here is what crashed all four of these routes with "Functions
+            are not valid as a child of Client Components".
+          */}
+          <MePillarSurface
+            promiseKey="hr.me.schedule"
+            operation="My schedule"
+            owner="Scheduling"
+          />
         </div>
       </div>
     </>

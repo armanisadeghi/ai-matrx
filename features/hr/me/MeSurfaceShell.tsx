@@ -36,6 +36,7 @@ import type { ReactNode } from "react";
 
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
+import { COMING_SOON } from "@/lib/coming-soon/registry";
 
 export function MeSurfaceShell({
   /** Set false for a surface that genuinely works without a spell (rare). */
@@ -110,5 +111,55 @@ export function MePillarPlaceholder({
         </p>
       </div>
     </div>
+  );
+}
+
+/**
+ * The pillar placeholder AS A CLIENT COMPONENT — mounted directly by a route.
+ *
+ * 🚨 THIS EXISTS BECAUSE A RENDER PROP CANNOT CROSS THE SERVER/CLIENT BOUNDARY,
+ * AND FOUR ROUTES CRASHED ON IT. `MeSurfaceShell` is a client component whose
+ * `children` is a FUNCTION of the resolved context. A route file with no
+ * `"use client"` is a Server Component, so writing
+ *
+ *     <MeSurfaceShell operation="…">{() => <MePillarPlaceholder … />}</MeSurfaceShell>
+ *
+ * asks React to serialize a function as a child across the RSC boundary. It
+ * cannot, and every one of those pages died with **"Functions are not valid as
+ * a child of Client Components"** — a generic error boundary for every viewer,
+ * employee and admin alike. `/hr/me/time-off`, `/schedule`, `/training` and
+ * `/documents` all had it.
+ *
+ * The routes cannot simply become client components: each exports `metadata`,
+ * which is server-only. So the composition moves HERE, where both halves are
+ * already client code and the function child is legal.
+ *
+ * These four surfaces never used the context they were handed — the placeholder
+ * takes no employment, employee or organization — so nothing is lost by closing
+ * over nothing. A pillar lane replacing its placeholder with a real surface
+ * should go back to `MeSurfaceShell` directly from its OWN client component, and
+ * will then get the as-of-resolved `employmentId` the shell exists to provide.
+ */
+export function MePillarSurface({
+  promiseKey,
+  operation,
+  owner,
+}: {
+  /** A `hr.me.*` key in `lib/coming-soon/registry.ts`. Never a bare string. */
+  promiseKey: keyof typeof COMING_SOON;
+  operation: string;
+  owner: string;
+}) {
+  const promise = COMING_SOON[promiseKey];
+  return (
+    <MeSurfaceShell operation={operation}>
+      {() => (
+        <MePillarPlaceholder
+          title={promise.label}
+          promise={promise.promise}
+          owner={owner}
+        />
+      )}
+    </MeSurfaceShell>
   );
 }
