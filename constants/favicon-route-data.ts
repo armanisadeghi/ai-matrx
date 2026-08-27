@@ -98,6 +98,10 @@ export const faviconRouteData: FaviconRouteEntry[] = [
     href: "/google-analytics-youtube-review",
     favicon: { color: "#1d4ed8", letter: "GY" },
   },
+  {
+    href: "/google-read-only-review",
+    favicon: { color: "#1d4ed8", letter: "GR" },
+  },
   { href: "/free", favicon: { color: "#14b8a6", letter: "Fr" } },
   {
     href: "/appointment-reminder",
