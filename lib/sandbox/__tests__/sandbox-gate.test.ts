@@ -56,7 +56,7 @@ function makeState({
       byConversationId: {
         "conv-1": {
           conversationId: "conv-1",
-          sourceFeature: "chat-route",
+          sourceFeature: "chat",
           isEphemeral,
           cacheOnly: false,
           sandboxBinding: binding,
@@ -67,7 +67,7 @@ function makeState({
     userPreferences: {
       coding: {
         activeAgentSandboxBySurface: surfaceSeed
-          ? { "chat-route": surfaceSeed }
+          ? { chat: surfaceSeed }
           : {},
       },
     },
