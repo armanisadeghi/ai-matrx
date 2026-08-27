@@ -103,6 +103,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - Phone ownership verification is not consent by itself; the explicit disclosure must also be accepted.
 - `sms_notification_preferences` never manufactures a consent row. Enabling requires an existing verified, opted-in record for the same user and number.
 - The public SMS page, privacy policy, terms URL, settings disclosure, and recorded consent metadata describe one program and must stay aligned.
+- The program has separate registered senders: `+14158059951` for account/assistant traffic and `+16282965420` for employer/workforce notifications. A transport caller never substitutes one campaign's sender for the other.
 - `siteConfig.legalOperatorName` is the single legal identity for AI Matrx public policies and carrier registration; the SMS program names both that operator and the AI Matrx product.
 - Every outbound body passes through `formatSmsBody`; callers do not hand-roll or omit the `AI Matrx:` brand prefix.
 - Every message recipient must have applicable consent unless the message is a system/administrative exception with its own lawful basis.
@@ -131,6 +132,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Change log
 
+- `2026-08-26` — Expanded the versioned opt-in contract and public carrier-review surfaces to name employer-to-employee workforce notifications, added the dedicated HR sender, and kept event-level SMS choices in the canonical Notifications settings.
 - `2026-08-18` — Added exact-action SMS authorization without narrowing the Mandate Holder: service-role-only atomic confirm/consume RPCs, recent AMR enforcement, 15-minute single-use receipts, authenticated chat deep links, a redacted approval card with email OTP re-authentication, and cold-resume support for durable pending calls. The existing `sms/assistant` context injection remains unchanged.
 
 - `2026-08-18` — Replaced the SMS assistant's direct agent/version pointers with the canonical `sms.owner_beta` Mandate and user Binding; runtime resolves the Holder fresh per admitted turn, Messaging uses the canonical Binding picker, and legacy agent-selection RPCs/columns are retired as authority.
