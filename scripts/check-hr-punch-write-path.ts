@@ -155,6 +155,20 @@ const EXPECTED_CHECKS = [
   // Allowed sets are parsed from the live CHECK at check time, so this cannot drift from the
   // schema it polices; superseded rows keep the old token so snapshots stay readable.
   "rule_vocabulary_is_storable",
+  // Round-12 P4 (hr_l3_58). A rollup reading 0 overtime beneath a workweek that computed some is
+  // EXPECTED for data drained by an engine that split the workweek but not its intervals — and is
+  // only acceptable when the row SAYS so via calc.split_pending. Undisclosed disagreement is a
+  // refresher defect. And hr.timesheet_get reads calc.multi_rate rather than re-deriving it: the
+  // old count over (assignment, rate) counted OT/DT multiplier rates as pay rates, and counted two
+  // assignments at the SAME rate as two rates.
+  "rollup_overtime_agrees_or_discloses",
+  "workweek_carries_multi_rate_flag",
+  // hr_l3_59. jsonb_build_object writes the KEY with a JSON null when its value is SQL NULL, and
+  // (calc -> 'split_pending') IS NULL is FALSE for a JSON null. Check 23 tested presence, so every
+  // row the refresher touched read as already-disclosed and was excluded from its violation set —
+  // blocking in name and inert in fact, on the run that installed it. A marker is an array or it is
+  // absent; never a JSON null.
+  "split_pending_is_absent_or_real",
 ] as const;
 
 interface ConformanceRow {
