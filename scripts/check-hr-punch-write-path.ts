@@ -40,14 +40,15 @@
  *      advisory-marker regex knows, so a degraded run shows as [WARN] with the
  *      banner instead of a silent green [OK].
  *   2. The RPC answered but returned an empty array, or an array missing any of
- *      the nine expected check_keys. A gate that silently measures nothing is
+ *      any expected check_key. A gate that silently measures nothing is
  *      EXACTLY the failure mode this file exists to prevent: it would report a
  *      clean write path while checking zero of it. So the returned check_keys
- *      are compared against the expected nine and any absentee is reported as a
- *      finding in its own right.
+ *      are compared against EXPECTED_CHECKS and any absentee is reported as a
+ *      finding in its own right. Adding a check to the SQL function means adding
+ *      its key here in the same change, or the new check can vanish unnoticed.
  *
  * Exit codes:
- *   0  all nine checks ok, OR findings/unmeasured in default (advisory) mode
+ *   0  every check ok, OR findings/unmeasured in default (advisory) mode
  *   1  findings, missing checks, or an unmeasured run AND --strict
  *   2  the script itself crashed
  */
@@ -78,7 +79,7 @@ const TAG = {
 const STRICT = process.argv.includes("--strict");
 
 /**
- * The nine checks the deployed function is contracted to return. A row that
+ * The checks the deployed function is contracted to return. A row that
  * stops being returned is a silent hole in the write path's coverage, so the
  * absence of a key is itself a finding — see the header.
  */
@@ -92,6 +93,10 @@ const EXPECTED_CHECKS = [
   "wrappers_authenticated_only",
   "kiosk_doors_anon_reachable",
   "punch_record_hardened",
+  // The COMPUTED lane (hr_l3_14). hr.work_interval is fenced the way hr.punch is: one sanctioned
+  // persist door plus the premium writer, and nothing may ever DELETE a superseded row.
+  "only_sanctioned_interval_writers",
+  "no_interval_deleters",
 ] as const;
 
 interface ConformanceRow {
