@@ -15,6 +15,85 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D271 — `callHr` reads every HR WRITE refusal as a successful write (2026-08-26)
+
+`features/hr/service.ts`'s `callHr` treats a payload as a refusal only when it carries
+`granted: false` — the READ doors' dialect. The WRITE doors speak a third dialect the file's
+header and its `isRefusalEnvelope` do not account for (verified against the live function bodies,
+2026-08-26):
+
+```
+{ "ok": false, "reason": "validation", "field": "hire_date", "detail": "…" }
+{ "ok": false, "reason": "location_without_jurisdiction", "door": "/hr/settings/structure" }
+{ "ok": false, "reason": "rehire_required", "existing": { … } }
+{ "ok": false, "reason": "cross_employer_move", "door": "/hr/people/<id>" }
+```
+
+`granted` is absent, so `callHr` falls through to its success branch and returns
+`{ok: true, data: {ok: false, …}}`. **Any call site that checks only `result.ok` reads a refusal as
+a successful write** — in the people lane that means telling an HR admin somebody was hired when
+nothing was written.
+
+Affects `hr_employee_create`, `hr_position_change`, `hr_transfer`, `hr_compensation_upsert`,
+`hr_separation_record`, `hr_duplicate_scan`, `hr_emergency_contact_upsert`,
+`hr_external_identity_upsert`, `hr_engagement_upsert`, `hr_structure_upsert`, `hr_knob_set/clear`,
+`hr_corrective_action_issue`, `hr_incident_create`, `hr_verification_request_create`.
+
+**Fix:** in `callHr`, treat `payload.ok === false` as a refusal alongside `granted === false`,
+carrying `reason`, `detail`, `field` and `door` onto `HrDenied`. One change, in one place.
+`features/hr/people/new/writeAck.ts` is the local shim the people lane uses until then and should
+be DELETED by the same commit — it exists only to keep the bug off users.
+
+### D272 — `features/hr/service.ts` claims the HR write doors are not live; they all are (2026-08-26)
+
+The `── Writes ──` section header says "🚨 NOT LIVE YET (verified against `pg_proc` 2026-08-26)".
+Re-read of `pg_proc` on the same day: `hr_employee_create`, `hr_employee_update`,
+`hr_position_change`, `hr_transfer`, `hr_compensation_upsert`, `hr_separation_record`,
+`hr_duplicate_scan`, `hr_emergency_contact_upsert` (+ `_remove`), `hr_engagement_upsert`,
+`hr_external_identity_upsert`, `hr_pending_change_cancel`, `hr_corrective_action_issue`,
+`hr_incident_create` and `hr_verification_request_create` **all exist**. A comment telling the next
+agent a door is missing is how a surface gets stubbed that could have been built.
+
+Two real signature gaps in the same file:
+
+- `updateHrEmployee` calls `hr_employee_update` with `p_employee_id` + `p_patch`; the live function
+  takes **three** arguments (`p_expected_version integer`) — optimistic concurrency, silently not
+  passed.
+- No wrappers exist for these live doors: `hr_confidential_list`, `hr_restricted_list`,
+  `hr_relations_list`, `hr_transfer`, `hr_wf_instance`, `hr_wf_for_target`,
+  `hr_emergency_contact_remove`, `hr_incident_status`, `hr_access_audit_query`.
+
+**Fix:** correct the header, add the missing wrappers, pass `p_expected_version`.
+
+### D273 — no per-EMPLOYEE read door for compensation or emergency contacts (2026-08-26)
+
+`hr_employee_profile` returns `comp_visibility` and the tab set but carries **no compensation rows
+and no emergency contacts** (read the function body). The only list door,
+`hr_confidential_list(p_token, p_filter, …)`, filters solely on `p_filter.organization_id` (see
+`hr._door_list`) and returns up to 500 org-wide rows.
+
+So a profile tab for ONE person can only be served by pulling the whole org and filtering
+client-side — which also writes an audited `action='list'` row over the entire organization against
+that viewer for a one-person purpose, corrupting the audit trail the Confidential tier exists to
+produce. `/hr/people/[employeeId]/compensation` and `/emergency` therefore state the gap instead of
+faking a number (`hr.people.compensation-history`, `hr.people.emergency-contacts` in
+`lib/coming-soon/registry.ts`).
+
+**Fix (server, L1):** an employment-scoped filter on `hr._door_list`, or dedicated
+`hr_compensation_for_employment(p_employment_id)` /
+`hr_emergency_contacts_for_employee(p_employee_id)` doors.
+
+### D274 — `hr_employee` has no entity-registry token and no peek kind (2026-08-26)
+
+`features/scopes/registry/entityRegistry.ts` carries no `hr_employee` `hrefFor`, and
+`features/organizations/peek/kinds-list.ts` carries no `hr_employee` peek. So `<EntityRef>` — the
+Door Law made importable — cannot name a person, and every HR surface that renders one has to
+hand-roll its doors. `features/hr/people/doors/HrPersonDoor.tsx` is that hand-roll; it should
+collapse to a thin `EntityRef` wrapper the moment the token and the peek kind are registered.
+
+**Fix:** add `hr_employee` to the entity registry (`hrefFor` → `/hr/people/<id>`) and a peek kind to
+`registry.ts` + `kinds-list.ts`, then delete `HrPersonDoor`'s door plumbing.
+
 ### D270 — two `next.config.js` redirects land on 404s (2026-08-26)
 
 Found while sweeping all 176 redirect destinations against on-disk routes (the `check:doc-claims`
