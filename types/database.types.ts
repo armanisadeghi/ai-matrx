@@ -42919,6 +42919,10 @@ export type Database = {
         Returns: boolean
       }
       _time_interval_json: { Args: { p_id: string }; Returns: Json }
+      _time_not_employed_refusal: {
+        Args: { p_tail: string; p_uid: string }
+        Returns: Json
+      }
       _time_ok: { Args: { p_data: Json }; Returns: Json }
       _time_ot_preapproval_json: { Args: { p_id: string }; Returns: Json }
       _time_page: { Args: { p_page: Json }; Returns: Record<string, unknown> }

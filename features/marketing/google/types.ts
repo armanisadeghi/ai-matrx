@@ -93,24 +93,11 @@ export interface YouTubeChannelPreview {
   recent_videos: YouTubeVideoPreview[];
 }
 
-export interface CalendarAgendaEvent {
-  event_id: string;
-  title: string;
-  starts_at: string | null;
-  ends_at: string | null;
-  all_day: boolean;
-  status: string | null;
-  location: string | null;
-  html_url: string | null;
-}
+export type CalendarAgendaEvent =
+  components["schemas"]["CalendarAgendaEvent"];
 
-export interface CalendarAgendaPreview {
-  calendar: "primary";
-  window_start: string;
-  window_end: string;
-  events: CalendarAgendaEvent[];
-  access_mode: "read_only";
-}
+export type CalendarAgendaPreview =
+  components["schemas"]["CalendarAgendaPreview"];
 
 export interface GoogleTaskItemPreview {
   task_id: string;
@@ -123,32 +110,17 @@ export interface GoogleTaskItemPreview {
   position: string | null;
 }
 
-export interface GoogleTaskListPreview {
-  task_list_id: string;
-  title: string;
-  tasks: GoogleTaskItemPreview[];
-}
+export type GoogleTaskListPreview =
+  components["schemas"]["GoogleTaskListPreview"];
 
-export interface GoogleTasksPreview {
-  task_lists: GoogleTaskListPreview[];
-  access_mode: "read_only";
-}
+export type GoogleTasksPreview =
+  components["schemas"]["GoogleTasksPreview"];
 
-export interface YouTubeAnalyticsDay {
-  day: string;
-  views: number;
-  estimated_minutes_watched: number;
-  average_view_duration_seconds: number;
-  subscribers_gained: number;
-}
+export type YouTubeAnalyticsDay =
+  components["schemas"]["YouTubeAnalyticsDay"];
 
-export interface YouTubeAnalyticsPreview {
-  channel_id: string;
-  start_date: string;
-  end_date: string;
-  days: YouTubeAnalyticsDay[];
-  access_mode: "read_only_non_monetary";
-}
+export type YouTubeAnalyticsPreview =
+  components["schemas"]["YouTubeAnalyticsPreview"];
 
 export interface TagManagerWorkspacePreview {
   workspace_id: string;
@@ -169,10 +141,8 @@ export interface TagManagerAccountPreview {
   containers: TagManagerContainerPreview[];
 }
 
-export interface TagManagerInventory {
-  accounts: TagManagerAccountPreview[];
-  access_mode: "read_only";
-}
+export type TagManagerInventory =
+  components["schemas"]["TagManagerInventory"];
 
 export type GoogleAdsCustomer = components["schemas"]["GoogleAdsCustomer"];
 
