@@ -137,7 +137,11 @@ export function toExportFailure(err: unknown): ExportFailure {
       engineMessage: addsInformation(parsed.engineMessage, err.userMessage)
         ? parsed.engineMessage
         : null,
-      hint: parsed.hint,
+      // 🚨 THE HINT IS STRUCTURED NOW. aidream a64423d43 puts the door's HINT in `details.hint`
+      // rather than leaving it buried in the raw raise. The text parse stays as the fallback for
+      // any envelope that predates it or comes from another shape — read the structured field
+      // first, never invent one.
+      hint: typeof details.hint === "string" ? details.hint : parsed.hint,
       details,
       status: err.status,
       requestId: err.requestId,
@@ -164,34 +168,6 @@ export function toExportFailure(err: unknown): ExportFailure {
 
 const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 
-/**
- * The PLACEHOLDER sentences the router writes when it is forwarding someone else's raise.
- *
- * 🚨 THIS LIST IS THE WHOLE POINT, AND IT IS NOT A GUESS. Each string is copied from the live
- * source: `aidream/api/routers/hr_exports.py::_sql_error` lines 94/96, and the shared `not_found`
- * helper (observed on the wire, 2026-08-27). These are the cases where the router has NOT written a
- * human sentence — it has stamped a filler over the engine's real one.
- *
- * Everywhere else the router's `user_message` is genuinely written for the operator ("This pay
- * period has not been approved yet.", "That export hasn't produced a file yet.") and it MUST keep
- * the headline. An earlier cut of this file compared the two strings for equality instead, which
- * let a technical restatement full of raw UUIDs — *"pay period 49f4c46c-… is open, not approved"* —
- * shove aside a perfectly good human sentence. Fixing a discard by degrading the good cases is not
- * a fix.
- */
-const ROUTER_PLACEHOLDERS: ReadonlySet<string> = new Set(
-  [
-    "That request wasn't valid.",
-    "That isn't possible in this state.",
-    "We couldn't find that.",
-  ].map(norm),
-);
-
-/** True when the router stamped a filler over the engine's sentence. */
-function isPlaceholder(userMessage: string): boolean {
-  return ROUTER_PLACEHOLDERS.has(norm(userMessage));
-}
-
 /** True when the engine's sentence is not just the headline again. */
 function addsInformation(
   engineMessage: string | null,
@@ -204,21 +180,21 @@ function addsInformation(
 /**
  * The ONE sentence to lead with — for a toast, which has room for exactly one.
  *
- * 🚨 THE ENGINE'S SENTENCE WINS. Where the router forwarded a real raise under a placeholder
- * `user_message` ("That request wasn't valid.", "That isn't possible in this state."), the toast
- * is the FIRST thing an operator reads and was showing the placeholder — so the precise reason
- * arrived only if they then looked at the alert underneath. Leading with the engine's own words
- * costs nothing when there are none: it falls straight back to `userMessage`.
+ * 🚨 IT IS `user_message`, AND THAT IS NOW THE WHOLE RULE. This function briefly carried a copy of
+ * the router's placeholder strings ("That request wasn't valid.", "That isn't possible in this
+ * state.") so the engine's real sentence could outrank filler. **That coupling is retired**:
+ * aidream `a64423d43` made `_sql_error` speak the door's own sentence — `spoken()` returns
+ * `refusal.user_message` and keeps the old strings only as a last-resort fallback — so
+ * `user_message` is the operator's sentence again, written by whoever knew the most.
  *
- * Still never invented, never rewritten — this only chooses which of the server's own two
- * sentences is the more useful one to show first.
+ * A frontend list of another service's copy is exactly the kind of coupling that rots silently: it
+ * was right for one afternoon and would have started lying the moment the router added a fourth
+ * string. It earned its keep and it is gone.
+ *
+ * Nothing is lost in the fallback case either — `engineMessage` still renders the raise's own text
+ * as data underneath, so even an unparseable refusal shows its technical sentence.
  */
 export function failureHeadline(failure: ExportFailure): string {
-  // Only when the router stamped a filler does the engine's sentence take the lead. A real
-  // `user_message` is written FOR the operator and outranks a technical restatement.
-  if (failure.engineMessage && isPlaceholder(failure.userMessage)) {
-    return failure.engineMessage;
-  }
   return failure.userMessage;
 }
 
