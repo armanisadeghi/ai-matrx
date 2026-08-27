@@ -46,17 +46,8 @@ import {
 } from "../types";
 import { NewCorrectiveActionDialog } from "./NewCorrectiveActionDialog";
 import { NewIncidentDialog } from "./NewIncidentDialog";
+import { formatHrDay as formatDay } from "@/features/hr/people/shared/HrStatusChip";
 
-function formatDay(value: string | null): string {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 export function RelationsCaseList() {
   const { orgRef } = useHrContext();

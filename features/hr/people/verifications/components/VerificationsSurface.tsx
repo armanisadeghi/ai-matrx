@@ -47,18 +47,8 @@ import {
 } from "../types";
 import { NewVerificationRequestDialog } from "./NewVerificationRequestDialog";
 import { VerificationRowActions } from "./VerificationRowActions";
+import { formatHrDay as formatDay } from "@/features/hr/people/shared/HrStatusChip";
 
-function formatDay(value: string | null | undefined): string {
-  if (!value) return "";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-}
 
 export function VerificationsSurface() {
   const { active } = useHrContext();

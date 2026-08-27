@@ -129,6 +129,35 @@ export function formatFullDate(iso: string | null | undefined): string {
   });
 }
 
+/**
+ * A value that may be EITHER a calendar date (`2026-08-17`) or a timestamp
+ * (`2026-08-17T14:03:00Z`) → `17 Aug 2026`.
+ *
+ * 🚨 `new Date("2026-08-17")` IS PARSED AS **UTC MIDNIGHT**, and `toLocaleDateString`
+ * then renders it in the viewer's zone — so everywhere west of UTC it printed the
+ * PREVIOUS DAY. Seven copies of a local `formatDay` helper across this lane had that
+ * bug; the CRM party panel was caught showing "Started Aug 16, 2026" for an employee
+ * the door reports as hired on `2026-08-17`, while the profile header two clicks
+ * away said Aug 17. A hire date is not cosmetic — it is the date service is computed
+ * from.
+ *
+ * A calendar date has no zone, so it must be parsed at LOCAL midnight. A timestamp
+ * does have one and must NOT be, or it would be shifted a second time. This branches
+ * on the shape rather than forcing either reading, which is why it is safe to point
+ * every call site at it regardless of what that site is formatting.
+ */
+export function formatHrDay(value: string | null | undefined): string {
+  if (!value) return "";
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+  const parsed = new Date(dateOnly ? `${value.trim()}T00:00:00` : value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 /** A timestamp (system time) → `25 Aug 2026`. Never a bare ISO string in the UI. */
 export function formatRecordedAt(value: string | null | undefined): string {
   if (!value) return "";

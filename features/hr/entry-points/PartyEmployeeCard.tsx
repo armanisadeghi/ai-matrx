@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { hrEmployeeHref } from "@/features/hr/routes";
 import { fetchHrEmployeeByParty } from "@/features/hr/service";
+import { formatHrDay as formatDay } from "@/features/hr/people/shared/HrStatusChip";
 
 type PartyEmployee = {
   employee_id: string | null;
@@ -41,17 +42,6 @@ type PartyEmployee = {
   hire_date: string | null;
 };
 
-function formatDay(value: string | null): string {
-  if (!value) return "";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-}
 
 const STATUS_LABELS: Record<string, string> = {
   prehire: "Starting soon",
