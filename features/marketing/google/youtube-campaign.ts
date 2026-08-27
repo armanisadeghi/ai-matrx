@@ -1,10 +1,10 @@
 export type GoogleYouTubeCampaignPhase = "internal_test" | "approved";
 
 export const GOOGLE_YOUTUBE_CAMPAIGN_PHASE: GoogleYouTubeCampaignPhase =
-  "internal_test";
+  "approved";
 
 export const GOOGLE_YOUTUBE_CAMPAIGN_PAUSE_REASON =
-  "Google has not approved AI Matrx's YouTube permission yet. YouTube account authorization and reads are limited to internal test accounts.";
+  "YouTube authorization is temporarily paused by AI Matrx.";
 
 export function canUseGoogleYouTube(isSuperAdmin: boolean): boolean {
   return GOOGLE_YOUTUBE_CAMPAIGN_PHASE === "approved" || isSuperAdmin;

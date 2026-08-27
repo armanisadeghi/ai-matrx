@@ -10,12 +10,12 @@
 export type GoogleAnalyticsCampaignPhase = "internal_test" | "approved";
 
 export const GOOGLE_ANALYTICS_CAMPAIGN_PHASE: GoogleAnalyticsCampaignPhase =
-  "internal_test";
+  "approved";
 
 export const GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON =
-  "Google is still reviewing AI Matrx's Analytics permission. Until it is approved, connecting and refreshing Google Analytics is limited to internal test accounts.";
+  "Google Analytics authorization is temporarily paused by AI Matrx.";
 
-/** May THIS user authorize or manually refresh the unapproved GA4 scope? */
+/** May this user authorize or manually refresh the GA4 scope? */
 export function canUseGoogleAnalytics(isSuperAdmin: boolean): boolean {
   return GOOGLE_ANALYTICS_CAMPAIGN_PHASE === "approved" || isSuperAdmin;
 }

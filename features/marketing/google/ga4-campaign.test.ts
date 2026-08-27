@@ -6,13 +6,12 @@ import {
 } from "@/features/marketing/google/ga4-campaign";
 
 describe("Google Analytics OAuth campaign gate", () => {
-  it("allows internal testers while keeping normal users closed", () => {
-    expect(GOOGLE_ANALYTICS_CAMPAIGN_PHASE).toBe("internal_test");
+  it("allows every signed-in user after Google approval", () => {
+    expect(GOOGLE_ANALYTICS_CAMPAIGN_PHASE).toBe("approved");
     expect(canUseGoogleAnalytics(true)).toBe(true);
-    expect(canUseGoogleAnalytics(false)).toBe(false);
-    expect(() => assertGoogleAnalyticsCampaignActive(false)).toThrow(
-      GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON,
-    );
+    expect(canUseGoogleAnalytics(false)).toBe(true);
+    expect(() => assertGoogleAnalyticsCampaignActive(false)).not.toThrow();
     expect(() => assertGoogleAnalyticsCampaignActive(true)).not.toThrow();
+    expect(GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON).toBeTruthy();
   });
 });
