@@ -68,10 +68,11 @@ Consequences, both discharged:
 - `PayPeriodsRouteBody` / `PayPeriodRouteBody` were L13's temporary mounts. The ruling makes them
   dead, and they are **deleted** rather than left dormant ([no-legacy](/policies/no-legacy.md) —
   the fork that survives is the one that is mounted, and the loser goes).
-- The second component set at `features/hr/time/exports/` is L3's fork of this one. It consumes
-  this feature's `service.ts` and `types.ts` (the data layer was never duplicated) and nothing
-  imports it. **Ruled: it is annihilated by L3, not by L13** — a lane does not delete another
-  lane's files, and the ruling names the owner.
+- The second component set at `features/hr/time/exports/` was L3's fork of this one. **It is gone**
+  — L3 deleted all seven files on 2026-08-27, as the ruling directed (a lane does not delete
+  another lane's files, so the owner did it). Routes 32/33 now consume the components in this
+  directory. Nothing imports the old path; the only surviving references are two comments
+  explaining the deletion.
 - `PeriodStatePanel` / `PeriodTransitionBar` / `BoundaryWeeksPanel` / `PostLockAdjustments` are
   L3's and are **not** mounted by L13 on purpose: they take a viewer `role` and a reopen
   permission, and a lane that does not own the permission model must not guess one to make a page
@@ -221,14 +222,11 @@ deleted, `/schema/all` takes over, and a shape that changed makes this feature g
 build is the contract-drift detector** — fix `types.ts` to match, never narrow the generated type.
 
 **Debt left deliberately**
-1. 🚨 **A second set of export COMPONENTS exists, uncommitted, at `features/hr/time/exports/`**
-   (`ExportPanel`, `ExportRunList`, `ExportFormatPicker`, `ExportPreviewPanel`,
-   `ExportPreconditionNotice`, `RunVerdictNotice`). Verified 2026-08-26: it *consumes* this
-   feature's `service.ts` and `types.ts` — so the data layer is not duplicated — but it is a
-   second presentation of the same nine operations, and **nothing imports it**; the mounted
-   components are the ones in this directory. Two renderings of one thing is a defect even while
-   one is unwired. It is another session's in-flight work, so L13 did not touch it: it needs a
-   coordinator ruling on which set survives, and the loser deleted rather than left dormant.
+1. ~~A second set of export components at `features/hr/time/exports/`.~~ **CLOSED 2026-08-27.**
+   The coordinator ruled this set canonical and L3 deleted its fork — all seven files, not
+   deprecated. Kept as a line rather than erased because the reasoning is the reusable part:
+   *two renderings of one thing is a defect even while one is unwired*, and the loser goes rather
+   than sitting dormant waiting to be picked up by mistake.
 2. **`payrollExportDomainKey` ignores the format.** Per §1.4's frozen spelling, generating
    `generic_csv` then `adp_csv` for one period replays the first export. Following the spec
    literally was the right call for a frozen contract; whether the spec intends this is a

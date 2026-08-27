@@ -146,9 +146,28 @@ function FormatOption({
 }
 
 function PreviewSummary({ preview }: { preview: ExportPreviewResult }) {
-  // The money figure follows the HR sensitivity rule: a key the reader omitted is ABSENT from the
-  // DOM — no label, no dash, no reserved slot. A present key that is empty is a different fact.
-  const showsAmounts = "total_amount" in preview;
+  // 🚨 ABSENT WINS — no label, no dash, no reserved slot (coordinator ruling, 2026-08-27).
+  //
+  // An earlier version showed the slot whenever the KEY was present and dashed the value when it
+  // was null, on the reasoning that "a present key that is empty is a different fact". It is not a
+  // distinction a reader can act on, and it leaks: **an empty slot labelled "Total amount"
+  // advertises that there is a figure here you are not allowed to see** — which is exactly what the
+  // D19 pay wall exists to avoid. It is the same law the inbox scopes follow: absent, not disabled.
+  //
+  // So the slot renders only when there is a real amount to put in it. This now matches
+  // `ExportRunList`, which drops the whole column when no row carries the key. (Inside a column that
+  // IS shown, a null cell still dashes — a table cell must occupy its grid position, and a missing
+  // <td> would misalign the row. A definition-list entry has no such obligation, so it simply goes.)
+  //
+  // NOTE this is the PAY-AUTHORITY lane, not the advisory-rule lane. Where money is withheld
+  // because a contributing rule is `advisory`, the requirement is the opposite: the hours show, the
+  // amount is omitted, and a human sentence with a door to the rule is rendered — never silence.
+  // That is `features/hr/time/shared/MoneyAndFlags.tsx`, and nothing here should be copied onto it.
+  const showsAmounts =
+    "total_amount" in preview &&
+    preview.total_amount !== null &&
+    preview.total_amount !== undefined &&
+    preview.total_amount !== "";
   return (
     <div className="space-y-3">
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -173,9 +192,7 @@ function PreviewSummary({ preview }: { preview: ExportPreviewResult }) {
         {showsAmounts ? (
           <div>
             <dt className="text-xs text-muted-foreground">Total amount</dt>
-            <dd className="font-mono text-lg text-foreground">
-              {preview.total_amount ?? "—"}
-            </dd>
+            <dd className="font-mono text-lg text-foreground">{preview.total_amount}</dd>
           </div>
         ) : null}
       </dl>
