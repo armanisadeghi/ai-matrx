@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "4c2806c9bc81";
+export const KIND_REGISTRY_FINGERPRINT = "8a389db63473";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5195,7 +5195,7 @@ export interface AgentFunctionSpec {
 }
 
 /**
- * Kind `agent_input_qme_report` (registry v3).
+ * Kind `agent_input_qme_report` (registry v4).
  */
 export interface AgentInputQmeReport {
   /**

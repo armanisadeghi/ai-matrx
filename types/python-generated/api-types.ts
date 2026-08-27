@@ -137,6 +137,11 @@ export interface paths {
          *       3. `git rev-parse HEAD` — fallback for a local/dev checkout.
          *       4. "unknown" — none available. Never raises; a broken version probe
          *          must not take down the health surface.
+         *
+         *     The resolution itself lives in :mod:`aidream.build_identity` — a neutral home,
+         *     because ``aidream/services/hr/time/`` stamps the same SHA onto every computed
+         *     row as ``engine_version`` (AR2 LOCK 6) and a service may never import
+         *     ``aidream/api/*``. One implementation, two callers.
          */
         get: operations["version_check_health_version_get"];
         put?: never;
@@ -4478,6 +4483,564 @@ export interface paths {
          */
         put: operations["set_enabled_authenticator__credential_item_id__enabled_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/identity/{identity_id}/ssn/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reveal a stored SSN once, audited
+         * @description E-39 — the ONE confidential HR read that is server-side.
+         *
+         *     `hr.reveal_ssn` performs the capability gate and writes the `hr.access_audit` row; the
+         *     value itself is sealed with the platform's one symmetric primitive, whose key Postgres
+         *     does not hold. Crossing the daily-volume knob raises an alarm and STILL RETURNS THE
+         *     VALUE — an alarm is not a denial.
+         *
+         *     `Cache-Control: no-store` is set here because response headers are the router's job;
+         *     the value is served exactly once and is never logged.
+         */
+        post: operations["hr_identity_ssn_reveal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/verification-letters/{letter_id}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Render an employment-verification letter and freeze its assertion
+         * @description E-37 — generate the letter, store the artifact, freeze what it asserted.
+         *
+         *     Pay is stated only with recorded employee consent (403
+         *     `hr_verification_consent_missing`), every fact is resolved AS OF the letter's stated
+         *     date, and a delivered letter is never edited (409 `hr_verification_letter_delivered`).
+         */
+        post: operations["hr_verification_letters_generate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/exports/formats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The payroll export format registry
+         * @description E-18 — the registry, so no client hard-codes a list.
+         *
+         *     `delivery` gains `"api"` only where the org has a LIVE payroll binding for that format
+         *     (§4.3), which is why this reads the seam before answering: the shape must not change on the
+         *     day a binding appears, and the only way to guarantee that is to compute it from the binding
+         *     every time.
+         *
+         *     Both QuickBooks mappers come back `available: false` with their reason in `notes` (D22). The
+         *     client renders them disabled and says why — a format that is silently absent teaches the
+         *     reader we do not support QuickBooks at all, which is a different and wronger thing.
+         */
+        get: operations["hr_exports_formats_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/exports/payroll/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dry-run a payroll export without creating a record
+         * @description E-19 — synchronous, and it creates **no** `hr.payroll_export` row.
+         *
+         *     §4.4: *"This is what the payroll administrator looks at before committing, and it is a
+         *     separate endpoint precisely so that looking is not an act with a record."*
+         *
+         *     It reports the preconditions in `blocking[]` rather than raising them. A preview that 409s
+         *     tells the administrator exactly what a refused generate would, which makes the separate
+         *     endpoint pointless — the whole value is that the answer arrives before the commitment.
+         */
+        post: operations["hr_exports_payroll_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/exports/payroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate a payroll export
+         * @description E-20 — the act. 202 + the §1.5 runtime reference; the file is rendered detached.
+         *
+         *     The four preconditions are checked **before** the claim, each with its own named failure
+         *     (§4.4), because a claimed export that can never render is a row that will confuse whoever
+         *     finds it. The claim itself carries the double-pay guard and the domain idempotency key, both
+         *     inside one transaction.
+         *
+         *     A replay of the same `idempotency_key` returns the ORIGINAL run's reference with
+         *     `X-Idempotency-Replayed: true` and does not re-run the engine — §1.4's contract for an async
+         *     endpoint, and the same behaviour the workflow lane has.
+         */
+        post: operations["hr_exports_payroll_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/exports/timesheet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Render a timesheet report
+         * @description E-21 — a REPORT, not a payroll artifact.
+         *
+         *     §4.4 is explicit and the distinction is load-bearing: this writes an `hr.access_audit` row
+         *     with `action='export'` and creates **no** `hr.payroll_export` row, *"and conflating the two
+         *     would let a report supersede a payroll file."*
+         */
+        post: operations["hr_exports_timesheet_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/exports/{export_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read one export's state
+         * @description E-22 — status. Not an audited act (§2.2 files status and history in the CRUD lane).
+         */
+        get: operations["hr_exports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/exports/{export_id}/artifact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The artifact URL envelope
+         * @description E-23 — **the URL envelope, never bytes** (§3.5).
+         *
+         *     `file_id` is the identity and the URLs expire; a consumer that persists this envelope must
+         *     keep only `file_id` and `sha256` (the platform's `_durable_only` rule). This IS an audited
+         *     act — the file is the payroll data — so an `hr.access_audit` row with `action='export'` is
+         *     written before the envelope is returned.
+         *
+         *     A `includes_pii` export additionally requires `payroll.export_pii` to READ, not only to
+         *     generate: §4.6's gate would be decorative if the file it protects could be fetched with the
+         *     lesser capability.
+         */
+        get: operations["hr_exports_artifact_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/exports/{export_id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record that the receiving system confirmed this export
+         * @description E-24 — `sent → acknowledged`, and the point of no return.
+         *
+         *     `acknowledgement_ref` is the receiving system's own reference: opaque to us, never parsed.
+         *     After this, §4.5's double-pay guard closes the period to any further export.
+         */
+        post: operations["hr_exports_acknowledge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/exports/{export_id}/fail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record that this export failed downstream
+         * @description E-25 — §4.5: *"Failure is recorded, not swallowed."*
+         */
+        post: operations["hr_exports_fail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/exports/{export_id}/supersede": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace a generated or failed export with a new version
+         * @description E-26 — a NEW export at `export_version = n+1`, pointing back.
+         *
+         *     🚨 If the export — or any export of its period — is `acknowledged`, this returns
+         *     `409 hr_export_already_acknowledged`. §4.5: *"Once payroll has taken the file, the only
+         *     correction path is an `hr.time_adjustment` row that lands in the next export, tagged to the
+         *     original period. A locked period is never re-exported, because a re-export double-pays."*
+         *
+         *     Both artifacts are retained — the superseded one is evidence of what was nearly sent — and
+         *     each carries its own `artifact_sha256`.
+         */
+        post: operations["hr_exports_supersede"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/providers/{seam}/bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List an organization's provider bindings for one seam
+         * @description E-27 — the projection, and **no secret material** (§3.6).
+         *
+         *     `credential_ref`, `webhook_secret_ref` and `connector` are absent by construction: the SQL
+         *     projection does not select them, the response model has no field for them, and both refs are
+         *     registered `client_excluded_columns` so a generated `database.types.ts` cannot name them
+         *     either. Three independent nos, because *"provider credentials never reach the client"* is the
+         *     kind of rule that gets broken by one convenient `select *`.
+         */
+        get: operations["hr_providers_bindings_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/providers/{seam}/dispatch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dispatch one subject across a provider seam
+         * @description E-28 — the edge out.
+         *
+         *     What lands in our tables is `outbound_sent_at`, `outbound_request_ref` and an
+         *     `outbound_payload_summary` — **a summary, never the payload**, because the payload carries PII
+         *     our own tables should not duplicate. §3.6 says that twice; the ledger column additionally
+         *     carries a size CHECK as a tripwire for the day somebody starts storing the real thing.
+         *
+         *     A black box that does not answer is `424 hr_provider_unavailable`, and the error body **names
+         *     the manual fallback** — §1.3's guidance for a 424 is *"Retry or fall back to `path='manual'`"*,
+         *     and a person can only act on that if the response says it.
+         */
+        post: operations["hr_providers_dispatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/providers/{seam}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a provider result the organization obtained itself
+         * @description E-29 — the org-recorded path, and D12's actual first shipping mode.
+         *
+         *     An org running its own background-check service records the confirmation here. The body is the
+         *     same shape the webhook produces **after mapping**, and both call `seam_engine.record_result` — which
+         *     is invariant 2 (*"the consumer-facing API and the completion callback are byte-identical in
+         *     both modes"*) made structural rather than promised.
+         *
+         *     The provider's status is mirrored into `external_status` and **mapped** into `our_state`;
+         *     it is never adopted as our state (invariant 1).
+         */
+        post: operations["hr_providers_results_record"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/providers/{seam}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Poll a provider seam for outstanding results
+         * @description E-30 — the poll lane, and **the MCP lane's only result path** (§3.6 MCP rule 3).
+         *
+         *     An MCP server has no webhook, so a binding that speaks MCP resolves here or not at all. One
+         *     unreachable binding does not abort the sweep: the failure stays visible on the ledger's
+         *     unprocessed rows rather than being swallowed, which is §1.5's `partial` applied to a fan-out.
+         */
+        post: operations["hr_providers_sync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hooks/providers/{seam}/{provider_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inbound provider webhook (HMAC-signed, no bearer)
+         * @description E-31 — the edge in. 🚨 **Idempotent on `(provider_key, provider_event_id)`.**
+         *
+         *     §3.6: *"a provider that retries five times produces one state change."* The idempotency is a
+         *     partial unique index and an `ON CONFLICT DO NOTHING`, not a check-then-insert — the loser of
+         *     that race silently double-applies a provider's state change.
+         *
+         *     Three things this handler does that look small and are not:
+         *
+         *     * It reads the **raw body** and verifies the HMAC over those exact bytes. Re-serializing a
+         *       parsed body first would change whitespace and key order, and every signature would fail.
+         *     * It rejects a timestamp outside `hr.contracts.webhook_skew_seconds` (300), so a captured
+         *       request cannot be replayed indefinitely.
+         *     * It returns **`202` for an event it recognizes but does not map**, and `200` for one it
+         *       consumes — §3.6: *"a provider never sees a failure for an event we simply do not consume."*
+         *       Both are empty bodies. A webhook receiver that returns detail is a receiver that leaks.
+         */
+        post: operations["hr_hooks_provider_webhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/calc/overtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Overtime for one workweek
+         * @description E-03. The workweek is the OT unit, never the pay period.
+         *
+         *     Returns **200 with the amount omitted and the flag in ``flags[]``** when a contributing rule
+         *     is advisory — the ``/hr/calc/*`` posture (SPEC-CONTRACTS §1.3 rule 3). The 422 refusal
+         *     belongs to the export endpoint, which is not this lane's. **Never a zero.**
+         */
+        post: operations["hr_calc_overtime"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/calc/break-premium": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Meal/rest premiums for one work date
+         * @description E-04. ``parameters.work_date`` names the day.
+         *
+         *     A meal premium and a rest premium on the same day are **two lines, never merged**, and the
+         *     rest premium is capped at one per day.
+         */
+        post: operations["hr_calc_break_premium"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/time/overtime/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approaching-OT evaluator for one employment
+         * @description E-55. Cheap enough for a clock screen to call on every punch.
+         *
+         *     🚨 Always prospective: it projects, it never writes hours. Nothing in the response can
+         *     prevent hours being paid or exported.
+         */
+        post: operations["hr_time_overtime_evaluate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/time/recompute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pair punches, round, write intervals, roll up workweeks, evaluate rules
+         * @description E-11. Refuses ``423 hr_period_locked`` against a locked or closed period.
+         *
+         *     The refusal happens **before** the 202: a caller must learn that their scope is locked from
+         *     the request they made, not by polling an operation that failed for a reason they cannot see.
+         */
+        post: operations["hr_time_recompute"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/time/exceptions/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Elapsed-time attendance-exception detectors over a window
+         * @description E-12. ``dry_run: true`` returns what it would write and writes nothing.
+         */
+        post: operations["hr_time_exceptions_scan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/time/overtime/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The async sweep behind the real-time approaching-OT alerts
+         * @description E-56. Idempotent per ``(employment_id, workweek_id, threshold_key)``.
+         *
+         *     Runs on the dedicated worker lane when D23's schedule is turned on; this route is the
+         *     on-demand door to the identical engine body.
+         */
+        post: operations["hr_time_overtime_scan"];
         delete?: never;
         options?: never;
         head?: never;
@@ -27663,6 +28226,105 @@ export interface components {
             relation?: string;
         };
         /**
+         * BreakPremiumCalcResponse
+         * @description E-04 response — the typed supersession of the stub's open ``result`` (FREEZE D-3).
+         */
+        BreakPremiumCalcResponse: {
+            /**
+             * Snapshot Id
+             * Format: uuid
+             * @description ALWAYS present. Computing a consequential result without a snapshot is a defect.
+             */
+            snapshot_id: string;
+            /** Prospective */
+            prospective: boolean;
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Jurisdiction Key */
+            jurisdiction_key: string;
+            engine: components["schemas"]["EngineRef"];
+            /** Rules Applied */
+            rules_applied?: components["schemas"]["RuleApplied"][];
+            /** Flags */
+            flags?: components["schemas"]["CalcFlag"][];
+            /** Incomplete */
+            incomplete?: components["schemas"]["IncompleteFact"][];
+            /** Clamps */
+            clamps?: components["schemas"]["Clamp"][];
+            written?: components["schemas"]["WrittenRefs"];
+            result: components["schemas"]["BreakPremiumCalcResult"];
+        };
+        /**
+         * BreakPremiumCalcResult
+         * @description E-04's ``result``.
+         *
+         *     🚨 **Rest premium is capped at one per day; a meal premium and a rest premium on the same
+         *     day are TWO lines, never merged** (SPEC-TIME §4.3).
+         */
+        BreakPremiumCalcResult: {
+            /**
+             * Workweek Id
+             * Format: uuid
+             */
+            workweek_id: string;
+            /**
+             * Work Date
+             * Format: date
+             */
+            work_date: string;
+            /** Meal Premium Owed */
+            meal_premium_owed: boolean;
+            /** Rest Premium Owed */
+            rest_premium_owed: boolean;
+            /** Lines */
+            lines?: components["schemas"]["BreakPremiumLine"][];
+            /**
+             * Money Withheld
+             * @default false
+             */
+            money_withheld?: boolean;
+        };
+        /**
+         * BreakPremiumLine
+         * @description A statutory meal or rest premium.
+         *
+         *     Always **1.0 hours** by statute — a premium is not a measured interval, which is also why
+         *     rounding never touches it (SPEC-TIME §10).
+         */
+        BreakPremiumLine: {
+            /**
+             * Earning Code
+             * @enum {string}
+             */
+            earning_code: "MEAL_PREMIUM" | "REST_PREMIUM";
+            /**
+             * Hours
+             * @default 1.0
+             */
+            hours?: string;
+            /** Rate */
+            rate?: string | null;
+            /** Amount */
+            amount?: string | null;
+            /**
+             * Money Withheld
+             * @default false
+             */
+            money_withheld?: boolean;
+            /**
+             * Work Date
+             * Format: date
+             */
+            work_date: string;
+            /** Attendance Exception Id */
+            attendance_exception_id?: string | null;
+            /** Source Punch Ids */
+            source_punch_ids?: string[];
+        };
+        /**
          * BridgeAccountIdentity
          * @description Opaque, display-safe provider-account provenance. Never authorization.
          *
@@ -29486,6 +30148,74 @@ export interface components {
             models?: boolean;
         };
         /**
+         * CalcFlag
+         * @description A human-renderable reason something is missing, clamped or unverified.
+         *
+         *     ``flags[]`` is **never swallowed** (SPEC-CONTRACTS §1.3 rule 4). The UI renders every entry
+         *     as a visible sentence with a door to the rule.
+         */
+        CalcFlag: {
+            /** Code */
+            code: string;
+            /** Class */
+            class: string;
+            /** Rule Id */
+            rule_id?: string | null;
+            /** Jurisdiction Key */
+            jurisdiction_key?: string | null;
+            /** Message */
+            message: string;
+        };
+        /**
+         * CalcRequest
+         * @description The one request shape every ``/hr/calc/*`` endpoint shares.
+         *
+         *     ``as_of`` is **the event date, never ``now()``** (SPEC-CONTRACTS §1.6 law 1), and
+         *     ``jurisdiction_key`` may be supplied **only** in prospective mode for a record that does not
+         *     yet exist (law 2) — a validator enforces that here rather than trusting the caller.
+         */
+        CalcRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            subject: components["schemas"]["SubjectRef"];
+            /**
+             * As Of
+             * Format: date
+             * @description The EVENT date. Passing today's date for a past fact is a defect.
+             */
+            as_of: string;
+            /**
+             * Mode
+             * @default authoritative
+             * @enum {string}
+             */
+            mode?: "authoritative" | "prospective";
+            /** Parameters */
+            parameters?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Recalculation Batch Id */
+            recalculation_batch_id?: string | null;
+            /**
+             * Jurisdiction Key
+             * @description Prospective mode ONLY, and only for a record that does not yet exist. Jurisdiction is otherwise READ from the stamped record.
+             */
+            jurisdiction_key?: string | null;
+        };
+        /**
          * Calibration
          * @description What the ledger says about one judge (optionally one subject class).
          */
@@ -31032,6 +31762,20 @@ export interface components {
         ClaimRequest: {
             /** Ticket */
             ticket: string;
+        };
+        /**
+         * Clamp
+         * @description A statutory floor that overrode an organization's configured parameter.
+         */
+        Clamp: {
+            /** Class */
+            class: string;
+            /** From */
+            from: string;
+            /** To */
+            to: string;
+            /** Reason */
+            reason: string;
         };
         /** ClassificationProposal */
         ClassificationProposal: {
@@ -38076,6 +38820,15 @@ export interface components {
             /** Groups */
             groups?: components["schemas"]["DuplicateScheduleGroup"][];
         };
+        /** EarningCodeTotal */
+        EarningCodeTotal: {
+            /** Earning Code */
+            earning_code: string;
+            /** Hours */
+            hours: string;
+            /** Amount */
+            amount?: string | null;
+        };
         /**
          * EdgeDef
          * @description User-authored edge in a ReactFlow-compatible definition.
@@ -38260,6 +39013,19 @@ export interface components {
             dimensions: number;
             /** Vectors */
             vectors: number[][];
+        };
+        /**
+         * EngineRef
+         * @description Which engine produced a figure, and at what deployed revision.
+         */
+        EngineRef: {
+            /** Key */
+            key: string;
+            /**
+             * Version
+             * @description Deployed git SHA of the engine that computed this.
+             */
+            version: string;
         };
         /** EngramDemoteRequest */
         EngramDemoteRequest: {
@@ -38753,6 +39519,49 @@ export interface components {
             /** Values */
             values: string[];
         };
+        /**
+         * ExceptionScanRequest
+         * @description E-12 — the elapsed-time detector lane.
+         *
+         *     Only the detectors that **need time to have passed** run here (R-L3 U-15): late arrival,
+         *     early departure, no-show, unscheduled work, over-scheduled hours and the orphan auto-close.
+         *     The write-time detectors live inside ``hr.punch_record`` / recompute and are never
+         *     implemented twice.
+         */
+        ExceptionScanRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Location Ids */
+            location_ids?: string[] | null;
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+        };
         /** ExcludePageBody */
         ExcludePageBody: {
             /** Reason */
@@ -39219,6 +40028,215 @@ export interface components {
             skipped?: {
                 [key: string]: string;
             }[];
+        };
+        /** ExportAcknowledgeBody */
+        ExportAcknowledgeBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Acknowledgement Ref
+             * @description The receiving system's own reference. Opaque to us; we never parse it.
+             */
+            acknowledgement_ref: string;
+            /** Acknowledged At */
+            acknowledged_at?: string | null;
+        };
+        /** ExportAcknowledgeResponse */
+        ExportAcknowledgeResponse: {
+            /**
+             * Export Id
+             * Format: uuid
+             */
+            export_id: string;
+            /**
+             * Delivery State
+             * @enum {string}
+             */
+            delivery_state: "generated" | "sent" | "acknowledged" | "failed" | "superseded";
+            /**
+             * Acknowledged At
+             * Format: date-time
+             */
+            acknowledged_at: string;
+        };
+        /**
+         * ExportArtifactEnvelope
+         * @description E-23. **The URL envelope, never bytes.**
+         *
+         *     ``file_id`` is the identity; the URLs expire. A service or node output that persists this
+         *     must strip the expiring members — the platform's ``_durable_only`` rule — so only ``file_id``
+         *     and ``sha256`` are safe to store.
+         *
+         *     A note on ``signed_url``, because it looks like it contradicts a platform rule and does not:
+         *     ``matrx_files.FileRecord`` deliberately carries **no** ``signed_url``, on the 2026-08-21
+         *     ruling that *a signed URL is a handoff, never an identity*. That rule governs the platform's
+         *     identity-bearing file record. This envelope is the handoff itself — it says so in its own
+         *     contract by naming ``expires_at`` as required and by telling the caller which two members are
+         *     durable. The two agree; they are describing different objects.
+         */
+        ExportArtifactEnvelope: {
+            /**
+             * File Id
+             * Format: uuid
+             */
+            file_id: string;
+            /** Sha256 */
+            sha256: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Download Url */
+            download_url?: string | null;
+            /** Signed Url */
+            signed_url?: string | null;
+            /** Cdn Url */
+            cdn_url?: string | null;
+        };
+        /** ExportDelivery */
+        ExportDelivery: {
+            /**
+             * Mode
+             * @default file
+             * @enum {string}
+             */
+            mode?: "file" | "api";
+            /**
+             * Binding Id
+             * @description Required when mode='api'; names the live provider binding to push through.
+             */
+            binding_id?: string | null;
+        };
+        /** ExportFailBody */
+        ExportFailBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Failure Reason
+             * @description Failure is recorded, not swallowed (§4.5).
+             */
+            failure_reason: string;
+        };
+        /** ExportFailResponse */
+        ExportFailResponse: {
+            /**
+             * Export Id
+             * Format: uuid
+             */
+            export_id: string;
+            /**
+             * Delivery State
+             * @enum {string}
+             */
+            delivery_state: "generated" | "sent" | "acknowledged" | "failed" | "superseded";
+            /** Failure Reason */
+            failure_reason: string;
+        };
+        /** ExportFormatColumn */
+        ExportFormatColumn: {
+            /** Name */
+            name: string;
+            /** Source */
+            source: string;
+            /** Required */
+            required: boolean;
+        };
+        /**
+         * ExportFormatEntry
+         * @description One registry row. ``available`` is the D22 half: a format can be registered and refuse.
+         */
+        ExportFormatEntry: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "quickbooks_online" | "quickbooks_iif" | "gusto_csv" | "adp_csv" | "generic_csv" | "json";
+            /** Label */
+            label: string;
+            /**
+             * Delivery
+             * @description `api` appears only where a LIVE provider binding exists for this format, so the shape does not change when a binding appears (§4.3).
+             */
+            delivery: ("file" | "api")[];
+            /** Media Type */
+            media_type: string;
+            /** Columns */
+            columns?: components["schemas"]["ExportFormatColumn"][];
+            /**
+             * Requires Mapping
+             * @description Identifiers this format needs mapped to the destination's own before an export can generate. Unmapped ⇒ 400 with details.unmapped[], never a file with blanks.
+             */
+            requires_mapping?: string[];
+            /** Supports Rates */
+            supports_rates: boolean;
+            /** Supports Adjustment Lines */
+            supports_adjustment_lines: boolean;
+            /**
+             * Available
+             * @description False = registered with its reason in `notes`, and generation refuses.
+             */
+            available: boolean;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** ExportFormatsResponse */
+        ExportFormatsResponse: {
+            /** Formats */
+            formats: components["schemas"]["ExportFormatEntry"][];
+        };
+        /**
+         * ExportSupersedeBody
+         * @description E-26. 🚨 **An ``acknowledged`` export can never be superseded, regenerated, or re-sent.**
+         *
+         *     §4.5's one rule that prevents double payment. The refusal is
+         *     ``409 hr_export_already_acknowledged``, and the only correction path is an
+         *     ``hr.time_adjustment`` that lands in the **next** export, tagged to the original period.
+         */
+        ExportSupersedeBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Reason */
+            reason: string;
         };
         /** ExtensionContentResponse */
         ExtensionContentResponse: {
@@ -43144,6 +44162,19 @@ export interface components {
             injection_id: string;
             /** Status */
             status: string;
+        };
+        /**
+         * IncompleteFact
+         * @description A required applicability fact the resolver did not have.
+         *
+         *     Surfaced, never swallowed — an engine that drops ``incomplete[]`` to keep a response tidy
+         *     has destroyed the only signal the caller had.
+         */
+        IncompleteFact: {
+            /** Class */
+            class: string;
+            /** Fact */
+            fact: string;
         };
         /** IndependentRandomPlan */
         IndependentRandomPlan: {
@@ -50208,6 +51239,292 @@ export interface components {
             /** Notes */
             notes?: string | null;
         };
+        /**
+         * OvertimeCalcResponse
+         * @description E-03 response — the typed supersession of the stub's open ``result`` (FREEZE D-3).
+         */
+        OvertimeCalcResponse: {
+            /**
+             * Snapshot Id
+             * Format: uuid
+             * @description ALWAYS present. Computing a consequential result without a snapshot is a defect.
+             */
+            snapshot_id: string;
+            /** Prospective */
+            prospective: boolean;
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Jurisdiction Key */
+            jurisdiction_key: string;
+            engine: components["schemas"]["EngineRef"];
+            /** Rules Applied */
+            rules_applied?: components["schemas"]["RuleApplied"][];
+            /** Flags */
+            flags?: components["schemas"]["CalcFlag"][];
+            /** Incomplete */
+            incomplete?: components["schemas"]["IncompleteFact"][];
+            /** Clamps */
+            clamps?: components["schemas"]["Clamp"][];
+            written?: components["schemas"]["WrittenRefs"];
+            result: components["schemas"]["OvertimeCalcResult"];
+        };
+        /**
+         * OvertimeCalcResult
+         * @description E-03's ``result`` — the workweek is the OT unit, never the pay period (AR 1.5).
+         */
+        OvertimeCalcResult: {
+            /**
+             * Workweek Id
+             * Format: uuid
+             */
+            workweek_id: string;
+            /**
+             * Week Start Local Date
+             * Format: date
+             */
+            week_start_local_date: string;
+            /** Hours Worked */
+            hours_worked: string;
+            /** Hours Regular */
+            hours_regular: string;
+            /** Hours Overtime */
+            hours_overtime: string;
+            /** Hours Doubletime */
+            hours_doubletime: string;
+            /** Hours Of Service */
+            hours_of_service: string;
+            /**
+             * Weighted Average Regular Rate
+             * @description The FLSA multi-rate answer. Null when the week is single-rate, and ALSO null when money is withheld — read `money_withheld` on the lines, never the null itself.
+             */
+            weighted_average_regular_rate?: string | null;
+            /**
+             * Multi Rate
+             * @description True when the week spans more than one position assignment or rate. The UI must then show a Multiple rates marker and never a single week rate.
+             * @default false
+             */
+            multi_rate?: boolean;
+            /** Rate Components */
+            rate_components?: components["schemas"]["RateComponent"][];
+            /** Lines */
+            lines?: components["schemas"]["OvertimeLine"][];
+            /**
+             * Money Withheld
+             * @default false
+             */
+            money_withheld?: boolean;
+        };
+        /**
+         * OvertimeDaily
+         * @description The daily axis.
+         *
+         *     🚨 **Daily thresholds are not optional.** In California an 8-hour day triggers OT
+         *     regardless of the weekly total, so an evaluator that only watches the weekly number is
+         *     silently wrong for the jurisdiction that matters most.
+         */
+        OvertimeDaily: {
+            /** Hours Today */
+            hours_today: string;
+            /** Daily Ot At Hours */
+            daily_ot_at_hours?: string | null;
+            /** Daily Dt At Hours */
+            daily_dt_at_hours?: string | null;
+        };
+        /**
+         * OvertimeEvaluateRequest
+         * @description E-55 — one employment, cheap enough for a clock screen to call on every punch.
+         */
+        OvertimeEvaluateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Employment Id
+             * Format: uuid
+             */
+            employment_id: string;
+            /**
+             * As Of
+             * Format: date-time
+             * @description The evaluation instant. The workweek is DERIVED from it, never passed.
+             */
+            as_of: string;
+            /**
+             * Include Scheduled
+             * @default true
+             */
+            include_scheduled?: boolean;
+        };
+        /**
+         * OvertimeEvaluateResponse
+         * @description E-55's response.
+         *
+         *     **Always prospective.** It projects; it never writes hours. The authoritative OT answer is
+         *     E-03 against a closed workweek, and a projection stored as evidence is how a wage claim
+         *     gets an answer we cannot defend.
+         */
+        OvertimeEvaluateResponse: {
+            /**
+             * Workweek Id
+             * Format: uuid
+             */
+            workweek_id: string;
+            /**
+             * Week Start Local Date
+             * Format: date
+             */
+            week_start_local_date: string;
+            /** Hours Worked To Date */
+            hours_worked_to_date: string;
+            /** Hours Scheduled Remaining */
+            hours_scheduled_remaining: string;
+            /** Projected Week Hours */
+            projected_week_hours: string;
+            /** Thresholds */
+            thresholds?: components["schemas"]["OvertimeThreshold"][];
+            daily: components["schemas"]["OvertimeDaily"];
+            preapproval: components["schemas"]["OvertimePreapprovalState"];
+            /** Grace Minutes */
+            grace_minutes: number;
+            /**
+             * Snapshot Id
+             * Format: uuid
+             */
+            snapshot_id: string;
+            /**
+             * Prospective
+             * @default true
+             * @constant
+             */
+            prospective?: true;
+            /** Flags */
+            flags?: components["schemas"]["CalcFlag"][];
+            /** Incomplete */
+            incomplete?: components["schemas"]["IncompleteFact"][];
+        };
+        /**
+         * OvertimeLine
+         * @description One earning-code line the OT engine produced.
+         *
+         *     Never a bare total (AR 1.6) — a line names its earning code, its hours, the intervals it
+         *     came from, and the work date it belongs to.
+         *
+         *     ``rate`` and ``amount`` are ``None`` when an advisory rule contributed. ``money_withheld``
+         *     says so explicitly so a null can never be silently read as a zero.
+         */
+        OvertimeLine: {
+            /** Earning Code */
+            earning_code: string;
+            /** Hours */
+            hours: string;
+            /** Rate */
+            rate?: string | null;
+            /** Amount */
+            amount?: string | null;
+            /**
+             * Money Withheld
+             * @default false
+             */
+            money_withheld?: boolean;
+            /**
+             * Is Overtime
+             * @default false
+             */
+            is_overtime?: boolean;
+            /**
+             * Work Date
+             * Format: date
+             */
+            work_date: string;
+            /** Work Interval Ids */
+            work_interval_ids?: string[];
+        };
+        /**
+         * OvertimePreapprovalState
+         * @description The pre-approval position for this employment and week.
+         *
+         *     🚨 **No field in this object can prevent hours being paid or exported.**
+         *     ``exceeded_without_approval`` is a management fact, never a payroll gate (D24a).
+         */
+        OvertimePreapprovalState: {
+            /** Required */
+            required: boolean;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "none" | "requested" | "approved" | "denied" | "exceeded_without_approval";
+            /** Workflow Instance Id */
+            workflow_instance_id?: string | null;
+            /** Approved Hours */
+            approved_hours?: string | null;
+            /** Overtime Preapproval Id */
+            overtime_preapproval_id?: string | null;
+        };
+        /**
+         * OvertimeScanRequest
+         * @description E-56 — the async sweep behind the real-time alerts.
+         *
+         *     Idempotent per ``(employment_id, workweek_id, threshold_key)`` through
+         *     ``hr.overtime_alert.dedupe_key``, so a 15-minute cadence does not alert four times an hour.
+         *     Runs on the dedicated worker lane (§1.5b); **which roles receive which tier is D24g routing
+         *     resolved from configuration, never a recipient list in code.**
+         */
+        OvertimeScanRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Location Ids */
+            location_ids?: string[] | null;
+            /** Thresholds */
+            thresholds?: string[] | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+        };
+        /** OvertimeThreshold */
+        OvertimeThreshold: {
+            /**
+             * Key
+             * @description e.g. `approaching`, `at_overtime`, `at_doubletime`, `seventh_day`.
+             */
+            key: string;
+            /** At Hours */
+            at_hours: string;
+            /** Crossed */
+            crossed: boolean;
+            /** Crosses At */
+            crosses_at?: string | null;
+        };
         /** PageAnalysisResult */
         PageAnalysisResult: {
             /**
@@ -50944,6 +52261,158 @@ export interface components {
             pausing: boolean;
             /** Previous Status */
             previous_status: string;
+        };
+        /**
+         * PayrollExportBody
+         * @description E-20.
+         */
+        PayrollExportBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Pay Period Id
+             * Format: uuid
+             */
+            pay_period_id: string;
+            /**
+             * Export Format
+             * @enum {string}
+             */
+            export_format: "quickbooks_online" | "quickbooks_iif" | "gusto_csv" | "adp_csv" | "generic_csv" | "json";
+            /**
+             * Idempotency Key
+             * @description The DOMAIN key — unique (organization_id, idempotency_key) on hr.payroll_export. §1.4: where the domain already owns the key, the domain wins; it is checked FIRST, before the platform claim matters.
+             */
+            idempotency_key: string;
+            /**
+             * Include Adjustments
+             * @default true
+             */
+            include_adjustments?: boolean;
+            /**
+             * Includes Pii
+             * @default false
+             */
+            includes_pii?: boolean;
+            delivery?: components["schemas"]["ExportDelivery"];
+        };
+        /**
+         * PayrollExportPreviewBody
+         * @description E-19. Same inputs as E-20 and **creates no row** — looking is not an act with a record.
+         */
+        PayrollExportPreviewBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Pay Period Id
+             * Format: uuid
+             */
+            pay_period_id: string;
+            /**
+             * Export Format
+             * @enum {string}
+             */
+            export_format: "quickbooks_online" | "quickbooks_iif" | "gusto_csv" | "adp_csv" | "generic_csv" | "json";
+            /**
+             * Include Adjustments
+             * @default true
+             */
+            include_adjustments?: boolean;
+            /**
+             * Includes Pii
+             * @description §4.6 — SSN appears in no export except one explicitly flagged. True additionally requires the payroll.export_pii capability on top of payroll.export.
+             * @default false
+             */
+            includes_pii?: boolean;
+        };
+        /**
+         * PayrollExportPreviewResponse
+         * @description E-19's answer: what a payroll administrator looks at before committing.
+         *
+         *     ``blocking`` is the half that matters. A non-empty ``blocking`` means E-20 WILL refuse, and
+         *     the preview says so in advance rather than letting the administrator find out by being
+         *     refused. ``warnings`` are things they should see and may proceed past.
+         */
+        PayrollExportPreviewResponse: {
+            /** Line Count */
+            line_count: number;
+            /** Total Hours */
+            total_hours: string;
+            /** Total Amount */
+            total_amount?: string | null;
+            /** By Earning Code */
+            by_earning_code: components["schemas"]["EarningCodeTotal"][];
+            /** Employments Included */
+            employments_included: number;
+            /** Warnings */
+            warnings: string[];
+            /** Blocking */
+            blocking: string[];
+        };
+        /**
+         * PayrollExportView
+         * @description E-22.
+         */
+        PayrollExportView: {
+            /**
+             * Export Id
+             * Format: uuid
+             */
+            export_id: string;
+            /** Export Version */
+            export_version: number;
+            /**
+             * Export Format
+             * @enum {string}
+             */
+            export_format: "quickbooks_online" | "quickbooks_iif" | "gusto_csv" | "adp_csv" | "generic_csv" | "json";
+            /**
+             * Delivery State
+             * @enum {string}
+             */
+            delivery_state: "generated" | "sent" | "acknowledged" | "failed" | "superseded";
+            /** Line Count */
+            line_count: number;
+            /** Total Hours */
+            total_hours?: string | null;
+            /** Total Amount */
+            total_amount?: string | null;
+            /** Artifact File Id */
+            artifact_file_id?: string | null;
+            /** Artifact Sha256 */
+            artifact_sha256?: string | null;
+            /** Supersedes Export Id */
+            supersedes_export_id?: string | null;
+            /** Acknowledgement Ref */
+            acknowledgement_ref?: string | null;
+            /** Failure Reason */
+            failure_reason?: string | null;
         };
         /** PdfCropBox */
         PdfCropBox: {
@@ -54140,6 +55609,44 @@ export interface components {
             /** Seed Keyword */
             seed_keyword: string;
         };
+        /**
+         * ProviderBindingView
+         * @description E-27's projection. No secret material, by construction.
+         */
+        ProviderBindingView: {
+            /**
+             * Binding Id
+             * Format: uuid
+             */
+            binding_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
+            /**
+             * Seam
+             * @enum {string}
+             */
+            seam: "background_check" | "esign" | "payroll" | "benefits" | "everify";
+            /** Provider Key */
+            provider_key: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Connector Kind
+             * @enum {string}
+             */
+            connector_kind: "rest" | "mcp" | "file" | "manual";
+            /** Is Active */
+            is_active: boolean;
+            /** Capabilities */
+            capabilities: string[];
+            /** Bound At */
+            bound_at?: string | null;
+        };
+        /** ProviderBindingsResponse */
+        ProviderBindingsResponse: {
+            /** Bindings */
+            bindings: components["schemas"]["ProviderBindingView"][];
+        };
         /** ProviderCallEvidenceOut */
         ProviderCallEvidenceOut: {
             /** Id */
@@ -54165,6 +55672,107 @@ export interface components {
             metadata: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * ProviderDispatchBody
+         * @description E-28 — the edge out.
+         */
+        ProviderDispatchBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Seam
+             * @enum {string}
+             */
+            seam: "background_check" | "esign" | "payroll" | "benefits" | "everify";
+            subject: components["schemas"]["SubjectRefBody"];
+            /**
+             * Provider Key
+             * @description null = resolve the org's active binding for this seam.
+             */
+            provider_key?: string | null;
+            /**
+             * Payload
+             * @description Seam-typed; the adapter maps it to the provider's wire format. What we KEEP is a summary — never this payload, which carries PII our tables must not duplicate.
+             */
+            payload?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /**
+         * ProviderResultsBody
+         * @description E-29 — the org-recorded path, and D12's actual first shipping mode.
+         *
+         *     ``path='manual'``: an org running its own service, recording the confirmation. The body is
+         *     the same shape the webhook produces **after mapping**, so the manual path and the provider
+         *     path converge on one writer (invariant 2).
+         */
+        ProviderResultsBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Seam
+             * @enum {string}
+             */
+            seam: "background_check" | "esign" | "payroll" | "benefits" | "everify";
+            subject: components["schemas"]["SubjectRefBody"];
+            /** External Status */
+            external_status: string;
+            /** External Ref */
+            external_ref?: string | null;
+            /**
+             * Result Summary
+             * @enum {string}
+             */
+            result_summary: "clear" | "consider" | "ineligible" | "incomplete";
+            /** Artifact File Id */
+            artifact_file_id?: string | null;
+            /**
+             * Occurred At
+             * Format: date-time
+             */
+            occurred_at: string;
+        };
+        /** ProviderResultsResponse */
+        ProviderResultsResponse: {
+            /** Recorded */
+            recorded: boolean;
+            /**
+             * Our State
+             * @description §3.6 invariant 1 — the provider's status MAPPED into our state machine.
+             */
+            our_state: string;
+            /**
+             * External Status
+             * @description Mirrored verbatim; never adopted as our state.
+             */
+            external_status: string;
         };
         /** ProviderScheduleStatus */
         ProviderScheduleStatus: {
@@ -54216,6 +55824,36 @@ export interface components {
             /** Pct Used */
             pct_used: string;
         };
+        /**
+         * ProviderSyncBody
+         * @description E-30 — poll. The MCP lane's only result path, since an MCP server has no webhook.
+         */
+        ProviderSyncBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Seam
+             * @enum {string}
+             */
+            seam: "background_check" | "esign" | "payroll" | "benefits" | "everify";
+            /** Binding Id */
+            binding_id?: string | null;
+            /** Subject Ids */
+            subject_ids?: string[] | null;
+        };
         /** ProviderTaskEvidenceOut */
         ProviderTaskEvidenceOut: {
             /** Id */
@@ -54256,6 +55894,14 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /**
+         * ProviderWebhookAck
+         * @description E-31's body. ``200`` on a mapped event, ``202`` on one we recognize and do not consume.
+         *
+         *     §3.6: *"a provider never sees a failure for an event we simply do not consume."* An empty
+         *     object either way — a webhook receiver that returns detail is a receiver that leaks.
+         */
+        ProviderWebhookAck: Record<string, never>;
         /**
          * PruneResult
          * @description Outcome of one retention pass.
@@ -55045,6 +56691,22 @@ export interface components {
             /** Removed */
             removed: boolean;
         };
+        /**
+         * RateComponent
+         * @description One (rate, hours) pair behind a weighted-average regular rate.
+         */
+        RateComponent: {
+            /** Position Assignment Id */
+            position_assignment_id?: string | null;
+            /** Position Title */
+            position_title?: string | null;
+            /** Rate */
+            rate: string;
+            /** Hours */
+            hours: string;
+            /** Product */
+            product: string;
+        };
         /** RawPayloadEvidenceOut */
         RawPayloadEvidenceOut: {
             /** Id */
@@ -55160,6 +56822,80 @@ export interface components {
             count: number;
             /** Executions */
             executions: components["schemas"]["ExecutionTreeNode"][];
+        };
+        /**
+         * RecomputeRequest
+         * @description E-11 — the persisting engine run.
+         *
+         *     Refuses ``423 hr_period_locked`` when the scope touches a ``locked`` or ``closed`` pay
+         *     period. That is the whole point of the state machine: after lock, corrections are
+         *     ``hr.time_adjustment`` rows, never a rewrite.
+         */
+        RecomputeRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Scope */
+            scope: components["schemas"]["RecomputeScopePayPeriod"] | components["schemas"]["RecomputeScopeEmploymentRange"] | components["schemas"]["RecomputeScopeWorkweek"];
+            /** Reason */
+            reason: string;
+            /** Recalculation Batch Id */
+            recalculation_batch_id?: string | null;
+        };
+        /** RecomputeScopeEmploymentRange */
+        RecomputeScopeEmploymentRange: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "employment_range";
+            /** Employment Ids */
+            employment_ids: string[];
+            /**
+             * From
+             * Format: date
+             */
+            from: string;
+            /**
+             * To
+             * Format: date
+             */
+            to: string;
+        };
+        /** RecomputeScopePayPeriod */
+        RecomputeScopePayPeriod: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "pay_period";
+            /**
+             * Pay Period Id
+             * Format: uuid
+             */
+            pay_period_id: string;
+        };
+        /** RecomputeScopeWorkweek */
+        RecomputeScopeWorkweek: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "workweek";
+            /** Workweek Ids */
+            workweek_ids: string[];
         };
         /** ReconcileBody */
         ReconcileBody: {
@@ -57876,6 +59612,31 @@ export interface components {
             data: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * RuleApplied
+         * @description One jurisdiction rule that contributed to a result.
+         *
+         *     ``status='advisory'`` is the load-bearing value: it is what makes the corresponding money
+         *     field absent rather than zero.
+         */
+        RuleApplied: {
+            /** Class */
+            class: string;
+            /**
+             * Rule Id
+             * Format: uuid
+             */
+            rule_id: string;
+            /** Rule Version */
+            rule_version: number;
+            /** Jurisdiction Key */
+            jurisdiction_key: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "advisory" | "draft";
         };
         /** RuleCount */
         RuleCount: {
@@ -62225,6 +63986,62 @@ export interface components {
             sheets?: components["schemas"]["SheetSpec"][];
         };
         /**
+         * SsnRevealRequest
+         * @description Body of the ONE confidential read that is server-side (SPEC-ACCESS §4.5).
+         *
+         *     ``justification`` is required by the contract AND by ``hr.reveal_ssn``; its minimum
+         *     length is the knob ``hr.domain_wide.break_glass_justification_min_chars``, enforced in
+         *     the service so the caller gets a 400 that names the shortfall rather than a refusal
+         *     envelope that only says "justification_required".
+         */
+        SsnRevealRequest: {
+            /**
+             * Organization Id
+             * Format: uuid
+             * @description §1.2 — must equal the X-Organization-Id header; a disagreement is 409.
+             */
+            organization_id: string;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Purpose
+             * @description Why this reveal is happening; lands in the audit row.
+             */
+            purpose: string;
+            /**
+             * Justification
+             * @description Free-text justification; audited verbatim. Minimum length is a knob.
+             */
+            justification: string;
+        };
+        /**
+         * SsnRevealResponse
+         * @description The value, once. Served with ``Cache-Control: no-store`` and never logged.
+         */
+        SsnRevealResponse: {
+            /** Ssn */
+            ssn: string;
+            /**
+             * Revealed At
+             * Format: date-time
+             */
+            revealed_at: string;
+            /**
+             * Audit Id
+             * Format: uuid
+             * @description The hr.access_audit row hr.reveal_ssn already wrote.
+             */
+            audit_id: string;
+        };
+        /**
          * StagePipeConfig
          * @description How one stage should be carried.
          */
@@ -63012,6 +64829,42 @@ export interface components {
             message: string;
             /** Code */
             code?: string | null;
+        };
+        /**
+         * SubjectRef
+         * @description The entity token + id a calculation is *about*.
+         *
+         *     🚨 **Never a bare person** (AR 1.1). A subject is an employment, a position assignment, a
+         *     workweek, a ledger row or a schedule change — ``hr_employee`` is not a legal value here.
+         */
+        SubjectRef: {
+            /**
+             * Type
+             * @description Entity token, e.g. `hr_workweek`. Never `hr_employee`.
+             */
+            type: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /**
+         * SubjectRefBody
+         * @description §3.1 — a subject is never ``hr_employee``.
+         *
+         *     An employment, a position assignment, a workweek, a ledger row or a schedule change (AR 1.1).
+         *     Keying a consequential record on the bare person loses the employment spell, the assignment
+         *     and the effective date in one move.
+         */
+        SubjectRefBody: {
+            /** Type */
+            type: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
         };
         /**
          * SuggestRequest
@@ -64212,6 +66065,41 @@ export interface components {
             body: string;
             /** Label */
             label?: string | null;
+        };
+        /**
+         * TimesheetExportBody
+         * @description E-21. Writes ``hr.access_audit action='export'`` and creates **no** ``hr.payroll_export``
+         *     row — conflating the two would let a report supersede a payroll file.
+         */
+        TimesheetExportBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Pay Period Id */
+            pay_period_id?: string | null;
+            /** Employment Ids */
+            employment_ids?: string[] | null;
+            /** From */
+            from?: string | null;
+            /** To */
+            to?: string | null;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "pdf" | "csv";
         };
         /** ToolCallPart */
         ToolCallPart: {
@@ -67964,6 +69852,73 @@ export interface components {
             /** Next Level */
             next_level?: (1 | 2 | 3 | 4) | null;
         };
+        /**
+         * VerificationLetterGenerateRequest
+         * @description Body of the letter-generation act (SPEC-EMPLOYEES §4.9).
+         *
+         *     ``includes_compensation`` defaults to ``false`` in the frozen stub. Setting it true on
+         *     a request whose ``employee_consent_at`` is null is **403 hr_verification_consent_missing**
+         *     — checked in the service, not left to the DB CHECK, so the refusal is named.
+         */
+        VerificationLetterGenerateRequest: {
+            /**
+             * Organization Id
+             * Format: uuid
+             * @description §1.2 — must equal the X-Organization-Id header; a disagreement is 409.
+             */
+            organization_id: string;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Includes Compensation
+             * @description Assert pay in the letter. Requires recorded employee consent.
+             * @default false
+             */
+            includes_compensation?: boolean;
+            /**
+             * Recipient
+             * @description Who the letter is addressed to; frozen into the snapshot verbatim.
+             */
+            recipient?: string | null;
+        };
+        /**
+         * VerificationLetterGenerateResponse
+         * @description What was asserted, and the artifact that asserts it.
+         *
+         *     ``snapshot`` is the frozen assertion written to
+         *     ``hr.verification_letter_request.snapshot``. It is genuinely free-form — the letter's
+         *     fact set grows with the spec — so it is typed ``JsonValue``, the sanctioned shape for
+         *     a per-request-varying JSON blob.
+         */
+        VerificationLetterGenerateResponse: {
+            /**
+             * Letter Id
+             * Format: uuid
+             */
+            letter_id: string;
+            /**
+             * Artifact File Id
+             * Format: uuid
+             */
+            artifact_file_id: string;
+            /** Snapshot */
+            snapshot: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Issued At
+             * Format: date-time
+             */
+            issued_at: string;
+        };
         /** VerifyAddressRequest */
         VerifyAddressRequest: {
             /**
@@ -69092,6 +71047,21 @@ export interface components {
             /** Expected Updated At */
             expected_updated_at?: string | null;
         };
+        /**
+         * WrittenRefs
+         * @description What a calculation actually persisted.
+         *
+         *     **Empty on every prospective call** — that emptiness is the machine-checkable form of
+         *     "this result is not evidence" (SPEC-CONTRACTS §3.1 invariant 5).
+         */
+        WrittenRefs: {
+            /** Work Interval Ids */
+            work_interval_ids?: string[];
+            /** Workweek Id */
+            workweek_id?: string | null;
+            /** Leave Ledger Ids */
+            leave_ledger_ids?: string[];
+        };
         /** YieldBreachOut */
         YieldBreachOut: {
             /** Producer Key */
@@ -70106,6 +72076,64 @@ export interface components {
              * @default 14
              */
             backfill_days?: number;
+        };
+        /**
+         * AsyncAccepted
+         * @description The 202 body. Not a new envelope — the runtime spine's existing surfaces, named.
+         *
+         *     §1.5 deleted an earlier draft's ``GET /hr/jobs/{job_id}``: ``runtime.work_item`` is the
+         *     canonical durable queue and its own FEATURE.md says plainly *"No second job table or
+         *     lifecycle exists."*
+         */
+        aidream__services__hr__exports__models__AsyncAccepted: {
+            /** Request Id */
+            request_id: string;
+            /** Execution Id */
+            execution_id: string;
+            /**
+             * Status
+             * @default queued
+             * @constant
+             */
+            status?: "queued";
+            /** Poll */
+            poll: string;
+            /** Events */
+            events: string;
+            /**
+             * Submitted At
+             * Format: date-time
+             */
+            submitted_at: string;
+        };
+        /**
+         * AsyncAccepted
+         * @description The 202 body for every async HR endpoint.
+         *
+         *     🚨 **HR creates no job table, no job status endpoint and no worker of its own**
+         *     (SPEC-CONTRACTS §1.5). This is the runtime spine's own reference; ``poll`` and ``events``
+         *     point at `/runtime/*` endpoints that already exist.
+         */
+        aidream__services__hr__time__models__AsyncAccepted: {
+            /** Request Id */
+            request_id: string;
+            /** Execution Id */
+            execution_id: string;
+            /**
+             * Status
+             * @default queued
+             * @constant
+             */
+            status?: "queued";
+            /** Poll */
+            poll: string;
+            /** Events */
+            events: string;
+            /**
+             * Submitted At
+             * Format: date-time
+             */
+            submitted_at: string;
         };
         /** MentionRow */
         aidream__services__knowledge_graph__graph__MentionRow: {
@@ -78399,6 +80427,785 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthenticatorEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_identity_ssn_reveal: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SsnRevealRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SsnRevealResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_verification_letters_generate: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                letter_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerificationLetterGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VerificationLetterGenerateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_exports_formats_list: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportFormatsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_exports_payroll_preview: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollExportPreviewBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollExportPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_exports_payroll_create: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayrollExportBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__hr__exports__models__AsyncAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_exports_timesheet_create: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimesheetExportBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__hr__exports__models__AsyncAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_exports_get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollExportView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_exports_artifact_get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportArtifactEnvelope"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_exports_acknowledge: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportAcknowledgeBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportAcknowledgeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_exports_fail: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportFailBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExportFailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_exports_supersede: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportSupersedeBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__hr__exports__models__AsyncAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_providers_bindings_list: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                seam: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderBindingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_providers_dispatch: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                seam: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderDispatchBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__hr__exports__models__AsyncAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_providers_results_record: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                seam: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderResultsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderResultsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_providers_sync: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                seam: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderSyncBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__hr__exports__models__AsyncAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_hooks_provider_webhook: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Signature"?: string | null;
+                "X-Signature-Timestamp"?: string | null;
+            };
+            path: {
+                seam: string;
+                provider_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderWebhookAck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_calc_overtime: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalcRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OvertimeCalcResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_calc_break_premium: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalcRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BreakPremiumCalcResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_time_overtime_evaluate: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OvertimeEvaluateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OvertimeEvaluateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_time_recompute: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Idempotency-Key": string;
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecomputeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__hr__time__models__AsyncAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_time_exceptions_scan: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Idempotency-Key": string;
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExceptionScanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__hr__time__models__AsyncAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_time_overtime_scan: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Idempotency-Key": string;
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OvertimeScanRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__hr__time__models__AsyncAccepted"];
                 };
             };
             /** @description Validation Error */
