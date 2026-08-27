@@ -525,43 +525,85 @@ const ACTOR_ROLE: Record<string, string> = {
  * is honest and vastly better than "Someone". Owed by the door: the actor's display name.
  */
 function mapEditHistory(rows: Live[]): Timesheet["editHistory"] {
-  return rows
-    /*
-     * The read returns EVERY punch in the period, not only edited ones. An audit table listing
-     * untouched punches as "changes" would bury the one real correction — so a row qualifies only
-     * when it carries evidence of a human edit.
-     */
-    .filter((h) => nstr(h.voidedAt) !== null || nstr(h.enteredReason) !== null)
-    .map((h) => {
-      const actor = obj(h.actor);
-      const actorType = str(actor.actorType, "");
-      const original = obj(h.originalValues);
-      const tz = str(h.tz, "UTC");
-      const voided = nstr(h.voidedAt);
+  /*
+   * The read returns EVERY punch in the period. A row qualifies as an EDIT only if it carries
+   * evidence of one — otherwise untouched punches would be listed as "changes" and bury the real
+   * correction.
+   */
+  const edits = rows.filter(
+    (h) => nstr(h.voidedAt) !== null || nstr(h.enteredReason) !== null,
+  );
 
-      // The pre-edit instant, verbatim out of `original_values`. This is the "Was" column.
-      const originalAt = nstr(original.occurred_at) ?? nstr(original.occurredAt);
-      const rates = arr(h.rateAtTime);
+  /*
+   * 🚨 A CORRECTION IS ONE ACTION, SO IT IS ONE ROW (§4.1).
+   *
+   * void + replacement is a single reasoned act. Rendered as two rows it read as a defect to a
+   * verifier — and fairly so: the void half has no "Became" and no rate, because a void does not
+   * become anything, so its columns showed "—" and looked like missing data. Worse, it invites an
+   * employee to think two separate things happened to their timecard.
+   *
+   * So the pair is joined on `voided_by_punch_id` and emitted once: WAS from the voided punch's own
+   * time, BECAME from the replacement's, and the rate and reason from the replacement, which is the
+   * row that survived. An unpaired void or entry still renders alone — a void with no replacement
+   * is a real and different event, and hiding it would be the destroyed record §2.5 forbids.
+   */
+  const byId = new Map<string, Live>();
+  for (const h of edits) {
+    const id = nstr(h.punchId);
+    if (id) byId.set(id, h);
+  }
+  const consumedReplacements = new Set<string>();
+  for (const h of edits) {
+    const replacementId = nstr(h.voidedByPunchId);
+    if (replacementId && byId.has(replacementId)) consumedReplacements.add(replacementId);
+  }
+
+  return edits
+    .filter((h) => {
+      const id = nstr(h.punchId);
+      return !(id && consumedReplacements.has(id));
+    })
+    .map((h) => {
+      const replacementId = nstr(h.voidedByPunchId);
+      const replacement = replacementId ? byId.get(replacementId) : undefined;
+      const source = replacement ?? h;
+
+      const actor = obj(source.actor);
+      const actorType = str(actor.actorType, "");
+      const tz = str(h.tz, "UTC");
+      const voidedAt = nstr(h.voidedAt);
+
+      // WAS: the pre-edit instant. On a paired correction that is the voided punch's own time.
+      const originalAt =
+        nstr(obj(source.originalValues).occurred_at) ??
+        nstr(obj(source.originalValues).occurredAt) ??
+        (replacement ? str(h.occurredAt) : null);
+
+      // BECAME: only where something replaced it. A bare void genuinely has no new value.
+      const becameAt = replacement ? str(replacement.occurredAt) : null;
+
+      const rates = arr(source.rateAtTime);
 
       return {
-        at: voided ?? str(h.occurredAt),
+        at: voidedAt ?? str(h.occurredAt),
         /*
-         * 🚨 THE ACTOR'S NAME WHEN THE DOOR SERVES IT, THE ROLE WHEN IT DOES NOT.
-         * `actor_name` is suppression-aware: `hr._subject_display_name` returns NULL for a viewer
-         * who may not see that person, and NULL deliberately keeps the role wording. So the degrade
-         * path is not a fallback for missing data — it is the privacy answer, and it must stay.
+         * 🚨 THE ACTOR'S NAME WHEN SERVED, THE ROLE WHEN NOT.
+         * `hr._subject_display_name` is suppression-aware and returns NULL for a viewer who may not
+         * see that person, so the role wording is the PRIVACY answer, not a stopgap. Keep it.
          */
         byName:
           nstr(actor.actorName) ??
           ACTOR_ROLE[actorType] ??
           (actorType ? humanizeActor(actorType) : "Someone"),
-        // The employee's own words are never here; a correction reason is the manager's.
-        reason: str(h.enteredReason) || str(h.voidedReason) || "No reason was recorded.",
+        reason:
+          str(source.enteredReason) ||
+          str(h.voidedReason) ||
+          "No reason was recorded.",
         field: str(h.punchKind).replace(/_/g, " ") || "punch",
-        originalValue: originalAt ? formatDateTimeInTz(originalAt, tz) : voided ? formatDateTimeInTz(str(h.occurredAt), tz) : null,
-        newValue: voided ? null : formatDateTimeInTz(str(h.occurredAt), tz),
-        voidedPunchId: nstr(h.voidedByPunchId),
-        replacementPunchId: nstr(h.punchId),
+        originalValue: originalAt ? formatDateTimeInTz(originalAt, tz) : null,
+        newValue: becameAt ? formatDateTimeInTz(becameAt, tz) : null,
+        voidedPunchId: nstr(h.punchId),
+        replacementPunchId: replacementId,
         rateAtTime: rates.length > 0 ? nnum(rates[0]) : null,
       };
     });
