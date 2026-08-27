@@ -46,7 +46,10 @@ Answer all of these:
 5. Is developer/sandbox access distinct from production access?
 6. Are fees, contracts, billing, legal-entity verification, business verification, compliance or
    regulated-data attestations, customer sponsorship, DNS, app publication, or quotas involved?
-7. What account/role is required, and can the dedicated `info@aimatrx.com` profile use Google SSO?
+7. What account/role is required, and can the AI Matrx-owned `info@aimatrx.com` identity use Google
+   SSO inside the separate Codex in-app Browser? If not, what exact password, mailbox verification,
+   MFA, Vault metadata, recovery, and grouped action-time confirmation plan lets the executing agent
+   complete the account without returning clerical work to Arman?
 8. Which redirects, domains, privacy/terms/support URLs, screenshots, videos, test credentials, or
    reviewer instructions are needed?
 9. What confirmation/case ID will result, how long does the provider say review takes, where is

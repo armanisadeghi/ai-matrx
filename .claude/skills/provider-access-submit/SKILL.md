@@ -37,6 +37,12 @@ If a precondition fails, update the exact blocker and stop before changing provi
   agent can operate.
 - Do not set `Phase: blocked_owner` merely because confirmation is required. Use it only when the
   remaining action is technically or legally impossible for the agent.
+- Claiming a campaign means owning its account access, registration, verification email, credential
+  custody, connection, proof, reconciliation, and follow-up. Never finish at an account chooser,
+  ordinary SSO screen, verification link, consent page, credential copy screen, or Vault-save step.
+- Use one grouped interruption packet for up to five imminent provider actions. Name the exact
+  provider, destination account, data or credential transmitted, persistent access created, and
+  safe proof operation. After approval, execute the entire packet yourself.
 - Convert recurring choices into policy. Before asking Arman about a choice that could recur for
   another provider, workspace, account, or agent, propose the smallest durable rule: “May I add this
   rule to the provider-access policy: `<rule>`?” If approved, update the canonical provider-access
@@ -51,7 +57,9 @@ If a precondition fails, update the exact blocker and stop before changing provi
 
 - Exhaust existing CLI/API credentials, Vault entries, service identities, and authenticated browser
   sessions before asking Arman to log in.
-- Use the dedicated `info@aimatrx.com` Chrome profile and Google SSO where supported.
+- Use only Codex's separate in-app Browser for UI work. Use `info@aimatrx.com` as the default
+  AI Matrx-owned provider identity and Google SSO where supported; never borrow Arman's Chrome tabs,
+  profile, cookies, or saved passwords.
 - Continue through ordinary login, account choosers, existing-session SSO, OAuth consent, and
   email-link flows the agent can access. If policy requires confirmation before identity disclosure
   or a persistent grant, obtain permission and then complete the step yourself.
@@ -60,6 +68,14 @@ If a precondition fails, update the exact blocker and stop before changing provi
   arguments, logs, screenshots, or Git.
 - Put passwords, API keys, client secrets, TOTP/recovery material, and protected files into the
   AI Matrx organization Vault through the normal product/service surface.
+- When a new password account is required, generate one unique strong password without printing it,
+  include its transmission, final account creation, and Vault save in the grouped action-time
+  confirmation, then create and verify the account yourself. Store non-secret metadata for provider,
+  login URL, account identity, organization/workspace, authentication and MFA methods, owning task,
+  creation date, and recovery/revocation location. Prefer TOTP over SMS/push when optional and keep
+  the seed plus recovery codes in the Vault; never weaken existing MFA.
+- Retrieve accessible magic links, verification emails, and one-time codes through the approved
+  mailbox/tool path. They are agent work, not owner blockers.
 - Invoke `secret-location-audit` after creating, rotating, or retiring a credential.
 
 ## Execution
