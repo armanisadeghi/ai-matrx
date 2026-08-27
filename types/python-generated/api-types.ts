@@ -5234,6 +5234,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/google-integrations/calendar/agenda": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Google Calendar Agenda */
+        post: operations["google_calendar_agenda_google_integrations_calendar_agenda_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/tasks/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Google Tasks Preview */
+        post: operations["google_tasks_preview_google_integrations_tasks_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/youtube/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Youtube Analytics Preview */
+        post: operations["youtube_analytics_preview_google_integrations_youtube_analytics_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/tag-manager/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Google Tag Manager Inventory */
+        post: operations["google_tag_manager_inventory_google_integrations_tag_manager_inventory_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-integrations/internal/credential": {
         parameters: {
             query?: never;
@@ -30249,6 +30317,58 @@ export interface components {
              */
             jurisdiction_key?: string | null;
         };
+        /** CalendarAgendaEvent */
+        CalendarAgendaEvent: {
+            /** Event Id */
+            event_id: string;
+            /** Title */
+            title: string;
+            /** Starts At */
+            starts_at: string | null;
+            /** Ends At */
+            ends_at: string | null;
+            /** All Day */
+            all_day: boolean;
+            /** Status */
+            status: string | null;
+            /** Location */
+            location: string | null;
+            /** Html Url */
+            html_url: string | null;
+        };
+        /** CalendarAgendaPreview */
+        CalendarAgendaPreview: {
+            /**
+             * Calendar
+             * @default primary
+             * @constant
+             */
+            calendar?: "primary";
+            /** Window Start */
+            window_start: string;
+            /** Window End */
+            window_end: string;
+            /** Events */
+            events: components["schemas"]["CalendarAgendaEvent"][];
+            /**
+             * Access Mode
+             * @default read_only
+             * @constant
+             */
+            access_mode?: "read_only";
+        };
+        /** CalendarAgendaRequest */
+        CalendarAgendaRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
+            /**
+             * Days
+             * @default 14
+             */
+            days?: number;
+        };
         /**
          * Calibration
          * @description What the ledger says about one judge (optionally one subject class).
@@ -43137,6 +43257,13 @@ export interface components {
             /** Client Secret */
             client_secret: string;
         };
+        /** GoogleConnectionReadRequest */
+        GoogleConnectionReadRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
         /** GoogleDisconnectRequest */
         GoogleDisconnectRequest: {
             /** Connection Id */
@@ -43232,6 +43359,45 @@ export interface components {
             longitude?: number | null;
             /** Raw Payload Id */
             raw_payload_id?: string | null;
+        };
+        /** GoogleTaskItem */
+        GoogleTaskItem: {
+            /** Task Id */
+            task_id: string;
+            /** Title */
+            title: string;
+            /** Notes */
+            notes: string | null;
+            /** Due At */
+            due_at: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /** Status */
+            status: string | null;
+            /** Parent Task Id */
+            parent_task_id: string | null;
+            /** Position */
+            position: string | null;
+        };
+        /** GoogleTaskListPreview */
+        GoogleTaskListPreview: {
+            /** Task List Id */
+            task_list_id: string;
+            /** Title */
+            title: string;
+            /** Tasks */
+            tasks: components["schemas"]["GoogleTaskItem"][];
+        };
+        /** GoogleTasksPreview */
+        GoogleTasksPreview: {
+            /** Task Lists */
+            task_lists: components["schemas"]["GoogleTaskListPreview"][];
+            /**
+             * Access Mode
+             * @default read_only
+             * @constant
+             */
+            access_mode?: "read_only";
         };
         /** GrantPermissionRequest */
         GrantPermissionRequest: {
@@ -65709,6 +65875,46 @@ export interface components {
              */
             search_results_text?: string;
         };
+        /** TagManagerAccount */
+        TagManagerAccount: {
+            /** Account Id */
+            account_id: string;
+            /** Name */
+            name: string;
+            /** Containers */
+            containers: components["schemas"]["TagManagerContainer"][];
+        };
+        /** TagManagerContainer */
+        TagManagerContainer: {
+            /** Container Id */
+            container_id: string;
+            /** Name */
+            name: string;
+            /** Public Id */
+            public_id: string | null;
+            /** Usage Context */
+            usage_context: string[];
+            /** Workspaces */
+            workspaces: components["schemas"]["TagManagerWorkspace"][];
+        };
+        /** TagManagerInventory */
+        TagManagerInventory: {
+            /** Accounts */
+            accounts: components["schemas"]["TagManagerAccount"][];
+            /**
+             * Access Mode
+             * @default read_only
+             * @constant
+             */
+            access_mode?: "read_only";
+        };
+        /** TagManagerWorkspace */
+        TagManagerWorkspace: {
+            /** Workspace Id */
+            workspace_id: string;
+            /** Name */
+            name: string;
+        };
         /** TagResponse */
         TagResponse: {
             /** Id */
@@ -71285,6 +71491,64 @@ export interface components {
              * @default 1
              */
             no_signal_min_cost_usd?: number;
+        };
+        /** YouTubeAnalyticsDay */
+        YouTubeAnalyticsDay: {
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Views */
+            views: number;
+            /** Estimated Minutes Watched */
+            estimated_minutes_watched: number;
+            /** Average View Duration Seconds */
+            average_view_duration_seconds: number;
+            /** Subscribers Gained */
+            subscribers_gained: number;
+        };
+        /** YouTubeAnalyticsPreview */
+        YouTubeAnalyticsPreview: {
+            /** Channel Id */
+            channel_id: string;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Days */
+            days: components["schemas"]["YouTubeAnalyticsDay"][];
+            /**
+             * Access Mode
+             * @default read_only_non_monetary
+             * @constant
+             */
+            access_mode?: "read_only_non_monetary";
+        };
+        /** YouTubeAnalyticsRequest */
+        YouTubeAnalyticsRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Channel Id */
+            channel_id: string;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
         };
         /** YouTubeChannelPreview */
         YouTubeChannelPreview: {
@@ -81718,6 +81982,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoogleAdsReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_calendar_agenda_google_integrations_calendar_agenda_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarAgendaRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarAgendaPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_tasks_preview_google_integrations_tasks_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleConnectionReadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleTasksPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    youtube_analytics_preview_google_integrations_youtube_analytics_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubeAnalyticsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeAnalyticsPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_tag_manager_inventory_google_integrations_tag_manager_inventory_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleConnectionReadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagManagerInventory"];
                 };
             };
             /** @description Validation Error */

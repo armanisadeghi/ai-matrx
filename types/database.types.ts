@@ -42872,6 +42872,7 @@ export type Database = {
           p_action: string
           p_actor_employment_id?: string
           p_actor_type?: string
+          p_actor_user_id?: string
           p_basis: string
           p_denial_reason?: string
           p_field_key?: string

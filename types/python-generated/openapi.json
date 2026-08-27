@@ -13505,6 +13505,170 @@
         }
       }
     },
+    "/google-integrations/calendar/agenda": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Calendar Agenda",
+        "operationId": "google_calendar_agenda_google_integrations_calendar_agenda_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalendarAgendaRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarAgendaPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/tasks/preview": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Tasks Preview",
+        "operationId": "google_tasks_preview_google_integrations_tasks_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleConnectionReadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleTasksPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/youtube/analytics": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Youtube Analytics Preview",
+        "operationId": "youtube_analytics_preview_google_integrations_youtube_analytics_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/YouTubeAnalyticsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YouTubeAnalyticsPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/tag-manager/inventory": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Tag Manager Inventory",
+        "operationId": "google_tag_manager_inventory_google_integrations_tag_manager_inventory_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleConnectionReadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TagManagerInventory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-integrations/internal/credential": {
       "get": {
         "tags": [
@@ -77765,6 +77929,159 @@
         "title": "CalcRequest",
         "description": "The one request shape every ``/hr/calc/*`` endpoint shares.\n\n``as_of`` is **the event date, never ``now()``** (SPEC-CONTRACTS §1.6 law 1), and\n``jurisdiction_key`` may be supplied **only** in prospective mode for a record that does not\nyet exist (law 2) — a validator enforces that here rather than trusting the caller."
       },
+      "CalendarAgendaEvent": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "starts_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starts At"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "all_day": {
+            "type": "boolean",
+            "title": "All Day"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "html_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Html Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "title",
+          "starts_at",
+          "ends_at",
+          "all_day",
+          "status",
+          "location",
+          "html_url"
+        ],
+        "title": "CalendarAgendaEvent"
+      },
+      "CalendarAgendaPreview": {
+        "properties": {
+          "calendar": {
+            "type": "string",
+            "const": "primary",
+            "title": "Calendar",
+            "default": "primary"
+          },
+          "window_start": {
+            "type": "string",
+            "title": "Window Start"
+          },
+          "window_end": {
+            "type": "string",
+            "title": "Window End"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/CalendarAgendaEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only",
+            "title": "Access Mode",
+            "default": "read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_start",
+          "window_end",
+          "events"
+        ],
+        "title": "CalendarAgendaPreview"
+      },
+      "CalendarAgendaRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "days": {
+            "type": "integer",
+            "maximum": 31,
+            "minimum": 1,
+            "title": "Days",
+            "default": 14
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "CalendarAgendaRequest"
+      },
       "Calibration": {
         "properties": {
           "judge_key": {
@@ -112134,6 +112451,31 @@
         ],
         "title": "GoogleConnectionCredentialResponse"
       },
+      "GoogleConnectionReadRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "GoogleConnectionReadRequest"
+      },
       "GoogleDisconnectRequest": {
         "properties": {
           "connection_id": {
@@ -112468,6 +112810,144 @@
         ],
         "title": "GoogleListingSnapshot",
         "description": "Flat observed payload — the exact field names the FE NAP audit compares."
+      },
+      "GoogleTaskItem": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "parent_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Task Id"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "title",
+          "notes",
+          "due_at",
+          "completed_at",
+          "status",
+          "parent_task_id",
+          "position"
+        ],
+        "title": "GoogleTaskItem"
+      },
+      "GoogleTaskListPreview": {
+        "properties": {
+          "task_list_id": {
+            "type": "string",
+            "title": "Task List Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/GoogleTaskItem"
+            },
+            "type": "array",
+            "title": "Tasks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_list_id",
+          "title",
+          "tasks"
+        ],
+        "title": "GoogleTaskListPreview"
+      },
+      "GoogleTasksPreview": {
+        "properties": {
+          "task_lists": {
+            "items": {
+              "$ref": "#/components/schemas/GoogleTaskListPreview"
+            },
+            "type": "array",
+            "title": "Task Lists"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only",
+            "title": "Access Mode",
+            "default": "read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_lists"
+        ],
+        "title": "GoogleTasksPreview"
       },
       "GrantPermissionRequest": {
         "properties": {
@@ -168056,6 +168536,118 @@
         "title": "TagInputExport",
         "description": "The exact inputs the cross-cutting tag generator would receive, so a user\ncan run the agent manually (``GET /topics/{topic_id}/tag-input-export``)."
       },
+      "TagManagerAccount": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "title": "Account Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "containers": {
+            "items": {
+              "$ref": "#/components/schemas/TagManagerContainer"
+            },
+            "type": "array",
+            "title": "Containers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "name",
+          "containers"
+        ],
+        "title": "TagManagerAccount"
+      },
+      "TagManagerContainer": {
+        "properties": {
+          "container_id": {
+            "type": "string",
+            "title": "Container Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "public_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Id"
+          },
+          "usage_context": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Usage Context"
+          },
+          "workspaces": {
+            "items": {
+              "$ref": "#/components/schemas/TagManagerWorkspace"
+            },
+            "type": "array",
+            "title": "Workspaces"
+          }
+        },
+        "type": "object",
+        "required": [
+          "container_id",
+          "name",
+          "public_id",
+          "usage_context",
+          "workspaces"
+        ],
+        "title": "TagManagerContainer"
+      },
+      "TagManagerInventory": {
+        "properties": {
+          "accounts": {
+            "items": {
+              "$ref": "#/components/schemas/TagManagerAccount"
+            },
+            "type": "array",
+            "title": "Accounts"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only",
+            "title": "Access Mode",
+            "default": "read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accounts"
+        ],
+        "title": "TagManagerInventory"
+      },
+      "TagManagerWorkspace": {
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "title": "Workspace Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "workspace_id",
+          "name"
+        ],
+        "title": "TagManagerWorkspace"
+      },
       "TagResponse": {
         "properties": {
           "id": {
@@ -182350,6 +182942,126 @@
         "type": "object",
         "title": "YieldFloors",
         "description": "The thresholds the alarm uses, so the surface can show its own rules."
+      },
+      "YouTubeAnalyticsDay": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          },
+          "views": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Views"
+          },
+          "estimated_minutes_watched": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Estimated Minutes Watched"
+          },
+          "average_view_duration_seconds": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Average View Duration Seconds"
+          },
+          "subscribers_gained": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Subscribers Gained"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "views",
+          "estimated_minutes_watched",
+          "average_view_duration_seconds",
+          "subscribers_gained"
+        ],
+        "title": "YouTubeAnalyticsDay"
+      },
+      "YouTubeAnalyticsPreview": {
+        "properties": {
+          "channel_id": {
+            "type": "string",
+            "title": "Channel Id"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "days": {
+            "items": {
+              "$ref": "#/components/schemas/YouTubeAnalyticsDay"
+            },
+            "type": "array",
+            "title": "Days"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only_non_monetary",
+            "title": "Access Mode",
+            "default": "read_only_non_monetary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "channel_id",
+          "start_date",
+          "end_date",
+          "days"
+        ],
+        "title": "YouTubeAnalyticsPreview"
+      },
+      "YouTubeAnalyticsRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "channel_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Channel Id"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "channel_id",
+          "start_date",
+          "end_date"
+        ],
+        "title": "YouTubeAnalyticsRequest"
       },
       "YouTubeChannelPreview": {
         "properties": {
