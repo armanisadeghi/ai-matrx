@@ -22,7 +22,7 @@ import {
   type EntityListQuery as BrowseQuery,
   type EntityScopeCounts as BrowseScopeCounts,
 } from "@/lib/entity-list/types";
-import { scopeOrgId } from "@/lib/list-scope/types";
+import { LIST_SCOPE_KINDS, scopeOrgId } from "@/lib/list-scope/types";
 
 export interface AgentBrowsePage {
   rows: AgentBrowseRow[];
@@ -92,15 +92,12 @@ export async function fetchBrowseScopeCounts(
   const counts: BrowseScopeCounts = { byKind: {}, narrow: {} };
   for (const row of data ?? []) {
     const total = Number(row.total ?? 0);
-    const kind = row.scope;
-    if (
-      kind !== "mine" &&
-      kind !== "orgs" &&
-      kind !== "shared" &&
-      kind !== "public"
-    ) {
-      continue;
-    }
+    // Validate against the SHARED vocabulary, never a hand-listed subset. The
+    // hand-listed one silently dropped `system` the day the RPC learned it, so
+    // the new tab read a permanent "0" beside 400 rows — a scope the reader
+    // does not know about must be a loud omission, not a quiet zero.
+    const kind = LIST_SCOPE_KINDS.find((k) => k === row.scope);
+    if (!kind) continue;
     // A narrow_id means "one org/industry inside this scope"; no id means the
     // scope's own blended total.
     if (row.narrow_id) {

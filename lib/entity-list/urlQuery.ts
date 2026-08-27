@@ -25,6 +25,7 @@
 
 import type { UrlHistoryMode } from "@/lib/url-state/useUrlState";
 import {
+  LIST_SCOPE_KINDS,
   makeScope,
   scopeKey,
   type ListScope,
@@ -45,20 +46,11 @@ export const ENTITY_LIST_URL_PARAMS = {
 } as const;
 
 const ARCHIVED_VALUES: ArchivedFilter[] = ["active", "archived", "all"];
-const SCOPE_KINDS: ListScopeKind[] = [
-  "mine",
-  "orgs",
-  "shared",
-  "industry",
-  "public",
-  "system",
-];
-
 /** `mine` | `shared` | `orgs` | `orgs:<uuid>` | `industry:<uuid>` | `system`. */
 function parseScope(raw: string | null, fallback: ListScope): ListScope {
   if (!raw) return fallback;
   const [kind, narrowId] = raw.split(":", 2);
-  if (!SCOPE_KINDS.includes(kind as ListScopeKind)) return fallback;
+  if (!LIST_SCOPE_KINDS.includes(kind as ListScopeKind)) return fallback;
   return makeScope(kind as ListScopeKind, narrowId || null);
 }
 

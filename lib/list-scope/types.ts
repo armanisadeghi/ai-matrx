@@ -60,6 +60,23 @@ export type ListScope =
 
 export const DEFAULT_LIST_SCOPE: ListScope = { kind: "mine" };
 
+/**
+ * The vocabulary as a runtime value — for validating a scope string that
+ * arrives from outside TypeScript (a counts RPC row, a URL parameter).
+ *
+ * Every such check reads THIS. A hand-listed subset at a call site is how the
+ * `system` scope came back from the server with a real total and was silently
+ * dropped on the way to its tab.
+ */
+export const LIST_SCOPE_KINDS: readonly ListScopeKind[] = [
+  "mine",
+  "orgs",
+  "shared",
+  "industry",
+  "public",
+  "system",
+];
+
 // ── Narrowing helpers ───────────────────────────────────────────────────────
 
 export function isMineScope(
