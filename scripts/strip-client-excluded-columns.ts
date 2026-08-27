@@ -39,13 +39,17 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { config as loadEnv } from "dotenv";
 
 loadEnv({ path: ".env.local" });
 loadEnv({ path: ".env" });
 
-const TYPES_PATH = join(__dirname, "..", "types", "database.types.ts");
+// Target defaults to the real file, but `pnpm db-types` passes the staging temp file as argv[2]
+// so the committed types are never left half-written. See package.json → db-types.
+const TYPES_PATH = process.argv[2]
+    ? resolve(process.argv[2])
+    : join(__dirname, "..", "types", "database.types.ts");
 
 /**
  * The schemas whose excluded columns are stripped today. See the scope note above: this is an

@@ -29,4 +29,6 @@ patch_file() {
   echo "✅ Patched Json type in $FILE"
 }
 
-patch_file "types/database.types.ts"
+# Target defaults to the real file, but `pnpm db-types` passes the staging temp file so the
+# committed types are never left half-written. See package.json → db-types.
+patch_file "${1:-types/database.types.ts}"
