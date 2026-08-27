@@ -43,6 +43,8 @@ export interface PeriodTransitionBarProps {
   period: PayPeriodRow;
   role: PeriodViewerRole;
   allowPeriodReopen: boolean;
+  /** The server's reopen wording. Rendered verbatim when present; ours is the fallback. */
+  reopenNotice?: string | null;
   todayLocalDate: string;
   mockCase?: HrFixtureCase;
   onTransitioned: () => void;
@@ -52,6 +54,7 @@ export function PeriodTransitionBar({
   period,
   role,
   allowPeriodReopen,
+  reopenNotice,
   todayLocalDate,
   mockCase,
   onTransitioned,
@@ -159,7 +162,13 @@ export function PeriodTransitionBar({
           }}
           title={reasonFor.label}
           // The reopen notice, in plain words, BEFORE the reason is typed.
-          description={reasonFor.to === "reopened" ? REOPEN_NOTICE : reasonFor.consequence}
+          description={
+            reasonFor.to === "reopened"
+              ? // 🚨 The server's sentence wins. Both say the same thing; having ONE authority for
+                // the wording is what stops the two drifting apart.
+                (reopenNotice ?? REOPEN_NOTICE)
+              : reasonFor.consequence
+          }
           multiline
           rows={3}
           placeholder="Why is this period being reopened?"

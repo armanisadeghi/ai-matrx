@@ -39,6 +39,8 @@ export interface PeriodStatePanelProps {
   period: PayPeriodRow;
   role: PeriodViewerRole;
   allowPeriodReopen: boolean;
+  /** The server's own reopen wording, preferred over the client constant when present. */
+  reopenNotice?: string | null;
   todayLocalDate: string;
   mockCase?: HrFixtureCase;
   onTransitioned: () => void;
@@ -48,6 +50,7 @@ export function PeriodStatePanel({
   period,
   role,
   allowPeriodReopen,
+  reopenNotice,
   todayLocalDate,
   mockCase,
   onTransitioned,
@@ -123,6 +126,7 @@ export function PeriodStatePanel({
           period={period}
           role={role}
           allowPeriodReopen={allowPeriodReopen}
+          reopenNotice={reopenNotice}
           todayLocalDate={todayLocalDate}
           mockCase={mockCase}
           onTransitioned={onTransitioned}

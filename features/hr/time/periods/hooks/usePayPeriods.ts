@@ -20,6 +20,9 @@ import {
   getPayPeriod,
   listPayPeriods,
   listTimeAdjustments,
+  // The DETAIL shape carries four members the list read does not: the server-authored boundary and
+  // reopen sentences, the resolved allow_period_reopen knob, and the adjustment count.
+  type PayPeriodDetail,
   type PayPeriodListFilters,
   type TimeAdjustmentRow,
 } from "../api/periodReads";
@@ -92,7 +95,7 @@ export function usePayPeriods(
 }
 
 export interface UsePayPeriodResult {
-  period: PayPeriodRow | null;
+  period: PayPeriodDetail | null;
   isLoading: boolean;
   failure: PeriodFailure | null;
   reload: () => void;
@@ -103,7 +106,7 @@ export function usePayPeriod(
   payPeriodId: string | null,
   mockCase?: HrFixtureCase,
 ): UsePayPeriodResult {
-  const [period, setPeriod] = useState<PayPeriodRow | null>(null);
+  const [period, setPeriod] = useState<PayPeriodDetail | null>(null);
   const [failure, setFailure] = useState<PeriodFailure | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState(0);

@@ -13,8 +13,9 @@
  * links here instead. `hr.time_adjustment_create` refuses unless the original period is `locked` or
  * `closed` — before that, the fix is a punch edit, not an adjustment.
  *
- * 🚨 MONEY IS ABSENT, NOT ZERO, when a contributing rule is advisory. `amountWithheld` sits beside
- * `amountDelta` for exactly that reason and this component prints a sentence, never a `—` or a `$0`.
+ * 🚨 MONEY IS ABSENT, NOT ZERO, when a contributing rule is advisory. The server's flag is
+ * `amount_pending` (read from `calc.amount_pending`), and it sits beside `amountDelta` for exactly
+ * that reason: this component prints a SENTENCE, never a `—` and never a `$0`.
  *
  * NO CLIENT COMPUTES ANYTHING: `hoursDelta` and `amountDelta` arrive computed.
  */

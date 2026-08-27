@@ -20,7 +20,7 @@ import { ShieldAlert } from "lucide-react";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { formatHours, formatLocalDate } from "../../shared/format";
-import type { OvertimePreapprovalRow } from "../../api/types";
+import type { OvertimeRequestRow } from "../api/overtimeReads";
 import {
   OT_STATE_LABEL,
   UNAPPROVED_OT_IS_PAID,
@@ -35,7 +35,7 @@ import { OvertimeStateChip } from "./OvertimeStateChip";
  * management situation from one that was simply denied, and §4.6 requires the difference to be
  * visible.
  */
-export function displayState(row: OvertimePreapprovalRow): OvertimeQueueState {
+export function displayState(row: OvertimeRequestRow): OvertimeQueueState {
   if (row.unapprovedOtFlagged) return "worked-unapproved";
   return row.state;
 }
@@ -51,15 +51,15 @@ const FILTERABLE_STATES: OvertimeQueueState[] = [
 ];
 
 export interface OvertimeQueueTableProps {
-  rows: OvertimePreapprovalRow[];
+  rows: OvertimeRequestRow[];
   isLoading: boolean;
-  hrefFor: (row: OvertimePreapprovalRow) => string;
+  hrefFor: (row: OvertimeRequestRow) => string;
 }
 
 export function OvertimeQueueTable({ rows, isLoading, hrefFor }: OvertimeQueueTableProps) {
   const router = useRouter();
 
-  const columns: MatrxColumnDef<OvertimePreapprovalRow>[] = [
+  const columns: MatrxColumnDef<OvertimeRequestRow>[] = [
     {
       id: "employeeDisplayName",
       accessorKey: "employeeDisplayName",
@@ -72,7 +72,7 @@ export function OvertimeQueueTable({ rows, isLoading, hrefFor }: OvertimeQueueTa
     },
     {
       id: "window",
-      accessorFn: (row) => (row as OvertimePreapprovalRow).coversFrom,
+      accessorFn: (row) => (row as OvertimeRequestRow).coversFrom,
       header: "Window",
       cell: (row) => (
         <span className="whitespace-nowrap text-muted-foreground">
@@ -83,7 +83,7 @@ export function OvertimeQueueTable({ rows, isLoading, hrefFor }: OvertimeQueueTa
     },
     {
       id: "state",
-      accessorFn: (row) => displayState(row as OvertimePreapprovalRow),
+      accessorFn: (row) => displayState(row as OvertimeRequestRow),
       header: "State",
       filter: "select",
       filterOptions: FILTERABLE_STATES.map((s) => ({ value: s, label: OT_STATE_LABEL[s] })),
@@ -145,7 +145,7 @@ export function OvertimeQueueTable({ rows, isLoading, hrefFor }: OvertimeQueueTa
     },
     {
       id: "thresholdAxes",
-      accessorFn: (row) => (row as OvertimePreapprovalRow).thresholdAxes.join(", "),
+      accessorFn: (row) => (row as OvertimeRequestRow).thresholdAxes.join(", "),
       header: "Thresholds",
       width: 200,
       mobileHidden: true,
@@ -160,7 +160,7 @@ export function OvertimeQueueTable({ rows, isLoading, hrefFor }: OvertimeQueueTa
   ];
 
   return (
-    <MatrxDataTable<OvertimePreapprovalRow>
+    <MatrxDataTable<OvertimeRequestRow>
       data={rows}
       columns={columns}
       getRowId={(row) => row.id}

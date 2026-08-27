@@ -34,7 +34,7 @@ import { toast } from "@/lib/toast";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { formatHours, formatLocalDate } from "../../shared/format";
 import { HrRpcError } from "../../api/rpc";
-import type { OvertimePreapprovalRow } from "../../api/types";
+import type { OvertimeRequestRow } from "../api/overtimeReads";
 import { decideOvertimePreapproval } from "../api/overtimeReads";
 import type { OvertimeEvaluation } from "../api/overtimeReads";
 import {
@@ -51,7 +51,7 @@ import { WriteUpDoor } from "./WriteUpDoor";
 export type OvertimeViewer = "employee" | "manager";
 
 export interface OvertimeRequestPanelProps {
-  request: OvertimePreapprovalRow;
+  request: OvertimeRequestRow;
   viewer: OvertimeViewer;
   /** The live projection for this person's week. Always prospective, always labelled. */
   evaluation: OvertimeEvaluation | null;

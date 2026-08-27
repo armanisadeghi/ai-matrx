@@ -27,10 +27,21 @@ import { boundaryWeeksSentence } from "../periodStateMachine";
 
 export interface BoundaryWeeksPanelProps {
   boundaryWorkweekIds: string[];
+  /**
+   * 🚨 The SERVER's own boundary sentence (`hr_pay_period_get` → `boundary_note`), preferred over
+   * the client's whenever it is present. One authority for the wording means a change to how
+   * overtime is attributed is stated in one place, not re-worded independently in every client —
+   * including the native HR mobile app, which will consume the same field.
+   */
+  boundaryNote?: string | null;
 }
 
-export function BoundaryWeeksPanel({ boundaryWorkweekIds }: BoundaryWeeksPanelProps) {
-  const sentence = boundaryWeeksSentence(boundaryWorkweekIds);
+export function BoundaryWeeksPanel({
+  boundaryWorkweekIds,
+  boundaryNote,
+}: BoundaryWeeksPanelProps) {
+  // The client sentence is the fallback for the list read, which does not carry `boundary_note`.
+  const sentence = boundaryNote ?? boundaryWeeksSentence(boundaryWorkweekIds);
 
   // No straddling weeks is a real and common answer, and saying so is better than an absent panel
   // that leaves a reader wondering whether we checked.

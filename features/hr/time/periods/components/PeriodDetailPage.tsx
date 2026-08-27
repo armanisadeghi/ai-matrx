@@ -83,15 +83,25 @@ export function PeriodDetailPage({ payPeriodId }: { payPeriodId: string }) {
             <PeriodStatePanel
               period={period}
               role={role}
-              // The knob is the server's to resolve; `true` here is the platform default and is
-              // superseded the moment the resolved value is available on the period read.
-              allowPeriodReopen
+              /*
+               * 🚨 THE RESOLVED KNOB, not a client-side guess. `hr_pay_period_get` returns
+               * `reopen_allowed` — the resolved `hr.time_and_attendance.allow_period_reopen`. This
+               * used to be hard-coded `true`, which would have offered Reopen to an organization
+               * that had switched it off. A cast was hiding the field's existence.
+               */
+              allowPeriodReopen={period.reopenAllowed}
+              /* The server's own wording, verbatim, in preference to ours. */
+              reopenNotice={period.reopenNotice}
               todayLocalDate={todayLocalDate}
               mockCase={mockCase}
               onTransitioned={reload}
             />
 
-            <BoundaryWeeksPanel boundaryWorkweekIds={period.boundaryWorkweekIds} />
+            <BoundaryWeeksPanel
+              boundaryWorkweekIds={period.boundaryWorkweekIds}
+              /* Server-authored sentence; the panel falls back to its own only when absent. */
+              boundaryNote={period.boundaryNote}
+            />
 
             {organizationId ? (
               <>
