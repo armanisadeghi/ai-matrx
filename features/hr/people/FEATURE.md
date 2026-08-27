@@ -10,14 +10,14 @@ profile — the most-opened screen set in the HR module.
 
 ## Entry points
 
-| Route | Component | File |
-|---|---|---|
-| 10 `/hr/people` | `HrDirectory` | `directory/HrDirectory.tsx` |
-| 11 `/hr/people/org-chart` | `HrOrgChart` | `org-chart/HrOrgChart.tsx` |
-| 12 `/hr/people/new` | `HrNewEmployee` | `new/HrNewEmployee.tsx` |
-| 13 `/hr/people/[employeeId]` | `EmployeeProfileRedirect` | `profile/EmployeeProfile.tsx` |
-| 14 `/hr/people/[employeeId]/[tab]` · `/c/[tabKey]` | `EmployeeProfile` | `profile/EmployeeProfile.tsx` |
-| 15/16 relations · 17 verifications | a sibling lane's | `relations/` · `verifications/` |
+| Route                                              | Component                 | File                            |
+| -------------------------------------------------- | ------------------------- | ------------------------------- |
+| 10 `/hr/people`                                    | `HrDirectory`             | `directory/HrDirectory.tsx`     |
+| 11 `/hr/people/org-chart`                          | `HrOrgChart`              | `org-chart/HrOrgChart.tsx`      |
+| 12 `/hr/people/new`                                | `HrNewEmployee`           | `new/HrNewEmployee.tsx`         |
+| 13 `/hr/people/[employeeId]`                       | `EmployeeProfileRedirect` | `profile/EmployeeProfile.tsx`   |
+| 14 `/hr/people/[employeeId]/[tab]` · `/c/[tabKey]` | `EmployeeProfile`         | `profile/EmployeeProfile.tsx`   |
+| 15/16 relations · 17 verifications                 | a sibling lane's          | `relations/` · `verifications/` |
 
 Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
 `app/(core)/hr/people/layout.tsx`.
@@ -62,17 +62,17 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
 
 ## Known gaps (each a registered promise in `lib/coming-soon/registry.ts`)
 
-| Gap | Why | Id |
-|---|---|---|
-| Compensation components, emergency contacts | no per-employee read door (**D273**) | `hr.people.compensation-history`, `hr.people.emergency-contacts` |
-| Directory file export | must be AUDITED; no `hr_directory_export` door, so an unaudited CSV of everyone is deliberately not shipped | `hr.people.directory-export` |
-| Org-chart NL query | mandate `hr.employees.org_chart_query` unregistered — box renders honestly disabled | `hr.people.org-chart-query` |
-| Chart PDF/PNG | CSV ships first and carries the as-of date | `hr.people.chart-image-export` |
-| SSN reveal | `POST /api/hr/identity/{id}/ssn/reveal` not built; last-4 is what every viewer sees | `hr.people.ssn-reveal` |
-| Custom fields | platform tier-1 kit is lane L14's; read-only marked adapter meanwhile | `hr.people.custom-fields` |
-| Documents · Notes | files association / `platform.comments` for an employee not wired | `hr.people.documents`, `hr.people.notes` |
-| Hosted tabs | Leave, Time, Performance, Training lanes own the bodies | `hr.people.tab-*` |
-| Offboarding · corrective action | RPCs live; the forms belong to sibling lanes | `hr.people.start-offboarding`, `hr.people.corrective-action` |
+| Gap                                         | Why                                                                                                         | Id                                                               |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Compensation components, emergency contacts | no per-employee read door (**D273**)                                                                        | `hr.people.compensation-history`, `hr.people.emergency-contacts` |
+| Directory file export                       | must be AUDITED; no `hr_directory_export` door, so an unaudited CSV of everyone is deliberately not shipped | `hr.people.directory-export`                                     |
+| Org-chart NL query                          | mandate `hr.employees.org_chart_query` unregistered — box renders honestly disabled                         | `hr.people.org-chart-query`                                      |
+| Chart PDF/PNG                               | CSV ships first and carries the as-of date                                                                  | `hr.people.chart-image-export`                                   |
+| SSN reveal                                  | `POST /api/hr/identity/{id}/ssn/reveal` not built; last-4 is what every viewer sees                         | `hr.people.ssn-reveal`                                           |
+| Custom fields                               | platform tier-1 kit is lane L14's; read-only marked adapter meanwhile                                       | `hr.people.custom-fields`                                        |
+| Documents · Notes                           | files association / `platform.comments` for an employee not wired                                           | `hr.people.documents`, `hr.people.notes`                         |
+| Hosted tabs                                 | Leave, Time, Performance, Training lanes own the bodies                                                     | `hr.people.tab-*`                                                |
+| Offboarding · corrective action             | RPCs live; the forms belong to sibling lanes                                                                | `hr.people.start-offboarding`, `hr.people.corrective-action`     |
 
 ## Change Log
 
