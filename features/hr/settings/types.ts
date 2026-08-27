@@ -333,6 +333,29 @@ export type HrActivationResult = {
   employee_id: string;
   employment_id: string;
   role_assignment_id: string;
+  /**
+   * 🚨 THE TWELVE FOUNDING AUTHORITY GRANTS — THE MOST CONSEQUENTIAL THING
+   * ACTIVATION DOES, AND THE ACK DOES NOT CARRY THEM YET.
+   *
+   * `hr_activate_employer` calls `hr._seed_founding_authorities(org, employment,
+   * 'activation')`, which returns `uuid[]` of the `hr.approval_authority` rows it
+   * created — and then splices that array into the audit row's `target_ids` and
+   * DROPS IT from the envelope. So the completion panel promises "exactly what was
+   * created" while omitting the grants, which is the opposite of what the seeding
+   * function's own doctrine note asks for: it exists so the default is "VISIBLE in
+   * the authority register instead of latent in a gate".
+   *
+   * The set is vocabulary-driven, not a constant — `platform.categories` where
+   * `dimension = 'hr_approval_action'` and
+   * `metadata->>'sole_authority_mode' = 'require_second_actor'`, which is twelve
+   * actions today. That is exactly why this must arrive on the envelope and must
+   * NOT be hand-listed here: a client-side list would silently disagree with the
+   * vocabulary the moment somebody adds or retires an action.
+   *
+   * Optional until the SQL lane returns it; the panel renders the row only when it
+   * arrives, so nothing claims a grant that was not reported.
+   */
+  founding_authorities?: { id: string; action_type: string }[];
   audit_id: string | null;
   /**
    * 🚨 NO SEED FIELDS LIVE HERE, BECAUSE `hr_activate_employer` SEEDS NOTHING —

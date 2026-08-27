@@ -766,6 +766,22 @@ export function HrActivationWizard({
   );
 }
 
+/**
+ * `pay_change_approve` → "pay changes". The vocabulary's slugs are machine names and
+ * the panel is read by the person who just became responsible for them.
+ *
+ * Deliberately generic rather than a twelve-entry lookup: a table here would be one
+ * more place to disagree with `platform.categories`, and an action added tomorrow
+ * would render as a blank instead of an imperfect-but-true phrase.
+ */
+function humanActionType(slug: string): string {
+  return slug
+    .replace(/_approve$/, "")
+    .replace(/_issue$/, "")
+    .replace(/_countersign$/, " countersigning")
+    .replace(/_/g, " ");
+}
+
 // ── Step 4 — what was created, and what was NOT ─────────────────────────────
 
 function ActivationDone({
@@ -836,6 +852,31 @@ function ActivationDone({
               detail="Full HR standing for this employer"
               href={hrEmployeeHref(result.employee_id, "job", { org: orgRef })}
             />
+            {/*
+              🚨 THE AUTHORITY GRANTS, WHICH ARE THE MOST CONSEQUENTIAL THING
+              ACTIVATION DOES. `hr._seed_founding_authorities` seeds the new owner as
+              the rank-1 holder of every action whose `sole_authority_mode` is
+              `require_second_actor`, and its own doctrine note says why: so the
+              default is "VISIBLE in the authority register instead of latent in a
+              gate". A completion panel that promises "exactly what was created" and
+              omits them defeats that.
+
+              🚨 COUNTED FROM THE ENVELOPE, NEVER HAND-LISTED. The set is read from
+              the `hr_approval_action` vocabulary, so a constant here would silently
+              disagree the moment an action is added or retired. Until the ack
+              carries `founding_authorities` this row does not render — the panel
+              stays honest by saying less, never by guessing a number.
+            */}
+            {result.founding_authorities &&
+            result.founding_authorities.length > 0 ? (
+              <CreatedRow
+                label={`${result.founding_authorities.length} approval authorities`}
+                detail={`This person can approve ${result.founding_authorities
+                  .map((a) => humanActionType(a.action_type))
+                  .join(", ")} — until you grant those to somebody else`}
+                href={hrSettingsHref("access", { org: orgRef })}
+              />
+            ) : null}
           </ul>
         </section>
 
