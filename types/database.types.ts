@@ -25580,6 +25580,57 @@ export type Database = {
   }
   hr: {
     Tables: {
+      _recompute_queue: {
+        Row: {
+          attempts: number
+          claim_expires_at: string | null
+          claim_token: string | null
+          claimed_at: string | null
+          completed_at: string | null
+          employment_id: string
+          enqueued_at: string
+          id: string
+          last_error: string | null
+          local_work_date: string | null
+          organization_id: string
+          reason: string | null
+          state: string
+          workweek_start: string
+        }
+        Insert: {
+          attempts?: number
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          completed_at?: string | null
+          employment_id: string
+          enqueued_at?: string
+          id?: string
+          last_error?: string | null
+          local_work_date?: string | null
+          organization_id: string
+          reason?: string | null
+          state?: string
+          workweek_start: string
+        }
+        Update: {
+          attempts?: number
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          completed_at?: string | null
+          employment_id?: string
+          enqueued_at?: string
+          id?: string
+          last_error?: string | null
+          local_work_date?: string | null
+          organization_id?: string
+          reason?: string | null
+          state?: string
+          workweek_start?: string
+        }
+        Relationships: []
+      }
       _write_guard_key: {
         Row: {
           created_at: string
@@ -43208,6 +43259,16 @@ export type Database = {
         Args: { p_instance_id: string }
         Returns: Json
       }
+      dead_capability_doors: {
+        Args: never
+        Returns: {
+          allowlisted: boolean
+          declared_by: string
+          holders: number
+          reason: string
+          token: string
+        }[]
+      }
       derive_grants_bulk: {
         Args: { p_at?: string; p_employment_ids: string[] }
         Returns: Json
@@ -43850,6 +43911,22 @@ export type Database = {
         Returns: Json
       }
       recompute_enqueue_debt: { Args: never; Returns: Json }
+      recompute_queue_claim: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: {
+          claim_token: string
+          employment_id: string
+          id: string
+          local_work_date: string
+          organization_id: string
+          reason: string
+          workweek_start: string
+        }[]
+      }
+      recompute_queue_complete: {
+        Args: { p_error?: string; p_id: string; p_ok: boolean }
+        Returns: boolean
+      }
       resolve_rules: {
         Args: {
           p_as_of: string
