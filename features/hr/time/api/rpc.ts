@@ -5,10 +5,10 @@
  * resolution in this feature goes through this module. Two surfaces reaching the same data two
  * ways is a bug — collapse to the direct path.
  *
- * 🚨 WHY `public.hr_*` AND NOT `supabase.schema("hr")`
+ * 🚨 WHY `public.hr_*` AND NOT A BROWSER CLIENT POINTED AT `hr`
  * ----------------------------------------------------
  * The `hr` schema is **not exposed to PostgREST**. Verified live 2026-08-26 against
- * `pgrst.db_schemas` on the `authenticator` role. `supabase.schema("hr").from(...)` and
+ * `pgrst.db_schemas` on the `authenticator` role. Direct reads against the `hr` schema and
  * `.rpc("hr.x")` reach nothing from a browser, and they fail as PGRST106 rather than as anything a
  * reader would recognise. Adding a schema to that list replaces the whole value and a dropped name
  * is an instant platform-wide PGRST002 outage — a fleet-wide config change, explicitly not a build
@@ -383,7 +383,7 @@ export async function callHrTimeRpc<T>(
 ): Promise<T> {
   if (HR_MOCK_ENABLED) return serveMock<T>(rpc, opts?.mockCase);
 
-  // `hr_*` wrappers live in `public`, which is exposed — see the header. No `.schema("hr")` here.
+  // `hr_*` wrappers live in `public`, which is exposed — see the header. Never point this client at `hr`.
   const query = rpcClient.rpc(rpc, args);
   const { data, error } = await (opts?.signal ? query.abortSignal(opts.signal) : query);
 

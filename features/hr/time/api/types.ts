@@ -12,7 +12,7 @@
  * -----------------------------------------------------------
  * The `hr` schema is **not exposed to PostgREST.** Verified live 2026-08-26 against
  * `pgrst.db_schemas` on the `authenticator` role: the list carries 50-odd schemas and `hr` is not
- * among them, so `supabase.schema("hr")` and `.rpc("hr.x")` reach nothing from a browser. Adding a
+ * among them, so browser reads or RPC calls pointed at `hr` reach nothing. Adding a
  * schema to that list replaces the whole value and a dropped name is an instant platform-wide
  * PGRST002 outage — it is a fleet-wide config change and explicitly **not a build lane's call**
  * (FREEZE §4 D-10 recorded exactly this for `esign`).

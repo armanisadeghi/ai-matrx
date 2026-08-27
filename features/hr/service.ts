@@ -4,8 +4,8 @@
 //
 // 🚨 THE `hr` SCHEMA IS NOT EXPOSED TO PostgREST (verified live 2026-08-26 —
 // `authenticator`'s `pgrst.db_schemas` carries neither `hr` nor `esign`). So
-// `supabase.from("hr.employee")` and `supabase.schema("hr")` do not work from a
-// browser and never will. Every door is a `public.hr_*` SECURITY DEFINER function
+// Direct browser reads against either an `hr.*` relation or the `hr` schema do not
+// work and never will. Every door is a `public.hr_*` SECURITY DEFINER function
 // called as `supabase.rpc(...)`. This is still the DIRECT lane — React → Supabase,
 // no Next.js API route, no Python hop (CLAUDE.md § Data flow).
 //

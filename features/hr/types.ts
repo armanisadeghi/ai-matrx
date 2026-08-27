@@ -5,8 +5,8 @@
 //
 // 🚨 WHY EVERY HR READ IS AN RPC. The `hr` schema is NOT in PostgREST's exposed
 // schema list (`authenticator`'s `pgrst.db_schemas` carries no `hr`, no `esign`),
-// verified live 2026-08-26. `supabase.from('hr.employee')` and `supabase.schema('hr')`
-// do not work from a browser and never will. Every read and write goes through a
+// verified live 2026-08-26. Direct browser reads of `hr.employee` or any other
+// relation in that schema do not work and never will. Every read and write goes through a
 // `public.hr_*` SECURITY DEFINER RPC — still React → Supabase DIRECT, no Next.js hop
 // and no Python hop.
 //
