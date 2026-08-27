@@ -849,6 +849,34 @@ the failure list: the replication agent appends it to "Open gaps" below and its 
     expressions and prose as ONE template literal, and read the rendered text (not the source)
     before calling copy done — `javascript_tool` reading `document.body.innerText` is the check.**
 
+### Friction from the first joint Stage V+D pass — rank / RAG / table (2026-08-26)
+
+50. **FIXED — `verify_kinds.py` fed the leg-3 probe UNORDERED `kind_component` rows and
+    false-failed 7 of 18 kinds as `floor_only`.** The resolver keeps the FIRST row per
+    (kind, platform, role) and production feeds it `fallback LAST, is_default DESC,
+    sort_order ASC` — so a retired INACTIVE `generic_structured` row shadowed the ACTIVE
+    canonical component for every kind that ever HAD a floor row (exactly the ones Stage B
+    retires one). Kinds with a single row passed, which made the failure look real. The driver
+    now mirrors the production loader's order. **Rule: when a verdict splits along
+    "had-a-floor-row vs never-had-one", suspect the harness before the components.**
+51. **Leg 4 needs a REAL production BEFORE cutover, and the honest path is a captured example
+    from the family's own demo engine.** Pre-cutover, no node emits the new kinds, so every
+    Stage-B-finished kind reads `exercised_never`. `content_ir.kind_exercise_evidence()`
+    counts `kind_example` rows with `source='captured'`; the demo services already RUN the
+    real engines. `aidream/scripts/capture_kind_exercise_examples.py` is the harness: it runs
+    each family's real production path (live snapshot translation, live retrieval, live table
+    read, the committed real grounded-answer capture) and stores the payloads as captured
+    examples — extend it per family instead of re-inventing it. **Kinds whose ONLY honest
+    producer is a live node that has never run (`seo_rank_target`, …) stay `distilled` with a
+    note; their evidence arrives with the Stage D repoint. Never fabricate leg 4.**
+52. **Stage D.0 is now a parameterized guard, not a per-family rewrite.**
+    `aidream/scripts/check_kind_cutover_safety.py --family <rank|rag|table>` imports the
+    search pilot's mechanics (`check_search_cutover_safety.py` stays the one copy) and takes
+    (models module, cutover kinds) per family; `--self-test` plants a BREAK and a SAFE. Add a
+    FAMILIES entry for a new run instead of copying 550 lines. A whole-output passthrough
+    still comes back UNPROVABLE and must be human-read; record the read and its verdict in
+    the ledger (worked example: table run, *Certified Blurb Pipeline*).
+
 ## Chip prompts (standalone — paste as the chip body, fill the ⟨⟩)
 
 **Stage A:** "You are STAGE A of the data-to-kinds run for ⟨family⟩. Read ONLY
@@ -872,10 +900,9 @@ render approval, mark DONE, fire V + D."
 |---|---|---|
 | Search results (Brave + SerpAPI Google) — the pilot | `common-docs/operations/search-kinds-pilot.md` | A+B approved; C done 2026-08-23; V + D pending (cutover gated) |
 | Scraper / crawl results (`scraper.*`) — replication run 1 | `common-docs/operations/scraper-kinds-run.md` | Stage A fired 2026-08-23 |
-| Tabular results (`data_table`) — replication run 4 | `common-docs/operations/table-kinds-run.md` | A done; **B done 2026-08-25** (`data_table` ACTIVE, demo live); V + D pending, 3 slugs cutover-gated |
-| SEO rank tracking + SERP landscape — queue row 2 | `common-docs/operations/rank-kinds-run.md` | A + B DONE 2026-08-24; V + D pending |
-| RAG retrieval + citations — queue row 3 | `common-docs/operations/rag-kinds-run.md` | A DONE 2026-08-24; B in flight; mints `source_ref` |
-| Tabular results — queue row 4 | `common-docs/operations/table-kinds-run.md` | A DONE 2026-08-24; B in flight; mints `data_table` |
+| SEO rank tracking + SERP landscape — queue row 2 | `common-docs/operations/rank-kinds-run.md` | A+B approved; **V done 2026-08-26** (`serp_placement` + `provider_run_receipt` verified); D.0 field-read proof clean; D remainder open |
+| RAG retrieval + citations — queue row 3 | `common-docs/operations/rag-kinds-run.md` | A+B approved; **V done 2026-08-26** (`source_ref` + `retrieved_chunk` + `rag_synthesize_result` verified); D.0 4/4 SAFE; D remainder open |
+| Tabular results (`data_table`) — queue row 4 / replication run 4 | `common-docs/operations/table-kinds-run.md` | A+B approved; **V done 2026-08-26** (`data_table` verified); D.0 clean (1 passthrough human-judged); D remainder open |
 
 **Campaign doctrine (platform law, applies beyond kinds):** `common-docs/policies/conversion-campaigns.md` — the four consumer surfaces, demo-is-not-a-conversion, a campaign ends in a committed guard, consumer lists are computed not hand-written.
 
