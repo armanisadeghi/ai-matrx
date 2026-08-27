@@ -136,6 +136,12 @@ const EXPECTED_CHECKS = [
   // ever set it back.
   "punch_writers_unfinalize_their_week",
   "only_recompute_marks_a_week_final",
+  // hr_l3_49: hr._record_access_audit gained p_actor_user_id so a privileged caller (aidream, with
+  // no auth.uid()) can name the human behind a read. A caller that names the user but omits
+  // p_actor_type gets actor_type='automation' on a row naming a person — reproduced live. An
+  // access log that credits a robot for what a named human did is read as evidence, so the
+  // contradiction is not allowed to accumulate. Fix the CALL, not the row.
+  "audit_actor_type_matches_named_user",
 ] as const;
 
 interface ConformanceRow {
