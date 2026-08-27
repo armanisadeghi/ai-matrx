@@ -29,12 +29,50 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { classifyPrecondition, type ExportFailure } from "../errors";
 import { HrIdentityDoor } from "./HrIdentityDoor";
 
+/**
+ * 🚨 THE SERVER'S OWN WORDS, RENDERED (V2).
+ *
+ * This footer is in EVERY branch of this component, which is why the fix lives here: the four named
+ * preconditions and the unrecognised-failure fallback all gain it at once, and no future branch can
+ * forget it.
+ *
+ * WHAT WAS WRONG. `aidream/api/routers/hr_exports.py::_sql_error` forwards the engine's full raise
+ * as the envelope's `message` but sets a PLACEHOLDER `user_message`:
+ *
+ *     validation_error(text, user_message="That request wasn't valid.", details={})
+ *     state_conflict(text,   user_message="That isn't possible in this state.", details={})
+ *
+ * The surface rendered only `user_message`. So on the most consequential write in the domain the
+ * operator read "That request wasn't valid." while the server was saying *"an export must name its
+ * actor; this call has neither an authenticated user nor an employment in organization …"* and
+ * attaching a HINT naming the fix. The same discard silences this lane's own finality refusal,
+ * which names every pending workweek id.
+ *
+ * THE RULE THIS FOLLOWS is the one already proven at the list door (`fromLiveExports`): **the
+ * server's sentence wins, verbatim.** Nothing here is rewritten, summarised, or invented; the
+ * machine code stays a secondary reference, not the headline. Where the router DID write a real
+ * `user_message`, `toExportFailure` reports no separate engine sentence and this renders nothing
+ * extra — repeating one sentence under itself is noise that teaches people to stop reading.
+ */
 function FailureFooter({ failure }: { failure: ExportFailure }) {
   return (
-    <p className="mt-3 text-xs text-muted-foreground">
-      {failure.code}
-      {failure.requestId ? ` · request ${failure.requestId}` : null}
-    </p>
+    <>
+      {failure.engineMessage ? (
+        <p className="mt-3 rounded-md border border-border/60 bg-background/40 px-3 py-2 text-xs leading-relaxed text-foreground">
+          {failure.engineMessage}
+        </p>
+      ) : null}
+      {failure.hint ? (
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+          <span className="font-medium text-foreground">What to do: </span>
+          {failure.hint}
+        </p>
+      ) : null}
+      <p className="mt-3 text-xs text-muted-foreground">
+        {failure.code}
+        {failure.requestId ? ` · request ${failure.requestId}` : null}
+      </p>
+    </>
   );
 }
 

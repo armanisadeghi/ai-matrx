@@ -78,7 +78,11 @@ import {
   getExportArtifact,
   supersedeExport,
 } from "../service";
-import { toExportFailure, type ExportFailure } from "../errors";
+import {
+  failureHeadline,
+  toExportFailure,
+  type ExportFailure,
+} from "../errors";
 import type {
   ExportDeliveryState,
   ExportEnvelope,
@@ -524,7 +528,9 @@ export function ExportRunList({
       const next = toExportFailure(err);
       setFailure(next);
       // Scream, never swallow — a mutation that quietly does nothing reads as "it worked".
-      toast.error(next.userMessage);
+      // The engine's own sentence leads: the router forwards a real raise under a placeholder
+      // user_message, and a toast has room for exactly one sentence (V2).
+      toast.error(failureHeadline(next));
       throw err;
     } finally {
       setBusyId(null);
