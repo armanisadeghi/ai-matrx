@@ -62,6 +62,7 @@ async function main(): Promise<void> {
     boundaryWeeksSentence,
     rowProgressSentence,
     REOPEN_NOTICE,
+    resolvePeriodRole,
   } = await import("@/features/hr/time/periods/periodStateMachine");
   // 🚨 The export half is lane L13's (HRB-025) and this lane owns no copy of it — the coordinator
   // ruled that seam on 2026-08-26 and `features/hr/time/exports/` was DELETED, not deprecated.
@@ -380,6 +381,48 @@ async function main(): Promise<void> {
     (o) => o.to === "submitted",
   );
   ok("submit is offered once the end date has passed", late?.unavailableBecause === null);
+
+  // ── S4: the capability tokens must be the SERVER's, and hr_admin must actually reach. ───────
+  //
+  // `hr.pay_period_transition` gates on `payroll.read` for every transition except export. An
+  // invented token fails CLOSED and SILENTLY — no error, the string just never matches and the
+  // button greys out — so these assert the roles that hold the real capability can act.
+  ok(
+    "payroll.read resolves to hr_admin (NOT manager)",
+    resolvePeriodRole(["payroll.read"]) === "hr_admin",
+  );
+  ok(
+    "payroll.export resolves to payroll_admin",
+    resolvePeriodRole(["payroll.export", "payroll.read"]) === "payroll_admin",
+  );
+  ok("no capability resolves to manager", resolvePeriodRole([]) === "manager");
+  ok(
+    "a token the server does not issue does NOT grant reach",
+    resolvePeriodRole(["time.approve_period", "hr.admin"]) === "manager",
+  );
+
+  const hrAdminCtx = {
+    role: "hr_admin" as const,
+    allowPeriodReopen: true,
+    todayLocalDate: "2026-03-20",
+  };
+  const submitAsHrAdmin = offeredTransitions({
+    period: { ...basePeriod, state: "open" as const },
+    ...hrAdminCtx,
+  }).find((o) => o.to === "submitted");
+  ok(
+    "SUBMIT is offered to an hr_admin — the S4 blocker, asserted",
+    submitAsHrAdmin?.unavailableBecause === null,
+  );
+  // The server needs only payroll.read to lock; this surface used to demand payroll_admin.
+  const lockAsHrAdmin = offeredTransitions({
+    period: { ...basePeriod, state: "exported" as const },
+    ...hrAdminCtx,
+  }).find((o) => o.to === "locked");
+  ok(
+    "LOCK is offered to an hr_admin — matching the server, not over-tightened",
+    lockAsHrAdmin?.unavailableBecause === null,
+  );
 
   // ── Law: a manager is read-only, and the refusal explains the role rather than hiding. ───────
   const managerOffers = offeredTransitions({
