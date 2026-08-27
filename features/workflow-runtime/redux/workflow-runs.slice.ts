@@ -20,6 +20,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import {
   invocationKeyOf,
   readHeartbeatTails,
+  type NodeEmittedEvent,
   type NodeStreamEvent,
   type RunRecordSignal,
   type RunRow,
@@ -138,6 +139,17 @@ export interface WorkflowRunEmission {
   payload: unknown;
   componentRef: string | null;
   title: string | null;
+  /** How the emitting node asked to be shown: inline `panel` or full `showcase`.
+   * Defaults to "panel" on a server that predates the field. */
+  presentation: NodeEmittedEvent["presentation"];
+  /** Registered content-IR kind of the payload, or null when unkinded. */
+  kind: string | null;
+  /** Did the payload validate against that kind's schema? Null = not checked. */
+  kindOk: boolean | null;
+  /** Emitter metadata, verbatim — carries the verified Content-IR envelope
+   * under `__ir`. Never destructured or stripped here (the `__kind` law): the
+   * fold stores the object whole and lets renderers read what they need. */
+  metadata: Record<string, unknown> | null;
   ts: string;
   /** The durable event seq — THE stable identity of this emission across
    * refolds and refreshes (a ring index is not: the cap drops from the head).
@@ -832,6 +844,15 @@ function applyEvent(
         componentRef:
           typeof event.component_ref === "string" ? event.component_ref : null,
         title: typeof event.title === "string" ? event.title : null,
+        // The four fields below arrived with the kind-aware emitter. A server
+        // that predates them sends nothing, so each has a floor that means
+        // "not stated" — never a fabricated value. `metadata` is stored WHOLE
+        // (it carries the verified Content-IR envelope under `__ir`, and the
+        // `__kind` law forbids stripping anything out of it on the way in).
+        presentation: event.presentation === "showcase" ? "showcase" : "panel",
+        kind: typeof event.kind === "string" ? event.kind : null,
+        kindOk: typeof event.kind_ok === "boolean" ? event.kind_ok : null,
+        metadata: asRecord(event.metadata),
         ts: event.ts,
         seq,
         persisted: replay,

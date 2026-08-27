@@ -20,9 +20,10 @@
  * path (useRunAgent → POST /agents/{id}) has no is_version channel. A
  * version-pinned client mandate throws loudly rather than running the wrong row.
  *
- * Failures are LOUD: unknown mandate, disabled mandate, version-pinned mandate all
- * throw. No silent fallback to a hardcoded id — that would hide exactly the
- * breakage this system exists to surface.
+ * Failures are LOUD: unknown mandate, disabled mandate, version-pinned mandate,
+ * and a binding whose HOLDER is not an agent all throw. No silent fallback to a
+ * hardcoded id — that would hide exactly the breakage this system exists to
+ * surface.
  */
 
 import { createClient } from "@/utils/supabase/client";
@@ -36,7 +37,14 @@ import {
   parseMandateContract,
   type MandateContract,
 } from "./contract";
-import { parseMandateWave1, type MandateWave1Fields } from "./provision-shapes";
+import {
+  EXECUTABLE_HOLDER_TYPES,
+  holderNotExecutableMessage,
+  parseBindingWave1,
+  parseMandateWave1,
+  type MandateBindingLayer,
+  type MandateWave1Fields,
+} from "./provision-shapes";
 import type { JsonObject } from "@/types/json";
 
 export interface ResolvedMandate {
@@ -48,6 +56,15 @@ export interface ResolvedMandate {
    */
   mandateId: string;
   agentId: string;
+  /**
+   * The DECIDING layer's Holder type. Always `"agent"` today — a binding
+   * naming any other Holder refuses resolution outright (see
+   * `assertExecutableHolder`) instead of degrading to the system default — but
+   * consumers read it rather than assume it, so the day workflow Holders
+   * execute the field is already threaded through. Defaults to `"agent"` when
+   * no binding applies (the system default is an agent by construction).
+   */
+  holderType: string;
   configOverrides: Partial<FeLlmParams> | null;
   provenance: "system" | "org" | "user";
   /**
@@ -103,6 +120,39 @@ export function invalidateMandateCache(mandateKey?: string): void {
   for (const listener of invalidationListeners) listener(mandateKey);
 }
 
+/**
+ * REFUSE a binding whose Holder cannot execute — the client half of the
+ * server's `EXECUTABLE_HOLDER_TYPES` gate (aidream
+ * `services/mandates/service.py`).
+ *
+ * A `holder_type='workflow'` binding carries NO `agent_id` by construction, so
+ * before this existed it fell straight through the `if (binding.agent_id)`
+ * branch below and the resolver returned the SYSTEM DEFAULT agent with
+ * `provenance: "system"` — a deliberate binding silently evaporating, and the
+ * caller told the platform default was in charge. Refusing loudly is the same
+ * posture the server takes, and the only one that surfaces the wiring.
+ *
+ * Returns the (executable) holder type so the caller can carry it onto
+ * `ResolvedMandate`.
+ */
+function assertExecutableHolder(
+  mandateKey: string,
+  layer: MandateBindingLayer,
+  row: object,
+): string {
+  const { holderType } = parseBindingWave1(row);
+  if (!EXECUTABLE_HOLDER_TYPES.has(holderType)) {
+    const bindingId =
+      typeof (row as { id?: unknown }).id === "string"
+        ? (row as { id: string }).id
+        : null;
+    throw new Error(
+      holderNotExecutableMessage(mandateKey, layer, bindingId, holderType),
+    );
+  }
+  return holderType;
+}
+
 export async function resolveMandate(
   mandateKey: string,
 ): Promise<ResolvedMandate> {
@@ -140,6 +190,7 @@ export async function resolveMandate(
 
   let agentId = mandate.default_agent_id;
   let provenance: ResolvedMandate["provenance"] = "system";
+  let holderType: ResolvedMandate["holderType"] = "agent";
   let configOverrides: Partial<FeLlmParams> | null = null;
 
   const { data: auth } = await supabase.auth.getUser();
@@ -155,7 +206,7 @@ export async function resolveMandate(
       .schema("agent")
       .from("mandate_binding")
       .select(
-        "agent_id, agent_version_id, use_latest, config_overrides, is_enabled, updated_at",
+        "id, holder_type, agent_id, agent_version_id, use_latest, config_overrides, is_enabled, updated_at",
       )
       .eq("mandate_id", mandate.id)
       .eq("principal_type", "org")
@@ -165,6 +216,9 @@ export async function resolveMandate(
     if (orgError) throw orgError;
     const orgBinding = (orgBindings ?? []).find((b) => b.is_enabled) ?? null;
     if (orgBinding) {
+      // THE HOLDER GATE, first — before a single field of a non-executable
+      // binding is applied. The server refuses before merging too.
+      holderType = assertExecutableHolder(mandateKey, "organization", orgBinding);
       if (isJsonObject(orgBinding.config_overrides)) {
         configOverrides = toLlmParams(orgBinding.config_overrides);
       }
@@ -188,7 +242,7 @@ export async function resolveMandate(
       .schema("agent")
       .from("mandate_binding")
       .select(
-        "agent_id, agent_version_id, use_latest, config_overrides, is_enabled",
+        "id, holder_type, agent_id, agent_version_id, use_latest, config_overrides, is_enabled",
       )
       .eq("mandate_id", mandate.id)
       .eq("principal_type", "user")
@@ -197,6 +251,7 @@ export async function resolveMandate(
       .maybeSingle();
     if (bindingError) throw bindingError;
     if (binding?.is_enabled) {
+      holderType = assertExecutableHolder(mandateKey, "user", binding);
       if (isJsonObject(binding.config_overrides)) {
         // Merge upward — user wins per key over the org layer (server rule).
         configOverrides = {
@@ -221,6 +276,7 @@ export async function resolveMandate(
     mandateKey,
     mandateId: mandate.id,
     agentId,
+    holderType,
     configOverrides,
     provenance,
     contract: parseMandateContract(mandate.contract),

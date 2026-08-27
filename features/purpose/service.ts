@@ -31,7 +31,7 @@ import type { Json } from "@/types/database.types";
 export type GroundingTag = "H" | "V" | "A";
 
 /** The units that can carry a purpose. Mirrors the DB function's own check. */
-export type PurposeUnitType = "agent" | "workflow" | "tool";
+export type PurposeUnitType = "agent" | "workflow" | "tool" | "mandate";
 
 export type Purpose = {
   id: string;

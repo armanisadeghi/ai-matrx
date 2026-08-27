@@ -14,6 +14,10 @@ import "server-only";
  * No module cache: each request resolves fresh through the request-scoped
  * Supabase server client (two indexed single-row reads).
  *
+ * A binding whose HOLDER is not an agent (`holder_type='workflow'`) throws
+ * here too — such a row carries no `agent_id`, so falling through would paint
+ * the system default as though nothing were bound.
+ *
  * Failure posture: throws, same as the client resolver. A page that can
  * degrade (render with client-side resolution, or a documented seed) catches
  * and SCREAMS via console.error — never a silent fallback.
@@ -24,8 +28,35 @@ import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { toLlmParams } from "./llm-params";
 import { parseMandateContract } from "./contract";
-import { parseMandateWave1 } from "./provision-shapes";
+import {
+  EXECUTABLE_HOLDER_TYPES,
+  holderNotExecutableMessage,
+  parseBindingWave1,
+  parseMandateWave1,
+  type MandateBindingLayer,
+} from "./provision-shapes";
 import type { ResolvedMandate } from "./service";
+
+/** The HOLDER gate — twin of `service.ts`'s `assertExecutableHolder`; a
+ * `workflow` Holder carries no `agent_id`, so without this the binding falls
+ * through and SSR paints the system default as if nothing were bound. */
+function assertExecutableHolder(
+  mandateKey: string,
+  layer: MandateBindingLayer,
+  row: object,
+): string {
+  const { holderType } = parseBindingWave1(row);
+  if (!EXECUTABLE_HOLDER_TYPES.has(holderType)) {
+    const bindingId =
+      typeof (row as { id?: unknown }).id === "string"
+        ? (row as { id: string }).id
+        : null;
+    throw new Error(
+      holderNotExecutableMessage(mandateKey, layer, bindingId, holderType),
+    );
+  }
+  return holderType;
+}
 
 export async function resolveMandateServer(
   mandateKey: string,
@@ -61,6 +92,7 @@ export async function resolveMandateServer(
 
   let agentId = mandate.default_agent_id;
   let provenance: ResolvedMandate["provenance"] = "system";
+  let holderType: ResolvedMandate["holderType"] = "agent";
   let configOverrides: ResolvedMandate["configOverrides"] = null;
 
   const { data: auth } = await supabase.auth.getUser();
@@ -73,7 +105,7 @@ export async function resolveMandateServer(
       .schema("agent")
       .from("mandate_binding")
       .select(
-        "agent_id, agent_version_id, use_latest, config_overrides, is_enabled, updated_at",
+        "id, holder_type, agent_id, agent_version_id, use_latest, config_overrides, is_enabled, updated_at",
       )
       .eq("mandate_id", mandate.id)
       .eq("principal_type", "org")
@@ -83,6 +115,7 @@ export async function resolveMandateServer(
     if (orgError) throw orgError;
     const orgBinding = (orgBindings ?? []).find((b) => b.is_enabled) ?? null;
     if (orgBinding) {
+      holderType = assertExecutableHolder(mandateKey, "organization", orgBinding);
       if (orgBinding.agent_version_id) {
         throw new Error(
           `mandate "${mandateKey}": an organization binding is version-pinned — client-run mandates must be floating; update the binding`,
@@ -102,7 +135,9 @@ export async function resolveMandateServer(
     const { data: binding, error: bindingError } = await supabase
       .schema("agent")
       .from("mandate_binding")
-      .select("agent_id, agent_version_id, use_latest, config_overrides, is_enabled")
+      .select(
+        "id, holder_type, agent_id, agent_version_id, use_latest, config_overrides, is_enabled",
+      )
       .eq("mandate_id", mandate.id)
       .eq("principal_type", "user")
       .eq("subject_user_id", userId)
@@ -110,6 +145,7 @@ export async function resolveMandateServer(
       .maybeSingle();
     if (bindingError) throw bindingError;
     if (binding?.is_enabled) {
+      holderType = assertExecutableHolder(mandateKey, "user", binding);
       if (binding.agent_version_id) {
         throw new Error(
           `mandate "${mandateKey}": your override is version-pinned — client-run mandates must be floating; update the binding`,
@@ -134,6 +170,7 @@ export async function resolveMandateServer(
     mandateKey,
     mandateId: mandate.id,
     agentId,
+    holderType,
     configOverrides,
     provenance,
     // The same contract the client resolver carries — required variables are a

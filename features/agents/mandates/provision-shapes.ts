@@ -235,9 +235,55 @@ export function parseMandateWave1(row: object): MandateWave1Fields {
   };
 }
 
+// ── THE HOLDER LAW — only an 'agent' Holder EXECUTES in this wave ───────────
+
+/**
+ * Holder types a RESOLVER may run. Mirror of aidream
+ * `EXECUTABLE_HOLDER_TYPES` (`aidream/services/mandates/service.py`).
+ *
+ * A `workflow` Holder is representable — the bind path accepts it, and such a
+ * binding carries NO `agent_id` by construction — but it is deliberately NOT
+ * executable yet. The server REFUSES it loudly rather than dropping a
+ * deliberate binding on the floor; every client resolver must match that
+ * posture (`holderNotExecutableMessage` below), because the alternative is the
+ * binding silently evaporating into the system default.
+ */
+export const EXECUTABLE_HOLDER_TYPES: ReadonlySet<string> = new Set(["agent"]);
+
+/** Which layer of the resolution walk a binding came from. */
+export type MandateBindingLayer = "organization" | "user";
+
+/**
+ * The ONE refusal message for a binding whose Holder cannot execute. Names the
+ * mandate, the layer, the row, and the holder type — the same four facts the
+ * server's `MandateResolutionError` carries, so the two halves read alike in a
+ * bug report.
+ */
+export function holderNotExecutableMessage(
+  mandateKey: string,
+  layer: MandateBindingLayer,
+  bindingId: string | null,
+  holderType: string,
+): string {
+  const where =
+    layer === "organization" ? "an organization binding" : "your binding";
+  const which = bindingId ? ` (${bindingId})` : "";
+  return (
+    `mandate "${mandateKey}": ${where}${which} names a '${holderType}' Holder — ` +
+    "NOT IMPLEMENTED: only 'agent' Holders are executable in this wave. " +
+    "Rebind to an agent, or wait for workflow-holder execution."
+  );
+}
+
 export interface BindingWave1Fields {
-  /** 'agent' | 'workflow' — only agent Holders execute in this wave. */
-  holderType: "agent" | "workflow";
+  /**
+   * The binding's DECLARED holder type, verbatim (`agent` | `workflow` today;
+   * absent/blank reads as `agent`, matching the server's `or "agent"` default).
+   * Deliberately NOT collapsed to a two-value union: a value we do not
+   * recognize must REFUSE at the resolver, never masquerade as an executable
+   * agent Holder — check it against `EXECUTABLE_HOLDER_TYPES`.
+   */
+  holderType: string;
   consumptionMap: ConsumptionMap;
 }
 
@@ -246,7 +292,10 @@ export function parseBindingWave1(row: object | null): BindingWave1Fields {
   if (row == null) return { holderType: "agent", consumptionMap: {} };
   const raw: Record<string, unknown> = { ...row };
   return {
-    holderType: raw.holder_type === "workflow" ? "workflow" : "agent",
+    holderType:
+      typeof raw.holder_type === "string" && raw.holder_type.length > 0
+        ? raw.holder_type
+        : "agent",
     consumptionMap: parseConsumptionMap(raw.consumption_map),
   };
 }
