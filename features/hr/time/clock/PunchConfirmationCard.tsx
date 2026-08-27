@@ -20,6 +20,7 @@ import { CheckCircle2, Info, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { formatStampedTimeWithZone } from "./stampedTime";
+import { EXCEPTION_KIND_LABELS, labelFor } from "../shared/vocabulary";
 import { formatElapsedMinutes } from "./liveElapsed";
 import { punchKindPresentation } from "./punchVocabulary";
 import type { PunchConfirmation } from "./usePunchClock";
@@ -88,12 +89,15 @@ export function PunchConfirmationCard({
           <ul className="flex flex-col gap-1">
             {exceptionsRaised.map((exception) => (
               /*
-                The server's own sentence. We deliberately do NOT link to route 31 from here: that
-                route is another lane's and does not exist yet, and a link that 404s is worse than a
-                sentence that stands on its own. Recorded as a debt rather than faked.
+                🚨 `hr.punch_record` returns `{id, kind}` and NO message (G2 N2's quiet half), so the
+                row is labelled from `kind` through the shared lexicon. Reading `.message` printed a
+                blank line; printing the raw token would be F7's defect.
+
+                We deliberately do NOT link to route 31 from here: that route is another lane's, and
+                a link that 404s is worse than a sentence that stands on its own.
               */
               <li key={exception.id} className="text-sm text-muted-foreground">
-                {exception.message}
+                {labelFor(EXCEPTION_KIND_LABELS, exception.kind)}
               </li>
             ))}
           </ul>

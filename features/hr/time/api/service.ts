@@ -24,6 +24,7 @@ import type {
   ClockPhase,
   ClockState,
   ClockStateException,
+  PunchRaisedException,
   ExceptionResolutionState,
   KioskDeviceSession,
   KioskPairingResult,
@@ -106,14 +107,48 @@ export interface RecordPunchInput {
 }
 
 /**
+ * 🚨 **MAPPED, NOT CAST — THIS IS THE G2 N2 FIX.**
+ *
+ * `hr.punch_record` answers `{ok, replayed, punch, clock_state, exceptions}`. Two of those keys were
+ * being read by names the server does not use:
+ *   • `clock_state` is a full `hr.clock_state(...)` envelope, so it carries **`state`, not `phase`**.
+ *     `getClockState` was mapped by the F6 fix; this nested copy was not, so the instant a punch
+ *     succeeded the widget received a `ClockState` with no `phase`, `clockPhasePresentation`
+ *     returned `undefined`, and `PunchStatusPanel` crashed on `.elapsedField`. **An employee who
+ *     clocked in could not clock out.**
+ *   • `exceptions` was declared `exceptionsRaised`, so the confirmation card's "flagged for your
+ *     manager" list was always empty — a silent version of the same defect.
+ *
+ * Mapping the outer object is not enough on its own: the nested state goes through the same
+ * `mapClockState` as the standalone read, so there is exactly ONE place that knows what
+ * `hr.clock_state` looks like.
+ */
+function mapPunchRecordResult(raw: unknown): PunchRecordResult {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const exceptions = Array.isArray(r.exceptions) ? (r.exceptions as Record<string, unknown>[]) : [];
+
+  return {
+    punch: (r.punch ?? {}) as PunchRow,
+    // The nested envelope, through the one mapper.
+    clockState: mapClockState(r.clockState),
+    exceptionsRaised: exceptions.map((e) => ({
+      id: String(e.id ?? ""),
+      kind: e.kind as PunchRaisedException["kind"],
+      detector: typeof e.detector === "string" ? e.detector : undefined,
+    })),
+    replayed: r.replayed === true,
+  };
+}
+
+/**
  * The only punch writer a client may call. A refusal arrives as an {@link HrRpcError} whose
  * `userMessage` is rendered **verbatim** — never replaced with a generic sentence.
  */
-export function recordPunch(
+export async function recordPunch(
   input: RecordPunchInput,
   opts?: HrRpcOptions,
 ): Promise<PunchRecordResult> {
-  return callHrTimeRpc<PunchRecordResult>(
+  const raw = await callHrTimeRpc<unknown>(
     "hr_punch_record",
     {
       p_employment_id: input.employmentId,
@@ -128,6 +163,7 @@ export function recordPunch(
     },
     opts,
   );
+  return mapPunchRecordResult(raw);
 }
 
 /**

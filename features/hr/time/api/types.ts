@@ -443,11 +443,38 @@ export interface ClockStateException {
   calc: Record<string, unknown> | null;
 }
 
-/** What `hr_punch_record` answers with. A replay is a **success path**, not an error. */
+/**
+ * An exception `hr.punch_record` raised on this write. 🚨 **Two ids and a kind — that is all.**
+ * The function returns `jsonb_build_object('id', …, 'kind', …)`, **not** a full
+ * {@link AttendanceExceptionRow}: there is no `message`, no severity, no display name. Declaring the
+ * wide row here was the G2 N2 class of mistake — a surface that reads `.message` renders a blank
+ * line. Label it from `kind` through the shared lexicon instead.
+ */
+export interface PunchRaisedException {
+  id: string;
+  kind: AttendanceExceptionKind;
+  /** Which deterministic detector fired, where the function names one. */
+  detector?: string;
+}
+
+/**
+ * What `hr_punch_record` answers with. A replay is a **success path**, not an error.
+ *
+ * 🚨 **VERIFIED LIVE against `hr.punch_record`, 2026-08-27.** Both the replay door and the success
+ * return build `{ok, replayed, punch, clock_state, exceptions}` — so after camelization the keys are
+ * `clockState` and **`exceptions`**, not `exceptionsRaised`. `clock_state` is a full
+ * `hr.clock_state(...)` envelope, which means it carries **`state`, not `phase`**, exactly like the
+ * standalone read.
+ *
+ * That last point is G2 N2: `getClockState` was mapped by the F6 fix, but this **nested** copy was
+ * still cast, so the moment a punch succeeded the widget got a `ClockState` with no `phase`,
+ * `clockPhasePresentation` returned `undefined`, and reading `.elapsedField` crashed the page. An
+ * employee who clocked in could not clock out. `mapPunchRecordResult` in `service.ts` maps it now.
+ */
 export interface PunchRecordResult {
   punch: PunchRow;
   clockState: ClockState;
-  exceptionsRaised: AttendanceExceptionRow[];
+  exceptionsRaised: PunchRaisedException[];
   /** True when the idempotency key collided. The UI shows the SAME confirmation, never an error. */
   replayed: boolean;
 }

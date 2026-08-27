@@ -69,15 +69,35 @@ const CLOCK_PHASE_PRESENTATION: Record<ClockPhase, ClockPhasePresentation> = {
   on_meal: { headline: "On a meal break", elapsedField: "break", elapsedLabel: "On your meal break for" },
 };
 
-export function clockPhasePresentation(phase: ClockPhase): ClockPhasePresentation {
-  return CLOCK_PHASE_PRESENTATION[phase];
+/**
+ * 🚨 **TOTAL BY CONSTRUCTION — THIS LOOKUP CRASHED A LIVE PAGE (G2 N2).**
+ *
+ * `PunchStatusPanel` does `clockPhasePresentation(state.phase).elapsedField`. When the punch
+ * response arrived cast rather than mapped, `phase` was `undefined`, this returned `undefined`, and
+ * reading `.elapsedField` replaced `/hr/me/clock` with an error overlay — *"an employee who clocks
+ * in cannot clock out from this surface."*
+ *
+ * `service.ts` maps the field now, which is the real fix. This is the second line of defence: a
+ * server that one day sends a sixth phase, or a mapper that one day misses one, must degrade to a
+ * surface that still renders its punch controls — **never to a blank page for someone standing at a
+ * clock at 5am.** The fallback is deliberately the safest state: it shows no elapsed ticker rather
+ * than a wrong one, and it claims nothing about what the person is doing.
+ */
+export function clockPhasePresentation(phase: ClockPhase | null | undefined): ClockPhasePresentation {
+  return (
+    (phase ? CLOCK_PHASE_PRESENTATION[phase] : undefined) ?? {
+      headline: "Your time clock",
+      elapsedField: null,
+      elapsedLabel: null,
+    }
+  );
 }
 
 /**
  * §2.1: `on_paid_break` shows **a visible "this break is paid" statement**. An employee who does not
  * know whether their break is paid cannot tell whether their timesheet is right.
  */
-export function breakPayNotice(phase: ClockPhase): string | null {
+export function breakPayNotice(phase: ClockPhase | null | undefined): string | null {
   if (phase === "on_paid_break") return "This break is paid.";
   if (phase === "on_unpaid_break") return "This break is unpaid.";
   return null;
