@@ -3,6 +3,7 @@ import { createClient } from '@/utils/supabase/client';
 import { recordUnavailable } from '@/lib/records/recordUnavailable';
 import { getUserId } from '@/utils/auth/getUserId';
 import { resolveSharedCanvas } from '@/features/canvas/shared/resolveSharedCanvas';
+import { getCanvasViewScope } from '@/features/canvas/shared/canvasViewTracking';
 import type { SharedCanvasItem } from '@/types/canvas-social';
 
 export function useSharedCanvas(shareToken: string | null) {
@@ -34,11 +35,14 @@ export function useSharedCanvas(shareToken: string | null) {
 
 async function trackView(canvasId: string, organizationId: string | null) {
     try {
-        // canvas_views.organization_id is NOT NULL (the canvas's org, so anon
-        // viewers work) — without it there is nothing valid to insert.
-        if (!organizationId) return;
         const supabase = createClient();
         const userId = getUserId();
+
+        // canvas_views is an actor-owned canonical entity. The share-token
+        // resolver already records guest token access; a guest must not attempt
+        // a direct entity insert merely because the canvas organization is known.
+        const scope = getCanvasViewScope(userId, organizationId);
+        if (!scope) return;
 
         // Get or create session ID
         let sessionId = sessionStorage.getItem('canvas_session_id');
@@ -53,8 +57,8 @@ async function trackView(canvasId: string, organizationId: string | null) {
             .schema('canvas').from('canvas_views')
             .insert({
                 canvas_id: canvasId,
-                user_id: userId,
-                organization_id: organizationId,
+                user_id: scope.userId,
+                organization_id: scope.organizationId,
                 session_id: sessionId,
                 referrer: typeof document !== 'undefined' ? document.referrer : null,
                 viewed_at: new Date().toISOString()

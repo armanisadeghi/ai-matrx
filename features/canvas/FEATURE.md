@@ -65,6 +65,9 @@ the rules an agent editing THIS directory must obey.
   needs a plain string; `CanvasContent.metadata.title` is deliberately `string | ReactNode`.
 - **No `writeTargets` on the `matrx-user/canvas` surface, by design** — the pane owns no authored
   text, and its artifacts' own surfaces are strictly closer to the content.
+- **`canvas_views` direct inserts require an authenticated actor and explicit organization.**
+  Guest share-token access is recorded by the canonical share-link resolver; knowing the shared
+  canvas organization never authorizes an anonymous entity insert.
 - `search_vector` and `trending_score` on `shared_canvas_items` are trigger-maintained; never write
   them from app code.
 - **Verifying the canvas surface:** `/canvas` is not a route, and on a MAPPED route the route
@@ -76,6 +79,8 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-08-27` — Public shared-canvas guests no longer attempt actor-owned `canvas_views` inserts;
+  authenticated view rows still require both actor and explicit organization.
 - `2026-08-27` — Canvas preview now hydrates materialized `{ artifactId }` pointers from the
   canonical `canvas_items` row before rendering, with visible loading and retryable failure states.
 - `2026-08-27` — Public snapshot writes now resolve materialized `{ artifactId }` pointers to the
