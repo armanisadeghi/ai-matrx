@@ -14,10 +14,10 @@ const single = jest.fn();
 const select = jest.fn(() => ({ single }));
 const insert = jest.fn(() => ({ select }));
 const from = jest.fn(() => ({ insert }));
-const schema = jest.fn(() => ({ from }));
+const schema = jest.fn((_name: string) => ({ from }));
 
 jest.mock("@/utils/supabase/client", () => ({
-  supabase: { schema: (...args: unknown[]) => schema(...args) },
+  supabase: { schema: (name: string) => schema(name) },
 }));
 
 const NOTE_ID = "11111111-1111-4111-8111-111111111111";
