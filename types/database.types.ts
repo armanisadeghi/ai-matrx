@@ -43051,7 +43051,10 @@ export type Database = {
         Args: { p_condition: Json; p_ctx: Json }
         Returns: boolean
       }
-      _wf_display: { Args: { p_step: string }; Returns: Json }
+      _wf_display: {
+        Args: { p_contentless?: boolean; p_step: string }
+        Returns: Json
+      }
       _wf_event: {
         Args: {
           p_actor_emp?: string
