@@ -27,6 +27,7 @@
 import { supabase } from "@/utils/supabase/client";
 
 import type {
+  HrActivationSeedAck,
   HrAuditedPage,
   HrDirectoryFilter,
   HrDirectoryPage,
@@ -35,6 +36,7 @@ import type {
   HrKnobIndex,
   HrMyContext,
   HrOrgChart,
+  HrPayGroupAssignmentAck,
   HrPendingChanges,
   HrRefusalEnvelope,
   HrResult,
@@ -1013,6 +1015,119 @@ export function upsertHrStructure(args: {
     { p_kind: args.kind, p_payload: args.payload },
     { envelope: true, whatFailed: "Saving this" },
   );
+}
+
+// ── Pay-group assignment and the activation seeds ───────────────────────────
+//
+// Both doors are LIVE (`pg_proc`, 2026-08-26) and both used to have ZERO callers
+// anywhere in the browser, which is what the G2 D15 re-run recorded as N6 and N7.
+// A shipped door nothing calls is indistinguishable from a door that does not
+// exist, so these two wrappers are the whole fix on this side of the wire.
+//
+// Their envelopes are narrowed FIELD BY FIELD below rather than cast. `callHr`
+// asserts its payload to `T`, which is fine for a shape a panel only forwards —
+// it is NOT fine for numbers a wizard prints as "what was created", because a
+// missing key would render `undefined` as a count.
+
+/** Anything numeric on the wire that is genuinely a number. Never coerced from a string. */
+function readCount(row: Record<string, unknown>, key: string): number {
+  const value = row[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function readText(row: Record<string, unknown>, key: string): string | null {
+  const value = row[key];
+  return typeof value === "string" && value.trim() !== "" ? value : null;
+}
+
+function readTextArray(row: Record<string, unknown>, key: string): string[] {
+  const value = row[key];
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === "string");
+}
+
+/**
+ * Route 70's other half — put ONE employment into a pay group, or take it out of
+ * one by passing `payGroupId: null`.
+ *
+ * 🚨 `hr.pay_period` IS GENERATED FROM A PAY GROUP'S CALENDAR. An employment with
+ * no pay group can never have a pay period, which means no timesheet, no
+ * attestation, no approval, no lock and no export for that person. This is not a
+ * cosmetic field.
+ *
+ * The refusals, read out of the shipped body: `not_reachable` (no such live
+ * employment), `forbidden` (the `hr._l1_write_gate` verdict), `validation` with
+ * `field: 'pay_group_id'` (the group was deleted), and
+ * `pay_group_other_employer` — a group hangs off an employer of record, and
+ * attaching across employers would cut this person's periods against another
+ * company's calendar.
+ */
+export async function setHrEmploymentPayGroup(args: {
+  employmentId: string;
+  payGroupId: string | null;
+}): Promise<HrResult<HrPayGroupAssignmentAck>> {
+  const result = await callHr<Record<string, unknown>>(
+    "hr_employment_set_pay_group",
+    { p_employment_id: args.employmentId, p_pay_group_id: args.payGroupId },
+    { envelope: true, whatFailed: "This person's pay group" },
+  );
+  if (!result.ok) return result;
+
+  const row = result.data;
+  return {
+    ok: true,
+    data: {
+      employmentId: readText(row, "employment_id"),
+      payGroupId: readText(row, "pay_group_id"),
+      payGroupName: readText(row, "pay_group_name"),
+      previousPayGroupId: readText(row, "previous_pay_group_id"),
+      // The door always answers `false`. It is read rather than assumed so the
+      // day the server learns how to re-cut, the surface stops lying by omission.
+      existingPeriodsRecut: row.existing_periods_recut === true,
+      auditId: readText(row, "audit_id"),
+    },
+  };
+}
+
+/**
+ * The activation seeds — earning codes, deduction codes, and the employer's
+ * default holiday calendar with the year's federal holidays.
+ *
+ * 🚨 A FRESHLY ACTIVATED EMPLOYER CANNOT COMPUTE HOURS UNTIL THIS RUNS.
+ * `hr.work_interval.earning_code_id` is `NOT NULL`, so an employer with zero
+ * earning codes has nothing to write hours against.
+ *
+ * IDEMPOTENT: every insert is `on conflict do nothing` and the holiday calendar
+ * is only built when the employer has none, so a second call creates nothing and
+ * honestly reports zeros. Callers render the returned counts — never a constant,
+ * and never the list the seed *would* have created.
+ *
+ * Refuses `not_activated` when the org has no employer profile (seeds belong to
+ * an employer of record), and `forbidden` from `hr._l1_settings_gate`.
+ */
+export async function seedHrActivation(
+  organizationId: string,
+): Promise<HrResult<HrActivationSeedAck>> {
+  const result = await callHr<Record<string, unknown>>(
+    "hr_activation_seed",
+    { p_organization_id: organizationId },
+    { envelope: true, whatFailed: "The starting codes and calendars" },
+  );
+  if (!result.ok) return result;
+
+  const row = result.data;
+  return {
+    ok: true,
+    data: {
+      earningCodesCreated: readCount(row, "earning_codes_created"),
+      deductionCodesCreated: readCount(row, "deduction_codes_created"),
+      holidayCalendarId: readText(row, "holiday_calendar_id"),
+      holidaysCreated: readCount(row, "holidays_created"),
+      tipCodesSeededNotEnabled: readTextArray(row, "tip_codes_seeded_not_enabled"),
+      categoriesDimensions: readText(row, "categories_dimensions"),
+      auditId: readText(row, "audit_id"),
+    },
+  };
 }
 
 /** Set an org override on one configuration key (§10 / D13). */

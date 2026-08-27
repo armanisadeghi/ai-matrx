@@ -556,6 +556,51 @@ export type HrKnobIndex = {
 /** Every write returns `{ok:true, …}` or the refusal envelope. Same `HrResult<T>`. */
 export type HrWriteAck = Record<string, unknown> & { ok?: true };
 
+/**
+ * `hr_employment_set_pay_group`'s success envelope, narrowed field by field in
+ * `service.ts` — nothing here is cast off the wire.
+ *
+ * 🚨 `existingPeriodsRecut` IS ALWAYS `false`, AND THAT IS THE POINT. The door
+ * states route 70's rule on the wire so a surface can say it BEFORE saving:
+ * moving somebody between pay groups is not retroactive. Pay periods and
+ * workweeks already cut keep the group they were cut under, so hours already
+ * computed — and possibly already exported — are never rewritten. A control that
+ * hides this lets an HR admin believe a mid-period move fixes last week's
+ * timesheet. It does not.
+ */
+export type HrPayGroupAssignmentAck = {
+  employmentId: string | null;
+  payGroupId: string | null;
+  payGroupName: string | null;
+  previousPayGroupId: string | null;
+  existingPeriodsRecut: boolean;
+  auditId: string | null;
+};
+
+/**
+ * `hr_activation_seed`'s success envelope, narrowed field by field.
+ *
+ * 🚨 THESE COUNTS ARE WHAT THE DOOR ACTUALLY CREATED, NOT WHAT IT INTENDED TO.
+ * The function is idempotent — every insert is `on conflict do nothing` and the
+ * counters only advance when a row landed — so a second run honestly reports
+ * zeros. A surface that prints "14 earning codes" from a constant instead of
+ * from this envelope is the exact defect the seeds fix exists to end.
+ *
+ * `tipCodesSeededNotEnabled` carries D11's three codes, which ship
+ * `is_active = false` deliberately: tip credit is a jurisdiction minefield an
+ * employer must switch on knowingly.
+ */
+export type HrActivationSeedAck = {
+  earningCodesCreated: number;
+  deductionCodesCreated: number;
+  holidayCalendarId: string | null;
+  holidaysCreated: number;
+  tipCodesSeededNotEnabled: string[];
+  /** The server's own sentence about the seed that is platform-wide, not per-org. */
+  categoriesDimensions: string | null;
+  auditId: string | null;
+};
+
 export type HrCapabilitySet = {
   /** Typed at the call site; permissive on the wire, because the server owns the list. */
   can: (capability: HrCapability) => boolean;

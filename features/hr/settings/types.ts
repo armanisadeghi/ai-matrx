@@ -288,17 +288,16 @@ export type HrActivationResult = {
   role_assignment_id: string;
   audit_id: string | null;
   /**
-   * 🚨 SEEDS THE ENVELOPE REPORTS. The live function seeds NOTHING — no earning
-   * codes, no deduction codes, no `platform.categories` dimensions, no holiday
-   * calendar (read out of `hr_activate_employer`'s body 2026-08-26). §2.4 says
-   * activation seeds all four and the server lane owner is extending it, so step 4
-   * renders whatever these arrays report and says "nothing was seeded" when they
-   * are empty. It never claims a seed that did not happen.
+   * 🚨 NO SEED FIELDS LIVE HERE, BECAUSE `hr_activate_employer` SEEDS NOTHING —
+   * it never has (read out of its body 2026-08-26). The four optional
+   * `seeded_*` keys that used to sit here were never returned by anything, so
+   * step 4 always fell to its "nothing was seeded" branch.
+   *
+   * The seeds are `public.hr_activation_seed`, a SECOND call the wizard makes
+   * once activation succeeds, and its counts come back as `HrActivationSeedAck`
+   * (`features/hr/types.ts`). Keeping dead optional fields here is how a surface
+   * ends up claiming a seed that did not happen.
    */
-  seeded_earning_code_ids?: string[];
-  seeded_deduction_code_ids?: string[];
-  seeded_category_dimension_keys?: string[];
-  seeded_holiday_calendar_id?: string | null;
 };
 
 /** The three activation refusals the shipped function writes, verbatim. */

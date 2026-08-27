@@ -69,12 +69,24 @@ import { useHrPersona } from "../../shared/useHrPersona";
 import { createHrEmployee, scanHrDuplicates } from "../../service";
 import { hrEmployeeHref, hrPeopleHref, hrSettingsHref } from "../../routes";
 import { HR_WORKER_CLASSES } from "../../constants";
-import { activeStructure, useHrStructure } from "../shared/useHrStructure";
+import {
+  activeStructure,
+  payFrequencyWords,
+  payGroupOptions,
+  useHrStructure,
+} from "../shared/useHrStructure";
 import { readWriteAck, type HrWriteRefusal } from "./writeAck";
 import { DuplicatePanel, type HrDuplicateScan } from "./DuplicatePanel";
 import { RehirePanel, type HrPriorEmployment } from "./RehirePanel";
 
 type Mode = "new-person" | "link-member" | "link-party" | "convert-candidate";
+
+/**
+ * Radix `Select` refuses an empty-string item value, and "no pay group" is a real,
+ * legitimate answer — not the absence of one. So it is a sentinel that never
+ * leaves this file: the form state keeps `""` and the submit keeps sending `null`.
+ */
+const NO_PAY_GROUP = "__no_pay_group__";
 
 export function HrNewEmployee({
   prefill,
@@ -148,6 +160,11 @@ export function HrNewEmployee({
   const { locations, departments, jobTitles } = activeStructure(structure);
   const chosenLocation =
     locations.find((l) => l.id === form.location_id) ?? null;
+
+  // A deactivated pay group is not a choice you can make at hire.
+  const payGroups = payGroupOptions(structure).filter((group) => group.isActive);
+  const chosenPayGroup =
+    payGroups.find((group) => group.id === form.pay_group_id) ?? null;
 
   const isContractor = form.worker_class === "contractor";
 
@@ -492,7 +509,78 @@ export function HrNewEmployee({
                     </SelectContent>
                   </Select>
                 </Field>
+
+                {/* 🚨 THE PAY GROUP. `pay_group_id` was in this form's state and in
+                    its submit from the day it shipped, with NO CONTROL — so every
+                    person hired here was created with a null one, and
+                    `hr.pay_period` is generated from a pay group's calendar. No
+                    group, no period; no period, no timesheet, no attestation, no
+                    approval, no lock and no export for that person, ever. */}
+                {payGroups.length === 0 ? (
+                  <div className="min-w-0 space-y-1.5">
+                    <span className="block text-xs font-medium">Pay group</span>
+                    <p className="text-xs text-muted-foreground">
+                      This employer has no pay groups yet. Pay periods are cut from a
+                      pay group&apos;s calendar, so nobody here can have a timesheet
+                      until one exists.
+                    </p>
+                    <Button
+                      asChild
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="min-h-11 lg:min-h-9"
+                    >
+                      <Link href={hrSettingsHref("pay-groups", { org: orgRef })}>
+                        Create a pay group
+                      </Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <Field
+                    label="Pay group"
+                    hint={
+                      chosenPayGroup
+                        ? [
+                            payFrequencyWords(chosenPayGroup.payFrequency),
+                            "Their pay periods are cut from this group's calendar.",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")
+                        : undefined
+                    }
+                  >
+                    <Select
+                      value={form.pay_group_id || NO_PAY_GROUP}
+                      onValueChange={(value) =>
+                        set({ pay_group_id: value === NO_PAY_GROUP ? "" : value })
+                      }
+                    >
+                      <SelectTrigger className="h-11 lg:h-9">
+                        <SelectValue placeholder="Choose a pay group" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={NO_PAY_GROUP}>No pay group</SelectItem>
+                        {payGroups.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                )}
               </Grid>
+
+              {/* NOT REQUIRED — a contractor may legitimately have none — but the
+                  consequence is real and the form does not hide it. */}
+              {payGroups.length > 0 && !form.pay_group_id ? (
+                <p className="max-w-prose text-xs text-muted-foreground">
+                  No pay group — this person will have no pay periods, so no
+                  timesheet. That is a normal answer for a contractor who invoices;
+                  for anyone whose hours you compute, pick one.
+                </p>
+              ) : null}
             </Fieldset>
 
             <Fieldset title="Position">

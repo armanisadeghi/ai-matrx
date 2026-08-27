@@ -22,18 +22,29 @@
 // because the RPC `coalesce`s almost everything: a malformed EIN, and a location
 // with no jurisdiction.
 //
-// ── 🚨 THREE HONEST GAPS THIS WIZARD REFUSES TO PAPER OVER ────────────────
-//  1. NO SEEDS. §2.4 says activation seeds the earning codes, the deduction codes,
-//     the `platform.categories` dimensions and the jurisdiction's holiday calendar.
-//     The live function seeds NONE of them. Step 4 renders what the envelope
-//     REPORTS and says "nothing was seeded" when it reports nothing — it never
-//     claims a seed that did not happen (R-L1 wizard steps C4/C5).
-//  2. THE PROFILE FIELDS THE RPC DROPS. It reads `legal_name` and `ein` and nothing
+// ── THE SEEDS ARE A SECOND CALL, AND THEY RUN HERE ─────────────────────────
+// `hr_activate_employer` seeds NOTHING — it never has. `public.hr_activation_seed`
+// is the door that does, it has been live all along, and until now NOTHING IN THE
+// BROWSER CALLED IT (G2 D15 re-run, N7). So a freshly activated employer had zero
+// earning codes, and `hr.work_interval.earning_code_id` is `NOT NULL` — it had
+// nothing to write hours against, for anyone, ever.
+//
+// It runs immediately after activation succeeds, and it is IDEMPOTENT (every
+// insert is `on conflict do nothing`, and the holiday calendar is built only when
+// the employer has none), so a re-run creates nothing twice.
+//
+// 🚨 STEP 4 PRINTS THE COUNTS THE ENVELOPE RETURNED — never the list the seed was
+// supposed to create. If the seed call refuses, step 4 says so and offers route 72;
+// it does not claim seeds that did not happen. That claim is the specific failure
+// this wiring exists to end.
+//
+// ── 🚨 TWO HONEST GAPS THIS WIZARD REFUSES TO PAPER OVER ──────────────────
+//  1. THE PROFILE FIELDS THE RPC DROPS. It reads `legal_name` and `ein` and nothing
 //     else off step 1 — `entity_form`, `formation_state` and `primary_address` are
 //     not in its INSERT. They are sent anyway so they land the moment the server
 //     lane widens the insert, and step 1 says plainly that they are finished at
 //     route 68 today.
-//  3. THE LOCATION ADDRESS. Same shape: `location_name`, `tz` and `jurisdiction_id`
+//  2. THE LOCATION ADDRESS. Same shape: `location_name`, `tz` and `jurisdiction_id`
 //     are read; the address is not. Step 2 says so and points at route 69.
 
 "use client";
@@ -71,8 +82,17 @@ import { cn } from "@/lib/utils";
 import { getOrganizationMembers } from "@/features/organizations/service";
 import type { OrganizationMemberWithUser } from "@/features/organizations/types";
 
-import { activateHrEmployer, fetchHrStructure } from "../../service";
-import { isHrDenied, type HrDenied, type HrFailed } from "../../types";
+import {
+  activateHrEmployer,
+  fetchHrStructure,
+  seedHrActivation,
+} from "../../service";
+import {
+  isHrDenied,
+  type HrActivationSeedAck,
+  type HrDenied,
+  type HrFailed,
+} from "../../types";
 import { hrEmployeeHref, hrPeopleNewHref, hrSettingsHref } from "../../routes";
 import type {
   HrActivationRefusalReason,
@@ -170,6 +190,10 @@ export function HrActivationWizard({
   const [submitting, setSubmitting] = useState(false);
   const [refusal, setRefusal] = useState<HrDenied | HrFailed | null>(null);
   const [result, setResult] = useState<HrActivationResult | null>(null);
+  // What `hr_activation_seed` ACTUALLY did — or why it did not. Step 4 renders
+  // one or the other; there is no third branch that guesses.
+  const [seed, setSeed] = useState<HrActivationSeedAck | null>(null);
+  const [seedRefusal, setSeedRefusal] = useState<HrDenied | HrFailed | null>(null);
 
   const [jurisdictions, setJurisdictions] = useState<HrJurisdiction[] | null>(null);
   const [members, setMembers] = useState<OrganizationMemberWithUser[] | null>(null);
@@ -213,6 +237,8 @@ export function HrActivationWizard({
     return (
       <ActivationDone
         result={result}
+        seed={seed}
+        seedRefusal={seedRefusal}
         orgRef={activation.orgRef}
         className={className}
       />
@@ -284,11 +310,25 @@ export function HrActivationWizard({
     };
 
     const activated = await activateHrEmployer(payload);
-    setSubmitting(false);
 
     if (!activated.ok) {
+      setSubmitting(false);
       setRefusal(activated);
       return;
+    }
+
+    // 🚨 THE SEED STEP, AFTER ACTIVATION SUCCEEDS AND ONLY THEN. `hr_activation_seed`
+    // refuses `not_activated` without an employer profile, and the profile is what
+    // the call above just created. Its outcome is recorded verbatim — a refusal here
+    // does NOT undo the activation, and step 4 says which of the two happened.
+    const seeded = await seedHrActivation(organizationId);
+    setSubmitting(false);
+    if (seeded.ok) {
+      setSeed(seeded.data);
+      setSeedRefusal(null);
+    } else {
+      setSeed(null);
+      setSeedRefusal(seeded);
     }
 
     const created = activated.data as unknown as HrActivationResult;
@@ -730,22 +770,27 @@ export function HrActivationWizard({
 
 function ActivationDone({
   result,
+  seed,
+  seedRefusal,
   orgRef,
   className,
 }: {
   result: HrActivationResult;
+  /** What `hr_activation_seed` returned. `null` means it did not answer `ok`. */
+  seed: HrActivationSeedAck | null;
+  seedRefusal: HrDenied | HrFailed | null;
   orgRef: string | null;
   className?: string;
 }) {
-  const seededEarning = result.seeded_earning_code_ids ?? [];
-  const seededDeduction = result.seeded_deduction_code_ids ?? [];
-  const seededDimensions = result.seeded_category_dimension_keys ?? [];
-  const seededCalendar = result.seeded_holiday_calendar_id ?? null;
+  // 🚨 EVERY NUMBER BELOW COMES OFF THE ENVELOPE. The seed is idempotent, so on a
+  // re-run these are legitimately zero, and saying "14 earning codes" from a
+  // constant would be a lie the second time and every time after.
   const seededAnything =
-    seededEarning.length > 0 ||
-    seededDeduction.length > 0 ||
-    seededDimensions.length > 0 ||
-    Boolean(seededCalendar);
+    seed !== null &&
+    (seed.earningCodesCreated > 0 ||
+      seed.deductionCodesCreated > 0 ||
+      seed.holidaysCreated > 0 ||
+      Boolean(seed.holidayCalendarId));
 
   return (
     <div className={cn("w-full min-w-0 p-4 sm:p-6", className)}>
@@ -801,33 +846,56 @@ function ActivationDone({
             Starting codes and calendars
           </h2>
           <div className="space-y-3 p-3">
-            {seededAnything ? (
+            {seed === null ? (
+              // The call did not answer `ok`. Say exactly that, and never imply a seed.
+              <p className="text-sm text-foreground">
+                <span className="font-medium">Nothing was seeded.</span>{" "}
+                {seedRefusal === null
+                  ? "The starting codes step did not run."
+                  : seedRefusal.kind === "denied"
+                    ? (seedRefusal.detail ??
+                      "The starting codes step was refused for this employer.")
+                    : seedRefusal.message}{" "}
+                Hours are written against an earning code, so timesheets have no
+                vocabulary until this employer has some — create them at the door
+                below.
+              </p>
+            ) : seededAnything ? (
               <ul className="space-y-1 text-sm text-foreground">
-                {seededEarning.length > 0 ? (
-                  <li>{seededEarning.length} earning codes</li>
+                {seed.earningCodesCreated > 0 ? (
+                  <li>{seed.earningCodesCreated} earning codes</li>
                 ) : null}
-                {seededDeduction.length > 0 ? (
-                  <li>{seededDeduction.length} deduction codes</li>
+                {seed.deductionCodesCreated > 0 ? (
+                  <li>{seed.deductionCodesCreated} deduction codes</li>
                 ) : null}
-                {seededDimensions.length > 0 ? (
+                {seed.holidayCalendarId ? (
                   <li>
-                    Category dimensions: {seededDimensions.join(", ")}
+                    A default holiday calendar
+                    {seed.holidaysCreated > 0
+                      ? ` with ${seed.holidaysCreated} holidays`
+                      : ""}
                   </li>
                 ) : null}
-                {seededCalendar ? <li>A default holiday calendar</li> : null}
-                <li className="text-muted-foreground">
-                  Tip-related earning codes ship seeded, not enabled — they exist so a
-                  tipped employer does not have to invent them, and stay switched off
-                  until that employer turns them on.
-                </li>
+                {seed.categoriesDimensions ? (
+                  <li className="text-muted-foreground">
+                    Category dimensions: {seed.categoriesDimensions}
+                  </li>
+                ) : null}
+                {seed.tipCodesSeededNotEnabled.length > 0 ? (
+                  <li className="text-muted-foreground">
+                    {seed.tipCodesSeededNotEnabled.join(", ")} — seeded, not enabled.
+                    Tip credit is a jurisdiction minefield, so these exist for a
+                    tipped employer and stay switched off until that employer turns
+                    them on deliberately.
+                  </li>
+                ) : null}
               </ul>
             ) : (
+              // `ok`, but everything already existed. Idempotent, and said so.
               <p className="text-sm text-foreground">
-                <span className="font-medium">Nothing was seeded.</span> Setup created no
-                earning codes, no deduction codes, no category dimensions and no holiday
-                calendar for this employer — so timesheets have no vocabulary to write
-                against until you create some. That is the current behaviour of the
-                setup step, not a failure of yours.
+                <span className="font-medium">Nothing new was created.</span> This
+                employer already had its starting codes and calendar, so the setup step
+                created none of them a second time.
               </p>
             )}
             <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">

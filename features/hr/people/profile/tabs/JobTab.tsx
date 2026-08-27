@@ -21,6 +21,10 @@
 //     deadline — BEFORE the user commits, not in a toast afterwards.
 //  5. A TITLE CHANGE OFFERS THE TITLE'S DEFAULTS AS SUGGESTIONS. Never a silent
 //     overwrite of FLSA status or pay basis.
+//  6. THE PAY GROUP LIVES HERE, because it is a fact of the EMPLOYMENT, not of
+//     the position assignment. `hr.pay_period` is generated from a pay group's
+//     calendar, so this is the control that decides whether this person can ever
+//     have a timesheet at all. See `PayGroupCard`.
 
 import { useState } from "react";
 import Link from "next/link";
@@ -48,6 +52,7 @@ import {
   useHrEmploymentHistory,
 } from "../useHrProfile";
 import { ChangePositionForm } from "../ChangePositionForm";
+import { PayGroupCard } from "../PayGroupCard";
 
 type Row = Record<string, unknown>;
 
@@ -99,6 +104,14 @@ export function JobTab({
     const right = readNumber(b, "spell_number") ?? 0;
     return right - left;
   });
+
+  // The spell this tab's header is about — the one the pay-group control writes.
+  const currentSpell =
+    spells.find((spell) => readString(spell, "employment_id") === employmentId) ??
+    null;
+  const currentSpellPayGroupId = currentSpell
+    ? readString(currentSpell, "pay_group_id")
+    : null;
 
   // 🚨 `effective_from desc`. The most recent fact is the one a reader wants
   // first, and a list that starts at the beginning of time buries it.
@@ -163,6 +176,22 @@ export function JobTab({
             history.refresh();
           }}
           onCancel={() => setChanging(null)}
+        />
+      ) : null}
+
+      {/* ── Pay group (route 70's other half) ──────────────────────────────
+             The ONLY control in the product that puts an employment into a pay
+             group. `hr.pay_period` is generated from a pay group's calendar, so
+             an employment without one can never have a period — and therefore
+             never a timesheet, an approval, a lock or an export. ───────────── */}
+      {employmentId ? (
+        <PayGroupCard
+          employmentId={employmentId}
+          organizationId={profile.organization_id}
+          currentPayGroupId={currentSpellPayGroupId}
+          canWrite={canWrite}
+          org={org}
+          onSaved={history.refresh}
         />
       ) : null}
 
