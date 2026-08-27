@@ -1139,6 +1139,66 @@ async def main():
                 "select count(*)=0 from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
                 "where n.nspname='hr' and p.proname <> '_wf_not_attested' "
                 "and p.prosrc ~ '_wf_close_step\\([^)]*''not_attested'''"))
+        # ============================================= §1.8 THE QUEUE COUNTS ONLY REAL WORK
+        # 🚨 §1.8: the failure queue "is not an error log. It is a worked queue: every row is a
+        # thing a human must resolve BEFORE THE INSTANCE CAN MOVE." A terminally-closed instance
+        # cannot move, so an open row against one is not work — it is noise counted as work in the
+        # inbox's outstanding total. Two such rows were found live on 2026-08-27; both halves are
+        # asserted here so the class cannot re-accumulate.
+        await as_owner()
+        TERMINAL = ("completed", "closed", "rejected", "rejected_at_intake", "withdrawn",
+                    "cancelled", "expired", "superseded")
+        # drive it: cancel an instance that HAS an open failure row, through the real door
+        stale_lr = await conn.fetchval(
+            "insert into hr.leave_request (organization_id, employment_id, leave_policy_id, starts_on, "
+            "ends_on, requested_hours, state, engine_key, engine_version) "
+            "values ($1,$2,$3,current_date + 600, current_date + 600, 8,'submitted','proof','1') returning id",
+            org, people["erin"]["employment"], lp)
+        await conn.execute(
+            "update hr.approval_authority set is_active=false where organization_id=$1 "
+            "and action_type='leave_approve'", org)
+        await as_user(people["erin"]["uid"])
+        stale_req = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", stale_lr, org)
+        await as_owner()
+        await conn.execute(
+            "update hr.approval_authority set is_active=true where organization_id=$1", org)
+        stale_inst = stale_req.get("instance_id")
+        rec("§1.8 queue hygiene", "an unroutable request opens a real failure row a human owns",
+            await conn.fetchval(
+                "select count(*)>0 from hr.workflow_failure where workflow_instance_id=$1 and state='open'",
+                stale_inst))
+        await as_user(people["carol"]["uid"])
+        await j("select hr.wf_cancel($1,'no longer needed')", stale_inst)
+        await as_owner()
+        rec("§1.8 queue hygiene", "🚨 cancelling the instance CLOSES its open failure rows — a queue entry never outlives the work it described",
+            await conn.fetchval(
+                "select count(*)=0 from hr.workflow_failure where workflow_instance_id=$1 "
+                "and state in ('open','retrying')", stale_inst),
+            str(await conn.fetchval(
+                "select string_agg(state||'/'||failure_class, ', ') from hr.workflow_failure "
+                "where workflow_instance_id=$1", stale_inst)))
+        rec("§1.8 queue hygiene", "🚨 and NO FORGED ACTOR: the system rule resolved it, so resolved_by is null and the note says so",
+            await conn.fetchval(
+                "select bool_and(resolved_by is null and resolution_note like '%superseded by instance closure%') "
+                "from hr.workflow_failure where workflow_instance_id=$1 and state='resolved'", stale_inst))
+        # THE INVARIANT, over the whole live table — this is what stops the class re-accumulating
+        rec("§1.8 queue hygiene", "🚨 THE INVARIANT: not one open failure row anywhere outlives a terminally-closed instance",
+            await conn.fetchval(
+                "select count(*)=0 from hr.workflow_failure f "
+                "join hr.workflow_instance i on i.id=f.workflow_instance_id "
+                "where f.state in ('open','retrying') and i.state = any($1::text[])", list(TERMINAL)),
+            str(await conn.fetchval(
+                "select string_agg(f.failure_class||' on '||i.state, ', ') from hr.workflow_failure f "
+                "join hr.workflow_instance i on i.id=f.workflow_instance_id "
+                "where f.state in ('open','retrying') and i.state = any($1::text[])", list(TERMINAL))))
+        # and the other half of the rule: a FAILED instance KEEPS its row, because that IS the work
+        rec("§1.8 queue hygiene", "and a FAILED instance keeps its open row — §3.1 retries from there, so that row is live work",
+            await conn.fetchval(
+                "select count(*)>0 from hr.workflow_failure f "
+                "join hr.workflow_instance i on i.id=f.workflow_instance_id "
+                "where i.organization_id=$1 and i.state='failed' and f.state in ('open','retrying')", org),
+            "a failed instance's queue entry is the mechanism for getting it moving again")
+
         # ================================================================= §4.2 DOOR GRANTS
         # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
         # GRANT, so hr_c4_07's door assertion would stay green on a surface reachable only because
