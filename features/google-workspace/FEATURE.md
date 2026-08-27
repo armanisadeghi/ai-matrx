@@ -1,8 +1,8 @@
 # Google Workspace
 
-> **The whole-platform Google map** — every Google integration across every repo, what is
-> wired to the canonical connection and what is an island, and what is still open — is
-> [`docs/handoffs/google-integrations.md`](../../docs/handoffs/google-integrations.md).
+> **The whole-platform Google map** — the active first-party scope boundaries, approval waves,
+> and non-OAuth lanes — is
+> `/Users/armanisadeghi/code/common-docs/systems/integrations/provider-access/GOOGLE.md`.
 > Read it before adding any Google capability anywhere.
 
 ## Purpose

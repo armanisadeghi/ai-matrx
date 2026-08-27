@@ -1237,8 +1237,9 @@ un-gating it is one line once the scope is approved. PDF/HTML/PowerPoint are ful
 
 **Still open, and only Arman can start it:** (b) a `google.slides` provider-access campaign, after
 which the export should be rebuilt on the CANONICAL connection + a first-party tool rather than the
-hand-rolled per-feature OAuth path it uses today. Tracked in the Google integrations handoff
-(`docs/handoffs/google-integrations.md`).
+hand-rolled per-feature OAuth path it uses today. The current ruling is tracked in
+`/Users/armanisadeghi/code/common-docs/projects/google-oauth-verification/READ-ONLY-SWEEP.md`:
+selected Slides use the existing `drive.file` grant and do not start a broad Slides-scope campaign.
 
 ### D211 — org/project invitation email templates interpolate unescaped user text into HTML (2026-08-18)
 
