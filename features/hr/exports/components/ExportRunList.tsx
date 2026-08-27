@@ -223,7 +223,9 @@ function formatToken(token: string): string {
 function ExportArtifactSection({
   row,
   mockCase,
+  organizationId,
 }: {
+  organizationId?: string | null;
   row: PayrollExportHistoryRow;
   mockCase?: HrFixtureCase;
 }) {
@@ -241,7 +243,12 @@ function ExportArtifactSection({
   useEffect(() => {
     if (!row.artifact_file_id) return;
     let cancelled = false;
-    getExportArtifact(row.export_id, { mockCase })
+    // 🚨 The employer, explicitly — a GET carries no body for the transport to derive
+    // `X-Organization-Id` from, and HR does not scope to the Redux picker (R5).
+    getExportArtifact(row.export_id, {
+      mockCase,
+      organizationId: organizationId ?? undefined,
+    })
       .then((next) => {
         if (!cancelled) {
           setArtifactState({ requestKey, envelope: next, failure: null });
@@ -294,7 +301,9 @@ function ExportArtifactSection({
 function ExportRunDetail({
   row,
   mockCase,
+  organizationId,
 }: {
+  organizationId?: string | null;
   row: PayrollExportHistoryRow;
   mockCase?: HrFixtureCase;
 }) {
@@ -430,7 +439,11 @@ function ExportRunDetail({
 
       <div>
         <p className="mb-2 text-xs font-medium text-foreground">The file</p>
-        <ExportArtifactSection row={row} mockCase={mockCase} />
+        <ExportArtifactSection
+          row={row}
+          mockCase={mockCase}
+          organizationId={organizationId}
+        />
       </div>
     </div>
   );
@@ -910,7 +923,13 @@ export function ExportRunList({
             enabled: true,
             title: (row) => `Version ${row.export_version}`,
             description: (row) => STATE_LABEL[row.delivery_state],
-            render: (row) => <ExportRunDetail row={row} mockCase={mockCase} />,
+            render: (row) => (
+              <ExportRunDetail
+                row={row}
+                mockCase={mockCase}
+                organizationId={organizationId}
+              />
+            ),
           }}
           window={{ enabled: false }}
           toolbar={{

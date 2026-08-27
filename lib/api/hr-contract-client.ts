@@ -24,7 +24,12 @@
  */
 
 import type { paths } from "@/types/python-generated/hr-contracts.api-types";
-import { getJson, postJson, type RequestOptions, type ResponseMeta } from "@/lib/python-client";
+import {
+  getJson,
+  postJson,
+  type RequestOptions,
+  type ResponseMeta,
+} from "@/lib/python-client";
 import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import {
   HR_MOCK_ENABLED,
@@ -42,11 +47,12 @@ export type HrPathWith<M extends HttpMethod> = {
     : never;
 }[keyof paths];
 
-type HrOpOf<P extends keyof paths, M extends HttpMethod> = paths[P] extends Record<M, infer O>
-  ? O
-  : never;
+type HrOpOf<P extends keyof paths, M extends HttpMethod> =
+  paths[P] extends Record<M, infer O> ? O : never;
 
-type HrJsonBodyOf<O> = O extends { requestBody: { content: { "application/json": infer B } } }
+type HrJsonBodyOf<O> = O extends {
+  requestBody: { content: { "application/json": infer B } };
+}
   ? B
   : O extends { requestBody?: { content: { "application/json": infer B } } }
     ? B | undefined
@@ -60,13 +66,21 @@ type HrSuccessOf<O> = O extends {
   responses: { 200: { content: { "application/json": infer R } } };
 }
   ? R
-  : O extends { responses: { 202: { content: { "application/json": infer R } } } }
+  : O extends {
+        responses: { 202: { content: { "application/json": infer R } } };
+      }
     ? R
     : never;
 
-export type HrGetResult<P extends HrPathWith<"get">> = HrSuccessOf<HrOpOf<P, "get">>;
-export type HrPostBody<P extends HrPathWith<"post">> = HrJsonBodyOf<HrOpOf<P, "post">>;
-export type HrPostResult<P extends HrPathWith<"post">> = HrSuccessOf<HrOpOf<P, "post">>;
+export type HrGetResult<P extends HrPathWith<"get">> = HrSuccessOf<
+  HrOpOf<P, "get">
+>;
+export type HrPostBody<P extends HrPathWith<"post">> = HrJsonBodyOf<
+  HrOpOf<P, "post">
+>;
+export type HrPostResult<P extends HrPathWith<"post">> = HrSuccessOf<
+  HrOpOf<P, "post">
+>;
 
 type HrEnvelope<T> = Promise<{ data: T; meta: ResponseMeta }>;
 
@@ -94,10 +108,46 @@ export interface HrRequestOptions extends RequestOptions {
  * personal-org fallback, which would make the transport invent scope instead of carrying it.
  * `requireSelectedOrgId` throws before any networking when there is no selection, and
  * `applyOrganizationContextHeader` (inside `buildHeaders`) validates and normalizes the value.
+ *
+ * 🚨 AND THE PART THAT WAS WRONG, WHICH BROKE THE ONE THING THIS LANE EXISTS TO DO (R5).
+ * ------------------------------------------------------------------------------------
+ * `requireSelectedOrgId()` is the REDUX picker's org. **HR does not scope to it.** HR is strictly
+ * single-employer and SPEC-UI-IA §1 resolves the employer from `?org=` FIRST, so on
+ * `/hr/time/periods/<id>?org=<employer>` the body carried the employer while the header carried
+ * whatever org the user last clicked in the picker. Observed live, 2026-08-27:
+ *
+ *     POST /hr/exports/payroll/preview
+ *       X-Organization-Id:    f9cb3e35…  ("Titanium"  — the Redux selection)
+ *       body.organization_id: 2643e470…  ("Write Target Sandbox" — the ?org= employer)
+ *     -> 409 organization_context_mismatch
+ *
+ * The server was RIGHT and the client was lying. §1.2 makes the two disagreeing a 409 precisely so
+ * this cannot pass silently — and a payroll export built against the wrong employer is the exact
+ * outcome that rule exists to prevent.
+ *
+ * THE FIX IS STRUCTURAL, NOT A CALL-SITE PATCH. When the request BODY declares an
+ * `organization_id`, that value *is* the organization context of the request — there is no second
+ * opinion to have. So the header is derived from it, and the picker is consulted only when the
+ * body has nothing to say (every GET, and the handful of POSTs with no org in their body). A
+ * caller may still override explicitly, but it can no longer *forget*, which is what happened here:
+ * every export call site passed `{ mockCase }` and nothing else, and the omission was invisible
+ * because mock mode never checked the header.
  */
-function hrRequestOptions<O extends HrRequestOptions>(opts: O | undefined): O {
+function hrRequestOptions<O extends HrRequestOptions>(
+  opts: O | undefined,
+  body?: unknown,
+): O {
   const resolved = { ...(opts ?? ({} as O)) };
-  resolved.organizationId = opts?.organizationId ?? requireSelectedOrgId();
+  const bodyOrg =
+    typeof body === "object" && body !== null
+      ? (body as { organization_id?: unknown }).organization_id
+      : undefined;
+  resolved.organizationId =
+    opts?.organizationId ??
+    (typeof bodyOrg === "string" && bodyOrg.trim()
+      ? bodyOrg.trim()
+      : undefined) ??
+    requireSelectedOrgId();
   return resolved;
 }
 
@@ -109,7 +159,9 @@ export function hrBuildPath<P extends keyof paths>(
   return (template as string).replace(/\{([^}]+)\}/g, (_, k: string) => {
     const v = params[k];
     if (v === undefined) {
-      throw new Error(`hrBuildPath: missing path parameter "${k}" for "${String(template)}"`);
+      throw new Error(
+        `hrBuildPath: missing path parameter "${k}" for "${String(template)}"`,
+      );
     }
     return encodeURIComponent(String(v));
   }) as P;
@@ -147,7 +199,10 @@ function tryMock<T>(
     err.isHrMock = true;
     throw err;
   }
-  return { data: served.body as T, meta: { ...MOCK_META, status: served.status } };
+  return {
+    data: served.body as T,
+    meta: { ...MOCK_META, status: served.status },
+  };
 }
 
 /**
@@ -181,9 +236,12 @@ export async function hrApiPost<P extends HrPathWith<"post">>(
 ): HrEnvelope<HrPostResult<P>> {
   const mocked = tryMock<HrPostResult<P>>("POST", path as string, opts);
   if (mocked) return mocked;
+  // The body is handed to the resolver so the header can be DERIVED from `organization_id` when
+  // the body declares one — see `hrRequestOptions`. This is what stops a call site scoping the
+  // body to one employer and the header to another.
   return postJson<HrPostResult<P>, HrPostBody<P>>(
     path as string,
     body,
-    hrRequestOptions(opts),
+    hrRequestOptions(opts, body),
   );
 }

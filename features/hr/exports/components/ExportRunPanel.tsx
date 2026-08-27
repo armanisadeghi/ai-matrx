@@ -60,11 +60,7 @@ import {
   previewPayrollExport,
 } from "../service";
 import { toExportFailure, type ExportFailure } from "../errors";
-import {
-  AmountWithheldNote,
-  ExportAmount,
-  hasAmountAuthority,
-} from "../money";
+import { AmountWithheldNote, ExportAmount, hasAmountAuthority } from "../money";
 import type { ExportFormat, ExportPreviewResult } from "../types";
 import { ExportPreconditionAlert } from "./ExportPreconditionAlert";
 
@@ -142,7 +138,9 @@ function FormatOption({
       {format.requires_mapping.length > 0 ? (
         <p className="mt-1.5 text-xs text-muted-foreground">
           Needs first:{" "}
-          {format.requires_mapping.map((field) => mappingLabel(field)).join(", ")}
+          {format.requires_mapping
+            .map((field) => mappingLabel(field))
+            .join(", ")}
           .
         </p>
       ) : null}
@@ -260,7 +258,7 @@ export function ExportRunPanel({
 }) {
   const hr = useHrContext();
   const organizationId = hr.active?.organization_id ?? null;
-  const formats = useExportFormats(mockCase);
+  const formats = useExportFormats(mockCase, organizationId);
   const intentKeys = useIntentKeys();
   const run = useExportRun({ onSettled: () => onGenerated?.() });
 
@@ -274,7 +272,9 @@ export function ExportRunPanel({
     available.find((format) => format.key === selectedKey) ??
     // `generic_csv` is the floor and the day-one default, and no integration is ever a
     // precondition for getting paid data out (§4.3 ruling 5).
-    available.find((format) => format.key === "generic_csv" && format.available) ??
+    available.find(
+      (format) => format.key === "generic_csv" && format.available,
+    ) ??
     available.find((format) => format.available) ??
     null;
 
@@ -340,7 +340,10 @@ export function ExportRunPanel({
 
   if (formats.failure) {
     return (
-      <ExportPreconditionAlert failure={formats.failure} className={className} />
+      <ExportPreconditionAlert
+        failure={formats.failure}
+        className={className}
+      />
     );
   }
 
@@ -365,7 +368,10 @@ export function ExportRunPanel({
       )}
     >
       <div className="flex items-center gap-2">
-        <FileSpreadsheet className="h-4 w-4 text-muted-foreground" aria-hidden />
+        <FileSpreadsheet
+          className="h-4 w-4 text-muted-foreground"
+          aria-hidden
+        />
         <h2 className="text-sm font-semibold text-foreground">
           Build a payroll file
         </h2>
@@ -422,7 +428,11 @@ export function ExportRunPanel({
           Check what it would contain
         </Button>
 
-        <Button size="sm" onClick={() => void runGenerate()} disabled={!canGenerate}>
+        <Button
+          size="sm"
+          onClick={() => void runGenerate()}
+          disabled={!canGenerate}
+        >
           {busy === "generate" ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
           ) : (
@@ -445,8 +455,8 @@ export function ExportRunPanel({
           <AlertTitle>The build was accepted</AlertTitle>
           <AlertDescription>
             This environment is running against fixtures, so its progress
-            can&apos;t be followed here. On a real server the file appears in the
-            history below when it finishes.
+            can&apos;t be followed here. On a real server the file appears in
+            the history below when it finishes.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -466,9 +476,7 @@ export function ExportRunPanel({
           </AlertDescription>
         </Alert>
       ) : null}
-      {run.failure ? (
-        <ExportPreconditionAlert failure={run.failure} />
-      ) : null}
+      {run.failure ? <ExportPreconditionAlert failure={run.failure} /> : null}
 
       {/* ── The four named preconditions, and anything else the server refused with ── */}
       {failure ? <ExportPreconditionAlert failure={failure} /> : null}
@@ -487,7 +495,9 @@ export function ExportRunPanel({
               <Ban className="h-4 w-4" aria-hidden />
               <AlertTitle>
                 This file can&apos;t be built yet
-                {blocking.length > 1 ? ` — ${blocking.length} things are in the way` : ""}
+                {blocking.length > 1
+                  ? ` — ${blocking.length} things are in the way`
+                  : ""}
               </AlertTitle>
               <AlertDescription>
                 <ul className="ml-4 list-disc space-y-1">
@@ -503,9 +513,7 @@ export function ExportRunPanel({
           {preview.warnings.length > 0 ? (
             <Alert>
               <AlertTriangle className="h-4 w-4" aria-hidden />
-              <AlertTitle>
-                Worth a look before you build
-              </AlertTitle>
+              <AlertTitle>Worth a look before you build</AlertTitle>
               <AlertDescription>
                 <ul className="ml-4 list-disc space-y-1">
                   {preview.warnings.map((warning) => (

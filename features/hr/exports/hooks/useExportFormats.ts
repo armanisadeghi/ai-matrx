@@ -22,7 +22,16 @@ export interface UseExportFormatsResult {
   reload: () => void;
 }
 
-export function useExportFormats(mockCase?: HrFixtureCase): UseExportFormatsResult {
+export function useExportFormats(
+  mockCase?: HrFixtureCase,
+  /**
+   * 🚨 THE EMPLOYER, EXPLICITLY. This is a GET, so it carries no body for the transport to derive
+   * `X-Organization-Id` from — without it the header falls back to the REDUX picker's org, which
+   * is not what HR scopes to (SPEC-UI-IA §1: `?org=` wins). The registry is capability-scoped per
+   * employer, so a header naming the wrong one answers about the wrong employer. R5.
+   */
+  organizationId?: string | null,
+): UseExportFormatsResult {
   const [formats, setFormats] = useState<ExportFormat[] | null>(null);
   const [failure, setFailure] = useState<ExportFailure | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +42,10 @@ export function useExportFormats(mockCase?: HrFixtureCase): UseExportFormatsResu
     const startTimer = window.setTimeout(() => {
       setIsLoading(true);
       setFailure(null);
-      listExportFormats({ mockCase })
+      listExportFormats({
+        mockCase,
+        organizationId: organizationId ?? undefined,
+      })
         .then((next) => {
           if (cancelled) return;
           setFormats(next);
@@ -51,7 +63,7 @@ export function useExportFormats(mockCase?: HrFixtureCase): UseExportFormatsResu
       cancelled = true;
       window.clearTimeout(startTimer);
     };
-  }, [mockCase, reloadToken]);
+  }, [mockCase, organizationId, reloadToken]);
 
   return {
     formats,
