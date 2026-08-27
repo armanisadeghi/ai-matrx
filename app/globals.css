@@ -1488,14 +1488,16 @@
       min-width: 2.75rem;
     }
 
-    /* Text fields: 44px tall, and >=16px text so iOS does not zoom on focus. */
+    /* Text fields: 44px tall. The >=16px anti-iOS-zoom floor is NOT set here
+       — this block lives in `@layer components`, which loses to Tailwind's
+       `text-sm` utility no matter how specific the selector is. It is now
+       global and unlayered: see THE iOS ZOOM FLOOR at the end of this file. */
     .matrx-touch-targets
       :is(
         input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
         textarea
       ):not([data-touch-exempt]) {
       min-height: 2.75rem;
-      font-size: max(1rem, 100%);
     }
   }
 }
@@ -2298,4 +2300,55 @@
    square. */
 .matrx-mobile-sheet .h-7:not([class*="w-7"]) {
   min-height: 2.25rem;
+}
+
+/* ────────────────────────────────────────────────────────────────────────
+   THE iOS ZOOM FLOOR — global, mechanical, coarse-pointer only.
+
+   iOS Safari zooms the ENTIRE page when a focused text field's computed
+   font-size is < 16px, and it does not zoom back out on blur: the user is
+   left on a page that is suddenly too big, scrolled sideways, with the
+   layout apparently "broken". Every `text-sm` (14px) / `text-xs` (12px)
+   field in the app is that bug — including the base `Input` / `Textarea`
+   primitives, which are `text-sm` by design.
+
+   WHY IT ONLY STARTED SHOWING UP: this was invisible for a year because
+   `app/config/viewport.ts` shipped `userScalable: false, maximumScale: 1`,
+   which suppresses focus zoom as a side effect. That was correctly reverted
+   (2026-07-01) — pinch-zoom is the user's only escape hatch out of a mobile
+   overflow lockout and must stay ON — which un-masked ~450 sub-16px fields
+   at once. Do NOT "fix" this by re-disabling zoom in viewport.ts.
+
+   WHY IT IS A GLOBAL RULE AND NOT A CALL-SITE CONVENTION: 450+ call sites,
+   written by many agents, most of whom never read the mobile skill. A rule
+   that has to be remembered at every `<Input />` is a rule that decays. This
+   makes it mechanical instead: desktop density is untouched (`pointer:
+   coarse` only), and anything authored later is covered for free.
+
+   Deliberately UNLAYERED: Tailwind utilities live in `@layer utilities`, and
+   unlayered CSS beats every layered rule regardless of specificity — the
+   only way to raise a utility-set font size. Inline `style={{ fontSize }}`
+   still wins (no `!important`), which is what keeps code editors that size
+   their own hidden textarea (Monaco/CodeMirror) working.
+
+   `max(16px, 1em)` keeps a deliberately larger field larger.
+
+   NOT covered: `[contenteditable]` roots — forcing a size there re-scales
+   the whole document body of a rich-text/markdown editor. A contenteditable
+   COMPOSER that must not zoom sets `text-base` (or 16px) at its call site.
+
+   Opt out with `data-no-zoom-floor` ONLY for a readonly/display field that
+   can never receive a text-entry focus, and say why at the call site.
+   ──────────────────────────────────────────────────────────────────────── */
+@media (pointer: coarse) {
+  :root
+    :is(
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+          [type="color"]
+        ):not([type="file"]),
+      textarea,
+      select
+    ):not([data-no-zoom-floor]) {
+    font-size: max(16px, 1em);
+  }
 }

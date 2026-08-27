@@ -17,7 +17,7 @@ Single source of truth for mobile UX. Desktop stays unchanged; mobile gets iOS-n
 
 1. **Always `dvh`** — never `vh` or `h-screen`
 2. **Always `pb-safe`** — on fixed bottom elements
-3. **Always 16px inputs** — prevents iOS zoom (`text-base` + `style={{ fontSize: '16px' }}`)
+3. **Fields are ≥16px on touch** — enforced globally by THE iOS ZOOM FLOOR in `app/globals.css`; author mobile-facing fields `text-base` anyway, and never set an inline `fontSize` below 16px on one
 4. **Always 44pt touch targets** — minimum `h-10 w-10`
 5. **Header tokens:** `--shell-header-h` / `--header-height` — never hardcode in calc
 6. **Always Drawer on mobile** — never Dialog
@@ -197,15 +197,29 @@ function MyForm() {
 
 ## iOS Zoom Prevention
 
-```tsx
-// ✅ All inputs MUST have ≥16px font size
-<Input className="text-base" style={{ fontSize: '16px' }} />
-<Textarea className="text-base" style={{ fontSize: '16px' }} />
-<SelectTrigger className="text-base" style={{ fontSize: '16px' }} />
+**This is handled globally — you do not have to remember it at every call site.** `app/globals.css` ends with **THE iOS ZOOM FLOOR**: an unlayered `@media (pointer: coarse)` rule that raises every `input` / `textarea` / `select` to `max(16px, 1em)` on touch devices. It is unlayered on purpose — Tailwind utilities live in `@layer utilities`, and only unlayered CSS can out-rank a `text-sm` utility. Desktop density is untouched.
 
-// ❌ Will trigger iOS auto-zoom on focus
+What that means for you:
+
+- A `text-sm` / `text-xs` field is no longer an iOS zoom bug. It is still desktop-density text that a phone user has to squint at, so **author fields as `text-base`** when the surface is used on mobile.
+- **Do not "fix" a zoom report by re-disabling pinch-zoom.** See the paragraph below.
+- The floor loses only to an inline `style={{ fontSize }}` (deliberate — it keeps code editors that size their own hidden textarea working). If you set an inline font size on a real text field, it must be ≥16px.
+- `[contenteditable]` is NOT covered — forcing a size there re-scales a whole rich-text document. A contenteditable **composer** sets `text-base` itself.
+- `data-no-zoom-floor` opts a field out. Only for a readonly/display field that can never take text-entry focus, and say why at the call site.
+
+```tsx
+// ✅ Authored for mobile — reads well AND never zooms
+<Input className="text-base" />
+<Textarea className="text-base" />
+
+// ⚠️  Desktop density: the global floor stops the zoom, but this is small on a phone
 <Input className="text-sm" />
+
+// ❌ Inline size below the floor — beats the global rule, zooms the page
+<Input style={{ fontSize: '13px' }} />
 ```
+
+**History — why this exists:** the app shipped `userScalable: false, maximumScale: 1` from Nov 2025, which suppresses iOS focus-zoom as a side effect and hid ~450 sub-16px fields. Commit `d7ef647e` (2026-07-01) correctly restored pinch-zoom, and every one of those fields surfaced at once as "the page randomly zooms in". The floor is the fix; the viewport setting is not.
 
 **Prevent input auto-zoom with ≥16px fonts ONLY — never by disabling pinch-zoom.** `app/config/viewport.ts` keeps `userScalable: true` (`maximumScale: 5`) on purpose: pinch-zoom is the user's universal escape hatch when any surface overflows. **Never set `userScalable: false` / `maximumScale: 1`** — it removes the only way out of a mobile lockout.
 
