@@ -1,7 +1,8 @@
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+const backendUrl = AIDREAM_PRODUCTION_URL;
 
 export const metadata = createRouteMetadata("/research", {
   title: "Research",
@@ -27,12 +28,8 @@ export default function ResearchLayout({
           <link rel="dns-prefetch" href={supabaseUrl} />
         </>
       )}
-      {backendUrl && (
-        <>
-          <link rel="preconnect" href={backendUrl} />
-          <link rel="dns-prefetch" href={backendUrl} />
-        </>
-      )}
+      <link rel="preconnect" href={backendUrl} />
+      <link rel="dns-prefetch" href={backendUrl} />
       {children}
     </>
   );

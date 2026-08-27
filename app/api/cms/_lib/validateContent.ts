@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAuthenticatedClient } from "@/lib/api/backend-client";
-import { BACKEND_URLS, ENDPOINTS } from "@/lib/api/endpoints";
+import { AIDREAM_PRODUCTION_URL, ENDPOINTS } from "@/lib/api/endpoints";
 
 const VALIDATION_TIMEOUT_MS = 5_000;
 const CONTENT_FIELDS = ["html", "css", "js"] as const;
@@ -49,12 +49,9 @@ export interface ValidateCmsContentInput {
   accessToken: string | null;
 }
 
-function resolveValidationBaseUrl(): string | null {
-  const baseUrl =
-    process.env.AIDREAM_API_URL ??
-    BACKEND_URLS.production ??
-    process.env.NEXT_PUBLIC_BACKEND_URL;
-  return baseUrl ? baseUrl.replace(/\/$/, "") : null;
+function resolveValidationBaseUrl(): string {
+  const baseUrl = process.env.AIDREAM_API_URL ?? AIDREAM_PRODUCTION_URL;
+  return baseUrl.replace(/\/$/, "");
 }
 
 function isGuardFinding(value: unknown): value is CmsGuardFinding {
@@ -134,11 +131,6 @@ export async function validateContent(
   }
 
   const validationBaseUrl = resolveValidationBaseUrl();
-  if (!validationBaseUrl) {
-    return skippedValidation(
-      "aidream URL is not configured (AIDREAM_API_URL / NEXT_PUBLIC_BACKEND_URL_PROD)",
-    );
-  }
   if (!input.accessToken) {
     return skippedValidation(
       "the authenticated Supabase access token is unavailable",

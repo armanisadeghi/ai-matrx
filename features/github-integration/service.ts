@@ -8,6 +8,7 @@ import type {
   GitHubRepository,
   GitHubResourceRow,
 } from "./types";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 const CONNECTION_SELECT =
   "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, credential_item_id, vault_secret_key, deleted_at";
@@ -100,9 +101,7 @@ export async function loadGitHubConnectionInventory(): Promise<GitHubConnectionI
 }
 
 function backendBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_BACKEND_URL || "https://server.app.matrxserver.com"
-  );
+  return AIDREAM_PRODUCTION_URL;
 }
 
 async function githubBackend(

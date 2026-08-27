@@ -26,6 +26,7 @@ import {
   type TriggerKind,
   type WorkflowTrigger,
 } from "./types";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 export interface CreateTriggerArgs {
   definitionId: string;
@@ -63,11 +64,7 @@ export interface WorkflowTriggersApi {
 
 /** The origin an OUTSIDE system must POST to — never the admin's local toggle. */
 export function triggerWebhookUrl(triggerId: string): string {
-  const origin = (
-    process.env.NEXT_PUBLIC_BACKEND_URL_PROD ??
-    process.env.NEXT_PUBLIC_BACKEND_URL ??
-    "https://server.app.matrxserver.com"
-  ).replace(/\/$/, "");
+  const origin = AIDREAM_PRODUCTION_URL.replace(/\/$/, "");
   return `${origin}/triggers/${triggerId}/fire`;
 }
 
@@ -149,7 +146,9 @@ export function useWorkflowTriggers(
         }
         const created = parseTrigger(result.data);
         if (!created) {
-          toast.error("It saved, but the server sent back something we couldn't read.");
+          toast.error(
+            "It saved, but the server sent back something we couldn't read.",
+          );
           return null;
         }
         setTriggers((prev) => [created, ...prev]);

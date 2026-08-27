@@ -18,11 +18,10 @@ import type {
   AuthenticatorCode,
   AuthenticatorEntry,
 } from "./authenticator-types";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 function backendBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_BACKEND_URL || "https://server.app.matrxserver.com"
-  );
+  return AIDREAM_PRODUCTION_URL;
 }
 
 async function authHeaders(json: boolean): Promise<{

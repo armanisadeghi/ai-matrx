@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { BACKEND_URLS } from "@/lib/api/endpoints";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { getBackendProxyAuthHeaders } from "@/lib/api/proxy-backend-auth-headers";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { createClient } from "@/utils/supabase/server";
@@ -19,12 +19,9 @@ function errorResponse(error: unknown, status = 500) {
   return NextResponse.json({ error: message }, { status: resolvedStatus });
 }
 
-function resolveAidreamUrl(): string | null {
-  const baseUrl =
-    process.env.AIDREAM_API_URL ??
-    BACKEND_URLS.production ??
-    process.env.NEXT_PUBLIC_BACKEND_URL;
-  return baseUrl ? `${baseUrl.replace(/\/$/, "")}${ORGANIZATIONS_PATH}` : null;
+function resolveAidreamUrl(): string {
+  const baseUrl = process.env.AIDREAM_API_URL ?? AIDREAM_PRODUCTION_URL;
+  return `${baseUrl.replace(/\/$/, "")}${ORGANIZATIONS_PATH}`;
 }
 
 export async function GET(request: NextRequest) {
@@ -35,12 +32,6 @@ export async function GET(request: NextRequest) {
   }
 
   const organizationsUrl = resolveAidreamUrl();
-  if (!organizationsUrl) {
-    return NextResponse.json(
-      { error: "Aidream is not configured." },
-      { status: 503 },
-    );
-  }
 
   try {
     const headers = getBackendProxyAuthHeaders(request, {
@@ -51,7 +42,8 @@ export async function GET(request: NextRequest) {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+      if (session?.access_token)
+        headers.Authorization = `Bearer ${session.access_token}`;
     }
     const upstream = await fetch(organizationsUrl, {
       headers,
@@ -62,7 +54,8 @@ export async function GET(request: NextRequest) {
       statusText: upstream.statusText,
       headers: {
         "cache-control": "no-store",
-        "content-type": upstream.headers.get("content-type") ?? "application/json",
+        "content-type":
+          upstream.headers.get("content-type") ?? "application/json",
       },
     });
   } catch (error) {

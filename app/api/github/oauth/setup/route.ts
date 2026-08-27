@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { requestBaseUrl } from "../session";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const destination = new URL("/code", requestBaseUrl(request));
@@ -9,11 +10,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     data: { session },
   } = await supabase.auth.getSession();
   if (!session?.access_token) {
-    destination.searchParams.set("github_error", "Sign in to update GitHub access.");
+    destination.searchParams.set(
+      "github_error",
+      "Sign in to update GitHub access.",
+    );
     return NextResponse.redirect(destination);
   }
-  const backendBase =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "https://server.app.matrxserver.com";
+  const backendBase = AIDREAM_PRODUCTION_URL;
   const response = await fetch(`${backendBase}/api/github-integrations/sync`, {
     method: "POST",
     headers: {
@@ -23,6 +26,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     body: "{}",
     signal: AbortSignal.timeout(30_000),
   });
-  destination.searchParams.set(response.ok ? "github" : "github_error", response.ok ? "updated" : "Unable to update GitHub repository access.");
+  destination.searchParams.set(
+    response.ok ? "github" : "github_error",
+    response.ok ? "updated" : "Unable to update GitHub repository access.",
+  );
   return NextResponse.redirect(destination);
 }

@@ -46,9 +46,9 @@ const USE_BACKEND_API_IMPORT =
 const NETWORK_PRIMITIVE =
   /\bfetch\s*\(|\bresilientFetch\s*\(|new\s+XMLHttpRequest\s*\(|new\s+WebSocket\s*\(/;
 const BACKEND_LOCATOR =
-  /BACKEND_URLS|NEXT_PUBLIC_BACKEND_URL|server\.app\.matrxserver\.com|selectResolvedBaseUrl|resolveBaseUrl\s*\(|resolveBaseUrlForPath\s*\(|resolveFilesBaseUrl\s*\(|crawlerCommandUrl\s*\(|backendBase\s*\(|logApiTarget\s*\(|resolveOrchestratorByTier\s*\(|\bbackendUrl\b|\bbaseUrl\b|\bserverUrl\b/;
+  /BACKEND_URLS|AIDREAM_PRODUCTION_URL|NEXT_PUBLIC_BACKEND_URL|server\.app\.matrxserver\.com|selectResolvedBaseUrl|resolveBaseUrl\s*\(|resolveBaseUrlForPath\s*\(|resolveFilesBaseUrl\s*\(|crawlerCommandUrl\s*\(|backendBase\s*\(|logApiTarget\s*\(|resolveOrchestratorByTier\s*\(|\bbackendUrl\b|\bbaseUrl\b|\bserverUrl\b/;
 const STRONG_BACKEND_LOCATOR =
-  /BACKEND_URLS|NEXT_PUBLIC_BACKEND_URL|server\.app\.matrxserver\.com|selectResolvedBaseUrl|resolveBaseUrl\s*\(|resolveBaseUrlForPath\s*\(|resolveFilesBaseUrl\s*\(|crawlerCommandUrl\s*\(|backendBase\s*\(|logApiTarget\s*\(|resolveOrchestratorByTier\s*\(/;
+  /BACKEND_URLS|AIDREAM_PRODUCTION_URL|NEXT_PUBLIC_BACKEND_URL|server\.app\.matrxserver\.com|selectResolvedBaseUrl|resolveBaseUrl\s*\(|resolveBaseUrlForPath\s*\(|resolveFilesBaseUrl\s*\(|crawlerCommandUrl\s*\(|backendBase\s*\(|logApiTarget\s*\(|resolveOrchestratorByTier\s*\(/;
 const REMOTE_URL = /(?:https?|wss?):\/\//;
 
 const PYTHON_CLIENT_UTILITIES = new Set([

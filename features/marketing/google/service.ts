@@ -10,6 +10,7 @@ import type {
   GoogleAdsCustomerInventory,
   GoogleAdsReport,
 } from "@/features/marketing/google/types";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 // `credential_item_id` / `vault_secret_key` are REFERENCES, never secrets (a
 // vault item id and a key name). Reading them is what lets the UI tell the
@@ -145,9 +146,7 @@ export async function listGoogleConnectionInventory(
 // no client-side secret handling.
 
 function backendBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_BACKEND_URL || "https://server.app.matrxserver.com"
-  );
+  return AIDREAM_PRODUCTION_URL;
 }
 
 export async function postGoogleBackend(

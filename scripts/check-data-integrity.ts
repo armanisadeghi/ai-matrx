@@ -53,14 +53,15 @@ function loadEnv(): {
   backend?: string;
 } | null {
   const env: Record<string, string> = {};
-  // ONE name for the Supabase URL — no second candidate, no fallback chain.
+  // ONE name per value — no second candidate, no fallback chain. Applies to the
+  // backend origin too: `NEXT_PUBLIC_BACKEND_URL` was a second name for
+  // `NEXT_PUBLIC_BACKEND_URL_PROD` and was retired 2026-08-27.
   // See common-docs/policies/package-vs-implementation.md
   const want = [
     "NEXT_PUBLIC_SUPABASE_URL",
     "SUPABASE_SECRET_KEY",
     "MATRX_ADMIN_JWT",
     "NEXT_PUBLIC_BACKEND_URL_PROD",
-    "NEXT_PUBLIC_BACKEND_URL",
   ];
   for (const k of want) if (process.env[k]) env[k] = process.env[k] as string;
 
@@ -90,7 +91,7 @@ function loadEnv(): {
     url,
     key,
     jwt: env.MATRX_ADMIN_JWT,
-    backend: env.NEXT_PUBLIC_BACKEND_URL_PROD ?? env.NEXT_PUBLIC_BACKEND_URL,
+    backend: env.NEXT_PUBLIC_BACKEND_URL_PROD,
   };
 }
 

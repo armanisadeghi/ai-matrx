@@ -37,8 +37,8 @@ function getArg(name, fallback) {
 const fastMode = args.includes('--fast');
 const useLocal = fastMode || args.includes('--local');
 
-const LIVE_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL
-    ? `${process.env.NEXT_PUBLIC_BACKEND_URL}`
+const LIVE_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL_PROD
+    ? `${process.env.NEXT_PUBLIC_BACKEND_URL_PROD}`
     : 'https://server.app.matrxserver.com';
 const LOCAL_BACKEND_URL = 'http://localhost:8000';
 const backendUrl = getArg('--url', useLocal ? LOCAL_BACKEND_URL : LIVE_BACKEND_URL);

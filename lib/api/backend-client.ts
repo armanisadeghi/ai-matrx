@@ -16,7 +16,8 @@ import { BACKEND_URLS, ENDPOINTS } from "./endpoints";
  * Configuration for creating a BackendClient instance.
  */
 export interface BackendClientConfig {
-  /** Backend base URL — use BACKEND_URLS.production or NEXT_PUBLIC_BACKEND_URL */
+  /** Backend base URL. Defaults to `BACKEND_URLS.production` (the ONE name:
+   * `NEXT_PUBLIC_BACKEND_URL_PROD`, see `AIDREAM_PRODUCTION_URL`). */
   baseUrl?: string;
   /** Authentication credentials */
   auth?: AuthCredentials;

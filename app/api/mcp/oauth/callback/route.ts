@@ -6,6 +6,7 @@ import {
   persistMcpOAuthTokens,
 } from "@/features/agents/services/mcp-oauth/backend-failure";
 import { isValidOAuthState } from "@/features/agents/services/mcp-oauth/state";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 interface OAuthSession {
   serverId: string;
@@ -167,9 +168,7 @@ export async function GET(req: NextRequest) {
       throw new Error("No Supabase session to authorize token persistence");
     }
 
-    const backendBase =
-      process.env.NEXT_PUBLIC_BACKEND_URL ||
-      "https://server.app.matrxserver.com";
+    const backendBase = AIDREAM_PRODUCTION_URL;
     const persistRes = await persistMcpOAuthTokens(
       `${backendBase}/api/mcp-connections/${encodeURIComponent(session.serverId)}/oauth-tokens`,
       {

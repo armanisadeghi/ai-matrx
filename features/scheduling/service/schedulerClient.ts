@@ -34,15 +34,12 @@ import type {
   ValidateCronRequest,
   ValidateCronResponse,
 } from "./schedulerApi.types";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 // ── Base URL + auth ────────────────────────────────────────────────────────
 
 function baseUrl(): string {
-  const base =
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_BACKEND_URL_PROD ||
-    "";
-  return base.replace(/\/$/, "");
+  return AIDREAM_PRODUCTION_URL.replace(/\/$/, "");
 }
 
 async function authHeaders(): Promise<HeadersInit> {

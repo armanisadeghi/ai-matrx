@@ -35,7 +35,12 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
 
 // ── The contract shape (common-docs .../voice/REALTIME_TOOL_BRIDGE.md §3). Single source. ──
-const CONTRACT_FIELDS = ["name", "description", "parameters", "execution"] as const;
+const CONTRACT_FIELDS = [
+  "name",
+  "description",
+  "parameters",
+  "execution",
+] as const;
 const CONTRACT_EXECUTIONS = ["server", "client", "builtin"] as const;
 
 interface DriftIssue {
@@ -54,7 +59,9 @@ function checkTypeAgainstContract(): DriftIssue[] {
   const issues: DriftIssue[] = [];
   const typesPath = resolve(ROOT, "features/voice-agent/types.ts");
   if (!existsSync(typesPath)) {
-    return [{ where: "types.ts", detail: "features/voice-agent/types.ts not found" }];
+    return [
+      { where: "types.ts", detail: "features/voice-agent/types.ts not found" },
+    ];
   }
   const src = readFileSync(typesPath, "utf8");
 
@@ -97,7 +104,11 @@ function checkTypeAgainstContract(): DriftIssue[] {
       (m) => m[1],
     );
     for (const lit of feLiterals) {
-      if (!CONTRACT_EXECUTIONS.includes(lit as (typeof CONTRACT_EXECUTIONS)[number])) {
+      if (
+        !CONTRACT_EXECUTIONS.includes(
+          lit as (typeof CONTRACT_EXECUTIONS)[number],
+        )
+      ) {
         issues.push({
           where: "ResolvedRealtimeTool.execution",
           detail: `FE union has "${lit}" which is not in the contract`,
@@ -110,9 +121,11 @@ function checkTypeAgainstContract(): DriftIssue[] {
 
 // ── 2. Live endpoint (optional) ───────────────────────────────────────────
 function loadEnv(): { token: string; baseUrl: string; agentId: string } | null {
+  // `REALTIME_TOOLS_BASE_URL` is this script's per-run target, alongside its
+  // JWT/agent siblings; otherwise probe the one production origin.
   let baseUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL ??
     process.env.REALTIME_TOOLS_BASE_URL ??
+    process.env.NEXT_PUBLIC_BACKEND_URL_PROD ??
     "";
   const token = process.env.REALTIME_TOOLS_JWT ?? "";
   const agentId = process.env.REALTIME_TOOLS_AGENT_ID ?? "";
@@ -126,7 +139,7 @@ function loadEnv(): { token: string; baseUrl: string; agentId: string } | null {
         if (!m) continue;
         const [, k, raw] = m;
         const v = (raw ?? "").replace(/^['"]|['"]$/g, "");
-        if (!baseUrl && k === "NEXT_PUBLIC_BACKEND_URL") baseUrl = v;
+        if (!baseUrl && k === "NEXT_PUBLIC_BACKEND_URL_PROD") baseUrl = v;
       }
       if (baseUrl) break;
     }
@@ -179,7 +192,9 @@ async function checkLiveEndpoint(env: {
     const exec = t.execution;
     if (
       typeof exec !== "string" ||
-      !CONTRACT_EXECUTIONS.includes(exec as (typeof CONTRACT_EXECUTIONS)[number])
+      !CONTRACT_EXECUTIONS.includes(
+        exec as (typeof CONTRACT_EXECUTIONS)[number],
+      )
     ) {
       issues.push({
         where: `live tool "${String(t.name ?? "?")}"`,
@@ -198,7 +213,9 @@ async function main(): Promise<void> {
   const DIM = isTTY ? "\x1b[2m" : "";
   const RESET = isTTY ? "\x1b[0m" : "";
 
-  console.log("Realtime-tools drift check — FE ResolvedRealtimeTool ↔ contract §3");
+  console.log(
+    "Realtime-tools drift check — FE ResolvedRealtimeTool ↔ contract §3",
+  );
 
   const issues: DriftIssue[] = [...checkTypeAgainstContract()];
 
@@ -214,20 +231,24 @@ async function main(): Promise<void> {
     }
   } else {
     console.warn(
-      "  live endpoint: SKIPPED — set NEXT_PUBLIC_BACKEND_URL + REALTIME_TOOLS_JWT + " +
+      "  live endpoint: SKIPPED — set NEXT_PUBLIC_BACKEND_URL_PROD + REALTIME_TOOLS_JWT + " +
         "REALTIME_TOOLS_AGENT_ID to also verify the live response shape.",
     );
   }
   console.log("");
 
   if (issues.length === 0) {
-    console.log(`${GREEN}✓ No drift — ResolvedRealtimeTool matches the contract.${RESET}`);
+    console.log(
+      `${GREEN}✓ No drift — ResolvedRealtimeTool matches the contract.${RESET}`,
+    );
     process.exit(0);
   }
 
   const bar = "█".repeat(68);
   console.log(`${RED_BG}${bar}${RESET}`);
-  console.log(`${RED}⚠  REALTIME-TOOLS DRIFT — ${issues.length} problem(s).${RESET}`);
+  console.log(
+    `${RED}⚠  REALTIME-TOOLS DRIFT — ${issues.length} problem(s).${RESET}`,
+  );
   console.log(`${RED_BG}${bar}${RESET}`);
   console.log("");
   for (const i of issues) {

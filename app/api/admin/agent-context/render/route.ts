@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { BACKEND_URLS } from "@/lib/api/endpoints";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { getBackendProxyAuthHeaders } from "@/lib/api/proxy-backend-auth-headers";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { createClient } from "@/utils/supabase/server";
@@ -19,13 +19,9 @@ function errorResponse(error: unknown, status = 500) {
   return NextResponse.json({ error: message }, { status: resolvedStatus });
 }
 
-function resolveAidreamUrl(): string | null {
-  const baseUrl =
-    process.env.AIDREAM_API_URL ??
-    BACKEND_URLS.production ??
-    process.env.NEXT_PUBLIC_BACKEND_URL;
-
-  return baseUrl ? `${baseUrl.replace(/\/$/, "")}${RENDER_PATH}` : null;
+function resolveAidreamUrl(): string {
+  const baseUrl = process.env.AIDREAM_API_URL ?? AIDREAM_PRODUCTION_URL;
+  return `${baseUrl.replace(/\/$/, "")}${RENDER_PATH}`;
 }
 
 function isRenderRequest(value: unknown): value is {
@@ -72,21 +68,15 @@ export async function POST(request: NextRequest) {
 
   if (!isRenderRequest(parsedBody)) {
     return NextResponse.json(
-      { error: "Request body must contain object-shaped target and invocation fields." },
+      {
+        error:
+          "Request body must contain object-shaped target and invocation fields.",
+      },
       { status: 400 },
     );
   }
 
   const renderUrl = resolveAidreamUrl();
-  if (!renderUrl) {
-    return NextResponse.json(
-      {
-        error:
-          "Aidream is not configured. Set AIDREAM_API_URL or NEXT_PUBLIC_BACKEND_URL_PROD.",
-      },
-      { status: 503 },
-    );
-  }
 
   try {
     const backendHeaders = getBackendProxyAuthHeaders(request, {

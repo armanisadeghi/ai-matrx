@@ -6,6 +6,7 @@ import {
   parseGitHubOAuthSession,
   requestBaseUrl,
 } from "../session";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 function errorRedirect(
   request: NextRequest,
@@ -61,8 +62,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const backendBase =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "https://server.app.matrxserver.com";
+  const backendBase = AIDREAM_PRODUCTION_URL;
   try {
     const response = await fetch(
       `${backendBase}/api/github-integrations/exchange`,

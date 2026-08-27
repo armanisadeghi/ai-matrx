@@ -30,7 +30,7 @@ import {
   BackendApiError,
 } from "@/lib/api/errors";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { BACKEND_URLS } from "@/lib/api/endpoints";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { supabase } from "@/utils/supabase/client";
 import { getStore } from "@/lib/redux/store-singleton";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
@@ -83,13 +83,24 @@ export function newRequestId(): string {
  *      `custom`). This is the SAME selector `useBackendApi` reads, so the
  *      cloud-files client follows whichever server the user picked instead
  *      of hard-locking to production.
- *   3. Env-var fallback for runtimes without a store yet (rare — e.g. a
+ *   3. `AIDREAM_PRODUCTION_URL` for runtimes without a store yet (rare — e.g. a
  *      module-level call before the StoreProvider mounts).
  *
- * **Bug fix 2026-04-24:** before this change, the cloud-files client read
- * `BACKEND_URLS.production` directly and ignored the localhost toggle, so
- * dev traffic never hit a local Python server. See
- * [features/files/migration/INVENTORY.md] under Phase 12.
+ * 🚨 **Step 3 reads ONE variable name and never a fallback chain.** Two prior
+ * bugs live in this function's history and both were the same shape — a second
+ * way to name the target that quietly lost:
+ *   - 2026-04-24: this client read `BACKEND_URLS.production` directly and
+ *     ignored the localhost toggle, so dev traffic never hit a local Python
+ *     server (see [features/files/migration/INVENTORY.md] Phase 12) — fixed by
+ *     step 2 above.
+ *   - 2026-08-27: step 3 was `BACKEND_URLS.production || NEXT_PUBLIC_BACKEND_URL`,
+ *     so the variable `.env.example` advertised as "the active one" could never
+ *     win. Setting it changed nothing on the wire. The alias is gone; the ONE
+ *     name is `NEXT_PUBLIC_BACKEND_URL_PROD` (`AIDREAM_PRODUCTION_URL`).
+ *
+ * **Pointing the app at a different server is step 2's job, not an env var's.**
+ * Flip the sidebar server toggle (admin, any `(core)` route) or dispatch
+ * `switchServer`.
  */
 export function resolveBaseUrl(override?: string): string {
   if (override) return override.replace(/\/$/, "");
@@ -107,19 +118,9 @@ export function resolveBaseUrl(override?: string): string {
     }
   }
 
-  // 2. Env-var fallback for early/SSR contexts.
-  const configured =
-    (BACKEND_URLS.production as string | undefined) ||
-    (process.env.NEXT_PUBLIC_BACKEND_URL as string | undefined);
-  if (!configured) {
-    throw new BackendApiError({
-      code: "cloud_sync_unavailable",
-      detail: "NEXT_PUBLIC_BACKEND_URL is not configured",
-      userMessage: "Cloud sync is unavailable. Contact support.",
-      status: 503,
-    });
-  }
-  return configured.replace(/\/$/, "");
+  // 2. The production origin, for early/SSR contexts with no store. One name,
+  //    no chain — see the header note.
+  return AIDREAM_PRODUCTION_URL.replace(/\/$/, "");
 }
 
 /**

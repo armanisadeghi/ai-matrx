@@ -11,6 +11,7 @@ import type {
   BingConnectionSummary,
   BingSiteBinding,
 } from "@/features/marketing/bing/types";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 const CONNECTION_SELECT =
   "id, owner_type, owner_user_id, organization_id, provider, provider_subject, status, last_verified_at, last_error, created_at, updated_at, metadata";
@@ -117,9 +118,7 @@ export async function listBingConnectionInventory(
 // client-side secret handling beyond the one-time submit.
 
 function backendBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_BACKEND_URL || "https://server.app.matrxserver.com"
-  );
+  return AIDREAM_PRODUCTION_URL;
 }
 
 async function aidreamPost(

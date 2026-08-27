@@ -28,7 +28,7 @@
  *   pnpm tsx scripts/migrate-public-assets-to-cdn.ts
  *
  * Required env:
- *   NEXT_PUBLIC_BACKEND_URL  — backend base, e.g. https://api.matrxserver.com
+ *   NEXT_PUBLIC_BACKEND_URL_PROD — backend base, e.g. https://api.matrxserver.com
  *   MATRX_ADMIN_JWT          — admin JWT for the asset-owning user
  */
 
@@ -199,7 +199,7 @@ function avatarEntries(filenames: string[]): AssetEntry[] {
 // ---------------------------------------------------------------------------
 
 const BACKEND_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? "https://api.matrxserver.com";
+  process.env.NEXT_PUBLIC_BACKEND_URL_PROD ?? "https://api.matrxserver.com";
 const ADMIN_JWT = process.env.MATRX_ADMIN_JWT;
 
 interface UploadedRecord {
@@ -271,7 +271,11 @@ async function uploadOne(
   // Node Buffer is a valid BlobPart at runtime, but DOM lib typings under
   // TS 5.9 don't accept it cleanly. Cast around the lib mismatch.
   const blobParts = [buf] as unknown as BlobPart[];
-  form.append("file", new Blob(blobParts, { type: entry.contentType }), path.basename(entry.local));
+  form.append(
+    "file",
+    new Blob(blobParts, { type: entry.contentType }),
+    path.basename(entry.local),
+  );
   form.append("file_path", entry.cloudPath);
   form.append("visibility", "public");
   form.append(
@@ -336,7 +340,9 @@ function emitConstants(manifest: Record<string, ManifestEntry>): string {
   ];
   for (const entry of sorted) {
     lines.push(`/** From \`public/${entry.local}\`. */`);
-    lines.push(`export const ${entry.constName} = ${JSON.stringify(entry.cdn_url)};`);
+    lines.push(
+      `export const ${entry.constName} = ${JSON.stringify(entry.cdn_url)};`,
+    );
     lines.push("");
   }
   return lines.join("\n");
@@ -396,7 +402,9 @@ async function main() {
         continue;
       }
     } catch (err) {
-      console.warn(`  (lookup failed for ${entry.cloudPath}, will upload: ${err})`);
+      console.warn(
+        `  (lookup failed for ${entry.cloudPath}, will upload: ${err})`,
+      );
     }
 
     try {
@@ -441,7 +449,7 @@ main().catch((err) => {
 //    Capture a long-lived JWT (e.g. via `supabase auth refresh`).
 // 2. Confirm the backend is reachable and `/files/upload` accepts the JWT.
 // 3. Set env:
-//      export NEXT_PUBLIC_BACKEND_URL=https://api.matrxserver.com
+//      export NEXT_PUBLIC_BACKEND_URL_PROD=https://api.matrxserver.com
 //      export MATRX_ADMIN_JWT=<jwt>
 // 4. Run: `pnpm tsx scripts/migrate-public-assets-to-cdn.ts`
 // 5. Verify `lib/cdn-assets.ts` was generated with real CDN URLs.

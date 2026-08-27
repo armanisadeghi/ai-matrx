@@ -16,6 +16,7 @@ import type {
   SqlRunner,
 } from "./types";
 import { unwrapRows } from "./unwrap";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 /** SQL runner using the admin client + execute_admin_query RPC. */
 export function createAdminSqlRunner(): SqlRunner {
@@ -75,25 +76,20 @@ export function createScriptRunner(): ScriptRunner | undefined {
     });
 }
 
-function resolveBackendUrl(): string | null {
-  const url =
-    process.env.NEXT_PUBLIC_BACKEND_URL_PROD ??
-    process.env.NEXT_PUBLIC_BACKEND_URL ??
-    process.env.NEXT_PUBLIC_BACKEND_URL_EC2 ??
-    null;
-  return url ? url.replace(/\/$/, "") : null;
+function resolveBackendUrl(): string {
+  return AIDREAM_PRODUCTION_URL.replace(/\/$/, "");
 }
 
 /**
  * Builds a FileProbe that range-probes the download endpoint with the given
- * bearer token. Returns null when no token or backend URL is available (the
- * caller then reports the probe check as skipped).
+ * bearer token. Returns undefined when no token is available (the caller then
+ * reports the probe check as skipped).
  */
 export function createDownloadProbe(
   token: string | null,
 ): FileProbe | undefined {
   const backend = resolveBackendUrl();
-  if (!token || !backend) return undefined;
+  if (!token) return undefined;
 
   return async (fileId: string) => {
     const start = Date.now();

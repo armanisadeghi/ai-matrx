@@ -12,13 +12,12 @@ import {
   applyOrganizationContextHeader,
   requireOrganizationContext,
 } from "@/lib/api/organization-context";
+import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
 export const MAX_VAULT_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
 function backendBase(): string {
-  return (
-    process.env.NEXT_PUBLIC_BACKEND_URL || "https://server.app.matrxserver.com"
-  );
+  return AIDREAM_PRODUCTION_URL;
 }
 
 async function authorizationHeader(): Promise<Record<string, string>> {
