@@ -96,11 +96,20 @@ function kioskRefusalSentence(reason: string): string {
 }
 
 /**
- * How often a tablet that is paired-but-not-yet-approved re-asks. See the `device_pending_approval`
- * branch for why this is the one constant here: before trust exists the server hands the device no
- * configuration, so there is nothing to read. Once trusted, `kiosk_heartbeat_seconds` governs.
+ * 🚨 **THE RE-CHECK INTERVAL IS THE SERVER'S, AND `null` MEANS STOP.**
+ *
+ * `hr_kiosk_authenticate` and `hr_kiosk_session_heartbeat` both return `recheck_seconds` beside a
+ * refusal: the org-ladder value on `device_pending_approval`, and **NULL on `device_not_trusted`**,
+ * because a revoked tablet must never be told to come back. This replaces the bootstrap constant
+ * that used to live here — there is no client-side interval in this lane any more.
+ *
+ * Mapped, not cast: a missing or non-numeric value yields `null`, which stops the poll rather than
+ * silently substituting a number nobody configured.
  */
-const PENDING_RECHECK_SECONDS = 10;
+function recheckSecondsFrom(details: Record<string, unknown>): number | null {
+  const value = details.recheck_seconds;
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
+}
 
 export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): KioskDevice {
   const [view, setView] = useState<KioskDeviceView>({ kind: "loading" });
@@ -186,19 +195,17 @@ export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): Kios
              * 🚨 START THE RE-CHECK, OR THE SCREEN IS LYING.
              *
              * The waiting screen promises "it will start working on its own once an administrator
-             * approves it", and §3.3's flowchart resumes the moment trust is granted. The poll
-             * interval used to come from the authenticate SUCCESS response — but a pending device
-             * is now a REFUSAL, which carries `trust_state` and `server_time` and no config at all.
-             * So without this the interval stayed null, the poll never ran, and a correctly paired
-             * tablet sat on that screen forever while its row said `trusted`. Found by watching a
-             * real tablet fail to resume, not by reading.
+             * approves it", and §3.3's flowchart resumes the moment trust is granted. The interval
+             * used to come from the authenticate SUCCESS response — but a pending device is a
+             * REFUSAL, so for a while it stayed null, the poll never ran, and a correctly paired
+             * tablet sat on that screen forever while its row already said `trusted`.
              *
-             * `PENDING_RECHECK_SECONDS` is a **bootstrap** interval and the one place in this lane
-             * with a constant, because there is genuinely no config to read before trust exists.
-             * The moment the device is trusted, the server's own `heartbeatSeconds` takes over
-             * (`setTrustPollSeconds` on the success path below) and this value is never used again.
+             * The refusal now carries `recheck_seconds` itself, so the number is the server's and
+             * the lane holds no interval constant at all. `null` — which the server sends the
+             * moment the answer is no longer "wait" — stops the poll rather than falling back to a
+             * guess (see `recheckSecondsFrom`).
              */
-            setTrustPollSeconds((current) => current ?? PENDING_RECHECK_SECONDS);
+            setTrustPollSeconds(recheckSecondsFrom(cause.details));
             setView({ kind: "awaiting-trust", identity });
             return;
           }
@@ -309,6 +316,8 @@ export function useKioskDevice(deviceId: string, mockCase?: HrFixtureCase): Kios
             }
             if (reason === "device_pending_approval" && ready) {
               window.clearInterval(id);
+              // Same field, same rule: the server's interval, or stop.
+              setTrustPollSeconds(recheckSecondsFrom(cause.details));
               setView({ kind: "awaiting-trust", identity: ready.identity });
               return;
             }

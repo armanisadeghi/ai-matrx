@@ -176,6 +176,12 @@ interface HrRpcEnvelope {
   locked_until?: unknown;
   /** Set by `hr_kiosk_authenticate` alongside a refusal, so a pending device can be told apart. */
   trust_state?: unknown;
+  /**
+   * How long a paired-but-unapproved tablet should wait before asking again. Org-ladder sourced,
+   * and deliberately **NULL** whenever the answer is no longer "wait" — a bricked tablet must not
+   * be told to come back.
+   */
+  recheck_seconds?: unknown;
   /** Present only where a function deliberately nests its payload. Most do not. */
   data?: unknown;
   [key: string]: unknown;
@@ -320,6 +326,9 @@ function refusalFrom(rpc: HrTimeRpcName, envelope: HrRpcEnvelope): HrRpcError {
       ...(reason ? { reason } : {}),
       ...(envelope.locked_until !== undefined ? { locked_until: envelope.locked_until } : {}),
       ...(envelope.trust_state !== undefined ? { trust_state: envelope.trust_state } : {}),
+      ...(envelope.recheck_seconds !== undefined
+        ? { recheck_seconds: envelope.recheck_seconds }
+        : {}),
     },
   });
 }
