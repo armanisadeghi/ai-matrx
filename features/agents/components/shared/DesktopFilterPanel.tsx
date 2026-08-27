@@ -49,6 +49,17 @@ interface DesktopFilterPanelProps {
   resetFilters: () => void;
   activeFilterCount: number;
   hasShared: boolean;
+  /**
+   * Offer the platform's own corpus as a fourth "Show" option. Admin-only on
+   * every caller — the reads behind it are re-gated server-side regardless.
+   */
+  hasSystem?: boolean;
+  /**
+   * What this panel is filtering, plural and capitalised. The Show options
+   * name it ("My Agents" / "All Agents"), and this panel serves both prompts
+   * and agents — it read "My Prompts" on the agent pickers.
+   */
+  nounPlural?: string;
   /** Render trigger as a compact icon button instead of a labelled button. */
   iconOnly?: boolean;
 }
@@ -261,6 +272,8 @@ export function DesktopFilterPanel({
   resetFilters,
   activeFilterCount,
   hasShared,
+  hasSystem = false,
+  nounPlural = "Prompts",
   iconOnly = false,
 }: DesktopFilterPanelProps) {
   const [open, setOpen] = useState(false);
@@ -334,15 +347,18 @@ export function DesktopFilterPanel({
             />
           </FilterSection>
 
-          {hasShared && (
+          {(hasShared || hasSystem) && (
             <FilterSection label="Show" active={activeTab !== "mine"}>
               <RadioSelect<PromptTab | AgentTab>
                 value={activeTab}
                 onChange={setActiveTab}
                 options={[
-                  { value: "mine" as PromptTab, label: "My Prompts" },
+                  { value: "mine" as PromptTab, label: `My ${nounPlural}` },
                   { value: "shared" as PromptTab, label: "Shared with Me" },
-                  { value: "all" as PromptTab, label: "All Prompts" },
+                  { value: "all" as PromptTab, label: `All ${nounPlural}` },
+                  ...(hasSystem
+                    ? [{ value: "system" as AgentTab, label: "System" }]
+                    : []),
                 ]}
               />
             </FilterSection>

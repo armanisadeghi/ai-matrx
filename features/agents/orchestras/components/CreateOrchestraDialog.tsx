@@ -5,6 +5,13 @@
 // <DesktopFilterPanel> as /agents/all and the builder rail) — Mine/Shared/All tabs,
 // category/tag filters, sort, search, and per-row peek — never an alphabetical dump.
 // Agents load once via useEnsureAgentsLoaded (no refetch).
+//
+// A Matrx admin also gets the SYSTEM tab, and that is what makes a system
+// Orchestra possible at all: an Orchestra IS a conductor agent plus its
+// `orchestra` self-edge, so a picker that could not offer a builtin meant the
+// platform had no way to build one. The tab is admin-only in the UI; the writes
+// behind it (`assoc_add`) re-check editor access on the conductor, and
+// `orchestra_list` re-checks viewer access, so this is convenience, not the gate.
 
 "use client";
 
@@ -25,10 +32,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
 import {
-  makeSelectFilteredOwnedAgents,
-  makeSelectFilteredSharedAgents,
+  makeSelectFilteredAgents,
   selectAllAgentCategories,
   selectAllAgentTags,
   selectTotalSharedAgentsCount,
@@ -77,17 +84,17 @@ export function CreateOrchestraDialog({
   // Only fetch when the dialog is open — closed instances must be free.
   useEnsureAgentsLoaded(open);
 
+  const isAdmin = useAppSelector(selectIsAdmin);
   const consumer = useAgentConsumer(PICKER_CONSUMER, { initialTab: "mine" });
-  const selOwned = useMemo(
-    () => makeSelectFilteredOwnedAgents(PICKER_CONSUMER),
-    [],
+  // ONE selector for every tab — mine / shared / all / system — instead of the
+  // owned+shared pair this dialog used to union by hand, which had no way to
+  // express the platform corpus. `includeSystemInAll` is the admin reading of
+  // "All": for an admin, system agents ARE their agents.
+  const selAgents = useMemo(
+    () => makeSelectFilteredAgents(PICKER_CONSUMER, isAdmin),
+    [isAdmin],
   );
-  const selShared = useMemo(
-    () => makeSelectFilteredSharedAgents(PICKER_CONSUMER),
-    [],
-  );
-  const owned = useAppSelector(selOwned);
-  const shared = useAppSelector(selShared);
+  const agents = useAppSelector(selAgents);
   const allCategories = useAppSelector(selectAllAgentCategories);
   const allTags = useAppSelector(selectAllAgentTags);
   const totalShared = useAppSelector(selectTotalSharedAgentsCount);
@@ -98,18 +105,13 @@ export function CreateOrchestraDialog({
   const [accent, setAccent] = useState<OrchestraAccent>(DEFAULT_ORCHESTRA_ACCENT);
   const [busy, setBusy] = useState(false);
 
-  const candidates = useMemo(() => {
-    const base =
-      consumer.tab === "shared"
-        ? shared
-        : consumer.tab === "mine"
-          ? owned
-          : [...owned, ...shared];
-    return base.filter((a) => a.id !== seedMemberId);
-  }, [consumer.tab, owned, shared, seedMemberId]);
+  const candidates = useMemo(
+    () => agents.filter((a) => a.id !== seedMemberId),
+    [agents, seedMemberId],
+  );
 
   const selected = conductorId
-    ? [...owned, ...shared].find((a) => a.id === conductorId)
+    ? agents.find((a) => a.id === conductorId)
     : null;
 
   const activeFilterCount =
@@ -231,6 +233,8 @@ export function CreateOrchestraDialog({
                 resetFilters={consumer.resetFilters}
                 activeFilterCount={activeFilterCount}
                 hasShared={totalShared > 0}
+                hasSystem={isAdmin}
+                nounPlural="Agents"
               />
             </div>
             <ScrollArea className="h-44 rounded-md border border-border">
