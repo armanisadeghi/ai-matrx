@@ -281,10 +281,18 @@ and the same block renders read-only in chat.
 
 ## Change Log
 
-- 2026-08-26 — **Sites column + bulk site assignment** (Arman: *"I'm seeing a bunch of things
+- 2026-08-27 — **The canonical window deep link is hydrated again.** A lazy,
+  route-scoped `UrlPanelManager` now owns only `keyword_research` on
+  `/marketing/keyword-research`, so `?panels=keyword_research` opens the same
+  registered window as the manual launcher on desktop, tablet, and phone. It
+  waits for the window's URL-sync entry before canonicalizing the parameter and
+  leaves unrelated panel tokens untouched; opening the link never auto-runs the
+  paid research pipeline.
+
+- 2026-08-26 — **Sites column + bulk site assignment** (Arman: _"I'm seeing a bunch of things
   that are from the past, and they're still showing up and creating confusion… if you don't
   have any simple way of properly associating them with the right site, then you just need to
-  make sure you update the page to properly allow for bulk edits"*). The keyword library is
+  make sure you update the page to properly allow for bulk edits"_). The keyword library is
   global by design (one row per phrase+language, shared by every site), so the only place a
   site can live is the `seo.site_keyword_value` association — which the library never showed.
   Now: a **Sites** column (sorts and filters, with `Unassigned` as a filterable value —

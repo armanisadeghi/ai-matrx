@@ -12,7 +12,8 @@
 // deferred further, that logic belongs in the wrapper (or the widget's own
 // file), never in this core.
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { useIdleTask } from "@/utils/idle-scheduler";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
@@ -36,10 +37,14 @@ import {
   setEntitlementSnapshot,
   clearEntitlements,
 } from "@/features/entitlements/state/entitlementsSlice";
+import { UrlPanelManager } from "@/features/window-panels/url-sync/UrlPanelManager";
+
+const KEYWORD_RESEARCH_URL_PANEL_KEYS = ["keyword_research"] as const;
 
 export default function DeferredSingletonCore() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
+  const pathname = usePathname();
 
   // NOTE: global error capture + persistence install live in the WRAPPER
   // (DeferredSingletonWrapper.tsx), not here — they must be running during
@@ -96,6 +101,11 @@ export default function DeferredSingletonCore() {
     <>
       <PersistentDOMConnector />
       <OverlayController />
+      {pathname === "/marketing/keyword-research" && (
+        <Suspense fallback={null}>
+          <UrlPanelManager managedTypeKeys={KEYWORD_RESEARCH_URL_PANEL_KEYS} />
+        </Suspense>
+      )}
       <LazyMessagingIsland />
       <KgNewSuggestionNotifier />
       <AssistsDock />

@@ -99,6 +99,13 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
+- 2026-08-27 — **URL hydration has one audited route-scoped pilot.** The lazy
+  singleton core mounts `UrlPanelManager` only on `/marketing/keyword-research`
+  and allowlists only `keyword_research`. The manager preserves every unowned
+  `?panels=` token and waits for the restored window to register before
+  canonicalizing the URL, preventing the startup race that previously deleted
+  the deep link. Global activation and all other hydrators remain dormant.
+
 - 2026-08-26 — **Page-local windows may opt into a mobile surface explicitly.** `WindowPanel.mobilePresentationOverride` is the narrow escape hatch for inline windows without an overlay id; registered overlays remain registry-owned. The canonical association picker uses `"card"` so it stays non-modal and leaves the host page usable on phones.
 
 - 2026-08-26 — **Added `listenSummaryWindow` ("Listen") — the summarize-for-listening player.** New singleton, ephemeral window (`windows/listen/ListenSummaryWindow.tsx`, 460×560) opened by the "Summarize for listening" / "Summarize & listen" actions (assistant context menu + action-bar ⋯ menu). Launches the surface's `spoken_summary` agent headlessly (`useLiveAgentRun`, `expect: "text"`), renders the streaming summary through the canonical `LiveRunDisplay variant="bare"`, and pins a glass audio transport (play/pause/stop/replay + live equalizer) driven by the audio session registry. The `autoPlay` mode is stream-to-stream: speech starts while the summary is still being written, via the app-root speaker (`voicePlaybackBus` request with `includeActive: true`). Registered the canonical 5 ways (`overlay-ids.ts`, `catalogue.ts`, `windowRegistryMetadata.ts` ephemeral + `mobilePresentation: "card"`, `OverlayController.tsx`, opener `features/overlays/openers/listenSummaryWindow.tsx`).
@@ -315,7 +322,7 @@ Adding an overlay requires **explicit registration at every boundary**: typed ov
 Parallel subsystems that read the registry:
 
 - **WindowPersistenceManager** — hydrates the current tab/identity workspace from localStorage + IndexedDB, stages lazy restores, and runs the idle overlay GC sweep.
-- **UrlPanelManager** — currently unmounted. Its `?panels=` hydrators and registry metadata are dormant until the manager is deliberately re-enabled and tested.
+- **UrlPanelManager** — globally unmounted. An audited, allowlisted instance is mounted only on `/marketing/keyword-research` for `keyword_research`; every other `?panels=` hydrator remains dormant until deliberately enabled and tested.
 - **WindowPanel** — looks up its own registry entry by `overlayId` to resolve `mobilePresentation`, `mobileSidebarAs`, and `urlSync.key`; a page-local window without an overlay id may pass `mobilePresentationOverride`.
 
 ---
@@ -346,7 +353,7 @@ interface WindowRegistryEntry {
   instanceMode?: "singleton" | "multi"; // default "singleton"
 
   // Integrations
-  urlSync?: { key: string }; // dormant until UrlPanelManager is mounted
+  urlSync?: { key: string }; // active only where an audited UrlPanelManager owns the key
   icon?: LucideIconName; // (reserved — grid uses toolsGridTiles)
   category?: ToolsCategory; // (reserved — see above)
   heavySnapshot?: boolean; // Phase 7 opt-in
@@ -366,7 +373,7 @@ interface WindowRegistryEntry {
 1. Every metadata entry has `kind`; every overlay id has one lazy renderer in `OverlayController`.
 2. Every `kind: "window"` has `mobilePresentation`.
 3. `slug` and `overlayId` are each unique across the registry.
-4. Before `UrlPanelManager` is re-mounted, every live `urlSync.key` must have a context-safe hydrator in `initUrlHydration.ts`.
+4. Before a `urlSync.key` is allowlisted on a mounted `UrlPanelManager`, its hydrator in `initUrlHydration.ts` must be context-safe on that route.
 
 ### How to add a new overlay
 
@@ -556,9 +563,9 @@ Decision tree:
 
 ## URL sync
 
-`UrlPanelManager` is currently not mounted, so `?panels=` hydration is dormant. `WindowPanel` may still register metadata in `urlSyncSlice`, but no manager reads or writes the URL. Share and Transcript Studio intentionally have no `urlSync` metadata because safe hydration requires resource/session context.
+`UrlPanelManager` is not mounted globally. `/marketing/keyword-research` mounts an allowlisted instance for `keyword_research`; that manager hydrates and synchronizes only its owned key and preserves all unowned `?panels=` tokens verbatim. Every other key remains dormant. `WindowPanel` may still register metadata in `urlSyncSlice`, but no manager reads or writes a key unless it owns it. Share and Transcript Studio intentionally have no `urlSync` metadata because safe hydration requires resource/session context.
 
-If the manager is re-enabled, set `urlSync: { key: "..." }` on a registry entry. `WindowPanel` auto-activates `useUrlSync` when:
+When a manager is enabled for a key, set `urlSync: { key: "..." }` on its registry entry. `WindowPanel` auto-activates `useUrlSync` when:
 
 1. The entry has `overlayId` defined (caller passes it).
 2. Either the caller passes `urlSyncKey`/`urlSyncId` props, or the registry has `urlSync.key`.
@@ -641,7 +648,7 @@ Enforced by:
 | `tools-grid/menuPrimitives.tsx`             | `MenuSection` / `MenuDivider` / `MenuItem` / `MenuGridItem`.                                                       |
 | `url-sync/initUrlHydration.ts`              | `registerPanelHydrator` calls + dev-time integrity check.                                                          |
 | `url-sync/UrlPanelRegistry.ts`              | Hydrator map.                                                                                                      |
-| `url-sync/UrlPanelManager.tsx`              | Dormant `?panels=` coordinator; currently not mounted.                                                             |
+| `url-sync/UrlPanelManager.tsx`              | Allowlisted `?panels=` coordinator; globally dormant, route-scoped for audited keys.                               |
 | `url-sync/useUrlSync.ts`                    | Registers/unregisters open panel in `urlSyncSlice`.                                                                |
 | `constants/tray.ts`                         | Single source for tray dimensions, margins, wrapping, and slot rectangles.                                         |
 | `utils/rectClamp.ts`                        | Viewport-safe geometry clamping.                                                                                   |
@@ -674,7 +681,7 @@ Enforced by:
 | 5 — Mobile presentation layer (drawer/card surfaces, rect clamp)             | ✅ shipped                                                                                       |
 | 6 — WindowPanel decomposition                                                | ⏸ deferred                                                                                       |
 | 7 — Local persistence hardening + audited semantic preservation pilots       | ✅ platform shipped; broader registry rollout remains audited                                    |
-| 8 — URL-sync implementation                                                  | dormant; `UrlPanelManager` is not mounted                                                        |
+| 8 — URL-sync implementation                                                  | route-scoped pilot: `keyword_research`; global manager remains dormant                           |
 | 9 — Dead code removal                                                        | ✅ shipped                                                                                       |
 | 10 — Tests                                                                   | ✅ preservation/reducer/store coverage shipped; broader mobile matrix remains                    |
 | 11 — Docs refresh (this file)                                                | ✅ current                                                                                       |

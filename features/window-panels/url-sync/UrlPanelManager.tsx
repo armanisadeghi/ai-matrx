@@ -10,10 +10,26 @@ import {
 } from "@/lib/redux/slices/urlSyncSlice";
 import { getHydrator } from "./UrlPanelRegistry";
 import { initUrlHydration } from "./initUrlHydration";
+
+type UrlSyncEntries = ReturnType<typeof selectUrlSyncEntries>;
+
+interface UrlPanelManagerProps {
+  /**
+   * Restricts hydration and synchronization to audited panel types. Other
+   * `?panels=` tokens are preserved verbatim until their hydrators are safe to
+   * enable globally.
+   */
+  managedTypeKeys?: readonly string[];
+}
+
 export function serializeParams(
-  entries: ReturnType<typeof selectUrlSyncEntries>,
+  entries: UrlSyncEntries,
+  managedTypeKeys?: readonly string[],
 ): string {
+  const managedKeys = managedTypeKeys ? new Set(managedTypeKeys) : null;
+
   return Object.values(entries)
+    .filter((entry) => !managedKeys || managedKeys.has(entry.typeKey))
     .map((entry) => {
       let str = `${entry.typeKey}:${entry.instanceId}`;
       if (entry.args && Object.keys(entry.args).length > 0) {
@@ -25,6 +41,23 @@ export function serializeParams(
       return str;
     })
     .join(",");
+}
+
+export function mergeManagedPanelParams(
+  currentParam: string,
+  nextManagedParam: string,
+  managedTypeKeys?: readonly string[],
+): string {
+  if (!managedTypeKeys) return nextManagedParam;
+
+  const managedKeys = new Set(managedTypeKeys);
+  const unmanagedTokens = currentParam
+    .split(",")
+    .filter(Boolean)
+    .filter((token) => !managedKeys.has(token.split(":")[0]));
+  const nextManagedTokens = nextManagedParam.split(",").filter(Boolean);
+
+  return [...unmanagedTokens, ...nextManagedTokens].join(",");
 }
 
 export function parseParams(paramString: string | null) {
@@ -57,7 +90,7 @@ export function parseParams(paramString: string | null) {
  * This component handles ?panels= URL parameter sync for shareable deep links.
  * Mount inside a <Suspense> boundary if you need URL-based panel restoration.
  */
-export function UrlPanelManager() {
+export function UrlPanelManager({ managedTypeKeys }: UrlPanelManagerProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -67,6 +100,8 @@ export function UrlPanelManager() {
   const isHydrated = useAppSelector(selectIsUrlHydrated);
 
   const initialLoadDone = useRef(false);
+  const pendingInitialTypeKeys = useRef<Set<string>>(new Set());
+  const hasObservedInitialEntries = useRef(false);
 
   // 1. HYDRATION (URL -> Redux)
   useEffect(() => {
@@ -77,10 +112,14 @@ export function UrlPanelManager() {
 
     const panelsParam = searchParams.get("panels");
     if (panelsParam) {
-      const panels = parseParams(panelsParam);
+      const managedKeys = managedTypeKeys ? new Set(managedTypeKeys) : null;
+      const panels = parseParams(panelsParam).filter(
+        (panel) => !managedKeys || managedKeys.has(panel.typeKey),
+      );
       panels.forEach((panel) => {
         const hydrator = getHydrator(panel.typeKey);
         if (hydrator) {
+          pendingInitialTypeKeys.current.add(panel.typeKey);
           hydrator(dispatch, panel.instanceId, panel.args || {});
         } else {
           console.warn(
@@ -90,16 +129,36 @@ export function UrlPanelManager() {
       });
     }
 
+    hasObservedInitialEntries.current =
+      pendingInitialTypeKeys.current.size === 0;
+
     // Mark hydration complete so subsequent URL writes can begin
     dispatch(setHydrated());
-  }, [searchParams, dispatch]);
+  }, [searchParams, dispatch, managedTypeKeys]);
 
   // 2. SYNCHRONIZATION (Redux -> URL)
   useEffect(() => {
     if (!isHydrated) return;
 
+    if (!hasObservedInitialEntries.current) {
+      const observedTypeKeys = new Set(
+        Object.values(entries).map((entry) => entry.typeKey),
+      );
+      const allInitialEntriesObserved = Array.from(
+        pendingInitialTypeKeys.current,
+      ).every((typeKey) => observedTypeKeys.has(typeKey));
+
+      if (!allInitialEntriesObserved) return;
+      hasObservedInitialEntries.current = true;
+    }
+
     const currentParam = searchParams.get("panels") || "";
-    const nextParam = serializeParams(entries);
+    const nextManagedParam = serializeParams(entries, managedTypeKeys);
+    const nextParam = mergeManagedPanelParams(
+      currentParam,
+      nextManagedParam,
+      managedTypeKeys,
+    );
 
     // Only update if actually changed, to avoid infinite replace loops
     if (currentParam !== nextParam) {
@@ -115,7 +174,7 @@ export function UrlPanelManager() {
       // scroll: false keeps position stable
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     }
-  }, [entries, isHydrated, pathname, router, searchParams]);
+  }, [entries, isHydrated, managedTypeKeys, pathname, router, searchParams]);
 
   return null;
 }
