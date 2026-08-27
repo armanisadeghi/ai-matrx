@@ -826,6 +826,41 @@ export function fetchHrMyCompensation(args: {
   );
 }
 
+/**
+ * Is this CRM party an employee here? (SPEC-UI-IA §6, `PartyRecordPage`.)
+ *
+ * `hr.employee` is 1:1 with `crm.party`, but the directory door filters by
+ * NAME, not by party id — searching the directory for a uuid would silently
+ * match nothing and the card would render "not an employee" for somebody who
+ * is. So the seam gets its own door rather than a lookup that looks right and
+ * is wrong.
+ *
+ * Returns DIRECTORY-TIER FIELDS ONLY. Nothing confidential may reach a CRM
+ * surface; that is a separate, audited read on a different page. A refusal —
+ * or a party who is not an employee — renders the card as ABSENT.
+ */
+export function fetchHrEmployeeByParty(args: {
+  organizationId: string;
+  partyId: string;
+}): Promise<
+  HrResult<{
+    employee_id: string | null;
+    display_name: string | null;
+    directory_status: string | null;
+    job_title: string | null;
+    department: string | null;
+    manager_employee_id: string | null;
+    manager_name: string | null;
+    hire_date: string | null;
+  }>
+> {
+  return callHr(
+    "hr_employee_by_party",
+    { p_organization_id: args.organizationId, p_party_id: args.partyId },
+    { envelope: true, whatFailed: "This person's employee record" },
+  );
+}
+
 // ── The member ⇄ employee seam (SPEC-UI-IA §6, MemberManagement) ────────────
 
 /**

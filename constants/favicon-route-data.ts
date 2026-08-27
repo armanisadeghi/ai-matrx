@@ -57,6 +57,8 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/sandbox", favicon: { color: "#c2410c", letter: "SB" } },
   { href: "/messages", favicon: { color: "#db2777", letter: "MS" } },
   { href: "/crm", favicon: { color: "#9f1239", letter: "CR" } },
+  // SPEC-UI-IA §2.1, verbatim.
+  { href: "/hr", favicon: { color: "#4f46e5", letter: "HR" } },
   { href: "/education", favicon: { color: "#1e3a8a", letter: "ED" } },
   { href: "/maps", favicon: { color: "#713f12", letter: "MP" } },
   { href: "/markdown-studio", favicon: { color: "#334155", letter: "MD" } },

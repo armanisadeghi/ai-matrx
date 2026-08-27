@@ -7,6 +7,7 @@ import {
 import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { TasksAssistStrip } from "@/features/tasks/components/TasksAssistStrip";
 import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
+import { HrTasksDoor } from "@/features/hr/entry-points/HrTasksDoor";
 
 /**
  * Header controls for the /tasks route. Lives inside the shell glass header
@@ -53,6 +54,11 @@ export function TasksHeaderControls() {
           (`tasks.triage`) the user may swap for their own, with no deploy.
           Deep-linked to the `tasks` domain: the bare list is 264 mandates
           across 45 domains. */}
+      {/* SPEC-UI-IA §6 — HR decisions waiting on this person, as a BADGE that
+          is a DOOR to /hr/tasks. HR does NOT build a second task store, so
+          nothing is injected into the list; it renders nothing at all when
+          there is no HR standing or nothing waiting. */}
+      <HrTasksDoor />
       <MandateDoorLink feature="tasks" label="Task agents" className="ml-auto" />
     </div>
   );

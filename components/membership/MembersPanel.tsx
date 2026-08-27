@@ -131,6 +131,20 @@ export interface MembersPanelProps {
    */
   copyContainer?: Omit<MembershipCopyContainer, "noun"> &
     Partial<Pick<MembershipCopyContainer, "noun">>;
+  /**
+   * Extra content rendered on each member row, before the role badge.
+   *
+   * WHY THIS SEAM EXISTS. A member and an employee are RELATED BUT DISTINCT
+   * (SPEC-UI-IA §6): a member is a login with a role, an employee is a person
+   * with a spell. The org members list is where that seam becomes visible and
+   * crossable — "Employee record" when linked, "Link to employee" when not.
+   * Without a seam here, the HR module would have had to fork this panel, and
+   * the two copies would have drifted the first time either changed.
+   *
+   * It renders NOTHING when the caller supplies nothing, so every existing
+   * consumer is untouched.
+   */
+  renderMemberExtra?: (member: PanelMember) => React.ReactNode;
 }
 
 const ROLE_ICONS: Record<MembershipRole, LucideIcon> = {
@@ -167,6 +181,7 @@ export function MembersPanel({
   footerNotice,
   memberNoun = "member",
   copyContainer,
+  renderMemberExtra,
 }: MembersPanelProps) {
   const container: MembershipCopyContainer = {
     noun: copyContainer?.noun ?? containerNoun,
@@ -325,6 +340,9 @@ export function MembersPanel({
 
               {/* Role Badge and Actions */}
               <div className="flex items-center gap-2">
+                {/* The member ⇄ employee seam (SPEC-UI-IA §6). Renders nothing
+                    when the host supplies nothing. */}
+                {renderMemberExtra?.(member)}
                 <Badge
                   className={cn(
                     "flex items-center gap-1",

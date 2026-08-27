@@ -56,6 +56,7 @@ import {
   Frame,
   Microscope,
   FolderKanban,
+  IdCard,
   ListTodo,
 } from "lucide-react";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
@@ -528,6 +529,41 @@ export const ORG_RESOURCE_CATALOGUE: OrgResourceEntry[] = [
     titleColumn: "name",
     orgRoute: null,
     scopeable: true,
+  },
+
+  // ─── People (HR) ─────────────────────────────────────────────────────────
+  //
+  // D6 / SPEC-UI-IA §6. Registered here — the one purpose this file is retained
+  // for (its own header: "touch this catalogue only for sharing") — so
+  // `OrgModuleSettings` renders an HR row like every other module. The display
+  // and query metadata still resolves canonically: `token: "hr_employee"` IS a
+  // registered `platform.entity_types` token, so `getEntityInfo("hr_employee")`
+  // owns the icon, label, schema and route.
+  //
+  // 🚨 EVERY SHARING FIELD IS DELIBERATELY NULL, AND THAT IS THE POINT.
+  //   `table: null`   — the `hr` schema is NOT exposed to PostgREST, so there is
+  //                     no client-side count and there never will be. Every HR
+  //                     read is an audited `public.hr_*` RPC.
+  //   `shareKey: null` — HR access is governed by `hr.access_role` and the
+  //                     sensitivity tiers, NOT by `iam.permissions`. Making an
+  //                     employee record "shareable with the org" through the
+  //                     generic grant machinery would route around the entire
+  //                     access model. This must stay null.
+  //   `scopeable: false` — a person is not tagged to a scope.
+  {
+    key: "hr_employee",
+    token: "hr_employee",
+    label: "Employee",
+    labelPlural: "People",
+    role: "container",
+    icon: IdCard,
+    description: "The people this organization employs, and their records.",
+    table: null,
+    hasOrgColumn: true,
+    shareKey: null,
+    titleColumn: null,
+    orgRoute: "hr",
+    scopeable: false,
   },
 
   // ─── Workspaces (Containers) ────────────────────────────────────────────

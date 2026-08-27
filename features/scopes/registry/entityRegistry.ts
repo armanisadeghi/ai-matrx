@@ -51,6 +51,7 @@ import {
   GitBranch,
   Globe,
   Handshake,
+  IdCard,
   Layers,
   Layers3,
   LayoutTemplate,
@@ -80,6 +81,7 @@ import {
   type EntityTypeToken,
 } from "@/types/generated/entity-types.generated";
 import { listDataStoreCandidates } from "@/features/rag/service/dataStoreCandidates";
+import { listHrEmployeeCandidates } from "@/features/hr/entry-points/employeeCandidates";
 
 /**
  * The universal ownership column post-2026-reorg. Every first-class entity
@@ -228,6 +230,24 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: AppWindow,
     labelPlural: "Agent Apps",
     hrefFor: (id) => `/agent-apps/${id}`,
+  },
+  // ─── People (HR) ──────────────────────────────────────────────────────────
+  //
+  // D7 / SPEC-UI-IA §6: "Employees are a searchable entity type resolving to
+  // /hr/people/[employeeId]." THIS is the registration point — the universal
+  // search box and every association picker are registry-driven, so a token
+  // joins them here and nowhere else.
+  //
+  // `listCandidates` is REQUIRED, not polish. The generic candidate read does a
+  // `.schema(...).from(...)`, and the `hr` schema is not exposed to PostgREST —
+  // so without this override `hr_employee` either cannot be searched at all or
+  // fails with PGRST205 the moment somebody types. Same exception, same reason,
+  // as `data_store`.
+  hr_employee: {
+    Icon: IdCard,
+    labelPlural: "Employees",
+    hrefFor: (id) => `/hr/people/${id}`,
+    listCandidates: listHrEmployeeCandidates,
   },
   rulebook: {
     Icon: BookOpen,

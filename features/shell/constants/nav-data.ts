@@ -1064,6 +1064,171 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
+    // HR — SPEC-UI-IA §2.1. ONE primary entry with the section children below;
+    // WHICH of those children a given person sees inside `/hr` is resolved by
+    // `resolveHrNav` from their CAPABILITIES, never from a role string, and an
+    // employee's face of an item points at their own `/hr/me/*` surface.
+    //
+    // ⚠️ MODULE-OFF ABSENCE IS NOT ENFORCED HERE, AND CANNOT BE. SPEC-UI-IA §6
+    // says the HR nav item is ABSENT for an org with `hr.module.enabled=false`.
+    // This file is static, server-agnostic data filtered only by
+    // `navItemsForViewer(items, isAuthenticated)` — there is no per-org runtime
+    // gate, and adding one would make EVERY page in the app resolve HR context
+    // to draw its sidebar. So the absence is enforced one step in: `/hr` itself
+    // renders the enable door for an owner/admin and a plain not-enabled page
+    // for everyone else (`HrModuleOff`), and every §6 entry point renders its
+    // absent state. Named rather than silently skipped.
+    label: "HR",
+    href: "/hr",
+    iconName: "Users",
+    section: "primary",
+    profileMenu: false,
+    dashboard: false,
+    description: "People, time, pay and everything an employer has to keep",
+    color: "indigo",
+    guestHidden: true,
+    children: [
+      {
+        label: "HR Home",
+        href: "/hr",
+        iconName: "LayoutDashboard",
+        exact: true,
+        description: "What needs you today",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "My Info",
+        href: "/hr/me",
+        iconName: "User",
+        description: "Your own record — always yours, in every role",
+        color: "indigo",
+        profileMenu: true,
+        guestHidden: true,
+      },
+      {
+        label: "People",
+        href: "/hr/people",
+        iconName: "Users",
+        description: "The employee directory and the org chart",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "Hiring",
+        href: "/hr/hiring",
+        iconName: "Handshake",
+        description: "Requisitions, candidates, interviews and offers",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "Time",
+        href: "/hr/time",
+        iconName: "CalendarClock",
+        description: "Timesheets, punches, exceptions and pay periods",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "Schedule",
+        href: "/hr/schedule",
+        iconName: "CalendarDays",
+        description: "Build, publish and staff the schedule",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "Time Off",
+        href: "/hr/leave",
+        iconName: "HeartPulse",
+        description: "Requests, balances and the team calendar",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "Onboarding",
+        href: "/hr/onboarding",
+        iconName: "ClipboardCheck",
+        description: "New-hire runs, templates and offboarding",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "Documents",
+        href: "/hr/documents",
+        iconName: "FileText",
+        description: "The library, acknowledgments and signatures",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "Training",
+        href: "/hr/training",
+        iconName: "GraduationCap",
+        description: "Assignments, certifications and compliance",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "Performance",
+        href: "/hr/performance",
+        iconName: "Target",
+        description: "Reviews — yours, and your team's",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "Assets",
+        href: "/hr/assets",
+        iconName: "Package",
+        description: "Equipment issued, assigned and recovered",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "Engagement",
+        href: "/hr/engagement",
+        iconName: "Megaphone",
+        description: "Announcements, pulse surveys and recognition",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "Compliance",
+        href: "/hr/compliance",
+        iconName: "ShieldCheck",
+        description: "Exceptions, work authorization and access review",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "HR Tasks",
+        href: "/hr/tasks",
+        iconName: "ListTodo",
+        description: "Everything in HR waiting on a decision from you",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "HR Reports",
+        href: "/hr/reports",
+        iconName: "BarChart3",
+        description: "Headcount, turnover, cost and compliance reporting",
+        color: "indigo",
+        guestHidden: true,
+      },
+      {
+        label: "HR Settings",
+        href: "/hr/settings",
+        iconName: "Settings",
+        description: "How HR works for this employer",
+        color: "indigo",
+        guestHidden: true,
+      },
+    ],
+  },
+  {
     label: "CRM",
     href: "/crm",
     iconName: "Users",

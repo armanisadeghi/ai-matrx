@@ -23,6 +23,10 @@ import type {
   MembershipRole,
   MembershipRoleOption,
 } from "@/components/membership/types";
+import {
+  HrMemberEmployeeSeamProvider,
+  MemberEmployeeSeam,
+} from "@/features/hr/entry-points/MemberEmployeeSeam";
 
 interface MemberManagementProps {
   organizationId: string;
@@ -31,6 +35,8 @@ interface MemberManagementProps {
   userRole: OrgRole;
   isOwner: boolean;
   isPersonal: boolean;
+  /** Slug (or id) used to carry the employer context into every HR door. */
+  orgSlugOrId?: string;
 }
 
 const ROLE_OPTIONS: MembershipRoleOption[] = [
@@ -45,6 +51,7 @@ export function MemberManagement({
   userRole,
   isOwner,
   isPersonal,
+  orgSlugOrId,
 }: MemberManagementProps) {
   const { members, loading, error, refresh } =
     useOrganizationMembers(organizationId);
@@ -99,8 +106,22 @@ export function MemberManagement({
   }
 
   return (
+    // SPEC-UI-IA §6 — the member ⇄ employee seam. ONE batched resolution for
+    // the whole list, and it renders NOTHING when HR is off here or this viewer
+    // has no HR standing: absent, not disabled.
+    <HrMemberEmployeeSeamProvider
+      organizationId={organizationId}
+      orgSlugOrId={orgSlugOrId ?? organizationId}
+      userIds={(members as PanelMember[]).map((m) => m.userId)}
+    >
     <MembersPanel
       members={members as PanelMember[]}
+      renderMemberExtra={(member) => (
+        <MemberEmployeeSeam
+          userId={member.userId}
+          displayName={member.user?.displayName ?? member.user?.email ?? null}
+        />
+      )}
       roleOptions={ROLE_OPTIONS}
       operationLoading={operationLoading}
       containerNoun="organization"
@@ -128,5 +149,6 @@ export function MemberManagement({
         ) : undefined
       }
     />
+    </HrMemberEmployeeSeamProvider>
   );
 }

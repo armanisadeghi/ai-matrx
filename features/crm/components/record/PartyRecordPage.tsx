@@ -35,6 +35,7 @@ import { ExpertStatusCard } from "./ExpertStatusCard";
 import { ContactPointsCard } from "./ContactPointsCard";
 import { AddressesCard } from "./AddressesCard";
 import { EmploymentCard } from "./EmploymentCard";
+import { PartyEmployeeCard } from "@/features/hr/entry-points/PartyEmployeeCard";
 import { InteractionTimeline } from "./InteractionTimeline";
 import { PartyNotes } from "./PartyNotes";
 import { OutreachContactCandidatesCard } from "./OutreachContactCandidatesCard";
@@ -204,6 +205,17 @@ export function PartyRecordPage({ partyId }: Props) {
                   addresses={detail.addresses}
                   onChanged={refresh}
                 />
+                {/* SPEC-UI-IA §6 — a CRM record and an employee record must
+                    never look like two unrelated search results for the same
+                    person. Renders NOTHING when this party is not an employee
+                    here, or when HR is off for this org: absent, not a card
+                    that announces the absence. */}
+                {isPerson && (
+                  <PartyEmployeeCard
+                    partyId={party.id}
+                    orgId={party.organization_id}
+                  />
+                )}
                 {isPerson ? (
                   <EmploymentCard
                     mode="person"

@@ -52,6 +52,7 @@ import { OrgEmailTab } from "./OrgEmailTab";
 import { OrgPrivacyTab } from "./OrgPrivacyTab";
 import { OrgScopeTree } from "./OrgScopeTree";
 import { OrgModuleSettings } from "./OrgModuleSettings";
+import { OrgHrPeopleSection } from "@/features/hr/entry-points/OrgHrPeopleSection";
 import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
 import { VaultWorkspace } from "@/features/secrets/components/VaultWorkspace";
 import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
@@ -102,6 +103,11 @@ export function OrgManage({
       icon: Mail,
       show: mayManageInvitations,
     },
+    // SPEC-UI-IA §6 row 93. The section renders NOTHING when HR is off for this
+    // org (absent, not disabled), so the nav chip is offered whenever the
+    // viewer could act on it and the section itself decides whether there is
+    // anything to act on.
+    { id: "people", label: "People", icon: UserCog, show: canManageSettings },
     {
       id: "scopes",
       label: "Scopes",
@@ -293,6 +299,7 @@ export function OrgManage({
               <MemberManagement
                 organizationId={displayOrganization.id}
                 organizationName={displayOrganization.name}
+                orgSlugOrId={slug}
                 userRole={userRole}
                 isOwner={isOwner}
                 isPersonal={displayOrganization.isPersonal}
@@ -312,6 +319,24 @@ export function OrgManage({
                 organizationId={displayOrganization.id}
                 organizationName={displayOrganization.name}
                 userRole={userRole}
+              />
+            </SectionCard>
+          )}
+
+          {/* People — the HR module's door into org settings (SPEC-UI-IA §6
+              row 93). It CONFIGURES NOTHING: the module toggle lives in Module
+              settings below, and every HR setting lives at /hr/settings/*. */}
+          {canManageSettings && (
+            <SectionCard
+              id="people"
+              icon={UserCog}
+              title="People"
+              description="Employee records, the directory, and where HR is configured."
+            >
+              <OrgHrPeopleSection
+                organizationId={displayOrganization.id}
+                orgSlugOrId={slug}
+                canManage={canManageSettings}
               />
             </SectionCard>
           )}
