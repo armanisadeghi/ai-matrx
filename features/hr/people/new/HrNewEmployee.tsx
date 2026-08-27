@@ -228,19 +228,24 @@ export function HrNewEmployee({
     setRefusal(null);
     setSaving(true);
 
-    // The scan runs first, always. Its result gates the write.
+    // 🚨 THE SCAN RUNS FIRST, ALWAYS, AND ITS RESULT GATES THE WRITE.
+    //
+    // Three outcomes, three behaviours:
+    //   • it could not run  → STOP. A scan that failed is not a clean scan, and
+    //                         creating anyway is how a duplicate person is born.
+    //   • matches found     → STOP and show them. The user has to open them and
+    //                         tick "different person" before the button will fire
+    //                         again — which is why this returns rather than
+    //                         chaining straight into the write.
+    //   • nothing matched   → continue into the write in the SAME click. Making
+    //                         somebody press a second time to confirm nothing is
+    //                         a confirmation dialog with no question in it.
     if (scan === null) {
       const scanned = await runScan();
-      setSaving(false);
-      if (scanned && scanned.matches.length > 0) return;
-      if (!scanned) return;
-      // Fall through on the next click, with the scan on screen.
-      if (scanned.matches.length === 0) {
-        // Nothing matched — continue straight into the write.
-      } else {
+      if (!scanned || scanned.matches.length > 0) {
+        setSaving(false);
         return;
       }
-      setSaving(true);
     }
 
     const result = await createHrEmployee({
