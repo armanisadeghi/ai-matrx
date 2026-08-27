@@ -133,6 +133,8 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-08-26** — HR settings keeps the starting-code seed result visible after
+  the triggered structure refresh, so operators can read the created/skipped counts.
 - **2026-08-26** — L1 shell + primitives layer built: `HrShell`, `HrSubShell`,
   `HrStates` (four universal states + `HrPageState`), `EffectiveDatedForm`,
   `PendingChangesPanel`, `hr-assists-producer`, `app/(core)/hr/{layout,page}.tsx`.

@@ -80,6 +80,8 @@ export function HrCodesPanel() {
   const { active } = useHrContext();
   const organizationId = active?.organization_id ?? null;
   const { structure, isLoading, error, refresh } = useHrSettingsStructure(organizationId);
+  /** The seed panel has run here — see the note at its render site. */
+  const [seeded, setSeeded] = useState(false);
 
   return (
     <HrSettingsShell
@@ -98,8 +100,21 @@ export function HrCodesPanel() {
             `hr.work_interval.earning_code_id` is NOT NULL, so those employers
             cannot write an hour for anybody. The wizard is unreachable once an
             employer exists, so without this the only fix is a database call. */}
-        {!isLoading && organizationId && (structure?.earning_codes.length ?? 0) === 0 ? (
-          <SeedStartingCodes organizationId={organizationId} onSeeded={refresh} />
+        {/* 🚨 IT STAYS MOUNTED AFTER IT RUNS. The refresh it triggers fills the
+            code list, which is exactly the condition that would unmount it — and
+            the counts it just reported would vanish before anybody read them.
+            `seeded` latches it open for the rest of this visit. */}
+        {!isLoading &&
+        organizationId &&
+        (seeded || (structure?.earning_codes.length ?? 0) === 0) ? (
+          <SeedStartingCodes
+            organizationId={organizationId}
+            hasCodes={(structure?.earning_codes.length ?? 0) > 0}
+            onSeeded={() => {
+              setSeeded(true);
+              refresh();
+            }}
+          />
         ) : null}
         <EarningCodesSection
           codes={structure?.earning_codes ?? []}
@@ -128,9 +143,12 @@ export function HrCodesPanel() {
  */
 function SeedStartingCodes({
   organizationId,
+  hasCodes,
   onSeeded,
 }: {
   organizationId: string;
+  /** True once the list below has codes — which is also true right after a run. */
+  hasCodes: boolean;
   onSeeded: () => void;
 }) {
   const [running, setRunning] = useState(false);
@@ -164,13 +182,12 @@ function SeedStartingCodes({
         <Sprout className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
         <div className="min-w-0 space-y-1">
           <h2 className="text-sm font-semibold text-foreground">
-            This employer has no earning codes
+            {hasCodes ? "Starting codes" : "This employer has no earning codes"}
           </h2>
           <p className="max-w-prose text-sm text-muted-foreground">
-            Every hour written anywhere in HR is written against an earning code, so
-            until this employer has some, nobody here can have a timesheet. Setup
-            creates them for new employers; this employer was switched on before it
-            did.
+            {hasCodes
+              ? "What the last run actually created. It is idempotent, so running it again creates nothing twice."
+              : "Every hour written anywhere in HR is written against an earning code, so until this employer has some, nobody here can have a timesheet. Setup creates them for new employers; this employer was switched on before it did."}
           </p>
         </div>
       </header>
