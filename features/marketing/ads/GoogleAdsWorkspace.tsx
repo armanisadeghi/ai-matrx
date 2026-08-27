@@ -240,6 +240,7 @@ export function GoogleAdsWorkspace() {
                 </span>
               </label>
               <Button
+                className="min-h-11"
                 onClick={authorize}
                 disabled={
                   !disclosureAccepted ||
@@ -254,7 +255,11 @@ export function GoogleAdsWorkspace() {
               </Button>
             </div>
           ) : (
-            <Button onClick={discoverCustomers} disabled={customers.isPending}>
+            <Button
+              className="min-h-11"
+              onClick={discoverCustomers}
+              disabled={customers.isPending}
+            >
               {customers.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
@@ -300,6 +305,7 @@ export function GoogleAdsWorkspace() {
               <Label htmlFor="google-ads-start">Start</Label>
               <Input
                 id="google-ads-start"
+                className="h-11"
                 type="date"
                 value={startDate}
                 onChange={(event) => setStartDate(event.target.value)}
@@ -309,12 +315,14 @@ export function GoogleAdsWorkspace() {
               <Label htmlFor="google-ads-end">End</Label>
               <Input
                 id="google-ads-end"
+                className="h-11"
                 type="date"
                 value={endDate}
                 onChange={(event) => setEndDate(event.target.value)}
               />
             </div>
             <Button
+              className="min-h-11"
               onClick={loadReport}
               disabled={!selectedCustomer || report.isPending}
             >
@@ -362,7 +370,12 @@ export function GoogleAdsWorkspace() {
                   {report.data.start_date} to {report.data.end_date}
                 </p>
               </div>
-              <Button asChild variant="outline" size="sm">
+              <Button
+                asChild
+                className="min-h-11 sm:min-h-8"
+                variant="outline"
+                size="sm"
+              >
                 <a
                   href="https://ads.google.com/"
                   target="_blank"
