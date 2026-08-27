@@ -137,6 +137,7 @@ export function PunchWidget({
             busy={clock.busy}
             onRetry={clock.retry}
             onReload={clock.reload}
+            onStartOver={clock.startOver}
           />
         </>
       )}

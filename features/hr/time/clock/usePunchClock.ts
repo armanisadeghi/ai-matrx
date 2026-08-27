@@ -120,6 +120,16 @@ export interface PunchClock {
   submitAttestation: (response: AttestationResponse) => void;
   /** Back out of the attestation card without writing anything. */
   cancelAttestation: () => void;
+  /**
+   * Abandon the pending intent and return to the controls.
+   *
+   * 🚨 Needed because Retry deliberately re-sends the SAME intent — same key, same instant — so a
+   * manager whose back-dated entry was refused *for the date they chose* could otherwise never get
+   * back to the date field to correct it. Retry is for "the same punch, again"; this is for "that
+   * was the wrong punch". Conflating them would either strand the operator or let a retry silently
+   * change what it was retrying.
+   */
+  startOver: () => void;
   dismissConfirmation: () => void;
   reload: () => void;
 }
@@ -318,6 +328,13 @@ export function usePunchClock(input: UsePunchClockInput): PunchClock {
       // A "no" answer is never a blocked clock-out: the punch is written and the disagreement
       // becomes an exception (§3.2). There is no branch here that declines to send.
       void send(attachAttestation(pendingIntent, response), state);
+    },
+
+    startOver: () => {
+      if (!state) return;
+      setPendingIntent(null);
+      setConfirmation(null);
+      setView({ kind: "ready", state });
     },
 
     cancelAttestation: () => {

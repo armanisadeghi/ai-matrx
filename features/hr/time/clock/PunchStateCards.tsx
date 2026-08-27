@@ -146,11 +146,14 @@ export function PunchErrorCard({
   busy,
   onRetry,
   onReload,
+  onStartOver,
 }: {
   error: PunchClockError;
   intent: PunchIntent | null;
   busy: boolean;
   onRetry: () => void;
+  /** Abandon this intent and go back to the controls — see `usePunchClock.startOver`. */
+  onStartOver?: () => void;
   /**
    * Re-runs `hr_clock_state`. Used when the error has NO intent behind it — the initial read
    * failed, so there is no punch to retry and the surface would otherwise be a dead end: a
@@ -189,6 +192,22 @@ export function PunchErrorCard({
                 <RotateCcw className="size-4" />
                 Try again
               </Button>
+              {onStartOver && (
+                /*
+                  🚨 Retry re-sends the SAME intent, so a refusal that was ABOUT the entered time
+                  (a manager back-dating outside their reach) needs a way back to the form. Without
+                  this the operator's only exit is re-picking the employee from scratch.
+                */
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={onStartOver}
+                  className="min-h-[44px] w-fit"
+                >
+                  Change something and start over
+                </Button>
+              )}
               {intent.attempts > 0 && (
                 <p className="text-xs text-muted-foreground">
                   Attempt {intent.attempts + 1}. This is the same punch, not a new one — trying
