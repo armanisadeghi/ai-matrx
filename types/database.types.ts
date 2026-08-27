@@ -43685,7 +43685,6 @@ export type Database = {
         Returns: {
           binding_id: string
           capabilities: string[]
-          connector: Json
           connector_kind: string
           display_name: string
           is_active: boolean

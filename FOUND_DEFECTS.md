@@ -177,6 +177,28 @@ either narrow the function's return to drop the two columns, or decide the RPC i
 server-side seam and record why. Not done here — this session was fixing the `db-types` write race
 and had no standing to change an HR contract surface.
 
+> ✅ **RESOLVED 2026-08-27 (lane L13 / HRB-025), migration `hr_l13_06_provider_seam_definer_projection`.**
+> The judgment call went **both** ways, because the two columns are not the same case.
+> - `connector` was **dropped** from `provider_webhook_candidates` — the one caller
+>   (`aidream services/hr/providers/engine.py::verify_webhook`) unmarshals it and never reads it,
+>   and it reads it as `dict(row.get("connector") or {})`, so an absent key is `{}` and nothing
+>   changes.
+> - `webhook_secret_ref` **stays**, deliberately. Resolving the HMAC signing secret from that
+>   pointer is the entire job of that RPC; deleting it would not secure the webhook lane, it would
+>   disable signature verification. So it is the **RPC that is a legitimate server-side seam**, and
+>   the recorded why is: `authenticated`, `anon` and `PUBLIC` lost `EXECUTE`; `service_role` keeps
+>   it. The client's door to bindings stays E-27 (`hr.provider_bindings_list`), whose projection was
+>   already secret-free.
+> Two sibling functions were in the same state and got the same revoke: `provider_binding_resolve`
+> and `provider_sync_targets` (both project `connector`, both genuinely need it for the REST/MCP
+> adapters, neither has a browser caller).
+> **The class is now guarded**, in `scripts/hr/hrb012_type_proof.py` group F: for every
+> `SECURITY DEFINER` function in a frozen schema, if its result projects an excluded column *of a
+> table its body actually reads*, then no client role may execute it. The per-entity scoping is
+> load-bearing — `amount` is excluded on `hr.leave_ledger` and legitimate on `hr.work_interval`, so
+> a name-only match would flag `hr.export_line_source` forever and get the guard switched off.
+> `--self-test` replays the pre-fix shape and requires it to be caught.
+
 ### D267 — `assoc_list` with a NULL direction silently returns ZERO rows instead of raising (2026-08-26)
 
 `public.assoc_list(p_type, p_id, p_direction, p_role)` guards with

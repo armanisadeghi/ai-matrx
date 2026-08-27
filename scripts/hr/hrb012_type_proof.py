@@ -140,6 +140,19 @@ async def main():  # noqa: C901
                  from information_schema.columns
                 where table_schema = any($1::text[])""",
             sorted({r["schema_name"] for r in registry}))
+        # F's input: every SECURITY DEFINER function in the frozen schemas, with the two facts the
+        # generated types cannot carry — who may EXECUTE it, and which tables its body reads.
+        definers = await conn.fetch(
+            """select n.nspname as schema_name,
+                      p.proname  as fn,
+                      pg_get_function_identity_arguments(p.oid) as args,
+                      pg_get_function_result(p.oid)             as result_type,
+                      pg_get_functiondef(p.oid)                 as def,
+                      has_function_privilege('authenticated', p.oid, 'EXECUTE') as authenticated,
+                      has_function_privilege('anon',          p.oid, 'EXECUTE') as anon
+                 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                where p.prosecdef and n.nspname = any($1::text[])
+                order by n.nspname, p.proname""", list(FROZEN_SCHEMAS))
     finally:
         await conn.close()
 
@@ -209,6 +222,74 @@ async def main():  # noqa: C901
             rec("C whole-file (frozen schemas)", f"`{c}` appears nowhere in database.types.ts",
                 hits == 0, f"{hits} occurrence(s)")
 
+    # ---- F. THE FUNCTIONS BLOCK — the check the stripper structurally cannot make (D269)
+    #
+    # 🚨 WHY THIS GROUP EXISTS. `scripts/strip-client-excluded-columns.ts` walks `Tables:` and
+    # `Views:` and NOTHING ELSE (its own line: `section === "Tables" || section === "Views"`). A
+    # SECURITY DEFINER function that re-projects an excluded column therefore re-exposes it while
+    # every place a reader checks the convention says the column is gone — and SECURITY DEFINER
+    # means the base table's RLS does not re-gate the read either. That was live on
+    # `hr.provider_webhook_candidates`, which returned `webhook_secret_ref` and `connector` to any
+    # signed-in user (D269, fixed by migration hr_l13_06).
+    #
+    # 🚨 AND WHY THE ASSERTION IS A PAIR, NOT "no function returns an excluded column".
+    # That simpler rule is unimplementable without breaking the seam it protects:
+    # `provider_webhook_candidates` MUST return `webhook_secret_ref`, because resolving the HMAC
+    # signing secret from that pointer is the entire job of the one server that calls it. Deleting
+    # the column does not secure the webhook lane, it disables signature verification.
+    # The true invariant is about REACH: a DEFINER function may project an excluded column only
+    # when no client role can execute it. That is what is asserted here, and it is exactly the
+    # half the generated types cannot express — a `.ts` file carries no grants.
+    #
+    # Matching is `<name> <type>` pairs against the declared OUT columns, never a bare substring:
+    # `connector_kind text` is a legitimate column beside `connector jsonb`, and a guard that cries
+    # wolf is a guard the next person loosens.
+    excl_by_table = {
+        (r["schema_name"], r["table_name"]): list(r["client_excluded_columns"])
+        for r in registry
+    }
+
+    def excluded_cols_reachable_from(fn_def: str):
+        """Excluded columns of the tables this function's body actually reads.
+
+        Scoped to the tables named in the body, because an exclusion is per-entity: `amount` is
+        excluded on `hr.leave_ledger` and perfectly legitimate on `hr.work_interval`, so a
+        name-only match flags `hr.export_line_source` for a leak that does not exist.
+        """
+        cols = set()
+        for (s, t), cs in excl_by_table.items():
+            if re.search(r"\b%s\.%s\b" % (re.escape(s), re.escape(t)), fn_def):
+                cols.update(cs)
+        return cols
+
+    def projected(result_type: str, col: str) -> bool:
+        return bool(re.search(r"\b%s\s+\w" % re.escape(col), result_type))
+
+    fn_checked = fn_violations = 0
+    for d in definers:
+        ident = f"{d['schema_name']}.{d['fn']}({d['args']})"
+        reachable = excluded_cols_reachable_from(d["def"])
+        emitted = sorted(c for c in reachable if projected(d["result_type"], c))
+        if not emitted:
+            continue
+        fn_checked += 1
+        client_reachable = d["authenticated"] or d["anon"]
+        if client_reachable:
+            fn_violations += 1
+        roles = ", ".join(
+            r for r, on in (("authenticated", d["authenticated"]), ("anon", d["anon"])) if on
+        )
+        rec("F DEFINER projections (the stripper's blind spot)",
+            f"{ident} projects {','.join(emitted)} — no client role may execute it",
+            not client_reachable,
+            f"REACHABLE BY {roles}" if client_reachable
+            else "server-only (service_role)")
+
+    rec("F DEFINER projections (the stripper's blind spot)",
+        "every DEFINER projecting an excluded column is server-only",
+        fn_violations == 0,
+        f"{fn_checked} such function(s); {fn_violations} client-reachable")
+
     # ---- E. the platform-wide debt, named rather than hidden
     rec("E platform-wide debt (NOT this lane's gate)",
         "declared-excluded columns outside the frozen schemas are counted and named",
@@ -230,6 +311,37 @@ async def main():  # noqa: C901
                     caught += 1
         rec("D self-test", "every excluded column is detectable when planted",
             planted > 0 and caught == planted, f"{caught}/{planted} planted cases caught")
+
+        # F's own falsifiability. Group F passes today BECAUSE hr_l13_06 revoked the grants — and a
+        # green that would also be green with the bug present proves nothing. So: replay the exact
+        # pre-fix shape of `hr.provider_webhook_candidates` (its real body, its real projection,
+        # granted to `authenticated`) through the same predicates and require a violation.
+        pre_fix_def = (
+            "select pb.id, pb.webhook_secret_ref, pb.connector - 'credentials' "
+            "from hr.provider_binding pb"
+        )
+        pre_fix_result = (
+            "TABLE(binding_id uuid, organization_id uuid, seam text, provider_key text, "
+            "connector jsonb, webhook_secret_ref text)"
+        )
+        reachable = excluded_cols_reachable_from(pre_fix_def)
+        emitted = sorted(c for c in reachable if projected(pre_fix_result, c))
+        rec("D self-test",
+            "F catches the pre-fix provider_webhook_candidates (D269) when granted to a client",
+            emitted == ["connector", "webhook_secret_ref"],
+            f"planted projection resolved to {emitted or 'nothing'}")
+
+        # ...and the mirror: the per-entity scoping must NOT flag a function whose result merely
+        # shares a NAME with an exclusion on a table it never reads. `hr.export_line_source`
+        # returns `amount`/`rate`/`employment_id` from `hr.work_interval`; those names are excluded
+        # on `hr.leave_ledger` and `hr.eeo_response`. A checker that fires here would be turned off
+        # within a week.
+        innocent = excluded_cols_reachable_from(
+            "select wi.amount, wi.rate, wi.employment_id from hr.work_interval wi")
+        rec("D self-test",
+            "F does not flag a name collision on a table the function never reads",
+            not [c for c in innocent if projected("TABLE(amount numeric, rate numeric)", c)],
+            "hr.work_interval carries no registered exclusions")
 
     # ------------------------------------------------------------------ report
     width = max(len(n) for _, n, _, _ in R)
