@@ -16,9 +16,10 @@
  * body (`features/window-panels/FEATURE.md` § A PANEL WRAPS THE CANONICAL COMPONENT).
  */
 
-import { Component, createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 
 import { DataRowWindow } from "@/components/official/matrx-data-table/DataRowWindow";
+import { ErrorBoundaryWithCapture } from "@/lib/error-boundary/ErrorBoundaryWithCapture";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { revealWindow } from "@/lib/redux/slices/windowManagerSlice";
@@ -112,9 +113,14 @@ export function RuleSnapshotProvider({ children }: { children: ReactNode }) {
         height={620}
         viewContent={
           request ? (
-            <SnapshotErrorBoundary>
+            <ErrorBoundaryWithCapture
+              boundary="HrTimeRuleSnapshot"
+              relation={request.title}
+              resetKeys={[request]}
+              fallback={(error) => <RuleSnapshotFailure error={error} />}
+            >
               <RuleSnapshotBody request={request} />
-            </SnapshotErrorBoundary>
+            </ErrorBoundaryWithCapture>
           ) : null
         }
       />
@@ -125,48 +131,23 @@ export function RuleSnapshotProvider({ children }: { children: ReactNode }) {
 /**
  * 🚨 A RECOVERY LAYER THAT SCREAMS (CLAUDE.md § Errors).
  *
- * The other candidate for "the drawer opens nothing" is a throw while preparing this body — an
- * unexpected shape in a `calc` bag, an unparseable timestamp — which React answers by unmounting
- * the subtree. Silently. This boundary turns that into a visible, reportable failure instead of an
- * empty panel: the reader is told the evidence could not be rendered, and the error is logged with
- * the request that produced it.
- *
- * It never swallows. It renders the message AND re-logs, because an evidence surface that quietly
- * shows nothing is indistinguishable from one nobody wired.
+ * The second candidate for "the drawer opens nothing" is a throw while preparing this body — an
+ * unexpected shape in a `calc` bag, an unreadable timestamp — which React answers by unmounting the
+ * subtree, silently. The canonical boundary above captures that failure for the Error Inspector;
+ * this fallback makes it visible and quotable to the reader.
  */
-class SnapshotErrorBoundary extends Component<
-  { children: ReactNode },
-  { error: Error | null }
-> {
-  constructor(props: { children: ReactNode }) {
-    super(props);
-    this.state = { error: null };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { error };
-  }
-
-  override componentDidCatch(error: Error) {
-    console.error("[hr-time] the rule-snapshot drawer failed to render", error);
-  }
-
-  override render() {
-    if (this.state.error) {
-      return (
-        <div className="h-full w-full space-y-2 overflow-y-auto bg-popover p-4 text-sm text-popover-foreground">
-          <h2 className="text-sm font-semibold">
-            This figure&rsquo;s calculation record could not be displayed
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            The record exists — the panel failed while rendering it. Tell an HR administrator, and
-            quote this: <span className="font-mono">{this.state.error.message}</span>
-          </p>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
+function RuleSnapshotFailure({ error }: { error: Error }) {
+  return (
+    <div className="h-full w-full space-y-2 overflow-y-auto bg-popover p-4 text-sm text-popover-foreground">
+      <h2 className="text-sm font-semibold">
+        This figure&rsquo;s calculation record could not be displayed
+      </h2>
+      <p className="text-xs text-muted-foreground">
+        The record exists — the panel failed while rendering it. Tell an HR administrator and quote
+        this: <span className="font-mono">{error.message}</span>
+      </p>
+    </div>
+  );
 }
 
 function RuleSnapshotBody({ request }: { request: RuleSnapshotRequest }) {
