@@ -18,6 +18,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import { ProInput } from "@/components/official/ProInput";
 import { extractErrorMessage } from "@/utils/errors";
@@ -41,6 +50,7 @@ export interface RenameDialogProps {
   kind: RenameKind;
   resourceId: string;
   currentName: string;
+  presentation?: "dialog" | "drawer";
 }
 
 export interface ValidateRenameOptions {
@@ -94,7 +104,8 @@ export function validateRenameInput(
       error: string;
     } {
   const value = raw.trim();
-  if (!value) return { ok: false, code: "empty", error: "Name cannot be empty." };
+  if (!value)
+    return { ok: false, code: "empty", error: "Name cannot be empty." };
   if (/[/\\]/.test(value))
     return {
       ok: false,
@@ -182,6 +193,7 @@ export function RenameDialog({
   kind,
   resourceId,
   currentName,
+  presentation = "dialog",
 }: RenameDialogProps) {
   const dispatch = useAppDispatch();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -222,7 +234,8 @@ export function RenameDialog({
   }, [filesById, foldersById, parentId, resourceId]);
 
   const [originalBase, originalExt] = useMemo(
-    () => (kind === "file" ? splitNameAndExtension(currentName) : [currentName, ""]),
+    () =>
+      kind === "file" ? splitNameAndExtension(currentName) : [currentName, ""],
     [kind, currentName],
   );
   const [base, setBase] = useState(originalBase);
@@ -288,6 +301,138 @@ export function RenameDialog({
     onOpenChange,
   ]);
 
+  const title = `Rename ${kind === "file" ? "file" : "folder"}`;
+  const description =
+    kind === "file"
+      ? "The extension is shown separately so it isn't changed by accident."
+      : "Children move with the folder.";
+
+  const fields = (
+    <>
+      {kind === "file" && originalExt ? (
+        <div className="flex items-stretch gap-1.5">
+          <ProInput
+            ref={inputRef}
+            type="text"
+            value={base}
+            onChange={(e) => setBase(e.target.value)}
+            placeholder={originalBase}
+            wrapperClassName="flex-1 min-w-0"
+            disabled={busy}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void handleSubmit();
+              }
+            }}
+          />
+          <input
+            ref={extInputRef}
+            type="text"
+            value={ext}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v && !v.startsWith(".") && v !== "") {
+                setExt("." + v);
+              } else {
+                setExt(v);
+              }
+            }}
+            aria-label="File extension"
+            title={
+              extChanged
+                ? "Changing the extension changes the file type — be careful."
+                : "File extension"
+            }
+            className={cn(
+              "w-24 shrink-0 rounded-md border bg-muted/40 px-2 py-2 text-base outline-none focus:ring-2",
+              extChanged
+                ? "border-amber-500/70 text-amber-600 dark:text-amber-400 focus:ring-amber-400"
+                : "text-muted-foreground focus:ring-ring",
+            )}
+            disabled={busy}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void handleSubmit();
+              }
+            }}
+          />
+        </div>
+      ) : (
+        <ProInput
+          ref={inputRef}
+          type="text"
+          value={base}
+          onChange={(e) => setBase(e.target.value)}
+          placeholder={originalBase}
+          disabled={busy}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void handleSubmit();
+            }
+          }}
+        />
+      )}
+
+      {extChanged ? (
+        <p className="text-xs text-amber-600 dark:text-amber-400">
+          You changed the file extension from{" "}
+          <span className="font-mono">{originalExt || "(none)"}</span> to{" "}
+          <span className="font-mono">{ext || "(none)"}</span>. The file type
+          will change.
+        </p>
+      ) : null}
+      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+    </>
+  );
+
+  if (presentation === "drawer") {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent
+          className="max-h-[85dvh]"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            const input = inputRef.current;
+            if (!input) return;
+            input.focus();
+            input.setSelectionRange(0, base.length);
+          }}
+        >
+          <DrawerHeader>
+            <DrawerTitle>{title}</DrawerTitle>
+            <DrawerDescription>{description}</DrawerDescription>
+          </DrawerHeader>
+          <div className="space-y-3 px-4">{fields}</div>
+          <DrawerFooter className="flex-row justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              disabled={busy}
+              onClick={() => {
+                setError(null);
+                onOpenChange(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              className="min-h-11"
+              disabled={busy}
+              onClick={() => void handleSubmit()}
+            >
+              {busy ? "Renaming…" : "Rename"}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent
@@ -302,95 +447,10 @@ export function RenameDialog({
         }}
       >
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            Rename {kind === "file" ? "file" : "folder"}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {kind === "file"
-              ? "The extension is shown separately so it isn't changed by accident."
-              : "Children move with the folder."}
-          </AlertDialogDescription>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
-
-        {kind === "file" && originalExt ? (
-          <div className="flex items-stretch gap-1.5">
-            <ProInput
-              ref={inputRef}
-              type="text"
-              value={base}
-              onChange={(e) => setBase(e.target.value)}
-              placeholder={originalBase}
-              wrapperClassName="flex-1 min-w-0"
-              disabled={busy}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void handleSubmit();
-                }
-              }}
-            />
-            <input
-              ref={extInputRef}
-              type="text"
-              value={ext}
-              onChange={(e) => {
-                const v = e.target.value;
-                // Auto-prefix the dot so users typing "txt" still produce
-                // ".txt" — only fight the user when they type whitespace.
-                if (v && !v.startsWith(".") && v !== "") {
-                  setExt("." + v);
-                } else {
-                  setExt(v);
-                }
-              }}
-              aria-label="File extension"
-              title={
-                extChanged
-                  ? "Changing the extension changes the file type — be careful."
-                  : "File extension"
-              }
-              className={cn(
-                "w-24 shrink-0 rounded-md border bg-muted/40 px-2 py-2 text-sm outline-none focus:ring-2",
-                extChanged
-                  ? "border-amber-500/70 text-amber-600 dark:text-amber-400 focus:ring-amber-400"
-                  : "text-muted-foreground focus:ring-ring",
-              )}
-              style={{ fontSize: "16px" }}
-              disabled={busy}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void handleSubmit();
-                }
-              }}
-            />
-          </div>
-        ) : (
-          <ProInput
-            ref={inputRef}
-            type="text"
-            value={base}
-            onChange={(e) => setBase(e.target.value)}
-            placeholder={originalBase}
-            disabled={busy}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                void handleSubmit();
-              }
-            }}
-          />
-        )}
-
-        {extChanged ? (
-          <p className="text-xs text-amber-600 dark:text-amber-400">
-            You changed the file extension from{" "}
-            <span className="font-mono">{originalExt || "(none)"}</span> to{" "}
-            <span className="font-mono">{ext || "(none)"}</span>. The file type
-            will change.
-          </p>
-        ) : null}
-        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+        <div className="space-y-3">{fields}</div>
 
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy} onClick={() => setError(null)}>

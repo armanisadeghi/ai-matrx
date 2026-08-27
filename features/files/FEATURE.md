@@ -83,6 +83,9 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-27 — Mobile row Rename actions open the canonical editor.** The mobile Files surface
+  mounts the shared rename-event host and presents its file/folder editor as a Drawer; desktop
+  keeps the existing dialog.
 - **2026-08-26 — Row menus no longer activate their file or folder.** Table rows reject synthetic
   clicks from portal-rendered dropdown and context-menu actions before running row activation.
 - **2026-08-26 — Files certification no longer asks for an invented agent binding.** The

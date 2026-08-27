@@ -30,7 +30,11 @@ export function requestRename(kind: RenameKind, id: string): void {
   );
 }
 
-export function RenameHost() {
+export function RenameHost({
+  presentation = "dialog",
+}: {
+  presentation?: "dialog" | "drawer";
+}) {
   const filesById = useAppSelector(selectAllFilesMap);
   const foldersById = useAppSelector(selectAllFoldersMap);
   const [target, setTarget] = useState<OpenRenameDetail | null>(null);
@@ -61,6 +65,7 @@ export function RenameHost() {
       kind={target.kind}
       resourceId={target.id}
       currentName={currentName}
+      presentation={presentation}
     />
   );
 }

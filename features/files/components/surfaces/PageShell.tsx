@@ -224,11 +224,14 @@ function MobileFilesSurface(props: PageShellProps) {
       getScope={getFilesApplicationScope}
       isEditable={false}
     >
-      <MobileStack
-        initialFolderId={props.initialFolderId ?? null}
-        initialFileId={props.initialFileId ?? null}
-        className={props.className}
-      />
+      <>
+        <MobileStack
+          initialFolderId={props.initialFolderId ?? null}
+          initialFileId={props.initialFileId ?? null}
+          className={props.className}
+        />
+        <RenameHost presentation="drawer" />
+      </>
     </SurfaceRuntimeProvider>
   );
 }
