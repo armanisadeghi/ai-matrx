@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "2026-08-27T131727Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-27T13:21:34.688Z",
-  "summary": "Applied a bounded eight-file P3 batch for 11 hover-hidden touch actions and eight missing coarse-pointer touch-floor roots.",
+  "state": "escaped_delivery",
+  "updatedAt": "2026-08-27T13:25:46.945Z",
+  "summary": "Recorded candidate preservation on main before independent certification.",
   "source": "2026-08-27T131727Z.json",
-  "eventHash": "8876feb7baad04bcf661924b0515100ccc7da4f66e786d5e1a39cb22136e8116"
+  "eventHash": "2ecaabfb9488bba29d04b0a4b88ef5af8f95eea66b7b109fe59b4643d71c9467"
 }

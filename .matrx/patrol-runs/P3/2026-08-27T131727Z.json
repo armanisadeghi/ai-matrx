@@ -31,6 +31,41 @@
       ],
       "previousEventHash": "cfcc560136f39ca3696a0e8269038aa7840be71aef67a184908e94e22ad59d77",
       "eventHash": "8876feb7baad04bcf661924b0515100ccc7da4f66e786d5e1a39cb22136e8116"
+    },
+    {
+      "sequence": 3,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-27T13:25:46.460Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Exact detached worktree lifecycle failed during post-change proof; the coherent candidate was preserved externally.",
+      "evidence": [
+        "Both detached automation worktrees were removed externally after baseline capture; no product regression caused the removals."
+      ],
+      "blocker": {
+        "prerequisite": "stable automation worktree lifecycle",
+        "preservedRef": "refs/heads/main",
+        "preservedSha": "f28850472b2c617b9adcb53aeb43e37c2d96471a"
+      },
+      "previousEventHash": "8876feb7baad04bcf661924b0515100ccc7da4f66e786d5e1a39cb22136e8116",
+      "eventHash": "5f03b60a348f8bc56b12e5bc6a67259c2479981826f3a5e87570e0dfc5dfab95"
+    },
+    {
+      "sequence": 4,
+      "state": "escaped_delivery",
+      "at": "2026-08-27T13:25:46.945Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Recorded candidate preservation on main before independent certification.",
+      "evidence": [
+        "Exact candidate f28850472b contains eight product files and the fixing-state run record; no release tag contains it."
+      ],
+      "escape": {
+        "candidateSha": "f28850472b2c617b9adcb53aeb43e37c2d96471a",
+        "integratedSha": "f28850472b2c617b9adcb53aeb43e37c2d96471a",
+        "release": "unreleased",
+        "reason": "The automation worktree was removed externally and the integration controller preserved its coherent patch on origin/main before the certification transition completed."
+      },
+      "previousEventHash": "5f03b60a348f8bc56b12e5bc6a67259c2479981826f3a5e87570e0dfc5dfab95",
+      "eventHash": "2ecaabfb9488bba29d04b0a4b88ef5af8f95eea66b7b109fe59b4643d71c9467"
     }
   ]
 }
