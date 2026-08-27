@@ -321,17 +321,28 @@ export function voidPunch(
   ).then(fromLivePunchCorrection);
 }
 
+/**
+ * 🚨 THE REGISTER'S AXES, AS THE LIVE FUNCTION ACTUALLY DECLARES THEM (verified against
+ * `hr.punch_register`'s body, 2026-08-26). It refuses `hr_unknown_filter_axis` on anything else:
+ * *"a misspelled axis must never quietly widen an evidence pull."*
+ *
+ * Three fields this type used to carry were removed because no such axis exists, and sending them
+ * refused the whole read:
+ *   • `includeVoided` — voids are ALWAYS returned; every row carries `voided_at` and its voiding
+ *     punch. There is no mode that hides them, which is exactly what §2.5 requires.
+ *   • `departmentIds`  — the register scopes by work LOCATION, not department.
+ *   • `orphanOnly`     — an orphan punch is surfaced as an attendance exception, not a register filter.
+ */
 export interface PunchRegisterFilters {
   employmentIds?: string[];
-  locationIds?: string[];
-  departmentIds?: string[];
+  organizationId?: string;
+  workLocationIds?: string[];
   from?: string;
   to?: string;
   punchKinds?: PunchKind[];
   sources?: PunchSource[];
-  includeVoided?: boolean;
+  actorTypes?: string[];
   duplicateSuspectedOnly?: boolean;
-  orphanOnly?: boolean;
 }
 
 /**
@@ -424,6 +435,12 @@ export function transitionPayPeriod(
   reason: string | null,
   opts?: HrRpcOptions,
 ): Promise<PeriodTransitionResult> {
+  /*
+   * ✅ CHECKED AND ALREADY ALIGNED — not a cast seam, recorded so the next sweep does not "fix" it.
+   * `hr.pay_period_transition` builds its payload in camelCase already (`payPeriodId`, `fromState`,
+   * `toState`, `disputesOpen`, `transitionedAt`, `notice`), matching this type field for field.
+   * Verified against the live function body 2026-08-26.
+   */
   return callHrTimeRpc<PeriodTransitionResult>(
     "hr_pay_period_transition",
     { p_pay_period_id: payPeriodId, p_to_state: toState, p_reason: reason },
@@ -511,6 +528,13 @@ export function claimKioskPairing(
   deviceFingerprint: string,
   opts?: HrRpcOptions,
 ): Promise<KioskPairingResult> {
+  /*
+   * ⚠️ NOT YET MAPPED, AND DELIBERATELY LEFT TO THE KIOSK LANE. These three kiosk calls are the
+   * last typed casts in this file. That lane shipped `mapClockState`, `mapPunchRecordResult` and
+   * `mapKioskPunchResult` today and is working this same class; it also owns the only surface that
+   * can prove a kiosk mapping against a real device. Mapping them blind from another lane, hours
+   * before a verification round, would be guessing at consumption nobody could check.
+   */
   return callHrTimeRpc<KioskPairingResult>(
     "hr_kiosk_claim_pairing",
     { p_pairing_code: pairingCode, p_device_fingerprint: deviceFingerprint },

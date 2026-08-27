@@ -79,8 +79,12 @@ export function PunchRegister({
       getPunchRegister(
         {
           employmentIds: employmentId ? [employmentId] : undefined,
-          // 🚨 Voids are IN by default. There is no code path that hides them silently.
-          includeVoided: true,
+          /*
+           * 🚨 No `includeVoided` — and that is stronger than passing `true`. The live register
+           * ALWAYS returns voided punches, each carrying `voided_at` and its voiding punch. There
+           * is no axis that hides them and no code path here that could ask for one (§2.5: a hidden
+           * void is a destroyed record).
+           */
         },
         {
           page: query.page,
