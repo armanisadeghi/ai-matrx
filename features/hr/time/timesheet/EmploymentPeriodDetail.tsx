@@ -40,7 +40,6 @@ import { toast } from "@/lib/toast";
 import { hrPunchesHref, hrTimeExceptionsHref, hrTimePeriodHref } from "@/features/hr/routes";
 
 import { getTimesheet } from "../api/service";
-import { fromLiveTimesheet } from "./fromLiveTimesheet";
 import type { Timesheet } from "../api/types";
 import { PeriodStateChip, RowStateChip } from "../shared/badges";
 import { DisagreementBlock } from "../shared/DisagreementBlock";
@@ -74,9 +73,7 @@ export function EmploymentPeriodDetail({
 
   const query = useHrTimeQuery<Timesheet>(
     (signal) =>
-      getTimesheet(employmentId, payPeriodId as string, { mockCase, signal }).then(
-        fromLiveTimesheet,
-      ),
+      getTimesheet(employmentId, payPeriodId as string, { mockCase, signal }),
     [employmentId, payPeriodId, mockCase],
     ready,
   );

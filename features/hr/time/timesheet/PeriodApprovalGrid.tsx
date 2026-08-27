@@ -46,7 +46,7 @@ import {
 } from "@/features/hr/routes";
 
 import { getPeriodGrid } from "../api/service";
-import { fromLivePeriodGrid, type LivePeriodGrid } from "./fromLiveTimesheet";
+import { type LivePeriodGrid } from "./fromLiveTimesheet";
 import { listAttendanceExceptions } from "../exceptions/api";
 import type { AttendanceExceptionRow, Paged, PeriodGridRow } from "../api/types";
 import { PeriodStateChip, RowStateChip } from "../shared/badges";
@@ -114,7 +114,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
               ],
         },
         { mockCase, signal },
-      ).then(fromLivePeriodGrid),
+      ),
     [payPeriodId, query, mockCase],
     Boolean(payPeriodId),
   );

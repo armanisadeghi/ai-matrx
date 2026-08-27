@@ -15,6 +15,7 @@
  */
 
 import { callHrTimeRpc, type HrRpcOptions } from "../api/rpc";
+import { fromLiveExceptionList } from "../punches/fromLivePunches";
 import type {
   AttendanceExceptionKind,
   AttendanceExceptionRow,
@@ -66,7 +67,8 @@ export function listAttendanceExceptions(
   page: PageRequest,
   opts?: HrRpcOptions,
 ): Promise<Paged<AttendanceExceptionRow>> {
-  return callHrTimeRpc<Paged<AttendanceExceptionRow>>(
+  // MAPPED, not cast — see `../punches/fromLivePunches.ts` for the live-vs-types diff.
+  return callHrTimeRpc<unknown>(
     "hr_attendance_exception_list",
     {
       p_filters: snakeizeExceptionFilters(filters),
@@ -74,7 +76,7 @@ export function listAttendanceExceptions(
       p_page: { limit: page.pageSize, offset: Math.max(0, (page.page - 1) * page.pageSize) },
     },
     opts,
-  );
+  ).then(fromLiveExceptionList);
 }
 
 function snakeizeExceptionFilters(

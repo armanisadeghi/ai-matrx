@@ -18,6 +18,16 @@
 "use client";
 
 import { callHrTimeRpc, type HrRpcOptions } from "./rpc";
+import {
+  fromLivePeriodGrid,
+  fromLiveTimesheet,
+  type LivePeriodGrid,
+} from "../timesheet/fromLiveTimesheet";
+import {
+  fromLiveExceptionResolution,
+  fromLivePunchCorrection,
+  fromLivePunchRegister,
+} from "../punches/fromLivePunches";
 import type {
   AttendanceExceptionRow,
   ClockChainPunch,
@@ -83,6 +93,20 @@ function toWirePage(page: PageRequest): Record<string, unknown> {
     ...(page.sort ? { sort: snakeizeBag(page.sort) } : {}),
   };
 }
+
+/**
+ * 🚨 MAPPED, NOT CAST — and the mapping lives HERE so the declared return type is TRUE.
+ *
+ * `callHrTimeRpc<T>` ends in `return data as T`: a cast that compiles against a hand-written type
+ * and proves nothing about the payload. Wherever the live shape differs, fields arrive `undefined`
+ * and the surface renders a blank, a NaN, or crashes — at runtime, only once real data exists.
+ * Eight instances of that class landed across this feature in a single day.
+ *
+ * So these reads take `<unknown>` from the door and run a field-by-field mapper. The mappers record
+ * the live-vs-`types.ts` diff in their own headers; `types.ts` is deliberately NOT rewritten,
+ * because three lanes are mid-build against it and rewriting it would not settle which side is
+ * right. When the two are reconciled the mappers shrink to nothing and are deleted.
+ */
 
 // ---------------------------------------------------------------------------------------------
 // Punch lane
@@ -277,11 +301,11 @@ export function correctPunches(
   reason: string,
   opts?: HrRpcOptions,
 ): Promise<PunchCorrectionResult> {
-  return callHrTimeRpc<PunchCorrectionResult>(
+  return callHrTimeRpc<unknown>(
     "hr_punch_correct",
     { p_punch_ids: punchIds, p_new_values: newValues, p_reason: reason },
     opts,
-  );
+  ).then(fromLivePunchCorrection);
 }
 
 /** Void with no replacement — the duplicate-punch case. */
@@ -290,11 +314,11 @@ export function voidPunch(
   reason: string,
   opts?: HrRpcOptions,
 ): Promise<PunchCorrectionResult> {
-  return callHrTimeRpc<PunchCorrectionResult>(
+  return callHrTimeRpc<unknown>(
     "hr_punch_void",
     { p_punch_id: punchId, p_reason: reason },
     opts,
-  );
+  ).then(fromLivePunchCorrection);
 }
 
 export interface PunchRegisterFilters {
@@ -320,11 +344,11 @@ export function getPunchRegister(
   page: PageRequest,
   opts?: HrRpcOptions,
 ): Promise<Paged<PunchRow>> {
-  return callHrTimeRpc<Paged<PunchRow>>(
+  return callHrTimeRpc<unknown>(
     "hr_punch_register",
     { p_filters: snakeizeBag(filters), p_page: toWirePage(page) },
     opts,
-  );
+  ).then(fromLivePunchRegister);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -337,11 +361,11 @@ export function getTimesheet(
   payPeriodId: string,
   opts?: HrRpcOptions,
 ): Promise<Timesheet> {
-  return callHrTimeRpc<Timesheet>(
+  return callHrTimeRpc<unknown>(
     "hr_timesheet_get",
     { p_employment_id: employmentId, p_pay_period_id: payPeriodId },
     opts,
-  );
+  ).then(fromLiveTimesheet);
 }
 
 export interface PeriodGridFilters {
@@ -368,12 +392,12 @@ export function getPeriodGrid(
   filters: PeriodGridFilters,
   page: PageRequest,
   opts?: HrRpcOptions,
-): Promise<Paged<PeriodGridRow>> {
-  return callHrTimeRpc<Paged<PeriodGridRow>>(
+): Promise<LivePeriodGrid> {
+  return callHrTimeRpc<unknown>(
     "hr_timesheet_period_grid",
     { p_pay_period_id: payPeriodId, p_filters: snakeizeBag(filters), p_page: toWirePage(page) },
     opts,
-  );
+  ).then(fromLivePeriodGrid);
 }
 
 export interface PeriodTransitionResult {
@@ -465,7 +489,7 @@ export function resolveAttendanceException(
   premiumEarningCodeId: string | null,
   opts?: HrRpcOptions,
 ): Promise<{ exception: AttendanceExceptionRow; intervalsWritten: unknown[] }> {
-  return callHrTimeRpc(
+  return callHrTimeRpc<unknown>(
     "hr_attendance_exception_resolve",
     {
       p_exception_id: exceptionId,
@@ -474,7 +498,7 @@ export function resolveAttendanceException(
       p_premium_earning_code_id: premiumEarningCodeId,
     },
     opts,
-  );
+  ).then(fromLiveExceptionResolution);
 }
 
 // ---------------------------------------------------------------------------------------------

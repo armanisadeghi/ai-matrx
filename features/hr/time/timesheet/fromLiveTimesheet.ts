@@ -56,17 +56,17 @@ import type {
 } from "../api/types";
 
 /** What `callHrTimeRpc` hands back for this RPC: the live envelope, camelized key-by-key. */
-type Live = Record<string, unknown>;
+export type Live = Record<string, unknown>;
 
-const obj = (v: unknown): Live => (v && typeof v === "object" ? (v as Live) : {});
-const arr = (v: unknown): Live[] => (Array.isArray(v) ? (v as Live[]) : []);
-const str = (v: unknown, fallback = ""): string => (typeof v === "string" ? v : fallback);
-const nstr = (v: unknown): string | null => (typeof v === "string" ? v : null);
-const num = (v: unknown, fallback = 0): number =>
+export const obj = (v: unknown): Live => (v && typeof v === "object" ? (v as Live) : {});
+export const arr = (v: unknown): Live[] => (Array.isArray(v) ? (v as Live[]) : []);
+export const str = (v: unknown, fallback = ""): string => (typeof v === "string" ? v : fallback);
+export const nstr = (v: unknown): string | null => (typeof v === "string" ? v : null);
+export const num = (v: unknown, fallback = 0): number =>
   typeof v === "number" ? v : typeof v === "string" && v !== "" && !Number.isNaN(Number(v)) ? Number(v) : fallback;
-const nnum = (v: unknown): number | null =>
+export const nnum = (v: unknown): number | null =>
   typeof v === "number" ? v : typeof v === "string" && v !== "" && !Number.isNaN(Number(v)) ? Number(v) : null;
-const bool = (v: unknown): boolean => v === true;
+export const bool = (v: unknown): boolean => v === true;
 
 const EMPTY_CATEGORIES: Record<HoursCategory, number> = {
   worked: 0,
@@ -163,7 +163,11 @@ function interval(raw: Live, fallbackDate: string, fallbackTz: string): WorkInte
   };
 }
 
-function punch(raw: Live, fallbackDate: string, fallbackTz: string): PunchRow {
+/**
+ * Exported because the punch register (route 30) reads the SAME rows from a different RPC. One
+ * punch mapper for the whole lane — a second copy is how one of them quietly stops rendering voids.
+ */
+export function mapLivePunch(raw: Live, fallbackDate = "", fallbackTz = "UTC"): PunchRow {
   const actor = obj(raw.actor);
   return {
     id: str(raw.id),
@@ -210,7 +214,7 @@ function day(raw: Live, tz: string): TimesheetDay {
     tz,
     intervals: arr(raw.intervals).map((i) => interval(i, date, tz)),
     // `punch_chain` live, `punches` in the view model — the rename that broke the day view.
-    punches: arr(raw.punchChain ?? raw.punches).map((p) => punch(p, date, tz)),
+    punches: arr(raw.punchChain ?? raw.punches).map((p) => mapLivePunch(p, date, tz)),
     totalHours: num(raw.dayTotalHours ?? raw.totalHours),
     hoursByCategory: categories(raw.totalsByCategory ?? raw.hoursByCategory),
     roundingAppliedMinutes: num(raw.roundingAppliedMinutes),
