@@ -53,9 +53,7 @@ export function PreviewerActionBar({
 
   // Compact: only show explicitly-primary actions inline; everything else
   // goes into the overflow dropdown so we don't blow up small tiles.
-  const inline = compact
-    ? actions.filter((a) => a.primary === true)
-    : primary;
+  const inline = compact ? actions.filter((a) => a.primary === true) : primary;
   const dropdown = compact
     ? actions.filter((a) => a.primary !== true)
     : overflow;
@@ -70,7 +68,9 @@ export function PreviewerActionBar({
       {inline.map((action) => {
         const Icon = action.icon;
         const tip =
-          action.disabled && action.disabledHint ? action.disabledHint : action.label;
+          action.disabled && action.disabledHint
+            ? action.disabledHint
+            : action.label;
         return (
           <TooltipIcon key={action.id} label={tip}>
             <button
@@ -79,7 +79,7 @@ export function PreviewerActionBar({
               disabled={action.disabled}
               aria-label={action.label}
               className={cn(
-                "inline-flex h-7 items-center gap-1 rounded-md px-2 text-xs font-medium",
+                "inline-flex h-7 max-lg:min-h-11 max-lg:min-w-11 items-center gap-1 rounded-md px-2 text-xs font-medium",
                 "text-foreground/80 hover:bg-accent hover:text-foreground",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 action.disabled && "opacity-40 pointer-events-none",
@@ -99,7 +99,7 @@ export function PreviewerActionBar({
               <button
                 type="button"
                 aria-label="More preview actions"
-                className="ml-auto flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+                className="ml-auto flex h-7 w-7 max-lg:h-11 max-lg:w-11 max-lg:min-w-11 max-lg:shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
               >
                 <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
               </button>

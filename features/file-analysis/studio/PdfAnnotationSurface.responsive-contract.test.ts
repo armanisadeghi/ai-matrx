@@ -18,6 +18,13 @@ const filePreview = readFileSync(
   join(__dirname, "../../files/components/core/FilePreview/FilePreview.tsx"),
   "utf8",
 );
+const previewerActionBar = readFileSync(
+  join(
+    __dirname,
+    "../../files/components/core/FilePreview/PreviewerActionBar/PreviewerActionBar.tsx",
+  ),
+  "utf8",
+);
 
 describe("PDF annotation surface responsive contract", () => {
   it("keeps tablet and mobile annotation controls at the 44px floor", () => {
@@ -26,6 +33,16 @@ describe("PDF annotation surface responsive contract", () => {
     expect(inspectorRail).toContain("max-lg:min-h-11");
     expect(thumbnailStrip).toContain(
       "max-lg:h-11 max-lg:min-w-11 max-lg:shrink-0 max-lg:opacity-100",
+    );
+    expect(previewerActionBar).toContain("max-lg:min-h-11 max-lg:min-w-11");
+    expect(previewerActionBar).toContain(
+      "max-lg:h-11 max-lg:w-11 max-lg:min-w-11 max-lg:shrink-0",
+    );
+  });
+
+  it("keeps the mobile Studio mode row inside the viewport", () => {
+    expect(studioShell).toContain(
+      "max-sm:order-last max-sm:ml-0 max-sm:w-full max-sm:justify-center",
     );
   });
 
