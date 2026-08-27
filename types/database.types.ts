@@ -43585,6 +43585,13 @@ export type Database = {
         Args: { p_as_of?: string; p_employment_id: string }
         Returns: Json
       }
+      name_rule_violations: {
+        Args: never
+        Returns: {
+          door: string
+          problem: string
+        }[]
+      }
       org_chart_as_of: {
         Args: { p_on: string; p_organization_id: string }
         Returns: {
