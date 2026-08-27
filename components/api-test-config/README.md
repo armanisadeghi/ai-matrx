@@ -48,7 +48,7 @@ interface UseApiTestConfigOptions {
   defaultServerType?: 'local' | 'production';  // Default: 'production'
   defaultAuthToken?: string;                    // Fallback if no cookie stored
   localUrl?: string;         // Default: NEXT_PUBLIC_LOCAL_SOCKET_URL || 'http://localhost:8000'
-  productionUrl?: string;    // Default: NEXT_PUBLIC_BACKEND_URL (from BACKEND_URLS.production)
+  productionUrl?: string;    // Default: BACKEND_URLS.production (= NEXT_PUBLIC_BACKEND_URL_PROD)
   requireToken?: boolean;    // Default: true
 }
 ```

@@ -47,6 +47,14 @@ both the global choice and pins persist in `matrx.apiConfig.v1`.
 - Environment overrides are `NEXT_PUBLIC_SCRAPER_URL(_LOCAL)`,
   `NEXT_PUBLIC_FILES_URL(_LOCAL)`, and `NEXT_PUBLIC_SEO_URL(_LOCAL)`; aidream keeps its
   existing `NEXT_PUBLIC_BACKEND_URL_*` family.
+- 🚨 **The aidream production origin has exactly ONE name: `NEXT_PUBLIC_BACKEND_URL_PROD`,
+  read through `AIDREAM_PRODUCTION_URL` (`lib/api/endpoints.ts`), which carries the hardcoded
+  production default.** Never read it through a `??` / `||` chain over a second name.
+  `NEXT_PUBLIC_BACKEND_URL` was such a second name until 2026-08-27 — seventeen call sites read
+  it, `.env.example` advertised it as "the active one", and every resolver that decides the wire
+  target read `_PROD` instead, so setting it moved nothing. **There is no env var that points the
+  app at a different server**; that is the admin server toggle (`switchServer` →
+  `SidebarEnvToggle`), which every store-aware resolver honors.
 - **Those `*_URL` vars are the ONLY thing env may decide here: which HOST answers.** Which
   SERVICE owns a route is decided in code (`STANDALONE_FILE_ROUTE_RULES`), unconditionally.
   There is no cutover flag and there must never be one — `NEXT_PUBLIC_FILES_BROWSER_CUTOVER`
@@ -254,6 +262,15 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 `features/files/api/*`. Streaming stays blocked on the backend handoff.
 
 ## Change Log
+
+- 2026-08-27 — Collapsed the aidream production origin onto ONE variable name.
+  `AIDREAM_PRODUCTION_URL` (`NEXT_PUBLIC_BACKEND_URL_PROD` + hardcoded production default) is
+  now the single reader; the `NEXT_PUBLIC_BACKEND_URL` alias and its seventeen scattered
+  `|| "https://server.app.matrxserver.com"` copies are gone, along with the
+  `BACKEND_URLS.production || NEXT_PUBLIC_BACKEND_URL` chain in `resolveBaseUrl` that made the
+  documented variable dead. Verified on the wire from `/hr/time/periods/[periodId]`:
+  `GET /hr/exports/formats` goes to `http://localhost:8000` with the sidebar toggle on
+  Localhost and `https://server.app.matrxserver.com` with it on Production.
 
 - 2026-08-24 — Extended the blocking organization gate to a real GA4 NDJSON
   caller. `syncSiteAnalytics` validates its site organization itself before
