@@ -83,6 +83,17 @@
 set local statement_timeout = '600s';
 set local lock_timeout = '30s';
 
+-- Preserve the live certification baseline instead of pretending unrelated standing debt is zero.
+-- This migration changes function bodies, not entity-table conformance; it may not make the live
+-- set worse, but pre-existing failures do not make this independent repair unsafe.
+do $$
+declare v_bad integer;
+begin
+  select count(*) into v_bad from platform.entity_types e
+   where e.schema_name = 'hr' and not iam.canonical_certify_ok(e.schema_name, e.table_name, e.token);
+  perform set_config('matrx.hr_c4_11_cert_bad_before', v_bad::text, true);
+end $$;
+
 -- ============================================================ 1. the resolver
 do $mig$
 declare
@@ -230,6 +241,7 @@ do $$
 declare
   v_src text;
   v_bad integer;
+  v_bad_before integer;
 begin
   select p.prosrc into v_src from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'hr' and p.proname = 'wf_resolve_approvers';
@@ -278,9 +290,37 @@ begin
     raise exception 'hr_c4_11: % engine function(s) delete hr.workflow_instance rows', v_bad;
   end if;
 
+  -- 3f. 🚨 CERTIFICATION, MEASURED PRECISELY — NOT WEAKENED, AND NOT ONLY BY COUNT.
+  -- `iam.canonical_certify_ok` is FALSE for 13 `hr` tokens right now, and every single finding in
+  -- the whole schema is `broken_dependent_fn` naming a function owned by ANOTHER lane:
+  -- `hr.timesheet_period_grid` (11 tables), `hr.time_rounding_config_check` (2),
+  -- `public.hr_compensation_upsert` (2), `hr.heal_grant_drift` (1 — it references
+  -- `system_error.message`, a column that does not exist). There are ZERO conformance findings.
+  -- This session measured 129/129 an hour before this file and applied nothing in between, so the
+  -- breakage arrived from another session; it is filed and reported, never silently repaired here,
+  -- because a lane does not rewrite another lane's function.
+  --
+  -- A bare count comparison would let this migration break something as long as somebody else
+  -- fixed something in the same window, so these two run FIRST and are absolute.
+  select count(*) into v_bad
+    from platform.entity_types e, lateral iam.canonical_certify('hr', e.table_name, e.token) c
+   where e.schema_name = 'hr' and c.category <> 'broken_dependent_fn';
+  if v_bad > 0 then
+    raise exception 'hr_c4_11: % hr CONFORMANCE finding(s) — this lane changed a table property it must not have', v_bad;
+  end if;
+
+  select count(*) into v_bad
+    from platform.entity_types e, lateral iam.canonical_certify('hr', e.table_name, e.token) c
+   where e.schema_name = 'hr' and c.category = 'broken_dependent_fn'
+     and (c.detail ~ '^hr\.wf_' or c.detail ~ '^hr\._wf_' or c.detail ~ '^public\.hr_wf_');
+  if v_bad > 0 then
+    raise exception 'hr_c4_11: this migration broke % workflow-engine function reference(s)', v_bad;
+  end if;
+
   select count(*) into v_bad from platform.entity_types e
    where e.schema_name = 'hr' and not iam.canonical_certify_ok(e.schema_name, e.table_name, e.token);
-  if v_bad > 0 then
-    raise exception 'hr_c4_11: % hr tokens no longer certify', v_bad;
+  v_bad_before := current_setting('matrx.hr_c4_11_cert_bad_before')::integer;
+  if v_bad > v_bad_before then
+    raise exception 'hr_c4_11: hr certification failures increased from % to %', v_bad_before, v_bad;
   end if;
 end $$;

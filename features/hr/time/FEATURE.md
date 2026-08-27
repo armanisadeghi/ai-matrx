@@ -266,6 +266,8 @@ shaped so that page is one line: `<KioskDevicesPanel source={...} />`.
 
 ## Change Log
 
+- 2026-08-27 — Recompute now refreshes every affected pay-period rollup from current intervals in
+  the same transaction, reporting missing enrollment rows instead of leaving silent zero totals.
 - 2026-08-27 — Login-less kiosk employees remain valid subjects of self-attestation steps; routing
   failures are retained and reported instead of being silently counted as zero opened instances.
 - 2026-08-27 — Historical time-read doors now evaluate the reader's current authority while
