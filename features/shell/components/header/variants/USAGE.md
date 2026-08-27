@@ -71,6 +71,7 @@ Center injection zone rules:
 - **Exact shell header height** — one flat row (`text-sm` title + tap targets).
 - **Transparent root** — no `bg-card`, borders, or extra padding on the inject row.
 - **Tap targets** — `ChevronLeftTapButton` / `TapTargetButton`; don't wrap them in extra `p-*` / `gap-*`.
+- **Compact route nav** — `RouteModeNav` pills stay compact at every width; never add `min-h-11`, `min-w-11`, responsive padding, or a 44px minimum. Its mobile sheet owns the large touch rows.
 - Use `HeaderStructured` / variants only when you need dropdown center, pills, or tabs — not for a simple back + title row.
 
 ---

@@ -58,7 +58,8 @@ Two drop-in templates in `features/shell/components/header/templates/` cover alm
 **Button rules** (live catalogue: `/demos/button-demo`):
 - Tap buttons stay `glass` (the default) — never pass `variant="transparent"` in a header row; icons must match the shell's own buttons.
 - The page's ONE primary action → `variant="solid"` (primary). Delete/remove → solid `bgColor="bg-destructive" hoverBgColor="hover:bg-destructive/90"`.
-- **Tap targets self-space (44px)** — never wrap them in `gap-*`/`p-*`.
+- **Standalone tap buttons self-space (44px)** — never wrap `TapTargetButton` controls in `gap-*`/`p-*`.
+- **Route navigation stays compact at every width.** `RouteModeNav` items match the Agents header; never add `min-h-11`, `min-w-11`, responsive padding, or a 44px minimum to its visible pill. Mobile reachability comes from its 52px bottom-sheet rows, not a taller shell header.
 - Related actions can share a `TapTargetButtonGroup` (`TapTargetButtonForGroup` children). Search surfaces: see the SearchToolbar / SearchGroup patterns in the demo.
 
 **Mobile doctrine:** don't cram. As few header items as possible — back + identity + one `…` → bottom drawer. A truncated 8-letter dropdown is worse than a drawer. Only keep richer mobile headers where a route has a genuinely great concept (chat).

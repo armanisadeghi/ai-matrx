@@ -85,12 +85,11 @@ interface RouteModeNavProps {
 
 const PILL =
   "matrx-glass-thin-border flex items-center gap-0 rounded-full p-0.5 whitespace-nowrap";
-// Preserve the compact 28px desktop chrome while giving tablet and phone users
-// a real 44px touch target. Global min-h/min-w here makes every wide header
-// needlessly tall; omitting the responsive minimums makes the live tablet links
-// only ~22px high.
+// Route navigation lives inside the shell's compact fixed-height header. Keep
+// the visible pills compact at every width; mobile access expands into the
+// BottomSheet rows below rather than making the header itself 44px tall.
 const ITEM =
-  "flex max-lg:min-h-11 max-lg:min-w-11 items-center justify-center gap-1 py-0.5 px-2.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer whitespace-nowrap [&_svg]:w-3.5 [&_svg]:h-3.5";
+  "flex items-center justify-center gap-1 py-0.5 px-2.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer whitespace-nowrap [&_svg]:w-3.5 [&_svg]:h-3.5";
 
 // Breathing room the nav must keep between itself and the header's left/right
 // flanks. Without it the measurement picks "full" whenever the content fits by
