@@ -201,6 +201,12 @@ This surface is for acting ON rendered output (explain, transform, extract, save
       description:
         "Converts selected response text or a whole message into concise, natural prose designed for listening.",
       kind: "single",
+      // Platform-wide job: agent.mandate holds the default builtin (never a
+      // UUID in code). This surface is the HOME role every context menu falls
+      // back to (see LISTEN_SUMMARY_HOME_SURFACE in the listenSummaryWindow
+      // opener), so the mandate makes the Listen actions work for every user
+      // on every surface.
+      mandateKey: "ambient.spoken_summary",
       defaultAgentId: null,
       allowCustom: true,
       autoRun: "always",

@@ -68,7 +68,10 @@ import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions"
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useSpeech } from "@/features/audio/service/useSpeech";
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
-import { useOpenListenSummaryWindow } from "@/features/overlays/openers/listenSummaryWindow";
+import {
+  LISTEN_SUMMARY_HOME_SURFACE,
+  useOpenListenSummaryWindow,
+} from "@/features/overlays/openers/listenSummaryWindow";
 import { insertTextAtCursor } from "@/utils/editor-text-insertion";
 import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -475,15 +478,25 @@ export function useContextMenuActions(
     if (actionText.text.trim()) speak(actionText.text);
   };
 
-  const spokenSummaryAgentId =
-    surfaceAgentRoles.spoken_summary?.effectiveAgentId ?? null;
+  // Listening is universal: every menu has content or a selection. A surface
+  // that declares its own `spoken_summary` role wins; every other surface
+  // falls back to the platform home role (mandate-backed, so it resolves for
+  // every user). The home fetch is cached once per session by
+  // `ensureSurfaceConfig`'s single-flight.
+  const { roles: listenHomeRoles } = useSurfaceAgentRoles(
+    LISTEN_SUMMARY_HOME_SURFACE,
+  );
+  const spokenSummaryRole = surfaceAgentRoles.spoken_summary?.effectiveAgentId
+    ? surfaceAgentRoles.spoken_summary
+    : listenHomeRoles.spoken_summary;
+  const spokenSummaryAgentId = spokenSummaryRole?.effectiveAgentId ?? null;
   // Both listening actions open the Listen panel (summary text + audio
   // transport in one place). The only difference is stream-to-stream autoplay.
   const openSpokenSummary = (autoPlay: boolean) => {
     if (!spokenSummaryAgentId || !actionText.text.trim()) return;
     openListenSummaryWindow({
       agentId: spokenSummaryAgentId,
-      agentName: surfaceAgentRoles.spoken_summary?.role.label ?? null,
+      agentName: spokenSummaryRole?.role.label ?? null,
       sourceText: actionText.text,
       style: "Extremely Concise Summary",
       autoPlay,

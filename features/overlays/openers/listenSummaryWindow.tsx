@@ -20,6 +20,15 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 
 const OVERLAY_ID = "listenSummaryWindow" as const;
 
+/**
+ * The surface whose `spoken_summary` role is the platform-wide HOME of the
+ * listening actions. The role carries the `ambient.spoken_summary` mandate
+ * (agent.mandate holds the default builtin agent — never a UUID in code), so
+ * every user resolves a working agent. Surfaces may override by declaring
+ * their own `spoken_summary` role; consumers fall back to this one.
+ */
+export const LISTEN_SUMMARY_HOME_SURFACE = "matrx-user/assistant-message";
+
 export interface OpenListenSummaryWindowOptions {
   /** The bound `spoken_summary` agent that writes the listening summary. */
   agentId: string;

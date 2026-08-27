@@ -208,8 +208,8 @@ export interface MenuModel {
 export interface MenuRoles {
   copy: MenuItemNode;
   speak: MenuItemNode;
-  spokenSummary: MenuItemNode;
-  spokenSummaryLive: MenuItemNode;
+  /** ONE slot: "Listen" submenu — Summarize for listening / Summarize & listen. */
+  listen: MenuSubmenuNode;
   copyAs: MenuSubmenuNode | null;
   json: MenuSubmenuNode | null;
   cut: MenuItemNode;
@@ -527,13 +527,17 @@ export function buildMenuModel(
     disabled: actionText.source === "none",
     onSelect: m.handleSpeak,
   };
+  // The two listening actions live under ONE "Listen" slot — every menu has
+  // either content or a selection, so this pair is universal; a submenu keeps
+  // it to a single row. Disabled (never hidden) when no text or no agent.
+  const listenDisabled = actionText.source === "none" || !m.spokenSummaryAvailable;
   const spokenSummary: MenuItemNode = {
     kind: "item",
     id: "spoken-summary",
     label: "Summarize for listening",
     icon: Headphones,
     iconClassName: "text-violet-500",
-    disabled: actionText.source === "none" || !m.spokenSummaryAvailable,
+    disabled: listenDisabled,
     onSelect: m.handleSpokenSummary,
   };
   const spokenSummaryLive: MenuItemNode = {
@@ -542,8 +546,17 @@ export function buildMenuModel(
     label: "Summarize & listen",
     icon: AudioLines,
     iconClassName: "text-violet-500",
-    disabled: actionText.source === "none" || !m.spokenSummaryAvailable,
+    disabled: listenDisabled,
     onSelect: m.handleSpokenSummaryLive,
+  };
+  const listen: MenuSubmenuNode = {
+    kind: "submenu",
+    id: "listen",
+    label: "Listen",
+    icon: Headphones,
+    iconClassName: "text-violet-500",
+    disabled: listenDisabled,
+    children: [spokenSummary, spokenSummaryLive],
   };
   const copyAs: MenuSubmenuNode | null =
     m.copyVariantActions.length > 0
@@ -852,8 +865,7 @@ export function buildMenuModel(
     nodes: compactNodes([
       copy,
       speak,
-      spokenSummary,
-      spokenSummaryLive,
+      listen,
       copyAs,
       json,
       cut,
@@ -905,8 +917,7 @@ export function buildMenuModel(
     roles: {
       copy,
       speak,
-      spokenSummary,
-      spokenSummaryLive,
+      listen,
       copyAs,
       json,
       cut,
