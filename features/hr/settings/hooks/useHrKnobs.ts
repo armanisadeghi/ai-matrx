@@ -16,7 +16,7 @@
 import { useEffect, useState } from "react";
 
 import { fetchHrKnobs } from "../../service";
-import { isHrDenied, type HrDenied, type HrFailed, type HrKnob } from "../../types";
+import type { HrDenied, HrFailed, HrKnob } from "../../types";
 import { fetchHrKnobMetadata, type HrKnobMetadata } from "../service";
 import type {
   HrKnobPresentation,
@@ -194,9 +194,4 @@ export function selectHrKnobs(
     if (keys.has(knob.key)) return true;
     return prefixes.some((prefix) => knob.key.startsWith(prefix));
   });
-}
-
-/** True when the two refusal kinds should render the no-access state, not an error. */
-export function isHrKnobAccessRefusal(error: HrDenied | HrFailed | null): boolean {
-  return error !== null && isHrDenied(error);
 }

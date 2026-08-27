@@ -24,7 +24,6 @@
 
 "use client";
 
-import Link from "next/link";
 import { Info } from "lucide-react";
 
 import { useHrContext } from "../../shared/useHrContext";
@@ -114,20 +113,5 @@ export function HrLanePanel({
         </section>
       </div>
     </HrSettingsShell>
-  );
-}
-
-/**
- * A door out of a lane panel to something that DOES exist — so a panel waiting on
- * another lane is still never a dead end.
- */
-export function HrLaneDoor({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex min-h-11 items-center rounded-md border border-border px-3 text-sm text-foreground hover:bg-accent sm:min-h-9"
-    >
-      {label}
-    </Link>
   );
 }

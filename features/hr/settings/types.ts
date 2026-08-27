@@ -123,15 +123,6 @@ export type HrPayGroup = {
   is_active: boolean;
 };
 
-/** One previewed period boundary (route 70's six-period preview). */
-export type HrPeriodPreview = {
-  index: number;
-  start_on: string;
-  end_on: string;
-  /** True when this period's boundary falls inside a workweek (semimonthly). */
-  splitsWorkweek: boolean;
-};
-
 // ── Route 71 — calendars ────────────────────────────────────────────────────
 
 export type HrHoliday = {
