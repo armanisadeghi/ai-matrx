@@ -594,6 +594,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 ## Change log
 
 - 2026-08-26 — Codex: **Google Analytics and YouTube read-only moved to approved production phases.** Google approved both scopes on 2026-08-25; the frontend campaign gates now admit every signed-in user while preserving focused non-cumulative consent and exact connection/resource checks. The GA4 scheduler remains independently disabled until Arman approves its exact name and interval.
+- 2026-08-26 — Codex: **Duplicate Google resources now prefer a healthy credential.** When the same owned YouTube channel exists under both a current connection and an older connection that needs reauthorization, the provider-identity deduplicator still presents one channel but now retains the resource backed by the derived-healthy connection instead of whichever row arrived first.
 - 2026-08-26 — Codex: **Keyword Value uses the canonical site header once.**
   The padded in-body title/domain bar was removed; the shared
   `EntityModeHeader` remains the sole site identity and value-family navigation,

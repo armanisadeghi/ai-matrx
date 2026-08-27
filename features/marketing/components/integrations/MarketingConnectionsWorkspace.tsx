@@ -121,6 +121,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
     inventory.data?.resources.filter(
       (resource) => resource.resource_type === "youtube_channel",
     ) ?? [],
+    inventory.data?.connections ?? [],
   );
   const pageSpeedEnabledCount = (sites.data ?? []).filter(
     (site) =>

@@ -59,4 +59,20 @@ describe("Google connection presentation", () => {
       uniqueGoogleResourcesByProviderIdentity([first, duplicate]),
     ).toEqual([first]);
   });
+
+  it("prefers a healthy connection when duplicate rows describe one channel", () => {
+    const stale = resource("youtube_channel");
+    const healthy = {
+      ...stale,
+      id: "youtube-channel-healthy",
+      connection_id: "connection-2",
+    };
+
+    expect(
+      uniqueGoogleResourcesByProviderIdentity([stale, healthy], [
+        { id: "connection-1", health: "needs_reauth" },
+        { id: "connection-2", health: "connected" },
+      ]),
+    ).toEqual([healthy]);
+  });
 });

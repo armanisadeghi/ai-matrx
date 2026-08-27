@@ -24,14 +24,31 @@ export function googleConnectionLabel(
 /** Present one provider resource once even when multiple valid connections discover it. */
 export function uniqueGoogleResourcesByProviderIdentity(
   resources: GoogleConnectionResource[],
+  connections: Pick<GoogleConnectionSummary, "id" | "health">[] = [],
 ): GoogleConnectionResource[] {
-  const seen = new Set<string>();
-  return resources.filter((resource) => {
+  const connectionHealth = new Map(
+    connections.map((connection) => [connection.id, connection.health]),
+  );
+  const selected = new Map<string, GoogleConnectionResource>();
+
+  for (const resource of resources) {
     const identity = `${resource.resource_type}:${resource.resource_ref}`;
-    if (seen.has(identity)) return false;
-    seen.add(identity);
-    return true;
-  });
+    const current = selected.get(identity);
+    if (!current) {
+      selected.set(identity, resource);
+      continue;
+    }
+
+    const currentIsConnected =
+      connectionHealth.get(current.connection_id) === "connected";
+    const candidateIsConnected =
+      connectionHealth.get(resource.connection_id) === "connected";
+    if (!currentIsConnected && candidateIsConnected) {
+      selected.set(identity, resource);
+    }
+  }
+
+  return [...selected.values()];
 }
 
 /**
