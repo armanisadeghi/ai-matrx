@@ -15,6 +15,7 @@ import {
   Check,
   Code2,
   Download,
+  Eye,
   History,
   ListTree,
   Loader2,
@@ -81,6 +82,7 @@ import { getFeaturedCatalogEntries } from "../catalog";
 import { CodeModePane } from "../code/CodeModePane";
 import { OutlineModePane } from "../outline/OutlineModePane";
 import { VisualModePane } from "../visual/VisualModePane";
+import { ViewModePane } from "../view/ViewModePane";
 import { AgentEditRail } from "./AgentEditRail";
 import { registerMermaidEditor } from "./editor-bridge";
 import { useMermaidArtifactSave } from "./useMermaidArtifactSave";
@@ -371,6 +373,7 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-2 py-1.5">
           <div className="flex w-full items-center rounded-lg bg-muted p-0.5 sm:w-auto">
+            {modeButton("view", Eye, "View", false)}
             {modeButton("visual", Shapes, "Diagram", true)}
             {modeButton("outline", ListTree, "Outline", true)}
             {modeButton("code", Code2, "Code", false)}
@@ -574,6 +577,9 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
         {/* Mode pane + optional AI rail (rail stacks below on mobile) */}
         <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
           <div className="min-h-0 flex-1">
+            {state.mode === "view" && (
+              <ViewModePane source={state.source} options={renderOptions} />
+            )}
             {state.mode === "visual" && (
               <VisualModePane
                 source={state.source}

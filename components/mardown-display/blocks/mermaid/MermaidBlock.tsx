@@ -484,15 +484,15 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
             </SimpleTooltip>
 
             {isCanvasAvailable && (
-              <SimpleTooltip text="Open in canvas to edit">
+              <SimpleTooltip text="Open in canvas">
                 <button
                   type="button"
-                  aria-label="Open in canvas to edit"
+                  aria-label="Open in canvas"
                   onClick={() => handleOpenCanvas()}
                   className="flex items-center gap-1 rounded px-2 py-1 text-xs text-primary transition-colors hover:bg-primary/10"
                 >
                   <Maximize2 className="h-3.5 w-3.5" />
-                  <span>Edit</span>
+                  <span>Canvas</span>
                 </button>
               </SimpleTooltip>
             )}
