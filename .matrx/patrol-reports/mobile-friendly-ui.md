@@ -4,11 +4,11 @@
 - **Run id:** `2026-08-27T131727Z`
 - **Base:** `2cfc5d15ffbb1886572f97f7ea58451dadcc1aa6` (`v0.4.1306` ancestry)
 - **Run kind:** structural-novelty scope + open-sighting verification + periodic full viewport/safe-area pass
-- **Current state:** escaped-delivery candidate preserved on `origin/main`; independent exact-SHA certification in progress
+- **Current state:** closed after exact-SHA certification and escaped-delivery reconciliation through `v0.4.1307`
 - **Findings:** 19 verified occurrences in 8 files
 - **Fixed in candidate:** 19
 - **Approvals needed:** 0
-- **Degradation:** two detached automation worktrees were removed externally; the exact-checkout browser navigation then timed out. Product changes remain preserved and bounded static/type/gate evidence is complete.
+- **Degradation:** none outstanding. Two detached automation worktrees were removed externally and exact-checkout browser navigation timed out; the candidate was preserved, independently certified with bounded evidence, and fully reconciled.
 
 ## Resume reconciliation
 
@@ -73,6 +73,7 @@ minimum, and leaves mouse/desktop density unchanged.
 - `pnpm check:ui-primitives`: 25 warnings -> the same 25
 - `pnpm check:tsconfig`: PASS with the same two notes
 - `pnpm check:patrol-contracts`: unchanged baseline failure limited to other patrol/fleet automation drift; P3 has no manifest drift
+- `pnpm check:migrations`: exit 0 with 60 unrelated pre-existing drift warnings
 - scoped ESLint: the same two baseline errors before and after (`PackTopicsSection.tsx:67`, `TaxonomyTree.tsx:113`); neither changed line is involved
 - PostCSS/Tailwind compilation: PASS, 1,649,911 generated CSS bytes
 - changed-file assertions: 8 touch-floor roots, 11 `hover:hover` hides, 11 matching hover reveals, 0 unconditional hover-hidden action matches
@@ -99,10 +100,13 @@ requiring Arman was found.
 
 ## Certification
 
-Independent adversarial review is evaluating exact candidate
-`f28850472b2c617b9adcb53aeb43e37c2d96471a`. Integration preservation occurred
-before certification and is recorded as escaped delivery; it does not imply a
-verdict.
+Independent adversarial review **CERTIFIED** exact candidate
+`f28850472b2c617b9adcb53aeb43e37c2d96471a`: all 19 repairs, Tailwind
+semantics, coarse-pointer isolation, keyboard visibility, unchanged handlers,
+and the baseline-delta evidence passed with no concrete batch-caused defect.
+The candidate had already been preserved on `origin/main` and entered
+`v0.4.1307`; the permanent record retains that ordering as escaped delivery and
+then closes it with exact-candidate certification and delivery reconciliation.
 
 ## Recursive learning
 
