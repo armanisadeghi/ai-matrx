@@ -21,7 +21,13 @@
 
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { useSearchParams } from "next/navigation";
 
 import { isUuid } from "@/features/scopes/service/associationGuards";
@@ -82,7 +88,9 @@ function orgRefFor(
   active: HrActiveEmployer | null,
 ): string | null {
   if (!active) return null;
-  const match = employers.find((e) => e.organization_id === active.organization_id);
+  const match = employers.find(
+    (e) => e.organization_id === active.organization_id,
+  );
   return match?.slug?.trim() || active.organization_id;
 }
 
@@ -90,7 +98,9 @@ function orgRefFor(
  * Does the actual resolution. `<HrProvider>` is its only intended caller — every
  * other surface reads the result through `useHrContext()`.
  */
-export function useHrContextResolver(options: { enabled?: boolean } = {}): HrContextValue {
+export function useHrContextResolver(
+  options: { enabled?: boolean } = {},
+): HrContextValue {
   const enabled = options.enabled ?? true;
   const searchParams = useSearchParams();
   const orgParam = searchParams?.get(HR_ORG_PARAM)?.trim() || null;
@@ -121,7 +131,8 @@ export function useHrContextResolver(options: { enabled?: boolean } = {}): HrCon
 
       // Rule 1 wins when it is a uuid; a slug needs the employer list to map it, so
       // it takes the second pass below. Rule 2 is the picker's org.
-      const firstAsk = orgParam && isUuid(orgParam) ? orgParam : activeOrgId ?? null;
+      const firstAsk =
+        orgParam && isUuid(orgParam) ? orgParam : (activeOrgId ?? null);
 
       let result = await fetchHrContext(firstAsk);
       if (cancelled) return;
@@ -133,7 +144,10 @@ export function useHrContextResolver(options: { enabled?: boolean } = {}): HrCon
         // the employer list we just got and ask again for the real one.
         if (orgParam && !isUuid(orgParam)) {
           const bySlug = resolved.employers.find((e) => e.slug === orgParam);
-          if (bySlug && bySlug.organization_id !== resolved.active?.organization_id) {
+          if (
+            bySlug &&
+            bySlug.organization_id !== resolved.active?.organization_id
+          ) {
             const second = await fetchHrContext(bySlug.organization_id);
             if (cancelled) return;
             if (second.ok) resolved = second.data;

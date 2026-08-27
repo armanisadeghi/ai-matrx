@@ -66,10 +66,7 @@ export async function validateHrBrowserSession(): Promise<HrResult<true>> {
   } = await supabase.auth.getSession();
 
   if (!session) {
-    return denied(
-      "no_authenticated_session",
-      "Sign in again to open HR.",
-    );
+    return denied("no_authenticated_session", "Sign in again to open HR.");
   }
 
   const {
@@ -78,10 +75,7 @@ export async function validateHrBrowserSession(): Promise<HrResult<true>> {
   } = await supabase.auth.getUser();
 
   if (error?.name === "AuthSessionMissingError" || !user) {
-    return denied(
-      "no_authenticated_session",
-      "Sign in again to open HR.",
-    );
+    return denied("no_authenticated_session", "Sign in again to open HR.");
   }
 
   if (error) {
@@ -196,7 +190,11 @@ async function callHrRaw(
 
   const payload: unknown = data;
 
-  if (payload === null || typeof payload !== "object" || Array.isArray(payload)) {
+  if (
+    payload === null ||
+    typeof payload !== "object" ||
+    Array.isArray(payload)
+  ) {
     return failed(
       `${options.whatFailed} came back in a shape this app does not understand. ` +
         "Retry, and if it keeps happening the HR data door needs a look.",
@@ -216,7 +214,10 @@ async function callHrRaw(
   }
 
   if (options.envelope) {
-    const { granted: _granted, ...rest } = payload as Record<string, unknown> & {
+    const { granted: _granted, ...rest } = payload as Record<
+      string,
+      unknown
+    > & {
       granted?: boolean;
     };
     return { ok: true, data: rest };
@@ -440,7 +441,10 @@ export function fetchHrStructure(
   return callHrAligned<HrStructure>(
     "hr_structure_list",
     { p_organization_id: organizationId },
-    { envelope: false, whatFailed: "This employer's departments, locations and job titles" },
+    {
+      envelope: false,
+      whatFailed: "This employer's departments, locations and job titles",
+    },
   );
 }
 
@@ -499,7 +503,9 @@ function mapAuditedPage<T>(raw: Record<string, unknown>): HrAuditedPage<T> {
     rowCount: typeof raw.row_count === "number" ? raw.row_count : rows.length,
     // `null` is the end-of-list signal. An empty string is not a cursor.
     nextCursor:
-      typeof raw.next_cursor === "string" && raw.next_cursor ? raw.next_cursor : null,
+      typeof raw.next_cursor === "string" && raw.next_cursor
+        ? raw.next_cursor
+        : null,
     auditId: typeof raw.audit_id === "string" ? raw.audit_id : null,
   };
 }
@@ -556,7 +562,9 @@ export async function fetchHrConfidential<T = Record<string, unknown>>(args: {
  * failed outright every time it ran. Pass the previous page's `nextCursor`, or
  * `null` for the first page.
  */
-export async function fetchHrConfidentialList<T = Record<string, unknown>>(args: {
+export async function fetchHrConfidentialList<
+  T = Record<string, unknown>,
+>(args: {
   token: string;
   filter?: Record<string, unknown>;
   limit?: number;
@@ -575,7 +583,9 @@ export async function fetchHrConfidentialList<T = Record<string, unknown>>(args:
     },
     { envelope: true, whatFailed: "That list" },
   );
-  return result.ok ? { ok: true, data: mapAuditedPage<T>(result.data) } : result;
+  return result.ok
+    ? { ok: true, data: mapAuditedPage<T>(result.data) }
+    : result;
 }
 
 /**
@@ -616,7 +626,9 @@ export async function fetchHrRestrictedList<T = Record<string, unknown>>(args: {
     },
     { envelope: true, whatFailed: "That list" },
   );
-  return result.ok ? { ok: true, data: mapAuditedPage<T>(result.data) } : result;
+  return result.ok
+    ? { ok: true, data: mapAuditedPage<T>(result.data) }
+    : result;
 }
 
 /** A Restricted-tier row. `justification` is REQUIRED and is shown in the subject's access log. */
@@ -705,10 +717,14 @@ export function activateHrEmployer(
 export function createHrEmployee(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHrWrite("hr_employee_create", { p_payload: payload }, {
-    envelope: true,
-    whatFailed: "Creating this employee",
-  });
+  return callHrWrite(
+    "hr_employee_create",
+    { p_payload: payload },
+    {
+      envelope: true,
+      whatFailed: "Creating this employee",
+    },
+  );
 }
 
 export function updateHrEmployee(args: {
@@ -739,20 +755,28 @@ export function updateHrSelf(args: {
 export function recordHrPositionChange(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHrWrite("hr_position_change", { p_payload: payload }, {
-    envelope: true,
-    whatFailed: "This position change",
-  });
+  return callHrWrite(
+    "hr_position_change",
+    { p_payload: payload },
+    {
+      envelope: true,
+      whatFailed: "This position change",
+    },
+  );
 }
 
 /** §4.4 pay change. Always the `pay_change` flow — no page approves a raise itself. */
 export function upsertHrCompensation(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHrWrite("hr_compensation_upsert", { p_payload: payload }, {
-    envelope: true,
-    whatFailed: "This compensation change",
-  });
+  return callHrWrite(
+    "hr_compensation_upsert",
+    { p_payload: payload },
+    {
+      envelope: true,
+      whatFailed: "This compensation change",
+    },
+  );
 }
 
 /**
@@ -775,37 +799,53 @@ export function cancelHrPendingChange(args: {
 export function recordHrSeparation(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHrWrite("hr_separation_record", { p_payload: payload }, {
-    envelope: true,
-    whatFailed: "This separation",
-  });
+  return callHrWrite(
+    "hr_separation_record",
+    { p_payload: payload },
+    {
+      envelope: true,
+      whatFailed: "This separation",
+    },
+  );
 }
 
 export function upsertHrEngagement(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHrWrite("hr_engagement_upsert", { p_payload: payload }, {
-    envelope: true,
-    whatFailed: "This engagement",
-  });
+  return callHrWrite(
+    "hr_engagement_upsert",
+    { p_payload: payload },
+    {
+      envelope: true,
+      whatFailed: "This engagement",
+    },
+  );
 }
 
 export function upsertHrEmergencyContact(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHrWrite("hr_emergency_contact_upsert", { p_payload: payload }, {
-    envelope: true,
-    whatFailed: "This emergency contact",
-  });
+  return callHrWrite(
+    "hr_emergency_contact_upsert",
+    { p_payload: payload },
+    {
+      envelope: true,
+      whatFailed: "This emergency contact",
+    },
+  );
 }
 
 export function upsertHrExternalIdentity(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHrWrite("hr_external_identity_upsert", { p_payload: payload }, {
-    envelope: true,
-    whatFailed: "This external system id",
-  });
+  return callHrWrite(
+    "hr_external_identity_upsert",
+    { p_payload: payload },
+    {
+      envelope: true,
+      whatFailed: "This external system id",
+    },
+  );
 }
 
 /** §4.1 — is this person already here? Asked BEFORE a create, never after. */
@@ -823,28 +863,40 @@ export function scanHrDuplicates(args: {
 export function createHrIncident(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHrWrite("hr_incident_create", { p_payload: payload }, {
-    envelope: true,
-    whatFailed: "This incident report",
-  });
+  return callHrWrite(
+    "hr_incident_create",
+    { p_payload: payload },
+    {
+      envelope: true,
+      whatFailed: "This incident report",
+    },
+  );
 }
 
 export function issueHrCorrectiveAction(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHrWrite("hr_corrective_action_issue", { p_payload: payload }, {
-    envelope: true,
-    whatFailed: "This corrective action",
-  });
+  return callHrWrite(
+    "hr_corrective_action_issue",
+    { p_payload: payload },
+    {
+      envelope: true,
+      whatFailed: "This corrective action",
+    },
+  );
 }
 
 export function createHrVerificationRequest(
   payload: Record<string, unknown>,
 ): Promise<HrResult<HrWriteAck>> {
-  return callHrWrite("hr_verification_request_create", { p_payload: payload }, {
-    envelope: true,
-    whatFailed: "This verification request",
-  });
+  return callHrWrite(
+    "hr_verification_request_create",
+    { p_payload: payload },
+    {
+      envelope: true,
+      whatFailed: "This verification request",
+    },
+  );
 }
 
 // ── Employee relations — the case-working doors (SPEC-EMPLOYEES §2.2 route 16)
@@ -1208,9 +1260,7 @@ export function fetchHrMemberEmployeeLinks(args: {
  * render for an owner/admin who holds no HR capability at all, and a directory
  * read would refuse for them.
  */
-export function fetchHrOrgSummary(
-  organizationId: string,
-): Promise<
+export function fetchHrOrgSummary(organizationId: string): Promise<
   HrResult<{
     organization_id: string;
     module_enabled: boolean;
@@ -1390,7 +1440,10 @@ export async function seedHrActivation(
       deductionCodesCreated: readCount(row, "deduction_codes_created"),
       holidayCalendarId: readText(row, "holiday_calendar_id"),
       holidaysCreated: readCount(row, "holidays_created"),
-      tipCodesSeededNotEnabled: readTextArray(row, "tip_codes_seeded_not_enabled"),
+      tipCodesSeededNotEnabled: readTextArray(
+        row,
+        "tip_codes_seeded_not_enabled",
+      ),
       categoriesDimensions: readText(row, "categories_dimensions"),
       auditId: readText(row, "audit_id"),
     },

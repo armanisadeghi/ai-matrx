@@ -30,6 +30,7 @@ feature. There is no cross-employer HR view, in v1 or later.
 ## Entry points
 
 **Routes**
+
 - `app/(core)/hr/layout.tsx` — mounts `<HrProvider>` (ONE `hr_my_context`
   resolution for the whole tree) behind a Suspense boundary. Adds no wrapper
   element and no clipping: `HrShell` is `h-full` and its height chain must reach
@@ -42,6 +43,7 @@ feature. There is no cross-employer HR view, in v1 or later.
 - Section routes mount `HrShell` or `HrSubShell` from their own `layout.tsx`.
 
 **Shell + primitives** (`features/hr/shared/`)
+
 - `HrShell.tsx` — `HrShell({children, title, description, actions, subNav})`. The
   HR context bar (employer name + switcher), the capability-driven persona nav, and
   the breadcrumb — all injected into the shell header via `RouteHeader`; the body is
@@ -62,6 +64,7 @@ feature. There is no cross-employer HR view, in v1 or later.
   `types.ts` · `routes.ts` · `constants.ts`.
 
 **Assists**
+
 - `features/hr/hr-assists-producer.ts` — `produceHrAssists()` +
   `HR_ASSIST_SURFACES`. Deterministic, capped at three chips, every chip carrying
   the fix as its action. None opens a chat.
@@ -102,7 +105,7 @@ place. See `types.ts` for the full contract.
 4. **Every page runs the universal states before its own** — through `HrPageState`,
    in one order, so no page re-implements the sequence.
 5. **Effective dating is asked, never guessed.** The date is first and labelled
-   *Effective*; a future date flips the verb to *Schedule change*; the
+   _Effective_; a future date flips the verb to _Schedule change_; the
    correction-vs-amendment question is asked in the three exact sentences from
    `HR_CHANGE_INTENTS`, and only when the date is in the past.
 6. **No dead ends.** Every identity the UI names opens. Tabs are `<Link href>` so
@@ -112,16 +115,16 @@ place. See `types.ts` for the full contract.
 
 ## Technical calls made in this lane (new unknowns, recorded per the brief)
 
-| Call | Why |
-|---|---|
-| `HrShell` gained an optional `subNav` slot | `HrSubShell`'s tab bar must be static above the scroll area. Nesting a second scroll container inside `HrShell`'s would break the bounded-height chain, and giving `HrSubShell` its own shell would fork the chrome. Only `HrSubShell` should pass it. |
-| `EffectiveDateField` takes `onModeChange` and `consequenceLine` | The contract's prop list left the body open. Splitting date-change from mode-change keeps `useEffectiveDating` the only owner of the "past ⇒ ask" rule; the consequence line is passed in so the field never re-derives it. |
-| No `365` anywhere in code | `hr.employees.future_dated_change_max_days` is read from `hr_knob_index`. If the knob is missing, the form NAMES the key in a visible line and applies no ceiling — a silent default is how a knob becomes a constant. |
-| `PendingChangesPanel` shows the new value, never a "was" | SPEC-EMPLOYEES §6.2 asks for "from what to what", but `hr_pending_changes` returns only the future row (verified 2026-08-26). A client-side guess at the prior value would be a fabricated audit statement. **Widening the RPC is the server lane's call.** |
-| `HrEmptyOrg` renders a door, not the wizard | `features/hr/settings/activation/HrActivationWizard.tsx` does not exist yet (checked 2026-08-26), and a `next/dynamic` import of a missing module is a build error. The door links to `/hr/settings/employer`. **When the wizard lands, replace the `<Link>` with ONE `next/dynamic` edge behind the same `canActivate` condition** — one boundary, at the edge, conditionally rendered. |
-| Cancel takes a required reason via `TextInputDialog` | `hr_pending_change_cancel` requires `p_reason`; browser prompts are banned. The dialog states, before the click, that nothing in the history is erased and that the cancellation is itself recorded. |
-| Assist surface names are string constants | The `matrx-user/hr*` surface **manifests** do not exist yet under `features/surfaces/manifests/`. `HR_ASSIST_SURFACES` holds the §3 names so there is one spelling to point at the manifests when that lane lands. |
-| This lane declares **no** `agentRole` and binds no mandate | HR runs no fixed AI worker on these surfaces yet, and inventing one to satisfy disclosure is forbidden. Assists chips are the platform's noticing lane, not agent disclosure — disclosure adds no visible page content, ever. |
+| Call                                                            | Why                                                                                                                                                                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HrShell` gained an optional `subNav` slot                      | `HrSubShell`'s tab bar must be static above the scroll area. Nesting a second scroll container inside `HrShell`'s would break the bounded-height chain, and giving `HrSubShell` its own shell would fork the chrome. Only `HrSubShell` should pass it.                                                                                                                                   |
+| `EffectiveDateField` takes `onModeChange` and `consequenceLine` | The contract's prop list left the body open. Splitting date-change from mode-change keeps `useEffectiveDating` the only owner of the "past ⇒ ask" rule; the consequence line is passed in so the field never re-derives it.                                                                                                                                                              |
+| No `365` anywhere in code                                       | `hr.employees.future_dated_change_max_days` is read from `hr_knob_index`. If the knob is missing, the form NAMES the key in a visible line and applies no ceiling — a silent default is how a knob becomes a constant.                                                                                                                                                                   |
+| `PendingChangesPanel` shows the new value, never a "was"        | SPEC-EMPLOYEES §6.2 asks for "from what to what", but `hr_pending_changes` returns only the future row (verified 2026-08-26). A client-side guess at the prior value would be a fabricated audit statement. **Widening the RPC is the server lane's call.**                                                                                                                              |
+| `HrEmptyOrg` renders a door, not the wizard                     | `features/hr/settings/activation/HrActivationWizard.tsx` does not exist yet (checked 2026-08-26), and a `next/dynamic` import of a missing module is a build error. The door links to `/hr/settings/employer`. **When the wizard lands, replace the `<Link>` with ONE `next/dynamic` edge behind the same `canActivate` condition** — one boundary, at the edge, conditionally rendered. |
+| Cancel takes a required reason via `TextInputDialog`            | `hr_pending_change_cancel` requires `p_reason`; browser prompts are banned. The dialog states, before the click, that nothing in the history is erased and that the cancellation is itself recorded.                                                                                                                                                                                     |
+| Assist surface names are string constants                       | The `matrx-user/hr*` surface **manifests** do not exist yet under `features/surfaces/manifests/`. `HR_ASSIST_SURFACES` holds the §3 names so there is one spelling to point at the manifests when that lane lands.                                                                                                                                                                       |
+| This lane declares **no** `agentRole` and binds no mandate      | HR runs no fixed AI worker on these surfaces yet, and inventing one to satisfy disclosure is forbidden. Assists chips are the platform's noticing lane, not agent disclosure — disclosure adds no visible page content, ever.                                                                                                                                                            |
 
 ---
 

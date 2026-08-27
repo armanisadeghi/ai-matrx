@@ -45,7 +45,10 @@ describe("validateHrBrowserSession", () => {
     getSession.mockResolvedValue({
       data: { session: { access_token: "valid" } },
     });
-    getUser.mockResolvedValue({ data: { user: { id: "user-1" } }, error: null });
+    getUser.mockResolvedValue({
+      data: { user: { id: "user-1" } },
+      error: null,
+    });
 
     await expect(validateHrBrowserSession()).resolves.toEqual({
       ok: true,
