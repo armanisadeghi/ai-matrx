@@ -22,7 +22,7 @@
 // never a toggle, never a reveal-on-hover, never in component state.
 
 import Link from "next/link";
-import { AlertTriangle, ShieldQuestion } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
@@ -40,6 +40,7 @@ import type {
   HrProfilePrivate,
 } from "../../../types";
 import { formatFullDate } from "../../shared/HrStatusChip";
+import { SsnRevealDoor } from "../../identity/SsnRevealDoor";
 import { MoreSection } from "../MoreSection";
 import { PlatformAccessSection } from "../PlatformAccessSection";
 
@@ -155,8 +156,19 @@ export function PersonalTab({
 
           <SensitiveFieldList source={priv} specs={PRIVATE_FIELDS} />
 
-          {/* The SSN door. Present only when the last-4 itself is. */}
-          {"ssn_last4" in priv ? <SsnRevealDoor /> : null}
+          {/*
+            The SSN door. Present only when the last-4 key itself is — §1.3 decides
+            that on the WIRE, so a viewer the server did not send `ssn_last4` to
+            never sees the control, and `SsnRevealDoor` then withholds it again for
+            anyone without `ssn.reveal`.
+          */}
+          {"ssn_last4" in priv ? (
+            <SsnRevealDoor
+              employeeId={profile.header.employee_id}
+              organizationId={profile.organization_id}
+              capabilities={profile.capabilities}
+            />
+          ) : null}
 
           <HomeAddress priv={priv} />
         </section>
@@ -285,25 +297,6 @@ function NotCollected() {
         Collect personal details
       </Button>
     </section>
-  );
-}
-
-/**
- * THE SSN DOOR. A door, not a toggle: it takes a justification, it is audited,
- * the value comes back once and is never cached. The endpoint
- * (`POST /api/hr/identity/{id}/ssn/reveal`) is specified and not built, so the
- * door is a registered promise rather than a control that silently does nothing.
- */
-function SsnRevealDoor() {
-  return (
-    <button
-      type="button"
-      onClick={() => void announceComingSoon("hr.people.ssn-reveal")}
-      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-    >
-      <ShieldQuestion className="h-3.5 w-3.5" aria-hidden />
-      Request the full number
-    </button>
   );
 }
 

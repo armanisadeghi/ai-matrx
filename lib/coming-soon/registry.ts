@@ -796,17 +796,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "/hr/people/org-chart — cycle badge",
     ],
   },
-  "hr.people.ssn-reveal": {
-    id: "hr.people.ssn-reveal",
-    label: "Reveal the full SSN",
-    owner: "hr",
-    promise:
-      "Show the full number once, against a recorded justification, without ever caching it — the audited door that replaces a masked field nobody can act on.",
-    stage: "blocked",
-    blockedBy:
-      "POST /api/hr/identity/{id}/ssn/reveal is specified (SPEC-EMPLOYEES §1.3) and not built. Last-4 is what every viewer sees, including hr_owner, so nothing is hidden that was ever shown.",
-    surfaces: ["/hr/people/[employeeId]/personal — SSN field"],
-  },
   "hr.people.custom-fields": {
     id: "hr.people.custom-fields",
     label: "Custom fields and custom tabs",
