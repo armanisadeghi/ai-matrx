@@ -58,6 +58,23 @@
 --    inside the period. hr_l3_32 means the null case should no longer occur (the conformance gate
 --    asserts zero), but if one ever reappears the rollup and the grid must count it identically —
 --    a rollup that disagrees with the grid above it is the defect wearing a different hat.
+-- 8. 🚨 THE PREMIUM PATH DOES NOT GO THROUGH RECOMPUTE, SO THE RULING AS WORDED WOULD HAVE MISSED
+--    IT. `hr.attendance_exception_resolve` writes its premium `hr.work_interval` row with its own
+--    `insert`, not by calling `hr.recompute_apply` — verified live in its body. Wiring only
+--    recompute would have satisfied the words of the ruling and still left a resolved meal or rest
+--    premium uncounted in the rollup: the identical S6 defect on the other writer, and the
+--    coordinator's own second proof ("a resolved premium updates it too") would have failed.
+--    So the resolver calls the SAME refresher, in the same transaction as its own insert. That is
+--    not a second rollup path — it is the one rollup function invoked by the second interval
+--    writer. The invariant is: whenever the set of current intervals changes, the rollup is
+--    refreshed before the transaction ends.
+-- 9. THE ROLLUP IS ROUNDED TO ITS OWN COLUMN'S SCALE, AND THE TOTAL IS THE SUM OF THE ROUNDED
+--    PARTS. `total_hours` is numeric(8,2); `hr.work_interval.hours` is numeric(8,4). Caught while
+--    repairing the live rows: a 0.0757-hour interval stored as `total_hours 0.08` above a
+--    breakdown reading 0.0757 -- a total that does not equal the numbers printed beneath it, which
+--    is this whole blocker in miniature. Categories are rounded to 2dp and the total is their sum;
+--    `totals_by_category_exact` and `total_hours_exact` carry the unrounded figures for anything
+--    that must reconcile against the intervals themselves.
 
 -- ── 1. the rollup arithmetic — the only writer of these columns (decision 1) ─────────────────
 create or replace function hr._ppe_rollup_refresh(
@@ -71,7 +88,9 @@ language plpgsql volatile security definer set search_path to 'hr','public'
 as $fn$
 declare
   v_per      hr.pay_period%rowtype;
-  v_cat      jsonb;
+  v_cat        jsonb;
+  v_cat_exact  jsonb;
+  v_total_exact numeric;
   v_total    numeric;
   v_amount   numeric;
   v_incomplete boolean;
@@ -115,13 +134,25 @@ begin
     coalesce((select sum(hours) filter (where ec_code = 'DT') from iv), 0),
     coalesce((select count(*) filter (where interval_kind = 'premium_only') from iv), 0),
     coalesce((select count(*) from iv), 0)
-  into v_cat, v_total, v_amount, v_incomplete, v_worked, v_ot, v_dt, v_prem, v_n;
+  into v_cat, v_total_exact, v_amount, v_incomplete, v_worked, v_ot, v_dt, v_prem, v_n;
 
-  v_cat := coalesce(v_cat, '{}'::jsonb);
+  v_cat_exact := coalesce(v_cat, '{}'::jsonb);
 
-  -- decision 4: the printed total IS the sum of the printed breakdown, and we check rather than trust
-  if abs(v_total - coalesce((select sum((value #>> '{}')::numeric)
-                               from jsonb_each(v_cat)), 0)) > 0.0001 then
+  -- 🚨 decision 9: `hr.pay_period_employment.total_hours` is numeric(8,2) while
+  -- `hr.work_interval.hours` is numeric(8,4). Storing the 4dp category figures under a 2dp total
+  -- reintroduces the very defect this migration closes, in miniature: an 0.0757-hour interval
+  -- stores as a 0.08 total over a 0.0757 breakdown, and the surface prints a total that does not
+  -- equal the numbers beneath it. So the DISPLAYED figures are rounded to the column's own scale
+  -- and the total is the sum of the ROUNDED categories — never the rounded sum, which can differ
+  -- from it. The interval-exact figures are kept alongside for anything that needs them.
+  select jsonb_object_agg(k, round((v #>> '{}')::numeric, 2)), coalesce(sum(round((v #>> '{}')::numeric, 2)), 0)
+    into v_cat, v_total
+    from jsonb_each(v_cat_exact) as e(k, v);
+  v_cat   := coalesce(v_cat, '{}'::jsonb);
+  v_total := coalesce(v_total, 0);
+
+  -- decision 4: the printed total IS the sum of the printed breakdown. Checked, not trusted.
+  if v_total <> coalesce((select sum((value #>> '{}')::numeric) from jsonb_each(v_cat)), 0) then
     raise exception 'hr_l3_44: rollup total % does not equal the sum of its categories %',
       v_total, v_cat;
   end if;
@@ -136,6 +167,9 @@ begin
          computed_at    = now(),
          calc = jsonb_build_object(
            'totals_by_category',  v_cat,
+           -- interval-exact (numeric(8,4)) figures, for anything that must not round (decision 9)
+           'totals_by_category_exact', v_cat_exact,
+           'total_hours_exact',   v_total_exact,
            'hours_worked',        v_worked,
            'hours_overtime',      v_ot,
            'hours_doubletime',    v_dt,
@@ -229,6 +263,40 @@ begin
 end
 $mig$;
 
+-- ── 2b. the OTHER interval writer: the premium written on exception resolve (decision 8) ────
+do $mig$
+declare
+  v_def text;
+  v_anchor text := '      v_written := v_written || hr._time_interval_json(v_new);';
+  v_block text;
+begin
+  v_def := pg_get_functiondef(
+    'hr.attendance_exception_resolve(uuid,text,text,uuid)'::regprocedure);
+
+  if position('_ppe_rollup_refresh' in v_def) > 0 then
+    raise notice 'hr_l3_44: the resolver already refreshes the rollup';
+    return;
+  end if;
+  if position(v_anchor in v_def) = 0 then
+    raise exception 'hr_l3_44: could not find the premium write in attendance_exception_resolve';
+  end if;
+
+  v_block := v_anchor || E'\n' ||
+    '      -- hr_l3_44 (S6, decision 8): this premium just changed the employment''s current' || E'\n' ||
+    '      -- intervals, so the pay-period rollup is stale as of this statement. Same single' || E'\n' ||
+    '      -- writer as hr.recompute_apply, same transaction as the interval write.' || E'\n' ||
+    '      perform hr._ppe_rollup_refresh(' || E'\n' ||
+    '        coalesce(nullif(v_lock ->> ''pay_period_id'','''')::uuid,' || E'\n' ||
+    '                 hr._period_for_day(v_ae.employment_id, v_ae.local_work_date)),' || E'\n' ||
+    '        v_ae.employment_id,' || E'\n' ||
+    '        coalesce(v_ae.engine_key, ''hr.time_engine''),' || E'\n' ||
+    '        coalesce(v_ae.engine_version, ''unversioned''), null);';
+
+  v_def := replace(v_def, v_anchor, v_block);
+  execute v_def;
+end
+$mig$;
+
 -- ── 3. self-assertions ──────────────────────────────────────────────────────────────────────
 do $chk$
 declare v_src text;
@@ -246,6 +314,25 @@ begin
   -- decision 2: the loop must consider every period the week touches, not just v_period
   if position('where w.workweek_id = v_ww_id and w.is_current and w.pay_period_id is not null' in v_src) = 0 then
     raise exception 'hr_l3_44: the rollup loop does not cover a straddling week''s second period';
+  end if;
+
+  -- decision 8: the premium writer refreshes it too, or a resolved premium goes uncounted
+  if (select prosrc from pg_proc
+       where oid='hr.attendance_exception_resolve(uuid,text,text,uuid)'::regprocedure)
+      !~ '_ppe_rollup_refresh' then
+    raise exception 'hr_l3_44: the exception resolver writes a premium without refreshing the rollup';
+  end if;
+
+  -- every function that inserts a current work_interval must refresh the rollup in the same body
+  if exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'hr' and p.prokind = 'f'
+       and p.prosrc ~ 'insert into hr\.work_interval'
+       and p.prosrc !~ '_ppe_rollup_refresh') then
+    raise exception 'hr_l3_44: an interval writer exists that never refreshes the pay-period rollup: %',
+      (select string_agg(p.proname, ', ') from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname='hr' and p.prokind='f'
+          and p.prosrc ~ 'insert into hr\.work_interval' and p.prosrc !~ '_ppe_rollup_refresh');
   end if;
 
   -- decision 1: exactly one writer of the rollup columns

@@ -907,6 +907,105 @@ async def main():
             await sp.rollback()
             rec("AD-11 ledger", label, ok, outcome)
 
+        # ============================================= §8.2 A→B→C→H→L, THROUGH THE REAL DOORS
+        # 🚨 THE WHOLE CHAIN, FROM THE PERIOD SUBMIT. Everything above drives hr.wf_request
+        # directly; nothing proved that the PRODUCT path — an HR admin pressing Submit on a pay
+        # period — opens the instances at all. It did not: the submit opened them and every one
+        # died `approver_ineligible` because hr.wf_resolve_approvers dropped any candidate with no
+        # platform login, including the SUBJECT of the self-step. `hr.pay_period_transition` then
+        # counted only granted envelopes and reported "0 instance(s) were started", so four
+        # verification rounds read an empty hr.workflow_instance and a submit that looked inert.
+        # Fixed in hr_c4_11; proven here end to end, on their own pay group so nothing above moves.
+        await as_owner()
+        pg2 = await conn.fetchval(
+            "insert into hr.pay_group (organization_id, employer_profile_id, name, pay_frequency, "
+            "first_period_start_on, workweek_effective_from) "
+            "values ($1,$2,'Chain Biweekly','biweekly',current_date - 60, current_date - 60) returning id", org, er)
+        for key in ("alice", "bob"):
+            await conn.execute("update hr.employment set pay_group_id=$1 where id=$2",
+                               pg2, people[key]["employment"])
+        pp2 = await conn.fetchval(
+            "insert into hr.pay_period (organization_id, pay_group_id, period_start_on, period_end_on, "
+            "sequence_number) values ($1,$2,current_date - 15, current_date - 1, 2) returning id", org, pg2)
+        # hr.pay_period_transition asks the capability AS OF period_end_on, not today — so the role
+        # that carries payroll.read has to have been in force then. The fixture's role assignments
+        # start today; backdate them here, at the end of the suite, where nothing above can see it.
+        await conn.execute(
+            "update hr.role_assignment set effective_from=current_date - 400 where organization_id=$1", org)
+
+        # carol is the HR owner, so she holds payroll.read and may move the period
+        await as_user(people["carol"]["uid"])
+        sub = await j("select hr.pay_period_transition($1,'submitted')", pp2)
+        sub_d = (sub or {}).get("data") or {}
+        await as_owner()
+        rec("§8.2 A→B submit", "an HR owner may submit the period at all — the product path is reachable",
+            (sub or {}).get("ok") is True, json.dumps(sub)[:260])
+        rec("§8.2 A→B submit", "🚨 the PERIOD SUBMIT opens one instance per enrolled employment — the product path, not hr.wf_request",
+            sub_d.get("workflowInstancesOpened") == 2 and sub_d.get("workflowInstancesFailed") == 0,
+            f"opened={sub_d.get('workflowInstancesOpened')} failed={sub_d.get('workflowInstancesFailed')} "
+            f"rows={sub_d.get('rowsOpened')} flow={sub_d.get('workflowFlowKey')}")
+        rec("§8.2 A→B submit", "and the notice says what actually happened, failures included — a refusal is never discarded",
+            "are routed and waiting" in str(sub_d.get("notice") or ""), sub_d.get("notice"))
+        chain = {}
+        for key in ("alice", "bob"):
+            ppe2 = await conn.fetchval(
+                "select id from hr.pay_period_employment where pay_period_id=$1 and employment_id=$2",
+                pp2, people[key]["employment"])
+            st2 = await conn.fetchrow(
+                "select s.id, s.state, s.resolved_approver_ids from hr.workflow_step s "
+                "join hr.workflow_instance i on i.id=s.workflow_instance_id "
+                "where i.target_id=$1 and i.flow_key='timecard_attestation' and s.state='active'", ppe2)
+            chain[key] = {"ppe": ppe2, "step": st2}
+        rec("§8.2 B→C routing", "🚨 every opened attestation routes to the EMPLOYEE THEMSELVES — the allows_self self-step, live",
+            all(chain[k]["step"] is not None
+                and list(chain[k]["step"]["resolved_approver_ids"]) == [people[k]["employment"]]
+                for k in chain),
+            {k: (chain[k]["step"]["state"] if chain[k]["step"] else None) for k in chain})
+
+        # ---- C→H: the employee attests, and the apply hook opens the manager's approval
+        for key, mgr in (("alice", "bob"), ("bob", "carol")):
+            await as_user(people[key]["uid"])
+            await j("select hr.wf_decide($1,'attested')", chain[key]["step"]["id"])
+            await as_owner()
+            chain[key]["mgr_step"] = await conn.fetchrow(
+                "select s.id from hr.workflow_step s join hr.workflow_instance i on i.id=s.workflow_instance_id "
+                "where i.target_id=$1 and i.flow_key='timecard_approval' and s.state='active'", chain[key]["ppe"])
+        rec("§8.2 C→H chain", "each employee self-attests and the apply hook opens THEIR manager-approval step",
+            all(chain[k].get("mgr_step") is not None for k in chain),
+            {k: str(chain[k].get("mgr_step") and chain[k]["mgr_step"]["id"]) for k in chain})
+        rec("§8.2 C attest", "and each timecard row records the attestation",
+            await conn.fetchval(
+                "select count(*)=2 from hr.pay_period_employment where pay_period_id=$1 and attested_at is not null", pp2),
+            str(await conn.fetchval(
+                "select string_agg(state, ', ') from hr.pay_period_employment where pay_period_id=$1", pp2)))
+
+        # ---- L: the period cannot be approved while a row is still undecided, and it NAMES who
+        await as_user(people["carol"]["uid"])
+        early = await j("select hr.pay_period_transition($1,'approved')", pp2)
+        rec("§8.2 L completion", "🚨 the period REFUSES to approve while a timecard is undecided, and names who is missing",
+            (early or {}).get("ok") is False
+            and (early or {}).get("code") == "hr_period_has_open_timecards"
+            and "Alice" in str((early or {}).get("details") or early),
+            json.dumps(early)[:260])
+
+        # ---- H→L: the managers approve, the rows advance, and the period closes
+        for key, mgr in (("alice", "bob"), ("bob", "carol")):
+            await as_user(people[mgr]["uid"])
+            await j("select hr.wf_decide($1,'approved')", chain[key]["mgr_step"]["id"])
+        await as_owner()
+        rec("§8.2 H→L chain", "each manager approves and THAT employment's timecard row advances to approved",
+            await conn.fetchval(
+                "select count(*)=2 from hr.pay_period_employment where pay_period_id=$1 and state='approved'", pp2),
+            str(await conn.fetchval(
+                "select string_agg(state, ', ') from hr.pay_period_employment where pay_period_id=$1", pp2)))
+        await as_user(people["carol"]["uid"])
+        done = await j("select hr.pay_period_transition($1,'approved')", pp2)
+        await as_owner()
+        rec("§8.2 L completion", "🚨 and with every row decided the PERIOD reaches approved — the chain runs end to end",
+            (done or {}).get("ok") is True
+            and await conn.fetchval("select state='approved' from hr.pay_period where id=$1", pp2),
+            json.dumps(done)[:220])
+
         # ================================================================= §4.2 DOOR GRANTS
         # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
         # GRANT, so hr_c4_07's door assertion would stay green on a surface reachable only because
