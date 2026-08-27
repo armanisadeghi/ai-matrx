@@ -1343,6 +1343,109 @@ async def main():
                 "select hr.can_approve($1,'timecard_approve','hr.pay_period_employment',$2)",
                 solo_uid, solo_ppe))
 
+        # ============================ §1.1 / D13 THE FOUNDING AUTHORITIES, AND THE FRONT DOOR
+        # 🚨 A FRESH ORG COULD NOT APPROVE A PAY CHANGE AT ALL, and found out only after submitting
+        # one. Not a deadlock and not an activation bug — §1.1's bootstrap simply says nothing about
+        # authority rows, so every org started unseeded. D13's default-with-override: the owner is
+        # seeded as the rank-1 holder of every `require_second_actor` action, VISIBLE in the
+        # authority register and revocable, instead of latent inside hr_authority_grant's owner arm.
+        await as_owner()
+        act_org = await conn.fetchval(
+            "insert into iam.organizations (name, slug, abbreviation) values "
+            "('HRB-008 Activation Org','hrb008-act-'||substr(gen_random_uuid()::text,1,8),'ACT') returning id")
+        act_uid = await conn.fetchval(
+            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+            "email_confirmed_at, created_at, updated_at) values "
+            "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
+            "$1,'x',now(),now(),now()) returning id", f"founder.{uuid.uuid4().hex[:8]}@example.invalid")
+        await conn.execute(
+            "insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) "
+            "values ($1,'organization',$1,$2,'owner','active')", act_org, act_uid)
+        act_party = await conn.fetchval(
+            "insert into crm.party (organization_id, party_kind, display_name) "
+            "values ($1,'person','Fay Founder') returning id", act_org)
+        act_e = await conn.fetchval(
+            "insert into hr.employee (organization_id, party_id, login_user_id, employee_number, "
+            "legal_first_name, legal_last_name, display_name) values ($1,$2,$3,'EMP-founder','Fay','Founder','Fay Founder') "
+            "returning id", act_org, act_party, act_uid)
+        act_er = await conn.fetchval(
+            "insert into hr.employer_profile (organization_id, legal_name, ein) "
+            "values ($1,'Founder Co','00-0000000') returning id", act_org)
+        act_owner_emp = await conn.fetchval(
+            "insert into hr.employment (organization_id, employee_id, employer_profile_id, hire_date, status) "
+            "values ($1,$2,$3,current_date - 365,'active') returning id", act_org, act_e, act_er)
+        # the one thing activation creates that this seeding keys off
+        await conn.execute(
+            "insert into hr.role_assignment (organization_id, employment_id, role_key, scope_kind, effective_from) "
+            "values ($1,$2,'hr_owner','org',current_date - 400)", act_org, act_owner_emp)
+        seeded = await conn.fetchval(
+            "select cardinality(hr._seed_founding_authorities($1,$2,'activation'))", act_org, act_owner_emp)
+        rec("§1.1 founding", "🚨 activation seeds the owner as rank-1 holder of EVERY require_second_actor action — the risk-split set, read from the vocabulary",
+            seeded == await conn.fetchval(
+                "select count(*) from platform.categories where dimension='hr_approval_action' "
+                "and deleted_at is null and metadata->>'sole_authority_mode'='require_second_actor'"),
+            f"seeded={seeded}")
+        rec("§1.1 founding", "and they are ordinary, VISIBLE, revocable rows carrying their provenance — not a latent gate",
+            await conn.fetchval(
+                "select bool_and(rank=1 and scope_kind='org' and source='assigned' and is_active "
+                "and metadata->>'basis'='activation' "
+                "and metadata->>'granted_by'='hr._seed_founding_authorities') "
+                "from hr.approval_authority where organization_id=$1", act_org))
+        rec("§1.1 founding", "seeding twice is a no-op — an org that revoked and re-granted is never overwritten",
+            await conn.fetchval(
+                "select cardinality(hr._seed_founding_authorities($1,$2,'activation'))",
+                act_org, act_owner_emp) == 0)
+
+        # a managed employee's pay change now resolves the owner, with no hand-grant anywhere
+        act_party2 = await conn.fetchval(
+            "insert into crm.party (organization_id, party_kind, display_name) "
+            "values ($1,'person','Ned New') returning id", act_org)
+        act_e2 = await conn.fetchval(
+            "insert into hr.employee (organization_id, party_id, employee_number, legal_first_name, "
+            "legal_last_name, display_name) values ($1,$2,'EMP-new','Ned','New','Ned New') returning id",
+            act_org, act_party2)
+        act_emp2 = await conn.fetchval(
+            "insert into hr.employment (organization_id, employee_id, employer_profile_id, hire_date, status) "
+            "values ($1,$2,$3,current_date - 100,'active') returning id", act_org, act_e2, act_er)
+        rec("§1.1 founding", "🚨 and a managed employee's PAY CHANGE now resolves the owner, with no hand-grant anywhere",
+            await conn.fetchval(
+                "select hr.can_approve($1,'pay_change_approve','hr.employment',$2)",
+                act_uid, act_emp2))
+
+        # ---- revoke the founding authority and the next submission refuses AT THE FRONT DOOR
+        await conn.execute(
+            "update hr.approval_authority set is_active=false where organization_id=$1", act_org)
+        act_lp = await conn.fetchval(
+            "insert into hr.leave_policy (organization_id, name, leave_kind, accrual_method) "
+            "values ($1,'PTO','pto','unlimited') returning id", act_org)
+        act_lr = await conn.fetchval(
+            "insert into hr.leave_request (organization_id, employment_id, leave_policy_id, starts_on, "
+            "ends_on, requested_hours, state, engine_key, engine_version) "
+            "values ($1,$2,$3,current_date + 30, current_date + 30, 8,'submitted','proof','1') returning id",
+            act_org, act_emp2, act_lp)
+        before_n = await conn.fetchval(
+            "select count(*) from hr.workflow_instance where organization_id=$1", act_org)
+        await as_user(act_uid)
+        pf = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", act_lr, act_org)
+        await as_owner()
+        rec("§4.2 pre-flight", "🚨 with nobody able to approve, the SUBMISSION is refused at the front door — named condition, not a post-hoc failure",
+            pf.get("granted") is False and pf.get("reason") == "WF_NO_POSSIBLE_APPROVER",
+            json.dumps(pf)[:220])
+        rec("§4.2 pre-flight", "and it names the DOOR and the action, so the requester knows what to ask for",
+            pf.get("door") == "hr_authority_grant" and pf.get("action_type") is not None,
+            f"door={pf.get('door')} action={pf.get('action_type')}")
+        rec("§4.2 pre-flight", "🚨 and NOTHING was minted — a refusal at the front door writes no instance to fail later",
+            await conn.fetchval(
+                "select count(*) from hr.workflow_instance where organization_id=$1", act_org) == before_n)
+        # the post-hoc machinery is untouched: restore the authority and the same request routes
+        await conn.execute(
+            "update hr.approval_authority set is_active=true where organization_id=$1", act_org)
+        await as_user(act_uid)
+        pf2 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", act_lr, act_org)
+        await as_owner()
+        rec("§4.2 pre-flight", "grant the authority back and the very same submission goes through — the refusal was about reach, never the request",
+            pf2.get("granted") is True, json.dumps(pf2)[:200])
+
         # ================================================================= §4.2 DOOR GRANTS
         # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
         # GRANT, so hr_c4_07's door assertion would stay green on a surface reachable only because
