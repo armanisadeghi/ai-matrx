@@ -39,6 +39,7 @@ import {
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { cn } from "@/lib/utils";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 
@@ -186,41 +187,57 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
   const loadCalendar = async () => {
     const connection = selectedConnection("calendar");
     if (!connection) return;
-    await calendar.mutateAsync({
-      connectionId: connection.id,
-      organizationId: connection.organization_id,
-      days: 14,
-    });
+    try {
+      await calendar.mutateAsync({
+        connectionId: connection.id,
+        organizationId: connection.organization_id,
+        days: 14,
+      });
+    } catch (error) {
+      showReadError("Calendar agenda", error);
+    }
   };
 
   const loadTasks = async () => {
     const connection = selectedConnection("tasks");
     if (!connection) return;
-    await tasks.mutateAsync({
-      connectionId: connection.id,
-      organizationId: connection.organization_id,
-    });
+    try {
+      await tasks.mutateAsync({
+        connectionId: connection.id,
+        organizationId: connection.organization_id,
+      });
+    } catch (error) {
+      showReadError("Google Tasks", error);
+    }
   };
 
   const loadYouTube = async () => {
     const connection = selectedConnection("youtube");
     if (!connection || !youtubeChannelId) return;
-    await youtube.mutateAsync({
-      connectionId: connection.id,
-      organizationId: connection.organization_id,
-      channelId: youtubeChannelId,
-      startDate: isoDate(29),
-      endDate: isoDate(0),
-    });
+    try {
+      await youtube.mutateAsync({
+        connectionId: connection.id,
+        organizationId: connection.organization_id,
+        channelId: youtubeChannelId,
+        startDate: isoDate(29),
+        endDate: isoDate(0),
+      });
+    } catch (error) {
+      showReadError("YouTube Analytics", error);
+    }
   };
 
   const loadTagManager = async () => {
     const connection = selectedConnection("tag_manager");
     if (!connection) return;
-    await tagManager.mutateAsync({
-      connectionId: connection.id,
-      organizationId: connection.organization_id,
-    });
+    try {
+      await tagManager.mutateAsync({
+        connectionId: connection.id,
+        organizationId: connection.organization_id,
+      });
+    } catch (error) {
+      showReadError("Tag Manager", error);
+    }
   };
 
   const youtubeConnection = selectedConnection("youtube");
@@ -231,7 +248,12 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
   );
 
   return (
-    <main className="min-h-full bg-background px-4 py-6 text-foreground sm:px-6">
+    <main
+      className={cn(
+        "min-h-full bg-background px-4 py-6 text-foreground sm:px-6",
+        reviewMode && "fixed inset-0 z-[100] h-dvh overflow-y-auto",
+      )}
+    >
       <div className="mx-auto max-w-6xl space-y-5">
         <header className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -494,6 +516,13 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
       />
     </main>
   );
+}
+
+function showReadError(feature: string, error: unknown) {
+  toast.error(`${feature} could not be loaded`, {
+    description:
+      error instanceof Error ? error.message : "Try reconnecting Google.",
+  });
 }
 
 function CapabilityCard({
