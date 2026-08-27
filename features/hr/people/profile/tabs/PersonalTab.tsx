@@ -232,23 +232,32 @@ export function PersonalTab({
           <h3 className="text-sm font-semibold text-foreground">Privacy</h3>
           <SelfServiceToggle
             field="directory_opt_out"
-            label="Hide me from the staff directory"
+            label="Hide me from the directory and org chart"
             /*
-              🚨 THIS SENTENCE PROMISES ONLY WHAT THE SERVER ACTUALLY DOES, AND IT
-              HAS BEEN NARROWED AND WIDENED ONCE EACH AS THAT CHANGED. It claimed
-              the org chart before the chart honoured it, was cut back to the
-              directory alone when testing showed it did not, and now says both —
-              because `hr_org_chart` suppresses the name for anyone but HR and the
-              subject, verified live on this record.
+              🚨 THIS SENTENCE PROMISES EXACTLY WHAT IS TRUE, AND IT HAS BEEN
+              NARROWED AND WIDENED AS THAT CHANGED — twice on the chart, once more
+              on the scope. It claimed the org chart before the chart honoured it,
+              was cut back to the directory alone when testing showed it did not,
+              widened again when `hr_org_chart` shipped its suppression, and now
+              also states the LIMIT of the control.
 
-              🚨 AND IT DOES NOT OVERSTATE THE CHART. She is not REMOVED from it:
-              her node stays and her reports stay attached, because a gap in a
-              reporting tree tells everyone exactly who is missing and where. What
-              goes is the name. Saying "hidden from the org chart" would be the
-              comfortable sentence and the wrong one — she would look at it, see her
-              own position still drawn, and rightly conclude the toggle lied.
+              🚨 IT DOES NOT OVERSTATE THE CHART. She is not REMOVED from it: her
+              node stays and her reports stay attached, because a gap in a reporting
+              tree tells everyone exactly who is missing and where. What goes is the
+              name.
+
+              🚨 AND IT DOES NOT PRETEND TO BE A SEAL. Ruled 2026-08-27:
+              `directory_opt_out` is a BROWSING control — the column's own name
+              scopes it. Not-findable is the promise: the directory drops the row,
+              the chart withholds the name, and no browsing surface publishes the
+              id. A profile reached by a legitimately-held id still shows
+              directory-tier identity under §4.2's own field rules, because people
+              who already work with someone knowing their name is not the exposure
+              this toggle governs. Saying "hidden from your colleagues" would be the
+              comfortable sentence and a lie — and the person would find out by
+              being greeted by name.
             */
-            description="Colleagues will not find you in the staff directory, and your name is hidden on the org chart — your position still shows there, because removing it would tell everyone exactly who is missing. HR, your manager and anyone who needs your record for work still see you: this hides you from browsing, not from your employer."
+            description="You won't turn up in the staff directory, and your name is hidden on the org chart — your position still shows there, because removing it would tell everyone exactly who is missing. This stops people browsing for you; it is not a disguise. Anyone you already work with — your manager, a colleague following a link from their own work — can still open your profile and see your name and role."
             value={personal.directory_opt_out === true}
             saving={selfUpdate.saving}
             onSave={(field, next) => selfUpdate.save(field, next)}
