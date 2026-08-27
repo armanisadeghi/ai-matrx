@@ -16,6 +16,8 @@ interface Props {
   count?: number;
   /** Right-aligned header action (an "Add" toggle, usually). */
   action?: ReactNode;
+  /** Keep a compact icon action on the title row at mobile widths. */
+  compactAction?: boolean;
   children: ReactNode;
   className?: string;
 }
@@ -25,12 +27,16 @@ export function SectionCard({
   Icon,
   count,
   action,
+  compactAction = false,
   children,
   className,
 }: Props) {
   return (
     <section
-      className={cn("rounded-md border border-border bg-card", className)}
+      className={cn(
+        "group/section rounded-md border border-border bg-card",
+        className,
+      )}
     >
       <header className="flex min-h-8 flex-wrap items-center gap-x-1.5 border-b border-border px-2.5 py-1 sm:flex-nowrap sm:py-0">
         <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -43,7 +49,14 @@ export function SectionCard({
           </span>
         )}
         {action ? (
-          <div className="mt-1 flex basis-full items-center gap-1 border-t border-border/60 pt-1 sm:ml-auto sm:mt-0 sm:basis-auto sm:border-0 sm:pt-0 max-sm:[&>div]:w-full max-sm:[&_button]:min-h-11">
+          <div
+            className={cn(
+              "flex items-center gap-1 max-sm:[&_button]:min-h-11",
+              compactAction
+                ? "ml-auto shrink-0"
+                : "mt-1 basis-full border-t border-border/60 pt-1 sm:ml-auto sm:mt-0 sm:basis-auto sm:border-0 sm:pt-0 max-sm:[&>div]:w-full",
+            )}
+          >
             {action}
           </div>
         ) : null}

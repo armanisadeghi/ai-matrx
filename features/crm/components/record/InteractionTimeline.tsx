@@ -23,7 +23,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { InboundLabelBadge } from "../outreach-lists/badges";
-import { readInboundClassification } from "../../inbox/attributes";
 import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ProInput } from "@/components/official/ProInput";
@@ -45,6 +44,15 @@ import type {
   InteractionRow,
 } from "../../types";
 import { SectionCard, SectionEmpty } from "./SectionCard";
+import { CrmRecordCopyButtons } from "./CrmRecordCopyButtons";
+import {
+  buildInteractionCopyView,
+  formatInteractionCopy,
+  formatInteractionsCopy,
+  interactionAgentPayload,
+  interactionsAgentPayload,
+  type CrmRecordCopyParent,
+} from "./record-copy";
 
 const CHANNEL_META: Record<string, { label: string; Icon: LucideIcon }> = {
   call: { label: "Call", Icon: Phone },
@@ -74,6 +82,8 @@ interface Props {
   getApplicationScope?: () => ApplicationScope;
   /** Registers the record-only write target when this shared component mounts there. */
   writeSurfaceName?: string;
+  /** Enables party-record copy context; deal reuse deliberately omits it. */
+  copyParent?: CrmRecordCopyParent;
 }
 
 export function InteractionTimeline({
@@ -84,6 +94,7 @@ export function InteractionTimeline({
   dealId,
   getApplicationScope,
   writeSurfaceName,
+  copyParent,
 }: Props) {
   const [channel, setChannel] = useState<InteractionChannel>("call");
   const [direction, setDirection] = useState<InteractionDirection>("outbound");
@@ -100,6 +111,7 @@ export function InteractionTimeline({
     expandableRowIds.length > 0 &&
     expandableRowIds.every((id) => expandedRows.has(id));
   const anyExpanded = expandableRowIds.some((id) => expandedRows.has(id));
+  const interactionCopyViews = interactions.map(buildInteractionCopyView);
 
   const setRowExpanded = (id: string, expanded: boolean) => {
     setExpandedRows((current) => {
@@ -178,14 +190,42 @@ export function InteractionTimeline({
       title="Activity"
       Icon={History}
       count={interactions.length}
+      compactAction
       action={
-        <CollapsibleTextGroupControls
-          allExpanded={allExpanded}
-          anyExpanded={anyExpanded}
-          disabled={expandableRowIds.length === 0}
-          onExpandAll={() => setExpandedRows(new Set(expandableRowIds))}
-          onCollapseAll={() => setExpandedRows(new Set())}
-        />
+        <div className="flex items-center gap-0.5">
+          {copyParent && interactions.length > 0 && (
+            <CrmRecordCopyButtons
+              label={`${copyParent.label} activity`}
+              human={() =>
+                formatInteractionsCopy(copyParent, interactionCopyViews)
+              }
+              agent={() =>
+                interactionsAgentPayload(copyParent, interactionCopyViews)
+              }
+              json={() => interactionCopyViews}
+              aiVariants={[
+                {
+                  id: "activity-overview",
+                  label: "Activity overview",
+                  hint: "Subjects, channels, directions, and dates without bodies",
+                  build: () =>
+                    interactionsAgentPayload(
+                      copyParent,
+                      interactionCopyViews,
+                      false,
+                    ),
+                },
+              ]}
+            />
+          )}
+          <CollapsibleTextGroupControls
+            allExpanded={allExpanded}
+            anyExpanded={anyExpanded}
+            disabled={expandableRowIds.length === 0}
+            onExpandAll={() => setExpandedRows(new Set(expandableRowIds))}
+            onCollapseAll={() => setExpandedRows(new Set())}
+          />
+        </div>
       }
     >
       {/* Composer — one tight strip: type, direction, subject, minutes, log. */}
@@ -274,19 +314,23 @@ export function InteractionTimeline({
         <ul className="space-y-0.5">
           {interactions.map((row) => {
             const meta = CHANNEL_META[row.channel_code] ?? CHANNEL_META.other;
+            const copyView = buildInteractionCopyView(row);
             // A REPLY is the most important row on this timeline — someone we
             // wrote to wrote back. It gets a standing accent, the classifier's
             // verdict, and a door to the campaign it answers, instead of
             // sitting anonymously among logged calls.
             const isReply = row.direction === "inbound";
             const classification = isReply
-              ? readInboundClassification(row.attributes)
+              ? {
+                  rawLabel: copyView.classification,
+                  evidence: copyView.classification_evidence,
+                }
               : null;
             return (
               <li
                 key={row.id}
                 className={cn(
-                  "group flex items-start gap-2 rounded px-1.5 py-1 hover:bg-accent/50",
+                  "group group/item flex items-start gap-2 rounded px-1.5 py-1 hover:bg-accent/50",
                   isReply &&
                     "border-l-2 border-emerald-500/60 bg-emerald-500/5 pl-1",
                 )}
@@ -347,6 +391,17 @@ export function InteractionTimeline({
                     </Link>
                   )}
                 </div>
+                {copyParent && (
+                  <CrmRecordCopyButtons
+                    revealFrom="item"
+                    label={`${copyView.subject} activity`}
+                    human={() => formatInteractionCopy(copyView)}
+                    agent={() =>
+                      interactionAgentPayload(copyParent, row, copyView)
+                    }
+                    json={() => copyView}
+                  />
+                )}
                 <button
                   type="button"
                   aria-label="Delete entry"

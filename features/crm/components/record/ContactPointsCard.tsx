@@ -60,6 +60,13 @@ import {
   type ContactPoint,
 } from "../../types";
 import { SectionCard, SectionEmpty } from "./SectionCard";
+import { CrmRecordCopyButtons } from "./CrmRecordCopyButtons";
+import {
+  buildContactPointCopyView,
+  contactPointsAgentPayload,
+  formatContactPointsCopy,
+  type CrmRecordCopyParent,
+} from "./record-copy";
 
 const CHANNEL_ICONS: Record<string, LucideIcon> = {
   email: AtSign,
@@ -77,6 +84,7 @@ const CHANNEL_LABELS: Record<
 
 interface Props {
   partyId: string;
+  partyLabel: string;
   orgId: string;
   points: ContactPoint[];
   onChanged: () => Promise<void>;
@@ -104,6 +112,7 @@ function deliverabilityBadge(point: ContactPoint) {
 
 export function ContactPointsCard({
   partyId,
+  partyLabel,
   orgId,
   points,
   onChanged,
@@ -116,6 +125,12 @@ export function ContactPointsCard({
   const [value, setValue] = useState("");
   const [label, setLabel] = useState("");
   const [saving, setSaving] = useState(false);
+  const copyParent: CrmRecordCopyParent = {
+    type: "party",
+    id: partyId,
+    label: partyLabel,
+  };
+  const contactCopyViews = points.map(buildContactPointCopyView);
 
   const submit = async () => {
     if (!value.trim()) return;
@@ -259,19 +274,34 @@ export function ContactPointsCard({
       title="Contact"
       Icon={AtSign}
       count={points.length}
+      compactAction
       action={
-        <button
-          type="button"
-          onClick={() => setAdding((v) => !v)}
-          aria-label={adding ? "Cancel add" : "Add contact method"}
-          className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
-        >
-          {adding ? (
-            <X className="h-3.5 w-3.5" />
-          ) : (
-            <Plus className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-0.5">
+          {points.length > 0 && (
+            <CrmRecordCopyButtons
+              label={`${partyLabel} contact methods`}
+              human={() =>
+                formatContactPointsCopy(copyParent, contactCopyViews)
+              }
+              agent={() =>
+                contactPointsAgentPayload(copyParent, contactCopyViews)
+              }
+              json={() => contactCopyViews}
+            />
           )}
-        </button>
+          <button
+            type="button"
+            onClick={() => setAdding((v) => !v)}
+            aria-label={adding ? "Cancel add" : "Add contact method"}
+            className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
+          >
+            {adding ? (
+              <X className="h-3.5 w-3.5" />
+            ) : (
+              <Plus className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
       }
     >
       {adding && (

@@ -818,6 +818,11 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-27 — **Every CRM record section can be copied without flattening its meaning.** Identity,
+  contact methods, addresses, employment, activity, and notes expose the canonical human, agent,
+  and JSON copy actions; activity and notes also provide body-free overview variants and per-item
+  copy while retaining the official collapsible-text controls.
+
 - 2026-08-27 — **Long record activity and notes stay readable without losing
   structure.** The activity composer now uses the official multiline authoring
   field, preserving pasted paragraphs and line breaks. Activity and note bodies

@@ -51,6 +51,7 @@ import {
 } from "./JournalistIntelligenceCard";
 import { PartyProvenanceCard } from "./PartyProvenanceCard";
 import { PartyDealsCard } from "../deals/PartyDealsCard";
+import type { CrmRecordCopyParent } from "./record-copy";
 
 interface Props {
   partyId: string;
@@ -126,6 +127,9 @@ export function PartyRecordPage({ partyId }: Props) {
   const roles = partyRoles
     .filter((category) => selectedRoleIds.has(category.id))
     .map((category) => ({ id: category.id, name: category.name }));
+  const copyParent: CrmRecordCopyParent | undefined = party
+    ? { type: "party", id: party.id, label: party.display_name }
+    : undefined;
 
   // The record scope is sampled at execution time, so category labels and
   // independently-loaded notes are as fresh as the data visible on the page.
@@ -240,12 +244,14 @@ export function PartyRecordPage({ partyId }: Props) {
                 <ExpertStatusCard party={party} onChanged={refresh} />
                 <ContactPointsCard
                   partyId={party.id}
+                  partyLabel={party.display_name}
                   orgId={party.organization_id}
                   points={detail.contactPoints}
                   onChanged={refresh}
                 />
                 <AddressesCard
                   partyId={party.id}
+                  partyLabel={party.display_name}
                   orgId={party.organization_id}
                   addresses={detail.addresses}
                   onChanged={refresh}
@@ -265,6 +271,7 @@ export function PartyRecordPage({ partyId }: Props) {
                   <EmploymentCard
                     mode="person"
                     partyId={party.id}
+                    partyLabel={party.display_name}
                     orgId={party.organization_id}
                     affiliations={detail.affiliations}
                     onChanged={refresh}
@@ -273,6 +280,7 @@ export function PartyRecordPage({ partyId }: Props) {
                   <EmploymentCard
                     mode="company"
                     partyId={party.id}
+                    partyLabel={party.display_name}
                     orgId={party.organization_id}
                     members={detail.members}
                     onChanged={refresh}
@@ -312,12 +320,14 @@ export function PartyRecordPage({ partyId }: Props) {
                   onChanged={refresh}
                   getApplicationScope={getScope}
                   writeSurfaceName={CRM_RECORD_SURFACE_NAME}
+                  copyParent={copyParent}
                 />
                 <PartyNotes
                   partyId={party.id}
                   orgId={party.organization_id}
                   getApplicationScope={getScope}
                   writeSurfaceName={CRM_RECORD_SURFACE_NAME}
+                  copyParent={copyParent}
                   onNotesStateChange={(nextNotes, nextError) => {
                     setNotes(nextNotes);
                     setNotesLoadError(nextError);

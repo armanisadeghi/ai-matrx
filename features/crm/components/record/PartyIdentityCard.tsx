@@ -31,6 +31,13 @@ import {
   type PartyUpdate,
 } from "../../types";
 import { parseIdentityFields } from "../../agent-context/crmRecordSurfaceWrite";
+import { CrmRecordCopyButtons } from "./CrmRecordCopyButtons";
+import {
+  buildIdentityCopyView,
+  formatIdentityCopy,
+  identityAgentPayload,
+  type CrmRecordCopyParent,
+} from "./record-copy";
 import { SectionCard } from "./SectionCard";
 
 interface Props {
@@ -329,8 +336,45 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
     },
   });
 
+  const copyParent: CrmRecordCopyParent = {
+    type: "party",
+    id: party.id,
+    label: party.display_name,
+  };
+  const identityCopyView = buildIdentityCopyView({
+    party,
+    lifecycleStage:
+      lifecycleStages.find(
+        (category) => category.id === party.lifecycle_stage_id,
+      ) ?? null,
+    rating: ratings.find((category) => category.id === party.rating_id) ?? null,
+    roles: roleCategories
+      .filter((category) =>
+        edges.some(
+          (edge) =>
+            edge.direction === "outgoing" &&
+            edge.otherType === "category" &&
+            edge.role === "member" &&
+            edge.otherId === category.id,
+        ),
+      )
+      .map((category) => ({ id: category.id, name: category.name })),
+  });
+
   return (
-    <SectionCard title="Identity" Icon={IdCard}>
+    <SectionCard
+      title="Identity"
+      Icon={IdCard}
+      compactAction
+      action={
+        <CrmRecordCopyButtons
+          label={`${party.display_name} identity`}
+          human={() => formatIdentityCopy(identityCopyView)}
+          agent={() => identityAgentPayload(copyParent, identityCopyView)}
+          json={() => identityCopyView}
+        />
+      }
+    >
       <div className="space-y-0">
         {fields.map((spec) => (
           <InlineField

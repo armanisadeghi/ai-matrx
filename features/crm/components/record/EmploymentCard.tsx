@@ -34,18 +34,21 @@ import type {
   PartyRef,
 } from "../../types";
 import { SectionCard, SectionEmpty } from "./SectionCard";
-
-function stintDates(startDate: string | null, endDate: string | null): string {
-  const start = startDate ? startDate.slice(0, 7) : "?";
-  const end = endDate ? endDate.slice(0, 7) : "now";
-  return `${start} → ${end}`;
-}
+import { CrmRecordCopyButtons } from "./CrmRecordCopyButtons";
+import {
+  buildEmploymentCopyViews,
+  employmentAgentPayload,
+  formatEmploymentCopy,
+  stintDates,
+  type CrmRecordCopyParent,
+} from "./record-copy";
 
 // ── Person side ─────────────────────────────────────────────────────────────
 
 interface PersonProps {
   mode: "person";
   partyId: string;
+  partyLabel: string;
   orgId: string;
   affiliations: AffiliationWithEmployer[];
   onChanged: () => Promise<void>;
@@ -56,6 +59,7 @@ interface PersonProps {
 interface CompanyProps {
   mode: "company";
   partyId: string;
+  partyLabel: string;
   orgId: string;
   members: AffiliationWithPerson[];
   onChanged: () => Promise<void>;
@@ -160,6 +164,16 @@ export function EmploymentCard(props: Props) {
 
   const isPerson = props.mode === "person";
   const rows = isPerson ? props.affiliations : props.members;
+  const copyParent: CrmRecordCopyParent = {
+    type: "party",
+    id: props.partyId,
+    label: props.partyLabel,
+  };
+  const employmentCopyViews = buildEmploymentCopyViews(
+    isPerson
+      ? { mode: "person", rows: props.affiliations }
+      : { mode: "company", rows: props.members },
+  );
 
   const submit = async () => {
     if (!isPerson) return;
@@ -263,21 +277,44 @@ export function EmploymentCard(props: Props) {
       title={isPerson ? "Employment" : "People"}
       Icon={isPerson ? Briefcase : Users}
       count={rows.length}
+      compactAction
       action={
-        isPerson ? (
-          <button
-            type="button"
-            onClick={() => setAdding((v) => !v)}
-            aria-label={adding ? "Cancel add" : "Add employment"}
-            className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
-          >
-            {adding ? (
-              <X className="h-3.5 w-3.5" />
-            ) : (
-              <Plus className="h-3.5 w-3.5" />
-            )}
-          </button>
-        ) : undefined
+        <div className="flex items-center gap-0.5">
+          {rows.length > 0 && (
+            <CrmRecordCopyButtons
+              label={`${props.partyLabel} ${isPerson ? "employment" : "people"}`}
+              human={() =>
+                formatEmploymentCopy(
+                  copyParent,
+                  props.mode,
+                  employmentCopyViews,
+                )
+              }
+              agent={() =>
+                employmentAgentPayload(
+                  copyParent,
+                  props.mode,
+                  employmentCopyViews,
+                )
+              }
+              json={() => employmentCopyViews}
+            />
+          )}
+          {isPerson && (
+            <button
+              type="button"
+              onClick={() => setAdding((v) => !v)}
+              aria-label={adding ? "Cancel add" : "Add employment"}
+              className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
+            >
+              {adding ? (
+                <X className="h-3.5 w-3.5" />
+              ) : (
+                <Plus className="h-3.5 w-3.5" />
+              )}
+            </button>
+          )}
+        </div>
       }
     >
       {isPerson && adding && (

@@ -21,6 +21,15 @@ import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { formatRelativeTime } from "@/utils/datetime";
 import { SectionCard, SectionEmpty } from "./SectionCard";
+import { CrmRecordCopyButtons } from "./CrmRecordCopyButtons";
+import {
+  buildNoteCopyView,
+  formatNoteCopy,
+  formatNotesCopy,
+  noteAgentPayload,
+  notesAgentPayload,
+  type CrmRecordCopyParent,
+} from "./record-copy";
 
 interface Props {
   /** The record the notes hang on (a party by default; a deal via entityType). */
@@ -35,6 +44,8 @@ interface Props {
   getApplicationScope?: () => ApplicationScope;
   writeSurfaceName?: string;
   onNotesStateChange?: (comments: Comment[], error: string | null) => void;
+  /** Enables party-record copy context; deal reuse deliberately omits it. */
+  copyParent?: CrmRecordCopyParent;
 }
 
 export function PartyNotes({
@@ -44,6 +55,7 @@ export function PartyNotes({
   getApplicationScope,
   writeSurfaceName,
   onNotesStateChange,
+  copyParent,
 }: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
   // A failed load is NOT an empty list. Rendering "No notes yet" over a failure
@@ -91,6 +103,8 @@ export function PartyNotes({
   const anyExpanded = comments.some((comment) =>
     expandedComments.has(comment.id),
   );
+  const displayedComments = [...comments].reverse();
+  const noteCopyViews = displayedComments.map(buildNoteCopyView);
 
   const setCommentExpanded = (id: string, expanded: boolean) => {
     setExpandedComments((current) => {
@@ -169,16 +183,38 @@ export function PartyNotes({
       // No count while the load is failing — an authoritative "0" is the same
       // lie as "No notes yet".
       count={loadError ? undefined : comments.length}
+      compactAction
       action={
-        <CollapsibleTextGroupControls
-          allExpanded={allExpanded}
-          anyExpanded={anyExpanded}
-          disabled={comments.length === 0}
-          onExpandAll={() =>
-            setExpandedComments(new Set(comments.map((comment) => comment.id)))
-          }
-          onCollapseAll={() => setExpandedComments(new Set())}
-        />
+        <div className="flex items-center gap-0.5">
+          {copyParent && comments.length > 0 && (
+            <CrmRecordCopyButtons
+              label={`${copyParent.label} notes`}
+              human={() => formatNotesCopy(copyParent, noteCopyViews)}
+              agent={() => notesAgentPayload(copyParent, noteCopyViews)}
+              json={() => noteCopyViews}
+              aiVariants={[
+                {
+                  id: "notes-overview",
+                  label: "Notes overview",
+                  hint: "Authors and dates without note bodies",
+                  build: () =>
+                    notesAgentPayload(copyParent, noteCopyViews, false),
+                },
+              ]}
+            />
+          )}
+          <CollapsibleTextGroupControls
+            allExpanded={allExpanded}
+            anyExpanded={anyExpanded}
+            disabled={comments.length === 0}
+            onExpandAll={() =>
+              setExpandedComments(
+                new Set(comments.map((comment) => comment.id)),
+              )
+            }
+            onCollapseAll={() => setExpandedComments(new Set())}
+          />
+        </div>
       }
     >
       <ProTextarea
@@ -218,42 +254,58 @@ export function PartyNotes({
         <SectionEmpty>No notes yet</SectionEmpty>
       ) : (
         <ul className="space-y-1">
-          {[...comments].reverse().map((comment) => (
-            <li
-              key={comment.id}
-              className="group rounded border border-border bg-muted/20 px-2 py-1.5"
-            >
-              <div className="flex items-baseline gap-2">
-                <span className="text-[11px] font-medium text-foreground">
-                  {comment.author.displayName ??
-                    comment.author.email ??
-                    "Unknown"}
-                </span>
-                <span className="text-[11px] tabular-nums text-muted-foreground">
-                  {formatRelativeTime(comment.createdAt)}
-                </span>
-                <button
-                  type="button"
-                  aria-label="Delete note"
-                  onClick={() => void remove(comment)}
-                  className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-              <CollapsibleText
-                expanded={expandedComments.has(comment.id)}
-                onExpandedChange={(expanded) =>
-                  setCommentExpanded(comment.id, expanded)
-                }
-                className="mt-0.5 text-sm leading-relaxed text-foreground"
-                expandLabel="Expand note"
-                collapseLabel="Collapse note"
+          {displayedComments.map((comment) => {
+            const copyView = buildNoteCopyView(comment);
+            return (
+              <li
+                key={comment.id}
+                className="group group/item rounded border border-border bg-muted/20 px-2 py-1.5"
               >
-                {comment.body}
-              </CollapsibleText>
-            </li>
-          ))}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[11px] font-medium text-foreground">
+                    {comment.author.displayName ??
+                      comment.author.email ??
+                      "Unknown"}
+                  </span>
+                  <span className="text-[11px] tabular-nums text-muted-foreground">
+                    {formatRelativeTime(comment.createdAt)}
+                  </span>
+                  <span className="ml-auto flex shrink-0 items-center gap-0.5">
+                    {copyParent && (
+                      <CrmRecordCopyButtons
+                        revealFrom="item"
+                        label={`Note by ${copyView.author}`}
+                        human={() => formatNoteCopy(copyView)}
+                        agent={() =>
+                          noteAgentPayload(copyParent, comment, copyView)
+                        }
+                        json={() => copyView}
+                      />
+                    )}
+                    <button
+                      type="button"
+                      aria-label="Delete note"
+                      onClick={() => void remove(comment)}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  </span>
+                </div>
+                <CollapsibleText
+                  expanded={expandedComments.has(comment.id)}
+                  onExpandedChange={(expanded) =>
+                    setCommentExpanded(comment.id, expanded)
+                  }
+                  className="mt-0.5 text-sm leading-relaxed text-foreground"
+                  expandLabel="Expand note"
+                  collapseLabel="Collapse note"
+                >
+                  {comment.body}
+                </CollapsibleText>
+              </li>
+            );
+          })}
         </ul>
       )}
     </SectionCard>

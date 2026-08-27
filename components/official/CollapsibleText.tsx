@@ -13,6 +13,11 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, ChevronsDown, ChevronsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface CollapsibleTextProps {
@@ -138,28 +143,38 @@ export function CollapsibleTextGroupControls({
 }: CollapsibleTextGroupControlsProps) {
   return (
     <div className="flex items-center gap-0.5">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={onExpandAll}
-        disabled={disabled || allExpanded}
-        className="h-11 gap-1 px-1.5 text-[11px] sm:h-7"
-      >
-        <ChevronsDown className="h-3.5 w-3.5" />
-        Expand all
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={onCollapseAll}
-        disabled={disabled || !anyExpanded}
-        className="h-11 gap-1 px-1.5 text-[11px] sm:h-7"
-      >
-        <ChevronsUp className="h-3.5 w-3.5" />
-        Collapse all
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Expand all"
+            onClick={onExpandAll}
+            disabled={disabled || allExpanded}
+            className="h-11 w-11 sm:h-7 sm:w-7"
+          >
+            <ChevronsDown className="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">Expand all</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Collapse all"
+            onClick={onCollapseAll}
+            disabled={disabled || !anyExpanded}
+            className="h-11 w-11 sm:h-7 sm:w-7"
+          >
+            <ChevronsUp className="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">Collapse all</TooltipContent>
+      </Tooltip>
     </div>
   );
 }

@@ -22,27 +22,30 @@ import { parseAddress } from "../../agent-context/crmRecordSurfaceWrite";
 import type { AddressPurpose, AddressRow } from "../../types";
 import { ADDRESS_PURPOSES } from "../../types";
 import { SectionCard, SectionEmpty } from "./SectionCard";
+import { CrmRecordCopyButtons } from "./CrmRecordCopyButtons";
+import {
+  addressesAgentPayload,
+  buildAddressCopyView,
+  formatAddress,
+  formatAddressesCopy,
+  type CrmRecordCopyParent,
+} from "./record-copy";
 
 interface Props {
   partyId: string;
+  partyLabel: string;
   orgId: string;
   addresses: AddressRow[];
   onChanged: () => Promise<void>;
 }
 
-function formatAddress(a: AddressRow): string {
-  return [
-    a.line1,
-    a.line2,
-    [a.locality, a.region].filter(Boolean).join(", "),
-    a.postal_code,
-    a.country_code,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-}
-
-export function AddressesCard({ partyId, orgId, addresses, onChanged }: Props) {
+export function AddressesCard({
+  partyId,
+  partyLabel,
+  orgId,
+  addresses,
+  onChanged,
+}: Props) {
   const [adding, setAdding] = useState(false);
   const [purpose, setPurpose] = useState<AddressPurpose>("office");
   const [line1, setLine1] = useState("");
@@ -51,6 +54,12 @@ export function AddressesCard({ partyId, orgId, addresses, onChanged }: Props) {
   const [postal, setPostal] = useState("");
   const [country, setCountry] = useState("");
   const [saving, setSaving] = useState(false);
+  const copyParent: CrmRecordCopyParent = {
+    type: "party",
+    id: partyId,
+    label: partyLabel,
+  };
+  const addressCopyViews = addresses.map(buildAddressCopyView);
 
   const submit = async () => {
     if (!line1.trim() && !locality.trim()) {
@@ -124,19 +133,30 @@ export function AddressesCard({ partyId, orgId, addresses, onChanged }: Props) {
       title="Addresses"
       Icon={MapPin}
       count={addresses.length}
+      compactAction
       action={
-        <button
-          type="button"
-          onClick={() => setAdding((v) => !v)}
-          aria-label={adding ? "Cancel add" : "Add address"}
-          className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
-        >
-          {adding ? (
-            <X className="h-3.5 w-3.5" />
-          ) : (
-            <Plus className="h-3.5 w-3.5" />
+        <div className="flex items-center gap-0.5">
+          {addresses.length > 0 && (
+            <CrmRecordCopyButtons
+              label={`${partyLabel} addresses`}
+              human={() => formatAddressesCopy(copyParent, addressCopyViews)}
+              agent={() => addressesAgentPayload(copyParent, addressCopyViews)}
+              json={() => addressCopyViews}
+            />
           )}
-        </button>
+          <button
+            type="button"
+            onClick={() => setAdding((v) => !v)}
+            aria-label={adding ? "Cancel add" : "Add address"}
+            className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
+          >
+            {adding ? (
+              <X className="h-3.5 w-3.5" />
+            ) : (
+              <Plus className="h-3.5 w-3.5" />
+            )}
+          </button>
+        </div>
       }
     >
       {adding && (
