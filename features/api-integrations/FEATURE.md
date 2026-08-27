@@ -48,6 +48,11 @@ review dossier, or approval monitor.
 
 - MCP tools integrate through the **durable delegated tool path** — never a parallel execution path ([`/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md`]/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/RESUME-AND-RECOVERY.md)).
 - OAuth tokens stay server-side; the client never sees raw credentials.
+- Per-user MCP endpoint overrides travel through the OAuth session into the
+  non-secret connection row and are honored by both direct discovery and the
+  matrx-ai execution seam. Browser-supplied OAuth overrides must keep the
+  catalog endpoint's exact HTTPS origin and path; aidream rejects private or
+  non-HTTPS targets again before persistence and invocation.
 - **DCR credentials are attempt-scoped.** Never cache a returned client ID without its
   matching secret; a downstream failure must not poison the next authorization attempt.
 - **OAuth callback state is fail-closed.** The external provider must return the exact,
@@ -94,6 +99,8 @@ OAuth popups share `utils/oauth-popup.ts`; the MCP adapter remains
 listener cleanup, popup-blocker errors, and cancellation settlement.
 
 ## Change log
+
+- `2026-08-26` — Completed scoped Supabase MCP OAuth: one non-production project reference, read-only mode, limited Docs/Database/Debugging tools, end-to-end endpoint persistence, runtime routing, and SSRF validation.
 
 - `2026-08-18` — made OAuth token persistence survive transient aidream deploy/restart windows.
 - `2026-08-18` — extracted the provider-neutral OAuth popup primitive for MCP and GitHub connection flows.

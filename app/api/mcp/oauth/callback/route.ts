@@ -16,6 +16,7 @@ interface OAuthSession {
   tokenEndpoint: string;
   redirectUri: string;
   returnUrl: string;
+  endpointOverride: string | null;
   state: string;
 }
 
@@ -183,6 +184,7 @@ export async function GET(req: NextRequest) {
           client_id: session.clientId,
           client_secret: session.clientSecret ?? undefined,
           transport: "http",
+          endpoint_override: session.endpointOverride ?? undefined,
         }),
         signal: AbortSignal.timeout(15_000),
       },

@@ -10,6 +10,7 @@ import {
   generateCodeChallenge,
   generateState,
 } from "@/features/agents/services/mcp-oauth/pkce";
+import { validateSupabaseScopedMcpEndpointOverride } from "@/features/agents/services/mcp-oauth/endpoint";
 
 const CALLBACK_PATH = "/api/mcp/oauth/callback";
 const CLIENT_METADATA_PATH = "/api/mcp/oauth/client-metadata";
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const serverId = searchParams.get("server_id");
   const returnUrl = searchParams.get("return_url");
+  const requestedEndpointOverride = searchParams.get("endpoint_override");
 
   if (!serverId) {
     return errorRedirect(req, returnUrl, "server_id is required");
@@ -62,6 +64,33 @@ export async function GET(req: NextRequest) {
   const redirectUri = `${baseUrl}${CALLBACK_PATH}`;
   const clientMetadataUrl = `${baseUrl}${CLIENT_METADATA_PATH}`;
 
+  let endpointOverride: string | null = null;
+  if (requestedEndpointOverride) {
+    if (server.slug !== "supabase") {
+      return errorRedirect(
+        req,
+        returnUrl,
+        `${server.name} does not support endpoint overrides`,
+      );
+    }
+    if (!server.endpoint_url) {
+      return errorRedirect(req, returnUrl, `${server.name} has no catalog endpoint`);
+    }
+    try {
+      endpointOverride = validateSupabaseScopedMcpEndpointOverride(
+        server.endpoint_url,
+        requestedEndpointOverride,
+      );
+    } catch (error) {
+      return errorRedirect(
+        req,
+        returnUrl,
+        error instanceof Error ? error.message : "Invalid MCP endpoint override",
+      );
+    }
+  }
+  const discoveryEndpoint = endpointOverride ?? server.endpoint_url;
+
   // Static auth endpoints stored in metadata (used as primary or fallback for
   // servers like Canva that use traditional OAuth without MCP discovery).
   const staticMeta = (server.metadata ?? {}) as Record<string, string>;
@@ -89,12 +118,12 @@ export async function GET(req: NextRequest) {
         authorization_endpoint: staticAuthEndpoint,
         token_endpoint: staticTokenEndpoint,
       };
-    } else if (server.endpoint_url) {
+    } else if (discoveryEndpoint) {
       console.log(
-        `[MCP OAuth] Starting discovery for ${server.slug} at ${server.endpoint_url}`,
+        `[MCP OAuth] Starting discovery for ${server.slug} at ${discoveryEndpoint}`,
       );
       try {
-        const result = await discoverOAuthEndpoints(server.endpoint_url);
+        const result = await discoverOAuthEndpoints(discoveryEndpoint);
         authServer = result.authServer;
         protectedResource = result.protectedResource;
       } catch (discoverErr) {
@@ -205,6 +234,7 @@ export async function GET(req: NextRequest) {
       tokenEndpoint: authServer.token_endpoint,
       redirectUri,
       returnUrl: returnUrl ?? "/",
+      endpointOverride,
       state,
     });
 

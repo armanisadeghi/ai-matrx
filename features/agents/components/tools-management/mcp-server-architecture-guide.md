@@ -437,9 +437,9 @@ Servers where you bring your own token — no OAuth discovery.
 ```json
 {
   "mcpServers": {
-    "supabase-prod": {
+    "supabase-readonly": {
       "transport": "http",
-      "url": "https://mcp.supabase.com/mcp?project_ref=txzxabzwovsujtloxrus",
+      "url": "https://mcp.supabase.com/mcp?project_ref=<NON_PRODUCTION_PROJECT_REF>&read_only=true&features=docs,database,debugging",
       "headers": {
         "Authorization": "Bearer ${SUPABASE_ACCESS_TOKEN}"
       },

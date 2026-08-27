@@ -14,6 +14,9 @@ export function mcpConnectionRouteFor(
   entry: Pick<McpCatalogEntry, "slug" | "authStrategy">,
 ): McpConnectionRoute {
   if (entry.slug === "github") return "github";
+  // Supabase must be configured with one project reference before OAuth so
+  // the saved connection is read-only and cannot drift across projects.
+  if (entry.slug === "supabase") return "configure";
   if (entry.authStrategy === "oauth_discovery") return "oauth";
   if (entry.authStrategy === "none") return "none";
   return "configure";

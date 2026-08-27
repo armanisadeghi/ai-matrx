@@ -14,6 +14,7 @@ import {
 } from "@/features/agents/redux/mcp/mcp.slice";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
+import { buildSupabaseScopedMcpEndpoint } from "@/features/agents/services/mcp-oauth/endpoint";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
@@ -223,12 +224,16 @@ export default function IntegrationsPage() {
   // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleOAuthConnect = useCallback(
-    async (entry: McpCatalogEntry) => {
+    async (entry: McpCatalogEntry, endpointOverride?: string) => {
       if (entry.slug === "github") {
         window.location.assign(githubConnectUrl(window.location.pathname));
         return;
       }
-      const outcome = await startMcpOAuthPopup(entry.serverId);
+      const outcome = await startMcpOAuthPopup(
+        entry.serverId,
+        undefined,
+        endpointOverride,
+      );
       if (outcome.ok) {
         dispatch(fetchCatalog());
         toast.success(`Connected to ${entry.name}`);
@@ -489,7 +494,9 @@ export default function IntegrationsPage() {
                   )
                 }
                 isConnecting={connectingId === entry.serverId}
-                onOAuthConnect={() => handleOAuthConnect(entry)}
+                onOAuthConnect={(endpointOverride) =>
+                  handleOAuthConnect(entry, endpointOverride)
+                }
                 onBearerConnect={(token) =>
                   handleBearerConnect(entry.serverId, token)
                 }
@@ -511,7 +518,7 @@ interface ServerCardProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   isConnecting: boolean;
-  onOAuthConnect: () => void;
+  onOAuthConnect: (endpointOverride?: string) => void;
   onBearerConnect: (token: string) => void;
   onNoAuthConnect: () => void;
   onDisconnect: () => void;
@@ -550,6 +557,26 @@ function ServerCard({
   const [showTokenForm, setShowTokenForm] = useState(false);
   const [token, setToken] = useState("");
   const [showToken, setShowToken] = useState(false);
+  const [supabaseProjectRef, setSupabaseProjectRef] = useState("");
+  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+
+  const isSupabase = entry.slug === "supabase";
+
+  const handleSupabaseOAuth = () => {
+    if (!entry.endpointUrl) return;
+    try {
+      const endpoint = buildSupabaseScopedMcpEndpoint(
+        entry.endpointUrl,
+        supabaseProjectRef,
+      );
+      setSupabaseError(null);
+      onOAuthConnect(endpoint);
+    } catch (error) {
+      setSupabaseError(
+        error instanceof Error ? error.message : "Invalid project reference",
+      );
+    }
+  };
 
   const handleTokenSubmit = () => {
     if (!token.trim()) return;
@@ -713,11 +740,11 @@ function ServerCard({
             >
               Disconnect
             </Button>
-          ) : canConnect && needsOAuth ? (
+          ) : canConnect && needsOAuth && !isSupabase ? (
             <Button
               size="sm"
               className="h-7 text-xs flex-1"
-              onClick={onOAuthConnect}
+              onClick={() => onOAuthConnect()}
               disabled={isConnecting}
             >
               {isConnecting ? (
@@ -726,6 +753,20 @@ function ServerCard({
                 <Lock className="h-3 w-3 mr-1" />
               )}
               Connect with OAuth
+            </Button>
+          ) : canConnect && needsOAuth && isSupabase ? (
+            <Button
+              size="sm"
+              className="h-7 text-xs flex-1"
+              onClick={handleSupabaseOAuth}
+              disabled={isConnecting || !supabaseProjectRef.trim()}
+            >
+              {isConnecting ? (
+                <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              ) : (
+                <Lock className="h-3 w-3 mr-1" />
+              )}
+              Connect read-only project
             </Button>
           ) : canConnect && needsToken ? (
             <Button
@@ -794,6 +835,41 @@ function ServerCard({
             )}
           </Button>
         </div>
+
+        {isSupabase && !isConnected && canConnect && (
+          <div className="mt-3 pt-3 border-t border-border space-y-2">
+            <label className="block text-xs font-medium text-foreground">
+              Supabase project reference
+            </label>
+            <Input
+              value={supabaseProjectRef}
+              onChange={(event) => {
+                setSupabaseProjectRef(event.target.value);
+                setSupabaseError(null);
+              }}
+              placeholder="20-character project ref"
+              className="h-8 text-xs font-mono"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && supabaseProjectRef.trim()) {
+                  handleSupabaseOAuth();
+                }
+              }}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Locked to this project with read-only Docs, Database, and
+              Debugging tools. AI Matrx cannot create, update, or delete data
+              through this connection.
+            </p>
+            {supabaseError && (
+              <p className="text-[11px] text-destructive" role="alert">
+                {supabaseError}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Inline token form */}
         {showTokenForm && !isConnected && (

@@ -38,4 +38,13 @@ describe("mcpConnectionRouteFor", () => {
       }),
     ).toBe("github");
   });
+
+  it("requires scoped Supabase configuration before OAuth", () => {
+    expect(
+      mcpConnectionRouteFor({
+        slug: "supabase",
+        authStrategy: "oauth_discovery",
+      }),
+    ).toBe("configure");
+  });
 });

@@ -39,13 +39,14 @@ const POPUP_TARGET = "mcp_oauth";
 export function startMcpOAuthPopup(
   serverId: string,
   returnUrl?: string,
+  endpointOverride?: string,
 ): Promise<McpOAuthOutcome> {
   const target =
     returnUrl ??
     (typeof window === "undefined" ? "/" : window.location.pathname);
-  const url = `/api/mcp/oauth/start?server_id=${encodeURIComponent(
-    serverId,
-  )}&return_url=${encodeURIComponent(target)}`;
+  const params = new URLSearchParams({ server_id: serverId, return_url: target });
+  if (endpointOverride) params.set("endpoint_override", endpointOverride);
+  const url = `/api/mcp/oauth/start?${params.toString()}`;
 
   return startOAuthPopup({
     url,

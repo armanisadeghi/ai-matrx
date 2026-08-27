@@ -156,7 +156,9 @@ function McpDetail({
       return;
     }
     if (route === "configure") {
-      window.location.assign("/settings/integrations");
+      window.location.assign(
+        `/user-settings/integrations?provider=${encodeURIComponent(entry.slug)}`,
+      );
       return;
     }
 

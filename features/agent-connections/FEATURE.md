@@ -139,6 +139,7 @@ Fidelity is a verdict, never an inference: `event_mirror` says native resume is 
 - **Sidebar is bi-modal; `basePath` for every new surface.** `OverviewSection` needs `AgentConnectionsNavProvider`.
 - **Connection auth stays server-side.** No credentials/tokens in client state; `features/agents/services/mcp-oauth/` owns the OAuth dance; external-integration credential UI belongs to `features/api-integrations/`.
 - **Connection status must prove the auth strategy.** `oauth_discovery` always runs `startMcpOAuthPopup`; only `none` may call the metadata-only connection RPC. Bearer, API-key, and env strategies route to the full integrations credential editor. Never create a green connection row without its required credential.
+- **Supabase OAuth is configured before it opens.** Every non-settings MCP surface routes Supabase to `/user-settings/integrations`, where the user supplies one project reference. The OAuth attempt persists an exact HTTPS endpoint override with `read_only=true` and only `docs,database,debugging`; the frontend refuses a different host/path and the server revalidates the target before storage and use.
 - **Skill/category/resource code does not come back here** — `features/skills/` owns all three now.
 - **Cookie name is versioned** (`panels:agent-connections:v1`).
 - **No permission gating in this feature** — scope filtering is a view filter (RLS is the ceiling); nothing here enforces admin tiers.

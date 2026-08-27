@@ -91,6 +91,7 @@ import type {
 } from "@/features/agents/types/mcp.types";
 import { MCP_CATEGORY_META } from "@/features/agents/types/mcp.types";
 import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
+import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
 import { fetchMcpServerConfigs } from "@/features/agents/services/mcp.service";
 import { headerFieldKey } from "@/features/agents/services/mcp-connections.service";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
@@ -2509,6 +2510,12 @@ function McpToolsTab({
             return;
           }
           if (entry.authStrategy === "oauth_discovery") {
+            if (mcpConnectionRouteFor(entry) === "configure") {
+              window.location.assign(
+                `/user-settings/integrations?provider=${encodeURIComponent(entry.slug)}`,
+              );
+              return;
+            }
             void connectViaOAuth(entry.serverId);
             return;
           }
@@ -2632,6 +2639,12 @@ function McpToolsTab({
             onRemove={() => removeFromAgent(entry.serverId)}
             onConnect={(entry) => {
               if (entry.authStrategy === "oauth_discovery") {
+                if (mcpConnectionRouteFor(entry) === "configure") {
+                  window.location.assign(
+                    `/user-settings/integrations?provider=${encodeURIComponent(entry.slug)}`,
+                  );
+                  return;
+                }
                 void connectViaOAuth(entry.serverId);
               }
             }}

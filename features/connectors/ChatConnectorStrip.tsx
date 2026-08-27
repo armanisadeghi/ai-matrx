@@ -23,6 +23,7 @@ import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleCo
 import { useMcpCatalog } from "@/features/agents/hooks/useMcpTools";
 import { fetchCatalog } from "@/features/agents/redux/mcp/mcp.slice";
 import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
+import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
 import { toast } from "@/lib/toast";
 import { ConnectorStrip } from "./ConnectorStrip";
 import { googleConnectedIds } from "./google-status";
@@ -58,6 +59,12 @@ export function ChatConnectorStrip({ className }: ChatConnectorStripProps) {
     }
 
     const server = mcp.catalog.find((entry) => entry.slug === id);
+    if (server && mcpConnectionRouteFor(server) === "configure") {
+      window.location.assign(
+        `/user-settings/integrations?provider=${encodeURIComponent(server.slug)}`,
+      );
+      return;
+    }
     const connectable =
       server &&
       (server.serverStatus === "active" ||
