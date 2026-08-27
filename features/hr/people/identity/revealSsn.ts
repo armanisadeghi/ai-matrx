@@ -67,11 +67,21 @@ function readErrorCode(payload: unknown): string | null {
   return null;
 }
 
+/**
+ * The `details` bag, when there is one.
+ *
+ * 🚨 IT IS NOT ALWAYS AN OBJECT. FastAPI's own request-validation errors send
+ * `details` as an ARRAY of per-field issues, while the HR service's own errors send
+ * a flat object. An array is `typeof "object"`, so this narrows deliberately and
+ * returns `{}` for the array shape rather than handing back something whose `.field`
+ * is silently `undefined`.
+ */
 function readDetails(payload: unknown): Record<string, unknown> {
   if (!payload || typeof payload !== "object") return {};
   const record = payload as Record<string, unknown>;
   const details = record.details ?? (record.detail as Record<string, unknown> | undefined)?.details;
-  return details && typeof details === "object" ? (details as Record<string, unknown>) : {};
+  if (!details || typeof details !== "object" || Array.isArray(details)) return {};
+  return details as Record<string, unknown>;
 }
 
 function readNumber(source: Record<string, unknown>, key: string): number | null {
@@ -105,8 +115,20 @@ export async function revealHrSsn(args: {
       `/api/hr/identity/${args.employeeId}/ssn/reveal`,
       {
         method: "POST",
-        // Deliberately only Content-Type. See the header: no idempotency key.
-        headers: { "Content-Type": "application/json" },
+        // Deliberately NO idempotency key — see the file header for why that is a
+        // security property here and not an omission.
+        // 🚨 `X-Organization-Id` IS REQUIRED BY THE ROUTER, NOT OPTIONAL POLITENESS.
+        // `aidream/api/routers/hr_employees.py` mounts the whole router with
+        // `dependencies=[Depends(require_authenticated), Depends(require_organization_context)]`,
+        // so every HR endpoint on it 422s without this header — before any of the body's
+        // own validation runs, which is why omitting it surfaced as a generic
+        // "validation_error" saying nothing about the request itself.
+        // The body ALSO carries `organization_id`, and that is not duplication: the
+        // service compares the two and answers 409 on a disagreement (§1.2).
+        headers: {
+          "Content-Type": "application/json",
+          "X-Organization-Id": args.organizationId,
+        },
         body: JSON.stringify({
           organization_id: args.organizationId,
           purpose: args.purpose,

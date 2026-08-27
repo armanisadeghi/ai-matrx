@@ -150,7 +150,18 @@ export async function generateHrVerificationLetter(args: {
       `/api/hr/verification-letters/${args.letterId}/generate`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        // 🚨 `X-Organization-Id` IS REQUIRED BY THE ROUTER, NOT OPTIONAL POLITENESS.
+        // `aidream/api/routers/hr_employees.py` mounts the whole router with
+        // `dependencies=[Depends(require_authenticated), Depends(require_organization_context)]`,
+        // so every HR endpoint on it 422s without this header, before any of the body's
+        // own validation runs. This call had the same omission as the SSN reveal and was
+        // found by the same live test — it had never been exercised against the server.
+        // The body ALSO carries `organization_id`, and that is not duplication: the
+        // service compares the two and answers 409 on a disagreement (§1.2).
+        headers: {
+          "Content-Type": "application/json",
+          "X-Organization-Id": args.organizationId,
+        },
         body: JSON.stringify({
           organization_id: args.organizationId,
           includes_compensation: args.includesCompensation,
