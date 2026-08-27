@@ -455,6 +455,21 @@ async def main():
         rec("§10 test 4", "and the instance state says failed, visibly",
             await conn.fetchval("select state='failed' from hr.workflow_instance where id=$1",
                                 r5.get("instance_id")))
+        # 🚨 AND THE QUEUE CANNOT BE CLEANED BY SWEEPING THE EVIDENCE UP. `resolve` IS on this
+        # class's menu, but its step is still `unroutable` — marking the row resolved would close
+        # the only thing surfacing a dead step. Measured live on 2026-08-27: that is exactly how a
+        # real timecard was lost after an escalation killed its step.
+        f5_id = await conn.fetchval(
+            "select id from hr.workflow_failure where workflow_instance_id=$1 and state='open' limit 1",
+            r5.get("instance_id"))
+        await as_user(people["carol"]["uid"])
+        f5_hide = await j("select hr.wf_resolve_failure($1,'resolve','tidy it away')", f5_id)
+        await as_owner()
+        rec("§1.8 failure", "🚨 `resolve` is REFUSED while the step is still unroutable — a dead step may not be tidied away",
+            f5_hide.get("granted") is False
+            and f5_hide.get("reason") == "WF_STEP_STILL_UNROUTABLE"
+            and "resolve" not in json.dumps(f5_hide.get("available_actions")),
+            json.dumps(f5_hide)[:220])
 
         # restore the chart for the remaining proofs
         await conn.execute("update hr.approval_authority set is_active=true where organization_id=$1", org)
@@ -1078,19 +1093,15 @@ async def main():
             await conn.fetchval(
                 "select state='active' and resolved_approver_ids=array[$2]::uuid[] "
                 "from hr.workflow_step where id=$1", nr_step["id"], noreach))
-        # 🚨 `resolve` MUST NOT be a way to make a dead step disappear. Park the step unroutable —
-        # the state a refused escalation used to leave behind — and the door must refuse to tidy
-        # the failure away, because that would close the only thing surfacing the problem.
-        await conn.execute("update hr.workflow_step set state='unroutable' where id=$1", nr_step["id"])
+        # `resolve` is not even on this class's menu — an unreachable step is not something you
+        # declare fixed. The vocabulary refuses it before any step state is consulted.
         await as_user(people["carol"]["uid"])
         nr_hide = await j("select hr.wf_resolve_failure($1,'resolve','tidy it away')", nr_fail)
-        rec("§8.2 node G", "🚨 `resolve` is REFUSED while the step is unroutable — a queue is not cleaned by sweeping the evidence up",
+        rec("§8.2 node G", "🚨 `resolve` is not offered for an unreachable step at all — you cannot declare it fixed",
             nr_hide.get("granted") is False
-            and nr_hide.get("reason") == "WF_STEP_STILL_UNROUTABLE"
+            and nr_hide.get("reason") == "unknown_action"
             and "resolve" not in json.dumps(nr_hide.get("available_actions")),
-            json.dumps(nr_hide)[:200])
-        await as_owner()
-        await conn.execute("update hr.workflow_step set state='active' where id=$1", nr_step["id"])
+            json.dumps(nr_hide.get("available_actions")))
 
         # the terminal path, through the product door
         await as_user(people["carol"]["uid"])
