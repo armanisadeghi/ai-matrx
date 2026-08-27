@@ -42550,6 +42550,14 @@ export type Database = {
         Args: { p_default?: Json; p_key: string; p_organization_id?: string }
         Returns: Json
       }
+      _day_time_facts: {
+        Args: {
+          p_employment_id: string
+          p_local_work_date: string
+          p_pay_period_id: string
+        }
+        Returns: Json
+      }
       _desired_grants_for_employment: {
         Args: { p_at?: string; p_employment_id: string }
         Returns: {
@@ -42665,6 +42673,7 @@ export type Database = {
       _interval_time_facts: {
         Args: {
           p_ended: string
+          p_hours: number
           p_local_work_date: string
           p_started: string
           p_tz: string
