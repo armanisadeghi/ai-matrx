@@ -469,9 +469,13 @@ begin
     raise exception 'hr_c4_20: % engine function(s) went back to the legacy write-guard arm', v_bad;
   end if;
 
+  -- 🚨 status matters as much as category: iam.canonical_certify also emits an INFO `snapshot` row
+  -- (129 of them, one per table) that is not a finding at all. Counting rows by category alone made
+  -- this gate read every healthy table as a violation.
   select count(*) into v_bad
     from platform.entity_types e, lateral iam.canonical_certify('hr', e.table_name, e.token) c
-   where e.schema_name = 'hr' and c.category <> 'broken_dependent_fn';
+   where e.schema_name = 'hr' and c.category <> 'broken_dependent_fn'
+     and c.status in ('FAIL','WARN');
   if v_bad > 0 then
     raise exception 'hr_c4_20: % hr CONFORMANCE finding(s)', v_bad;
   end if;
