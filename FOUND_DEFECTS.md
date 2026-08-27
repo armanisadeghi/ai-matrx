@@ -15,23 +15,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D275 — `hr.wf_request` leaves an orphan `validating` instance when the exclusive binding refuses (2026-08-26)
-
-`hr.wf_request` (live body, verified) inserts the `hr.workflow_instance` row FIRST, then inserts
-`hr.workflow_binding`. On the binding's `unique_violation` it returns the `WF_BINDING_OPEN` refusal
-envelope from inside that block — so the function returns *normally* and the instance INSERT is
-never rolled back. The result is a permanent `hr.workflow_instance` row in state `validating` with
-no binding, no steps and no `created` event. SPEC-WORKFLOW-ENGINE §1.3 says an instance is never
-deleted, so it cannot be cleaned up later, and it will show in the requester's own list (the
-`entity` variant's `std_select` is owner-OR-`iam.has_access`).
-
-Measured 2026-08-26 while fixing the HRB-008 proof: requesting `timecard_approval` on a
-`hr_pay_period_employment` that already had one open left exactly this row behind.
-
-Fix: check `hr.workflow_binding` for an open exclusive row on `(target_token, target_id, flow_key)`
-and return `WF_BINDING_OPEN` **before** the instance insert. Keep the `unique_violation` catch as
-the concurrent-race backstop. Do not fix it by deleting the instance — that would put a hard delete
-of an evidence-class table inside an engine RPC. Owner: C4 workflow-engine lane (HRB-008).
 ### D271 — `callHr` reads every HR WRITE refusal as a successful write (2026-08-26)
 
 `features/hr/service.ts`'s `callHr` treats a payload as a refusal only when it carries
@@ -2271,6 +2254,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D275** — `hr.wf_request` inserted the instance before the binding and returned `WF_BINDING_OPEN` from inside the catch, so every duplicate submit stranded a `validating` instance with no binding, steps or event — on a table §1.3 forbids deleting from, so it could never be cleaned up. Fixed at the source, not tidied up after: the binding is pre-checked before anything is written, AND both inserts now share ONE exception block so losing the concurrent race rolls the instance back too. `migrations/hr_c4_10_binding_refusal_leaves_no_instance.sql`; `scripts/hr/hrb008_proof.py` 91 assertions 0 RED, incl. the previously untested idempotent-replay lane the fix restructured. 2026-08-26.
 
 - **D276** — `hrb022_proof.py` asserted the C3 write-guard clobber as current behaviour after `hr_c3_11` closed it. Flipped to the shipped semantics and made two-sided: a callee leaves its caller's arm intact AND an unarmed `hr.*` write is still refused `42501` — a proof that stops watching a closed defect is how it comes back unnoticed. `scripts/hr/hrb022_proof.py`, 59 assertions 0 RED. 2026-08-26.
 
