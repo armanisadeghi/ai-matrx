@@ -43286,7 +43286,7 @@ export interface components {
              * @default general
              * @enum {string}
              */
-            connection_purpose?: "general" | "google_ads_isolated";
+            connection_purpose?: "general" | "google_ads_isolated" | "read_only_sweep";
         };
         /** GoogleExchangeResponse */
         GoogleExchangeResponse: {

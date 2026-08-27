@@ -43955,6 +43955,17 @@ export type Database = {
         Args: { p_snapshot_id: string }
         Returns: Json
       }
+      rule_vocabulary_drift: {
+        Args: never
+        Returns: {
+          allowed: string[]
+          bad_value: string
+          fact: string
+          label: string
+          row_id: string
+          source: string
+        }[]
+      }
       run_rule_fixtures: { Args: { p_codes?: string[] }; Returns: Json }
       stable_doors_that_write: {
         Args: never

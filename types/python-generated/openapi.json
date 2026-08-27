@@ -112527,7 +112527,8 @@
             "type": "string",
             "enum": [
               "general",
-              "google_ads_isolated"
+              "google_ads_isolated",
+              "read_only_sweep"
             ],
             "title": "Connection Purpose",
             "default": "general"
