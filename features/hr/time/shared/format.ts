@@ -50,6 +50,7 @@ export function zoneDiffersFromViewer(tz: string): boolean {
  */
 export function formatTimeInViewerZone(iso: string | null): string {
   if (!iso) return "—";
+  if (!isRenderableInstant(iso)) return `Unreadable timestamp (${iso})`;
   return new Intl.DateTimeFormat(undefined, {
     hour: "numeric",
     minute: "2-digit",
@@ -62,8 +63,22 @@ export function formatTimeInViewerZone(iso: string | null): string {
  * `occurred_at` and `device_reported_at` routinely differ by a few of them and that difference is
  * the whole point of the `clock_skew_applied_seconds` column beside them.
  */
+/**
+ * 🚨 AN UNPARSEABLE TIMESTAMP MUST NOT TAKE THE SURFACE DOWN.
+ *
+ * `Intl.DateTimeFormat.format(new Date("not-a-date"))` throws `RangeError: Invalid time value`. In
+ * a render path that is not an error message — it unmounts the subtree, and the reader is shown
+ * NOTHING with no console trace they would recognise. That is one of the two candidates for the
+ * "evidence drawer opens nothing" class, and it is entirely avoidable: a value we cannot read is a
+ * finding to display, never a reason to blank the panel.
+ */
+function isRenderableInstant(iso: string): boolean {
+  return !Number.isNaN(new Date(iso).getTime());
+}
+
 export function formatDateTimeInTz(iso: string | null, tz: string): string {
   if (!iso) return "—";
+  if (!isRenderableInstant(iso)) return `Unreadable timestamp (${iso})`;
   const showZone = zoneDiffersFromViewer(tz);
   return new Intl.DateTimeFormat(undefined, {
     year: "numeric",
@@ -89,6 +104,7 @@ export function formatLocalDate(
   opts: { weekday?: boolean; year?: boolean } = {},
 ): string {
   if (!date) return "—";
+  if (!isRenderableInstant(`${date}T00:00:00Z`)) return `Unreadable date (${date})`;
   return new Intl.DateTimeFormat(undefined, {
     ...(opts.weekday ? { weekday: "short" as const } : {}),
     month: "short",
@@ -100,6 +116,7 @@ export function formatLocalDate(
 
 /** Short day-column heading: `Tue 17`. */
 export function formatDayColumn(date: string): string {
+  if (!isRenderableInstant(`${date}T00:00:00Z`)) return date;
   return new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     day: "numeric",
