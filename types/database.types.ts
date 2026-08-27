@@ -42843,6 +42843,10 @@ export type Database = {
         Returns: string
       }
       _punch_state_of: { Args: { p_employment_id: string }; Returns: string }
+      _punch_unfinalize_week: {
+        Args: { p_employment_id: string; p_local_work_date: string }
+        Returns: Json
+      }
       _recompute_enqueue: {
         Args: {
           p_employment_id: string
