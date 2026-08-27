@@ -46,7 +46,7 @@ import {
   requestVoicePlayback,
   stopVoicePlayback,
 } from "@/features/transcript-studio/state/voicePlaybackBus";
-import { playPlaybackItem } from "@/features/audio/playback/playbackQueue";
+import { skipPlayback } from "@/features/audio/playback/playbackQueue";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
@@ -432,10 +432,15 @@ function ListenVoiceSettings() {
   const effectiveVoiceId = resolveVoiceId(voice, "assistant");
 
   const handlePreview = useCallback(() => {
-    // Canonical path; take over anything playing so the preview is instant
-    // (one voice at a time — same rule as every other playback start).
-    const { id } = speak({ text: PREVIEW_TEXT, label: "Voice preview" });
-    void playPlaybackItem(id);
+    // Deliberately STOP whatever is playing before enqueueing, instead of
+    // letting the new utterance take over: a takeover (or a queued-behind
+    // state) auto-opens the Media panel over this one, which reads as noise
+    // for an explicit in-panel preview. Stopped first, the preview starts
+    // instantly with no cross-path event.
+    stopVoicePlayback();
+    void skipPlayback().then(() => {
+      speak({ text: PREVIEW_TEXT, label: "Voice preview" });
+    });
   }, []);
 
   return (

@@ -39,7 +39,14 @@ export function AudioPlaybackHost() {
         }),
       );
       // Auto-open when a second utterance lines up behind the active one.
-      const hasPending = snapshot.items.some((i) => i.status === "queued");
+      // `currentId` must be set: enqueuePlayback notifies BEFORE startItem
+      // claims the first item, so a lone first utterance briefly reads as
+      // "queued" while nothing is active — that snapshot must NOT open the
+      // panel (it made every first Speak click pop the Media window over
+      // whatever the user was doing).
+      const hasPending =
+        snapshot.currentId !== null &&
+        snapshot.items.some((i) => i.status === "queued");
       if (hasPending && !hadPendingRef.current) surfacePanel();
       hadPendingRef.current = hasPending;
     });

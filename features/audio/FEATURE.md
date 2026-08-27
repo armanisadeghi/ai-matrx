@@ -231,6 +231,8 @@ Unit tests cover `sinkAwarePlayer`, `captureLock`, the speech API boundary, and 
 
 ## Change log
 
+- `2026-08-27` — **Media panel no longer auto-opens on a lone first utterance.** `AudioPlaybackHost`'s queued-behind rising edge now also requires `snapshot.currentId` to be set: `enqueuePlayback` notifies before `startItem` claims the first item, so a single first Speak briefly read as "queued" with nothing active and popped the Media window over whatever the user was doing (observed covering the Listen panel). A second utterance genuinely lining up behind an active one still opens the panel; cross-path takeovers unchanged.
+
 - `2026-08-21` — Transcription failures write to the canonical `ops.system_error` table after the observability-schema cutover.
 
 - `2026-08-18` — Final fallback transcription failures remain user-visible while their derived voice-input toast no longer duplicates the canonical `audio_transcription` queue row.
