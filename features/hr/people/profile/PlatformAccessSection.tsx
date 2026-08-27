@@ -97,7 +97,11 @@ export function PlatformAccessSection({
       // The server's own sentence. Never rewritten into something friendlier —
       // "this person already has a login" and "there is no address to send to"
       // are different problems with different fixes.
-      toast.error(result.error.message);
+      toast.error(
+        result.kind === "denied"
+          ? (result.detail ?? result.reason)
+          : result.message,
+      );
       return;
     }
     setIssued(result.data);
