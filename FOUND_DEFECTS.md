@@ -141,6 +141,21 @@ server-side path that belongs elsewhere or a real leak. Verify with
 **Note:** this is a **projection convention, not a security boundary** (SPEC-ACCESS §4.6). The
 boundary is RLS and column grants; nothing here is an exposure on its own.
 
+**Second gap, found 2026-08-26 (separate from the schema allowlist): the stripper never touches
+`Functions:`, so a `SECURITY DEFINER` RPC re-emits excluded columns even in a frozen schema.**
+`strip()` only walks `Tables` and `Views` by design. Live instance in the fully-stripped `hr`
+schema: `hr.provider_webhook_candidates(p_seam, p_provider_key)` is `SECURITY DEFINER`, granted
+`EXECUTE` to `authenticated`, and its `Returns` row carries `webhook_secret_ref` and `connector` —
+both declared excluded on `hr.provider_binding`, and both stripped from that table's own Row/Insert/
+Update. So the column is absent where the convention is enforced and present one RPC away, reachable
+by any signed-in user through PostgREST. `SECURITY DEFINER` also means the base table's RLS does not
+re-gate the read. Per the note above this is still a projection gap rather than a proven exposure —
+but unlike the table remainder it is invisible: a reader who greps the frozen schema concludes the
+column is gone. **The fix** belongs to the HR lane and is a judgment call, not a script widening:
+either narrow the function's return to drop the two columns, or decide the RPC is a legitimate
+server-side seam and record why. Not done here — this session was fixing the `db-types` write race
+and had no standing to change an HR contract surface.
+
 ### D267 — `assoc_list` with a NULL direction silently returns ZERO rows instead of raising (2026-08-26)
 
 `public.assoc_list(p_type, p_id, p_direction, p_role)` guards with
