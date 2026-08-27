@@ -1,10 +1,14 @@
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════
 -- hr_l3_46_project_attestation_outcome.sql — lane L3 / HRB-015, 2026-08-27. Finding U2.
 --
--- ⚠️ NOT YET APPLIED. Both attempts to apply this were refused by the permission classifier in the
--- authoring session. It needs an approved hand. Everything on the client side is already built and
--- degrades safely: the fields are optional in the mapper and the sentence simply does not render
--- while they are absent. Applying this file is the only remaining step.
+-- ✅ APPLIED. (The authoring session's two attempts were refused by the permission classifier; it
+-- was applied afterwards by an approved hand.)
+--
+-- 🚨 THIS FILE SHIPPED A BUG — see `hr_l3_47_unable_reason_scoped_by_ppe_target.sql`, which fixes
+-- it and must be applied alongside. The `unable_reason` lateral below is scoped to `i`, the single
+-- resolved instance, which on an APPROVED row is the approval instance — while the reason the
+-- employee could never attest lives on the ATTESTATION instance. So `unable_reason` came back NULL
+-- on exactly the rows the answer exists for. Do not apply this file without 47.
 --
 -- 🚨 THE DEFECT. An APPROVED period renders "Employee attested 0 / Manager approved 1" and leaves a
 -- manager to work out BY SUBTRACTION that pay was released on a timecard its subject never
