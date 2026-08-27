@@ -54,11 +54,11 @@ export function OrganizationPerformanceReviewsPage({
   return (
     <>
       <CrumbTrailHeader
-        backHref={`/organizations/${encodeURIComponent(orgSlugOrId)}`}
+        backHref={`/organizations/${encodeURIComponent(organization.slug)}`}
         trail={[
           {
             label: organization.name,
-            href: `/organizations/${encodeURIComponent(orgSlugOrId)}`,
+            href: `/organizations/${encodeURIComponent(organization.slug)}`,
           },
           { label: organizationPerformanceReviewsManifest.label },
         ]}

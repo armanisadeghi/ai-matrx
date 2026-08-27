@@ -26,6 +26,12 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - `app/(authenticated)/organizations/[orgId]/projects/[projectId]/` — project-scoped view within an org; `[projectId]` also accepts UUID or slug
 - `app/(authenticated)/organizations/[orgId]/settings/page.tsx` — the **Manage** experience. Renders `OrgManage` — a single scrollable, sectioned page (identity header + sticky jump-nav, **no tabs**) that reuses the existing settings sub-components (General, Members, Invitations, Scopes link, Privacy, Email, Organization Vault, Danger). All members may inspect masked vault metadata and contribute independent copies from their personal vault; owner/admin roles manage values and restrictions. Exact setting-door hashes are first-class targets; admin-only controls replace themselves with contextual access requests for ordinary members.
 - `app/(authenticated)/organizations/[orgId]/settings/scopes/` — scope config (see [`features/scopes/FEATURE.md`](../scopes/FEATURE.md))
+- `app/(core)/organizations/[orgId]/performance-reviews/` — organization-context
+  performance-review workspace. The organization home exposes the canonical
+  door; the page resolves a real organization UUID for the future explicit
+  `organization_id` writer. Current review drafts remain browser-local and are
+  not tenant persistence. Feature contract:
+  [`features/employee-performance-reviews/FEATURE.md`](../employee-performance-reviews/FEATURE.md).
 - `app/(core)/organizations/[orgId]/admin/{,users/[userId]/{,resources}}` — **org-admin user management** (roster, usage/metrics, budgets, tiers, suspend, remove, resource reassignment). Owner/admin-gated; surfaced from the `OrgManage` header ("Manage users"). Full contract: [`admin/FEATURE.md`](./admin/FEATURE.md). **Read it before touching any `org_admin_*` RPC or `iam.org_member_controls`.**
 - `app/(authenticated)/invitations/organization/accept/[token]/page.tsx` — accept org invitation
 - `app/(authenticated)/invitations/project/accept/[token]/page.tsx` — accept project invitation
@@ -250,6 +256,10 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-08-26` — Added the organization-home door to the normal nested
+  `/organizations/[orgId]/performance-reviews` route. The route resolves the
+  organization UUID for its future persistent writer; browser-local draft
+  partitioning is explicitly not organization-scoped storage.
 - `2026-08-26` — **The Organizations launcher now carries the complete ordinary-surface shell.** `/organizations` wraps its single scroll pane in the canonical v3 context menu with the existing `matrx-user/organizations` runtime, uses the canonical voice-free `ProInput` for search, replaces the centered spinner with organization-card skeletons, anchors the list/count/query values for Surface Context Locate, and turns every card's member/dimension/scope count into its real destination. The full-list summary now includes the description, website, creation time, and scope counts already rendered by each card. No agent role, binding, or visible agent content was added.
 - `2026-08-25` — **Organization reads no longer disappear when one browser temporarily loses its Supabase session.** Removed stale anonymous execute grants from the four `SECURITY DEFINER` membership-read RPCs while preserving authenticated/service-role access; routed all membership reads through the shared one-shot session recovery; required the browser user id + access token before `useUserOrganizations` starts I/O; stopped converting typed membership/count/read failures into `[]`; and made the primary `/organizations` launcher render its retry state. The shared classifier now distinguishes the recoverable anonymous `401` from an authenticated `403` grant defect. Live ACL and ordinary-user membership/RLS parity verified; focused regression suite covers recovery, non-retry, and failure presentation.
 - `2026-08-24` — Replaced compact member/contact search inputs in shared membership, invitation, organization-email, org-admin roster, and reassignment surfaces with the canonical `UserSearchField`. Their advanced windows are bounded to the roster/candidate list already visible to the caller; invitation email entry remains available for people without accounts.

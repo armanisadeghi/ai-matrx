@@ -65,7 +65,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "organization_id",
     label: "Organization ID",
     description:
-      "UUID of the organization that owns this browser-local review workspace. Empty on the retained demo route.",
+      "Resolved UUID of the organization in this route. This is the explicit organization_id for the future persistent writer; the current browser draft is not durable tenant storage. Empty on the retained demo route.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,

@@ -33,6 +33,7 @@ import {
   Boxes,
   ChevronRight,
   Info,
+  ClipboardCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -416,6 +417,12 @@ export function OrgWorkspace() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/organizations/${slug}/performance-reviews`}>
+                      <ClipboardCheck className="h-4 w-4 mr-1.5" />
+                      Performance reviews
+                    </Link>
+                  </Button>
                   <Button size="sm" onClick={() => openContribute()}>
                     <Share2 className="h-4 w-4 mr-1.5" />
                     Contribute
