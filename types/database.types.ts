@@ -42699,6 +42699,16 @@ export type Database = {
         Args: { p_employment_id: string; p_local_work_date: string }
         Returns: string
       }
+      _ppe_rollup_refresh: {
+        Args: {
+          p_batch?: string
+          p_employment_id: string
+          p_engine_key?: string
+          p_engine_version?: string
+          p_pay_period_id: string
+        }
+        Returns: Json
+      }
       _project_row: {
         Args: {
           p_id: string
