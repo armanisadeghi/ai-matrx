@@ -20,8 +20,7 @@ function errorResponse(error: unknown, status = 500) {
 }
 
 function resolveAidreamUrl(): string {
-  const baseUrl = process.env.AIDREAM_API_URL ?? AIDREAM_PRODUCTION_URL;
-  return `${baseUrl.replace(/\/$/, "")}${ORGANIZATIONS_PATH}`;
+  return `${AIDREAM_PRODUCTION_URL.replace(/\/$/, "")}${ORGANIZATIONS_PATH}`;
 }
 
 export async function GET(request: NextRequest) {

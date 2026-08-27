@@ -47,10 +47,10 @@ export interface ValidateCmsContentInput {
   siteId?: string | null;
   pageId?: string | null;
   accessToken: string | null;
+  baseUrl?: string;
 }
 
-function resolveValidationBaseUrl(): string {
-  const baseUrl = process.env.AIDREAM_API_URL ?? AIDREAM_PRODUCTION_URL;
+function resolveValidationBaseUrl(baseUrl = AIDREAM_PRODUCTION_URL): string {
   return baseUrl.replace(/\/$/, "");
 }
 
@@ -130,7 +130,7 @@ export async function validateContent(
     return { allowed: true, skipped: false, findings: [] };
   }
 
-  const validationBaseUrl = resolveValidationBaseUrl();
+  const validationBaseUrl = resolveValidationBaseUrl(input.baseUrl);
   if (!input.accessToken) {
     return skippedValidation(
       "the authenticated Supabase access token is unavailable",

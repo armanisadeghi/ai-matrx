@@ -109,6 +109,9 @@ export default function SidebarEnvToggle() {
     ? "localhost"
     : "production";
   const label = isLocalhost ? "Localhost" : "Production";
+  const targetDescription = `API target: ${label} — click to switch to ${
+    isLocalhost ? "production" : "localhost"
+  }`;
 
   return (
     <div className="shell-env-switch">
@@ -118,8 +121,8 @@ export default function SidebarEnvToggle() {
         className="shell-nav-item shell-tactile shell-env-primary"
         style={isLocalhost ? { color: localhostColor } : undefined}
         aria-pressed={isLocalhost}
-        aria-label={`Switch all API services to ${isLocalhost ? "production" : "localhost"}`}
-        title={`Using ${label} for all unpinned services. Click to switch every service.`}
+        aria-label={targetDescription}
+        title={`${targetDescription}. Applies to all unpinned services.`}
       >
         <span
           className="shell-nav-icon"

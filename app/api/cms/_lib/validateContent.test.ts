@@ -6,16 +6,9 @@ import {
   withCmsValidationHeader,
 } from "./validateContent";
 
-const originalAidreamUrl = process.env.AIDREAM_API_URL;
-
 describe("CMS content validation client", () => {
   beforeEach(() => {
     jest.restoreAllMocks();
-    process.env.AIDREAM_API_URL = "https://aidream.test";
-  });
-
-  afterAll(() => {
-    process.env.AIDREAM_API_URL = originalAidreamUrl;
   });
 
   it("returns the guard's blocking findings and builds the canonical 422", async () => {
@@ -50,6 +43,7 @@ describe("CMS content validation client", () => {
       siteId: "site-1",
       pageId: "page-1",
       accessToken: "jwt",
+      baseUrl: "https://aidream.test",
     });
 
     expect(result).toMatchObject({
@@ -100,6 +94,7 @@ describe("CMS content validation client", () => {
       content: { css: "body { color: red; }" },
       siteId: "site-1",
       accessToken: "jwt",
+      baseUrl: "https://aidream.test",
     });
     const response = withCmsValidationHeader(
       new Response(JSON.stringify({ success: true })),

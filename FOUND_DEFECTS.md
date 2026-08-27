@@ -15,31 +15,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D278 — `AIDREAM_API_URL` is still a second name for the aidream origin (2026-08-27)
-
-Found while retiring `NEXT_PUBLIC_BACKEND_URL` (its sibling alias). Three server-side call sites
-still read `process.env.AIDREAM_API_URL ?? AIDREAM_PRODUCTION_URL`:
-`app/api/admin/agent-context/{organizations,render}/route.ts` and `app/api/cms/_lib/validateContent.ts`.
-It is set in **no** env file, so it is inert everywhere — but it is exactly the banned
-"one value, two names" shape (`../common-docs/policies/env-vars-are-values-not-toggles.md`).
-Not swept with the alias because it is also the test seam
-`app/api/cms/_lib/validateContent.test.ts` monkeypatches. **Fix:** convert that seam (inject the
-base URL as a parameter, or a dict constant the test can `setItem`), then delete the variable and
-add an assertion that the module contains no `AIDREAM_API_URL` read.
-
-### D279 — the sidebar server toggle is invisible in the collapsed rail, and its label contradicts its aria-label (2026-08-27)
-
-`features/shell/components/controls/SidebarEnvToggle.tsx` renders on every `(core)` route for
-admins, including all of `/hr/*` — verified live 2026-08-27. But in the **collapsed** icon rail it
-is a bare `Server` icon with no visible text, which is why a verifier concluded the control "was
-not present in the DOM on any HR route" and spent most of a round editing env vars instead
-(`../common-docs/projects/hr-domain/readiness/G2-VERIFICATION-2026-08-26.md` § W2). Compounding it,
-the visible label reads the CURRENT environment ("Production") while `aria-label` reads the
-ACTION ("Switch all API services to localhost") — so a text search for "localhost" finds it and a
-text search for the state does not, and vice versa. **Fix:** give the collapsed rail a tooltip
-naming the control (not just the state), and make the accessible name state-first
-("API target: Production — click to switch to localhost").
-
 ### D277 — the hire form lets you submit without a job title or department, and the user gets raw Postgres (2026-08-26)
 
 > (Renumbered from a colliding D275 — that id belongs to the resolved wf_request orphan-instance defect below.)
@@ -2337,6 +2312,9 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D279 — RESOLVED 2026-08-27:** the collapsed sidebar server toggle now identifies itself and its current state in both its tooltip and accessible name (`features/shell/components/controls/SidebarEnvToggle.tsx`).
+- **D278 — RESOLVED 2026-08-27:** removed the inert `AIDREAM_API_URL` alias and replaced its test seam with explicit base-URL injection (`app/api/cms/_lib/validateContent.ts`).
 
 - **D275** — `hr.wf_request` inserted the instance before the binding and returned `WF_BINDING_OPEN` from inside the catch, so every duplicate submit stranded a `validating` instance with no binding, steps or event — on a table §1.3 forbids deleting from, so it could never be cleaned up. Fixed at the source, not tidied up after: the binding is pre-checked before anything is written, AND both inserts now share ONE exception block so losing the concurrent race rolls the instance back too. `migrations/hr_c4_10_binding_refusal_leaves_no_instance.sql`; `scripts/hr/hrb008_proof.py` 91 assertions 0 RED, incl. the previously untested idempotent-replay lane the fix restructured. 2026-08-26.
 
