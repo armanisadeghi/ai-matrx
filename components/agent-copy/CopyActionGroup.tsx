@@ -5,9 +5,10 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * CopyActionGroup — the even-width segmented chrome for Copy + Copy-for-AI
- * + Export. One shared border, one height, one cell width per action. Cells
- * are wide enough for the AI chevron so that segment is never the odd one.
+ * CopyActionGroup — the even-width Copy + Copy-for-AI + Export action row.
+ * Touch layouts keep the full 44px hit areas but drop the heavy shared frame;
+ * desktop restores the compact segmented chrome. Cells are wide enough for
+ * the AI chevron so that segment is never the odd one.
  *
  * Children must each render a single in-flow root (dialogs portal). Pass the
  * matching {@link copyActionSegmentClass} to every trigger so hover/focus
@@ -41,8 +42,10 @@ export function CopyActionGroup({
       role="group"
       data-copy-action-group=""
       className={cn(
-        "inline-flex items-stretch overflow-hidden rounded-md border border-border bg-background",
-        "divide-x divide-border shadow-none",
+        "inline-flex w-max min-w-max max-w-none shrink-0 items-stretch overflow-visible rounded-none border-0 bg-transparent",
+        "divide-x-0 shadow-none",
+        "lg:overflow-hidden lg:rounded-md lg:border lg:border-border lg:bg-background",
+        "lg:divide-x lg:divide-border",
         GROUP_SIZE[size],
         className,
       )}
@@ -54,14 +57,18 @@ export function CopyActionGroup({
 
 /** Even-width cell that fills one group slot. Put this on the child's root. */
 export function copyActionCellClass(size: CopyActionSize = "icon"): string {
-  return cn("inline-flex h-full items-stretch justify-center", CELL_SIZE[size]);
+  return cn(
+    "inline-flex h-full shrink-0 items-stretch justify-center",
+    CELL_SIZE[size],
+  );
 }
 
 /** Trigger that fills its cell — no individual chrome, no scale-on-press. */
 export function copyActionSegmentClass(size: CopyActionSize = "icon"): string {
   return cn(
-    "h-full w-full rounded-none shadow-none active:scale-100",
-    "hover:bg-accent hover:text-accent-foreground",
+    "h-full w-full rounded-md shadow-none active:scale-100 lg:rounded-none",
+    "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+    "active:bg-accent active:text-accent-foreground",
     size === "xs" ? "[&_svg]:size-3" : "[&_svg]:size-3.5",
   );
 }

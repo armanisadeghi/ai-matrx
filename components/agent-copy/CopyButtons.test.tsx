@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { copyActionCellClass } from "@/components/agent-copy/CopyActionGroup";
 
 jest.mock("@/components/agent-copy/AiCopyMenu", () => ({
   AiCopyMenu: ({
@@ -155,9 +156,19 @@ describe("CopyButtons AI variants", () => {
     });
 
     expect(container.querySelector("[data-copy-action-group]")).not.toBeNull();
-    expect(
-      container.querySelector("[data-copy-action-group]")?.className,
-    ).toContain("lg:h-7");
+    const groupClassName = container.querySelector(
+      "[data-copy-action-group]",
+    )?.className;
+    expect(groupClassName).toContain("lg:h-7");
+    expect(groupClassName).toContain("border-0");
+    expect(groupClassName).toContain("bg-transparent");
+    expect(groupClassName).toContain("shrink-0");
+    expect(groupClassName).toContain("w-max");
+    expect(groupClassName).toContain("min-w-max");
+    expect(groupClassName).toContain("max-w-none");
+    expect(groupClassName).toContain("lg:border-border");
+    expect(groupClassName).toContain("lg:bg-background");
+    expect(copyActionCellClass("icon")).toContain("shrink-0");
     const buttons = [
       ...container.querySelectorAll("[data-copy-action-group] button"),
     ];
