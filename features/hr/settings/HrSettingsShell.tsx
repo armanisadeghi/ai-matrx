@@ -27,7 +27,7 @@
 
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
 import { HrSubShell, type HrRouteTab } from "../shared/HrSubShell";
@@ -89,6 +89,8 @@ export function HrSettingsChrome({ children }: { children: ReactNode }) {
   const { allowed, isLoading: personaLoading } = useCanConfigureHr();
   const pathname = usePathname() ?? "/hr/settings";
   const tab = hrSettingsTab(hrSettingsSectionFromPath(pathname));
+  /** The route activation finished on — see the latch note at the gate below. */
+  const [justActivated, setJustActivated] = useState<string | null>(null);
 
   const body = (() => {
     if (context.isLoading) return <HrLoading variant="panel" rows={6} />;
@@ -122,12 +124,27 @@ export function HrSettingsChrome({ children }: { children: ReactNode }) {
     }
 
     // ── The activation gate — the wizard IS the empty-org state here ────────
-    if (activation.mode === "wizard" || activation.mode === "first_hire") {
+    //
+    // 🚨 THE `justActivated` LATCH IS WHY STEP 4 IS READABLE AT ALL. Activation
+    // creates the nominee's employee record, so the moment it succeeds this org
+    // has people and `activation.mode` flips straight to `ready` — the chrome
+    // would swap the wizard out for the employer panel mid-render and step 4,
+    // which is the ONLY report of what the seeds actually created, would never
+    // be seen by anybody. The latch holds the wizard on the route it finished
+    // on; following any of its doors changes the pathname and releases it.
+    if (
+      justActivated === pathname ||
+      activation.mode === "wizard" ||
+      activation.mode === "first_hire"
+    ) {
       if (!activation.organizationId) return <HrLoading variant="panel" rows={6} />;
       return (
         <HrActivationWizard
           organizationId={activation.organizationId}
-          onComplete={() => activation.refresh()}
+          onComplete={() => {
+            setJustActivated(pathname);
+            activation.refresh();
+          }}
         />
       );
     }
