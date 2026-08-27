@@ -21,6 +21,12 @@ describe("task lifecycle responsive contract", () => {
     expect(dueDatePicker).toContain("h-6 max-lg:h-11");
   });
 
+  it("keeps smart-view targets touch-sized through tablet widths", () => {
+    expect(source("TasksContextSidebar.tsx")).toContain(
+      "px-1.5 py-1 max-lg:min-h-11",
+    );
+  });
+
   it("keeps the narrow-pane view toggle clear of quick-add actions", () => {
     const listPane = source("TaskListPane.tsx");
 

@@ -346,7 +346,7 @@ export default function TasksContextSidebar() {
                     onClick={() => dispatch(setSmartView(v.key))}
                     title={v.description}
                     className={cn(
-                      "flex items-center gap-1.5 px-1.5 py-1 rounded text-[11px] transition-colors",
+                      "flex items-center gap-1.5 px-1.5 py-1 max-lg:min-h-11 rounded text-[11px] transition-colors",
                       isActive
                         ? "bg-accent text-primary font-medium"
                         : "text-muted-foreground hover:text-foreground hover:bg-accent",
