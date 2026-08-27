@@ -596,23 +596,17 @@ function mapKioskPersonSession(raw: unknown): KioskPersonSession {
 }
 
 /** The ONLY way a device secret is ever minted. The secret is returned once and never re-readable. */
-export function claimKioskPairing(
+export async function claimKioskPairing(
   pairingCode: string,
   deviceFingerprint: string,
   opts?: HrRpcOptions,
 ): Promise<KioskPairingResult> {
-  /*
-   * ⚠️ NOT YET MAPPED, AND DELIBERATELY LEFT TO THE KIOSK LANE. These three kiosk calls are the
-   * last typed casts in this file. That lane shipped `mapClockState`, `mapPunchRecordResult` and
-   * `mapKioskPunchResult` today and is working this same class; it also owns the only surface that
-   * can prove a kiosk mapping against a real device. Mapping them blind from another lane, hours
-   * before a verification round, would be guessing at consumption nobody could check.
-   */
-  return callHrTimeRpc<KioskPairingResult>(
+  const raw = await callHrTimeRpc<unknown>(
     "hr_kiosk_claim_pairing",
     { p_pairing_code: pairingCode, p_device_fingerprint: deviceFingerprint },
     opts,
   );
+  return mapKioskPairingResult(raw);
 }
 
 /** Exchange the long-lived secret for a DEVICE session (TTL in hours) plus the server clock. */
