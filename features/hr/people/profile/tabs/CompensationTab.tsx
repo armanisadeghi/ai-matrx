@@ -37,6 +37,7 @@ import { cn } from "@/lib/utils";
 import { hrStructureFocusHref, type HrOrgRef } from "../../../routes";
 import type { HrEmployeeProfile } from "../../../types";
 import { useHrStructure } from "../../shared/useHrStructure";
+import { ProposePayChange } from "../ProposePayChange";
 
 export function CompensationTab({
   profile,
@@ -56,7 +57,7 @@ export function CompensationTab({
       {profile.comp_visibility === "band_only" ? (
         <BandOnly profile={profile} org={org} />
       ) : (
-        <FullVisibility profile={profile} />
+        <FullVisibility profile={profile} org={org} />
       )}
     </div>
   );
@@ -131,7 +132,13 @@ function BandOnly({
 
 // ── full ────────────────────────────────────────────────────────────────────
 
-function FullVisibility({ profile }: { profile: HrEmployeeProfile }) {
+function FullVisibility({
+  profile,
+  org,
+}: {
+  profile: HrEmployeeProfile;
+  org: HrOrgRef;
+}) {
   return (
     <section className="space-y-3">
       <h3 className="text-sm font-semibold text-foreground">Compensation</h3>
@@ -156,6 +163,16 @@ function FullVisibility({ profile }: { profile: HrEmployeeProfile }) {
           What is missing?
         </Button>
       </div>
+
+      {/*
+        🚨 PROPOSING IS NOT READING, WHICH IS WHY THIS SITS ABOVE THE "cannot be
+        read yet" panel rather than inside it. The per-person audited READ door has
+        not shipped; the WRITE path has, and round 18 fixed who may approve while
+        nothing could propose. A holder of `comp.write` can open a request here
+        without this tab being able to show what the current number is — the
+        approver sees both.
+      */}
+      <ProposePayChange profile={profile} org={org} />
 
       <ul className="max-w-prose space-y-1 text-xs text-muted-foreground">
         <li>
