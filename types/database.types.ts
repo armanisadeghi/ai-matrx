@@ -42434,6 +42434,14 @@ export type Database = {
         Returns: string
       }
       _employment_expiry: { Args: { p_employment_id: string }; Returns: string }
+      _exception_in_pay_period: {
+        Args: {
+          p_date: string
+          p_employment_id: string
+          p_pay_period_id: string
+        }
+        Returns: boolean
+      }
       _governance_refusal: {
         Args: {
           p_org: string
@@ -43628,6 +43636,15 @@ export type Database = {
         Returns: Json
       }
       run_rule_fixtures: { Args: { p_codes?: string[] }; Returns: Json }
+      stable_doors_that_write: {
+        Args: never
+        Returns: {
+          depth: number
+          door: string
+          reaches: string
+          volatility: string
+        }[]
+      }
       stamp_retention_triggers: {
         Args: { p_employment_id: string }
         Returns: number
@@ -60595,11 +60612,16 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_module_set_enabled: {
+        Args: { p_enabled: boolean; p_organization_id: string }
+        Returns: Json
+      }
       hr_my_context: { Args: { p_organization_id?: string }; Returns: Json }
       hr_org_chart: {
         Args: { p_on?: string; p_organization_id: string }
         Returns: Json
       }
+      hr_org_summary: { Args: { p_organization_id: string }; Returns: Json }
       hr_overtime_preapproval_create: {
         Args: {
           p_covers_from: string

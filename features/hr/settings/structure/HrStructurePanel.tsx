@@ -24,13 +24,26 @@
 //
 // `?focus=<id>` opens the matching row — the profile's department / location / title
 // doors land here (`hrStructureFocusHref`).
+//
+// ── 🚨 G2 F3: THE CREATE PATH ──────────────────────────────────────────────
+// All three editors used to be mounted ONLY as the `detail:` renderer of a
+// `MatrxDataTable` row — the expansion of a row that already exists. With zero rows
+// there was no path to any of them, while this panel's own empty state promised the
+// opposite ("Setup creates the first one; add the rest as the org grows"). An org
+// could not add its second department, its second location, or ANY job title.
+//
+// Each section now carries a primary action in its header AND inside its empty
+// state — the empty state most of all, because that is the moment somebody is most
+// likely to act. There is no second form: each editor takes its row as
+// `T | null`, and null is create mode. `upsertHrStructure` omits `id` to insert,
+// which is exactly what `public.hr_structure_upsert` branches on.
 
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Info, ListTree, Loader2, MapPin, Save, Users } from "lucide-react";
+import { Info, ListTree, Loader2, MapPin, Plus, Save, Users } from "lucide-react";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -51,7 +64,7 @@ import { toast } from "@/lib/toast";
 
 import { upsertHrStructure } from "../../service";
 import { isHrDenied } from "../../types";
-import type { HrDepartment, HrJobTitle, HrLocation } from "../../types";
+import type { HrDepartment, HrJobTitle, HrLocation, HrResult } from "../../types";
 import { hrPeopleHref } from "../../routes";
 import { useHrContext } from "../../shared/useHrContext";
 import { useHrSettingsStructure } from "../hooks/useHrSettingsStructure";
@@ -83,6 +96,123 @@ const COMMON_TIMEZONES = [
   "America/Puerto_Rico",
   "UTC",
 ];
+
+// ── The refusal, rendered where it happened ─────────────────────────────────
+
+/**
+ * 🚨 A REFUSAL IS DATA, NOT AN EXCEPTION. `hr_structure_upsert` answers
+ * `{ok:false, reason:'validation', field:'jurisdiction_id', detail:'…'}` with NO
+ * Postgres error, so `supabase.rpc()` resolves happily and a caller that only
+ * catches throws reports a save that never happened.
+ *
+ * The server names the control it rejected (`field`) and, where one exists, the
+ * place to go and fix it (`door`). Both are carried to the form, so the sentence
+ * lands ON the offending input rather than becoming "something went wrong".
+ */
+type WriteRefusal = { message: string; field: string | null; door: string | null };
+
+function refusalOf<T>(result: HrResult<T>, fallback: string): WriteRefusal | null {
+  if (result.ok) return null;
+  if (isHrDenied(result)) {
+    return {
+      message:
+        result.detail?.trim() ||
+        `${fallback} (${result.reason.replace(/_/g, " ")}).`,
+      field: result.field,
+      door: result.door,
+    };
+  }
+  return { message: result.message, field: null, door: null };
+}
+
+/** The one alert block, with the server's door offered when it sent one. */
+function RefusalNote({ refusal }: { refusal: WriteRefusal }) {
+  return (
+    <div
+      role="alert"
+      className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-3"
+    >
+      <p className="text-sm text-destructive">{refusal.message}</p>
+      {refusal.door ? (
+        <Link
+          href={refusal.door}
+          className="inline-flex min-h-11 items-center text-sm font-medium text-foreground underline underline-offset-2 sm:min-h-0"
+        >
+          Go and fix it
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+/** The message repeated at the named control — the whole point of `field`. */
+function FieldRefusal({
+  refusal,
+  field,
+}: {
+  refusal: WriteRefusal | null;
+  field: string;
+}) {
+  if (!refusal || refusal.field !== field) return null;
+  return <p className="text-sm text-destructive">{refusal.message}</p>;
+}
+
+function invalidFor(refusal: WriteRefusal | null, field: string): boolean {
+  return refusal?.field === field;
+}
+
+// ── The create affordance ───────────────────────────────────────────────────
+
+/**
+ * The primary action, rendered identically in a section header and inside that
+ * section's empty state. Two call sites, one control — an org with forty
+ * departments needs the forty-first, and an org with none needs the first from the
+ * very place that explains why it matters.
+ */
+function NewRowButton({
+  label,
+  onClick,
+  disabled,
+  full,
+}: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  full?: boolean;
+}) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      onClick={onClick}
+      disabled={disabled}
+      className={
+        full
+          ? "min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
+          : "min-h-11 shrink-0 sm:min-h-9"
+      }
+    >
+      <Plus className="mr-2 h-4 w-4" />
+      {label}
+    </Button>
+  );
+}
+
+/** The create editor's frame — same place on every section, above the list. */
+function CreatePanel({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border-b border-border bg-muted/30 p-4">
+      <h3 className="px-3 text-sm font-semibold text-foreground">{title}</h3>
+      {children}
+    </div>
+  );
+}
 
 // ── Cycle safety ────────────────────────────────────────────────────────────
 
@@ -234,6 +364,7 @@ function DepartmentsSection({
   focus: string | null;
   onSaved: () => void;
 }) {
+  const [creating, setCreating] = useState(false);
   const byId = new Map(departments.map((department) => [department.id, department]));
 
   const columns: MatrxColumnDef<HrDepartment>[] = [
@@ -286,16 +417,41 @@ function DepartmentsSection({
 
   return (
     <section className="rounded-lg border border-border bg-card">
-      <header className="flex items-start gap-3 border-b border-border p-4">
-        <ListTree className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 space-y-1">
-          <h2 className="text-sm font-semibold text-foreground">Departments</h2>
-          <p className="text-sm text-muted-foreground">
-            Departments nest. A department can never be placed under one of its own
-            descendants — the picker does not offer them.
-          </p>
+      <header className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <ListTree className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+          <div className="min-w-0 space-y-1">
+            <h2 className="text-sm font-semibold text-foreground">Departments</h2>
+            <p className="text-sm text-muted-foreground">
+              Departments nest. A department can never be placed under one of its own
+              descendants — the picker does not offer them.
+            </p>
+          </div>
         </div>
+        <NewRowButton
+          label="New department"
+          full
+          disabled={creating || !organizationId}
+          onClick={() => setCreating(true)}
+        />
       </header>
+
+      {creating ? (
+        <CreatePanel title="New department">
+          <DepartmentEditor
+            department={null}
+            departments={departments}
+            organizationId={organizationId}
+            orgRef={orgRef}
+            onSaved={() => {
+              setCreating(false);
+              onSaved();
+            }}
+            onCancel={() => setCreating(false)}
+          />
+        </CreatePanel>
+      ) : null}
+
       <div className="p-4">
         <MatrxDataTable
           data={departments}
@@ -307,7 +463,15 @@ function DepartmentsSection({
           toolbar={{ search: true, searchPlaceholder: "Search departments" }}
           emptyState={{
             title: "No departments yet",
-            description: "Setup creates the first one; add the rest as the org grows.",
+            description:
+              "Nobody can be assigned to a department until one exists. Add the first one here — and the rest as the org grows.",
+            action: (
+              <NewRowButton
+                label="New department"
+                disabled={creating || !organizationId}
+                onClick={() => setCreating(true)}
+              />
+            ),
           }}
           detail={{
             title: (row) => row.name,
@@ -327,43 +491,55 @@ function DepartmentsSection({
   );
 }
 
+/** `department === null` is CREATE. Same form, same rules, no second component. */
 function DepartmentEditor({
   department,
   departments,
   organizationId,
   orgRef,
   onSaved,
+  onCancel,
 }: {
-  department: HrDepartment;
+  department: HrDepartment | null;
   departments: HrDepartment[];
   organizationId: string | null;
   orgRef: string | null;
   onSaved: () => void;
+  onCancel?: () => void;
 }) {
-  const [name, setName] = useState(department.name);
-  const [code, setCode] = useState(department.code ?? "");
-  const [costCenter, setCostCenter] = useState(department.cost_center ?? "");
-  const [parentId, setParentId] = useState(department.parent_department_id ?? "");
+  const isCreate = department === null;
+  // Distinct ids per mounted editor: the create panel and an expanded row can both
+  // be on the page, and duplicate DOM ids break every `htmlFor`.
+  const uid = useId();
+
+  const [name, setName] = useState(department?.name ?? "");
+  const [code, setCode] = useState(department?.code ?? "");
+  const [costCenter, setCostCenter] = useState(department?.cost_center ?? "");
+  const [parentId, setParentId] = useState(department?.parent_department_id ?? "");
   const [busy, setBusy] = useState(false);
-  const [why, setWhy] = useState<string | null>(null);
+  const [refusal, setRefusal] = useState<WriteRefusal | null>(null);
 
   // 🚨 THE CYCLE CHECK, MADE UNREPRESENTABLE: this department and everything under
-  // it are simply not in the list.
-  const blocked = descendantsOf(departments, department.id);
-  const parentOptions = departments.filter((candidate) => !blocked.has(candidate.id));
+  // it are simply not in the list. A department that does not exist yet has no
+  // descendants, so on a create every department is a legitimate parent.
+  const blocked = department ? descendantsOf(departments, department.id) : null;
+  const parentOptions = blocked
+    ? departments.filter((candidate) => !blocked.has(candidate.id))
+    : departments;
 
   const save = async () => {
     if (!organizationId) return;
     if (name.trim() === "") {
-      setWhy("A department needs a name.");
+      setRefusal({ message: "A department needs a name.", field: "name", door: null });
       return;
     }
     setBusy(true);
-    setWhy(null);
+    setRefusal(null);
     const result = await upsertHrStructure({
       kind: "department",
       payload: {
-        id: department.id,
+        // No `id` is what makes this an INSERT server-side.
+        ...(department ? { id: department.id } : {}),
         organization_id: organizationId,
         name: name.trim(),
         code: code.trim() || null,
@@ -372,20 +548,20 @@ function DepartmentEditor({
       },
     });
     setBusy(false);
-    if (!result.ok) {
-      setWhy(
-        isHrDenied(result)
-          ? result.detail || `The server refused this change (${result.reason}).`
-          : result.message,
-      );
+
+    const denial = refusalOf(result, "The server refused this department");
+    if (denial) {
+      setRefusal(denial);
       return;
     }
-    toast.success(`${name.trim()} is saved.`);
+    toast.success(
+      isCreate ? `${name.trim()} is created.` : `${name.trim()} is saved.`,
+    );
     onSaved();
   };
 
   const toggleActive = async () => {
-    if (!organizationId) return;
+    if (!organizationId || !department) return;
     if (department.is_active) {
       const proceed = await confirmDeactivate({
         label: department.name,
@@ -404,12 +580,10 @@ function DepartmentEditor({
       },
     });
     setBusy(false);
-    if (!result.ok) {
-      setWhy(
-        isHrDenied(result)
-          ? result.detail || `The server refused this change (${result.reason}).`
-          : result.message,
-      );
+
+    const denial = refusalOf(result, "The server refused this change");
+    if (denial) {
+      setRefusal(denial);
       return;
     }
     onSaved();
@@ -417,20 +591,39 @@ function DepartmentEditor({
 
   return (
     <div className="space-y-4 p-3">
-      <EditorField id="dept-name" label="Name" value={name} onChange={setName} />
-      <EditorField id="dept-code" label="Code" value={code} onChange={setCode} />
       <EditorField
-        id="dept-cc"
+        id={`${uid}-name`}
+        label="Name"
+        required
+        value={name}
+        onChange={setName}
+        disabled={busy}
+        invalid={invalidFor(refusal, "name")}
+      />
+      <FieldRefusal refusal={refusal} field="name" />
+      <EditorField
+        id={`${uid}-code`}
+        label="Code"
+        value={code}
+        onChange={setCode}
+        disabled={busy}
+      />
+      <EditorField
+        id={`${uid}-cc`}
         label="Cost centre"
         value={costCenter}
         onChange={setCostCenter}
+        disabled={busy}
       />
       <div className="space-y-1.5">
-        <Label htmlFor="dept-parent" className="text-sm font-medium">
+        <Label htmlFor={`${uid}-parent`} className="text-sm font-medium">
           Reports into
         </Label>
         <Select value={parentId} onValueChange={setParentId}>
-          <SelectTrigger id="dept-parent">
+          <SelectTrigger
+            id={`${uid}-parent`}
+            aria-invalid={invalidFor(refusal, "parent_department_id")}
+          >
             <SelectValue placeholder="Top level" />
           </SelectTrigger>
           <SelectContent>
@@ -442,43 +635,36 @@ function DepartmentEditor({
           </SelectContent>
         </Select>
         <p className="text-sm text-muted-foreground">
-          This department and everything beneath it are not offered — a department
-          cannot report into itself.
+          {isCreate
+            ? "Leave it at top level if this department reports into nobody."
+            : "This department and everything beneath it are not offered — a department cannot report into itself."}
         </p>
+        <FieldRefusal refusal={refusal} field="parent_department_id" />
       </div>
 
-      <div className="flex items-center gap-3">
-        <Switch
-          id="dept-active"
-          checked={department.is_active}
-          disabled={busy}
-          onCheckedChange={toggleActive}
-        />
-        <Label htmlFor="dept-active" className="text-sm">
-          Offered for new assignments
-        </Label>
-      </div>
-
-      {why ? (
-        <p role="alert" className="text-sm text-destructive">
-          {why}
-        </p>
+      {department ? (
+        <div className="flex items-center gap-3">
+          <Switch
+            id={`${uid}-active`}
+            checked={department.is_active}
+            disabled={busy}
+            onCheckedChange={toggleActive}
+          />
+          <Label htmlFor={`${uid}-active`} className="text-sm">
+            Offered for new assignments
+          </Label>
+        </div>
       ) : null}
 
-      <Button
-        type="button"
-        size="sm"
-        onClick={save}
-        disabled={busy}
-        className="min-h-11 sm:min-h-9"
-      >
-        {busy ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Save className="mr-2 h-4 w-4" />
-        )}
-        Save
-      </Button>
+      {refusal ? <RefusalNote refusal={refusal} /> : null}
+
+      <EditorActions
+        isCreate={isCreate}
+        busy={busy}
+        createLabel="Create department"
+        onSave={save}
+        onCancel={onCancel}
+      />
     </div>
   );
 }
@@ -500,6 +686,8 @@ function LocationsSection({
   focus: string | null;
   onSaved: () => void;
 }) {
+  const [creating, setCreating] = useState(false);
+
   const columns: MatrxColumnDef<HrLocation>[] = [
     {
       id: "name",
@@ -553,16 +741,41 @@ function LocationsSection({
 
   return (
     <section className="rounded-lg border border-border bg-card">
-      <header className="flex items-start gap-3 border-b border-border p-4">
-        <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 space-y-1">
-          <h2 className="text-sm font-semibold text-foreground">Locations</h2>
-          <p className="text-sm text-muted-foreground">
-            Every location carries a time zone and a jurisdiction. Both are required,
-            because every punch, shift and workweek is stamped from them.
-          </p>
+      <header className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+          <div className="min-w-0 space-y-1">
+            <h2 className="text-sm font-semibold text-foreground">Locations</h2>
+            <p className="text-sm text-muted-foreground">
+              Every location carries a time zone and a jurisdiction. Both are required,
+              because every punch, shift and workweek is stamped from them.
+            </p>
+          </div>
         </div>
+        <NewRowButton
+          label="New location"
+          full
+          disabled={creating || !organizationId}
+          onClick={() => setCreating(true)}
+        />
       </header>
+
+      {creating ? (
+        <CreatePanel title="New location">
+          <LocationEditor
+            location={null}
+            jurisdictions={jurisdictions}
+            organizationId={organizationId}
+            orgRef={orgRef}
+            onSaved={() => {
+              setCreating(false);
+              onSaved();
+            }}
+            onCancel={() => setCreating(false)}
+          />
+        </CreatePanel>
+      ) : null}
+
       <div className="p-4">
         <MatrxDataTable
           data={locations}
@@ -575,7 +788,14 @@ function LocationsSection({
           emptyState={{
             title: "No locations yet",
             description:
-              "Setup creates the first one. Nothing can be scheduled or stamped until at least one exists.",
+              "Nothing can be scheduled or stamped until at least one exists — a punch has no rules to be checked against without a location.",
+            action: (
+              <NewRowButton
+                label="New location"
+                disabled={creating || !organizationId}
+                onClick={() => setCreating(true)}
+              />
+            ),
           }}
           detail={{
             title: (row) => row.name,
@@ -595,26 +815,32 @@ function LocationsSection({
   );
 }
 
+/** `location === null` is CREATE. Both required fields are enforced in both modes. */
 function LocationEditor({
   location,
   jurisdictions,
   organizationId,
   orgRef,
   onSaved,
+  onCancel,
 }: {
-  location: HrLocation;
+  location: HrLocation | null;
   jurisdictions: HrJurisdiction[];
   organizationId: string | null;
   orgRef: string | null;
   onSaved: () => void;
+  onCancel?: () => void;
 }) {
-  const [name, setName] = useState(location.name);
-  const [code, setCode] = useState(location.code ?? "");
-  const [tz, setTz] = useState(location.tz ?? "");
-  const [jurisdictionId, setJurisdictionId] = useState(location.jurisdiction_id ?? "");
-  const [isRemote, setIsRemote] = useState(location.is_remote);
+  const isCreate = location === null;
+  const uid = useId();
+
+  const [name, setName] = useState(location?.name ?? "");
+  const [code, setCode] = useState(location?.code ?? "");
+  const [tz, setTz] = useState(location?.tz ?? "");
+  const [jurisdictionId, setJurisdictionId] = useState(location?.jurisdiction_id ?? "");
+  const [isRemote, setIsRemote] = useState(location?.is_remote ?? false);
   const [busy, setBusy] = useState(false);
-  const [why, setWhy] = useState<string | null>(null);
+  const [refusal, setRefusal] = useState<WriteRefusal | null>(null);
 
   const timezoneOptions = COMMON_TIMEZONES.includes(tz)
     ? COMMON_TIMEZONES
@@ -625,33 +851,41 @@ function LocationEditor({
   const save = async () => {
     if (!organizationId) return;
     if (name.trim() === "") {
-      setWhy("A location needs a name.");
+      setRefusal({ message: "A location needs a name.", field: "name", door: null });
       return;
     }
     if (tz.trim() === "") {
-      setWhy(
-        "A location needs an IANA time zone. Every punch and shift at this location is " +
+      setRefusal({
+        message:
+          "A location needs an IANA time zone. Every punch and shift at this location is " +
           "stamped in it, and without one hours land on the wrong day.",
-      );
+        field: "tz",
+        door: null,
+      });
       return;
     }
-    // 🚨 THE REFUSAL WITH ITS REASON, AT THE CONTROL, BEFORE THE SAVE.
+    // 🚨 THE REFUSAL WITH ITS REASON, AT THE CONTROL, BEFORE THE SAVE. The server
+    // refuses the same thing with `field: "jurisdiction_id"`; saying it here saves a
+    // round trip without ever being the only thing that checks.
     if (jurisdictionId.trim() === "") {
-      setWhy(
-        "A location cannot be saved without a jurisdiction. Nothing can be scheduled " +
+      setRefusal({
+        message:
+          "A location cannot be saved without a jurisdiction. Nothing can be scheduled " +
           "or stamped against it: overtime, breaks, minimum wage and holidays are all " +
           "read from the jurisdiction, and a location without one silently produces " +
           "unlawful results.",
-      );
+        field: "jurisdiction_id",
+        door: null,
+      });
       return;
     }
 
     setBusy(true);
-    setWhy(null);
+    setRefusal(null);
     const result = await upsertHrStructure({
       kind: "location",
       payload: {
-        id: location.id,
+        ...(location ? { id: location.id } : {}),
         organization_id: organizationId,
         name: name.trim(),
         code: code.trim() || null,
@@ -661,20 +895,20 @@ function LocationEditor({
       },
     });
     setBusy(false);
-    if (!result.ok) {
-      setWhy(
-        isHrDenied(result)
-          ? result.detail || `The server refused this change (${result.reason}).`
-          : result.message,
-      );
+
+    const denial = refusalOf(result, "The server refused this location");
+    if (denial) {
+      setRefusal(denial);
       return;
     }
-    toast.success(`${name.trim()} is saved.`);
+    toast.success(
+      isCreate ? `${name.trim()} is created.` : `${name.trim()} is saved.`,
+    );
     onSaved();
   };
 
   const toggleActive = async () => {
-    if (!organizationId) return;
+    if (!organizationId || !location) return;
     if (location.is_active) {
       const proceed = await confirmDeactivate({
         label: location.name,
@@ -693,12 +927,10 @@ function LocationEditor({
       },
     });
     setBusy(false);
-    if (!result.ok) {
-      setWhy(
-        isHrDenied(result)
-          ? result.detail || `The server refused this change (${result.reason}).`
-          : result.message,
-      );
+
+    const denial = refusalOf(result, "The server refused this change");
+    if (denial) {
+      setRefusal(denial);
       return;
     }
     onSaved();
@@ -706,15 +938,30 @@ function LocationEditor({
 
   return (
     <div className="space-y-4 p-3">
-      <EditorField id="loc-name" label="Name" value={name} onChange={setName} />
-      <EditorField id="loc-code" label="Code" value={code} onChange={setCode} />
+      <EditorField
+        id={`${uid}-name`}
+        label="Name"
+        required
+        value={name}
+        onChange={setName}
+        disabled={busy}
+        invalid={invalidFor(refusal, "name")}
+      />
+      <FieldRefusal refusal={refusal} field="name" />
+      <EditorField
+        id={`${uid}-code`}
+        label="Code"
+        value={code}
+        onChange={setCode}
+        disabled={busy}
+      />
 
       <div className="space-y-1.5">
-        <Label htmlFor="loc-tz" className="text-sm font-medium">
+        <Label htmlFor={`${uid}-tz`} className="text-sm font-medium">
           Time zone <span className="text-destructive">*</span>
         </Label>
         <Select value={tz} onValueChange={setTz}>
-          <SelectTrigger id="loc-tz">
+          <SelectTrigger id={`${uid}-tz`} aria-invalid={invalidFor(refusal, "tz")}>
             <SelectValue placeholder="Choose an IANA time zone" />
           </SelectTrigger>
           <SelectContent>
@@ -725,14 +972,18 @@ function LocationEditor({
             ))}
           </SelectContent>
         </Select>
+        <FieldRefusal refusal={refusal} field="tz" />
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="loc-jurisdiction" className="text-sm font-medium">
+        <Label htmlFor={`${uid}-jurisdiction`} className="text-sm font-medium">
           Jurisdiction <span className="text-destructive">*</span>
         </Label>
         <Select value={jurisdictionId} onValueChange={setJurisdictionId}>
-          <SelectTrigger id="loc-jurisdiction">
+          <SelectTrigger
+            id={`${uid}-jurisdiction`}
+            aria-invalid={invalidFor(refusal, "jurisdiction_id")}
+          >
             <SelectValue placeholder="Choose the jurisdiction" />
           </SelectTrigger>
           <SelectContent>
@@ -747,52 +998,44 @@ function LocationEditor({
           Required. Nothing can be scheduled or stamped against a location without one
           — overtime, breaks, minimum wage and holidays are all read from it.
         </p>
+        <FieldRefusal refusal={refusal} field="jurisdiction_id" />
       </div>
 
       <div className="flex items-center gap-3">
         <Switch
-          id="loc-remote"
+          id={`${uid}-remote`}
           checked={isRemote}
           disabled={busy}
           onCheckedChange={setIsRemote}
         />
-        <Label htmlFor="loc-remote" className="text-sm">
+        <Label htmlFor={`${uid}-remote`} className="text-sm">
           Remote location
         </Label>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Switch
-          id="loc-active"
-          checked={location.is_active}
-          disabled={busy}
-          onCheckedChange={toggleActive}
-        />
-        <Label htmlFor="loc-active" className="text-sm">
-          Offered for new assignments
-        </Label>
-      </div>
-
-      {why ? (
-        <p role="alert" className="text-sm text-destructive">
-          {why}
-        </p>
+      {location ? (
+        <div className="flex items-center gap-3">
+          <Switch
+            id={`${uid}-active`}
+            checked={location.is_active}
+            disabled={busy}
+            onCheckedChange={toggleActive}
+          />
+          <Label htmlFor={`${uid}-active`} className="text-sm">
+            Offered for new assignments
+          </Label>
+        </div>
       ) : null}
 
-      <Button
-        type="button"
-        size="sm"
-        onClick={save}
-        disabled={busy}
-        className="min-h-11 sm:min-h-9"
-      >
-        {busy ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Save className="mr-2 h-4 w-4" />
-        )}
-        Save
-      </Button>
+      {refusal ? <RefusalNote refusal={refusal} /> : null}
+
+      <EditorActions
+        isCreate={isCreate}
+        busy={busy}
+        createLabel="Create location"
+        onSave={save}
+        onCancel={onCancel}
+      />
     </div>
   );
 }
@@ -812,6 +1055,8 @@ function JobTitlesSection({
   focus: string | null;
   onSaved: () => void;
 }) {
+  const [creating, setCreating] = useState(false);
+
   const columns: MatrxColumnDef<HrJobTitle>[] = [
     {
       id: "title",
@@ -876,15 +1121,23 @@ function JobTitlesSection({
 
   return (
     <section className="rounded-lg border border-border bg-card">
-      <header className="flex items-start gap-3 border-b border-border p-4">
-        <Users className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 space-y-1">
-          <h2 className="text-sm font-semibold text-foreground">Job titles</h2>
-          <p className="text-sm text-muted-foreground">
-            Every title carries an EEO-1 job category, because a title without one
-            cannot be reported on.
-          </p>
+      <header className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-3">
+          <Users className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+          <div className="min-w-0 space-y-1">
+            <h2 className="text-sm font-semibold text-foreground">Job titles</h2>
+            <p className="text-sm text-muted-foreground">
+              Every title carries an EEO-1 job category, because a title without one
+              cannot be reported on.
+            </p>
+          </div>
         </div>
+        <NewRowButton
+          label="New job title"
+          full
+          disabled={creating || !organizationId}
+          onClick={() => setCreating(true)}
+        />
       </header>
 
       {/* The edge, stated on the panel */}
@@ -898,6 +1151,21 @@ function JobTitlesSection({
         </p>
       </div>
 
+      {creating ? (
+        <CreatePanel title="New job title">
+          <JobTitleEditor
+            jobTitle={null}
+            organizationId={organizationId}
+            orgRef={orgRef}
+            onSaved={() => {
+              setCreating(false);
+              onSaved();
+            }}
+            onCancel={() => setCreating(false)}
+          />
+        </CreatePanel>
+      ) : null}
+
       <div className="p-4">
         <MatrxDataTable
           data={jobTitles}
@@ -910,7 +1178,14 @@ function JobTitlesSection({
           emptyState={{
             title: "No job titles yet",
             description:
-              "Titles can be added at any time — setup deliberately does not create one, because a made-up title on a real person is worse than none.",
+              "Setup deliberately does not create one, because a made-up title on a real person is worse than none. Add the ones this org actually uses.",
+            action: (
+              <NewRowButton
+                label="New job title"
+                disabled={creating || !organizationId}
+                onClick={() => setCreating(true)}
+              />
+            ),
           }}
           detail={{
             title: (row) => row.title,
@@ -1105,18 +1380,77 @@ function EditorField({
   label,
   value,
   onChange,
+  required = false,
+  disabled = false,
+  invalid = false,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
+  required?: boolean;
+  disabled?: boolean;
+  invalid?: boolean;
 }) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id} className="text-sm font-medium">
-        {label}
+        {label} {required ? <span className="text-destructive">*</span> : null}
       </Label>
-      <Input id={id} value={value} onChange={(event) => onChange(event.target.value)} />
+      <Input
+        id={id}
+        value={value}
+        disabled={disabled}
+        aria-invalid={invalid}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </div>
+  );
+}
+
+function EditorActions({
+  isCreate,
+  busy,
+  createLabel,
+  onSave,
+  onCancel,
+}: {
+  isCreate: boolean;
+  busy: boolean;
+  createLabel: string;
+  onSave: () => void;
+  onCancel?: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        type="button"
+        size="sm"
+        onClick={onSave}
+        disabled={busy}
+        className="min-h-11 sm:min-h-9"
+      >
+        {busy ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : isCreate ? (
+          <Plus className="mr-2 h-4 w-4" />
+        ) : (
+          <Save className="mr-2 h-4 w-4" />
+        )}
+        {isCreate ? createLabel : "Save"}
+      </Button>
+      {onCancel ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          onClick={onCancel}
+          disabled={busy}
+          className="min-h-11 sm:min-h-9"
+        >
+          Cancel
+        </Button>
+      ) : null}
     </div>
   );
 }
