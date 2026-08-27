@@ -79,6 +79,9 @@ export function HrDecisionPanel({
     const [dialogRefusal, setDialogRefusal] = useState<HrRefusal | null>(null);
     const [dialogBusy, setDialogBusy] = useState(false);
     const [failureOpen, setFailureOpen] = useState(failureId !== null);
+    const [pickedFailure, setPickedFailure] = useState<{ id: string; failureClass: string } | null>(
+        null,
+    );
 
     async function load() {
         setLoading(true);
@@ -115,6 +118,9 @@ export function HrDecisionPanel({
     const step = stepId ? steps.find((s) => s.id === stepId) : steps.find((s) => s.state === "active");
     const restricted = str(instance, "sensitivity_tier") === "restricted";
     const activeStep = step && step.state === "active" ? step : undefined;
+    const openFailures = (detail?.failures ?? []).filter(
+        (f) => f.state === "open" || f.state === "retrying",
+    );
 
     async function act(decision: "approve" | "reject" | "return") {
         if (!activeStep) return;
@@ -265,9 +271,54 @@ export function HrDecisionPanel({
                             <section className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
                                 {steps.length === 0
                                     ? "This request has no steps yet."
-                                    : "Nothing on this request is waiting on you right now."}
+                                    : openFailures.length > 0
+                                      ? "Nothing here is waiting on a decision — this request is held by a failure, below."
+                                      : "Nothing on this request is waiting on you right now."}
                             </section>
                         )}
+
+                        {/* 🚨 THE ESCAPE HATCH FOR THE STUCK CLASS.
+                            When a step goes `unroutable` — nobody eligible, escalation exhausted —
+                            the decision controls correctly disappear, because nobody CAN decide.
+                            Without this section the request becomes a dead end: a live instance,
+                            visible, with no control on it at all. The failure row is the handle,
+                            so it belongs on the request as well as in the inbox. */}
+                        {openFailures.length > 0 ? (
+                            <section className="space-y-2">
+                                <h2 className="text-sm font-semibold">Holding this request</h2>
+                                <ul className="divide-y divide-border rounded-lg border border-destructive/40 bg-card text-sm">
+                                    {openFailures.map((f) => (
+                                        <li key={String(f.id)} className="flex items-center gap-3 p-3">
+                                            <span className="truncate font-medium">
+                                                {str(f, "failure_class")}
+                                            </span>
+                                            <span className="text-muted-foreground">
+                                                {str(f, "state")}
+                                            </span>
+                                            {str(f, "detail") ? (
+                                                <span className="truncate text-muted-foreground">
+                                                    {str(f, "detail")}
+                                                </span>
+                                            ) : null}
+                                            <Button
+                                                className="ml-auto shrink-0"
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() =>
+                                                    setPickedFailure({
+                                                        id: String(f.id),
+                                                        failureClass:
+                                                            str(f, "failure_class") ?? "failure",
+                                                    })
+                                                }
+                                            >
+                                                Resolve
+                                            </Button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </section>
+                        ) : null}
 
                         <section className="space-y-2">
                             <h2 className="text-sm font-semibold">Steps</h2>
@@ -463,18 +514,23 @@ export function HrDecisionPanel({
             />
 
             {/* `?failure=` from the inbox's failure rows lands straight on the terminal. */}
-            <HrFailureResolveDialog
-                failureId={failureId}
+<HrFailureResolveDialog
+                failureId={pickedFailure?.id ?? (failureOpen ? failureId : null)}
                 failureClass={
-                    failureId
+                    pickedFailure?.failureClass ??
+                    (failureId
                         ? (str(
                               (detail?.failures ?? []).find((f) => f.id === failureId) ?? {},
                               "failure_class",
                           ) ?? null)
-                        : null
+                        : null)
                 }
-                open={failureOpen && failureId !== null}
-                onOpenChange={setFailureOpen}
+                open={pickedFailure !== null || (failureOpen && failureId !== null)}
+                onOpenChange={(open) => {
+                    if (open) return;
+                    setPickedFailure(null);
+                    setFailureOpen(false);
+                }}
                 onResolved={load}
             />
         </div>

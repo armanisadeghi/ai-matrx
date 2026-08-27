@@ -102,6 +102,37 @@ how two surfaces come to disagree about what a person is allowed to see.
 
 `subject_label` is `null` on a restricted row — redacted, not absent, so the UI can say so.
 
+## 🚨 A STUCK REQUEST MUST ALWAYS HAVE ONE CONTROL LEFT
+
+When a step goes `unroutable` — nobody eligible, escalation exhausted — the decision controls
+**correctly** disappear, because nobody can decide. Without something else on the page, the request
+becomes a dead end: a live instance, visible in the inbox, with nothing you can do to it. The
+`hr.workflow_failure` row is the handle, so it appears **both** in the inbox's *Failures assigned to
+me* and in a *Holding this request* section on the request itself, each with a Resolve control.
+
+The terminal is `hr.wf_resolve_failure(failure, action, note)` — `retry | resolve | abandon |
+reassign`, and the **note is mandatory** (the door answers `WF_REASON_REQUIRED`: *"resolving a
+failure always records what was done about it"*). A retry that is itself refused is reported as
+**still live**, never as a resolved failure. On success the caller reloads, so the row leaves both
+lists.
+
+`outcome` is read from the returned envelope and stays dark until the engine emits it — the live
+signature takes three arguments and no outcome, so the client sends nothing that does not exist and
+needs no change on the day it starts coming back.
+
+## 🚨 NEVER USE THE GLOBAL `confirm()` ON THIS SURFACE
+
+`components/dialogs/confirm/ConfirmDialogHost` mounts through `next/dynamic({ ssr: false })` and
+queues calls made before it hydrates. Observed live on `/hr/tasks/{instance}`: the first Escalate
+click after a load produced **no dialog, no change, no refusal and no console error**, while
+Approve on the same page refused correctly. On the escape hatch for a stuck approval that is the
+worst possible failure — the operator concludes the button is dead and the request stays stuck.
+
+Every changing control here uses `HrActionDialog`, a plain component mounted with the panel. No
+registry, no queue, no dynamic import between the click and the dialog. It also carries the
+**reason**, which `confirm()` structurally cannot: `hr.wf_escalate` stores `p_reason` on the step
+and puts it in the notice both parties receive.
+
 ## Section and control rules that are spec, not taste
 
 - **Five sections, one page** (§5.2): *Needs my decision* (grouped by §5.9's urgency buckets) ·
@@ -142,6 +173,8 @@ the fix is in that pillar's flow declaration — never a second list on this pag
 | `components/HrDecisionPanel.tsx` | `/hr/tasks/{instance}` — the focused decision surface. |
 | `components/HrDeliveryState.tsx` | `hr.workflow_notice` state, honestly labelled. |
 | `components/HrRefusalNotice.tsx` | The refusal envelope, rendered in place. |
+| `components/HrActionDialog.tsx` | The confirm-plus-reason dialog every changing control uses. |
+| `components/HrFailureResolveDialog.tsx` | The failure-resolution terminal for the stuck class. |
 | `../../../scripts/hr/hrb022_proof.py` | The live proof, driven as real identities and rolled back. |
 
 ## Related, and NOT ours
@@ -158,6 +191,14 @@ the fix is in that pillar's flow declaration — never a second list on this pag
 
 # Change Log
 
+- 2026-08-27 — Round-5 T2: **Escalate did nothing.** Root cause was the global `confirm()`'s
+  dynamic host swallowing the first click after load — not the door, which works and refuses
+  correctly. Replaced with locally-mounted `HrActionDialog` for Escalate, Withdraw and Cancel, each
+  carrying the reason the engine actually stores. Added the failure-resolution terminal
+  (`HrFailureResolveDialog`) to BOTH the inbox's failure rows and a new *Holding this request*
+  section on the panel, because a step that goes `unroutable` leaves the request with no control at
+  all. Proven live end to end: a real `approver_ineligible` failure resolved with a note, `state`
+  flipped to `resolved` in `hr.workflow_failure`, and the row left both lists.
 - 2026-08-26 — Created with the feature (HRB-022). The inbox reads the live engine, not the mock
   lane. Two findings fixed at the source in `hr_c4_07_inbox_doors.sql`: the §5.1 display rule was
   extracted from `hr._wf_project_step` so the mirror and the inbox cannot disagree, and
