@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 593 active entity tokens. A token here is FK-valid for
+// 595 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -536,6 +536,8 @@ export type EntityTypeToken =
   | "study_plan"
   | "study_plan_block"
   | "study_plan_day"
+  | "study_reminder_context"
+  | "study_reminder_delivery"
   | "study_session"
   | "surface"
   | "system_error"
@@ -1503,6 +1505,8 @@ export type ScopeableEntityToken =
   | "study_plan"
   | "study_plan_block"
   | "study_plan_day"
+  | "study_reminder_context"
+  | "study_reminder_delivery"
   | "study_session"
   | "surface"
   | "system_error"
@@ -2190,6 +2194,8 @@ export const ENTITY_TYPE_METADATA = {
   "study_plan": { token: "study_plan", schema: "education", table: "study_plan", label: "Study Plan", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "study_plan_block": { token: "study_plan_block", schema: "education", table: "study_plan_block", label: "Study Plan Block", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "study_plan_day": { token: "study_plan_day", schema: "education", table: "study_plan_day", label: "Study Plan Day", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "study_reminder_context": { token: "study_reminder_context", schema: "education", table: "study_reminder_context", label: "Study Reminder Context", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "study_reminder_delivery": { token: "study_reminder_delivery", schema: "education", table: "study_reminder_delivery", label: "Study Reminder Delivery", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "study_session": { token: "study_session", schema: "education", table: "study_session", label: "Study Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "surface": { token: "surface", schema: "ui", table: "ui_surface", label: "UI Surface", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "system_error": { token: "system_error", schema: "ops", table: "system_error", label: "System Error", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2787,6 +2793,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "study_plan",
   "study_plan_block",
   "study_plan_day",
+  "study_reminder_context",
+  "study_reminder_delivery",
   "study_session",
   "surface",
   "system_error",

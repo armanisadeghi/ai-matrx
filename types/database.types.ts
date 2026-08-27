@@ -19773,6 +19773,141 @@ export type Database = {
           },
         ]
       }
+      study_reminder_context: {
+        Row: {
+          assignment_due_count: number
+          computed_at: string
+          created_at: string
+          created_by: string | null
+          current_streak: number
+          deleted_at: string | null
+          due_review_count: number
+          id: string
+          is_rest_day: boolean
+          metadata: Json
+          organization_id: string
+          studied_today: boolean
+          studied_yesterday: boolean
+          timezone: string | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          assignment_due_count?: number
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          current_streak?: number
+          deleted_at?: string | null
+          due_review_count?: number
+          id?: string
+          is_rest_day?: boolean
+          metadata?: Json
+          organization_id: string
+          studied_today?: boolean
+          studied_yesterday?: boolean
+          timezone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          assignment_due_count?: number
+          computed_at?: string
+          created_at?: string
+          created_by?: string | null
+          current_streak?: number
+          deleted_at?: string | null
+          due_review_count?: number
+          id?: string
+          is_rest_day?: boolean
+          metadata?: Json
+          organization_id?: string
+          studied_today?: boolean
+          studied_yesterday?: boolean
+          timezone?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      study_reminder_delivery: {
+        Row: {
+          body: string
+          channel_results: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          delivered_at: string | null
+          expires_at: string | null
+          id: string
+          kind: string
+          metadata: Json
+          occurrence_key: string
+          organization_id: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          url: string
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          body: string
+          channel_results?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          expires_at?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          occurrence_key: string
+          organization_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          url: string
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          body?: string
+          channel_results?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          delivered_at?: string | null
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          occurrence_key?: string
+          organization_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          url?: string
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       study_session: {
         Row: {
           aggregate_score: Json | null
@@ -42358,7 +42493,10 @@ export type Database = {
         Args: { p_at: string; p_employment_id: string; p_user: string }
         Returns: Json
       }
-      _clock_knob: { Args: { p_default?: Json; p_key: string }; Returns: Json }
+      _clock_knob: {
+        Args: { p_default?: Json; p_key: string; p_organization_id?: string }
+        Returns: Json
+      }
       _desired_grants_for_employment: {
         Args: { p_at?: string; p_employment_id: string }
         Returns: {
@@ -42450,6 +42588,15 @@ export type Database = {
           p_subject_employment?: string
           p_target_ids?: string[]
           p_target_token: string
+        }
+        Returns: Json
+      }
+      _hr_knob: {
+        Args: {
+          p_default: Json
+          p_feature: string
+          p_key: string
+          p_organization_id: string
         }
         Returns: Json
       }
@@ -42595,7 +42742,10 @@ export type Database = {
         Returns: boolean
       }
       _punch_kind_rank: { Args: { p_kind: string }; Returns: number }
-      _punch_knob: { Args: { p_default: Json; p_key: string }; Returns: Json }
+      _punch_knob: {
+        Args: { p_default: Json; p_key: string; p_organization_id: string }
+        Returns: Json
+      }
       _punch_next_state: {
         Args: { p_break_paid: boolean; p_kind: string; p_state: string }
         Returns: string
@@ -43301,6 +43451,10 @@ export type Database = {
       }
       pay_change_wf_apply: { Args: { p_instance_id: string }; Returns: Json }
       pay_change_wf_validate: { Args: { p_instance_id: string }; Returns: Json }
+      pay_period_generate: {
+        Args: { p_pay_group_id: string; p_through_date?: string }
+        Returns: Json
+      }
       pay_period_get: { Args: { p_pay_period_id: string }; Returns: Json }
       pay_period_list: {
         Args: { p_filters?: Json; p_page?: Json }
@@ -60474,6 +60628,10 @@ export type Database = {
       hr_emergency_contact_remove: { Args: { p_id: string }; Returns: Json }
       hr_emergency_contact_upsert: { Args: { p_payload: Json }; Returns: Json }
       hr_employee_create: { Args: { p_payload: Json }; Returns: Json }
+      hr_employee_invite: {
+        Args: { p_email?: string; p_employee_id: string; p_expires_at?: string }
+        Returns: Json
+      }
       hr_employee_profile: {
         Args: { p_as_of?: string; p_employee_id: string }
         Returns: Json
@@ -60511,6 +60669,7 @@ export type Database = {
       hr_incident_create: { Args: { p_payload: Json }; Returns: Json }
       hr_incident_party_add: { Args: { p_payload: Json }; Returns: Json }
       hr_incident_status: { Args: { p_incident_id: string }; Returns: Json }
+      hr_invite_accept: { Args: { p_token: string }; Returns: Json }
       hr_kiosk_authenticate: {
         Args: { p_device_id: string; p_device_secret: string }
         Returns: Json
@@ -60648,6 +60807,10 @@ export type Database = {
         Returns: Json
       }
       hr_pay_group_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_pay_period_generate: {
+        Args: { p_pay_group_id: string; p_through_date?: string }
+        Returns: Json
+      }
       hr_pay_period_get: { Args: { p_pay_period_id: string }; Returns: Json }
       hr_pay_period_list: {
         Args: { p_filters?: Json; p_page?: Json }
