@@ -110,6 +110,10 @@ const EXPECTED_CHECKS = [
   // interval per (employment, day, earning code). Two sanctioned writers can emit one for the same
   // exception; this survives a change to either. It catches a DOUBLE premium, never a missing one.
   "premium_line_not_doubled",
+  // G2 N1 (hr_l3_24): a knob reader pointed at a feature with zero rows in platform.feature_knob
+  // silently falls past the platform rung to its caller default, in EVERY org, unfixable by any
+  // admin action. hr._clock_knob read `hr.clock`, which has no registered keys.
+  "knob_readers_use_registered_features",
 ] as const;
 
 interface ConformanceRow {
