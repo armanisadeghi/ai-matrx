@@ -63,19 +63,54 @@ export function PeriodTransitionBar({
   const [reasonFor, setReasonFor] = useState<PeriodActionOffer | null>(null);
   /** The server's own `notice`, rendered verbatim. Never paraphrased away. */
   const [serverNotice, setServerNotice] = useState<string | null>(null);
+  /**
+   * What the transition's envelope reported it DID — instances opened, rows opened, disputes
+   * carried. Rendered on the page, not only in a toast: a toast disappears, and "how many people
+   * were actually asked to attest" is the fact somebody comes back to this page to check.
+   */
+  const [envelopeLines, setEnvelopeLines] = useState<string[]>([]);
 
   const offers = offeredTransitions({ period, role, allowPeriodReopen, todayLocalDate });
 
   const run = async (offer: PeriodActionOffer, reason: string | null) => {
     setBusyTo(offer.to);
+    setEnvelopeLines([]);
     try {
       const result = await transitionPayPeriod(period.id, offer.to, reason, { mockCase });
       // The server's sentence wins over ours in every case where it sent one.
       setServerNotice(result.notice ?? null);
+
+      /*
+       * 🚨 WHAT ACTUALLY HAPPENED, not just that it happened.
+       *
+       * On `submitted` the transition opens one `timecard_attestation` instance per included
+       * employment, and `workflowInstancesOpened` is that count. It is reported because "the period
+       * is submitted" and "312 people have actually been asked to attest" are DIFFERENT FACTS —
+       * only the second means the attestation deadline has started running for anybody, and a
+       * period that moved without opening a single instance is a silent dead end that looks like
+       * success. Reporting zero explicitly is the point: it is the case worth noticing.
+       */
+      const lines: string[] = [];
+      if (typeof result.workflowInstancesOpened === "number") {
+        const n = result.workflowInstancesOpened;
+        lines.push(
+          n === 0
+            ? "No attestation instances were started — nobody has been asked to attest yet."
+            : `${n} ${result.workflowFlowKey ?? "workflow"} ${n === 1 ? "instance" : "instances"} started.`,
+        );
+      }
+      if (typeof result.rowsOpened === "number" && result.rowsOpened > 0) {
+        lines.push(
+          `${result.rowsOpened} timecard ${result.rowsOpened === 1 ? "row" : "rows"} opened.`,
+        );
+      }
       const disputes = disputeSentence(result.disputesOpen);
+      if (disputes) lines.push(disputes);
+
+      setEnvelopeLines(lines);
       toast.success(
         `Period ${offer.to}`,
-        disputes ? { description: disputes } : undefined,
+        lines.length > 0 ? { description: lines.join(" ") } : undefined,
       );
       onTransitioned();
     } catch (err: unknown) {
@@ -147,6 +182,16 @@ export function PeriodTransitionBar({
           </p>
         ) : null}
       </div>
+
+      {envelopeLines.length > 0 ? (
+        <ul className="space-y-1 rounded-md border border-border bg-muted/50 px-3 py-2">
+          {envelopeLines.map((line) => (
+            <li key={line} className="text-[12px] leading-relaxed text-foreground">
+              {line}
+            </li>
+          ))}
+        </ul>
+      ) : null}
 
       {serverNotice ? (
         <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-relaxed text-amber-800 dark:text-amber-300">
