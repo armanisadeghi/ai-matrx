@@ -76,7 +76,7 @@ export function copyActionSegmentClass(
     "h-full w-full rounded-md bg-transparent shadow-none active:scale-100",
     appearance === "segmented"
       ? "text-muted-foreground hover:bg-accent hover:text-accent-foreground active:bg-accent active:text-accent-foreground lg:rounded-none"
-      : "text-muted-foreground hover:bg-transparent hover:text-foreground focus:bg-transparent active:bg-transparent active:text-foreground data-[state=open]:bg-transparent",
+      : "text-muted-foreground hover:bg-transparent hover:text-foreground focus:bg-transparent focus-visible:bg-transparent focus-visible:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 active:bg-transparent active:text-foreground data-[state=open]:bg-transparent",
     size === "xs"
       ? "[&_svg]:size-[18px] lg:[&_svg]:size-3"
       : "[&_svg]:size-[18px] lg:[&_svg]:size-3.5",

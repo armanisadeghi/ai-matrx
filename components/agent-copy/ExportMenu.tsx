@@ -35,6 +35,7 @@ import {
   exportFilename,
   type ExportItem,
 } from "@/components/agent-copy/export";
+import { cn } from "@/lib/utils";
 
 export interface ExportMenuProps {
   /** Filename base + toast label, e.g. "backlinks-aimatrx" / "Stored backlinks". */
@@ -147,7 +148,12 @@ export function ExportMenu({
                   appearance,
                 )
               : isIcon
-                ? `h-7 w-7 ${className ?? ""}`
+                ? cn(
+                    "h-7 w-7",
+                    appearance === "bare" &&
+                      "bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent focus-visible:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 active:bg-transparent data-[state=open]:bg-transparent",
+                    className,
+                  )
                 : className
           }
           disabled={disabled}

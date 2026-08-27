@@ -216,7 +216,7 @@ export function AiCopyMenu({
           ? "h-11 w-11 lg:h-7 lg:w-7"
           : "h-11 w-11 lg:h-8 lg:w-8",
     appearance === "bare" &&
-      "bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent data-[state=open]:bg-transparent",
+      "bg-transparent hover:bg-transparent focus:bg-transparent focus-visible:bg-transparent focus-visible:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 active:bg-transparent data-[state=open]:bg-transparent",
   );
   const iconCls =
     size === "xs"

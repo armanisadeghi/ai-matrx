@@ -238,6 +238,7 @@ describe("CopyButtons AI variants", () => {
       'button[aria-label="Copy CRM activity (human-readable)"]',
     );
     expect(copyButton?.className).toContain("hover:bg-transparent");
+    expect(copyButton?.className).toContain("focus-visible:ring-0");
     expect(copyButton?.className).toContain("[&_svg]:size-[18px]");
   });
 

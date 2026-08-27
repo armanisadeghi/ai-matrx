@@ -18,7 +18,8 @@ no page reimplements them.
   18px icon controls show, each with a non-shrinking 44px tap target. Compact
   segmented chrome returns at `lg+`. **Naturally unframed action rails use
   `appearance="bare"`** to remove desktop group chrome and every hover/active
-  fill; the default remains segmented.
+  fill or focus ring; keyboard focus remains visible through icon color. The
+  default remains segmented.
   `size`: `"xs"` (dense cards / per-field), `"icon"` (rows/toolbars), `"sm"`
   (header). Stops click propagation by default. **Pass `json`** for
   structured data; it is an AI-menu item, never a fourth button. The AI

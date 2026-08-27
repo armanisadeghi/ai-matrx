@@ -44068,6 +44068,17 @@ export type Database = {
         Returns: string
       }
       timecard_wf_validate: { Args: { p_instance_id: string }; Returns: Json }
+      timecards_without_an_approver: {
+        Args: never
+        Returns: {
+          employment_id: string
+          has_manager: boolean
+          pay_period_employment_id: string
+          pay_period_id: string
+          shape: string
+          subject: string
+        }[]
+      }
       timesheet_get: {
         Args: { p_employment_id: string; p_pay_period_id: string }
         Returns: Json
