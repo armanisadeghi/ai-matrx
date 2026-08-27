@@ -1011,6 +1011,123 @@ async def main():
             and await conn.fetchval("select state='approved' from hr.pay_period where id=$1", pp2),
             json.dumps(done)[:220])
 
+        # ============================================= §8.2 NODE G — THE UNREACHABLE ATTESTATION
+        # 🚨 A SELF-STEP CAN ROUTE TO SOMEBODY WHO CANNOT ACT, AND IT MUST STILL BE ABLE TO END.
+        # A kiosk-only employee holds no login: no iam.permissions grant, no workspace.tasks row,
+        # no way to call hr.wf_decide. hr_c4_11 made the step ROUTE to them (§5.1 — the login is a
+        # projection filter, not an eligibility rule); this is the other half — it TERMINATES,
+        # honestly, without anything ever attesting on their behalf.
+        await as_owner()
+        noreach_emp = await conn.fetchval(
+            "insert into hr.employee (organization_id, party_id, employee_number, legal_first_name, "
+            "legal_last_name, display_name) values ($1,$2,'EMP-noreach','Nora','NoLogin','Nora NoLogin') "
+            "returning id", org,
+            await conn.fetchval("insert into crm.party (organization_id, party_kind, display_name) "
+                                "values ($1,'person','Nora NoLogin') returning id", org))
+        noreach = await conn.fetchval(
+            "insert into hr.employment (organization_id, employee_id, employer_profile_id, "
+            "pay_group_id, hire_date, status) values ($1,$2,$3,$4,current_date - 365,'active') returning id",
+            org, noreach_emp, er, pg2)
+        await conn.execute(
+            "insert into hr.position_assignment (organization_id, employment_id, job_title_id, "
+            "department_id, location_id, worker_class, flsa_status, pay_basis, schedule_class, "
+            "effective_from, manager_employment_id) "
+            "values ($1,$2,$3,$4,$5,'employee','nonexempt','hourly','full_time',current_date - 365,$6)",
+            org, noreach, jt, dept, loc, people["bob"]["employment"])
+        pp3 = await conn.fetchval(
+            "insert into hr.pay_period (organization_id, pay_group_id, period_start_on, period_end_on, "
+            "sequence_number) values ($1,$2,current_date - 45, current_date - 31, 3) returning id", org, pg2)
+        await as_user(people["carol"]["uid"])
+        sub3 = await j("select hr.pay_period_transition($1,'submitted')", pp3)
+        await as_owner()
+        nr_ppe = await conn.fetchval(
+            "select id from hr.pay_period_employment where pay_period_id=$1 and employment_id=$2",
+            pp3, noreach)
+        nr_step = await conn.fetchrow(
+            "select s.id, s.state, s.resolved_approver_ids, s.resolved_user_ids, s.resolution_evidence "
+            "from hr.workflow_step s join hr.workflow_instance i on i.id=s.workflow_instance_id "
+            "where i.target_id=$1 and i.flow_key='timecard_attestation'", nr_ppe)
+        rec("§8.2 node G", "an employee with NO LOGIN is still routed their own attestation, and the step records that it cannot reach them",
+            nr_step is not None and nr_step["state"] == "active"
+            and list(nr_step["resolved_approver_ids"]) == [noreach]
+            and list(nr_step["resolved_user_ids"]) == []
+            and "no_login" in json.dumps(json.loads(nr_step["resolution_evidence"]).get("no_reach") or []),
+            nr_step["state"] if nr_step else None)
+        rec("§8.2 node G", "🚨 and it raises a NAMED, NON-RETRYABLE failure — unreachable is a STATE, not a transient error",
+            await conn.fetchval(
+                "select count(*)=1 from hr.workflow_failure where workflow_step_id=$1 "
+                "and failure_class='unactionable_no_reach' and state='open'", nr_step["id"]))
+        nr_fail = await conn.fetchval(
+            "select id from hr.workflow_failure where workflow_step_id=$1 "
+            "and failure_class='unactionable_no_reach'", nr_step["id"])
+        await as_user(people["carol"]["uid"])
+        nr_retry = await j("select hr.wf_resolve_failure($1,'retry','try again')", nr_fail)
+        rec("§8.2 node G", "retry is REFUSED by name, and the refusal says what the class does offer",
+            nr_retry.get("granted") is False
+            and nr_retry.get("reason") == "unknown_action"
+            and "not_attested" in json.dumps(nr_retry.get("available_actions")),
+            json.dumps(nr_retry)[:200])
+        # 🚨 ESCALATE IS THE ONE CONTROL THIS STEP MUST NEVER TAKE — it hands somebody else the
+        # employee's own signature, and it is what killed the real G2V timecard on 2026-08-27.
+        nr_esc = await j("select hr.wf_escalate($1,'nobody is answering')", nr_step["id"])
+        await as_owner()
+        rec("§8.2 node G", "🚨 ESCALATE is refused on a self-step — escalating an attestation hands somebody else the employee's signature",
+            nr_esc.get("granted") is False
+            and nr_esc.get("reason") == "WF_SELF_STEP_NOT_ESCALATABLE", json.dumps(nr_esc)[:200])
+        rec("§8.2 node G", "and the refused escalation left the step exactly as it was — still active, still theirs",
+            await conn.fetchval(
+                "select state='active' and resolved_approver_ids=array[$2]::uuid[] "
+                "from hr.workflow_step where id=$1", nr_step["id"], noreach))
+        # 🚨 `resolve` MUST NOT be a way to make a dead step disappear. Park the step unroutable —
+        # the state a refused escalation used to leave behind — and the door must refuse to tidy
+        # the failure away, because that would close the only thing surfacing the problem.
+        await conn.execute("update hr.workflow_step set state='unroutable' where id=$1", nr_step["id"])
+        await as_user(people["carol"]["uid"])
+        nr_hide = await j("select hr.wf_resolve_failure($1,'resolve','tidy it away')", nr_fail)
+        rec("§8.2 node G", "🚨 `resolve` is REFUSED while the step is unroutable — a queue is not cleaned by sweeping the evidence up",
+            nr_hide.get("granted") is False
+            and nr_hide.get("reason") == "WF_STEP_STILL_UNROUTABLE"
+            and "resolve" not in json.dumps(nr_hide.get("available_actions")),
+            json.dumps(nr_hide)[:200])
+        await as_owner()
+        await conn.execute("update hr.workflow_step set state='active' where id=$1", nr_step["id"])
+
+        # the terminal path, through the product door
+        await as_user(people["carol"]["uid"])
+        nr_term = await j("select hr.wf_resolve_failure($1,'not_attested','Nobody can reach this employee; closing it honestly.')",
+                          nr_fail)
+        await as_owner()
+        rec("§8.2 node G", "🚨 the failure lane closes it as NOT_ATTESTED — and the envelope carries `outcome` for the task page",
+            nr_term.get("granted") is True and nr_term.get("outcome") == "not_attested",
+            json.dumps(nr_term)[:200])
+        rec("§8.2 node G", "🚨 NOTHING attested on their behalf: attested_at is still NULL and the row is flagged to the manager",
+            await conn.fetchval(
+                "select attested_at is null and metadata->>'attestation_outcome'='not_attested' "
+                "from hr.pay_period_employment where id=$1", nr_ppe),
+            str(await conn.fetchval(
+                "select metadata->>'attestation_outcome' from hr.pay_period_employment where id=$1", nr_ppe)))
+        nr_mgr_step = await conn.fetchrow(
+            "select s.id, s.resolved_approver_ids from hr.workflow_step s "
+            "join hr.workflow_instance i on i.id=s.workflow_instance_id "
+            "where i.target_id=$1 and i.flow_key='timecard_approval' and s.state='active'", nr_ppe)
+        rec("§8.2 node G", "and the MANAGER's approval opens on the flagged timecard — the period is not blocked forever",
+            nr_mgr_step is not None
+            and list(nr_mgr_step["resolved_approver_ids"]) == [people["bob"]["employment"]],
+            str(nr_mgr_step["id"]) if nr_mgr_step else None)
+        await as_user(people["bob"]["uid"])
+        await j("select hr.wf_decide($1,'approved','Approved despite no attestation; the flag travels to the export.')",
+                nr_mgr_step["id"])
+        await as_owner()
+        rec("§8.2 node G", "🚨 the manager approves a NOT-ATTESTED timecard and the row advances — approve-despite, flagged, never forged",
+            await conn.fetchval(
+                "select state='approved' and attested_at is null "
+                "from hr.pay_period_employment where id=$1", nr_ppe))
+        # and the same transition is the SWEEP's, not a second implementation
+        rec("§8.2 node G", "🚨 the human door and the deadline sweep take THE SAME transition — one hr._wf_not_attested, nothing to fork",
+            await conn.fetchval(
+                "select count(*)=0 from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='hr' and p.proname <> '_wf_not_attested' "
+                "and p.prosrc ~ '_wf_close_step\\([^)]*''not_attested'''"))
         # ================================================================= §4.2 DOOR GRANTS
         # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
         # GRANT, so hr_c4_07's door assertion would stay green on a surface reachable only because
