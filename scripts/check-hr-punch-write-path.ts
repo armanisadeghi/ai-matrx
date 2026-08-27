@@ -176,12 +176,19 @@ const EXPECTED_CHECKS = [
   // none of). Three known pairs ride a dated allowlist printed on every run; both fixes belong to
   // the workflow lane, because widening the predicate decides who may act on payroll.
   "every_timecard_has_an_approver",
-  // Round-18 P1 (hr_l3_64/65). hr_directory_list suppressed an opted-out person's own ROW in its
-  // WHERE clause and then printed that same person's full name one column over as manager_name, to
-  // any peer — a raw hr.employee.display_name read with no viewer in it. The row-level suppression
-  // is exactly what hid it: anyone testing "is the opted-out employee hidden?" gets a correct YES.
-  // The rule now lives in hr._employee_display_name with hr._subject_display_name delegating, so an
-  // employment-keyed and an employee-keyed caller cannot disagree about one person.
+  // Round-18 P1 + round-19 (hr_l3_64/65/66). TWO doors suppressed an opted-out person's own row and
+  // then printed that same person's full name one column over as manager_name, to any peer — a raw
+  // hr.employee.display_name read with no viewer in it. The row-level suppression is exactly what
+  // hid it: anyone testing "is the opted-out employee hidden?" gets a correct YES.
+  // hr_directory_list did it (hr_l3_64) and hr.employee_by_party did it too (hr_l3_66) — the latter
+  // because it carried a SECOND hand-copied set of the arms, which is the whole lesson: a second
+  // body does not drift eventually, it drifts on the day it is written.
+  // The load-bearing clause is therefore a FINGERPRINT COUNT, not a caller count: exactly one
+  // function in hr may read the opt-out flag AND check identity.write AND call hr._punch_capability.
+  // A caller count would forbid a legitimate eighth door while permitting the duplication that
+  // actually leaks. The shell (hr._subject_display_name) is asserted by what it DOES — it must call
+  // the one body — since asserting only the absence of arm logic would also pass an empty function
+  // that silently blanks six doors. Clauses live in hr.name_rule_violations().
   "directory_names_use_the_one_rule",
   // Round-18, the half hr_c4_20 deliberately could not reach. RULE 2b (the reporting-line rung that
   // closed check 26) is gated on sole_authority_mode = auto_record, so it never reaches
