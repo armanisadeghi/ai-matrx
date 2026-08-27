@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-08-26
+**Last updated:** 2026-08-27
 
 ## Internal Authority Router
 
@@ -600,6 +600,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   identities are not offered for Ads consent, and aidream independently rejects
   an account collision before replacing any canonical Vault credential. Normal
   users retain the registered coming-soon surface until provider approval.
+- 2026-08-27 — Codex: **The next Google read-only sweep has one mirrored scope contract.** Contacts, owned-calendar agenda, Google Tasks import, non-monetary YouTube Analytics, and Tag Manager inventory each have an exact focused scope family plus one auditable Cloud Data Access set. None includes Ads, Gmail read, or write access; runtime consumers stay internal-test-only until their normal product paths and real-account proofs exist.
 - 2026-08-26 — Codex: **Google Analytics and YouTube read-only moved to approved production phases.** Google approved both scopes on 2026-08-25; the frontend campaign gates now admit every signed-in user while preserving focused non-cumulative consent and exact connection/resource checks. The GA4 scheduler remains independently disabled until Arman approves its exact name and interval.
 - 2026-08-26 — Codex: **Duplicate Google resources now prefer a healthy credential.** When the same owned YouTube channel exists under both a current connection and an older connection that needs reauthorization, the provider-identity deduplicator still presents one channel but now retains the resource backed by the derived-healthy connection instead of whichever row arrived first.
 - 2026-08-26 — Codex: **Keyword Value uses the canonical site header once.**

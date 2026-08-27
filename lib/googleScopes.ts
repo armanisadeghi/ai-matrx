@@ -18,7 +18,14 @@ export const GOOGLE_SCOPE = {
   webmastersReadonly: "https://www.googleapis.com/auth/webmasters.readonly",
   analyticsReadonly: "https://www.googleapis.com/auth/analytics.readonly",
   youtubeReadonly: "https://www.googleapis.com/auth/youtube.readonly",
+  youtubeAnalyticsReadonly:
+    "https://www.googleapis.com/auth/yt-analytics.readonly",
   contactsReadonly: "https://www.googleapis.com/auth/contacts.readonly",
+  calendarEventsOwnedReadonly:
+    "https://www.googleapis.com/auth/calendar.events.owned.readonly",
+  tasksReadonly: "https://www.googleapis.com/auth/tasks.readonly",
+  tagManagerReadonly:
+    "https://www.googleapis.com/auth/tagmanager.readonly",
   googleAds: "https://www.googleapis.com/auth/adwords",
 } as const;
 
@@ -63,6 +70,31 @@ export const GOOGLE_YOUTUBE_SCOPES = [
   GOOGLE_SCOPE.youtubeReadonly,
 ] as const;
 
+/** Owned-calendar agenda read; deliberately excludes shared calendars and writes. */
+export const GOOGLE_CALENDAR_AGENDA_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
+  GOOGLE_SCOPE.calendarEventsOwnedReadonly,
+] as const;
+
+/** Read-only import from the user's Google Tasks lists. */
+export const GOOGLE_TASKS_IMPORT_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
+  GOOGLE_SCOPE.tasksReadonly,
+] as const;
+
+/** Channel identity plus non-monetary YouTube Analytics reports. */
+export const GOOGLE_YOUTUBE_ANALYTICS_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
+  GOOGLE_SCOPE.youtubeReadonly,
+  GOOGLE_SCOPE.youtubeAnalyticsReadonly,
+] as const;
+
+/** Read-only inventory of Tag Manager accounts, containers, and workspaces. */
+export const GOOGLE_TAG_MANAGER_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
+  GOOGLE_SCOPE.tagManagerReadonly,
+] as const;
+
 /** Isolated Google Ads reporting grant; restricted and never bundled elsewhere. */
 export const GOOGLE_ADS_REPORTING_SCOPES = [
   ...GOOGLE_IDENTITY_SCOPES,
@@ -81,10 +113,13 @@ export const GOOGLE_FIRST_CAMPAIGN_CLOUD_SCOPES = [
   GOOGLE_SCOPE.webmastersReadonly,
 ] as const;
 
-/** Implemented elsewhere, but deliberately excluded from this campaign. */
-export const GOOGLE_DEFERRED_SENSITIVE_SCOPES = [
-  GOOGLE_SCOPE.analyticsReadonly,
-  GOOGLE_SCOPE.youtubeReadonly,
+/** Exact new product scopes in the ordinary read-only Cloud review batch. */
+export const GOOGLE_READ_ONLY_SWEEP_CLOUD_SCOPES = [
+  GOOGLE_SCOPE.contactsReadonly,
+  GOOGLE_SCOPE.calendarEventsOwnedReadonly,
+  GOOGLE_SCOPE.tasksReadonly,
+  GOOGLE_SCOPE.youtubeAnalyticsReadonly,
+  GOOGLE_SCOPE.tagManagerReadonly,
 ] as const;
 
 /**
@@ -128,7 +163,8 @@ export const GOOGLE_OUTREACH_INBOX_SCOPES = [
 ] as const;
 
 /**
- * 🚨 SENSITIVE, and NOT in the approved campaign set — its own future campaign.
+ * 🚨 SENSITIVE, and NOT in the approved campaign set — part of the current
+ * ordinary read-only sweep under an internal-test gate until approval.
  *
  * CRM contact import through the Google People API (read-only). RULED BY ARMAN
  * 2026-08-19 (`common-docs/systems/crm/STATE.md` Q3): the Google People
@@ -139,7 +175,7 @@ export const GOOGLE_OUTREACH_INBOX_SCOPES = [
  * submission is APPROVED and frozen, and adding an unapproved sensitive scope
  * to the production consent path is the exact code/console mismatch the
  * campaign existed to remove. Until Google approves this scope in its own
- * campaign, ONLY the internal-test gate may request it
+ * sweep is approved, ONLY the internal-test gate may request it
  * (`features/crm/import/connectors/campaign.ts` — super-admin testers see the
  * connect action; everyone else sees an explicit "awaiting Google
  * verification" status on the /crm/import source tile). Queue + process:
@@ -175,6 +211,30 @@ export const googleServices = {
     scope: GOOGLE_SCOPE.contactsReadonly,
     description:
       "Read the user's Google Contacts to import them into their CRM.",
+    classification: "sensitive",
+  },
+  calendar_agenda: {
+    name: "Google Calendar agenda",
+    scope: GOOGLE_SCOPE.calendarEventsOwnedReadonly,
+    description: "Read upcoming events from calendars the user owns.",
+    classification: "sensitive",
+  },
+  tasks_import: {
+    name: "Google Tasks import",
+    scope: GOOGLE_SCOPE.tasksReadonly,
+    description: "Read task lists and tasks selected for import.",
+    classification: "sensitive",
+  },
+  youtube_analytics: {
+    name: "YouTube channel analytics",
+    scope: GOOGLE_SCOPE.youtubeAnalyticsReadonly,
+    description: "Read non-monetary performance metrics for an owned channel.",
+    classification: "sensitive",
+  },
+  tag_manager: {
+    name: "Google Tag Manager inventory",
+    scope: GOOGLE_SCOPE.tagManagerReadonly,
+    description: "Read Tag Manager accounts, containers, and workspaces.",
     classification: "sensitive",
   },
 } as const;

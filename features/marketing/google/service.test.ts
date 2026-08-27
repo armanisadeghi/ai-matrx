@@ -3,7 +3,13 @@ import { GOOGLE_CONNECTION_SCOPES } from "@/features/marketing/google/types";
 import {
   GOOGLE_ADS_REPORTING_SCOPES,
   GOOGLE_ANALYTICS_SCOPES,
+  GOOGLE_CALENDAR_AGENDA_SCOPES,
+  GOOGLE_CONTACTS_IMPORT_SCOPES,
+  GOOGLE_READ_ONLY_SWEEP_CLOUD_SCOPES,
   GOOGLE_SCOPE,
+  GOOGLE_TAG_MANAGER_SCOPES,
+  GOOGLE_TASKS_IMPORT_SCOPES,
+  GOOGLE_YOUTUBE_ANALYTICS_SCOPES,
 } from "@/lib/googleScopes";
 
 const baseResource = {
@@ -86,5 +92,48 @@ describe("Google OAuth connection resources", () => {
       GOOGLE_SCOPE.youtubeReadonly,
     );
     expect(GOOGLE_ADS_REPORTING_SCOPES).not.toContain(GOOGLE_SCOPE.driveFile);
+  });
+
+  it("keeps every read-only sweep action focused on its own product", () => {
+    expect(GOOGLE_CONTACTS_IMPORT_SCOPES).toContain(
+      GOOGLE_SCOPE.contactsReadonly,
+    );
+    expect(GOOGLE_CALENDAR_AGENDA_SCOPES).toContain(
+      GOOGLE_SCOPE.calendarEventsOwnedReadonly,
+    );
+    expect(GOOGLE_TASKS_IMPORT_SCOPES).toContain(GOOGLE_SCOPE.tasksReadonly);
+    expect(GOOGLE_YOUTUBE_ANALYTICS_SCOPES).toEqual(
+      expect.arrayContaining([
+        GOOGLE_SCOPE.youtubeReadonly,
+        GOOGLE_SCOPE.youtubeAnalyticsReadonly,
+      ]),
+    );
+    expect(GOOGLE_TAG_MANAGER_SCOPES).toContain(
+      GOOGLE_SCOPE.tagManagerReadonly,
+    );
+
+    for (const family of [
+      GOOGLE_CONTACTS_IMPORT_SCOPES,
+      GOOGLE_CALENDAR_AGENDA_SCOPES,
+      GOOGLE_TASKS_IMPORT_SCOPES,
+      GOOGLE_YOUTUBE_ANALYTICS_SCOPES,
+      GOOGLE_TAG_MANAGER_SCOPES,
+    ]) {
+      expect(family).not.toContain(GOOGLE_SCOPE.googleAds);
+      expect(family).not.toContain(GOOGLE_SCOPE.gmailReadonly);
+      expect(new Set(family).size).toBe(family.length);
+    }
+  });
+
+  it("keeps Cloud Data Access parity explicit for the read-only sweep", () => {
+    expect(new Set(GOOGLE_READ_ONLY_SWEEP_CLOUD_SCOPES)).toEqual(
+      new Set([
+        GOOGLE_SCOPE.contactsReadonly,
+        GOOGLE_SCOPE.calendarEventsOwnedReadonly,
+        GOOGLE_SCOPE.tasksReadonly,
+        GOOGLE_SCOPE.youtubeAnalyticsReadonly,
+        GOOGLE_SCOPE.tagManagerReadonly,
+      ]),
+    );
   });
 });
