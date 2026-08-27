@@ -42628,6 +42628,10 @@ export type Database = {
         Args: { p_code: string; p_organization_id: string }
         Returns: string
       }
+      _employee_display_name: {
+        Args: { p_employee_id: string; p_uid: string }
+        Returns: string
+      }
       _employment_expiry: { Args: { p_employment_id: string }; Returns: string }
       _enroll_pay_period_rows: {
         Args: { p_employment_id?: string; p_pay_period_id?: string }
@@ -42963,6 +42967,14 @@ export type Database = {
       _run_fixture_probe: {
         Args: { p_input: Json; p_probe: string }
         Returns: Json
+      }
+      _seed_founding_authorities: {
+        Args: {
+          p_basis?: string
+          p_holder_employment_id: string
+          p_organization_id: string
+        }
+        Returns: string[]
       }
       _subject_display_name: {
         Args: { p_employment_id: string; p_uid: string }
@@ -43625,6 +43637,17 @@ export type Database = {
       }
       pay_change_wf_apply: { Args: { p_instance_id: string }; Returns: Json }
       pay_change_wf_validate: { Args: { p_instance_id: string }; Returns: Json }
+      pay_changes_without_an_approver: {
+        Args: never
+        Returns: {
+          compensation_id: string
+          employment_id: string
+          has_manager: boolean
+          organization_id: string
+          shape: string
+          subject: string
+        }[]
+      }
       pay_period_generate: {
         Args: { p_pay_group_id: string; p_through_date?: string }
         Returns: Json
