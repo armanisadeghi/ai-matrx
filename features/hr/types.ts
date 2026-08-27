@@ -291,13 +291,21 @@ export type HrProfileHeader = {
   employee_id: string;
   employment_id: string | null;
   display_name: string;
-  /** null unless the viewer is self or hr_admin. Absent identity, never masked. */
-  legal_name: string | null;
+  /**
+   * 🚨 OPTIONAL BECAUSE THE KEY IS GENUINELY ABSENT, NOT NULL, for a viewer
+   * without `identity.read` (§1.3, migration `hr_l1_18`). Typing it as
+   * `string | null` invited exactly the bug that shipped: a present-but-null
+   * `legal_name` renders as "Not provided", which tells a colleague the person
+   * HAS no legal name. `null` here means the permitted viewer looked and it is
+   * empty; ABSENT means they were never allowed to ask.
+   */
+  legal_name?: string | null;
   pronouns: string | null;
   photo_file_id: string | null;
   employee_number: string | null;
   party_id: string | null;
-  login_user_id: string | null;
+  /** Absent — not null — unless the viewer is self or hr_admin. See `legal_name`. */
+  login_user_id?: string | null;
   status: string | null;
   spell_number: number | null;
   hire_date: string | null;
