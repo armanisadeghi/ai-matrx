@@ -190,7 +190,7 @@ function KioskReadySurface({
           <p className="text-4xl font-semibold text-foreground">Too many attempts.</p>
           <p className="max-w-lg text-2xl text-muted-foreground">
             {punch.view.lockedUntil
-              ? `Try again after ${formatStampedTime(punch.view.lockedUntil, kioskKeyTimeZone())}, or ask your manager.`
+              ? `Try again after ${formatStampedTime(punch.view.lockedUntil, kioskKeyTimeZone(config.tz))}, or ask your manager.`
               : "Try again later, or ask your manager."}
           </p>
           <Button onClick={punch.dismiss} className="min-h-[72px] px-10 text-xl">

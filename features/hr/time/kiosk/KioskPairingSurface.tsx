@@ -63,7 +63,9 @@ export function KioskPairingSurface({ mockCase }: { mockCase?: HrFixtureCase }) 
       const stored = storeKioskIdentity({
         deviceId: result.deviceId,
         deviceSecret: result.deviceSecret,
-        organizationDisplayName: result.organizationDisplayName,
+        // 🚨 `organization_name` on the wire — the old `organizationDisplayName` read undefined,
+        // which is why the waiting screen's employer caption rendered blank.
+        organizationDisplayName: result.organizationName ?? "",
         locationName: result.locationName,
         pairedAt: new Date().toISOString(),
       });

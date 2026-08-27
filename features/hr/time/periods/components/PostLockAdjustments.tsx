@@ -19,6 +19,7 @@
  * NO CLIENT COMPUTES ANYTHING: `hoursDelta` and `amountDelta` arrive computed.
  */
 
+import Link from "next/link";
 import { FileWarning, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -45,7 +46,10 @@ export function PostLockAdjustments({ period, rows, isLoading }: PostLockAdjustm
           <h3 className="text-[13px] font-semibold text-foreground">Corrections after lock</h3>
           <p className="mt-1 max-w-2xl text-[12px] leading-relaxed text-muted-foreground">
             {lockedYet
-              ? "This period is not editable. A correction is recorded as an adjustment that rides the next payroll export, tagged back to this period. The locked period itself is never rewritten and the delivered export is never regenerated."
+              ? // The server ships `locked_period_note` on every row and it says the same thing;
+                // this is the panel-level statement for when the list is empty and there is no row
+                // to carry it.
+                "This period is not editable. A correction is recorded as an adjustment that rides the next payroll export, tagged back to this period. The locked period itself is never rewritten and the delivered export is never regenerated."
               : "This period is still editable, so a correction here is a punch edit on the person's timesheet — not an adjustment. The adjustment lane opens once the period is locked."}
           </p>
         </div>
@@ -80,22 +84,36 @@ export function PostLockAdjustments({ period, rows, isLoading }: PostLockAdjustm
                   </span>
                 </p>
                 <p className="text-[13px] font-medium tabular-nums text-foreground">
-                  {row.hoursDelta > 0 ? "+" : ""}
-                  {formatHours(row.hoursDelta)} h
+                  {/* `hoursDelta` is nullable on the live payload; a missing figure stays dark. */}
+                  {row.hoursDelta === null
+                    ? "—"
+                    : `${row.hoursDelta > 0 ? "+" : ""}${formatHours(row.hoursDelta)} h`}
                 </p>
               </div>
 
-              {/* 🚨 The two periods, always both, never collapsed. */}
+              {/*
+                🚨 The two periods, always both, never collapsed. The server sends IDS, not labels —
+                it has no `target_period_label` — so this states the RELATIONSHIP in words rather
+                than printing a blank where a period name used to be assumed.
+              */}
               <p className="mt-1 text-[11px] text-muted-foreground">
-                Belongs to this period ·{" "}
+                {row.originalPayPeriodId === period.id
+                  ? "Belongs to this period · "
+                  : "Belongs to an earlier locked period · "}
                 <span className="text-foreground">
-                  paid in {row.targetPeriodLabel ?? "the next open period"}
+                  {row.targetPayPeriodId === null
+                    ? "rides the next open period"
+                    : row.targetPayPeriodId === period.id
+                      ? "paid in this period"
+                      : "paid in a later period"}
                 </span>
               </p>
 
-              <p className="mt-1.5 text-[12px] leading-relaxed text-foreground">{row.reasonNote}</p>
+              {row.reasonNote ? (
+                <p className="mt-1.5 text-[12px] leading-relaxed text-foreground">{row.reasonNote}</p>
+              ) : null}
 
-              {row.amountWithheld ? (
+              {row.amountPending ? (
                 // Money is ABSENT. Not a zero, not a dash, not a guess.
                 <p className="mt-2 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-relaxed text-amber-800 dark:text-amber-300">
                   <FileWarning className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -111,9 +129,30 @@ export function PostLockAdjustments({ period, rows, isLoading }: PostLockAdjustm
                 </p>
               ) : null}
 
-              <p className="mt-1.5 text-[11px] text-muted-foreground">
-                {row.workflowState}
-                {row.exportedInExportId ? " · already carried on a payroll file" : ""}
+              {/*
+                The workflow state comes from `hr.wf_for_target`, and its `deepLink` is the door into
+                the ONE HR task inbox — where the decision is actually taken. No dead ends: an open
+                instance the UI names is an identity that opens.
+              */}
+              <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
+                {row.workflow.open.length > 0 ? (
+                  <>
+                    <span>{row.workflow.open[0].state}</span>
+                    {row.workflow.open[0].deepLink ? (
+                      <Link
+                        href={row.workflow.open[0].deepLink}
+                        className="underline underline-offset-2 hover:text-foreground"
+                      >
+                        Open the approval
+                      </Link>
+                    ) : null}
+                  </>
+                ) : row.approvedAt ? (
+                  <span>Approved</span>
+                ) : (
+                  <span>Not yet routed for approval</span>
+                )}
+                {row.exportedAt ? <span>· already carried on a payroll file</span> : null}
               </p>
             </li>
           ))}

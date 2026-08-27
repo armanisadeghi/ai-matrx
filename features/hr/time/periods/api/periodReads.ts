@@ -1,129 +1,359 @@
 /**
- * features/hr/time/periods/api/periodReads.ts — the pay-period LIST/GET reads for routes 32 and 33.
+ * features/hr/time/periods/api/periodReads.ts — the pay-period reads for routes 32 and 33.
  *
  * WHY THIS FILE EXISTS BESIDE `features/hr/time/api/service.ts` RATHER THAN INSIDE IT
  * ----------------------------------------------------------------------------------
- * The shared service module is a different agent's file in a shared checkout, and these three reads
- * are wholly this lane's. They still go through **the one door** — `callHrTimeRpc` — so there is no
- * second transport, no second error class and no second mock lane. Fold them into `service.ts` the
- * day the wrappers land and `pnpm db-types` gives them generated `Returns` types; until then the
- * split keeps two agents out of one file.
+ * The shared service module is a different agent's file in a shared checkout, and these reads are
+ * wholly this lane's. They still go through **the one door** — `callHrTimeRpc` — so there is no
+ * second transport, no second error class and no second mock lane.
  *
- * 🚨 THREE RPC NAMES WERE ADDED TO THE CLOSED UNION IN `../../api/rpc.ts` FOR THIS FILE
- * (`hr_pay_period_list`, `hr_pay_period_get`, `hr_time_adjustment_list`), plus three more for the
- * overtime lane. That union is deliberately closed so a typo is a compile error; extending it is the
- * only way to add a read without opening a second door, and a second door is the defect the union
- * exists to prevent. None of these RPCs exists yet — neither does any other RPC in this lane.
+ * ═══════════════════════════════════════════════════════════════════════════════════════════════
+ * 🚨 MAPPED, NOT CAST — and the mapping lives HERE so the declared return type is TRUE.
+ *
+ * `callHrTimeRpc<T>` camelizes the payload and ends in `as T`. A cast cannot fail, so where the
+ * live shape differs from the hand-written type nothing goes red: fields arrive `undefined` and the
+ * surface renders a blank, a NaN, or crashes — at runtime, only once real data exists. This file
+ * previously had three such casts. Mapping them against the live envelopes (read from the function
+ * bodies on 2026-08-26) found **five defects that a cast had been hiding**:
+ *
+ *   1. `hr_time_adjustment_list` takes `p_filters jsonb` and matches a period on EITHER
+ *      `original_pay_period_id` OR `target_pay_period_id`. This file was passing
+ *      `p_original_pay_period_id` — an argument that does not exist. **Every call would have failed
+ *      as PGRST202.**
+ *   2. The money-absent flag on an adjustment is `calc.amount_pending`, surfaced as
+ *      **`amount_pending`** — not `amountWithheld`, which this lane invented. The advisory-money
+ *      sentence would never have rendered, and a null amount would have read as "no amount".
+ *   3. `target_period_label`, `created_by_name` and `exported_in_export_id` **do not exist** on the
+ *      server payload. Three fields the UI printed were always going to be blank.
+ *   4. `hr_pay_period_get` returns `reopen_allowed` — the resolved
+ *      `hr.time_and_attendance.allow_period_reopen` knob. Route 33 was **hard-coding `true`**,
+ *      which would have offered Reopen to an org that had switched it off.
+ *   5. `hr_pay_period_get` also returns `boundary_note` and `reopen_notice` as **server-authored
+ *      sentences**. This lane was generating its own copy client-side for both.
+ *
+ * The rule the mappers follow: **a field the server does not send stays dark.** Nothing here
+ * invents a default, a zero or a placeholder — a fabricated figure on a payroll surface is the
+ * defect this whole lane exists to avoid.
+ * ═══════════════════════════════════════════════════════════════════════════════════════════════
  *
  * 🚨 NO CLIENT COMPUTES HOURS. Nothing here subtracts a timestamp, multiplies a rate or sums a
- * column. `counts`, `totalHours` and every OT figure arrive computed and snapshot-backed.
+ * column. Every figure arrives computed and snapshot-backed.
  */
 
 "use client";
 
 import { callHrTimeRpc, type HrRpcOptions } from "../../api/rpc";
-import type {
-  PageRequest,
-  Paged,
-  PayPeriodRow,
-  PayPeriodState,
-} from "../../api/types";
+import type { PageRequest, Paged, PayPeriodRow, PayPeriodState } from "../../api/types";
+
+// ---------------------------------------------------------------------------------------------
+// Mapping helpers — small, shared, and deliberately unforgiving about invention
+// ---------------------------------------------------------------------------------------------
+
+function rec(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+function str(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+/** A field the server did not send stays `null`. It never becomes `""` or `0`. */
+function strOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function numOrNull(value: unknown): number | null {
+  if (typeof value === "number") return value;
+  // Postgres `numeric` arrives as a STRING through PostgREST. Coercing here is a parse of a value
+  // the server already computed — not a computation. Nothing in this file derives a figure.
+  if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
+    return Number(value);
+  }
+  return null;
+}
+
+function num(value: unknown, fallback: number): number {
+  return numOrNull(value) ?? fallback;
+}
+
+function strArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+}
+
+/**
+ * The workflow block `hr.wf_for_target` returns on every row that has one.
+ * 🚨 `deepLink` is the door into the ONE HR task inbox. A decision is taken THERE, never by a
+ * second decision surface this lane invents — the workflow engine is the only approval engine.
+ */
+export interface WorkflowRef {
+  instanceId: string;
+  flowKey: string;
+  state: string;
+  /** `/hr/tasks/<instanceId>` — where the decision is actually made. */
+  deepLink: string | null;
+}
+
+function mapWorkflow(raw: unknown): { open: WorkflowRef[]; history: WorkflowRef[] } {
+  const w = rec(raw);
+  const list = (v: unknown): WorkflowRef[] =>
+    (Array.isArray(v) ? v : []).map((entry) => {
+      const e = rec(entry);
+      return {
+        instanceId: str(e.instanceId),
+        flowKey: str(e.flowKey),
+        state: str(e.state),
+        deepLink: strOrNull(e.deepLink),
+      };
+    });
+  return { open: list(w.open), history: list(w.history) };
+}
+
+/** The five row-state counts. Server-computed; this sums nothing. */
+function mapCounts(raw: unknown): PayPeriodRow["counts"] {
+  const c = rec(raw);
+  return {
+    employments: num(c.employments, 0),
+    approved: num(c.approved, 0),
+    open: num(c.open, 0),
+    attested: num(c.attested, 0),
+    disputed: num(c.disputed, 0),
+  };
+}
+
+/**
+ * The row shape shared by `pay_period_list` and `pay_period_get`.
+ *
+ * Verified field-for-field against both function bodies. `pay_group_name` is joined server-side in
+ * both, so it is never assembled here.
+ */
+function mapPayPeriodRow(raw: unknown): PayPeriodRow {
+  const r = rec(raw);
+  return {
+    id: str(r.id),
+    payGroupId: str(r.payGroupId),
+    payGroupName: str(r.payGroupName),
+    periodStartOn: str(r.periodStartOn),
+    periodEndOn: str(r.periodEndOn),
+    payDate: strOrNull(r.payDate),
+    sequenceNumber: num(r.sequenceNumber, 0),
+    state: str(r.state) as PayPeriodState,
+    submittedAt: strOrNull(r.submittedAt),
+    approvedAt: strOrNull(r.approvedAt),
+    exportedAt: strOrNull(r.exportedAt),
+    lockedAt: strOrNull(r.lockedAt),
+    closedAt: strOrNull(r.closedAt),
+    reopenedAt: strOrNull(r.reopenedAt),
+    reopenReason: strOrNull(r.reopenReason),
+    boundaryWorkweekIds: strArray(r.boundaryWorkweekIds),
+    counts: mapCounts(r.counts),
+  };
+}
+
+/** `{rows, page, page_size, total_rows, has_more}` — the shape every list envelope shares. */
+function mapPaged<T>(raw: unknown, mapRow: (row: unknown) => T): Paged<T> {
+  const r = rec(raw);
+  const rows = Array.isArray(r.rows) ? r.rows : [];
+  return {
+    rows: rows.map(mapRow),
+    page: num(r.page, 1),
+    pageSize: num(r.pageSize, rows.length),
+    totalRows: num(r.totalRows, rows.length),
+    hasMore: r.hasMore === true,
+  };
+}
+
+/**
+ * The server's page argument is `{limit, offset}`, not `{page, pageSize}` — `hr._time_page` reads
+ * those two keys. Translating here rather than at every call site keeps one spelling in the lane.
+ */
+function pageArg(page: PageRequest): Record<string, unknown> {
+  return {
+    limit: page.pageSize,
+    offset: Math.max(0, (page.page - 1) * page.pageSize),
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Pay periods
+// ---------------------------------------------------------------------------------------------
 
 /** Which periods the list is asking for. Every member is the server's filter, never a client sort. */
 export interface PayPeriodListFilters {
   payGroupId?: string | null;
-  states?: PayPeriodState[];
+  organizationId?: string | null;
+  state?: PayPeriodState[];
   /** `period_end_on >= this`. */
-  endingOnOrAfter?: string | null;
-  endingOnOrBefore?: string | null;
-  search?: string | null;
+  from?: string | null;
+  /** `period_start_on <= this`. */
+  to?: string | null;
+}
+
+function filterArg(filters: PayPeriodListFilters): Record<string, unknown> {
+  // Snake_case, because the SQL body reads `f ->> 'pay_group_id'`. Only keys the server actually
+  // reads are sent — an unread key in a filter bag is a silent no-op that looks like a working filter.
+  const out: Record<string, unknown> = {};
+  if (filters.payGroupId) out.pay_group_id = filters.payGroupId;
+  if (filters.organizationId) out.organization_id = filters.organizationId;
+  if (filters.state && filters.state.length > 0) out.state = filters.state;
+  if (filters.from) out.from = filters.from;
+  if (filters.to) out.to = filters.to;
+  return out;
 }
 
 /**
  * Route 32's read — the pay-period state machine per pay group.
  *
- * Fully paginated: LAW 3 — a list a caller treats as complete is never a capped fetch, and a pay
- * group with four years of history has ~104 periods, comfortably past any silent cap.
+ * Fully paginated: LAW 3 — a list a caller treats as complete is never a capped fetch.
  */
-export function listPayPeriods(
+export async function listPayPeriods(
   filters: PayPeriodListFilters,
   page: PageRequest,
   opts?: HrRpcOptions,
 ): Promise<Paged<PayPeriodRow>> {
-  return callHrTimeRpc<Paged<PayPeriodRow>>(
+  const raw = await callHrTimeRpc<unknown>(
     "hr_pay_period_list",
-    { p_filters: filters, p_page: page },
+    { p_filters: filterArg(filters), p_page: pageArg(page) },
     opts,
   );
+  return mapPaged(raw, mapPayPeriodRow);
 }
 
-/** Route 33's header read. One period, with its counts and its boundary workweeks. */
-export function getPayPeriod(
+/**
+ * Route 33's header read — the period, plus four things the LIST does not carry.
+ *
+ * All four are the server's, and three of them replace copy this lane used to write itself:
+ * `boundaryNote` and `reopenNotice` are server-authored sentences, and `reopenAllowed` is the
+ * resolved `allow_period_reopen` knob rather than a client-side guess.
+ */
+export interface PayPeriodDetail extends PayPeriodRow {
+  /**
+   * 🚨 The server's own boundary-weeks sentence. Rendered verbatim when present. `null` when no
+   * workweek straddles the edges — and `null` means the panel says so, never that it invents one.
+   */
+  boundaryNote: string | null;
+  /** The resolved `hr.time_and_attendance.allow_period_reopen`. Never assumed by the client. */
+  reopenAllowed: boolean;
+  /** 🚨 *"Reopening does NOT un-export and does NOT re-pay…"* — the server's wording, verbatim. */
+  reopenNotice: string | null;
+  /** Corrections tagged to this period, either as origin or as target. Server-counted. */
+  adjustmentsTaggedHere: number;
+}
+
+export async function getPayPeriod(
   payPeriodId: string,
   opts?: HrRpcOptions,
-): Promise<PayPeriodRow> {
-  return callHrTimeRpc<PayPeriodRow>(
+): Promise<PayPeriodDetail> {
+  const raw = await callHrTimeRpc<unknown>(
     "hr_pay_period_get",
     { p_pay_period_id: payPeriodId },
     opts,
   );
+  const r = rec(raw);
+  return {
+    ...mapPayPeriodRow(raw),
+    boundaryNote: strOrNull(r.boundaryNote),
+    // Defaults TRUE only because the platform default is true and the knob resolves server-side;
+    // an explicit `false` from the server is always honoured.
+    reopenAllowed: r.reopenAllowed !== false,
+    reopenNotice: strOrNull(r.reopenNotice),
+    adjustmentsTaggedHere: num(r.adjustmentsTaggedHere, 0),
+  };
 }
+
+// ---------------------------------------------------------------------------------------------
+// Post-lock corrections
+// ---------------------------------------------------------------------------------------------
 
 /**
  * One post-lock correction, as route 33 renders it.
  *
  * 🚨 The two period ids are the whole point and must never be collapsed into one column.
  * `originalPayPeriodId` is the **locked** period the correction belongs to; `targetPayPeriodId` is
- * the **next open** period it will actually be paid in. A surface that shows only one of them is
- * telling a payroll administrator that a locked period was rewritten, which is exactly what did not
- * happen and exactly what must never happen.
+ * the **next open** period it will actually be paid in. A surface showing only one of them tells a
+ * payroll administrator that a locked period was rewritten, which is exactly what did not happen.
  *
- * ⚠️ HAND-WRITTEN, and owed to `features/hr/time/api/types.ts` when `hr_time_adjustment_list` lands
- * with a generated return type. It is not in the shared file today because the shared file's author
- * had no list read to type.
+ * Mapped field-for-field against `hr.time_adjustment_list`'s projection. Three fields this lane
+ * previously declared — `targetPeriodLabel`, `createdByName`, `exportedInExportId` — **are not sent
+ * by the server** and have been removed rather than defaulted: printing a blank where a name should
+ * be is how a cast's damage reaches a user.
  */
 export interface TimeAdjustmentRow {
   id: string;
   employmentId: string;
   employeeDisplayName: string;
   /** The LOCKED period this correction is tagged to. Never rewritten. */
-  originalPayPeriodId: string;
+  originalPayPeriodId: string | null;
   /** The NEXT OPEN period the correction is paid in. Never the same as the original. */
   targetPayPeriodId: string | null;
-  targetPeriodLabel: string | null;
   workDate: string;
   earningCodeId: string;
   /** 🚨 The label, never the token — LAW 3a: no cell prints a type name. */
   earningCodeName: string;
-  hoursDelta: number;
-  /** Null where a contributing rule is advisory. `amountWithheld` sits beside it so null ≠ zero. */
+  earningCode: string;
+  hoursDelta: number | null;
+  /**
+   * 🚨 `null` here is NOT zero. When {@link amountPending} is true the amount is **absent** because
+   * a contributing rule is advisory, and the surface renders a sentence — never a `0`, never a `—`.
+   */
   amountDelta: number | null;
-  amountWithheld: boolean;
-  reasonCategoryName: string | null;
-  reasonNote: string;
-  /** The `timecard_correction` instance. The workflow engine is the only approval engine. */
+  /** The server's money-absent flag, read from `calc.amount_pending`. */
+  amountPending: boolean;
+  rate: number | null;
+  reasonCategoryId: string | null;
+  reasonNote: string | null;
   workflowInstanceId: string | null;
-  workflowState: string;
-  createdAt: string;
-  createdByName: string | null;
-  /** Set once the adjustment has actually ridden an export. */
-  exportedInExportId: string | null;
+  /** Where the decision actually happens — the ONE HR task inbox. */
+  workflow: { open: WorkflowRef[]; history: WorkflowRef[] };
+  approvedAt: string | null;
+  exportedAt: string | null;
+  createdAt: string | null;
+  /** 🚨 The server's sentence about what a correction after lock does. Rendered verbatim. */
+  lockedPeriodNote: string | null;
+}
+
+function mapTimeAdjustmentRow(raw: unknown): TimeAdjustmentRow {
+  const r = rec(raw);
+  return {
+    id: str(r.id),
+    employmentId: str(r.employmentId),
+    employeeDisplayName: str(r.employeeDisplayName),
+    originalPayPeriodId: strOrNull(r.originalPayPeriodId),
+    targetPayPeriodId: strOrNull(r.targetPayPeriodId),
+    workDate: str(r.workDate),
+    earningCodeId: str(r.earningCodeId),
+    earningCodeName: str(r.earningCodeName),
+    earningCode: str(r.earningCode),
+    hoursDelta: numOrNull(r.hoursDelta),
+    amountDelta: numOrNull(r.amountDelta),
+    amountPending: r.amountPending === true,
+    rate: numOrNull(r.rate),
+    reasonCategoryId: strOrNull(r.reasonCategoryId),
+    reasonNote: strOrNull(r.reasonNote),
+    workflowInstanceId: strOrNull(r.workflowInstanceId),
+    workflow: mapWorkflow(r.workflow),
+    approvedAt: strOrNull(r.approvedAt),
+    exportedAt: strOrNull(r.exportedAt),
+    createdAt: strOrNull(r.createdAt),
+    lockedPeriodNote: strOrNull(r.lockedPeriodNote),
+  };
 }
 
 /**
- * The adjustments tagged to ONE period — route 33's post-lock lane.
+ * The adjustments touching ONE period — route 33's post-lock lane.
  *
- * `p_original_pay_period_id` is deliberate: these are the corrections **belonging to** this period,
- * wherever they end up being paid. Asking by target would answer a different question.
+ * 🚨 The server's `pay_period_id` filter matches on EITHER `original_pay_period_id` OR
+ * `target_pay_period_id`, which is the right question for this surface: it shows both the
+ * corrections that BELONG to this period and the ones that will be PAID in it.
  */
-export function listTimeAdjustments(
-  originalPayPeriodId: string,
+export async function listTimeAdjustments(
+  payPeriodId: string,
   page: PageRequest,
   opts?: HrRpcOptions,
 ): Promise<Paged<TimeAdjustmentRow>> {
-  return callHrTimeRpc<Paged<TimeAdjustmentRow>>(
+  const raw = await callHrTimeRpc<unknown>(
     "hr_time_adjustment_list",
-    { p_original_pay_period_id: originalPayPeriodId, p_page: page },
+    { p_filters: { pay_period_id: payPeriodId }, p_page: pageArg(page) },
     opts,
   );
+  return mapPaged(raw, mapTimeAdjustmentRow);
 }

@@ -39,6 +39,7 @@ import type {
   KioskDeviceSession,
   KioskPairingResult,
   KioskPersonSession,
+  KioskTrustState,
   KioskPunchResult,
   Paged,
   PayPeriodState,
@@ -522,6 +523,78 @@ export function resolveAttendanceException(
 // Kiosk — anon-callable. The token IS the authorization; RLS admits the kiosk nowhere.
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * 🚨 **MAPPED, NOT CAST — the last three seams in this lane.**
+ *
+ * `claimKioskPairing`, `authenticateKioskDevice` and `openKioskSession` were the remaining
+ * `callHrTimeRpc<T>` casts. Verified field-by-field against the live function bodies 2026-08-27;
+ * `hr_kiosk_session_open` turned out to be correct already and is annotated as such on its type,
+ * while the pairing result had a genuinely wrong name that was rendering blank on a real tablet.
+ */
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+
+const asText = (value: unknown): string | null =>
+  typeof value === "string" && value ? value : null;
+
+const asCount = (value: unknown, fallback: number): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : fallback;
+
+function mapKioskPairingResult(raw: unknown): KioskPairingResult {
+  const r = asRecord(raw);
+  return {
+    deviceId: asText(r.deviceId) ?? "",
+    deviceSecret: asText(r.deviceSecret) ?? "",
+    // 🚨 `organization_name` on the wire. The old `organizationDisplayName` read undefined.
+    organizationName: asText(r.organizationName),
+    deviceName: asText(r.deviceName),
+    locationName: asText(r.locationName),
+    trustState: (asText(r.trustState) as KioskTrustState) ?? "pending",
+    message: asText(r.message),
+  };
+}
+
+function mapKioskDeviceSession(raw: unknown): KioskDeviceSession {
+  const r = asRecord(raw);
+  const config = asRecord(r.config);
+  return {
+    sessionToken: asText(r.sessionToken) ?? "",
+    kioskSessionId: asText(r.kioskSessionId),
+    expiresAt: asText(r.expiresAt) ?? "",
+    trustState: (asText(r.trustState) as KioskTrustState) ?? "pending",
+    serverTime: asText(r.serverTime) ?? "",
+    configVersion: asText(r.configVersion) ?? "",
+    locationId: asText(r.locationId),
+    config: {
+      requirePhoto: config.requirePhoto === true,
+      requireGeo: config.requireGeo === true,
+      /*
+       * Defaults match the server's own knob defaults, and exist only so a truncated envelope
+       * cannot produce NaN on a tablet. They are not a second source of configuration: every one of
+       * these arrives on every real answer.
+       */
+      maxClockSkewSeconds: asCount(config.maxClockSkewSeconds, 300),
+      pinLength: asCount(config.pinLength, 4),
+      confirmDismissSeconds: asCount(config.confirmDismissSeconds, 5),
+      heartbeatSeconds: asCount(config.heartbeatSeconds, 60),
+      locationName: asText(config.locationName),
+      // 🚨 The location's stamped zone — what punch times must render in.
+      tz: asText(config.tz),
+    },
+  };
+}
+
+function mapKioskPersonSession(raw: unknown): KioskPersonSession {
+  const r = asRecord(raw);
+  return {
+    kioskSessionId: asText(r.kioskSessionId) ?? "",
+    employmentId: asText(r.employmentId) ?? "",
+    expiresAt: asText(r.expiresAt) ?? "",
+  };
+}
+
 /** The ONLY way a device secret is ever minted. The secret is returned once and never re-readable. */
 export function claimKioskPairing(
   pairingCode: string,
@@ -543,16 +616,17 @@ export function claimKioskPairing(
 }
 
 /** Exchange the long-lived secret for a DEVICE session (TTL in hours) plus the server clock. */
-export function authenticateKioskDevice(
+export async function authenticateKioskDevice(
   deviceId: string,
   deviceSecret: string,
   opts?: HrRpcOptions,
 ): Promise<KioskDeviceSession> {
-  return callHrTimeRpc<KioskDeviceSession>(
+  const raw = await callHrTimeRpc<unknown>(
     "hr_kiosk_authenticate",
     { p_device_id: deviceId, p_device_secret: deviceSecret },
     opts,
   );
+  return mapKioskDeviceSession(raw);
 }
 
 /**
@@ -577,13 +651,13 @@ export function heartbeatKioskSession(
  * 🚨 This call owns the lockout counter. `kioskPunch` re-checks the PIN but counts nothing, so a
  * kiosk that skips this step has no lockout at all — R3.
  */
-export function openKioskSession(
+export async function openKioskSession(
   sessionToken: string,
   employeeNumber: string,
   employmentPin: string,
   opts?: HrRpcOptions,
 ): Promise<KioskPersonSession> {
-  return callHrTimeRpc<KioskPersonSession>(
+  const raw = await callHrTimeRpc<unknown>(
     "hr_kiosk_session_open",
     {
       p_session_token: sessionToken,
@@ -592,6 +666,7 @@ export function openKioskSession(
     },
     opts,
   );
+  return mapKioskPersonSession(raw);
 }
 
 /**

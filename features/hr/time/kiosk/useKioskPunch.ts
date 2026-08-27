@@ -248,7 +248,7 @@ export function useKioskPunch({
         kind: punchKind,
         employmentId: `kioskintent-${crypto.randomUUID()}`,
         deviceOrSession: deviceId,
-        tz: kioskKeyTimeZone(),
+        tz: kioskKeyTimeZone(session.config.tz),
         at: skewCorrectedNow(skew),
       });
       setIntent(minted);
@@ -296,8 +296,22 @@ export function useKioskPunch({
  * mints a key against the wrong minute — harmless to the punch itself (the server stamps the truth
  * from the location), but it weakens the retry guarantee across a minute boundary.
  */
-export function kioskKeyTimeZone(): string {
-  return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+/**
+ * The zone a kiosk renders and keys against.
+ *
+ * 🚨 **THE LOCATION'S STAMPED ZONE, NOT THE TABLET'S.** `hr._kiosk_device_config` returns `tz`
+ * explicitly *"because the tablet renders stamped times"* — and this lane used to infer it from the
+ * device's own OS clock, carrying a debt note that said the session had none. It does. The tablet's
+ * clock is the one thing already under suspicion here (see `kioskSkew.ts`), so trusting its zone to
+ * decide which DAY a punch belongs to was the same mistake in a different unit: a tablet set to the
+ * wrong region would mint keys and render confirmations against the wrong `local_work_date`.
+ *
+ * The browser zone remains only as a last resort for a truncated envelope, and it is the honest
+ * one: there is nothing better to fall back to, and the server stamps the authoritative value on
+ * the punch regardless.
+ */
+export function kioskKeyTimeZone(sessionTz?: string | null): string {
+  return sessionTz || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 }
 
 export { KIOSK_SKEW_REFUSAL };

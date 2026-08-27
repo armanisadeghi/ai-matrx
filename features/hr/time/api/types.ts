@@ -829,30 +829,61 @@ export interface OvertimePreapprovalRow {
 // Kiosk
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * `hr_kiosk_claim_pairing`. **Verified field-by-field against the live function, 2026-08-27.**
+ *
+ * 🚨 `organizationDisplayName` WAS WRONG AND IT SHOWED. The door sends `organization_name`, so the
+ * old name read `undefined`, the pairing surface stored `undefined`, and the awaiting-trust screen
+ * rendered its employer caption blank — visible in the round-3 evidence and mistaken for a styling
+ * choice. Cast, not mapped, exactly like the rest of this family.
+ */
 export interface KioskPairingResult {
   deviceId: string;
   /** 🚨 Returned **once** and never re-readable. Store it on the device immediately. */
   deviceSecret: string;
-  organizationDisplayName: string;
+  /** The employer's name. Server spelling: `organization_name`. */
+  organizationName: string | null;
+  /** The name the administrator gave this tablet, echoed back so the screen can confirm it. */
+  deviceName: string | null;
   locationName: string | null;
   trustState: KioskTrustState;
+  /** The server's own worded next step. Rendered rather than re-written. */
+  message: string | null;
 }
 
+/**
+ * `hr_kiosk_authenticate` (the success answer). **Verified field-by-field against the live function
+ * and `hr._kiosk_device_config`, 2026-08-27.** Every field previously declared here was already
+ * correctly spelled — this family's misalignment was in the pairing and punch results, not here.
+ * Three fields the door sends were simply **missing**, and one of them was load-bearing:
+ *
+ * 🚨 `config.tz` — the **location's** IANA zone, added by the server *"because the tablet renders
+ * stamped times"*. The kiosk had been inferring a zone from the tablet's own OS clock, with a debt
+ * note saying the session carried none. It does. A wall tablet whose OS zone is wrong now cannot
+ * mint an idempotency key or render a confirmation against the wrong day.
+ */
 export interface KioskDeviceSession {
   sessionToken: string;
+  /** The device session's own row id. */
+  kioskSessionId: string | null;
   expiresAt: string;
   trustState: KioskTrustState;
   /** The server clock, for skew computation. Held for the session and re-synced on every heartbeat. */
   serverTime: string;
   configVersion: string;
+  /** The device's work location. */
+  locationId: string | null;
   config: {
     requirePhoto: boolean;
     requireGeo: boolean;
+    /** The SAME expression `hr.punch_record` enforces, so the tablet cannot pre-flight wrongly. */
     maxClockSkewSeconds: number;
     pinLength: number;
     confirmDismissSeconds: number;
     heartbeatSeconds: number;
     locationName: string | null;
+    /** 🚨 The location's stamped zone. Render punch times in THIS, never the tablet's OS zone. */
+    tz: string | null;
   };
 }
 
@@ -897,6 +928,10 @@ export interface KioskPunchResult {
  * 🚨 **A PIN ALONE IDENTIFIES NOBODY** (§1.2). It is a secret, not an identifier, and two employees
  * may hold the same four digits — so the door takes the **employee number and then the PIN**, and
  * answers one indistinguishable failure for a wrong number or a wrong PIN.
+ *
+ * ✅ **VERIFIED ALIGNED** against the live `hr_kiosk_session_open` body, 2026-08-27: it returns
+ * `{ok, kiosk_session_id, employment_id, expires_at}` and these three names are exactly those,
+ * camelized. Nothing to correct — recorded so the next reader does not have to re-derive it.
  */
 export interface KioskPersonSession {
   kioskSessionId: string;

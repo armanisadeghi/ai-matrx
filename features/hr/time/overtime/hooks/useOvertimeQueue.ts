@@ -11,13 +11,16 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { HrRpcError } from "../../api/rpc";
-import type { OvertimePreapprovalRow, PageRequest, Paged } from "../../api/types";
+import type { PageRequest, Paged } from "../../api/types";
 import {
   evaluateOvertime,
   getOvertimePreapproval,
   listOvertimePreapprovals,
   type OvertimeEvaluation,
   type OvertimeListFilters,
+  // The lane's MAPPED row. `types.ts`'s `OvertimePreapprovalRow` does not declare `workflow`,
+  // `shiftIds`, `paymentNote` or `paymentWithheld`, and two of those are load-bearing.
+  type OvertimeRequestRow,
 } from "../api/overtimeReads";
 
 export interface OvertimeFailure {
@@ -40,12 +43,12 @@ export function useOvertimeQueue(
   filters: OvertimeListFilters,
   mockCase?: HrFixtureCase,
 ): {
-  page: Paged<OvertimePreapprovalRow> | null;
+  page: Paged<OvertimeRequestRow> | null;
   isLoading: boolean;
   failure: OvertimeFailure | null;
   reload: () => void;
 } {
-  const [page, setPage] = useState<Paged<OvertimePreapprovalRow> | null>(null);
+  const [page, setPage] = useState<Paged<OvertimeRequestRow> | null>(null);
   const [failure, setFailure] = useState<OvertimeFailure | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState(0);
@@ -79,12 +82,12 @@ export function useOvertimeRequest(
   requestId: string | null,
   mockCase?: HrFixtureCase,
 ): {
-  request: OvertimePreapprovalRow | null;
+  request: OvertimeRequestRow | null;
   isLoading: boolean;
   failure: OvertimeFailure | null;
   reload: () => void;
 } {
-  const [request, setRequest] = useState<OvertimePreapprovalRow | null>(null);
+  const [request, setRequest] = useState<OvertimeRequestRow | null>(null);
   const [failure, setFailure] = useState<OvertimeFailure | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [token, setToken] = useState(0);
