@@ -27,8 +27,12 @@ import {
   type HrRequestOptions,
 } from "@/lib/api/hr-contract-client";
 import { supabase } from "@/utils/supabase/client";
-import { HR_MOCK_ENABLED, type HrFixtureCase } from "@/features/hr/mock/transport";
+import {
+  HR_MOCK_ENABLED,
+  type HrFixtureCase,
+} from "@/features/hr/mock/transport";
 import { HR_EXPORT_HISTORY_FIXTURES } from "./mock/history";
+import { fromLiveExportList } from "./fromLiveExports";
 import type {
   AsyncAccepted,
   ExportAcknowledgeBody,
@@ -273,5 +277,11 @@ export async function listPayrollExports(args: {
       `hr_payroll_export_list failed: ${error.message}${error.hint ? ` (${error.hint})` : ""}`,
     );
   }
-  return data as unknown as PayrollExportListResult;
+  // 🚨 MAPPED AT THE DOOR, NEVER CAST. This used to be `data as unknown as
+  // PayrollExportListResult` — a DOUBLE assertion, which does not just skip the check, it turns the
+  // checker off: `as unknown as T` accepts any value at all. It was hiding a live/fixture
+  // disagreement about a field's very kind (the refusal `reason` is a machine code live and a human
+  // sentence in the fixture), so every mock proof of this surface passed while a real denial would
+  // have printed "hr_capability_denied" at a payroll administrator. See `./fromLiveExports`.
+  return fromLiveExportList(data);
 }
