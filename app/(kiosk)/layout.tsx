@@ -26,9 +26,19 @@
  * build profile and needs no registration — a kiosk must compile in whatever build the employer's
  * tablets point at. Verified 2026-08-27.
  *
- * `h-dvh` on the wrapper, never `h-screen` (`ios-mobile-first`): on an iPad the visual viewport is
- * the only honest measure, and `100vh` puts the primary control under the browser chrome. The
- * wrapper is `flex flex-col` so `KioskFrame`'s `min-h-0 flex-1` scroller is actually bounded.
+ * 🚨 **THE LAYOUT ADDS NO FRAME OF ITS OWN, AND THAT IS DELIBERATE.** `KioskFrame` — which every
+ * kiosk surface renders through — already sets `flex h-dvh flex-col overflow-hidden` on its root and
+ * bounds a real `min-h-0 flex-1 overflow-y-auto` `<main>` inside it. An earlier version of this file
+ * repeated that same frame here, which was two problems at once: it is the wrapper-around-a-component
+ * the UI standards forbid (*a host frame either IS the chrome or has none*), and the outer
+ * `overflow-hidden` clipped with no scroll owner of its own, which `pnpm check:scroll-chain` reports
+ * because it cannot follow `{children}` through the route slot to the frame that does scroll. On a
+ * tablet in landscape with the on-screen keyboard raised, a clipped PIN pad is one an hourly employee
+ * cannot reach — so this is a real failure mode, not a lint nit. Providers, and the page. Nothing else.
+ *
+ * (`h-dvh` and never `h-screen` — `ios-mobile-first`: on an iPad the visual viewport is the only
+ * honest measure, and `100vh` puts the primary control under the browser chrome. It lives on
+ * `KioskFrame`, where the rest of the frame is.)
  */
 
 import type { ReactNode } from "react";
@@ -36,9 +46,5 @@ import type { ReactNode } from "react";
 import { Providers } from "@/app/Providers";
 
 export default function KioskLayout({ children }: { children: ReactNode }) {
-  return (
-    <Providers>
-      <div className="flex h-dvh flex-col overflow-hidden">{children}</div>
-    </Providers>
-  );
+  return <Providers>{children}</Providers>;
 }
