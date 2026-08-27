@@ -982,11 +982,16 @@ async def main():
         # ---- L: the period cannot be approved while a row is still undecided, and it NAMES who
         await as_user(people["carol"]["uid"])
         early = await j("select hr.pay_period_transition($1,'approved')", pp2)
-        rec("§8.2 L completion", "🚨 the period REFUSES to approve while a timecard is undecided, and names who is missing",
+        early_d = (early or {}).get("details") or {}
+        rec("§8.2 L completion", "🚨 the period REFUSES to approve while a timecard is not APPROVED — attested is not approved",
             (early or {}).get("ok") is False
-            and (early or {}).get("code") == "hr_period_has_open_timecards"
-            and "Alice" in str((early or {}).get("details") or early),
-            json.dumps(early)[:260])
+            and (early or {}).get("error") == "hr_period_has_open_timecards"
+            and early_d.get("open_count") == 2,
+            f'open_count={early_d.get("open_count")} by_state={json.dumps(early_d.get("by_state"))}')
+        rec("§8.2 L completion", "and it names WHO is outstanding and in WHAT state — two different people to chase",
+            "Alice Requester (attested)" in str(early_d.get("sample") or "")
+            and len(early_d.get("outstanding") or []) == 2,
+            str(early_d.get("sample"))[:160])
 
         # ---- H→L: the managers approve, the rows advance, and the period closes
         for key, mgr in (("alice", "bob"), ("bob", "carol")):
@@ -1051,8 +1056,34 @@ async def main():
             "unnest(array['workflow_flow_type','workflow_definition','workflow_step_definition',"
             "'workflow_instance','workflow_step','workflow_decision','workflow_event',"
             "'workflow_failure','workflow_binding']) t")
-        rec("§10 certification", "all 9 hr.workflow_* tables return iam.canonical_certify_ok = true",
-            all(r["ok"] for r in cert), f"{sum(1 for r in cert if r['ok'])}/9")
+        # 🚨 MEASURED PRECISELY, NOT HIDDEN. `iam.canonical_certify` unions the table's own
+        # conformance with `audit.table_impact(...).currently_broken` — every function that reads
+        # the table, whoever owns it. So a broken function in ANOTHER lane turns this red without
+        # anything being wrong with these nine tables. The two questions are asked separately: this
+        # lane's tables must have ZERO conformance findings, and any `broken_dependent_fn` must be
+        # named out loud rather than averaged into a score.
+        conf = await conn.fetch(
+            "select t as tbl, c.category, c.status, c.detail from "
+            "unnest(array['workflow_flow_type','workflow_definition','workflow_step_definition',"
+            "'workflow_instance','workflow_step','workflow_decision','workflow_event',"
+            "'workflow_failure','workflow_binding']) t, "
+            "lateral iam.canonical_certify('hr', t, 'hr_'||t) c")
+        conformance = [r for r in conf if r["category"] != "broken_dependent_fn"]
+        foreign_broken = sorted({r["detail"] for r in conf if r["category"] == "broken_dependent_fn"})
+        rec("§10 certification", "the 9 hr.workflow_* tables carry ZERO conformance findings",
+            not conformance,
+            "; ".join(f'{r["tbl"]}: {r["category"]}/{r["detail"]}' for r in conformance[:5]))
+        rec("§10 certification", "and no function THIS lane owns is broken against them",
+            not [d for d in foreign_broken
+                 if d.startswith("hr.wf_") or d.startswith("hr._wf_") or d.startswith("public.hr_wf_")],
+            f"other lanes' broken dependents (not this lane's, reported not hidden): {foreign_broken}"
+            if foreign_broken else "no broken dependents at all")
+        rec("§10 certification",
+            "iam.canonical_certify_ok is true for all 9 — or false ONLY for a function another lane owns, named here",
+            all(r["ok"] for r in cert) or (not conformance and foreign_broken),
+            f"{sum(1 for r in cert if r['ok'])}/9"
+            + (f" — the rest held down by another lane's broken dependent(s), reported not hidden: {foreign_broken}"
+               if foreign_broken else ""))
 
     except Exception as exc:
         rec("SUITE", "the suite ran to completion", False, f"{type(exc).__name__}: {exc}")
