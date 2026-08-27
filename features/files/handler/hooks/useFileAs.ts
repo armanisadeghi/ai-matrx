@@ -13,6 +13,11 @@
 
 import { useEffect, useState } from "react";
 import { fileHandler } from "../handler";
+import {
+  FileAccessDeniedError,
+  FileDeletedError,
+  FileNotFoundError,
+} from "../errors";
 import type { FileSource, FileTarget, RenderedFor } from "../types";
 
 export interface UseFileAsResult<T extends FileTarget> {
@@ -53,12 +58,15 @@ export function useFileAs<T extends FileTarget>(
       .catch((err) => {
         if (cancelled) return;
         const error = err instanceof Error ? err : new Error(String(err));
-        // Loud recovery: a swallowed resolution failure renders as a silent
-        // fallback icon and hides real defects (missing grants, dead mints).
-        console.error(
-          `[file-handler] resolve failed for ${stableSourceKey(source)} → ${targetKey}`,
-          error,
-        );
+        if (!isExpectedUnavailableState(error)) {
+          // Loud recovery: unexpected resolution failures must not disappear
+          // behind a fallback icon. Typed unavailable states are normal
+          // control flow and remain available to the caller through `error`.
+          console.error(
+            `[file-handler] resolve failed for ${stableSourceKey(source)} → ${targetKey}`,
+            error,
+          );
+        }
         setError(error);
         setStatus("error");
       });
@@ -69,6 +77,14 @@ export function useFileAs<T extends FileTarget>(
   }, [stableSourceKey(source), targetKey]);
 
   return { result, status, error };
+}
+
+export function isExpectedUnavailableState(error: Error): boolean {
+  return (
+    error instanceof FileAccessDeniedError ||
+    error instanceof FileNotFoundError ||
+    error instanceof FileDeletedError
+  );
 }
 
 function stableSourceKey(source: FileSource | null | undefined): string {

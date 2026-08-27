@@ -97,6 +97,10 @@ Auth lanes for the durable byte routes:
     (it also carries education offline study). A second registration would replace it and silently
     kill transparent media serving.
 14. **Never a direct `Files.uploadFile`** outside `handler/` and `upload/`.
+15. **Unavailable is a rendered state, not an incident.** Typed access-denied, missing, and deleted
+    results remain on `useFileAs().error` for the surface to render, but never emit `console.error`;
+    unexpected resolver failures stay loud. Structured GET 403 `permission_denied` and analysis
+    404 `file_not_found` refusals likewise never enter the durable error queue.
 
 ## Deliberately not owned here
 
@@ -123,3 +127,8 @@ couldn't be created` → the upload succeeded and only the post-upload share cre
 
 Then confirm the service is up: `curl https://files.matrxserver.com/files-service/health`, or use
 `/demos/cloud-files-debug`, which shows the active URL + JWT and fires raw fetches.
+
+## Change log
+
+- **2026-08-27** — Typed unavailable-file reads stopped generating duplicate durable incidents;
+  callers still receive the refusal, while unexpected resolver and file-service failures stay loud.

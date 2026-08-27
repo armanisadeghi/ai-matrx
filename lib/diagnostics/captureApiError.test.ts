@@ -241,4 +241,46 @@ describe("captureApiError", () => {
 
     expect(getSnapshot()).toHaveLength(0);
   });
+
+  it.each([
+    [403, "permission_denied", "/files/file-id"],
+    [404, "file_not_found", "/files/file-id/analysis"],
+  ])(
+    "keeps expected file read refusal %s %s out of persistence",
+    (status, code, path) => {
+      captureApiError(
+        {
+          type: "validation_error",
+          status,
+          message: "This file is unavailable.",
+          serverDetail: { error: code },
+        },
+        {
+          url: `https://files.matrxserver.com${path}`,
+          method: "GET",
+          path,
+        },
+      );
+
+      expect(getSnapshot()).toHaveLength(0);
+    },
+  );
+
+  it("still persists a file service failure that is not an access-state refusal", () => {
+    captureApiError(
+      {
+        type: "http_error",
+        status: 500,
+        message: "File service failed.",
+        serverDetail: { error: "internal_error" },
+      },
+      {
+        url: "https://files.matrxserver.com/files/file-id",
+        method: "GET",
+        path: "/files/file-id",
+      },
+    );
+
+    expect(getSnapshot()).toHaveLength(1);
+  });
 });

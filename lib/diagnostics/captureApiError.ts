@@ -72,6 +72,19 @@ export function captureApiError(
         : undefined;
     const requestId = backendRequestId ?? ctx.requestId;
     const structuredDetail = sd.details ?? sd.detail;
+    const machineCode = backendType ?? backendCode ?? error.code;
+    const expectedFileReadRefusal =
+      ctx.method.toUpperCase() === "GET" &&
+      /^\/files\/[^/]+(?:\/analysis)?$/.test(ctx.path) &&
+      ((error.status === 403 && machineCode === "permission_denied") ||
+        (error.status === 404 && machineCode === "file_not_found"));
+
+    // File viewer routes deliberately accept durable IDs that can become
+    // unavailable after a share is revoked or a row is removed. The caller
+    // receives the typed refusal and renders its access/unavailable state;
+    // persisting that expected read result creates a false production bug.
+    if (expectedFileReadRefusal) return;
+
     const retryableWorkerRestart =
       error.status === 503 &&
       (backendType ?? backendCode) === "worker_unreachable" &&
@@ -89,7 +102,7 @@ export function captureApiError(
       relation: `${ctx.method.toUpperCase()} ${ctx.path}`,
       // Prefer the backend's machine code (e.g. "agent_timeout") over our
       // coarse normalized class ("http_error").
-      code: backendType ?? backendCode ?? error.type,
+      code: machineCode ?? error.type,
       message: error.message || `Backend request failed (${error.type})`,
       status: error.status,
       userMessage,
