@@ -1,6 +1,10 @@
 import { connectionResource } from "@/features/marketing/google/service";
 import { GOOGLE_CONNECTION_SCOPES } from "@/features/marketing/google/types";
-import { GOOGLE_ANALYTICS_SCOPES, GOOGLE_SCOPE } from "@/lib/googleScopes";
+import {
+  GOOGLE_ADS_REPORTING_SCOPES,
+  GOOGLE_ANALYTICS_SCOPES,
+  GOOGLE_SCOPE,
+} from "@/lib/googleScopes";
 
 const baseResource = {
   id: "resource-1",
@@ -71,5 +75,16 @@ describe("Google OAuth connection resources", () => {
     expect(new Set(GOOGLE_ANALYTICS_SCOPES).size).toBe(
       GOOGLE_ANALYTICS_SCOPES.length,
     );
+  });
+
+  it("keeps Google Ads in its isolated one-product grant", () => {
+    expect(GOOGLE_ADS_REPORTING_SCOPES).toContain(GOOGLE_SCOPE.googleAds);
+    expect(GOOGLE_ADS_REPORTING_SCOPES).not.toContain(
+      GOOGLE_SCOPE.analyticsReadonly,
+    );
+    expect(GOOGLE_ADS_REPORTING_SCOPES).not.toContain(
+      GOOGLE_SCOPE.youtubeReadonly,
+    );
+    expect(GOOGLE_ADS_REPORTING_SCOPES).not.toContain(GOOGLE_SCOPE.driveFile);
   });
 });

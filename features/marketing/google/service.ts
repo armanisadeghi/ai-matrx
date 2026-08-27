@@ -7,6 +7,8 @@ import type {
   GoogleConnectionOwner,
   GoogleConnectionResult,
   YouTubeChannelPreview,
+  GoogleAdsCustomerInventory,
+  GoogleAdsReport,
 } from "@/features/marketing/google/types";
 
 // `credential_item_id` / `vault_secret_key` are REFERENCES, never secrets (a
@@ -178,6 +180,7 @@ export async function postGoogleBackend(
 export async function connectGoogle(
   code: string,
   owner: GoogleConnectionOwner,
+  connectionPurpose: "general" | "google_ads_isolated" = "general",
 ): Promise<GoogleConnectionResult> {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   if (!clientId) {
@@ -192,6 +195,7 @@ export async function connectGoogle(
       organization_id:
         owner.type === "organization" ? owner.organizationId : null,
       redirect_uri: window.location.origin,
+      connection_purpose: connectionPurpose,
     },
     "Unable to connect Google.",
   );
@@ -225,4 +229,42 @@ export async function getYouTubeChannelPreview(
     "Unable to read the selected YouTube channel.",
   );
   return (await response.json()) as YouTubeChannelPreview;
+}
+
+export async function getGoogleAdsCustomers(
+  connectionId: string,
+  organizationId?: string | null,
+): Promise<GoogleAdsCustomerInventory> {
+  const response = await postGoogleBackend(
+    "/api/google-integrations/ads/customers",
+    {
+      connection_id: connectionId,
+      organization_id: organizationId ?? null,
+    },
+    "Unable to discover Google Ads accounts.",
+  );
+  return (await response.json()) as GoogleAdsCustomerInventory;
+}
+
+export async function getGoogleAdsReport(input: {
+  connectionId: string;
+  customerId: string;
+  loginCustomerId: string;
+  startDate: string;
+  endDate: string;
+  organizationId?: string | null;
+}): Promise<GoogleAdsReport> {
+  const response = await postGoogleBackend(
+    "/api/google-integrations/ads/report",
+    {
+      connection_id: input.connectionId,
+      customer_id: input.customerId,
+      login_customer_id: input.loginCustomerId,
+      start_date: input.startDate,
+      end_date: input.endDate,
+      organization_id: input.organizationId ?? null,
+    },
+    "Unable to load the selected Google Ads report.",
+  );
+  return (await response.json()) as GoogleAdsReport;
 }

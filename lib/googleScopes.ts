@@ -19,6 +19,7 @@ export const GOOGLE_SCOPE = {
   analyticsReadonly: "https://www.googleapis.com/auth/analytics.readonly",
   youtubeReadonly: "https://www.googleapis.com/auth/youtube.readonly",
   contactsReadonly: "https://www.googleapis.com/auth/contacts.readonly",
+  googleAds: "https://www.googleapis.com/auth/adwords",
 } as const;
 
 export type GoogleScope = (typeof GOOGLE_SCOPE)[keyof typeof GOOGLE_SCOPE];
@@ -60,6 +61,12 @@ export const GOOGLE_ANALYTICS_SCOPES = [
 export const GOOGLE_YOUTUBE_SCOPES = [
   ...GOOGLE_IDENTITY_SCOPES,
   GOOGLE_SCOPE.youtubeReadonly,
+] as const;
+
+/** Isolated Google Ads reporting grant; restricted and never bundled elsewhere. */
+export const GOOGLE_ADS_REPORTING_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
+  GOOGLE_SCOPE.googleAds,
 ] as const;
 
 /**

@@ -5,6 +5,8 @@ import {
   connectGoogle,
   disconnectGoogle,
   getYouTubeChannelPreview,
+  getGoogleAdsCustomers,
+  getGoogleAdsReport,
   listGoogleConnectionInventory,
 } from "@/features/marketing/google/service";
 import type { GoogleConnectionOwner } from "@/features/marketing/google/types";
@@ -27,10 +29,12 @@ export function useConnectGoogle() {
     mutationFn: ({
       code,
       owner,
+      connectionPurpose = "general",
     }: {
       code: string;
       owner: GoogleConnectionOwner;
-    }) => connectGoogle(code, owner),
+      connectionPurpose?: "general" | "google_ads_isolated";
+    }) => connectGoogle(code, owner, connectionPurpose),
     onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: googleConnectionKeys.inventory,
@@ -61,4 +65,20 @@ export function useYouTubeChannelPreview() {
       organizationId?: string | null;
     }) => getYouTubeChannelPreview(connectionId, channelId, organizationId),
   });
+}
+
+export function useGoogleAdsCustomers() {
+  return useMutation({
+    mutationFn: ({
+      connectionId,
+      organizationId,
+    }: {
+      connectionId: string;
+      organizationId?: string | null;
+    }) => getGoogleAdsCustomers(connectionId, organizationId),
+  });
+}
+
+export function useGoogleAdsReport() {
+  return useMutation({ mutationFn: getGoogleAdsReport });
 }

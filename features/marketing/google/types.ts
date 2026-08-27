@@ -91,3 +91,41 @@ export interface YouTubeChannelPreview {
   video_count: number | null;
   recent_videos: YouTubeVideoPreview[];
 }
+
+export interface GoogleAdsCustomer {
+  customer_id: string;
+  login_customer_id: string;
+  descriptive_name: string;
+  manager: boolean;
+  test_account: boolean;
+  level: number;
+  status: string | null;
+  currency_code: string | null;
+  time_zone: string | null;
+}
+
+export interface GoogleAdsCustomerInventory {
+  customers: GoogleAdsCustomer[];
+  api_version: string;
+  access_mode: "read_only";
+}
+
+export interface GoogleAdsCampaignMetric {
+  campaign_id: string;
+  campaign_name: string;
+  status: string | null;
+  impressions: number;
+  clicks: number;
+  cost_micros: number;
+  conversions: number;
+  conversion_value: number;
+}
+
+export interface GoogleAdsReport {
+  customer: GoogleAdsCustomer;
+  start_date: string;
+  end_date: string;
+  campaigns: GoogleAdsCampaignMetric[];
+  api_version: string;
+  access_mode: "read_only";
+}
