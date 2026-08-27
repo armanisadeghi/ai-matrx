@@ -133,8 +133,10 @@ function PickerFileThumbnail({
   // Use the asset endpoint (GET /files/{id}/asset) — same path FilePreview uses for images.
   // It returns CDN URL for public files and signed-inline for private, in one call.
   // Skip the fetch entirely if we already have publicUrl or it's not an image.
-  const { primaryUrl } = useFileAsset(isImage && !publicUrl ? fileId : null, {
-  });
+  const { primaryUrl } = useFileAsset(
+    isImage && !publicUrl ? fileId : null,
+    {},
+  );
   const src = isImage ? (publicUrl ?? primaryUrl) : null;
 
   if (!src) {
@@ -358,7 +360,7 @@ function PickerFooter({
       <button
         type="button"
         onClick={onCancel}
-        className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
       >
         <X className="h-4 w-4" aria-hidden="true" />
         Cancel
@@ -367,7 +369,7 @@ function PickerFooter({
         type="button"
         onClick={onConfirm}
         disabled={!canConfirm}
-        className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
       >
         <Check className="h-4 w-4" aria-hidden="true" />
         {confirmLabel}

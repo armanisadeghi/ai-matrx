@@ -54,7 +54,8 @@ in the same change.
 10. **Dialog on desktop, Drawer on mobile**, branched in the surface. `dvh` not `vh` under
     `app/(a)/files/`; `pb-safe` on fixed bottoms; 16px inputs. Tablet list rows reserve space for
     a visible 44px **More** control; mobile rows expose a 44px **Actions** control plus the canonical
-    ContextMenuV3 long-press path. Row activation ignores portal-rendered menu events. No
+    ContextMenuV3 long-press path. Picker footer Cancel/confirm controls are 44px in every host.
+    Row activation ignores portal-rendered menu events. No
     `window.alert/confirm/prompt`.
 11. **Core components never know their host** — no imports from `app/`,
     `features/window-panels/`, or `useIsMobile`; no core component opens a Dialog directly.
@@ -83,6 +84,8 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-27 — Picker footer actions meet the 44px touch floor.** Cancel and confirm controls in
+  the shared file/folder picker now keep the same 44px minimum height in Dialog and Drawer hosts.
 - **2026-08-27 — Mobile row Rename actions open the canonical editor.** The mobile Files surface
   mounts the shared rename-event host and presents its file/folder editor as a Drawer; desktop
   keeps the existing dialog.
