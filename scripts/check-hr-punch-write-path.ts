@@ -176,6 +176,22 @@ const EXPECTED_CHECKS = [
   // none of). Three known pairs ride a dated allowlist printed on every run; both fixes belong to
   // the workflow lane, because widening the predicate decides who may act on payroll.
   "every_timecard_has_an_approver",
+  // Round-18 P1 (hr_l3_64/65). hr_directory_list suppressed an opted-out person's own ROW in its
+  // WHERE clause and then printed that same person's full name one column over as manager_name, to
+  // any peer — a raw hr.employee.display_name read with no viewer in it. The row-level suppression
+  // is exactly what hid it: anyone testing "is the opted-out employee hidden?" gets a correct YES.
+  // The rule now lives in hr._employee_display_name with hr._subject_display_name delegating, so an
+  // employment-keyed and an employee-keyed caller cannot disagree about one person.
+  "directory_names_use_the_one_rule",
+  // Round-18, the half hr_c4_20 deliberately could not reach. RULE 2b (the reporting-line rung that
+  // closed check 26) is gated on sole_authority_mode = auto_record, so it never reaches
+  // pay_change_approve / termination_approve / offer_approve — correctly, since a manager must not
+  // approve their report's pay alone. A managed subject therefore fails RULE 2 (hr.approval_authority
+  // is empty database-wide), RULE 2b (wrong mode) and RULE 3 (top-of-chart only). NOT a deadlock:
+  // hr_authority_grant admits org owners explicitly. NOT an activation bug either: SPEC-ACCESS §1.1
+  // enumerates what activation creates and no authority row is in it. Two known pairs ride a dated
+  // allowlist; whether a fresh org should be seeded is an approval-engine policy call, not this lane's.
+  "every_pay_change_has_an_approver",
 ] as const;
 
 interface ConformanceRow {
