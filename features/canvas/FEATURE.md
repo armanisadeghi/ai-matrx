@@ -47,6 +47,9 @@ the rules an agent editing THIS directory must obey.
 - **The rewrite may NEVER change a message's tool_call blocks** — `cx_message_set_content` rejects
   it (`tool_call_graph_change_forbidden`). A rejection means the commit path mis-partitioned
   iterations; fix the partition, not the guard.
+- **Materialize chat from persisted `cx_message.content`, never stream reservation content.**
+  Reservation bookkeeping is not source-content authority; reading the row first prevents a
+  later iteration's artifacts from being attributed to an earlier message.
 - Chat rewrites go through **`cx_message_set_content`** (status-preserving, archives to
   `content_history`), **never `cx_message_edit`** (marks the row `'edited'`).
 - **Read the node's `TWO-WAY-BINDING.md` before touching artifact EDIT or UNBIND on any surface.**
@@ -72,4 +75,6 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-08-27` — Chat materialization now reads canonical persisted message content before any
+  canvas write, preserving the row-owned tool graph across iteration-reservation races.
 - `2026-08-25` — The Working document canvas inherits the responsive `DocumentsWorkspace`: its document list is a full-width mobile state and selecting a document returns to the full-width editor, while desktop keeps the side-by-side rail.

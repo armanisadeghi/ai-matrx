@@ -82,13 +82,39 @@ export function cxMessageContentRewriter(messageId: string): PersistRewrite {
 export async function materializeMessageArtifacts(
   params: MaterializeParams,
 ): Promise<MaterializeResult> {
+  // The stream's reservation list is delivery metadata, not content
+  // authority. In an under-announced or late-announced tool loop it can map
+  // the final iteration's assembled blocks to an earlier assistant row. The
+  // database row is already committed before materialization and owns the
+  // canonical tool-pairing graph, so read that content before creating any
+  // canvas rows. This prevents both a forbidden rewrite and, more importantly,
+  // artifacts being attributed to the wrong source message.
+  const { data, error } = await supabase
+    .schema("chat")
+    .from("message")
+    .select("content")
+    .eq("id", params.messageId)
+    .single();
+
+  if (error) {
+    return {
+      materializedCount: 0,
+      rewrittenContent: null,
+      errors: [`canonical source read failed: ${error.message}`],
+    };
+  }
+
+  const canonicalContent = Array.isArray(data.content)
+    ? (data.content as CxContentBlock[])
+    : params.content;
+
   return materializeBlocks({
     source: {
       system: "cx_message",
       id: params.messageId,
       conversationId: params.conversationId,
     },
-    content: params.content,
+    content: canonicalContent,
     persistRewrite: cxMessageContentRewriter(params.messageId),
   });
 }
