@@ -295,19 +295,28 @@ attachments = `features/files` · tags/stages = `platform.categories` · the 360
 
 ---
 
-## Agent surfaces (2026-08-14)
+## Agent surfaces (updated 2026-08-27)
 
 Three read surfaces plus one universal capture point.
 
 **`matrx-user/crm-record`** (`crm-record.manifest.ts` + `agent-context/buildCrmRecordContextData.ts`)
-— the 360° record page was the CRM's largest agent blind spot: an agent on
-`/crm/[partyId]` saw nothing at all. It now emits identity, every contact point
-**with its resolved usability verdict**, addresses, employment both directions,
-the interaction timeline, and a derived `last_touch_at`.
+— the 360° record page was the CRM's largest agent blind spot. Exact record
+routes now resolve this surface before the broader `/crm` route, so an agent on
+`/crm/[partyId]` receives the record contract instead of the list contract. The
+surface emits the complete readable party row plus direct high-use identity,
+classification, ownership, lifecycle, rating, role, contact, address,
+employment, interaction, note, provenance, and derived last-touch values.
 
-- **Read-only, deliberately.** No write targets: every party mutation is either
-  governed (the server resolver) or destructive (merge / delete / purge /
-  primary flips). An agent proposes; the human presses the button.
+- **Normal record maintenance is agent-writable, with human approval.** Fourteen
+  `entity` write targets cover identity fields, lifecycle, rating, roles,
+  expert status, do-not-contact, contact points, primary contact selection,
+  addresses, employment, interactions, notes, and contact promotion. Each
+  target uses `applyPolicy: "ask"` and delegates to the same service or RPC as
+  the visible record control. Handlers live beside the canonical component
+  that owns the mutation instead of in a second agent-only write layer.
+- **Protected boundaries remain human-only.** Party kind, organization,
+  ownership, merge, delete, purge, removals, suppression overrides, and merge
+  candidate verdicts are intentionally absent from the write contract.
 - **Reachability is resolved for the agent, never left to it.** `reachability.ts`
   is the ONE rule (record `do_not_contact` → point `opt_out_at` → medium DNC /
   invalid / suppressed). It was inlined phone-only inside `computeDialTargets`;
@@ -815,8 +824,18 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
   render through the new official `CollapsibleText`: a measured four-line
   preview with a semantic fade, per-item expand/collapse, and section-level
   Expand all / Collapse all controls. Short bodies remain untouched and never
-  receive a disclosure control; mobile keeps the full 40px individual target
+  receive a disclosure control; mobile keeps the full 44px individual target
   while the group actions stay compact.
+
+- 2026-08-27 — **The CRM record surface now maps the real record and supports
+  approval-gated agent maintenance.** Exact `/crm/[partyId]` routes resolve
+  `matrx-user/crm-record` instead of falling through to the broad CRM surface.
+  The contract now maps the full readable party record plus 52 focused values,
+  including resolved lifecycle/rating/role labels, collaboration fields,
+  contact channels and reachability, addresses, employment, interactions,
+  notes, provenance, and load errors. Fourteen `ask` write targets use the
+  record's canonical component services for normal maintenance; destructive,
+  organizational, ownership, and governance boundaries remain human-only.
 
 - 2026-08-24 — **Right-click context menu (v3) on the four CRM tables.**
   `features/crm/components/crm-row-actions.tsx` is the ONE definition of what
