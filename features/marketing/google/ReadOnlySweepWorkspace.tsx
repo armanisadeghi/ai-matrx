@@ -269,7 +269,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
             never edits Google contacts, calendars, tasks, YouTube content, or
             Tag Manager configuration through these connections.
           </p>
-          <Button asChild size="sm" variant="outline">
+          <Button asChild size="sm" variant="outline" className="min-h-11">
             <Link href="/marketing/connections/google">
               Manage or disconnect Google accounts
               <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
