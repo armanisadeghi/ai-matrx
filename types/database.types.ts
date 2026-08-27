@@ -42784,6 +42784,20 @@ export type Database = {
           tz: string
         }[]
       }
+      _punch_open_chain_as_of: {
+        Args: { p_at: string; p_employment_id: string }
+        Returns: {
+          attestation_response: Json
+          break_paid: boolean
+          id: string
+          local_work_date: string
+          occurred_at: string
+          position_assignment_id: string
+          punch_kind: string
+          source: string
+          tz: string
+        }[]
+      }
       _punch_orphan_threshold_hours: {
         Args: { p_juris: Json; p_organization_id: string }
         Returns: number
@@ -42813,6 +42827,10 @@ export type Database = {
       _punch_resolve_juris: {
         Args: { p_employment_id: string; p_occurred_at: string }
         Returns: Json
+      }
+      _punch_state_as_of: {
+        Args: { p_at: string; p_employment_id: string }
+        Returns: string
       }
       _punch_state_of: { Args: { p_employment_id: string }; Returns: string }
       _recompute_enqueue: {
@@ -42861,6 +42879,10 @@ export type Database = {
       _run_fixture_probe: {
         Args: { p_input: Json; p_probe: string }
         Returns: Json
+      }
+      _subject_display_name: {
+        Args: { p_employment_id: string; p_uid: string }
+        Returns: string
       }
       _subject_jurisdiction_key: {
         Args: { p_subject_id: string; p_subject_type: string }
@@ -43194,6 +43216,10 @@ export type Database = {
         Args: { p_end_local: string; p_start_local: string; p_tz: string }
         Returns: number
       }
+      employee_by_party: {
+        Args: { p_organization_id: string; p_party_id: string }
+        Returns: Json
+      }
       employment_as_of: {
         Args: { p_employee_id: string; p_on: string }
         Returns: {
@@ -43419,6 +43445,14 @@ export type Database = {
           depth: number
           manager_employment_id: string
         }[]
+      }
+      member_employee_links: {
+        Args: { p_organization_id: string; p_user_ids: string[] }
+        Returns: Json
+      }
+      my_compensation: {
+        Args: { p_as_of?: string; p_employment_id: string }
+        Returns: Json
       }
       org_chart_as_of: {
         Args: { p_on: string; p_organization_id: string }
@@ -60648,6 +60682,10 @@ export type Database = {
       }
       hr_emergency_contact_remove: { Args: { p_id: string }; Returns: Json }
       hr_emergency_contact_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_employee_by_party: {
+        Args: { p_organization_id: string; p_party_id: string }
+        Returns: Json
+      }
       hr_employee_create: { Args: { p_payload: Json }; Returns: Json }
       hr_employee_invite: {
         Args: { p_email?: string; p_employee_id: string; p_expires_at?: string }
@@ -60778,6 +60816,10 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_member_employee_links: {
+        Args: { p_organization_id: string; p_user_ids: string[] }
+        Returns: Json
+      }
       hr_mint_investigation_token: {
         Args: {
           p_incident_id: string
@@ -60798,6 +60840,10 @@ export type Database = {
       }
       hr_module_set_enabled: {
         Args: { p_enabled: boolean; p_organization_id: string }
+        Returns: Json
+      }
+      hr_my_compensation: {
+        Args: { p_as_of?: string; p_employment_id: string }
         Returns: Json
       }
       hr_my_context: { Args: { p_organization_id?: string }; Returns: Json }
