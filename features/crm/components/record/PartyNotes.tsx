@@ -6,13 +6,18 @@
 // rebuilt). Reached ONLY through commentsService; p_org_id is passed
 // explicitly because cmt_add's own org resolution is task-only.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
-import { AlertTriangle, NotebookText, Send, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AlertTriangle, NotebookText, Trash2 } from "lucide-react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { commentsService } from "@/features/comments/service/commentsService";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  CollapsibleText,
+  CollapsibleTextGroupControls,
+} from "@/components/official/CollapsibleText";
 import type { Comment } from "@/features/comments/types";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { formatRelativeTime } from "@/utils/datetime";
 import { SectionCard, SectionEmpty } from "./SectionCard";
 
@@ -26,9 +31,15 @@ interface Props {
    * needed the same card (2026-08-20).
    */
   entityType?: "party" | "crm_deal";
+  getApplicationScope?: () => ApplicationScope;
 }
 
-export function PartyNotes({ partyId, orgId, entityType = "party" }: Props) {
+export function PartyNotes({
+  partyId,
+  orgId,
+  entityType = "party",
+  getApplicationScope,
+}: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
   // A failed load is NOT an empty list. Rendering "No notes yet" over a failure
   // tells the user this record has no notes when it may have many — and it hid
@@ -37,28 +48,47 @@ export function PartyNotes({ partyId, orgId, entityType = "party" }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  const [reloadNonce, setReloadNonce] = useState(0);
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(
+    new Set(),
+  );
   const generationRef = useRef(0);
-
-  const load = useCallback(async () => {
-    const gen = ++generationRef.current;
-    const result = await commentsService.listForEntity(entityType, partyId);
-    if (generationRef.current !== gen) return;
-    if (result.ok) {
-      setComments(result.data.comments);
-      setLoadError(null);
-    } else {
-      console.error("[crm] notes load failed:", result.error);
-      setLoadError(result.error.message);
-    }
-  }, [partyId, entityType]);
 
   useEffect(() => {
     // Timer = async boundary, so no setState runs synchronously in the effect.
     const timer = setTimeout(() => {
+      const load = async () => {
+        const gen = ++generationRef.current;
+        const result = await commentsService.listForEntity(entityType, partyId);
+        if (generationRef.current !== gen) return;
+        if (result.ok) {
+          setComments(result.data.comments);
+          setLoadError(null);
+        } else {
+          console.error("[crm] notes load failed:", result.error);
+          setLoadError(result.error.message);
+        }
+      };
       void load();
     }, 0);
     return () => clearTimeout(timer);
-  }, [load]);
+  }, [partyId, entityType, reloadNonce]);
+
+  const allExpanded =
+    comments.length > 0 &&
+    comments.every((comment) => expandedComments.has(comment.id));
+  const anyExpanded = comments.some((comment) =>
+    expandedComments.has(comment.id),
+  );
+
+  const setCommentExpanded = (id: string, expanded: boolean) => {
+    setExpandedComments((current) => {
+      const next = new Set(current);
+      if (expanded) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
 
   const submit = async () => {
     const body = draft.trim();
@@ -73,7 +103,7 @@ export function PartyNotes({ partyId, orgId, entityType = "party" }: Props) {
     setSaving(false);
     if (result.ok) {
       setDraft("");
-      await load();
+      setReloadNonce((current) => current + 1);
     } else {
       toast.error(result.error.message);
     }
@@ -87,7 +117,7 @@ export function PartyNotes({ partyId, orgId, entityType = "party" }: Props) {
     });
     if (!ok) return;
     const result = await commentsService.remove(comment.id);
-    if (result.ok) await load();
+    if (result.ok) setReloadNonce((current) => current + 1);
     else toast.error(result.error.message);
   };
 
@@ -98,28 +128,38 @@ export function PartyNotes({ partyId, orgId, entityType = "party" }: Props) {
       // No count while the load is failing — an authoritative "0" is the same
       // lie as "No notes yet".
       count={loadError ? undefined : comments.length}
-    >
-      <div className="mb-2 flex gap-1.5">
-        <textarea
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void submit();
-          }}
-          rows={2}
-          placeholder="Add a note… (⌘↵ to save)"
-          className="min-h-[3rem] flex-1 resize-y rounded border border-border bg-background px-2 py-1 text-sm text-foreground outline-none placeholder:text-muted-foreground/60 focus:border-primary"
+      action={
+        <CollapsibleTextGroupControls
+          allExpanded={allExpanded}
+          anyExpanded={anyExpanded}
+          disabled={comments.length === 0}
+          onExpandAll={() =>
+            setExpandedComments(new Set(comments.map((comment) => comment.id)))
+          }
+          onCollapseAll={() => setExpandedComments(new Set())}
         />
-        <Button
-          size="sm"
-          className="h-auto px-2.5"
-          onClick={submit}
-          disabled={saving || !draft.trim()}
-          aria-label="Save note"
-        >
-          <Send className="h-3.5 w-3.5" />
-        </Button>
-      </div>
+      }
+    >
+      <ProTextarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder="Add a note…"
+        autoGrow
+        minHeight={64}
+        maxHeight={240}
+        onSubmit={submit}
+        submitDisabled={saving || !draft.trim()}
+        isSubmitting={saving}
+        submitLabel="Save note"
+        surfaceName="matrx-user/crm-record"
+        sourceFeature="crm"
+        getApplicationScope={getApplicationScope}
+        enableTextStats
+        defaultShowTextStatsBar={false}
+        wrapperClassName="mb-2"
+        className="text-base sm:text-sm"
+        aria-label="Add a note"
+      />
 
       {loadError ? (
         <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
@@ -127,7 +167,7 @@ export function PartyNotes({ partyId, orgId, entityType = "party" }: Props) {
           <span>Couldn&apos;t load notes — {loadError}</span>
           <button
             type="button"
-            onClick={() => void load()}
+            onClick={() => setReloadNonce((current) => current + 1)}
             className="rounded px-1.5 py-0.5 font-medium text-primary hover:bg-accent"
           >
             Retry
@@ -160,9 +200,17 @@ export function PartyNotes({ partyId, orgId, entityType = "party" }: Props) {
                   <Trash2 className="h-3 w-3" />
                 </button>
               </div>
-              <p className="mt-0.5 whitespace-pre-wrap text-sm text-foreground">
+              <CollapsibleText
+                expanded={expandedComments.has(comment.id)}
+                onExpandedChange={(expanded) =>
+                  setCommentExpanded(comment.id, expanded)
+                }
+                className="mt-0.5 text-sm leading-relaxed text-foreground"
+                expandLabel="Expand note"
+                collapseLabel="Collapse note"
+              >
                 {comment.body}
-              </p>
+              </CollapsibleText>
             </li>
           ))}
         </ul>

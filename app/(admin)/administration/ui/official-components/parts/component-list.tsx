@@ -295,6 +295,15 @@ export const componentList: ComponentEntry[] = [
     tags: ["accordion", "collapsible", "expandable", "fullscreen", "actions"],
   },
   {
+    id: "collapsible-text",
+    name: "Collapsible Text",
+    path: "components/official/CollapsibleText.tsx",
+    description:
+      "Measured multiline text preview with a bottom fade, individual expand/collapse, and coordinated group controls",
+    categories: ["collapsible", "text", "data-display", "interactive"],
+    tags: ["text", "fade", "preview", "expand all", "collapse all"],
+  },
+  {
     id: "advanced-menu",
     name: "Advanced Menu",
     path: "components/official/AdvancedMenu.tsx",

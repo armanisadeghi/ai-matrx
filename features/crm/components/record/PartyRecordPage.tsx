@@ -265,8 +265,13 @@ export function PartyRecordPage({ partyId }: Props) {
                   orgId={party.organization_id}
                   interactions={detail.interactions}
                   onChanged={refresh}
+                  getApplicationScope={getScope}
                 />
-                <PartyNotes partyId={party.id} orgId={party.organization_id} />
+                <PartyNotes
+                  partyId={party.id}
+                  orgId={party.organization_id}
+                  getApplicationScope={getScope}
+                />
                 <PrimaryEntityProvider
                   value={{
                     type: "party",

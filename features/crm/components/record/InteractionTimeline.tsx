@@ -25,11 +25,17 @@ import {
 import { InboundLabelBadge } from "../outreach-lists/badges";
 import { readInboundClassification } from "../../inbox/attributes";
 import type { LucideIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  CollapsibleText,
+  CollapsibleTextGroupControls,
+} from "@/components/official/CollapsibleText";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
+import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { logInteraction, removeInteraction } from "../../service";
 import type {
   InteractionChannel,
@@ -38,10 +44,7 @@ import type {
 } from "../../types";
 import { SectionCard, SectionEmpty } from "./SectionCard";
 
-const CHANNEL_META: Record<
-  string,
-  { label: string; Icon: LucideIcon }
-> = {
+const CHANNEL_META: Record<string, { label: string; Icon: LucideIcon }> = {
   call: { label: "Call", Icon: Phone },
   email: { label: "Email", Icon: AtSign },
   meeting: { label: "Meeting", Icon: CalendarClock },
@@ -66,6 +69,7 @@ interface Props {
   onChanged: () => Promise<void>;
   /** When set, logged activity binds to this deal's timeline (deal record page). */
   dealId?: string | null;
+  getApplicationScope?: () => ApplicationScope;
 }
 
 export function InteractionTimeline({
@@ -74,6 +78,7 @@ export function InteractionTimeline({
   interactions,
   onChanged,
   dealId,
+  getApplicationScope,
 }: Props) {
   const [channel, setChannel] = useState<InteractionChannel>("call");
   const [direction, setDirection] = useState<InteractionDirection>("outbound");
@@ -81,6 +86,24 @@ export function InteractionTimeline({
   const [body, setBody] = useState("");
   const [minutes, setMinutes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const expandableRowIds = interactions
+    .filter((row) => Boolean(row.body))
+    .map((row) => row.id);
+  const allExpanded =
+    expandableRowIds.length > 0 &&
+    expandableRowIds.every((id) => expandedRows.has(id));
+  const anyExpanded = expandableRowIds.some((id) => expandedRows.has(id));
+
+  const setRowExpanded = (id: string, expanded: boolean) => {
+    setExpandedRows((current) => {
+      const next = new Set(current);
+      if (expanded) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
 
   const submit = async () => {
     if (!subject.trim() && !body.trim()) {
@@ -128,7 +151,20 @@ export function InteractionTimeline({
   };
 
   return (
-    <SectionCard title="Activity" Icon={History} count={interactions.length}>
+    <SectionCard
+      title="Activity"
+      Icon={History}
+      count={interactions.length}
+      action={
+        <CollapsibleTextGroupControls
+          allExpanded={allExpanded}
+          anyExpanded={anyExpanded}
+          disabled={expandableRowIds.length === 0}
+          onExpandAll={() => setExpandedRows(new Set(expandableRowIds))}
+          onCollapseAll={() => setExpandedRows(new Set())}
+        />
+      }
+    >
       {/* Composer — one tight strip: type, direction, subject, minutes, log. */}
       <div className="mb-2 space-y-1.5 rounded border border-border bg-muted/30 p-1.5">
         <div className="flex flex-wrap items-center gap-1">
@@ -178,30 +214,34 @@ export function InteractionTimeline({
             />
           )}
         </div>
-        <div className="flex gap-1.5">
-          <Input
+        <div className="grid gap-1.5 sm:grid-cols-[minmax(10rem,13rem)_1fr]">
+          <ProInput
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Subject"
-            className="h-7 w-40 shrink-0 text-xs sm:w-52"
+            enableVoice={false}
+            className="h-9"
+            aria-label="Activity subject"
           />
-          <Input
+          <ProTextarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void submit();
-            }}
             placeholder="What happened?"
-            className="h-7 flex-1 text-xs"
+            autoGrow
+            minHeight={64}
+            maxHeight={240}
+            onSubmit={submit}
+            submitDisabled={saving || (!subject.trim() && !body.trim())}
+            isSubmitting={saving}
+            submitLabel="Log activity"
+            surfaceName="matrx-user/crm-record"
+            sourceFeature="crm"
+            getApplicationScope={getApplicationScope}
+            enableTextStats
+            defaultShowTextStatsBar={false}
+            className="text-base sm:text-sm"
+            aria-label="Activity details"
           />
-          <Button
-            size="sm"
-            className="h-7 px-2.5 text-xs"
-            onClick={submit}
-            disabled={saving}
-          >
-            Log
-          </Button>
         </div>
       </div>
 
@@ -256,9 +296,17 @@ export function InteractionTimeline({
                     </span>
                   </div>
                   {row.body && (
-                    <p className="mt-0.5 whitespace-pre-wrap text-xs text-muted-foreground">
+                    <CollapsibleText
+                      expanded={expandedRows.has(row.id)}
+                      onExpandedChange={(expanded) =>
+                        setRowExpanded(row.id, expanded)
+                      }
+                      className="mt-0.5 text-xs leading-relaxed text-muted-foreground"
+                      expandLabel={`Expand ${meta.label.toLowerCase()} details`}
+                      collapseLabel={`Collapse ${meta.label.toLowerCase()} details`}
+                    >
                       {row.body}
-                    </p>
+                    </CollapsibleText>
                   )}
                   {classification?.evidence && (
                     <p className="mt-0.5 text-[11px] italic text-muted-foreground/80">
