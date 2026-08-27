@@ -10,8 +10,8 @@ replication, and remote reconciliation for registered Redux slices.
 Server-rendered HTML and the first client render must observe the same Redux
 state. `StoreProvider` therefore creates the store without reading persisted
 state, then `SyncBootstrap` schedules the idempotent sync boot after window
-load at the next browser-idle turn. A parent passive effect is **not** a
-hydration boundary: a streamed Suspense descendant may still hydrate afterward.
+load at a browser-idle turn with no pending React streaming boundary. Idle
+alone is **not** a hydration boundary: a streamed descendant may still hydrate.
 
 The store-owned `boot()` promise includes warm-cache IDB hydration. A
 write-time resolver that depends on hydrated context joins that promise before
@@ -31,6 +31,8 @@ hydration errors.
 
 ## Change log
 
+- 2026-08-27 — Persisted boot reschedules while React still exposes a pending
+  streamed Suspense boundary; browser idle alone did not close the Notes #418 race.
 - 2026-08-26 — Persisted boot now waits for window load plus browser idle; a parent passive effect
   can precede selective hydration in a streamed Suspense subtree and still produce React #418.
 - 2026-08-26 — `boot()` now resolves after warm-cache IDB hydration, and

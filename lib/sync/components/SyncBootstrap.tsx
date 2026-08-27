@@ -14,6 +14,16 @@
 import { useEffect } from "react";
 import { useAppStore } from "@/lib/redux/hooks";
 
+function hasPendingReactBoundary(root: Node): boolean {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_COMMENT);
+  let node = walker.nextNode();
+  while (node) {
+    if (node.nodeValue === "$?") return true;
+    node = walker.nextNode();
+  }
+  return false;
+}
+
 export function SyncBootstrap(): null {
   const store = useAppStore();
 
@@ -24,6 +34,12 @@ export function SyncBootstrap(): null {
 
     const boot = () => {
       if (cancelled) return;
+      // Browser idle is only a scheduler hint: streamed Suspense boundaries
+      // can still be waiting to hydrate and must see the unpersisted tree.
+      if (hasPendingReactBoundary(document)) {
+        scheduleIdle();
+        return;
+      }
       void store._sync.boot().catch((error: unknown) => {
         console.error("[sync] post-hydration bootstrap failed", error);
       });

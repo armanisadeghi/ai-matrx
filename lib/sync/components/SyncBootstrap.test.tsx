@@ -84,4 +84,24 @@ describe("SyncBootstrap", () => {
     expect(await boot.mock.results[0].value).toBe(true);
     expect(recoverableErrors).toEqual([]);
   });
+
+  it("waits while a streamed React boundary is still pending", async () => {
+    const pendingBoundary = document.createComment("$?");
+    container.appendChild(pendingBoundary);
+
+    await act(async () => {
+      root = hydrateRoot(container, <Subject />);
+    });
+
+    await act(async () => {
+      idleCallback?.({ didTimeout: false, timeRemaining: () => 10 });
+    });
+    expect(boot).not.toHaveBeenCalled();
+
+    pendingBoundary.remove();
+    await act(async () => {
+      idleCallback?.({ didTimeout: false, timeRemaining: () => 10 });
+    });
+    expect(boot).toHaveBeenCalledTimes(1);
+  });
 });
