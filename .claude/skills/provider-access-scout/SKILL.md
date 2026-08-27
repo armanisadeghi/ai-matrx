@@ -144,6 +144,12 @@ Business remain separate bundles. State whether `info@aimatrx.com` with Google S
 does not, name the exact approved identity class and Vault custody plan. Never invent a shared human
 identity to satisfy a provider that requires a real person.
 
+When account setup is assigned or scheduled, create exactly one owner-session action for each
+`Bundle`. Put the due date and click-through action on one primary campaign task; sibling campaigns
+must reference that shared bundle without duplicating the due action. Separate bundles remain
+separate actions even when they belong to the same provider. Reuse an existing account or bundle
+task when canonical inventory proves it exists instead of creating a new signup action.
+
 Do not ask Arman to create an account an agent can create after action-time confirmation. Put a
 provider-enforced identity, CAPTCHA, hardware key, legal document, payment decision, or immutable
 business fact in `Human-only ceremony`; routine SSO, mailbox codes, password generation, MFA/Vault
