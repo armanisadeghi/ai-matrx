@@ -1,7 +1,6 @@
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentsListHeader } from "@/features/agents/components/shell/AgentsListHeader";
 import { AgentBrowsePage } from "@/features/agents/browse/components/AgentBrowsePage";
-import { ADMIN_SYSTEM_AGENTS_LIST_SURFACE } from "@/features/agents/browse/adminSurface";
 
 export const metadata = { title: "System Agents | Admin" };
 
@@ -23,11 +22,7 @@ export default function AdminSystemAgentsListPage() {
       <PageHeader>
         <AgentsListHeader />
       </PageHeader>
-      <AgentBrowsePage
-        defaultScope={{ kind: "system" }}
-        surface={ADMIN_SYSTEM_AGENTS_LIST_SURFACE}
-        clearsShellHeader={false}
-      />
+      <AgentBrowsePage variant="system-admin" />
     </>
   );
 }

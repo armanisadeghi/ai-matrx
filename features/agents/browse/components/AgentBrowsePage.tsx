@@ -26,14 +26,11 @@ import { Plus, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
-import {
-  EntityListPage,
-  type EntityListSurface,
-} from "@/lib/entity-list/components/EntityListPage";
+import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityListController } from "@/lib/entity-list/config";
-import type { ListScope } from "@/lib/list-scope/types";
 import { agentListConfig } from "../listConfig";
 import { newAgentHref } from "../agentPaths";
+import { ADMIN_SYSTEM_AGENTS_LIST_SURFACE } from "../adminSurface";
 import {
   AGENT_BROWSE_SURFACE,
   AGENT_BROWSE_SURFACE_ADMIN,
@@ -42,34 +39,31 @@ import { AGENT_LIST_SCOPES, AGENT_LIST_SCOPES_ADMIN } from "../types";
 import type { AgentBrowseRow } from "../types";
 import { ClassicViewNotice } from "./ClassicViewNotice";
 
+/**
+ * WHICH ROUTE is rendering this list. Deliberately a plain string and not a
+ * bag of props: both callers are SERVER components, and a function cannot
+ * cross that boundary — passing the surface object itself 500s the page
+ * ("Functions cannot be passed directly to Client Components"). Everything
+ * that differs between the two routes is therefore derived HERE, on the
+ * client, from this one serializable word.
+ */
+export type AgentBrowseVariant = "user" | "system-admin";
+
 export interface AgentBrowsePageProps {
   /**
-   * Where the page opens. The admin System Agents route passes
-   * `{ kind: "system" }` because its whole shell is already about the platform
-   * corpus; `/agents/all` omits it and opens on Mine. Either way the tabs
-   * still switch freely — this is a starting point, never a cage.
+   * Default `"user"` — `/agents/all`. `"system-admin"` is the admin System
+   * Agents route: it opens on the System scope, emits the
+   * `matrx-admin/system-agents` runtime instead of the user's Agents Hub, and
+   * does not pad for the glass header (`/administration` already begins below
+   * it). The scope tabs still switch freely either way.
    */
-  defaultScope?: ListScope;
-  /**
-   * The agent surface this rendering emits, when it is not the user's Agents
-   * Hub. One UI can sit in two contexts: the admin System Agents route emits
-   * `matrx-admin/system-agents` (its own manifest, write targets, and
-   * bindings) from this very same controller.
-   */
-  surface?: EntityListSurface<AgentBrowseRow>;
-  /**
-   * Forwarded to the shell. `(core)` scrolls behind a transparent glass header
-   * and must pad for it; `/administration` already begins below the header, so
-   * the admin System Agents route passes false.
-   */
-  clearsShellHeader?: boolean;
+  variant?: AgentBrowseVariant;
 }
 
 export function AgentBrowsePage({
-  defaultScope,
-  surface,
-  clearsShellHeader,
+  variant = "user",
 }: AgentBrowsePageProps) {
+  const systemAdmin = variant === "system-admin";
   // ANY Matrx admin (developer / senior_admin / super_admin) — the same bar the
   // /administration route tree uses. Hiding the tab is a convenience for
   // everyone else, never the security: agx_list_scoped re-checks
@@ -100,11 +94,14 @@ export function AgentBrowsePage({
     <EntityListPage
       config={agentListConfig}
       scopes={isAdmin ? AGENT_LIST_SCOPES_ADMIN : AGENT_LIST_SCOPES}
-      defaultScope={defaultScope}
-      clearsShellHeader={clearsShellHeader}
+      defaultScope={systemAdmin ? { kind: "system" } : undefined}
+      clearsShellHeader={!systemAdmin}
       surface={
-        surface ??
-        (isAdmin ? AGENT_BROWSE_SURFACE_ADMIN : AGENT_BROWSE_SURFACE)
+        systemAdmin
+          ? ADMIN_SYSTEM_AGENTS_LIST_SURFACE
+          : isAdmin
+            ? AGENT_BROWSE_SURFACE_ADMIN
+            : AGENT_BROWSE_SURFACE
       }
       notice={<ClassicViewNotice />}
       headerActions={(list) => (
