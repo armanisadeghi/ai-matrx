@@ -22972,15 +22972,7 @@ export type Database = {
           upload_offset?: number
           visibility?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "uploads_inflight_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "files"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_account: {
         Row: {
