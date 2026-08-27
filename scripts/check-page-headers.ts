@@ -15,10 +15,11 @@
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { basename, join, relative } from "node:path";
 
 const ROOT = process.cwd();
 const APP_DIR = join(ROOT, "app");
+const FEATURES_DIR = join(ROOT, "features");
 
 const ROUTE_GLOBS = [
   "(core)",
@@ -33,6 +34,14 @@ const FAUX_HEADER_MARKERS = [
   "border-b border-border bg-card",
   "flex-shrink-0 border-b border-border bg-card",
   "flex-shrink-0 p-4 border-b border-border bg-card",
+] as const;
+
+/** Compact center navigation must not consume the shell's full 44px height. */
+const FAT_ROUTE_NAV_MARKERS = [
+  "min-h-11",
+  "min-w-11",
+  "max-lg:min-h-11",
+  "max-lg:min-w-11",
 ] as const;
 
 interface Violation {
@@ -62,6 +71,24 @@ function walkTsx(dir: string, out: string[] = []): string[] {
       entry === "page.tsx" ||
       entry.endsWith("Client.tsx") ||
       entry.endsWith("LayoutClient.tsx")
+    ) {
+      out.push(full);
+    }
+  }
+  return out;
+}
+
+function walkHeaderComponents(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    const st = statSync(full);
+    if (st.isDirectory()) {
+      walkHeaderComponents(full, out);
+      continue;
+    }
+    if (
+      entry.endsWith(".tsx") &&
+      /(Header|Mode|Nav)/.test(basename(entry, ".tsx"))
     ) {
       out.push(full);
     }
@@ -112,18 +139,39 @@ function scanFile(path: string): Violation[] {
   return violations;
 }
 
+function scanCompactRouteNav(path: string): Violation[] {
+  const src = readFileSync(path, "utf8");
+  if (!src.includes("navItemClasses")) return [];
+
+  const marker = FAT_ROUTE_NAV_MARKERS.find((candidate) =>
+    src.includes(candidate),
+  );
+  if (!marker) return [];
+
+  return [
+    {
+      file: relative(ROOT, path),
+      reason: `Compact shell route navigation contains \`${marker}\`. Route-mode pills must match the Agents header at every width; mobile reachability belongs in the bottom-sheet rows, not a 44px center pill.`,
+    },
+  ];
+}
+
 function main() {
   const { strict } = parseArgs();
   const files = walkTsx(APP_DIR).filter(isRouteFile);
-  const violations = files.flatMap(scanFile);
+  const featureHeaderFiles = walkHeaderComponents(FEATURES_DIR);
+  const violations = [
+    ...files.flatMap(scanFile),
+    ...featureHeaderFiles.flatMap(scanCompactRouteNav),
+  ];
 
   if (violations.length === 0) {
-    console.log("✓ No faux page-header violations in app route files.");
+    console.log("✓ No page-header or compact route-nav violations.");
     process.exit(0);
   }
 
   console.log(
-    `\n⚠ ${violations.length} route file(s) with faux in-body page headers:\n`,
+    `\n⚠ ${violations.length} page-header violation(s):\n`,
   );
   for (const v of violations) {
     console.log(`  ${v.file}`);
@@ -132,6 +180,7 @@ function main() {
   console.log(
     "Fix: wrap header controls in <PageHeader> (features/shell/components/header/PageHeader.tsx).\n" +
       "     Body wrapper: h-full overflow-hidden on (core) routes — never h-page or calc(100dvh - header).\n" +
+      "     Compact route navigation: no 44px minimums or responsive padding in the shell center.\n" +
       "     See features/shell/components/header/variants/USAGE.md\n",
   );
 
