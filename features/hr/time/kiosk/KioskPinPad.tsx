@@ -14,13 +14,20 @@
  * server answers one indistinguishable failure for a wrong number and a wrong PIN; this screen must
  * not be more helpful than that.
  *
- * 🚨 **The pad is numeric-only and rendered as buttons**, not an `<input>`: a text field on a wall
- * tablet raises the OS keyboard, which covers the pad, offers autofill, and remembers what was
- * typed. None of those are acceptable for a shared credential.
+ * 🚨 **The PIN step is numeric-only and rendered as buttons**, not an `<input>`: a text field on a
+ * wall tablet raises the OS keyboard, which covers the pad, offers autofill, and remembers what was
+ * typed. None of those are acceptable for a shared **credential**. The employee-number step is a
+ * field precisely because a badge number is not one — see the note below.
  *
- * 🚨 **`pinLength` is the server's knob** (`session.config.pinLength`), never a constant here. The
- * employee number has **no** length knob and no client-side format rule — an employer numbers its
- * people however it likes, and a pad that assumed four digits would lock out everyone else.
+ * 🚨 **`pinLength` is the server's knob** (`session.config.pinLength`), never a constant here.
+ *
+ * 🚨 **THE EMPLOYEE NUMBER IS NOT NECESSARILY NUMERIC, AND THIS WAS FOUND BY TESTING, NOT BY
+ * READING.** The spec says *"numeric pad asks EMPLOYEE NUMBER, then PIN"*, and the first real
+ * employer's numbers are `EMP-00001`. `hr_kiosk_session_open` matches `employee_number` exactly, so
+ * a digits-only pad could never enter one — it would have locked out every employer that does not
+ * number its people in bare digits. The number step therefore takes a **text field** (it is an
+ * identifier read off a badge, not a secret), and the **PIN keeps the numeric pad**, where the
+ * no-OS-keyboard rule genuinely matters.
  *
  * The PIN is masked. The kiosk never renders a PIN, not even the one being typed. The employee
  * number is shown, because it is an identifier the person is reading off a badge, not a secret.
@@ -32,6 +39,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Delete, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { PunchKind } from "@/features/hr/time/api/types";
 import { punchKindPresentation } from "@/features/hr/time/clock/punchVocabulary";
 
@@ -105,14 +113,23 @@ export function KioskPinPad({
       {step === "number" ? (
         /*
           Shown, not masked — a badge number is an identifier the person is reading off a card, and
-          hiding it only makes it harder to correct a typo. It is never checked as it is typed.
+          hiding it only makes it harder to correct a typo. It is never checked as it is typed, and
+          the field never hints whether the number exists.
         */
-        <p
-          className="min-h-12 text-4xl font-semibold tabular-nums tracking-widest text-foreground"
+        <Input
+          value={employeeNumber}
+          onChange={(event) => setEmployeeNumber(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && employeeNumber.trim()) setStep("pin");
+          }}
+          disabled={busy}
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
           aria-label="Employee number"
-        >
-          {employeeNumber || <span className="text-muted-foreground">—</span>}
-        </p>
+          placeholder="EMP-00001"
+          className="min-h-[72px] w-full max-w-md text-center text-3xl tracking-widest"
+        />
       ) : (
         /* Masked, always. The count is the only feedback — the digits are never drawn. */
         <div
@@ -130,6 +147,7 @@ export function KioskPinPad({
         </div>
       )}
 
+      {step === "pin" && (
       <div className="grid grid-cols-3 gap-4">
         {KEYS.map((digit) => (
           <Button
@@ -173,17 +191,29 @@ export function KioskPinPad({
           <Delete className="size-9" />
         </Button>
       </div>
+      )}
 
       {step === "number" && (
-        <Button
-          type="button"
-          disabled={busy || employeeNumber.length === 0}
-          onClick={() => setStep("pin")}
-          className="min-h-[72px] w-full max-w-md gap-2 text-xl"
-        >
-          Next
-          <ArrowRight className="size-5" />
-        </Button>
+        <div className="flex w-full max-w-md flex-col gap-3">
+          <Button
+            type="button"
+            disabled={busy || employeeNumber.trim().length === 0}
+            onClick={() => setStep("pin")}
+            className="min-h-[72px] gap-2 text-xl"
+          >
+            Next
+            <ArrowRight className="size-5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={busy}
+            onClick={onCancel}
+            className="min-h-[60px] text-lg"
+          >
+            Cancel
+          </Button>
+        </div>
       )}
     </div>
   );
