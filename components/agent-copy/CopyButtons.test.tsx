@@ -217,6 +217,30 @@ describe("CopyButtons AI variants", () => {
     ]);
   });
 
+  it("supports opt-in bare chrome without changing the default group", () => {
+    act(() => {
+      root.render(
+        <CopyButtons
+          appearance="bare"
+          size="xs"
+          label="CRM activity"
+          human="readable activity"
+          agent="agent activity"
+        />,
+      );
+    });
+
+    const group = container.querySelector("[data-copy-action-group]");
+    expect(group?.getAttribute("data-copy-action-appearance")).toBe("bare");
+    expect(group?.className).not.toContain("lg:border-border");
+
+    const copyButton = container.querySelector(
+      'button[aria-label="Copy CRM activity (human-readable)"]',
+    );
+    expect(copyButton?.className).toContain("hover:bg-transparent");
+    expect(copyButton?.className).toContain("[&_svg]:size-[18px]");
+  });
+
   it("opens a caller-owned modal from an AI menu item instead of copying", () => {
     const onSelect = jest.fn();
     act(() => {

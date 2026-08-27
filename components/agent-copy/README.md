@@ -15,8 +15,10 @@ no page reimplements them.
   modal (`onSelect` / hosted `modal` on an `AiVariant`; `onSelect` on an
   export item). `groomer` and `aiCustom` already host their own workspaces.
   On phone/tablet, the group has no shared frame or dividers: only the quiet
-  icon controls show, each with a non-shrinking 44px tap target. Compact
-  segmented chrome returns at `lg+`.
+  18px icon controls show, each with a non-shrinking 44px tap target. Compact
+  segmented chrome returns at `lg+`. **Naturally unframed action rails use
+  `appearance="bare"`** to remove desktop group chrome and every hover/active
+  fill; the default remains segmented.
   `size`: `"xs"` (dense cards / per-field), `"icon"` (rows/toolbars), `"sm"`
   (header). Stops click propagation by default. **Pass `json`** for
   structured data; it is an AI-menu item, never a fourth button. The AI

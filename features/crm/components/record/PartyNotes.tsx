@@ -288,7 +288,7 @@ export function PartyNotes({
                       onClick={() => void remove(comment)}
                       className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive lg:h-5 lg:w-5 lg:opacity-0 lg:group-hover:opacity-100"
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="size-[18px] lg:size-3" />
                     </button>
                   </span>
                 </div>

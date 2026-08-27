@@ -23,6 +23,7 @@ export function CrmRecordCopyButtons({
     <CopyButtons
       {...props}
       size="xs"
+      appearance="bare"
       className={cn(
         "shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:focus-within:opacity-100",
         revealFrom === "section"

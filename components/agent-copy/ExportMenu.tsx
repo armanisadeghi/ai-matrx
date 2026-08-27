@@ -27,6 +27,7 @@ import { toast } from "@/lib/toast";
 import {
   copyActionCellClass,
   copyActionSegmentClass,
+  type CopyActionAppearance,
   type CopyActionSize,
 } from "@/components/agent-copy/CopyActionGroup";
 import {
@@ -41,6 +42,7 @@ export interface ExportMenuProps {
   items: ExportItem[];
   /** "icon" = icon-only trigger (toolbars); "sm" = icon + "Export" text. */
   size?: CopyActionSize | "sm";
+  appearance?: CopyActionAppearance;
   /**
    * Fill one even-width slot inside {@link CopyActionGroup}. Icon-only —
    * the visible "Export" label is not used in a group.
@@ -59,6 +61,7 @@ export function ExportMenu({
   label,
   items,
   size = "icon",
+  appearance = "segmented",
   grouped = false,
   disabled = false,
   className,
@@ -139,7 +142,10 @@ export function ExportMenu({
           size={isIcon ? "icon" : "sm"}
           className={
             grouped
-              ? copyActionSegmentClass(groupSize === "sm" ? "sm" : groupSize)
+              ? copyActionSegmentClass(
+                  groupSize === "sm" ? "sm" : groupSize,
+                  appearance,
+                )
               : isIcon
                 ? `h-7 w-7 ${className ?? ""}`
                 : className

@@ -152,9 +152,9 @@ export function CollapsibleTextGroupControls({
             aria-label="Expand all"
             onClick={onExpandAll}
             disabled={disabled || allExpanded}
-            className="h-11 w-11 sm:h-7 sm:w-7"
+            className="h-11 w-11 lg:h-7 lg:w-7"
           >
-            <ChevronsDown className="h-3.5 w-3.5" />
+            <ChevronsDown className="!size-[18px] lg:!size-3.5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="top">Expand all</TooltipContent>
@@ -168,9 +168,9 @@ export function CollapsibleTextGroupControls({
             aria-label="Collapse all"
             onClick={onCollapseAll}
             disabled={disabled || !anyExpanded}
-            className="h-11 w-11 sm:h-7 sm:w-7"
+            className="h-11 w-11 lg:h-7 lg:w-7"
           >
-            <ChevronsUp className="h-3.5 w-3.5" />
+            <ChevronsUp className="!size-[18px] lg:!size-3.5" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="top">Collapse all</TooltipContent>

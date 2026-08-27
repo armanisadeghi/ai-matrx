@@ -34,6 +34,7 @@ import type { AgentCopyGroomerConfig } from "@/components/agent-copy/groomer-typ
 import {
   copyActionCellClass,
   copyActionSegmentClass,
+  type CopyActionAppearance,
   type CopyActionSize,
 } from "@/components/agent-copy/CopyActionGroup";
 import {
@@ -169,6 +170,7 @@ export interface AiCopyMenuProps {
    * CopyButtons.
    */
   size?: CopyActionSize;
+  appearance?: CopyActionAppearance;
   /**
    * Fill one even-width slot inside {@link CopyActionGroup}. The chevron
    * sits beside the icon; every cell is sized for that pair.
@@ -191,6 +193,7 @@ export function AiCopyMenu({
   groomer,
   label,
   size = "icon",
+  appearance = "segmented",
   grouped = false,
   stopPropagation = true,
   disabled = false,
@@ -204,15 +207,23 @@ export function AiCopyMenu({
     React.useState<AgentCopyGroomerConfig | null>(null);
   const [openModalId, setOpenModalId] = React.useState<string | null>(null);
 
-  const buttonCls = grouped
-    ? copyActionSegmentClass(size)
-    : size === "xs"
-      ? "h-11 w-11 lg:h-5 lg:w-5"
-      : size === "icon"
-        ? "h-11 w-11 lg:h-7 lg:w-7"
-        : "h-11 w-11 lg:h-8 lg:w-8";
+  const buttonCls = cn(
+    grouped
+      ? copyActionSegmentClass(size, appearance)
+      : size === "xs"
+        ? "h-11 w-11 lg:h-5 lg:w-5"
+        : size === "icon"
+          ? "h-11 w-11 lg:h-7 lg:w-7"
+          : "h-11 w-11 lg:h-8 lg:w-8",
+    appearance === "bare" &&
+      "bg-transparent hover:bg-transparent focus:bg-transparent active:bg-transparent data-[state=open]:bg-transparent",
+  );
   const iconCls =
-    size === "xs" ? "h-3 w-3" : size === "icon" ? "h-3.5 w-3.5" : "h-4 w-4";
+    size === "xs"
+      ? "size-[18px] lg:size-3"
+      : size === "icon"
+        ? "size-[18px] lg:size-3.5"
+        : "size-[18px] lg:size-4";
   const chevronCls =
     size === "xs" ? "!size-2.5" : size === "sm" ? "!size-3.5" : "!size-3";
 
