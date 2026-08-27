@@ -383,9 +383,10 @@ export function resolveAgentSandboxRef(
  *
  * Cached per rowId for the session: the URL is a pure function of the row, and
  * the token mint already fails loudly if the box has since died. Returns null
- * (loudly) if the box can't be read — that lands as "bound but unresolvable",
- * which the pre-send gate turns into a user decision rather than a silent
- * unbound send.
+ * if the box can't be read — that lands as "bound but unresolvable", which the
+ * pre-send gate turns into a user decision rather than a silent unbound send.
+ * A 404 is an expected stale-binding lifecycle state and warns; unexpected
+ * auth/server failures remain errors.
  */
 const PROXY_URL_CACHE = new Map<string, ResolvedRefDetails>();
 
@@ -413,9 +414,18 @@ export async function resolveSandboxRefDetails(
   try {
     const resp = await fetch(`/api/sandbox/${sandboxRowId}`);
     if (!resp.ok) {
-      console.error(
-        `${LOG} ❌ could not re-derive routing details for bound box ${sandboxRowId}: GET /api/sandbox/${sandboxRowId} → HTTP ${resp.status}. The conversation IS bound to this box, so the turn will NOT silently run unbound — the pre-send gate asks the user what to do.`,
-      );
+      const message =
+        `${LOG} could not re-derive routing details for bound box ${sandboxRowId}: ` +
+        `GET /api/sandbox/${sandboxRowId} → HTTP ${resp.status}. The conversation IS bound ` +
+        "to this box, so the turn will NOT silently run unbound — the pre-send gate asks the user what to do.";
+      if (resp.status === 404) {
+        // A deleted/expired sandbox can legitimately outlive its conversation
+        // binding. The gate is the recovery path; this is not an application
+        // crash and must not be promoted into the system_error queue.
+        console.warn(`${LOG} ⚠️ stale binding: ${message}`);
+      } else {
+        console.error(`${LOG} ❌ ${message}`);
+      }
       return null;
     }
     const json = (await resp.json()) as {

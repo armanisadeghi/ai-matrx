@@ -18,6 +18,7 @@ import {
   getConversationSandboxBinding,
   getSurfaceSeedRef,
   getEffectiveSandboxRef,
+  resolveSandboxRefDetails,
 } from "../active-binding";
 import { ensureSandboxOrDecide } from "@/features/agents/redux/execution-system/thunks/sandbox-gate.thunk";
 import { openSandboxGate } from "@/components/dialogs/sandbox-gate/SandboxGateHost";
@@ -35,17 +36,27 @@ jest.mock("../active-binding", () => ({
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getActiveSandboxBinding } = require("../active-binding");
 
-const LIVE_BOX = { rowId: "box-live", proxyUrl: "https://orch/sandboxes/sbx-1/proxy" };
-const DEAD_BOX = { rowId: "box-dead", proxyUrl: "https://orch/sandboxes/sbx-0/proxy" };
+const LIVE_BOX = {
+  rowId: "box-live",
+  proxyUrl: "https://orch/sandboxes/sbx-1/proxy",
+};
+const DEAD_BOX = {
+  rowId: "box-dead",
+  proxyUrl: "https://orch/sandboxes/sbx-0/proxy",
+};
 
 /** Minimal RootState slice-set the resolvers actually read. */
-function makeState({ binding = null, surfaceSeed = null, isEphemeral = false } = {}) {
+function makeState({
+  binding = null,
+  surfaceSeed = null,
+  isEphemeral = false,
+} = {}) {
   return {
     conversations: {
       byConversationId: {
         "conv-1": {
           conversationId: "conv-1",
-          sourceFeature: "chat",
+          sourceFeature: "chat-route",
           isEphemeral,
           cacheOnly: false,
           sandboxBinding: binding,
@@ -89,7 +100,10 @@ describe("sandbox binding resolution — the record is the source of truth", () 
 
   it("the binding wins over a seed, and a seed arms an unbound conversation", () => {
     expect(
-      getEffectiveSandboxRef(makeState({ binding: LIVE_BOX, surfaceSeed: DEAD_BOX }), "conv-1"),
+      getEffectiveSandboxRef(
+        makeState({ binding: LIVE_BOX, surfaceSeed: DEAD_BOX }),
+        "conv-1",
+      ),
     ).toMatchObject({ rowId: "box-live", source: "conversation" });
 
     expect(
@@ -109,12 +123,18 @@ describe("sandbox binding resolution — the record is the source of truth", () 
     // silent fallback this whole module exists to prevent. The URL is a routing
     // detail (re-derived at send time), never identity.
     const urlless = { rowId: "box-from-server", proxyUrl: "" };
-    expect(getConversationSandboxBinding(makeState({ binding: urlless }), "conv-1"))
-      .toMatchObject({ rowId: "box-from-server", source: "conversation" });
+    expect(
+      getConversationSandboxBinding(makeState({ binding: urlless }), "conv-1"),
+    ).toMatchObject({ rowId: "box-from-server", source: "conversation" });
 
     const localPc = { rowId: "pc-1", proxyUrl: "", kind: "local-pc" };
-    expect(getConversationSandboxBinding(makeState({ binding: localPc }), "conv-1"))
-      .toMatchObject({ rowId: "pc-1", kind: "local-pc", source: "conversation" });
+    expect(
+      getConversationSandboxBinding(makeState({ binding: localPc }), "conv-1"),
+    ).toMatchObject({
+      rowId: "pc-1",
+      kind: "local-pc",
+      source: "conversation",
+    });
   });
 });
 
@@ -122,7 +142,9 @@ describe("ensureSandboxOrDecide — who gets gated", () => {
   const run = async (state) => {
     const dispatch = jest.fn((action) =>
       typeof action === "function"
-        ? Object.assign(Promise.resolve(undefined), { unwrap: () => Promise.resolve(undefined) })
+        ? Object.assign(Promise.resolve(undefined), {
+            unwrap: () => Promise.resolve(undefined),
+          })
         : action,
     );
     const result = await ensureSandboxOrDecide({ conversationId: "conv-1" })(
@@ -137,7 +159,9 @@ describe("ensureSandboxOrDecide — who gets gated", () => {
 
   it("NEVER opens the gate for a new conversation whose surface seed is dead", async () => {
     getActiveSandboxBinding.mockResolvedValue(null); // box can't be minted — it's gone
-    const { outcome } = await run(makeState({ binding: null, surfaceSeed: DEAD_BOX }));
+    const { outcome } = await run(
+      makeState({ binding: null, surfaceSeed: DEAD_BOX }),
+    );
 
     // The message goes out (unbound). No modal. This is the reported bug.
     expect(openSandboxGate).not.toHaveBeenCalled();
@@ -163,12 +187,57 @@ describe("ensureSandboxOrDecide — who gets gated", () => {
 
   it("promotes a LIVE seed onto the conversation record before sending", async () => {
     getActiveSandboxBinding.mockResolvedValue({ sandbox_id: "sbx-1" });
-    const { outcome, dispatch } = await run(makeState({ surfaceSeed: LIVE_BOX }));
+    const { outcome, dispatch } = await run(
+      makeState({ surfaceSeed: LIVE_BOX }),
+    );
 
     expect(outcome).toBe("proceed");
     expect(openSandboxGate).not.toHaveBeenCalled();
     // A thunk was dispatched to write the binding (promote) — the DB gets the
     // box before the request goes out, so the server's own check agrees.
-    expect(dispatch.mock.calls.some(([a]) => typeof a === "function")).toBe(true);
+    expect(dispatch.mock.calls.some(([a]) => typeof a === "function")).toBe(
+      true,
+    );
+  });
+});
+
+describe("resolveSandboxRefDetails — expected stale bindings are not errors", () => {
+  const originalFetch = global.fetch;
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    jest.restoreAllMocks();
+  });
+
+  it("warns and returns null when the bound sandbox row is gone", async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 404 });
+    const warn = jest
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+    const error = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    await expect(resolveSandboxRefDetails("gone-box-404")).resolves.toBeNull();
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("stale binding"));
+    expect(error).not.toHaveBeenCalled();
+  });
+
+  it("keeps unexpected sandbox-detail failures on the error channel", async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 500 });
+    const warn = jest
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+    const error = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    await expect(
+      resolveSandboxRefDetails("broken-box-500"),
+    ).resolves.toBeNull();
+
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("HTTP 500"));
+    expect(warn).not.toHaveBeenCalled();
   });
 });
