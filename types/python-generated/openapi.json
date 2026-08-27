@@ -11798,6 +11798,121 @@
         }
       }
     },
+    "/hr/identity/{identity_id}/ssn": {
+      "post": {
+        "tags": [
+          "HR"
+        ],
+        "summary": "Record a person's SSN, sealed server-side, audited",
+        "description": "E-39's write half — the ONE confidential HR write that is server-side.\n\nThe raw value crosses the wire once, under TLS, and is sealed before this returns; the\nkey is aidream's and Postgres does not hold it. `public.hr_ssn_store` performs the\ncapability gate (`identity.write` over the subject, or the subject themselves) and\nwrites the `hr.access_audit` row. A re-submit REPLACES and earns a fresh audit row.\n\nThe acknowledgement carries **last four digits only**. `Cache-Control: no-store` is set\nhere because response headers are the router's job, and because a request body this\nsensitive must not have its response parked in an intermediary either.",
+        "operationId": "hr_identity_ssn_store",
+        "parameters": [
+          {
+            "name": "identity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Identity Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsnStoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SsnStoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hr/identity/ssn/fingerprint": {
+      "post": {
+        "tags": [
+          "HR"
+        ],
+        "summary": "Keyed digest of an identifier for the pre-hire duplicate scan",
+        "description": "The hash-only sibling: `public.hr_duplicate_scan`'s `ssn_hmac_hex`, and nothing else.\n\nThe scan reports its `ssn_hmac` leg as *skipped* on every hire today because aidream\nholds the only key that can compute the digest and nothing asked it to. This is a\ndistinct operation from the store, not a variation of it: at probe time the candidate\nhas no `hr.employee` row, so there is nothing to seal a value against.\n\nNo path parameter, because there is no subject yet — the gate is org-scoped and matches\n`hr_duplicate_scan`'s own. Nothing is stored; the value reaches no log and no audit row.\n\nRoute order note: `/identity/ssn/fingerprint` cannot be captured by\n`/identity/{identity_id}/ssn` — the third segment differs — so the two are unambiguous.",
+        "operationId": "hr_identity_ssn_fingerprint",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SsnFingerprintRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SsnFingerprintResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/hr/verification-letters/{letter_id}/generate": {
       "post": {
         "tags": [
@@ -164710,6 +164825,78 @@
         "title": "SpreadsheetSpec",
         "description": "Canonical AI-authorable shape for an Excel workbook (.xlsx)."
       },
+      "SsnFingerprintRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id",
+            "description": "§1.2 — must equal the X-Organization-Id header; a disagreement is 409."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "ssn": {
+            "type": "string",
+            "format": "password",
+            "title": "Ssn",
+            "description": "The candidate's identifier, sent once over TLS. Hashed and discarded — nothing is stored, nothing is echoed, and the value reaches no log and no audit row.",
+            "writeOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "ssn"
+        ],
+        "title": "SsnFingerprintRequest",
+        "description": "Body of the hash-only sibling: fingerprint an identifier, store nothing.\n\n``public.hr_duplicate_scan`` reads ``p_probe->>'ssn_hmac_hex'`` and reports its\n``ssn_hmac`` leg as *skipped* whenever it is absent — which is every hire, because\naidream holds the only key that can compute it. This is how a caller gets one for a\ncandidate **before** any ``hr.employee`` row exists, which is precisely when seal-and-\nstore cannot help."
+      },
+      "SsnFingerprintResponse": {
+        "properties": {
+          "ssn_hmac_hex": {
+            "type": "string",
+            "title": "Ssn Hmac Hex",
+            "description": "Hex HMAC-SHA256 digest; pass verbatim as hr_duplicate_scan's ssn_hmac_hex."
+          },
+          "audit_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Audit Id",
+            "description": "The hr.access_audit row recording the probe act."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ssn_hmac_hex",
+          "audit_id"
+        ],
+        "title": "SsnFingerprintResponse",
+        "description": "The digest, and nothing else.\n\n``ssn_hmac_hex`` goes straight into ``hr_duplicate_scan``'s probe, which does\n``decode(…, 'hex')`` and compares the bytes to ``hr.employee_private.ssn_hmac``. The\nsame derivation writes that column, so the two are the same fact in two shapes."
+      },
       "SsnRevealRequest": {
         "properties": {
           "organization_id": {
@@ -164790,6 +164977,96 @@
         ],
         "title": "SsnRevealResponse",
         "description": "The value, once. Served with ``Cache-Control: no-store`` and never logged."
+      },
+      "SsnStoreRequest": {
+        "properties": {
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id",
+            "description": "§1.2 — must equal the X-Organization-Id header; a disagreement is 409."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "ssn": {
+            "type": "string",
+            "format": "password",
+            "title": "Ssn",
+            "description": "The identifier, sent once over TLS. Nine digits; hyphens and spaces are accepted and ignored. Never stored in plaintext, never logged, never echoed.",
+            "writeOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "organization_id",
+          "ssn"
+        ],
+        "title": "SsnStoreRequest",
+        "description": "Body of the intake act (SPEC-ACCESS §4.5, SPEC-EMPLOYEES §2.3).\n\nThe raw value crosses the wire exactly **once**, under TLS, and is sealed before this\nrequest returns. It is typed ``SecretStr`` so an accidental ``repr``/``model_dump`` of\nthe body — in a log line, a traceback frame, an error payload — prints\n``**********`` instead of the number.\n\nThere is deliberately **no shape constraint on the field itself**: validation is done\nin the service (see :func:`~aidream.services.hr.employees.ssn_intake.normalize_ssn`)\nso a bad shape produces a 400 that describes the requirement without quoting the\ninput. Constraints here would move that error into Pydantic's hands, which echo."
+      },
+      "SsnStoreResponse": {
+        "properties": {
+          "employee_private_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Employee Private Id"
+          },
+          "ssn_last4": {
+            "type": "string",
+            "title": "Ssn Last4",
+            "description": "The four-digit hint the profile panel renders."
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created",
+            "description": "True when this was the first collection; false when it replaced one."
+          },
+          "stored_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Stored At"
+          },
+          "audit_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Audit Id",
+            "description": "The hr.access_audit row the door wrote for THIS submit."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "employee_private_id",
+          "ssn_last4",
+          "created",
+          "stored_at",
+          "audit_id"
+        ],
+        "title": "SsnStoreResponse",
+        "description": "The acknowledgement. Carries **last four digits only** — never the value.\n\n``created`` distinguishes a first collection from a correction. A correction replaces\nall four sealed columns and earns its own ``hr.access_audit`` row, so ``audit_id``\ndiffers on every submit even when nothing else does."
       },
       "StagePipeConfig": {
         "properties": {

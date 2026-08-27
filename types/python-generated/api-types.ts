@@ -4517,6 +4517,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hr/identity/{identity_id}/ssn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a person's SSN, sealed server-side, audited
+         * @description E-39's write half — the ONE confidential HR write that is server-side.
+         *
+         *     The raw value crosses the wire once, under TLS, and is sealed before this returns; the
+         *     key is aidream's and Postgres does not hold it. `public.hr_ssn_store` performs the
+         *     capability gate (`identity.write` over the subject, or the subject themselves) and
+         *     writes the `hr.access_audit` row. A re-submit REPLACES and earns a fresh audit row.
+         *
+         *     The acknowledgement carries **last four digits only**. `Cache-Control: no-store` is set
+         *     here because response headers are the router's job, and because a request body this
+         *     sensitive must not have its response parked in an intermediary either.
+         */
+        post: operations["hr_identity_ssn_store"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/identity/ssn/fingerprint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Keyed digest of an identifier for the pre-hire duplicate scan
+         * @description The hash-only sibling: `public.hr_duplicate_scan`'s `ssn_hmac_hex`, and nothing else.
+         *
+         *     The scan reports its `ssn_hmac` leg as *skipped* on every hire today because aidream
+         *     holds the only key that can compute the digest and nothing asked it to. This is a
+         *     distinct operation from the store, not a variation of it: at probe time the candidate
+         *     has no `hr.employee` row, so there is nothing to seal a value against.
+         *
+         *     No path parameter, because there is no subject yet — the gate is org-scoped and matches
+         *     `hr_duplicate_scan`'s own. Nothing is stored; the value reaches no log and no audit row.
+         *
+         *     Route order note: `/identity/ssn/fingerprint` cannot be captured by
+         *     `/identity/{identity_id}/ssn` — the third segment differs — so the two are unambiguous.
+         */
+        post: operations["hr_identity_ssn_fingerprint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hr/verification-letters/{letter_id}/generate": {
         parameters: {
             query?: never;
@@ -64305,6 +64365,61 @@ export interface components {
             sheets?: components["schemas"]["SheetSpec"][];
         };
         /**
+         * SsnFingerprintRequest
+         * @description Body of the hash-only sibling: fingerprint an identifier, store nothing.
+         *
+         *     ``public.hr_duplicate_scan`` reads ``p_probe->>'ssn_hmac_hex'`` and reports its
+         *     ``ssn_hmac`` leg as *skipped* whenever it is absent — which is every hire, because
+         *     aidream holds the only key that can compute it. This is how a caller gets one for a
+         *     candidate **before** any ``hr.employee`` row exists, which is precisely when seal-and-
+         *     store cannot help.
+         */
+        SsnFingerprintRequest: {
+            /**
+             * Organization Id
+             * Format: uuid
+             * @description §1.2 — must equal the X-Organization-Id header; a disagreement is 409.
+             */
+            organization_id: string;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Ssn
+             * Format: password
+             * @description The candidate's identifier, sent once over TLS. Hashed and discarded — nothing is stored, nothing is echoed, and the value reaches no log and no audit row.
+             */
+            ssn: string;
+        };
+        /**
+         * SsnFingerprintResponse
+         * @description The digest, and nothing else.
+         *
+         *     ``ssn_hmac_hex`` goes straight into ``hr_duplicate_scan``'s probe, which does
+         *     ``decode(…, 'hex')`` and compares the bytes to ``hr.employee_private.ssn_hmac``. The
+         *     same derivation writes that column, so the two are the same fact in two shapes.
+         */
+        SsnFingerprintResponse: {
+            /**
+             * Ssn Hmac Hex
+             * @description Hex HMAC-SHA256 digest; pass verbatim as hr_duplicate_scan's ssn_hmac_hex.
+             */
+            ssn_hmac_hex: string;
+            /**
+             * Audit Id
+             * Format: uuid
+             * @description The hr.access_audit row recording the probe act.
+             */
+            audit_id: string;
+        };
+        /**
          * SsnRevealRequest
          * @description Body of the ONE confidential read that is server-side (SPEC-ACCESS §4.5).
          *
@@ -64357,6 +64472,80 @@ export interface components {
              * Audit Id
              * Format: uuid
              * @description The hr.access_audit row hr.reveal_ssn already wrote.
+             */
+            audit_id: string;
+        };
+        /**
+         * SsnStoreRequest
+         * @description Body of the intake act (SPEC-ACCESS §4.5, SPEC-EMPLOYEES §2.3).
+         *
+         *     The raw value crosses the wire exactly **once**, under TLS, and is sealed before this
+         *     request returns. It is typed ``SecretStr`` so an accidental ``repr``/``model_dump`` of
+         *     the body — in a log line, a traceback frame, an error payload — prints
+         *     ``**********`` instead of the number.
+         *
+         *     There is deliberately **no shape constraint on the field itself**: validation is done
+         *     in the service (see :func:`~aidream.services.hr.employees.ssn_intake.normalize_ssn`)
+         *     so a bad shape produces a 400 that describes the requirement without quoting the
+         *     input. Constraints here would move that error into Pydantic's hands, which echo.
+         */
+        SsnStoreRequest: {
+            /**
+             * Organization Id
+             * Format: uuid
+             * @description §1.2 — must equal the X-Organization-Id header; a disagreement is 409.
+             */
+            organization_id: string;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Ssn
+             * Format: password
+             * @description The identifier, sent once over TLS. Nine digits; hyphens and spaces are accepted and ignored. Never stored in plaintext, never logged, never echoed.
+             */
+            ssn: string;
+        };
+        /**
+         * SsnStoreResponse
+         * @description The acknowledgement. Carries **last four digits only** — never the value.
+         *
+         *     ``created`` distinguishes a first collection from a correction. A correction replaces
+         *     all four sealed columns and earns its own ``hr.access_audit`` row, so ``audit_id``
+         *     differs on every submit even when nothing else does.
+         */
+        SsnStoreResponse: {
+            /**
+             * Employee Private Id
+             * Format: uuid
+             */
+            employee_private_id: string;
+            /**
+             * Ssn Last4
+             * @description The four-digit hint the profile panel renders.
+             */
+            ssn_last4: string;
+            /**
+             * Created
+             * @description True when this was the first collection; false when it replaced one.
+             */
+            created: boolean;
+            /**
+             * Stored At
+             * Format: date-time
+             */
+            stored_at: string;
+            /**
+             * Audit Id
+             * Format: uuid
+             * @description The hr.access_audit row the door wrote for THIS submit.
              */
             audit_id: string;
         };
@@ -80881,6 +81070,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SsnRevealResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_identity_ssn_store: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                identity_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SsnStoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SsnStoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_identity_ssn_fingerprint: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SsnFingerprintRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SsnFingerprintResponse"];
                 };
             };
             /** @description Validation Error */
