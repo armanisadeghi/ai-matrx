@@ -265,9 +265,21 @@ function day(raw: Live, tz: string): TimesheetDay {
   const continuesInto =
     intervals.map((iv) => iv.timeFacts?.continuesIntoDate ?? null).find((d) => d !== null) ?? null;
 
-  // §9 rule 3, the SERVER's composed sentence, printed verbatim.
-  const dstSentence =
-    intervals.map((iv) => iv.timeFacts?.dst?.sentence ?? null).find((x) => x !== null) ?? null;
+  /*
+   * 🚨 EACH GRAIN PRINTS ITS OWN SENTENCE (T-5).
+   *
+   * The door composes three, and they are NOT interchangeable:
+   *   • `days[].time_facts.dst.sentence`      — "this wall-clock-8 shift measured 9 hours",
+   *                                             summed over the day's intervals. THIS row's fact.
+   *   • `weeks[].dst.sentence`                — "this workweek was 169 hours long, not 168".
+   *   • `intervals[].time_facts.dst.sentence` — one interval's span, for the interval table only.
+   *
+   * This row previously printed an INTERVAL's sentence and the week's was dropped entirely. On a
+   * day holding several intervals the interval sentence describes a shift the reader is not
+   * looking at, and the week's 169-hour fact — the only one that explains the week total — never
+   * appeared at all.
+   */
+  const dstSentence = nstr(obj(obj(raw.timeFacts).dst).sentence);
 
   return {
     localWorkDate: date,
@@ -390,6 +402,13 @@ function workweek(raw: Live, employmentId: string, payGroupId: string): Workweek
     })),
     isFinal: bool(raw.isFinal),
     isBoundaryWeek: bool(raw.boundaryWeek ?? raw.isBoundaryWeek),
+    dst: raw.dst && typeof raw.dst === "object"
+      ? {
+          spanHours: nnum(obj(raw.dst).spanHours) ?? undefined,
+          observed: bool(obj(raw.dst).observed),
+          sentence: nstr(obj(raw.dst).sentence),
+        }
+      : null,
     calc: calcBlock(raw.calcRef ?? raw.calc),
     money: money(raw.amount, raw.flags),
   };

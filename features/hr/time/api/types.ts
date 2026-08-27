@@ -604,6 +604,13 @@ export interface WorkweekRow {
   isFinal: boolean;
   /** True when this week straddles the period edge; OT is attributed to the week's END date. */
   isBoundaryWeek: boolean;
+  /**
+   * 🚨 THE WEEK'S OWN DST FACT — a different grain from the day's and the interval's.
+   * `hr._workweek_dst` answers "why is this workweek 169 hours long, not 168", which no day-level
+   * or interval-level sentence can say. Rendered in the WEEK HEADER; printing a day's sentence
+   * there (or a week's on a day row) is the grain confusion T-5 filed.
+   */
+  dst?: { spanHours?: number; observed?: boolean; sentence: string | null } | null;
   calc: CalcBlock;
   money: MoneyBearing;
 }

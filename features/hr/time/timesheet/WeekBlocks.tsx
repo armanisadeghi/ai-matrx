@@ -25,7 +25,7 @@
  */
 
 import { useState } from "react";
-import { ChevronDown, ChevronRight, Layers } from "lucide-react";
+import { ChevronDown, ChevronRight, Layers, SunMoon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -122,6 +122,18 @@ function WeekBlock({
         ) : null}
 
         {week.splitAtBoundary ? <WeekSplitNote className="mt-2" /> : null}
+
+        {/*
+          * 🚨 THE WEEK'S OWN GRAIN (T-5). "This workweek was 169 hours long, not 168" is the only
+          * sentence that explains the WEEK total, and no day-level or interval-level text can say
+          * it. It belongs here, in the header, beside the totals it accounts for.
+          */}
+        {ww.dst?.sentence ? (
+          <p className="mt-2 flex items-start gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs">
+            <SunMoon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+            <span>{ww.dst.sentence}</span>
+          </p>
+        ) : null}
 
         <WeekTotalsRow workweek={ww} />
         <FigureNotices money={ww.money} calc={ww.calc} className="mt-2" />
@@ -540,6 +552,17 @@ function IntervalRows({
           )}
         </td>
       </tr>
+
+      {/* The INTERVAL's own grain — only here, where a reader is looking at one interval. */}
+      {iv.timeFacts?.dst?.sentence ? (
+        <tr className="border-b border-border/60">
+          <td colSpan={7} className="px-3 pb-2">
+            <p className="rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-[11px]">
+              {iv.timeFacts.dst.sentence}
+            </p>
+          </td>
+        </tr>
+      ) : null}
 
       {iv.money.flags.length > 0 || iv.calc.calc.incomplete ? (
         <tr className="border-b border-border/60">
