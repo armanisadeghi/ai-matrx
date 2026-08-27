@@ -86,7 +86,17 @@ export function RuleSnapshotProvider({ children }: { children: ReactNode }) {
 function RuleSnapshotBody({ request }: { request: RuleSnapshotRequest }) {
   const { calc, extra, body, subtitle } = request;
   return (
-    <div className="space-y-5 p-4 text-sm">
+    /*
+     * 🚨 THE BODY OWNS AN OPAQUE SURFACE AND ITS OWN HEIGHT (G2 round-11, N1).
+     *
+     * The drawer was mounting with correct content — engine, version, three rule version ids, calc
+     * inputs — and a verifier reported that clicking the OT figure opened nothing. The panel is a
+     * `position: fixed`, `z-index: 1000` child of `<body>`, so it was never trapped; what it lacked
+     * was a body that FILLS and PAINTS. Against the page behind it the content read as unrendered.
+     * A drawer that is technically present and practically unreadable is a dead end with extra
+     * steps.
+     */
+    <div className="h-full min-h-0 w-full space-y-5 overflow-y-auto bg-popover p-4 text-sm text-popover-foreground">
       <header className="space-y-1">
         <h2 className="text-sm font-semibold">{request.title}</h2>
         {subtitle ? <p className="text-xs text-muted-foreground">{subtitle}</p> : null}
@@ -146,6 +156,8 @@ function RuleSnapshotBody({ request }: { request: RuleSnapshotRequest }) {
 
           <IncompleteFactSentences calc={calc} />
 
+          <ThresholdSection calc={calc.calc} />
+
           <Section title="The inputs the engine used">
             <KeyValues values={calc.calc} />
           </Section>
@@ -164,6 +176,47 @@ function RuleSnapshotBody({ request }: { request: RuleSnapshotRequest }) {
         </Section>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * 🚨 THE THRESHOLDS THAT PRODUCED THE FIGURE, PULLED OUT OF THE CALC BAG AND NAMED.
+ *
+ * §0 law 2 wants "the thresholds applied" reachable from every OT/DT figure. They are in the calc
+ * inputs, but buried among snapshot ids and batch ids where nobody reads them — so the ones a
+ * person can act on are lifted into their own section, in words. Anything not recognised still
+ * renders below, verbatim: this promotes keys, it never hides them.
+ *
+ * ⚠️ OWED BY THE DOOR: rule NAMES. The snapshot carries `rule_version_ids` as bare uuids, and no
+ * read serves the human name or the citation for a rule version. Until one does, a person can copy
+ * the id but cannot read which law it is.
+ */
+const THRESHOLD_LABELS: Record<string, string> = {
+  daily_ot_at: "Daily overtime begins after",
+  daily_dt_at: "Double time begins after",
+  weekly_ot_at: "Weekly overtime begins after",
+  seventh_day_rule: "Seventh consecutive day",
+  jurisdiction_key: "Jurisdiction",
+  workday_start_local: "The workday starts at",
+  week_start_dow: "The workweek starts on",
+};
+
+function ThresholdSection({ calc }: { calc: Record<string, unknown> }) {
+  const found = Object.keys(THRESHOLD_LABELS).filter((k) => calc[k] !== undefined && calc[k] !== null);
+  if (found.length === 0) return null;
+  return (
+    <Section title="The thresholds that were applied">
+      <dl className="space-y-1">
+        {found.map((key) => (
+          <div key={key} className="flex items-baseline justify-between gap-3 border-b border-border/60 py-1">
+            <dt className="text-xs text-muted-foreground">{THRESHOLD_LABELS[key]}</dt>
+            <dd className="text-right text-xs font-medium">
+              {typeof calc[key] === "object" ? JSON.stringify(calc[key]) : String(calc[key])}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </Section>
   );
 }
 

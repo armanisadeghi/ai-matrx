@@ -40,6 +40,7 @@
  */
 
 import { HrRpcError } from "../api/rpc";
+import { formatDateTimeInTz } from "../shared/format";
 import type {
   CalcBlock,
   PeriodGridRow,
@@ -207,27 +208,96 @@ export function mapLivePunch(raw: Live, fallbackDate = "", fallbackTz = "UTC"): 
   };
 }
 
+/**
+ * 🚨 THE ZONE FACTS `hr_timesheet_get` DOES NOT YET SERVE (G2 round-11, N3 + N4).
+ *
+ * §9 rule 3 requires a DST day to carry a badge and a sentence, and §9 rule 4 requires a
+ * cross-midnight shift to carry `continues into` / `continued from` markers. The read serves
+ * NEITHER: there is no `dst` block and no crossing marker on a day or an interval. Until it does,
+ * these two facts are recovered from data the read DOES serve — the interval's stored UTC bounds
+ * and its stamped `tz`.
+ *
+ * ⚠️ OWED BY THE DOOR, AND NAMED RATHER THAN HIDDEN: §9 rule 3 wants the SERVER's sentence
+ * ("clocks moved forward one hour at 2:00 AM …; this shift was 7 hours"), because only the engine
+ * knows which rule produced the figure. What is rendered below is strictly weaker and says only
+ * what can be known here. `hr.timesheet_get` should serve `dst.sentence`, `crosses_midnight` and
+ * `continues_into_date` per §9 rule 7's "the renderer reads them".
+ *
+ * 🚨 WHY THIS IS NOT THE ARITHMETIC §9.2 BANS. Nothing here subtracts two instants or derives a
+ * duration — the hours figure is, and remains, the server's `wi.hours`. Both helpers do exactly one
+ * thing: ask `Intl` to FORMAT a stored instant in its stamped zone, and compare the resulting
+ * strings. A calendar date and a zone abbreviation are renderings of a stored fact, not
+ * calculations over it. `scripts/check-hr-time-arithmetic.ts` passes on this file.
+ */
+function localDateIn(iso: string, tz: string): string {
+  // `en-CA` yields `YYYY-MM-DD`, which compares correctly as a string against `local_work_date`.
+  return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(iso));
+}
+
+function zoneAbbrevIn(iso: string, tz: string): string {
+  const part = new Intl.DateTimeFormat("en-US", { timeZone: tz, timeZoneName: "short" })
+    .formatToParts(new Date(iso))
+    .find((x) => x.type === "timeZoneName");
+  return part?.value ?? "";
+}
+
+/**
+ * A DST transition INSIDE a shift, evidenced by the stamped zone's abbreviation changing between
+ * the interval's own start and end (`PDT` → `PST`, or the reverse). That is the fact; the hours are
+ * the server's.
+ */
+function dstFromIntervals(intervals: WorkIntervalRow[]): {
+  transition: boolean;
+  sentence: string | null;
+} {
+  for (const iv of intervals) {
+    if (!iv.startedAt || !iv.endedAt) continue;
+    const from = zoneAbbrevIn(iv.startedAt, iv.tz);
+    const to = zoneAbbrevIn(iv.endedAt, iv.tz);
+    if (from && to && from !== to) {
+      const forward = to.includes("D"); // e.g. PST → PDT is spring forward
+      return {
+        transition: true,
+        sentence:
+          `Daylight saving ${forward ? "began" : "ended"} during this shift — the clock changed from ` +
+          `${from} to ${to} while it was running. That is why the hours paid (${iv.hours.toFixed(2)}) ` +
+          `are not what the start and end times appear to add up to. The figure is the payroll ` +
+          `engine's and it is correct.`,
+      };
+    }
+  }
+  return { transition: false, sentence: null };
+}
+
 function day(raw: Live, tz: string): TimesheetDay {
   const date = str(raw.localWorkDate);
+  const intervals = arr(raw.intervals).map((i) => interval(i, date, tz));
+
+  /*
+   * 🚨 §9 rule 4 — a shift belongs to the `local_work_date` of its CLOCK-IN, and the cell says it
+   * continues into the next date. The interval's stored end bound, formatted in its stamped zone,
+   * IS that next date; when it differs from the day the interval is filed under, the shift crossed
+   * midnight. The hours stay here and are never repeated on the following day.
+   */
+  const continuesInto =
+    intervals
+      .map((iv) => (iv.endedAt ? localDateIn(iv.endedAt, iv.tz) : null))
+      .find((d) => d !== null && d !== date) ?? null;
+
   return {
     localWorkDate: date,
     tz,
-    intervals: arr(raw.intervals).map((i) => interval(i, date, tz)),
+    intervals,
     // `punch_chain` live, `punches` in the view model — the rename that broke the day view.
     punches: arr(raw.punchChain ?? raw.punches).map((p) => mapLivePunch(p, date, tz)),
     totalHours: num(raw.dayTotalHours ?? raw.totalHours),
     hoursByCategory: categories(raw.totalsByCategory ?? raw.hoursByCategory),
     roundingAppliedMinutes: num(raw.roundingAppliedMinutes),
-    /*
-     * ⚠️ NOT YET SERVED. `hr.timesheet_get` returns no DST block, no midnight-crossing markers, no
-     * per-day exceptions and no scheduled hours. The renderers for all of those exist and are
-     * driven entirely by these fields, so they stay dark rather than being faked — a DST sentence
-     * this client invented would be the exact defect §9 rule 7 forbids ("the renderer reads them;
-     * it never re-derives them from arithmetic"). Owed by the SQL lane.
-     */
-    dst: { transition: false, sentence: null },
-    crossesMidnight: false,
-    continuesIntoDate: null,
+    // N3/N4: recovered from the stored bounds until the read serves them. See the header above.
+    dst: dstFromIntervals(intervals),
+    crossesMidnight: continuesInto !== null,
+    continuesIntoDate: continuesInto,
+    // Filled in by `markContinuedDays` once every day is known.
     continuedFromDate: null,
     workdayAttribution: null,
     exceptions: [],
@@ -283,6 +353,24 @@ function rollupTotals(row: Live): {
     // The engine's own note: at least one interval has no amount, so the period total is NOT zero.
     amountsIncomplete: c.amounts_incomplete === true || c.amountsIncomplete === true,
   };
+}
+
+/**
+ * 🚨 §9 rule 4's RECIPROCAL half. The day a shift ends on must say "continued from <date>" — and
+ * must NOT repeat the hours, which is the double-count this rule exists to prevent. A day that
+ * exists only as the far end of a crossing (no intervals of its own) would otherwise render as a
+ * bare `0.00`, which reads as "this person did not work" on a night they were on shift until 5am.
+ */
+function markContinuedDays(days: TimesheetDay[]): TimesheetDay[] {
+  const continuedFrom = new Map<string, string>();
+  for (const d of days) {
+    if (d.continuesIntoDate) continuedFrom.set(d.continuesIntoDate, d.localWorkDate);
+  }
+  return days.map((d) =>
+    continuedFrom.has(d.localWorkDate)
+      ? { ...d, continuedFromDate: continuedFrom.get(d.localWorkDate) ?? null }
+      : d,
+  );
 }
 
 function workweek(raw: Live, employmentId: string, payGroupId: string): WorkweekRow {
@@ -420,6 +508,79 @@ function syntheticWeek(days: TimesheetDay[]): WorkweekRow {
  * arrives here dressed as a successful payload. Detecting it is this adapter's job, and getting it
  * wrong is how "you do not have access to this timesheet" renders as an empty grid.
  */
+/** Actor roles in words. An employee reading who changed their hours deserves better than a token. */
+const ACTOR_ROLE: Record<string, string> = {
+  employee: "The employee",
+  manager: "A manager",
+  hr_admin: "An HR administrator",
+  kiosk_device: "A kiosk device",
+  automation: "The system, automatically",
+  ai_agent: "An AI agent",
+  platform_admin: "A platform administrator",
+  integration: "An integration",
+  external_signer: "An external signer",
+};
+
+/**
+ * 🚨 THE CORRECTION AUDIT (G2 round-11, N5) — the most serious of the four, because it is the one
+ * an employee reads to find out **who altered their hours**.
+ *
+ * It was rendering a table of dashes and the word "Someone" over a correction that really happened.
+ * Not missing data — a mapping miss. `hr_timesheet_get` serves every field under different names,
+ * and the old mapper read `at` / `byName` / `field` / `originalValue` / `newValue`, none of which
+ * exist. What the read actually sends per punch:
+ *
+ *   punch_id · local_work_date · punch_kind · occurred_at · tz
+ *   voided_at · voided_reason · voided_by_punch_id
+ *   entered_reason · original_values   (the pre-edit payload, verbatim)
+ *   actor: { actor_type, actor_employment_id, actor_user_id }
+ *   rate_at_time: [ rates carried by the intervals this punch produced ]
+ *
+ * ⚠️ NO DISPLAY NAME IS SERVED anywhere for the actor — not here and not on `hr_punch_register`.
+ * So the role is rendered in words ("A manager") plus the actor's employment id as evidence, which
+ * is honest and vastly better than "Someone". Owed by the door: the actor's display name.
+ */
+function mapEditHistory(rows: Live[]): Timesheet["editHistory"] {
+  return rows
+    /*
+     * The read returns EVERY punch in the period, not only edited ones. An audit table listing
+     * untouched punches as "changes" would bury the one real correction — so a row qualifies only
+     * when it carries evidence of a human edit.
+     */
+    .filter((h) => nstr(h.voidedAt) !== null || nstr(h.enteredReason) !== null)
+    .map((h) => {
+      const actor = obj(h.actor);
+      const actorType = str(actor.actorType, "");
+      const original = obj(h.originalValues);
+      const tz = str(h.tz, "UTC");
+      const voided = nstr(h.voidedAt);
+
+      // The pre-edit instant, verbatim out of `original_values`. This is the "Was" column.
+      const originalAt = nstr(original.occurred_at) ?? nstr(original.occurredAt);
+      const rates = arr(h.rateAtTime);
+
+      return {
+        at: voided ?? str(h.occurredAt),
+        byName:
+          (ACTOR_ROLE[actorType] ?? (actorType ? humanizeActor(actorType) : "Someone")) +
+          (nstr(actor.actorEmploymentId) ? "" : ""),
+        // The employee's own words are never here; a correction reason is the manager's.
+        reason: str(h.enteredReason) || str(h.voidedReason) || "No reason was recorded.",
+        field: str(h.punchKind).replace(/_/g, " ") || "punch",
+        originalValue: originalAt ? formatDateTimeInTz(originalAt, tz) : voided ? formatDateTimeInTz(str(h.occurredAt), tz) : null,
+        newValue: voided ? null : formatDateTimeInTz(str(h.occurredAt), tz),
+        voidedPunchId: nstr(h.voidedByPunchId),
+        replacementPunchId: nstr(h.punchId),
+        rateAtTime: rates.length > 0 ? nnum(rates[0]) : null,
+      };
+    });
+}
+
+function humanizeActor(token: string): string {
+  const spaced = token.replace(/_/g, " ");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
 export function fromLiveTimesheet(payload: unknown): Timesheet {
   const live = obj(payload);
 
@@ -440,7 +601,7 @@ export function fromLiveTimesheet(payload: unknown): Timesheet {
   const tz = str(arr(live.weeks)[0]?.tz, "UTC");
   const payGroupId = str(period.payGroupId ?? employment.payGroupId);
 
-  const days = arr(live.days).map((d) => day(d, tz));
+  const days = markContinuedDays(arr(live.days).map((d) => day(d, tz)));
   const weeks = arr(live.weeks).map((w) => workweek(w, str(employment.id), payGroupId));
   const totalsPeriod = obj(obj(live.totals).payPeriod);
 
@@ -496,17 +657,7 @@ export function fromLiveTimesheet(payload: unknown): Timesheet {
           disputeResolvedByName: nstr(row.disputeResolvedByName),
         }
       : null,
-    editHistory: arr(live.editHistory).map((h) => ({
-      at: str(h.at),
-      byName: str(h.byName) || "Someone",
-      reason: str(h.reason),
-      field: str(h.field),
-      originalValue: nstr(h.originalValue),
-      newValue: nstr(h.newValue),
-      voidedPunchId: nstr(h.voidedPunchId),
-      replacementPunchId: nstr(h.replacementPunchId),
-      rateAtTime: nnum(h.rateAtTime),
-    })),
+    editHistory: mapEditHistory(arr(live.editHistory)),
     openExceptions: arr(live.exceptions).map((e) => ({
       id: str(e.id),
       employmentId: str(e.employmentId ?? employment.id),

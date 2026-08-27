@@ -349,10 +349,21 @@ function DayRow({
             <span className="text-sm font-medium">
               {formatLocalDate(day.localWorkDate, { weekday: true })}
             </span>
-            <span className="text-sm tabular-nums">
-              {formatHours(day.totalHours)}{" "}
-              <span className="text-xs text-muted-foreground">hours</span>
-            </span>
+            {/*
+              * 🚨 A DAY THAT IS ONLY THE FAR END OF A CROSSING LEADS WITH THE FACT, NOT "0.00".
+              * §9 rule 4 keeps the hours on the clock-in's date, so this day genuinely has none —
+              * but "0.00 hours" reads as "did not work" on a night somebody was on shift until 5am.
+              */}
+            {day.continuedFromDate && day.totalHours === 0 ? (
+              <span className="text-sm text-muted-foreground">
+                Night shift from the previous day
+              </span>
+            ) : (
+              <span className="text-sm tabular-nums">
+                {formatHours(day.totalHours)}{" "}
+                <span className="text-xs text-muted-foreground">hours</span>
+              </span>
+            )}
             {day.scheduledHours !== null ? (
               <span className="text-xs text-muted-foreground">
                 Scheduled {formatHours(day.scheduledHours)}
