@@ -129,14 +129,17 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
     (signal) =>
       listAttendanceExceptions(
         /*
-         * ⚠️ There is no pay-period filter on `hr.attendance_exception_list` (verified live) — its
-         * axes are resolution state, kind, severity, employment, location and a date range. So the
-         * strip asks for what it can honestly ask for: everything still OPEN and sitting on a
-         * period nobody has approved. Narrowing to THIS period needs a `pay_period_id` filter on
-         * the contract; recorded for the lane owner rather than faked with a date range that would
-         * silently miss a boundary week.
+         * 🚨 SCOPED TO THIS PERIOD, VIA THE PERIOD'S OWN ENVELOPE (SPEC-TIME §5.4).
+         *
+         * `pay_period_id` resolves the period's roster and its date range **or its
+         * boundary-workweek days** server-side. That is the whole reason this axis is used instead
+         * of the `from`/`to` window it replaced: a boundary week's findings sit outside the
+         * period's own dates, so a date filter drops precisely the days most likely to be disputed.
+         *
+         * It also replaces this lane's interim broadening ("everything open on any unapproved
+         * period"), which showed a manager other periods' exceptions above a grid for this one.
          */
-        { resolutionState: "open", affectsUnapprovedPeriod: true },
+        { payPeriodId: payPeriodId as string, resolutionState: "open" },
         { page: 1, pageSize: 200 },
         { mockCase, signal },
       ),
@@ -170,6 +173,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
              */}
             <ExceptionsStrip
               exceptions={strip.data?.rows ?? []}
+              error={strip.error}
               mockCase={mockCase}
               onResolved={() => {
                 strip.refetch();

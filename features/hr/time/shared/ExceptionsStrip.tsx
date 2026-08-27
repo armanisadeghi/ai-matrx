@@ -83,6 +83,16 @@ function groupByKind(rows: AttendanceExceptionRow[]): KindGroup[] {
 
 export function ExceptionsStrip({
   exceptions,
+  /**
+   * 🚨 A REFUSED READ MUST NOT RENDER AS A CLEAN PERIOD.
+   *
+   * §5.4 exists because *"an absent strip and a clean period must not look identical"* — and a
+   * strip whose read was REFUSED saying "No open exceptions in this period" is worse than either:
+   * it is a reassurance the surface has no basis for. Caught live 2026-08-26, where an
+   * unauthenticated read was refused and the strip still showed the all-clear sentence above a
+   * manager's approval grid.
+   */
+  error,
   /** Pre-filters the route 31 door — a group's door lands on ITS kind, not the whole queue. */
   queueHref = hrTimeExceptionsHref(),
   mockCase,
@@ -90,6 +100,7 @@ export function ExceptionsStrip({
   className,
 }: {
   exceptions: AttendanceExceptionRow[];
+  error?: Error | null;
   queueHref?: string;
   mockCase?: HrFixtureCase;
   onResolved: () => void;
@@ -114,7 +125,10 @@ export function ExceptionsStrip({
         </Link>
       </header>
 
-      {groups.length === 0 ? (
+      {error ? (
+        /* The refusal, in the server's own words. NEVER the all-clear sentence. */
+        <RefusalNotice error={error} className="mt-2" />
+      ) : groups.length === 0 ? (
         /* THE SENTENCE. Not a null, not an empty div. */
         <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
           <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />

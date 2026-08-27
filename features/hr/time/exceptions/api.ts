@@ -36,6 +36,18 @@ import type {
  * `service.ts` snake-cases the bag on the way out.
  */
 export interface AttendanceExceptionFilters {
+  /**
+   * 🚨 THE PERIOD AXIS — the one route 28's strip scopes by (SPEC-TIME §5.4).
+   *
+   * It resolves the period's REAL envelope server-side: the
+   * `pay_period_employment`-or-pay-group roster, and the period range **or the boundary-workweek
+   * days**. That last part is why this exists and why a `from`/`to` window is not a substitute — a
+   * boundary week's findings fall outside the period's own date range, so a date filter silently
+   * drops exactly the days most likely to carry an overtime dispute.
+   *
+   * Refuses `hr_pay_period_not_found` for an id the caller cannot see.
+   */
+  payPeriodId?: string;
   resolutionState?: ExceptionResolutionState;
   exceptionKind?: AttendanceExceptionKind;
   severity?: ExceptionSeverity;
