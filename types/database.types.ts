@@ -42931,6 +42931,15 @@ export type Database = {
         Args: { p_code: string; p_details?: Json; p_message: string }
         Returns: Json
       }
+      _time_subject_clause: {
+        Args: {
+          p_at: string
+          p_employment_id: string
+          p_fallback: string
+          p_uid: string
+        }
+        Returns: string
+      }
       _wf_absent: {
         Args: { p_at?: string; p_employment_id: string }
         Returns: boolean
