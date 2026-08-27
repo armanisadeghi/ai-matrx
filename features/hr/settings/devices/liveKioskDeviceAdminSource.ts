@@ -16,6 +16,10 @@
 // (authenticated-only — `anon` has EXECUTE on none of them) and **all four columns are on the
 // table**. The kiosk builder landed both. Nothing here re-creates them.
 //
+// 🚨 THE DOORS ANSWER snake_case. An earlier version of this file asserted the opposite and read
+// camelCase keys, which returned `undefined` for every field — see `key()` below for what that
+// cost. Verified live 2026-08-27 against `hr.kiosk_pairing_code_create` and `hr._kiosk_device_row`.
+//
 // 🚨 A REFUSAL IS DATA. Every `public.hr_*` door answers `{ok: false, reason, detail}` rather than
 // raising, because Postgres has no autonomous transactions and a door that wrote its audit row and
 // then RAISED would roll the audit back with the exception. `supabase.rpc()` therefore does NOT
@@ -79,43 +83,66 @@ function unwrap(data: unknown, error: { message?: string } | null, fallback: str
   throw new Error(sentence ?? `${fallback}${code ? ` (${code})` : ""}`);
 }
 
-function str(record: Record<string, unknown>, key: string): string | null {
-  const value = record[key];
+/**
+ * 🚨 **THE KIOSK DOORS ANSWER snake_case, AND READING camelCase RETURNED NOTHING (G2 F4, round 2).**
+ *
+ * Verified live 2026-08-27 against `hr.kiosk_pairing_code_create` and `hr._kiosk_device_row`: the
+ * success envelope is `{ok, device_id, code, expires_at, device:{device_name, trust_state,
+ * last_seen_at, clock_skew_seconds, require_photo, …}}`. Every key is snake.
+ *
+ * This file originally read `deviceId` / `expiresAt` / `deviceName`, and the header above still
+ * asserts the doors "return camelCase already". They do not. The consequences, both real:
+ *   • `createPairingCode` found no `deviceId`, hit its own missing-code guard, and told an
+ *     administrator *"The pairing code did not come back. Nothing was paired"* — **while the server
+ *     had created the device and returned a perfectly good code.** A row was written and the
+ *     operator was told it was not.
+ *   • `toRow` would have rendered every device as "Unnamed clock", trust `pending`, skew 0 and both
+ *     capture toggles off. Nobody had seen it only because the fleet was empty.
+ *
+ * `key()` therefore reads the snake spelling first and accepts a camel one, so this seam survives a
+ * door that is later normalised either way instead of silently emptying again.
+ */
+function key(record: Record<string, unknown>, snake: string): unknown {
+  const camel = snake.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+  return record[snake] !== undefined ? record[snake] : record[camel];
+}
+
+function str(record: Record<string, unknown>, snake: string): string | null {
+  const value = key(record, snake);
   return typeof value === "string" && value.trim() ? value : null;
 }
 
-function num(record: Record<string, unknown>, key: string, fallback: number): number {
-  const value = record[key];
+function num(record: Record<string, unknown>, snake: string, fallback: number): number {
+  const value = key(record, snake);
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
-function bool(record: Record<string, unknown>, key: string): boolean {
-  return record[key] === true;
+function bool(record: Record<string, unknown>, snake: string): boolean {
+  return key(record, snake) === true;
 }
 
 /**
- * The door returns camelCase already — `hr_kiosk_device_list` builds its rows to
- * `KioskDeviceRow`'s shape on purpose, so this is a narrowing rather than a rename. Every field is
- * read defensively anyway: a wire shape that drifts should render a device with a missing label,
- * never crash a fleet table an administrator is using to revoke something.
+ * The door answers snake_case (`hr._kiosk_device_row`), so this is a rename as well as a narrowing.
+ * Every field is read defensively through `key()`: a wire shape that drifts should render a device
+ * with a missing label, never crash a fleet table an administrator is using to revoke something.
  */
 function toRow(raw: unknown): KioskDeviceRow {
   const r = asEnvelope(raw);
   return {
     id: String(r.id ?? ""),
-    deviceName: str(r, "deviceName") ?? "Unnamed clock",
-    locationId: str(r, "locationId"),
-    locationName: str(r, "locationName"),
-    trustState: (str(r, "trustState") ?? "pending") as KioskTrustState,
-    lastSeenAt: str(r, "lastSeenAt"),
-    lastSeenIp: str(r, "lastSeenIp"),
-    clockSkewSeconds: num(r, "clockSkewSeconds", 0),
-    maxClockSkewSeconds: num(r, "maxClockSkewSeconds", 300),
-    requirePhoto: bool(r, "requirePhoto"),
-    requireGeo: bool(r, "requireGeo"),
-    pairingCodeExpiresAt: str(r, "pairingCodeExpiresAt"),
-    pairingClaimedAt: str(r, "pairingClaimedAt"),
-    registeredByName: str(r, "registeredByName"),
+    deviceName: str(r, "device_name") ?? "Unnamed clock",
+    locationId: str(r, "location_id"),
+    locationName: str(r, "location_name"),
+    trustState: (str(r, "trust_state") ?? "pending") as KioskTrustState,
+    lastSeenAt: str(r, "last_seen_at"),
+    lastSeenIp: str(r, "last_seen_ip"),
+    clockSkewSeconds: num(r, "clock_skew_seconds", 0),
+    maxClockSkewSeconds: num(r, "max_clock_skew_seconds", 300),
+    requirePhoto: bool(r, "require_photo"),
+    requireGeo: bool(r, "require_geo"),
+    pairingCodeExpiresAt: str(r, "pairing_code_expires_at"),
+    pairingClaimedAt: str(r, "pairing_claimed_at"),
+    registeredByName: str(r, "registered_by_name"),
   };
 }
 
@@ -178,7 +205,7 @@ export function liveKioskDeviceAdminSource(organizationId: string): KioskDeviceA
       // generate a pairing code." `unwrap` now surfaces the server's `detail` whenever there is
       // one (see its body), which is SPEC-ACCESS §4.2's denial-names-what-was-missing rule.
       const code = str(envelope, "code");
-      const deviceId = str(envelope, "deviceId");
+      const deviceId = str(envelope, "device_id");
       if (!code || !deviceId) {
         // 🚨 The code is shown ONCE and only its hash is stored — there is no re-read path by
         // design. If the door answered without one, saying so is the only honest move: a dialog
@@ -190,7 +217,7 @@ export function liveKioskDeviceAdminSource(organizationId: string): KioskDeviceA
       return {
         deviceId,
         code,
-        expiresAt: str(envelope, "expiresAt") ?? "",
+        expiresAt: str(envelope, "expires_at") ?? "",
       };
     },
 
