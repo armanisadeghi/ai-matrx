@@ -29,23 +29,6 @@ export const getAgentListSeed = cache(async () => {
 });
 
 /**
- * SSR seed for the admin system-agents list page. Returns every builtin
- * (global/system) agent — no pagination, no scope filter. Backed by
- * agx_get_list_full (same RPC used by `fetchAgentsListFull`) filtered
- * client-side to `agent_type = 'builtin'`.
- *
- * Called from the admin route; client then dispatches `fetchAgentsListFull()`
- * to populate the Redux slice for selectors like `selectBuiltinAgents`.
- */
-export const getSystemAgentListSeed = cache(async () => {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("agx_get_list_full");
-  if (error) throw error;
-  const rows = (data ?? []) as AgentListRow[];
-  return rows.filter((row) => row.agent_type === "builtin");
-});
-
-/**
  * Full live agent row. Wrapped in cache() so layout + generateMetadata + page
  * all call this — React deduplicates to one DB hit per request.
  * Calls notFound() on missing/unauthorized — triggers not-found.tsx.

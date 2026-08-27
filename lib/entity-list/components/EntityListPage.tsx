@@ -86,10 +86,20 @@ export interface EntityListPageProps<TRow> {
    * without hand-rolling a second copy of the query state.
    */
   notice?: ReactNode | ((list: EntityListController<TRow>) => ReactNode);
-  /** Buttons on the right of the scope tabs (New, secondary destinations). */
-  headerActions?: ReactNode;
-  /** Action rendered inside the empty state (usually the New button again). */
-  emptyAction?: ReactNode;
+  /**
+   * Buttons on the right of the scope tabs (New, secondary destinations). A
+   * function receives the live controller, so a surface whose primary action
+   * depends on the ACTIVE SCOPE — "New agent" means a system agent while the
+   * System tab is selected — reads it from the one query state instead of
+   * keeping a second copy.
+   */
+  headerActions?: ReactNode | ((list: EntityListController<TRow>) => ReactNode);
+  /**
+   * Action rendered inside the empty state (usually the New button again).
+   * Takes the same render-prop form as `headerActions` and for the same
+   * reason — it is normally the SAME button.
+   */
+  emptyAction?: ReactNode | ((list: EntityListController<TRow>) => ReactNode);
   /** Agent surface this list emits its live values to (manifest-backed). */
   surface?: EntityListSurface<TRow>;
   /**
@@ -228,7 +238,11 @@ export function EntityListPage<TRow>({
           </Button>
         ),
       }
-    : { ...config.emptyState, action: emptyAction };
+    : {
+        ...config.emptyState,
+        action:
+          typeof emptyAction === "function" ? emptyAction(list) : emptyAction,
+      };
 
   const cardsView = config.views?.cards;
   const rowsView = config.views?.rows;
@@ -284,7 +298,9 @@ export function EntityListPage<TRow>({
           </div>
           {headerActions && (
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              {headerActions}
+              {typeof headerActions === "function"
+                ? headerActions(list)
+                : headerActions}
             </div>
           )}
         </div>

@@ -160,7 +160,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "ownership_tab",
     label: "Ownership tab",
     description:
-      'Which ownership slice the current gallery is viewing. The canonical gallery offers "mine", "orgs", "shared", or "public"; the temporary classic gallery offers "mine", "shared", or "all".',
+      'Which ownership slice the current gallery is viewing. The canonical gallery offers "mine", "orgs", "shared", or "public", plus "system" (the platform\'s own builtin corpus) for a Matrx admin; the temporary classic gallery offers "mine", "shared", or "all".',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 6,
@@ -345,7 +345,7 @@ const writeTargets: SurfaceWriteTarget[] = [
       "Value is an OBJECT containing ONLY the keys you want to change; every key is optional and each one you send REPLACES that filter outright. " +
       'Keys: `search_query` (string; matches agent names and tags, or prompt text too when `deep_search` is on; "" clears it), ' +
       "`deep_search` (boolean; true also searches INSIDE agent prompts, server-side), " +
-      '`ownership_tab` (one of the ownership tabs visible in the current gallery: canonical `/agents/all` offers "mine" | "orgs" | "shared" | "public"; temporary `/agents/classic` offers "mine" | "shared" | "all", and rejects "shared" when that tab is not rendered), ' +
+      '`ownership_tab` (one of the ownership tabs visible in the current gallery: canonical `/agents/all` offers "mine" | "orgs" | "shared" | "public", and additionally "system" for a Matrx admin; temporary `/agents/classic` offers "mine" | "shared" | "all", and rejects "shared" when that tab is not rendered), ' +
       "`sort_by` (" +
       SORT_OPTIONS.map((o) => `"${o.value}"`).join(" | ") +
       "), " +

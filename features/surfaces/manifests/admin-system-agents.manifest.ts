@@ -22,7 +22,11 @@
  * presence boolean (e.g. `has_api_key`), never as a value.
  *
  * Emitters (real, wired):
- *   - Roster    → `features/agents/components/agent-listings/SystemAgentsGrid.tsx`
+ *   - Roster    → `features/agents/browse/adminSurface.ts`, mapped from the
+ *                 CANONICAL agents list (`features/agents/browse`) which this
+ *                 route now renders directly. The old `SystemAgentsGrid` — a
+ *                 second, poorer grid over the same table — was deleted
+ *                 2026-08-26 when the two routes were aligned.
  *   - Open agent→ `features/agents/components/admin/SystemAgentSurfaceEmitter.tsx`
  *                 mounted by `app/(admin)/administration/agents/system-agents/
  *                 agents/[id]/layout.tsx` (admin route only — the shared

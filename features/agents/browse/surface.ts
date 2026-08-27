@@ -12,12 +12,30 @@ import {
 } from "@/features/surfaces/manifests/agents-hub.manifest";
 import type { AgentBrowseRow } from "./types";
 
-const AGENT_BROWSE_OWNERSHIP_TABS = [
+/**
+ * The ownership tabs a NON-ADMIN sees. This is both what the surface may
+ * EMIT and what an agent may WRITE via `catalog_filters`.
+ */
+export const AGENT_BROWSE_OWNERSHIP_TABS = [
   "mine",
   "orgs",
   "shared",
   "public",
 ] as const;
+
+/**
+ * Plus the platform's own corpus, for a Matrx admin. Kept a separate list so
+ * an agent cannot steer a non-admin's gallery into a tab that page does not
+ * render — the DB is still the authorization (agx_list_scoped re-checks
+ * is_platform_admin), this is about not lying to the user about where they are.
+ */
+export const AGENT_BROWSE_OWNERSHIP_TABS_ADMIN = [
+  ...AGENT_BROWSE_OWNERSHIP_TABS,
+  "system",
+] as const;
+
+type AgentBrowseOwnershipTab =
+  (typeof AGENT_BROWSE_OWNERSHIP_TABS_ADMIN)[number];
 
 const AGENT_SORT_VIEW = {
   "updated-desc": { sort: "updated", direction: "desc" },
@@ -55,6 +73,7 @@ function facetVocabulary(
 
 export function createAgentBrowseSurfaceScope(
   list: EntityListSurfaceController<AgentBrowseRow>,
+  ownershipTabs: readonly AgentBrowseOwnershipTab[] = AGENT_BROWSE_OWNERSHIP_TABS,
 ) {
   const categories = facetVocabulary(list, "category");
   const tags = facetVocabulary(list, "tag");
@@ -67,7 +86,7 @@ export function createAgentBrowseSurfaceScope(
   const peekedAgent = peekedAgentId
     ? list.rows.find((row) => row.id === peekedAgentId)
     : undefined;
-  const ownershipTab = AGENT_BROWSE_OWNERSHIP_TABS.find(
+  const ownershipTab = ownershipTabs.find(
     (tab) => tab === list.query.scope.kind,
   );
   if (!ownershipTab) {
@@ -130,13 +149,14 @@ function setSelectFilter(
 
 export function createAgentBrowseSurfaceWriteHandlers(
   list: EntityListSurfaceController<AgentBrowseRow>,
+  ownershipTabs: readonly AgentBrowseOwnershipTab[] = AGENT_BROWSE_OWNERSHIP_TABS,
 ) {
   return {
     catalog_filters: (value: unknown) => {
       const parsed = parseAgentsHubCatalogFilters(value, {
         categories: facetVocabulary(list, "category"),
         tags: facetVocabulary(list, "tag"),
-        ownershipTabs: AGENT_BROWSE_OWNERSHIP_TABS,
+        ownershipTabs,
         sortOptions: SORT_OPTIONS.map((option) => option.value),
         archivedOptions: ["active", "archived", "both"] as const,
       });
@@ -184,8 +204,30 @@ export function createAgentBrowseSurfaceWriteHandlers(
   };
 }
 
-export const AGENT_BROWSE_SURFACE = {
-  surfaceName: AGENTS_HUB_SURFACE_NAME,
-  getScope: createAgentBrowseSurfaceScope,
-  getWriteHandlers: createAgentBrowseSurfaceWriteHandlers,
-};
+/**
+ * The `matrx-user/agents` runtime for one rendering of the canonical list.
+ *
+ * Parameterized by the tabs that rendering actually shows, so the values the
+ * surface emits and the writes it accepts always describe the same gallery the
+ * user is looking at — /agents/all for a normal user, the same page plus
+ * System for a Matrx admin, and the admin System Agents route.
+ */
+export function createAgentBrowseSurface(
+  ownershipTabs: readonly AgentBrowseOwnershipTab[],
+) {
+  return {
+    surfaceName: AGENTS_HUB_SURFACE_NAME,
+    getScope: (list: EntityListSurfaceController<AgentBrowseRow>) =>
+      createAgentBrowseSurfaceScope(list, ownershipTabs),
+    getWriteHandlers: (list: EntityListSurfaceController<AgentBrowseRow>) =>
+      createAgentBrowseSurfaceWriteHandlers(list, ownershipTabs),
+  };
+}
+
+export const AGENT_BROWSE_SURFACE = createAgentBrowseSurface(
+  AGENT_BROWSE_OWNERSHIP_TABS,
+);
+
+export const AGENT_BROWSE_SURFACE_ADMIN = createAgentBrowseSurface(
+  AGENT_BROWSE_OWNERSHIP_TABS_ADMIN,
+);

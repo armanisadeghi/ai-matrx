@@ -65,8 +65,10 @@ export function agentDefinitionSummary(
 
 /**
  * Compact roster projection for a builtin (system) agent — the single shape
- * behind both `SystemAgentsGrid`'s surface-registry scope emitter and its
- * "Roster summary" Copy-for-AI variant. Never duplicate this projection.
+ * behind `AgentCard`'s "Roster summary" Copy-for-AI variant. Never duplicate
+ * this projection. (The system-agents grid that also used it was deleted
+ * 2026-08-26; the admin roster surface projects from the canonical list
+ * controller instead — `features/agents/browse/adminSurface.ts`.)
  */
 export interface SystemAgentRosterEntry {
   id: string;

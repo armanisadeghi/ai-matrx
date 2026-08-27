@@ -21,7 +21,7 @@
  * Write half: this mount also registers the surface's `writeTargets` handlers
  * (`useSystemAgentWriteHandlers`) — the four authored identity fields (name,
  * description, category, tags), each persisted through `saveAgentField`. The
- * roster mount (`SystemAgentsGrid`) deliberately registers NONE; see the
+ * roster mount (`features/agents/browse/adminSurface.ts`) deliberately registers NONE; see the
  * manifest's `writeTargets` block for the reasoning on both.
  */
 
