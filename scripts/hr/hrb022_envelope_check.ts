@@ -96,7 +96,9 @@ function refuses(name: string, run: () => unknown) {
         run();
         check(name, false, "it did NOT throw");
     } catch (e) {
-        check(name, e instanceof HrContractError, `threw ${(e as Error).name}, wanted HrContractError`);
+        // `unknown` narrowed, not asserted — the same rule this whole file exists to enforce.
+        const thrown = e instanceof Error ? e.name : typeof e;
+        check(name, e instanceof HrContractError, `threw ${thrown}, wanted HrContractError`);
     }
 }
 
