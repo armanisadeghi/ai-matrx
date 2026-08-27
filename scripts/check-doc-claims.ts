@@ -457,6 +457,32 @@ const claims: Claim[] = [
     where: "CLAUDE.md (all markdown links)",
     check: () => {
       const dead: string[] = [];
+      const unreachable: string[] = [];
+
+      // A cross-repo pointer names a SIBLING checkout, so it can never be
+      // resolved against this repo — `join(ROOT, "../common-docs/x.md")`
+      // escapes to `/common-docs/x.md`. Same three outcomes as the absolute
+      // branch below (found / checked-out-but-missing / not-checked-out), and
+      // for the same reason: on CI, where only this repo is cloned, judging an
+      // unreadable path "dead" turns the guard into a permanent red X that
+      // every agent learns to skip. A checkout may be named for the repo or
+      // carry the `matrx-` prefix (this session clones common-docs as
+      // matrx-common-docs), and must be picked by which one HAS THE FILE —
+      // with both cloned, picking the first directory that merely exists
+      // reports a dead pointer for a doc sitting in the other clone.
+      const crossRepo = (
+        repoDir: string,
+        rest: string,
+      ): "found" | "missing" | "no-checkout" => {
+        const siblings = dirname(ROOT);
+        const candidates = [
+          join(siblings, repoDir),
+          join(siblings, `matrx-${repoDir}`),
+        ];
+        if (candidates.some((d) => existsSync(join(d, rest)))) return "found";
+        return candidates.some((d) => existsSync(d)) ? "missing" : "no-checkout";
+      };
+
       // `\.{0,2}` — NOT `\.?`. With one optional dot a `../common-docs/x.md`
       // pointer had its first dot eaten, the capture became `./common-docs/x.md`
       // and resolved against THIS repo, so every cross-repo pointer that exists
@@ -467,6 +493,13 @@ const claims: Claim[] = [
       )) {
         const rel = m[1].replace(/^\.\//, "");
         if (rel.startsWith("http")) continue;
+        if (rel.startsWith("../")) {
+          const [, repoDir, ...restParts] = rel.split("/");
+          const verdict = crossRepo(repoDir, restParts.join("/"));
+          if (verdict === "missing") dead.push(rel);
+          else if (verdict === "no-checkout") unreachable.push(rel);
+          continue;
+        }
         if (!existsSync(join(ROOT, rel))) dead.push(rel);
       }
       // Absolute cross-repo pointers: catch a path on a volume that no longer
@@ -483,7 +516,6 @@ const claims: Claim[] = [
       //   • the repo isn't checked out at all → NOT VERIFIABLE, report
       //     separately; claiming it dead would be reporting a failure for data
       //     we could not read.
-      const unreachable: string[] = [];
       for (const m of CLAUDE_MD.matchAll(
         /`?(\/(?:Volumes|Users)\/[^\s`)]+\.md)`?/g,
       )) {
@@ -497,21 +529,9 @@ const claims: Claim[] = [
           continue;
         }
         const [repoDir, ...restParts] = afterCode.split("/");
-        const rest = restParts.join("/");
-        const siblings = dirname(ROOT);
-        // A checkout may be named for the repo or carry the `matrx-` prefix
-        // (this session clones common-docs as matrx-common-docs).
-        const repoCandidates = [
-          join(siblings, repoDir),
-          join(siblings, `matrx-${repoDir}`),
-        ];
-        // Resolve against the first candidate that HAS THE FILE, not the first
-        // that merely exists — with both `common-docs` and `matrx-common-docs`
-        // checked out, picking the directory first would report a dead pointer
-        // for a doc sitting in the other clone.
-        if (repoCandidates.some((d) => existsSync(join(d, rest)))) continue;
-        const anyCheckout = repoCandidates.some((d) => existsSync(d));
-        if (!anyCheckout) {
+        const verdict = crossRepo(repoDir, restParts.join("/"));
+        if (verdict === "found") continue;
+        if (verdict === "no-checkout") {
           unreachable.push(abs);
           continue;
         }
