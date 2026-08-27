@@ -966,6 +966,43 @@ export function fetchHrOrgSummary(
   );
 }
 
+/**
+ * Switch the HR module on (or off) for one organization.
+ *
+ * 🚨 THE WRITER THAT DID NOT EXIST, AND THE DEAD END IT LEFT. `hr._l1_module_enabled` has always
+ * read `iam.organizations.settings->hr->module_enabled`, and **nothing in the codebase ever wrote
+ * that key** — so the flag could only ever be its fallback ("an employer profile exists"), while
+ * the activation wizard that creates the profile sits BEHIND the flag. A closed loop: HR could not
+ * be turned on through the product by anybody, and `/hr`'s "Turn on HR" pointed at an org-settings
+ * card that rendered nothing. The G2 verifier measured that card in the DOM: zero links, zero
+ * buttons.
+ *
+ * Gated server-side on org owner/admin — the same single named place where org standing confers
+ * HR standing (SPEC-ACCESS §1.1, adopted from SPEC-EMPLOYEES D-1). Turning the module on is the
+ * act that precedes there being any HR role to hold, which is why it is not itself an HR setting.
+ *
+ * Switching OFF retains every record: §1.3's absent-not-disabled applies to modules, and an org
+ * that switches HR off and back on finds its people where it left them.
+ */
+export function enableHrModule(args: {
+  organizationId: string;
+  enabled: boolean;
+}): Promise<
+  HrResult<{
+    organization_id: string;
+    module_enabled: boolean;
+    is_activated: boolean;
+    records_retained: boolean;
+    next: "activation_wizard" | "module_off";
+  }>
+> {
+  return callHr(
+    "hr_module_set_enabled",
+    { p_organization_id: args.organizationId, p_enabled: args.enabled },
+    { envelope: false, whatFailed: "Switching HR on for this organization" },
+  );
+}
+
 /** Route 69's writes — departments, locations, job titles, and the rest of §2.4. */
 export function upsertHrStructure(args: {
   kind: string;

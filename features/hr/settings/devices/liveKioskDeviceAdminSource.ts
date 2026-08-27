@@ -33,7 +33,14 @@ import type {
 import type { KioskDeviceRow, KioskTrustState } from "@/features/hr/time/api/types";
 
 /** The envelope every `public.hr_*` door returns. `ok:false` is an answer, not a fault. */
-type Envelope = Record<string, unknown> & { ok?: boolean; reason?: string; detail?: string };
+type Envelope = Record<string, unknown> & {
+  ok?: boolean;
+  reason?: string;
+  detail?: string;
+  message?: string;
+  /** The kiosk family nests its refusal: `{ok:false, error:{code, message}}`. */
+  error?: unknown;
+};
 
 function asEnvelope(value: unknown): Envelope {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Envelope) : {};
@@ -48,14 +55,27 @@ function asEnvelope(value: unknown): Envelope {
 function unwrap(data: unknown, error: { message?: string } | null, fallback: string): Envelope {
   if (error) throw new Error(error.message || fallback);
   const envelope = asEnvelope(data);
-  if (envelope.ok === false) {
-    throw new Error(
-      typeof envelope.detail === "string" && envelope.detail.trim()
-        ? envelope.detail
-        : `${fallback}${envelope.reason ? ` (${envelope.reason})` : ""}`,
-    );
-  }
-  return envelope;
+  if (envelope.ok !== false) return envelope;
+
+  // 🚨 THERE ARE TWO REFUSAL SHAPES ON THIS SURFACE, AND READING ONLY ONE THREW AWAY THE
+  // SERVER'S SENTENCE. This lane's doors answer flat — `{ok:false, reason, detail}` — but the
+  // kiosk family answers NESTED: `{ok:false, error:{code, message}}`. The G2 verifier caught the
+  // consequence: pairing refused with `hr_kiosk_location_required` and the genuinely useful
+  // sentence *"A kiosk belongs to a work location: that is what its punches are checked against
+  // and what cross-location flagging compares to"*, and the dialog said **"We could not generate
+  // a pairing code."** The server did its job (SPEC-ACCESS §4.2 — a denial names what was
+  // missing); this function deleted it.
+  const nested = asEnvelope(envelope.error);
+  const sentence =
+    [envelope.detail, nested.message, envelope.message].find(
+      (candidate): candidate is string => typeof candidate === "string" && candidate.trim().length > 0,
+    ) ?? null;
+  const code =
+    [envelope.reason, nested.code].find(
+      (candidate): candidate is string => typeof candidate === "string" && candidate.trim().length > 0,
+    ) ?? null;
+
+  throw new Error(sentence ?? `${fallback}${code ? ` (${code})` : ""}`);
 }
 
 function str(record: Record<string, unknown>, key: string): string | null {
@@ -123,6 +143,12 @@ export function liveKioskDeviceAdminSource(organizationId: string): KioskDeviceA
         p_location_id: input.locationId,
       } as never);
       const envelope = unwrap(data, error, "We could not generate a pairing code.");
+      // 🚨 The generic sentence above is the FALLBACK, never the answer when the server gave one.
+      // The G2 verifier caught this file replacing a named, actionable refusal —
+      // `hr_kiosk_location_required`: "A kiosk belongs to a work location: that is what its punches
+      // are checked against and what cross-location flagging compares to." — with "We could not
+      // generate a pairing code." `unwrap` now surfaces the server's `detail` whenever there is
+      // one (see its body), which is SPEC-ACCESS §4.2's denial-names-what-was-missing rule.
       const code = str(envelope, "code");
       const deviceId = str(envelope, "deviceId");
       if (!code || !deviceId) {
