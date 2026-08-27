@@ -22,7 +22,15 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Pause, Play, RotateCcw, Square } from "lucide-react";
+import {
+  AudioLines,
+  Loader2,
+  Pause,
+  Play,
+  RotateCcw,
+  Settings2,
+  Square,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -38,6 +46,14 @@ import {
   requestVoicePlayback,
   stopVoicePlayback,
 } from "@/features/transcript-studio/state/voicePlaybackBus";
+import { playPlaybackItem } from "@/features/audio/playback/playbackQueue";
+import { useSetting } from "@/features/settings/hooks/useSetting";
+import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
+import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
+import { SettingsSlider } from "@/components/official/settings/primitives/SettingsSlider";
+import { availableVoices } from "@/lib/cartesia/voices";
+import { LANGUAGE_OPTIONS } from "@/features/settings/agent-writable-settings";
+import { resolveVoiceId, TTS_DEFAULT_SPEED } from "@/lib/cartesia/config";
 
 const SUMMARY_STYLE_DEFAULT = "Extremely Concise Summary";
 
@@ -266,6 +282,11 @@ function ListenSummaryWindowInner({
 
   const title = statusText && isActive ? `Listen — ${statusText}` : "Listen";
 
+  // ── Voice settings pane (header toggle) ──────────────────────────────────
+  // Swaps the BODY only — the transport footer stays live, so audio keeps
+  // playing and stays controllable while the user tunes voice and speed.
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   return (
     <WindowPanel
       id="listen-summary-window"
@@ -276,25 +297,48 @@ function ListenSummaryWindowInner({
       minWidth={340}
       minHeight={380}
       onClose={onClose}
+      actionsRight={
+        <button
+          type="button"
+          onClick={() => setSettingsOpen((v) => !v)}
+          aria-pressed={settingsOpen}
+          title={settingsOpen ? "Back to the summary" : "Voice settings"}
+          aria-label={settingsOpen ? "Back to the summary" : "Voice settings"}
+          className={cn(
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors [&_svg]:h-3 [&_svg]:w-3",
+            settingsOpen
+              ? "text-primary"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Settings2 strokeWidth={2.25} />
+        </button>
+      }
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
-        {/* Summary text — the canonical stream pipeline, nothing bespoke. */}
+        {/* Summary text — the canonical stream pipeline, nothing bespoke.
+            The settings pane overlays via CSS `hidden`, never an unmount —
+            LiveRunDisplay's viewer retention must keep holding the live
+            request rows while the user tunes settings mid-run. */}
         <div className="min-h-0 flex-1 overflow-hidden">
-          {!agentId ? (
-            <p className="px-4 py-6 text-sm text-muted-foreground">
-              No listening-summary agent is bound for this surface yet. Bind one
-              from the Agents menu, then try again.
-            </p>
-          ) : (
-            <LiveRunDisplay
-              conversationId={conversationId}
-              pending={!conversationId && !failed}
-              variant="bare"
-              className="h-full"
-              bodyClassName="max-h-none h-full overflow-y-auto px-4 py-3"
-            />
-          )}
+          {settingsOpen ? <ListenVoiceSettings /> : null}
+          <div className={cn("h-full min-h-0", settingsOpen && "hidden")}>
+            {!agentId ? (
+              <p className="px-4 py-6 text-sm text-muted-foreground">
+                No listening-summary agent is bound for this surface yet. Bind
+                one from the Agents menu, then try again.
+              </p>
+            ) : (
+              <LiveRunDisplay
+                conversationId={conversationId}
+                pending={!conversationId && !failed}
+                variant="bare"
+                className="h-full"
+                bodyClassName="max-h-none h-full overflow-y-auto px-4 py-3"
+              />
+            )}
+          </div>
         </div>
 
         {/* Transport — one delicate glass strip; the panel's single control row. */}
@@ -356,6 +400,92 @@ function ListenSummaryWindowInner({
         </div>
       </div>
     </WindowPanel>
+  );
+}
+
+/**
+ * Voice settings pane — the SAME setting paths the canonical Settings → Voice
+ * tab edits (`features/settings/tabs/VoiceTab.tsx`), rendered through the same
+ * official settings primitives. Every change auto-saves to the user's profile
+ * and is the app-wide default: `speak()` and the app-root streaming speaker
+ * read these preferences at each utterance, so the next playback (or Listen
+ * again) uses the new voice/speed everywhere, not just in this panel.
+ */
+const VOICE_OPTIONS = availableVoices.map((v) => ({
+  value: v.id,
+  label: v.name,
+  description: v.description,
+}));
+
+const PREVIEW_TEXT =
+  "Here's how your listening voice sounds. Summaries, notes, and replies will all be read like this.";
+
+function ListenVoiceSettings() {
+  const [voice, setVoice] = useSetting<string>("userPreferences.voice.voice");
+  const [speed, setSpeed] = useSetting<number>("userPreferences.voice.speed");
+  const [language, setLanguage] = useSetting<string>(
+    "userPreferences.voice.language",
+  );
+
+  // Show the voice that will ACTUALLY speak: an unset preference resolves to
+  // the assistant default, so surface that instead of a blank select.
+  const effectiveVoiceId = resolveVoiceId(voice, "assistant");
+
+  const handlePreview = useCallback(() => {
+    // Canonical path; take over anything playing so the preview is instant
+    // (one voice at a time — same rule as every other playback start).
+    const { id } = speak({ text: PREVIEW_TEXT, label: "Voice preview" });
+    void playPlaybackItem(id);
+  }, []);
+
+  return (
+    <div className="h-full min-h-0 overflow-y-auto px-4 py-3">
+      <SettingsSection title="Listening voice">
+        <SettingsSelect
+          label="Voice"
+          description="Used everywhere speech plays, app-wide."
+          value={effectiveVoiceId}
+          onValueChange={setVoice}
+          options={VOICE_OPTIONS}
+          width="lg"
+        />
+        <SettingsSlider
+          label="Speech speed"
+          description="1.0 = original pace. Our default is 1.2."
+          value={speed || TTS_DEFAULT_SPEED}
+          onValueChange={setSpeed}
+          min={0.6}
+          max={1.5}
+          step={0.05}
+          precision={2}
+          minLabel="Slower"
+          midLabel="Default"
+          maxLabel="Faster"
+        />
+        <SettingsSelect
+          label="Language"
+          value={language}
+          onValueChange={setLanguage}
+          options={LANGUAGE_OPTIONS}
+          last
+        />
+      </SettingsSection>
+
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          Saved to your profile automatically. Changes apply from the next
+          playback.
+        </p>
+        <button
+          type="button"
+          onClick={handlePreview}
+          className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/60 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-primary/50 hover:text-primary"
+        >
+          <AudioLines className="h-3.5 w-3.5" />
+          Preview voice
+        </button>
+      </div>
+    </div>
   );
 }
 
