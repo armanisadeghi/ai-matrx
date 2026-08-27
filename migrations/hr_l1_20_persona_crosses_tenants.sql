@@ -84,7 +84,7 @@ declare
     ['hr._l1_persona(uuid,uuid,date)',
      'hr.capability(p_user, ''working_record.write'', null, p_at)',
      'hr.capability(p_user, ''working_record.write'', null, p_at, p_org)'],
-    ['hr._l1_settings_gate(uuid,text)',
+    ['hr._l1_settings_gate(uuid,text,text)',
      'hr.capability(v_uid, ''identity.write'', null, current_date)',
      'hr.capability(v_uid, ''identity.write'', null, current_date, p_org)'],
     ['public.hr_duplicate_scan(uuid,jsonb)',
