@@ -38,6 +38,8 @@ import {
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { selectCanvasIsAvailable } from "@/features/canvas/redux/canvasSlice";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
@@ -125,6 +127,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { open } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
   const isCanvasAvailable = useAppSelector(selectCanvasIsAvailable);
   const appMode = useThemeMode();
   const userPrefs = useAppSelector(selectMermaidPreferences);
@@ -206,6 +209,45 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
   };
 
   const handleOpenCanvas = (aiAgent?: { agentId: string; name: string }) => {
+    // Per-type extras the workbench needs, independent of how we open.
+    const extras = {
+      // Chat right-click -> "Edit with <agent>": land in the workbench with
+      // the AI rail open + the diagram-scoped agent preselected, so the
+      // agent's result flows through the workbench's normal apply/version
+      // pipeline (APPLY_EXTERNAL_SOURCE -> saved as a new version).
+      ...(aiAgent
+        ? {
+            openAiRail: true,
+            aiAgentId: aiAgent.agentId,
+            aiAgentName: aiAgent.name,
+          }
+        : {}),
+      mermaid: {
+        diagramType,
+        title: title ?? undefined,
+        theme: effective.theme,
+        look: effective.look,
+        layout: effective.layout,
+      },
+    };
+
+    // Already materialized -> open BY IDENTITY through the canonical opener.
+    // Redux then holds a pointer to the row, the canvas dedupes against an
+    // item already showing this artifact, and edits version the one row. The
+    // snapshot path below is only for a block that has no artifact yet.
+    if (isMaterializedArtifactId(artifactId)) {
+      void openArtifact({
+        canvasType: "mermaid",
+        title: title ?? catalog.label,
+        content: source,
+        artifactId,
+        messageId,
+        conversationId,
+        metadata: extras,
+      });
+      return;
+    }
+
     open({
       type: "mermaid",
       data: source,
@@ -216,24 +258,7 @@ const MermaidBlock: React.FC<MermaidBlockProps> = ({
           taskId || (messageId ? `mermaid:${messageId}` : undefined),
         canvasItemId: artifactId,
         conversationId,
-        // Chat right-click → "Edit with <agent>": land in the workbench with
-        // the AI rail open + the diagram-scoped agent preselected, so the
-        // agent's result flows through the workbench's normal apply/version
-        // pipeline (APPLY_EXTERNAL_SOURCE → saved as a new version).
-        ...(aiAgent
-          ? {
-              openAiRail: true,
-              aiAgentId: aiAgent.agentId,
-              aiAgentName: aiAgent.name,
-            }
-          : {}),
-        mermaid: {
-          diagramType,
-          title: title ?? undefined,
-          theme: effective.theme,
-          look: effective.look,
-          layout: effective.layout,
-        },
+        ...extras,
       },
     });
   };
