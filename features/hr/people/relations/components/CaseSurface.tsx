@@ -29,7 +29,7 @@ import { AlertTriangle, Lock, Scale } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { hrRelationsHref } from "@/features/hr/routes";
-import { HrPageState } from "@/features/hr/shared/HrStates";
+import { HrNoAccess, HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { useHrPersona } from "@/features/hr/shared/useHrPersona";
 import { toast } from "@/lib/toast";
@@ -40,6 +40,7 @@ import { CorrectiveActionPanel } from "./CorrectiveActionPanel";
 import { IncidentPartiesPanel } from "./IncidentPartiesPanel";
 import { IncidentStatePanel } from "./IncidentStatePanel";
 import { OshaDeterminationPanel } from "./OshaDeterminationPanel";
+import { ReporterStatusView } from "./ReporterStatusView";
 import { RestrictedNotesPanel } from "./RestrictedNotesPanel";
 import {
   HR_INCIDENT_KIND_LABELS,
@@ -102,6 +103,24 @@ export function CaseSurface({
     can("incident.investigate") ||
     can("incident.read") ||
     detail?.viewer_role === "investigator";
+
+  // 🚨 THE REPORTER'S LANE. A person who filed a report holds no
+  // `incident.read`, so the case door refuses them — correctly. But somebody
+  // who reported harassment has a real need to know their report did not
+  // vanish, and §4.9b J gives them exactly state, last-updated and the declared
+  // next step through a SEPARATE door that carries no notes. Only try it for a
+  // viewer who was never able to open the case: a person who just lost reach by
+  // being accused must be moved away, not handed a status page.
+  if (denied && !wasReachable) {
+    return (
+      <ReporterStatusView
+        incidentId={caseId}
+        fallback={
+          <HrNoAccess sentence="This part of HR isn't yours here." />
+        }
+      />
+    );
+  }
 
   return (
     <HrPageState
