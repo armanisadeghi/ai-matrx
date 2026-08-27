@@ -32,21 +32,6 @@ Fix: check `hr.workflow_binding` for an open exclusive row on `(target_token, ta
 and return `WF_BINDING_OPEN` **before** the instance insert. Keep the `unique_violation` catch as
 the concurrent-race backstop. Do not fix it by deleting the instance — that would put a hard delete
 of an evidence-class table inside an engine RPC. Owner: C4 workflow-engine lane (HRB-008).
-
-### D276 — `scripts/hr/hrb022_proof.py` asserts a C3 write-guard defect that `hr_c3_11` already fixed (2026-08-26)
-
-One red in `hrb022_proof.py`: *"writing hr.employment overwrites the transaction-scoped
-write-guard literal with a STALE statement-scoped token, refusing the next hr.\* write until
-re-armed"*. That was true, and `migrations/hr_c3_11_arm_write_preserves_caller_arm.sql` fixed it —
-`hr.arm_write()` now leaves an existing legacy arm exactly as it found it, which is why the
-assertion reads `flag after the write = 'on'; next unarmed hr write refused = False`. The proof is
-recording a defect as a live finding after the defect was closed. Same class as the stale HRB-008
-finding flipped in the same session.
-
-Fix: flip the assertion to the shipped semantics — a callee never degrades its caller's arm — the
-way `hrb007_cross_org_proof.py`'s write-guard-scope phase and `hrb008_proof.py`'s
-`§ write-guard scope` group now state it. Owner: the HRB-022 lane, not C4.
-
 ### D271 — `callHr` reads every HR WRITE refusal as a successful write (2026-08-26)
 
 `features/hr/service.ts`'s `callHr` treats a payload as a refusal only when it carries
@@ -2286,6 +2271,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D276** — `hrb022_proof.py` asserted the C3 write-guard clobber as current behaviour after `hr_c3_11` closed it. Flipped to the shipped semantics and made two-sided: a callee leaves its caller's arm intact AND an unarmed `hr.*` write is still refused `42501` — a proof that stops watching a closed defect is how it comes back unnoticed. `scripts/hr/hrb022_proof.py`, 59 assertions 0 RED. 2026-08-26.
 
 - **D247** — `get_dm_conversations_with_details` now keyset-paginates (`p_limit` default 50, cursor on last-message time + `conversation_id`); the messaging panel loads page 1 and "Show more" continues from the last row (`features/messaging/data/conversationsWithDetails.ts`, `features/messaging/redux/messagingSlice.ts`, `features/messaging/components/ConversationList.tsx`, `app/api/messages/conversations/route.ts`); `migrations/dm_conversations_with_details_pagination.sql`. 2026-08-24.
 - **SEO topic demand contract** — `gsc_topic_stats` no longer scans all historical site observations before reducing to linked topics; all five topic reads/ledger refreshes now use one winning GSC `query` run per date, and stale queue rows reconcile on refresh (`migrations/seo_topic_demand_accuracy_and_timeout.sql`, `seo_topic_demand_membership_index.sql`). 2026-08-24.

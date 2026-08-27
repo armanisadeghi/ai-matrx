@@ -68,15 +68,19 @@ async def main():
             json.dumps({"sub": str(uid), "role": "authenticated"}))
 
     async def arm():
-        """Re-arm the legacy write-guard literal for the NEXT statement.
+        """Arm the legacy write-guard literal for this fixture's owner-side writes.
 
-        🚨 MEASURED, not assumed (probe below records it as an assertion): C3's hardened guard
-        (migrations/hr_c3_00_write_guard.sql) added a statement-scoped token lane, and some hr
-        writers now call `hr.arm_write()` mid-statement — `hr.employment`'s `_zzz_derive_grants`
-        trigger does. That OVERWRITES the transaction-scoped `'on'` literal with a token keyed to
-        `statement_timestamp()`, so the very next top-level statement sees a STALE token, matches
-        neither lane, and is refused. Any fixture that writes hr.employment more than once in one
-        transaction hits it. So every owner-side write re-arms immediately before it runs.
+        C3's hardened guard (migrations/hr_c3_00_write_guard.sql) has two lanes: the legacy
+        transaction-scoped `'on'` literal, and a statement-scoped token that `hr.arm_write()`
+        issues for writers that need one mid-statement — `hr.employment`'s `_zzz_derive_grants`
+        trigger calls it.
+
+        This harness used to re-arm before EVERY write because a callee's `hr.arm_write()` used to
+        overwrite its caller's literal with a token keyed to `statement_timestamp()`, leaving the
+        next top-level statement matching neither lane. `migrations/hr_c3_11_arm_write_preserves_caller_arm.sql`
+        closed that: a callee now leaves an existing arm exactly as it found it. The probe below
+        asserts the SHIPPED semantics rather than the old defect. Re-arming stays because it is
+        idempotent and keeps the fixture readable, not because it is still required.
         """
         await conn.execute("select set_config('hr.privileged_write','on',true)")
 
@@ -198,30 +202,55 @@ async def main():
             "first_period_start_on, workweek_effective_from) "
             "values ($1,$2,'Biweekly','biweekly',current_date - 30, current_date - 30) returning id", org, er)
 
-        # 🚨 the finding the harness had to be built around, measured rather than asserted from
-        # a comment: writing hr.employment leaves the write-guard flag holding a STALE
-        # statement-scoped token, so a second hr.* write in the same transaction is refused
-        # unless the caller re-arms. Recorded here as evidence for the C3/C4 guard owners.
+        # 🚨 THE WRITE-GUARD SCOPE, RE-SIGHTED FROM THIS LANE (D276).
+        # This probe used to assert the defect: `hr.employment`'s `_zzz_derive_grants` trigger
+        # calls `hr.arm_write()`, which overwrote its CALLER's transaction-scoped arm with a
+        # statement-scoped token, so the next top-level hr.* write was refused. `hr_c3_11` fixed
+        # it — a callee never degrades its caller's arm — and the assertion is now the shipped
+        # behaviour. Left in place deliberately: a proof that stops watching a closed defect is
+        # how the defect comes back unnoticed.
         people["alice"]["employment"] = await own(
             "insert into hr.employment (organization_id, employee_id, employer_profile_id, "
             "pay_group_id, hire_date, status) values ($1,$2,$3,$4,current_date - 365,'active') returning id",
             org, people["alice"]["employee"], er, pg)
         flag_after = await conn.fetchval("select current_setting('hr.privileged_write', true)")
-        stale_refused = False
+        next_write_ok = False
+        next_write_state = None
         sp_probe = conn.transaction()
         await sp_probe.start()
         try:
             await conn.execute(
                 "insert into hr.department (organization_id, name) values ($1,'Probe')", org)
-        except Exception:
-            stale_refused = True
+            next_write_ok = True
+        except asyncpg.PostgresError as exc:
+            next_write_state = exc.sqlstate
         await sp_probe.rollback()
-        rec("FINDING", "writing hr.employment overwrites the transaction-scoped write-guard literal "
-                       "with a STALE statement-scoped token, refusing the next hr.* write until re-armed",
-            flag_after not in ("on", "true", "1", "yes") and stale_refused,
-            f"flag after the write = {flag_after!r}; next unarmed hr write refused = {stale_refused}. "
-            "hr.employment's _zzz_derive_grants trigger calls hr.arm_write() (C3 hr_c3_00_write_guard.sql); "
-            "any fixture writing hr.employment twice in one transaction hits it. Owned by the C3 access lane.")
+        rec("write-guard scope",
+            "🚨 a callee never degrades its caller's arm: writing hr.employment leaves the "
+            "legacy arm intact and the NEXT hr.* write under it still succeeds (hr_c3_11)",
+            flag_after == "on" and next_write_ok,
+            f"flag after the write = {flag_after!r}; next hr write under the same arm "
+            f"succeeded = {next_write_ok}"
+            + (f" (refused {next_write_state})" if next_write_state else ""))
+
+        # The other half of the same boundary, and the one that must never soften: an arm does
+        # not outlive the statement it was issued for. Proven by DISARMING and writing again.
+        sp_disarm = conn.transaction()
+        await sp_disarm.start()
+        await conn.execute("select set_config('hr.privileged_write','', true)")
+        unarmed_refused = False
+        unarmed_state = None
+        try:
+            await conn.execute(
+                "insert into hr.department (organization_id, name) values ($1,'Probe unarmed')", org)
+        except asyncpg.PostgresError as exc:
+            unarmed_refused = True
+            unarmed_state = exc.sqlstate
+        await sp_disarm.rollback()
+        rec("write-guard scope",
+            "🚨 and the guard still bites: an UNARMED hr.* write is refused 42501",
+            unarmed_refused and unarmed_state == "42501",
+            f"refused = {unarmed_refused}, sqlstate = {unarmed_state!r}")
 
         for key in ("bob", "carol", "dave"):
             people[key]["employment"] = await own(
