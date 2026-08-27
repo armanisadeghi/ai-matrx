@@ -155,8 +155,13 @@ $function$;
 comment on function audit.function_broken_live(oid) is
   'Live plpgsql_check of ONE function under its own effective search path, classified by audit.classify_broken_function. true = a severity=real finding right now. The un-cached slice of audit.refresh_static() that iam.canonical_certify measures with.';
 
-revoke all on function audit.function_broken_live(oid) from public, anon, authenticated;
-grant execute on function audit.function_broken_live(oid) to service_role;
+-- Grants match audit.table_impact / classify_broken_function / effective_search_path,
+-- the rest of this call path: EXECUTE to PUBLIC, reachable only by roles that
+-- already hold USAGE on the audit schema (anon does not). Locking these two
+-- down instead BREAKS iam.canonical_certify, which is itself PUBLIC and
+-- invoker-rights -- proven live: `set role authenticated` then certify returned
+-- "permission denied for function broken_functions_snapshot_age". Neither
+-- function exposes a finding: one returns a boolean, the other a timestamp.
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 2. The residual snapshot's age, as one readable string.
@@ -180,8 +185,8 @@ $function$;
 comment on function audit.broken_functions_snapshot_age() is
   'Age of the only cached lane iam.canonical_certify still reads (runtime-probe failures). The static lane is measured live per call and has no age.';
 
-revoke all on function audit.broken_functions_snapshot_age() from public, anon, authenticated;
-grant execute on function audit.broken_functions_snapshot_age() to service_role;
+grant execute on function audit.function_broken_live(oid) to public;
+grant execute on function audit.broken_functions_snapshot_age() to public;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- 3. table_impact: currently_broken becomes a measurement.
