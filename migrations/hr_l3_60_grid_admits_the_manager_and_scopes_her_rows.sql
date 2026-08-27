@@ -94,13 +94,16 @@ declare v_def text;
 begin
   v_def := pg_get_functiondef('hr.timesheet_period_grid(uuid,jsonb,jsonb)'::regprocedure);
 
-  if position('_time_grid_reach' in v_def) > 0 then
-    raise notice 'hr_l3_60: the grid already admits and scopes on the read-door lane';
+  -- guard on the FINAL shape, not on the first thing this migration ever inserted: an earlier
+  -- form of it scoped rows on time.read alone, and guarding on that marker would skip the upgrade.
+  if position('hr.can_approve(v_uid, ''timecard_approve''' in v_def) > 0 then
+    raise notice 'hr_l3_60: the grid already admits and scopes in its final shape';
     return;
   end if;
 
   ---------------------------------------------------------------- the gate (decisions 1, 4, 5)
-  if position('  if not hr._time_has_timecard_approve(v_uid, v_per.organization_id, current_date) then' in v_def) = 0 then
+  if position('_time_grid_reach' in v_def) = 0
+     and position('  if not hr._time_has_timecard_approve(v_uid, v_per.organization_id, current_date) then' in v_def) = 0 then
     raise exception 'hr_l3_60: the grid gate has moved; refusing to guess';
   end if;
   v_def := replace(v_def,
@@ -110,9 +113,6 @@ begin
     '  if not hr._time_has_timecard_approve(v_uid, v_per.organization_id, current_date)' || E'\n' ||
     '     and not hr._time_grid_reach(v_uid, p_pay_period_id, current_date) then');
 
-  if position('''detail'', ''the approval grid is readable by someone holding timecard_approve authority somewhere in this pay group, or by HR with time.read. You hold neither today.'',' in v_def) = 0 then
-    raise exception 'hr_l3_60: the grid refusal sentence has moved; refusing to guess';
-  end if;
   v_def := replace(v_def,
     '''detail'', ''the approval grid is readable by someone holding timecard_approve authority somewhere in this pay group, or by HR with time.read. You hold neither today.'',',
     '''detail'', ''the approval grid is readable by HR, by someone holding timecard_approve ''' || E'\n' ||
@@ -120,12 +120,15 @@ begin
     '        || ''are none of those today, so there is no row here you could open.'',');
 
   ---------------------------------------------------------------- the rows (decision 2)
-  if position('     where ppe.pay_period_id = p_pay_period_id' in v_def) = 0 then
+  if position('where ppe.pay_period_id = p_pay_period_id' in v_def) = 0 then
     raise exception 'hr_l3_60: the grid base CTE has moved; refusing to guess';
   end if;
-  v_def := replace(v_def,
-    '     where ppe.pay_period_id = p_pay_period_id',
-    '     where ppe.pay_period_id = p_pay_period_id' || E'\n' ||
+  -- Normalise the whole span rather than appending: an earlier form of this migration inserted a
+  -- time.read-only filter here, and a second insert would stack two filters instead of replacing
+  -- one. `.` spans newlines in a Postgres regex, so the non-greedy match takes the block whole.
+  v_def := regexp_replace(v_def,
+    'where ppe\.pay_period_id = p_pay_period_id.*?-- 🚨 RD 5:',
+    'where ppe.pay_period_id = p_pay_period_id' || E'\n' ||
     '       -- 🚨 hr_l3_60 decision 2: a row is shown when the reader could open that timesheet one' || E'\n' ||
     '       -- at a time, OR may approve it. Before this the grid showed every enrolled row to' || E'\n' ||
     '       -- anyone who passed the gate, so admitting a manager without scoping would hand her' || E'\n' ||
@@ -133,7 +136,8 @@ begin
     '       -- holder who lacks time.read would otherwise gate in to an empty grid.' || E'\n' ||
     '       and (hr.capability(v_uid, ''time.read'', ppe.employment_id, current_date)' || E'\n' ||
     '            or hr.can_approve(v_uid, ''timecard_approve'', ''hr.pay_period_employment'',' || E'\n' ||
-    '                              ppe.id, current_date))');
+    '                              ppe.id, current_date))' || E'\n' ||
+    '       -- 🚨 RD 5:');
 
   execute v_def;
 end

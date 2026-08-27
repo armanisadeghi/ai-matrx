@@ -169,6 +169,13 @@ const EXPECTED_CHECKS = [
   // blocking in name and inert in fact, on the run that installed it. A marker is an array or it is
   // absent; never a JSON null.
   "split_pending_is_absent_or_real",
+  // Round-15 (hr_l3_61). A timecard nobody can approve stalls payroll with no error anywhere — the
+  // surface simply never advances. Two shapes today: a subject WITH a manager (hr.can_approve has
+  // no reporting-line rung, so the selector's rung is structurally dead), and the sole approver's
+  // own card (RULE 1 forbids self-approval, sole_authority_mode requires a second actor there is
+  // none of). Three known pairs ride a dated allowlist printed on every run; both fixes belong to
+  // the workflow lane, because widening the predicate decides who may act on payroll.
+  "every_timecard_has_an_approver",
 ] as const;
 
 interface ConformanceRow {
