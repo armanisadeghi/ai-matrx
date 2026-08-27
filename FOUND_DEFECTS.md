@@ -15,6 +15,25 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D275 — the hire form lets you submit without a job title or department, and the user gets raw Postgres (2026-08-26)
+
+`features/hr/people/new/HrNewEmployee.tsx` mirrors the server's validation for start date,
+location, jurisdiction, FLSA basis, FTE and last name — but **not** for job title or department.
+`hr.position_assignment.job_title_id` and `.department_id` are both `NOT NULL`, so a hire with
+either left as "Pick a …" reaches the door and comes back as, verbatim on screen:
+
+```
+Creating this employee could not be loaded. null value in column "job_title_id" of
+relation "position_assignment" violates not-null constraint
+```
+
+Reproduced twice in a browser on `zzz-throwaway-surface-test-org`, 2026-08-26, once per column.
+Two things are wrong: the client mirror is missing two required fields, and a raised
+`23502` is being rendered as a sentence to an HR admin (SPEC-EMPLOYEES §2's error state says
+never a bare Postgres code). **Fix:** add both to the `problems` list beside the location check
+("A position needs a job title." / "A position needs a department."), so the button is blocked
+before the write.
+
 ### D271 — `callHr` reads every HR WRITE refusal as a successful write (2026-08-26)
 
 `features/hr/service.ts`'s `callHr` treats a payload as a refusal only when it carries
