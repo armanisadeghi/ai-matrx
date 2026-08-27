@@ -9,11 +9,12 @@
 // and nothing else; the full value exists only inside this dialog, only after a
 // person typed a reason, and only until they close it.
 //
-// 🚨 THE CONTROL IS ABSENT WITHOUT `ssn.reveal` (§4.2), not disabled. A disabled
-// button tells a colleague that a number exists and that somebody else may read it;
-// §1.3's rule is that a field you cannot access is not in the DOM. The capability
-// comes from `profile.capabilities`, which the server computed — never inferred
-// here from a role string.
+// 🚨 THE CONTROL IS ABSENT FOR ANYONE THE DOOR WOULD REFUSE (§4.2), not disabled.
+// A disabled button tells a colleague that a number exists and that somebody else
+// may read it; §1.3's rule is that a field you cannot access is not in the DOM.
+// Who may ask is `profile.capabilities` and `profile.viewer` — both computed by the
+// server, never inferred here from a role string. See `mayAsk` below for why it is
+// two arms and not one.
 //
 // 🚨 THE HIDDEN CONTROL IS NOT THE SECURITY BOUNDARY. `hr.reveal_ssn` refuses and
 // AUDITS the refusal regardless of what the client drew, which is why
@@ -23,7 +24,7 @@
 // the dialog closes, and is never sent to a toast — a toast outlives the dialog and
 // can be read over a shoulder long after the person has moved on.
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Loader2, ShieldQuestion } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -48,12 +49,15 @@ export function SsnRevealDoor({
   employeeId,
   organizationId,
   capabilities,
+  viewer,
   className,
 }: {
   employeeId: string;
   organizationId: string;
   /** `profile.capabilities`, verbatim from the server. */
   capabilities: string[];
+  /** `profile.viewer`. `self` is one of the two arms the door admits — see below. */
+  viewer: string;
   className?: string;
 }) {
   const api = useBackendApi();
@@ -63,7 +67,22 @@ export function SsnRevealDoor({
   const [outcome, setOutcome] = useState<HrSsnRevealOutcome | null>(null);
 
   // §4.2 — absent, not disabled.
-  if (!capabilities.includes("ssn.reveal")) return null;
+  //
+  // 🚨 THE CONTROL MIRRORS THE DOOR'S TWO ARMS, AND MUST KEEP MIRRORING THEM.
+  // `hr.reveal_ssn` admits either somebody holding `ssn.reveal` over this person OR
+  // **the subject themselves**:
+  //
+  //     if not (hr.capability(v_uid, 'ssn.reveal', v_subject)
+  //             or (v_subject is not null and v_subject = any(hr.employments_of(v_uid))))
+  //
+  // Gating this control on the capability alone was stricter than the server, which
+  // made the self lane unreachable: your own number is yours to see, the door was
+  // written to allow it, and the audit row records it as `basis = 'self'`. A UI that
+  // is quietly stricter than its door is how a shipped capability goes unused — the
+  // exact shape of the defect this whole surface was built to close.
+  const isSelf = viewer === "self";
+  const mayAsk = capabilities.includes("ssn.reveal") || isSelf;
+  if (!mayAsk) return null;
 
   const close = () => {
     setOpen(false);
@@ -104,10 +123,15 @@ export function SsnRevealDoor({
       <Dialog open={open} onOpenChange={(next) => (next ? setOpen(true) : close())}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Show this person&apos;s Social Security number</DialogTitle>
+            <DialogTitle>
+              {isSelf
+                ? "Show your Social Security number"
+                : "Show this person's Social Security number"}
+            </DialogTitle>
             <DialogDescription>
-              This is recorded in their access log with your name, the time, and the
-              reason you give below. They can see that you looked.
+              {isSelf
+                ? "This is recorded in your own access log with the time and the reason you give below."
+                : "This is recorded in their access log with your name, the time, and the reason you give below. They can see that you looked."}
             </DialogDescription>
           </DialogHeader>
 

@@ -167,6 +167,7 @@ export function PersonalTab({
               employeeId={profile.header.employee_id}
               organizationId={profile.organization_id}
               capabilities={profile.capabilities}
+              viewer={profile.viewer}
             />
           ) : null}
 
