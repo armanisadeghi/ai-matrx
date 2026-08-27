@@ -244,31 +244,43 @@ export type HrOrgChartNode = {
   employment_id: string;
   employee_id: string;
   /**
-   * 🚨 ALWAYS PRESENT, EVEN WHEN THE IDENTITY IS WITHHELD. For a person who has
-   * opted out of the directory, the server puts the WORDED STATEMENT here — not
-   * an empty string, not a masked form of the name. §4.2's rule for the chart is
-   * *name withheld, structure intact*: never a masked field, and never a gap
-   * where a node should be, because a hole in a reporting tree is itself a
-   * disclosure — everyone can see exactly who is missing and where.
+   * 🚨 NULL IS THE SUPPRESSION SIGNAL, AND IT IS THE ONLY ONE. The door runs
+   * `hr._subject_display_name(employment_id, viewer)` — the same helper the
+   * directory and the audit reads use — so this is null exactly when THIS viewer
+   * may not have the name, and carries the real name otherwise.
+   *
+   * 🚨 DO NOT KEY RENDERING ON `opted_out`. That field is the PERSON'S PREFERENCE,
+   * not this viewer's outcome, so it is `true` for HR as well — and HR gets the
+   * name. Verified live: the same node arrives as `{display_name: null,
+   * opted_out: true}` for a peer and `{display_name: 'G2V-Priya Raman',
+   * opted_out: true}` for an hr_admin. Keying on the preference would blank the
+   * name for the very people entitled to see it.
    */
-  display_name: string;
+  display_name: string | null;
   /**
-   * 🚨 THE ONLY FLAG THE CLIENT NEEDS, AND THE SERVER OWNS THE SENTENCE.
-   * True when `display_name` is a disclosure statement rather than a name. The
-   * wording comes from `hr.employees.disclosure_existence_statements` (§1.3's one
-   * permitted disclosure), which is an ORG-CONFIGURABLE knob — so composing it
-   * server-side is what lets an employer reword it without a client release.
-   *
-   * What this flag changes here is the DOOR: a withheld node must not link to a
-   * profile the viewer cannot open. Everything else about the node — its
-   * position, its edges, its reports — renders exactly like every other, which is
-   * the whole point of the exception.
-   *
-   * Optional because a door that does not send it means "not withheld", which is
-   * every node today and stays correct once the chart half ships.
+   * The person's own directory preference. Present for every viewer, including
+   * those who can still see the name — see the warning above.
    */
-  name_withheld?: boolean;
+  opted_out?: boolean;
+  /**
+   * 🚨 THE ORG'S OWN WORDS, OR NULL — AND THE DOOR DELIBERATELY WRITES NO DEFAULT.
+   * It comes from `hr.employees.disclosure_existence_statements ->
+   * 'org_chart_opted_out' ->> 'statement'`, which ships empty, because composing a
+   * sentence on an employer's behalf is precisely what that knob exists to
+   * prevent. When it is null the CLIENT supplies its own fallback, styled so it
+   * cannot be mistaken for something the organization authored.
+   *
+   * Sent whenever the person opted out — so it too can arrive alongside a real
+   * name, and is only rendered when the name is actually withheld.
+   */
+  disclosure_statement?: string | null;
   job_title_id: string | null;
+  /**
+   * On a suppressed node these arrive only if the org listed them in the knob's
+   * `shows`, so they are the employer's disclosure choice rather than this
+   * component's. Verified live: with nothing listed, a peer gets null for title,
+   * department, location AND photo, while HR gets all of them.
+   */
   job_title: string | null;
   department_id: string | null;
   department: string | null;
@@ -279,12 +291,20 @@ export type HrOrgChartNode = {
   worker_class: HrWorkerClass | null;
   photo_file_id: string | null;
 };
-
-/** People with no manager. Rendered in an explicit tray — NEVER silently dropped. */
+/**
+ * People with no manager. Rendered in an explicit tray — NEVER silently dropped.
+ *
+ * 🚨 THE SAME SUPPRESSION RULE APPLIES HERE, in the door's own words: "unplaced
+ * people are people. The same rule, one array over." So `display_name` is null for
+ * a viewer who may not have it, and the tray must render the withheld treatment
+ * rather than an empty row.
+ */
 export type HrOrgChartUnplaced = {
   employment_id: string;
   employee_id: string;
-  display_name: string;
+  display_name: string | null;
+  opted_out?: boolean;
+  disclosure_statement?: string | null;
   reason: string;
 };
 

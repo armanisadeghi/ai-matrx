@@ -109,9 +109,23 @@ async function runFacets(
         .map((node) => node.manager_employment_id)
         .filter((id): id is string => Boolean(id)),
     );
+    /*
+      🚨 A MANAGER WHOSE NAME IS WITHHELD IS NOT AN OPTION IN THIS FILTER.
+      `display_name` is null when this viewer may not have the name (the chart
+      door suppresses it for anyone but HR and the subject), and offering the
+      withheld treatment as a pickable option would be worse than a blank label:
+      it lets a colleague narrow the directory to one hidden person's reports,
+      which turns "who is the hidden manager of these two" into a single click.
+      Their reports still appear in the list on their own account — this removes
+      an affordance, not a person.
+    */
     facets.managers = [...managerIds]
       .map((employmentId) => byEmployment.get(employmentId))
       .filter((node): node is NonNullable<typeof node> => Boolean(node))
+      .filter(
+        (node): node is typeof node & { display_name: string } =>
+          typeof node.display_name === "string" && node.display_name.length > 0,
+      )
       .map((node) => ({ value: node.employee_id, label: node.display_name }))
       .sort((a, b) => a.label.localeCompare(b.label));
   }

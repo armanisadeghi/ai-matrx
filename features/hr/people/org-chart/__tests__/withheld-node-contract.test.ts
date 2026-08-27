@@ -3,11 +3,14 @@
 // §4.2's chart exception, locked as a contract: NAME WITHHELD, STRUCTURE INTACT.
 //
 // A source-contract test in this directory's established idiom (see
-// `responsive-contract.test.ts`), and for the reason `layout.test.ts` gives for its
-// own existence: the interesting input is invisible to a test account. A withheld
-// node is produced by `hr_org_chart` projecting `name_withheld` for somebody who has
-// opted out, and until that door half ships there is no way to render one live — and
-// once it ships, the properties below are the ones a refactor would quietly drop.
+// `responsive-contract.test.ts`). The door is live now, and these lock the
+// properties a refactor would quietly drop.
+//
+// 🚨 THE FIRST TEST IS THE ONE THAT MATTERS MOST. `hr_org_chart` sends `opted_out`
+// as the PERSON'S PREFERENCE — true for HR as well — and `display_name` as null only
+// for a viewer who may not have the name. Keying suppression on `opted_out` would
+// blank the name for the very people entitled to see it, which is a bug that looks
+// like a privacy feature. Verified live before this was written.
 //
 // 🚨 THE BRANCH THESE TESTS GUARD IS THE SECURITY-RELEVANT ONE. A withheld node with
 // a profile link is a door the viewer cannot open, on a person who asked not to be
@@ -27,17 +30,38 @@ const types = readFileSync(
   "utf8",
 );
 
+const directory = readFileSync(
+  join(process.cwd(), "features/hr/people/directory/HrDirectory.tsx"),
+  "utf8",
+);
+
 const exporter = readFileSync(
   join(process.cwd(), "features/hr/people/org-chart/orgChartExport.ts"),
   "utf8",
 );
 
 describe("org chart — the withheld node (§4.2)", () => {
-  it("gives a withheld node NO profile door", () => {
-    // The call site chooses null rather than an href it knows will refuse.
-    expect(chart).toContain("node.name_withheld === true\n                          ? null");
-    // And the card renders a non-link branch rather than a disabled link.
+  it("keys suppression on the NAME, never on the person's preference", () => {
+    // `isWithheld` reads display_name only.
+    expect(chart).toContain('return node.display_name === null || node.display_name === "";');
+    // Nothing may branch rendering on `opted_out` — see the header.
+    expect(chart).not.toMatch(/node\.opted_out\s*===\s*true/);
+    expect(chart).not.toMatch(/opted_out\s*\?/);
+  });
+
+  it("gives a withheld node NO profile door, in the canvas and the tray", () => {
+    expect(chart).toContain("isWithheld(node)\n                          ? null");
     expect(chart).toContain("{props.href ? (");
+    // The tray renders a <span> for a withheld person rather than a Link.
+    expect(chart).toContain("const withheld = isWithheld(person);");
+  });
+
+  it("lets the org's own sentence win, and marks our fallback as not theirs", () => {
+    // The knob's statement, when present, is what renders.
+    expect(chart).toContain("if (statement) return { text: statement, authored: true };");
+    // Ours is flagged so the card can style it as system chrome, not prose.
+    expect(chart).toContain('return { text: "Name withheld", authored: false };');
+    expect(chart).toContain("props.statementAuthored ? (");
   });
 
   it("never interpolates a withheld name into the team-toggle label", () => {
@@ -56,8 +80,20 @@ describe("org chart — the withheld node (§4.2)", () => {
     expect(chart).not.toMatch(/\.filter\([^)]*name_withheld/);
   });
 
-  it("declares the projection as optional, so a door that omits it means 'not withheld'", () => {
-    expect(types).toContain("name_withheld?: boolean;");
+  it("types the door's real projection — nullable name, optional preference", () => {
+    // `display_name` must be nullable or every call site silently assumes a name.
+    expect(types).toContain("display_name: string | null;");
+    // The preference and the org's sentence both arrive, both optional.
+    expect(types).toContain("opted_out?: boolean;");
+    expect(types).toContain("disclosure_statement?: string | null;");
+  });
+
+  it("keeps a withheld manager out of the directory's manager filter", () => {
+    // Offering the withheld treatment as a pickable option would turn "who is the
+    // hidden manager of these two people" into one click.
+    expect(directory).toContain(
+      'typeof node.display_name === "string" && node.display_name.length > 0,',
+    );
   });
 
   it("exports the withheld statement rather than a name it does not have", () => {

@@ -67,6 +67,7 @@ import type {
   HrDenied,
   HrFailed,
   HrOrgChart as HrOrgChartData,
+  HrOrgChartUnplaced,
 } from "../../types";
 import { formatFullDate } from "../shared/HrStatusChip";
 import { HrWorkerClassChip } from "../shared/HrWorkerClassChip";
@@ -178,7 +179,9 @@ export function HrOrgChart() {
     nodes: nodes.map((node) => ({
       id: node.employment_id,
       managerId: node.manager_employment_id,
-      sortKey: node.display_name,
+      // A withheld node still sorts — by the label the viewer actually sees, so
+      // the ordering they observe is stable and explicable.
+      sortKey: node.display_name ?? withheldLabel(node).text,
     })),
     collapsed: effectiveCollapsed,
     dottedLines: showDotted
@@ -442,19 +445,39 @@ export function HrOrgChart() {
                           return next;
                         })
                       }
-                      name={node.display_name}
+                      name={node.display_name ?? withheldLabel(node).text}
                       jobTitle={node.job_title}
                       department={node.department}
                       workerClass={node.worker_class}
-                      nameWithheld={node.name_withheld === true}
+                      nameWithheld={isWithheld(node)}
+                      statementAuthored={withheldLabel(node).authored}
                       // No door for a withheld node — see `ChartNode.href`.
                       href={
-                        node.name_withheld === true
+                        isWithheld(node)
                           ? null
                           : hrEmployeeHref(employeeId, null, { org: orgRef })
                       }
+                      /*
+                        🚨 A WITHHELD NODE GETS NO DOORS AT ALL, AND THE REPORTS
+                        LINK IS THE ONE THAT LOOKED HARMLESS. It carries
+                        `managerEmployeeId` — a working handle to the person whose
+                        name we just withheld — so the node suppressed the name and
+                        then published the id needed to go and read it. Verified
+                        live: the id appeared in the href on a peer's chart.
+
+                        It was also a DEAD END for that viewer. The directory
+                        filtered by an opted-out manager returns 0 rows for a peer
+                        (measured), so a node promising "2 reports" led to a list
+                        showing none — the same confidently-wrong-count defect this
+                        lane has fixed twice elsewhere.
+
+                        The count still renders, as text: the structure is not the
+                        thing being hidden. Same treatment the as-of view already
+                        gets, for the same reason — no door where the door cannot
+                        answer.
+                      */
                       reportsHref={
-                        isAsOfView
+                        isAsOfView || isWithheld(node)
                           ? null
                           : hrPeopleHref({
                               org: orgRef,
@@ -516,6 +539,39 @@ function ChartEdges({ layout }: { layout: OrgLayout }) {
   );
 }
 
+/**
+ * 🚨 THE SUPPRESSION KEY IS THE NAME, NOT THE PREFERENCE. `hr_org_chart` sends
+ * `opted_out` as the PERSON'S CHOICE — it is `true` for HR too — while
+ * `display_name` is null exactly when THIS viewer may not have the name. Keying on
+ * `opted_out` would blank the name for the people entitled to see it; verified live,
+ * where one node arrives `{display_name: null, opted_out: true}` for a peer and
+ * `{display_name: 'G2V-Priya Raman', opted_out: true}` for an hr_admin.
+ */
+function isWithheld(node: {
+  display_name: string | null;
+}): boolean {
+  return node.display_name === null || node.display_name === "";
+}
+
+/**
+ * What a withheld node says, and whose words they are.
+ *
+ * 🚨 THE ORG'S SENTENCE WINS, AND OURS MUST NOT IMPERSONATE IT. `hr_org_chart`
+ * deliberately writes no default — composing a sentence on an employer's behalf is
+ * exactly what `disclosure_existence_statements` exists to prevent — so when the knob
+ * is empty the client supplies wording of its own. That fallback is rendered as
+ * SYSTEM TEXT (see `ChartNode`), never as prose, so nobody can mistake it for
+ * something their employer wrote about them.
+ */
+function withheldLabel(node: { disclosure_statement?: string | null }): {
+  text: string;
+  authored: boolean;
+} {
+  const statement = node.disclosure_statement?.trim();
+  if (statement) return { text: statement, authored: true };
+  return { text: "Name withheld", authored: false };
+}
+
 function ChartNode(props: {
   x: number;
   y: number;
@@ -539,6 +595,11 @@ function ChartNode(props: {
   reportsHref: string | null;
   /** True when `name` is a disclosure statement rather than somebody's name. */
   nameWithheld: boolean;
+  /**
+   * True when the statement is the ORGANIZATION'S OWN WORDS. False when it is this
+   * app's fallback, which must be styled so it cannot be read as the employer's.
+   */
+  statementAuthored: boolean;
   canFixCycle: boolean;
 }) {
   // The team-toggle label reads about a person, and there is no person to name.
@@ -583,9 +644,23 @@ function ChartNode(props: {
             the server's decision to make rather than this component's.
           */
           <div className="flex min-h-11 min-w-0 flex-1 flex-col justify-center lg:min-h-0">
-            <span className="text-[0.6875rem] italic leading-snug text-muted-foreground">
-              {props.name}
-            </span>
+            {props.statementAuthored ? (
+              /* The employer's own sentence, rendered as prose — their words. */
+              <span className="text-[0.6875rem] italic leading-snug text-muted-foreground">
+                {props.name}
+              </span>
+            ) : (
+              /*
+                🚨 OUR FALLBACK, AND IT MUST NOT LOOK LIKE A SENTENCE THE ORG WROTE.
+                The door refuses to compose one; this is the app filling a gap, so it
+                is rendered as UI chrome — a bordered, uppercase, tracked label — and
+                not as prose. A reader can tell at a glance that nobody at their
+                employer chose these words.
+              */
+              <span className="inline-flex w-fit items-center rounded-sm border border-dashed border-border px-1 py-px text-[0.5625rem] font-medium uppercase tracking-wide text-muted-foreground">
+                {props.name}
+              </span>
+            )}
             {[props.jobTitle, props.department].filter(Boolean).length > 0 ? (
               <span className="truncate text-[0.6875rem] font-normal text-muted-foreground">
                 {[props.jobTitle, props.department].filter(Boolean).join(" · ")}
@@ -664,12 +739,7 @@ function UnplacedTray({
   org,
   employmentToEmployee,
 }: {
-  unplaced: {
-    employment_id: string;
-    employee_id: string;
-    display_name: string;
-    reason: string;
-  }[];
+  unplaced: HrOrgChartUnplaced[];
   org: string | null;
   employmentToEmployee: Map<string, string>;
 }) {
@@ -687,23 +757,53 @@ function UnplacedTray({
         </span>
       </div>
       <ul className="mt-1.5 flex flex-wrap gap-1.5">
-        {unplaced.map((person) => (
-          <li key={person.employment_id}>
-            <Link
-              href={hrEmployeeHref(
-                person.employee_id ||
-                  employmentToEmployee.get(person.employment_id) ||
-                  "",
-                "job",
-                { org },
-              )}
-              className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground hover:bg-accent lg:min-h-0"
-              title={person.reason}
-            >
-              {person.display_name}
-            </Link>
-          </li>
-        ))}
+        {/*
+          🚨 THE TRAY OBEYS THE SAME RULE AS THE CANVAS — the door's own words:
+          "unplaced people are people. The same rule, one array over." A withheld
+          person still appears (omitting them is the disclosure this whole design
+          avoids) but carries no door, because the record behind it would refuse.
+        */}
+        {unplaced.map((person) => {
+          const withheld = isWithheld(person);
+          const label = person.display_name ?? withheldLabel(person).text;
+          const authored = withheldLabel(person).authored;
+
+          if (withheld) {
+            return (
+              <li key={person.employment_id}>
+                <span
+                  className={cn(
+                    "inline-flex min-h-11 items-center gap-1.5 rounded-md border border-dashed border-border bg-card px-2 py-1 lg:min-h-0",
+                    authored
+                      ? "text-xs italic text-muted-foreground"
+                      : "text-[0.5625rem] font-medium uppercase tracking-wide text-muted-foreground",
+                  )}
+                  title={person.reason}
+                >
+                  {label}
+                </span>
+              </li>
+            );
+          }
+
+          return (
+            <li key={person.employment_id}>
+              <Link
+                href={hrEmployeeHref(
+                  person.employee_id ||
+                    employmentToEmployee.get(person.employment_id) ||
+                    "",
+                  "job",
+                  { org },
+                )}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground hover:bg-accent lg:min-h-0"
+                title={person.reason}
+              >
+                {label}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
