@@ -18,7 +18,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, ShieldOff, ShieldX } from "lucide-react";
+import { KeyRound, ShieldCheck, ShieldOff, ShieldX } from "lucide-react";
 
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -63,6 +63,8 @@ export function DeviceFleetTable({
   onChanged: () => void;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
+  /** A re-issued code, shown once above the table. */
+  const [reissued, setReissued] = useState<{ deviceName: string; code: string } | null>(null);
 
   async function changeTrust(row: KioskDeviceRow, trustState: KioskTrustState) {
     const destructive = trustState === "revoked";
@@ -84,6 +86,20 @@ export function DeviceFleetTable({
         reason: destructive ? "Revoked from device management" : "Paused from device management",
       });
       toast.success(destructive ? "Tablet revoked" : "Tablet paused");
+      onChanged();
+    } catch (cause: unknown) {
+      toast.error(cause instanceof Error ? cause.message : "That did not go through.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function reissue(row: KioskDeviceRow) {
+    setBusyId(row.id);
+    try {
+      const issued = await source.reissuePairingCode({ deviceId: row.id });
+      // Shown once, exactly like a first pairing — only the hash is stored.
+      setReissued({ deviceName: row.deviceName, code: issued.code });
       onChanged();
     } catch (cause: unknown) {
       toast.error(cause instanceof Error ? cause.message : "That did not go through.");
@@ -215,6 +231,25 @@ export function DeviceFleetTable({
               Approve
             </Button>
           )}
+          {/*
+            🚨 The recovery lane for an ORPHANED tablet. A device that never claimed its code — or
+            whose secret was destroyed by the old kiosk client — can never authenticate again, and
+            without this its row is dead weight an administrator can only revoke. Re-issuing works
+            against the SAME row, so the tablet keeps its name, location and history.
+          */}
+          {row.pairingClaimedAt === null && row.trustState !== "revoked" && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busyId === row.id}
+              onClick={() => void reissue(row)}
+              className="gap-1"
+            >
+              <KeyRound className="size-4" />
+              New code
+            </Button>
+          )}
           {row.trustState === "trusted" && (
             <Button
               type="button"
@@ -247,5 +282,29 @@ export function DeviceFleetTable({
     },
   ];
 
-  return <MatrxDataTable data={rows} columns={columns} getRowId={(row) => row.id} />;
+  return (
+    <div className="flex flex-col gap-4">
+      {reissued && (
+        <div className="flex flex-wrap items-center gap-4 rounded-lg border border-border bg-card p-4">
+          <div className="flex flex-col">
+            <span className="text-sm text-muted-foreground">
+              New code for {reissued.deviceName} — type it into the tablet. Shown once.
+            </span>
+            <code className="text-2xl font-semibold tracking-widest text-foreground">
+              {reissued.code}
+            </code>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-[44px]"
+            onClick={() => setReissued(null)}
+          >
+            Done
+          </Button>
+        </div>
+      )}
+      <MatrxDataTable data={rows} columns={columns} getRowId={(row) => row.id} />
+    </div>
+  );
 }

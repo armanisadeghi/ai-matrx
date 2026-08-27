@@ -31,6 +31,7 @@ import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { webPunchSessionSegment } from "@/features/hr/time/api/idempotencyKey";
 
 import { PunchWidget } from "./PunchWidget";
+import { SetKioskPinCard } from "./SetKioskPinCard";
 
 export function MyClockSurface({
   mockCase,
@@ -72,14 +73,23 @@ export function MyClockSurface({
         requireEmployer={!employmentId}
       >
         {employmentId ? (
-          <PunchWidget
-            employmentId={employmentId}
-            /* Route 6 is the employee punching for themselves. */
-            source="web"
-            deviceOrSession={webPunchSessionSegment()}
-            mockCase={HR_MOCK_ENABLED ? mockCase : undefined}
-            punchMockCase={HR_MOCK_ENABLED ? punchMockCase : undefined}
-          />
+          <div className="flex flex-col gap-4">
+            <PunchWidget
+              employmentId={employmentId}
+              /* Route 6 is the employee punching for themselves. */
+              source="web"
+              deviceOrSession={webPunchSessionSegment()}
+              mockCase={HR_MOCK_ENABLED ? mockCase : undefined}
+              punchMockCase={HR_MOCK_ENABLED ? punchMockCase : undefined}
+            />
+            {/*
+              R3: `hr_set_employment_pin` had NO caller anywhere, so no employment could ever hold a
+              PIN and the whole kiosk chain was unusable however well a tablet was paired. The door's
+              own authority check is "an HR writer OR the subject themselves", so self-service is
+              sanctioned — and this is the one route an hourly employee already opens for their time.
+            */}
+            <SetKioskPinCard employmentId={employmentId} />
+          </div>
         ) : (
           /*
             An employer resolved, but no active employment spell today. This is not `blocked` — the

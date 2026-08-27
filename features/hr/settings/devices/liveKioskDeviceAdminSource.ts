@@ -221,6 +221,27 @@ export function liveKioskDeviceAdminSource(organizationId: string): KioskDeviceA
       };
     },
 
+    /**
+     * Re-issue a code against an EXISTING device row (`p_device_id`), rather than inserting a new
+     * one. The door skips its name/location checks on this path because the row already carries
+     * both — which is exactly what makes it the recovery lane for an orphaned tablet.
+     */
+    async reissuePairingCode(input): Promise<KioskPairingCode> {
+      const { data, error } = await supabase.rpc("hr_kiosk_pairing_code_create" as never, {
+        p_organization_id: organizationId,
+        p_device_name: null,
+        p_location_id: null,
+        p_device_id: input.deviceId,
+      } as never);
+      const envelope = unwrap(data, error, "We could not re-issue a pairing code.");
+      const code = str(envelope, "code");
+      const deviceId = str(envelope, "device_id");
+      if (!code || !deviceId) {
+        throw new Error("The pairing code did not come back. Nothing changed — try again.");
+      }
+      return { deviceId, code, expiresAt: str(envelope, "expires_at") ?? "" };
+    },
+
     async setTrust(input): Promise<KioskDeviceRow> {
       const { data, error } = await supabase.rpc("hr_kiosk_device_set_trust" as never, {
         p_device_id: input.deviceId,

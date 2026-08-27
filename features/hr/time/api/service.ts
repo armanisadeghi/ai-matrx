@@ -576,7 +576,14 @@ export function setEmploymentPin(
   employmentId: string,
   pin: string,
   opts?: HrRpcOptions,
-): Promise<{ granted?: boolean; employmentPinId?: string; auditId?: string }> {
+): Promise<{
+  granted?: boolean;
+  employmentPinId?: string;
+  auditId?: string;
+  /** 🚨 A refusal has NO `ok` key, so the transport passes it through as DATA and never throws. */
+  reason?: string;
+  detail?: string;
+}> {
   return callHrTimeRpc(
     "hr_set_employment_pin",
     { p_employment_id: employmentId, p_pin: pin },

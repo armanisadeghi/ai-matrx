@@ -62,6 +62,20 @@ export interface KioskDeviceAdminSource {
   listLocations: () => Promise<KioskLocation[]>;
   createPairingCode: (input: { deviceName: string; locationId: string }) => Promise<KioskPairingCode>;
   /**
+   * Re-issue a pairing code **for a device that already exists**, in place.
+   *
+   * 🚨 **THIS IS THE ONLY WAY BACK FOR AN ORPHANED TABLET.** A device whose secret is gone —
+   * `device_secret_hash = '!unpaired'`, which is what the old R1 client bug produced every time a
+   * pending tablet was refused — can never authenticate again, and its row is otherwise dead
+   * weight an administrator can only revoke. `hr_kiosk_pairing_code_create(org, null, null,
+   * p_device_id => id)` mints a fresh code against the same row, so the device keeps its name,
+   * location, trust history and id.
+   *
+   * Regenerating **replaces** the previous code and stops it working immediately (the function's
+   * own decision 2), so this is safe to offer repeatedly.
+   */
+  reissuePairingCode: (input: { deviceId: string }) => Promise<KioskPairingCode>;
+  /**
    * 🚨 Revocation must take effect on the device within one heartbeat (§3.3). The server is what
    * makes that true; this is only the administrator's half of it.
    */
@@ -158,6 +172,8 @@ export function mockKioskDeviceAdminSource(): KioskDeviceAdminSource {
         // stops being obvious, and the picker names the zone for exactly that reason.
         { id: "loc-reno", name: "Reno", tz: "America/Denver" },
       ]),
+    reissuePairingCode: ({ deviceId }) =>
+      Promise.resolve({ deviceId, code: "PAIR-REISSU", expiresAt: new Date(Date.now() + 9e5).toISOString() }),
     createPairingCode: ({ deviceName }) =>
       Promise.resolve({
         deviceId: `ddddddd1-0000-4000-8000-${Math.floor(Math.random() * 1e12)
