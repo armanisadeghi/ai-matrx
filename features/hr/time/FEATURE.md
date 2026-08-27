@@ -266,6 +266,8 @@ shaped so that page is one line: `<KioskDevicesPanel source={...} />`.
 
 ## Change Log
 
+- 2026-08-27 — Rule-snapshot evidence windows now reveal minimized, hidden, or off-screen state on
+  every open and surface render failures visibly instead of leaving an empty calculation panel.
 - 2026-08-27 — Recompute now refreshes every affected pay-period rollup from current intervals in
   the same transaction, reporting missing enrollment rows instead of leaving silent zero totals.
 - 2026-08-27 — Login-less kiosk employees remain valid subjects of self-attestation steps; routing

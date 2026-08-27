@@ -16,10 +16,12 @@
  * body (`features/window-panels/FEATURE.md` § A PANEL WRAPS THE CANONICAL COMPONENT).
  */
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { Component, createContext, useContext, useState, type ReactNode } from "react";
 
 import { DataRowWindow } from "@/components/official/matrx-data-table/DataRowWindow";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { revealWindow } from "@/lib/redux/slices/windowManagerSlice";
 import { cn } from "@/lib/utils";
 import { viewerTimeZone } from "../clock/stampedTime";
 
@@ -62,25 +64,109 @@ export function useRuleSnapshot(): RuleSnapshotApi {
   return api;
 }
 
+const WINDOW_ID = "hr-time-rule-snapshot";
+
 export function RuleSnapshotProvider({ children }: { children: ReactNode }) {
   const [request, setRequest] = useState<RuleSnapshotRequest | null>(null);
+  const dispatch = useAppDispatch();
+
+  /**
+   * 🚨 OPENING IS NOT ENOUGH — THE WINDOW MUST BE REVEALED (G2 T-4).
+   *
+   * `windowManagerSlice` says this in its own words: *"an open dispatch only updated overlay-slice
+   * data; if the window was minimized, dragged off-screen, or suppressed by `windowsHidden`, the
+   * user saw nothing."* That is precisely the reported symptom — the click handler fires, no error
+   * reaches the console, and no overlay appears — and it is **per-browser session state**, which is
+   * why one machine opened the drawer and another did not on the identical build.
+   *
+   * `revealWindow` is the sanctioned cure: it restores a minimized window, rescues one dragged
+   * off-screen, raises it to the top of the z-stack, and clears the global hide-all. It no-ops on a
+   * first open, where `registerWindow` already does the right thing. Dispatching it on every open
+   * costs nothing and removes the entire silent-failure class from this surface.
+   *
+   * An evidence drawer that "sometimes doesn't appear" is worse than one that never does: §0 law 2
+   * makes this the path from a wage figure to the rule behind it.
+   */
+  function open(next: RuleSnapshotRequest) {
+    setRequest(next);
+    if (typeof window !== "undefined") {
+      dispatch(
+        revealWindow({
+          id: WINDOW_ID,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+        }),
+      );
+    }
+  }
 
   return (
-    <RuleSnapshotContext.Provider
-      value={{ open: setRequest, close: () => setRequest(null) }}
-    >
+    <RuleSnapshotContext.Provider value={{ open, close: () => setRequest(null) }}>
       {children}
       <DataRowWindow
         isOpen={request !== null}
         onClose={() => setRequest(null)}
         title={request ? `How this was calculated — ${request.title}` : "How this was calculated"}
-        windowId="hr-time-rule-snapshot"
+        windowId={WINDOW_ID}
         width={760}
         height={620}
-        viewContent={request ? <RuleSnapshotBody request={request} /> : null}
+        viewContent={
+          request ? (
+            <SnapshotErrorBoundary>
+              <RuleSnapshotBody request={request} />
+            </SnapshotErrorBoundary>
+          ) : null
+        }
       />
     </RuleSnapshotContext.Provider>
   );
+}
+
+/**
+ * 🚨 A RECOVERY LAYER THAT SCREAMS (CLAUDE.md § Errors).
+ *
+ * The other candidate for "the drawer opens nothing" is a throw while preparing this body — an
+ * unexpected shape in a `calc` bag, an unparseable timestamp — which React answers by unmounting
+ * the subtree. Silently. This boundary turns that into a visible, reportable failure instead of an
+ * empty panel: the reader is told the evidence could not be rendered, and the error is logged with
+ * the request that produced it.
+ *
+ * It never swallows. It renders the message AND re-logs, because an evidence surface that quietly
+ * shows nothing is indistinguishable from one nobody wired.
+ */
+class SnapshotErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+
+  override componentDidCatch(error: Error) {
+    console.error("[hr-time] the rule-snapshot drawer failed to render", error);
+  }
+
+  override render() {
+    if (this.state.error) {
+      return (
+        <div className="h-full w-full space-y-2 overflow-y-auto bg-popover p-4 text-sm text-popover-foreground">
+          <h2 className="text-sm font-semibold">
+            This figure&rsquo;s calculation record could not be displayed
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            The record exists — the panel failed while rendering it. Tell an HR administrator, and
+            quote this: <span className="font-mono">{this.state.error.message}</span>
+          </p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 function RuleSnapshotBody({ request }: { request: RuleSnapshotRequest }) {
