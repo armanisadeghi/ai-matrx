@@ -51,7 +51,7 @@ import { listAttendanceExceptions } from "../exceptions/api";
 import type { AttendanceExceptionRow, Paged, PeriodGridRow } from "../api/types";
 import { PeriodStateChip, RowStateChip } from "../shared/badges";
 import { ExceptionsStrip } from "../shared/ExceptionsStrip";
-import { formatHours, formatVariance, pluralize } from "../shared/format";
+import { formatGridVariance, formatHours, pluralize } from "../shared/format";
 import { HrTimeReadState } from "../shared/RefusalNotice";
 import { RuleSnapshotProvider } from "../shared/RuleSnapshot";
 import { useHrMockCase, useHrTimeQuery } from "../shared/useHrTimeQuery";
@@ -357,16 +357,16 @@ function columns(
     },
     {
       id: "varianceMinutes",
-      accessorFn: (row) => row.varianceMinutes,
+      accessorFn: (row) => row.varianceHours,
       header: "Against schedule",
       // 🚨 The WORDS. Never the number, never a 0 standing in for "no schedule".
       cell: (row) => (
         <span
           className={
-            row.varianceMinutes === null ? "text-muted-foreground" : undefined
+            row.varianceState === "not_scheduled" ? "text-muted-foreground" : undefined
           }
         >
-          {formatVariance(row.varianceMinutes)}
+          {formatGridVariance(row.varianceHours, row.varianceState)}
         </span>
       ),
     },
@@ -476,7 +476,9 @@ function MobileRow({ row }: { row: PeriodGridRow }) {
       <p className="text-xs tabular-nums">
         {formatHours(row.totalHours)} hours · {formatHours(row.hoursOvertime)} overtime
       </p>
-      <p className="text-xs text-muted-foreground">{formatVariance(row.varianceMinutes)}</p>
+      <p className="text-xs text-muted-foreground">
+        {formatGridVariance(row.varianceHours, row.varianceState)}
+      </p>
       {row.openExceptionCount > 0 ? (
         <p className="text-xs text-amber-700 dark:text-amber-300">
           {pluralize(row.openExceptionCount, "open exception")}

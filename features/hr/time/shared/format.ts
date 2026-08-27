@@ -191,6 +191,29 @@ export function formatVariance(minutes: number | null): string {
     : `${abs} ${unit} under schedule`;
 }
 
+/**
+ * 🚨 GRID VARIANCE, IN HOURS, KEYED OFF THE SERVER'S OWN STATE (SPEC-TIME §6.2).
+ *
+ * `hr.timesheet_period_grid` emits `variance_hours` plus `variance_state` — its own answer to "is
+ * there a schedule to compare against?". Reading the words off that state rather than off a null
+ * means the client never has to interpret an absent number, and a real 0.00 variance (worked
+ * exactly to schedule) can never be confused with no schedule at all.
+ *
+ * The sign is explained in words for the same reason it is everywhere else in this lane: `-1.50`
+ * does not tell a manager whether the person was short or long.
+ */
+export function formatGridVariance(
+  hours: number | null | undefined,
+  state: "not_scheduled" | "scheduled" | null | undefined,
+): string {
+  if (state === "not_scheduled") return "Not scheduled";
+  if (hours === null || hours === undefined) return "Not scheduled";
+  if (hours === 0) return "Exactly on schedule";
+  const abs = Math.abs(hours).toFixed(2);
+  // scheduled MINUS worked: positive means they worked LESS than scheduled.
+  return hours > 0 ? `${abs} hours under schedule` : `${abs} hours over schedule`;
+}
+
 /** The signed rounding delta, spelled the way SPEC-TIME §10 spells it: `+1 minute`. */
 export function formatRoundingDelta(minutes: number): string {
   const abs = Math.abs(minutes);

@@ -786,8 +786,20 @@ export interface PeriodGridRow {
   /**
    * 🚨 Signed, and **`null` means "Not scheduled"** — never `0`, which would read as perfect
    * adherence (SPEC-TIME §6.2). The renderer must print the words, not the number.
+   *
+   * ⚠️ The GRID's door emits variance in HOURS (`variance_hours`) with an explicit
+   * `variance_state`, not in minutes — see {@link varianceHours}. This field stays for the
+   * exceptions lane, where `hr.attendance_exception.variance_minutes` genuinely is minutes.
    */
   varianceMinutes: number | null;
+  /** Variance in HOURS as the grid's door emits it. `null` when there is no schedule. */
+  varianceHours?: number | null;
+  /**
+   * 🚨 The server's OWN answer to "is there a schedule to compare against?" — `not_scheduled` or
+   * `scheduled`. Keying the words off this rather than off a null keeps the client from having to
+   * guess what an absent number means.
+   */
+  varianceState?: "not_scheduled" | "scheduled" | null;
   scheduledHours: number | null;
 }
 

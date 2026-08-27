@@ -86,7 +86,6 @@ function categories(v: unknown): Record<HoursCategory, number> {
   }
   return out;
 }
-
 /** `calc_ref` → the `CalcBlock` every figure's rule-snapshot door reads. */
 function calcBlock(v: unknown): CalcBlock {
   const c = obj(v);
@@ -817,38 +816,67 @@ export function fromLivePeriodGrid(payload: unknown): LivePeriodGrid {
   };
 }
 
+/**
+ * 🚨 EVERY FIELD HERE IS READ FROM A KEY THE DOOR ACTUALLY EMITS. Verified against
+ * `hr.timesheet_period_grid`'s row builder, 2026-08-27.
+ *
+ * This function previously read `raw.hours.overtime`, `raw.exceptions.byKind` and
+ * `raw.variance.minutes` — three sub-objects the door has never sent. Every one of them resolved
+ * to `undefined`, and the `??` chains behind them turned that into `0` or `{}`:
+ *
+ *   overtime      → 0.00 on the APPROVAL GRID, against a real 17.00
+ *   double time   → 0.00
+ *   by-category   → every category 0.00
+ *   exceptions/kind → {} (the strip's per-kind counts silently emptied)
+ *   variance      → null on every row, so every row read "Not scheduled"
+ *
+ * A confident zero on the screen managers approve pay from is this lane's cardinal sin: a reader
+ * cannot tell it from the truth, and it is wrong in the direction that costs an employee money.
+ * The comment eight lines below warned about exactly this substitution while the code above it
+ * committed it — which is why these reads are now written against a verified key list and the
+ * fabricated fallbacks are gone rather than reordered.
+ *
+ * Where the door genuinely sends nothing (department, location and manager NAMES — it emits only
+ * ids), the field stays `null` and renders as absent. Absent must render absent.
+ */
 function gridRow(raw: Live): PeriodGridRow {
   const employee = obj(raw.employee);
-  const hours = obj(raw.hours);
-  const exceptions = obj(raw.exceptions);
-  const counts = obj(exceptions.byKind ?? raw.openExceptionCountsByKind);
 
   return {
-    employmentId: str(raw.employmentId ?? raw.id),
-    employeeDisplayName:
-      str(employee.displayName ?? raw.employeeDisplayName) || "This employee",
-    employeeNumber: nstr(employee.employeeNumber ?? raw.employeeNumber),
+    employmentId: str(raw.employmentId),
+    employeeDisplayName: str(employee.displayName) || "This employee",
+    employeeNumber: nstr(employee.employeeNumber),
+    // ⚠️ The door emits location_id / department_id / manager_employment_id, not names. Owed.
     departmentName: nstr(raw.departmentName),
-    locationName: nstr(raw.locationName ?? raw.workLocationName),
+    locationName: nstr(raw.locationName),
     managerName: nstr(raw.managerName),
-    state: str(raw.rowState ?? raw.state, "open") as PayPeriodEmploymentState,
-    openStepId: nstr(raw.openStepId ?? obj(raw.workflow).stepId),
-    totalHours: num(hours.total ?? raw.totalHours),
-    hoursByCategory: categories(hours.byCategory ?? raw.hoursByCategory),
-    hoursOvertime: num(hours.overtime ?? raw.hoursOvertime),
-    hoursDoubletime: num(hours.doubletime ?? raw.hoursDoubletime),
-    premiumLineCount: num(raw.premiumLineCount ?? raw.premiumLines),
-    openExceptionCountsByKind: counts as PeriodGridRow["openExceptionCountsByKind"],
-    openExceptionCount: num(exceptions.open ?? raw.openExceptionCount),
-    hasDispute: bool(raw.hasDispute ?? raw.disputed),
-    hasAutoClosedPunch: bool(raw.hasAutoClosedPunch ?? raw.autoClosedPresent),
+    state: str(raw.rowState, "open") as PayPeriodEmploymentState,
+    openStepId: nstr(raw.openStepId),
+    totalHours: num(raw.totalHours),
+    hoursByCategory: categories(raw.totalsByCategory),
+    // THE FIX: `ot_hours` / `dt_hours`, camelized. Not `hours.overtime`, which does not exist.
+    hoursOvertime: num(raw.otHours),
+    hoursDoubletime: num(raw.dtHours),
+    premiumLineCount: num(raw.premiumLineCount),
+    openExceptionCountsByKind: obj(
+      raw.openExceptionsByKind,
+    ) as PeriodGridRow["openExceptionCountsByKind"],
+    openExceptionCount: num(raw.openExceptionCount),
+    hasDispute: bool(raw.hasDispute),
+    hasAutoClosedPunch: bool(raw.autoClosedPresent),
     recomputedSinceApproval: bool(raw.recomputedSinceApproval),
     /*
-     * 🚨 `null` stays `null` and renders as "Not scheduled" (§6.2). A `?? 0` here would turn "no
-     * schedule to compare against" into "perfect adherence" — the exact substitution the spec
-     * singles out, made invisible inside an adapter.
+     * 🚨 VARIANCE IS SERVED IN HOURS, WITH THE SERVER'S OWN "is there a schedule?" ANSWER.
+     * `variance_minutes` is not a key on this row and never was. It is carried through unconverted
+     * — a ×60 in an adapter is one more place for a wage-adjacent figure to drift — and
+     * `variance_state` decides the words, so the client never has to interpret an absent number.
      */
-    varianceMinutes: nnum(raw.varianceMinutes ?? obj(raw.variance).minutes),
-    scheduledHours: nnum(raw.scheduledHours ?? obj(raw.variance).scheduledHours),
+    varianceMinutes: null,
+    varianceHours: nnum(raw.varianceHours),
+    varianceState:
+      raw.varianceState === "not_scheduled" || raw.varianceState === "scheduled"
+        ? raw.varianceState
+        : null,
+    scheduledHours: nnum(raw.scheduledHours),
   };
 }
