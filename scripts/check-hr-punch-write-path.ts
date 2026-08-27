@@ -97,6 +97,9 @@ const EXPECTED_CHECKS = [
   // persist door plus the premium writer, and nothing may ever DELETE a superseded row.
   "only_sanctioned_interval_writers",
   "no_interval_deleters",
+  // The client door surface (hr_l3_15). `hr` is not PostgREST-exposed, so every client-called HR
+  // RPC is a public.hr_* wrapper; this check fences their shape and publishes the live inventory.
+  "client_doors_well_formed",
 ] as const;
 
 interface ConformanceRow {
