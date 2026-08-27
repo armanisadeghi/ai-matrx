@@ -287,6 +287,9 @@ to unclassified) or, above 70% unclassified share, the intake wizard.
   day vs the previous 28 (`resolvePeriods` with `range:"28d"`, `compare:"prev"`)
   — never the user's URL range, so findings and dedupe keys don't churn with
   view state. One sweep per site per browser session.
+- **The three analytics reads are serialized.** They scan overlapping GSC
+  windows; concurrent execution can push `gsc_perf_class_movers` past the
+  PostgREST statement timeout even when every read is healthy in isolation.
 - Producer rules: `filterUndecidedKeys` first (dismissal is durable), one
   assist per finding kind per site, 14-day expiry, conservative thresholds
   (constants at the top of the producer). Dedupe key =
@@ -897,6 +900,9 @@ KeywordMetrics.tsx`), which gained an optional `tooltipLabel` prop so a
   Verified live at 1280px and 375px (mobile) against the 8 real sites with
   28-day data — sparklines render distinct per-site shapes, trend pills flip
   color correctly, no console errors.
+- 2026-08-27 — Serialized the background assist sweep's three overlapping
+  analytics RPCs; one read no longer starves `gsc_perf_class_movers` into an
+  otherwise-unreproducible PostgREST statement timeout.
 - 2026-08-24 — Added the partial `(site_id, date)` GSC coverage index used by
   `gsc_ingestion_health`; large-site health reads no longer sort/aggregate the
   full multi-profile corpus through the wrong index.

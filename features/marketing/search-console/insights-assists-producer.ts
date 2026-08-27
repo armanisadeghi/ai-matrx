@@ -72,6 +72,16 @@ const CLASSIFY_MIN_SHARE = 0.3;
 const CLASSIFY_INTAKE_SHARE = 0.7;
 const EXPIRES_MS = 14 * 24 * 60 * 60 * 1000;
 
+export async function settleGscAssistRead<T>(
+  read: () => Promise<T>,
+): Promise<PromiseSettledResult<T>> {
+  try {
+    return { status: "fulfilled", value: await read() };
+  } catch (reason) {
+    return { status: "rejected", reason };
+  }
+}
+
 /** Is this pending assist one of ours, addressed to this site? (Site scope
  * rides the dedupe key — the row's entity is the page, not the site.) */
 export function isGscInsightAssist(assist: Assist, siteId: string): boolean {
@@ -268,11 +278,18 @@ export async function produceGscInsightAssists(args: {
   );
   const expiresAt = new Date(Date.now() + EXPIRES_MS).toISOString();
 
-  const [movers, ctrGap, classSummary] = await Promise.allSettled([
+  // These analytics RPCs scan overlapping GSC windows. Keep them serialized:
+  // concurrent execution can push the class-movers query past PostgREST's
+  // statement timeout even though each query is healthy in isolation.
+  const movers = await settleGscAssistRead(() =>
     getGscClassMovers(siteId, periods, "page", "money", "loss"),
+  );
+  const ctrGap = await settleGscAssistRead(() =>
     getGscCtrGap(siteId, periods, "page", CTR_GAP_MIN_IMPRESSIONS),
+  );
+  const classSummary = await settleGscAssistRead(() =>
     getGscClassSummary(siteId, periods),
-  ]);
+  );
 
   const candidates: EmitAssistInput[] = [];
   if (movers.status === "fulfilled") {
