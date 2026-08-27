@@ -266,6 +266,10 @@ shaped so that page is one line: `<KioskDevicesPanel source={...} />`.
 
 ## Change Log
 
+- 2026-08-27 — Login-less kiosk employees remain valid subjects of self-attestation steps; routing
+  failures are retained and reported instead of being silently counted as zero opened instances.
+- 2026-08-27 — Historical time-read doors now evaluate the reader's current authority while
+  preserving record-date authority for writes and the employee self-read lane.
 - 2026-08-27 — Pending kiosks preserve their one-time device secret after proving possession;
   authenticate and heartbeat now distinguish approval-waiting, untrusted, and unauthenticated
   states without weakening the uniform wrong-secret refusal.
