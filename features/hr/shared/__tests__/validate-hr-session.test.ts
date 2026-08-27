@@ -1,5 +1,7 @@
 import { validateHrBrowserSession } from "../../service";
 import { supabase } from "@/utils/supabase/client";
+import { AuthSessionMissingError } from "@supabase/auth-js";
+import type { Session, User } from "@supabase/supabase-js";
 
 jest.mock("@/utils/supabase/client", () => ({
   supabase: { auth: { getSession: jest.fn(), getUser: jest.fn() } },
@@ -8,6 +10,28 @@ jest.mock("@/utils/supabase/client", () => ({
 const getSession = jest.mocked(supabase.auth.getSession);
 const getUser = jest.mocked(supabase.auth.getUser);
 
+const user: User = {
+  id: "user-1",
+  aud: "authenticated",
+  role: "authenticated",
+  email: "person@example.com",
+  app_metadata: {},
+  user_metadata: {},
+  identities: [],
+  created_at: "2026-08-27T00:00:00Z",
+};
+
+function session(accessToken: string): Session {
+  return {
+    access_token: accessToken,
+    token_type: "bearer",
+    expires_in: 3600,
+    expires_at: 1_788_000_000,
+    refresh_token: "refresh-token",
+    user,
+  };
+}
+
 describe("validateHrBrowserSession", () => {
   beforeEach(() => {
     getSession.mockReset();
@@ -15,7 +39,7 @@ describe("validateHrBrowserSession", () => {
   });
 
   it("refuses before any HR RPC when the browser has no session", async () => {
-    getSession.mockResolvedValue({ data: { session: null } });
+    getSession.mockResolvedValue({ data: { session: null }, error: null });
 
     await expect(validateHrBrowserSession()).resolves.toMatchObject({
       ok: false,
@@ -27,11 +51,12 @@ describe("validateHrBrowserSession", () => {
 
   it("refuses a locally cached session that server validation rejects", async () => {
     getSession.mockResolvedValue({
-      data: { session: { access_token: "expired" } },
+      data: { session: session("expired") },
+      error: null,
     });
     getUser.mockResolvedValue({
       data: { user: null },
-      error: { name: "AuthSessionMissingError" },
+      error: new AuthSessionMissingError(),
     });
 
     await expect(validateHrBrowserSession()).resolves.toMatchObject({
@@ -43,10 +68,11 @@ describe("validateHrBrowserSession", () => {
 
   it("opens the HR context boundary only for a server-validated user", async () => {
     getSession.mockResolvedValue({
-      data: { session: { access_token: "valid" } },
+      data: { session: session("valid") },
+      error: null,
     });
     getUser.mockResolvedValue({
-      data: { user: { id: "user-1" } },
+      data: { user },
       error: null,
     });
 
