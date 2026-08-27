@@ -75,6 +75,9 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-08-27` — Public snapshot writes now resolve materialized `{ artifactId }` pointers to the
+  canonical `canvas_items` payload before publishing, while renderers share the same validated
+  pointer reader and fail loudly when content cannot be resolved.
 - `2026-08-27` — Chat materialization now reads canonical persisted message content before any
   canvas write, preserving the row-owned tool graph across iteration-reservation races.
 - `2026-08-25` — The Working document canvas inherits the responsive `DocumentsWorkspace`: its document list is a full-width mobile state and selecting a document returns to the full-width editor, while desktop keeps the side-by-side rail.

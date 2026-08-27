@@ -4,7 +4,10 @@ import { Suspense } from "react";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import type { FlashcardsBlockData } from "@/types/python-generated/stream-events";
 import { artifactDedupKey } from "../artifact-renderers";
-import { isMaterializedArtifactId } from "../artifactId";
+import {
+  isMaterializedArtifactId,
+  readArtifactPointerId,
+} from "../artifactId";
 import FlashcardsBlock from "@/components/mardown-display/blocks/flashcards/FlashcardsBlock";
 import { CanvasFlashcardsView as CanvasFlashcardsView } from "@/features/flashcards/components/CanvasFlashcardsView";
 import type { ArtifactRendererProps } from "../types";
@@ -19,20 +22,11 @@ export default function FlashcardsArtifact({
   messageId,
   blockIndex,
 }: ArtifactRendererProps) {
-  const pointerArtifactId =
-    data &&
-    typeof data === "object" &&
-    data !== null &&
-    "artifactId" in data &&
-    typeof (data as { artifactId?: string }).artifactId === "string"
-      ? (data as { artifactId: string }).artifactId
-      : undefined;
+  const pointerArtifactId = readArtifactPointerId(data);
 
   const resolvedArtifactId = isMaterializedArtifactId(artifactId)
     ? artifactId
-    : isMaterializedArtifactId(pointerArtifactId)
-      ? pointerArtifactId
-      : artifactId;
+    : (pointerArtifactId ?? artifactId);
 
   const content = typeof data === "string" ? data : raw;
 

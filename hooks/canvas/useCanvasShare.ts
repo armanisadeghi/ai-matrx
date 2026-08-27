@@ -6,6 +6,7 @@ import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectDisplayName } from "@/lib/redux/slices/userSlice";
 import { createShareLink } from "@/utils/permissions/shareLinks";
+import { resolveArtifactData } from "@/features/canvas/artifact-types/resolveArtifactData";
 import type {
   CreateShareRequest,
   CreateShareResponse,
@@ -23,6 +24,13 @@ export function useCanvasShare() {
     mutationFn: async (request: CreateShareRequest) => {
       const userId = requireUserId();
 
+      // A materialized artifact carries only a POINTER (`{ artifactId }`) in
+      // the canvas slice — the body lives in its `canvas_items` row. The
+      // snapshot lane copies content into `shared_canvas_items`, where no
+      // pointer can be resolved, so resolve it to real content first or the
+      // public page renders nothing.
+      const canvasData = await resolveArtifactData(request.canvas_data);
+
       // 1) Publish the snapshot — a content write, not the share itself.
       // Map legacy "unlisted" to canonical platform.visibility "link".
       const visibility =
@@ -34,7 +42,7 @@ export function useCanvasShare() {
         title: request.title,
         description: request.description,
         canvas_type: request.canvas_type,
-        canvas_data: request.canvas_data,
+        canvas_data: canvasData,
         thumbnail_url: request.thumbnail_url ?? null,
         visibility,
         allow_remixes: request.allow_remixes !== false,

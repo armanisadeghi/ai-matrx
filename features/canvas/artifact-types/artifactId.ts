@@ -25,3 +25,24 @@ const UUID_RE =
 export function isMaterializedArtifactId(id?: string | null): boolean {
   return typeof id === "string" && UUID_RE.test(id.trim());
 }
+
+/**
+ * readArtifactPointerId — the pointer-shape reader.
+ *
+ * A canvas item whose artifact has been MATERIALIZED stores only a POINTER in
+ * `content.data`: `{ artifactId }`. The body lives in the `canvas_items` row.
+ * Anything that consumes `content.data` (render, share, export) must recognise
+ * that shape instead of treating the pointer as the content — publishing a
+ * pointer produces a page with nothing in it.
+ *
+ * Returns the materialized artifact UUID, or undefined when `data` is real
+ * content (string, or an object that is not a pointer).
+ */
+export function readArtifactPointerId(data: unknown): string | undefined {
+  if (typeof data !== "object" || data === null) return undefined;
+  if (!("artifactId" in data)) return undefined;
+  const id = (data as { artifactId?: unknown }).artifactId;
+  return isMaterializedArtifactId(typeof id === "string" ? id : null)
+    ? (id as string)
+    : undefined;
+}

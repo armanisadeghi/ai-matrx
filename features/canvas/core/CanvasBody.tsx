@@ -24,6 +24,7 @@ import dynamic from "next/dynamic";
 import { isScratchScope } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.slice";
 import type { CanvasContent } from "@/features/canvas/redux/canvasSlice";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
+import { readArtifactPointerId } from "@/features/canvas/artifact-types/artifactId";
 import {
   ArtifactRender,
   hasArtifactRenderer,
@@ -170,14 +171,7 @@ function renderContent(content: CanvasContent): React.ReactNode {
           canvasItemId?: string;
         }
       | undefined;
-    const artifactId =
-      meta?.canvasItemId ??
-      (typeof data === "object" &&
-      data !== null &&
-      "artifactId" in data &&
-      typeof (data as { artifactId?: string }).artifactId === "string"
-        ? (data as { artifactId: string }).artifactId
-        : undefined);
+    const artifactId = meta?.canvasItemId ?? readArtifactPointerId(data);
     return (
       <div className="h-full">
         <ArtifactRender
