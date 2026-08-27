@@ -33,6 +33,7 @@ import {
   openInNewTab,
 } from "@/utils/navigation/should-open-in-new-tab";
 import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
+import { agentHref as agentRouteHref } from "../agentPaths";
 import type { AgentBrowseRow } from "../types";
 
 interface Props {
@@ -97,7 +98,7 @@ export function AgentBrowseCards({
             onClick={(e) => {
               // Cmd/ctrl-click → Run in a new tab (classic card behaviour).
               if (shouldOpenInNewTab(e)) {
-                openInNewTab(`/agents/${row.id}/run`);
+                openInNewTab(agentRouteHref(row, "/run"));
                 return;
               }
               onOpenActionModal(row);
@@ -204,16 +205,16 @@ export function AgentBrowseCards({
 
             <div className="mt-auto flex items-center gap-1 border-t border-border px-2 py-1">
               <CardAction
-                href={`/agents/${row.id}/run`}
+                href={agentRouteHref(row, "/run")}
                 icon={Play}
                 label="Run"
               />
               <CardAction
-                href={`/agents/${row.id}/build`}
+                href={agentRouteHref(row, "/build")}
                 icon={Pencil}
                 label="Edit"
               />
-              <CardAction href={`/agents/${row.id}`} icon={Eye} label="View" />
+              <CardAction href={agentRouteHref(row)} icon={Eye} label="View" />
             </div>
           </div>
         );

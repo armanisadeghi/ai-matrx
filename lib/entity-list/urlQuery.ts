@@ -23,10 +23,7 @@
 //   * An unparseable or unknown value falls back to the default rather than
 //     throwing. A hand-edited or stale URL must never break the page.
 
-import {
-  commitUrlParams,
-  type UrlHistoryMode,
-} from "@/lib/url-state/useUrlState";
+import type { UrlHistoryMode } from "@/lib/url-state/useUrlState";
 import {
   makeScope,
   scopeKey,
@@ -54,9 +51,10 @@ const SCOPE_KINDS: ListScopeKind[] = [
   "shared",
   "industry",
   "public",
+  "system",
 ];
 
-/** `mine` | `shared` | `orgs` | `orgs:<uuid>` | `industry:<uuid>`. */
+/** `mine` | `shared` | `orgs` | `orgs:<uuid>` | `industry:<uuid>` | `system`. */
 function parseScope(raw: string | null, fallback: ListScope): ListScope {
   if (!raw) return fallback;
   const [kind, narrowId] = raw.split(":", 2);
@@ -185,5 +183,3 @@ export function historyModeFor(
     JSON.stringify(previous.filters) === JSON.stringify(next.filters);
   return onlySearchChanged ? "replace" : "push";
 }
-
-export { commitUrlParams };

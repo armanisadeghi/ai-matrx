@@ -20,4 +20,11 @@ describe("task lifecycle responsive contract", () => {
     expect(dueDatePicker).toContain("h-8 max-lg:h-11");
     expect(dueDatePicker).toContain("h-6 max-lg:h-11");
   });
+
+  it("keeps the narrow-pane view toggle clear of quick-add actions", () => {
+    const listPane = source("TaskListPane.tsx");
+
+    expect(listPane).toContain("flex flex-wrap items-center gap-2");
+    expect(listPane).toContain("order-last flex basis-full gap-1 min-w-0");
+  });
 });

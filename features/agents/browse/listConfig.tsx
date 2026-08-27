@@ -26,6 +26,7 @@ import {
   saveAgentRowEdits,
 } from "./service";
 import { useAgentRowActions } from "./useAgentRowActions";
+import { agentHref } from "./agentPaths";
 import {
   AGENT_LIST_SCOPES,
   type AgentBrowseRow,
@@ -177,10 +178,15 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
   prefsVersion: 4,
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
-  // THE DOOR LAW: the Name cell is a real anchor to /agents/[id], resolved from
-  // the entity registry. Row click still opens the action chooser (Run / Build /
-  // View) — the anchor is the addition that makes cmd-click and new tab work.
-  door: { token: "agent" },
+  // THE DOOR LAW: the Name cell is a real anchor to the agent's own page. Row
+  // click still opens the action chooser (Run / Build / View) — the anchor is
+  // the addition that makes cmd-click and new tab work.
+  //
+  // `hrefFor` rather than the registry `token` because this list carries TWO
+  // shells: a user agent opens at /agents/[id], a builtin (the System scope)
+  // under the admin System Agents tree. Which one is a property of the ROW, and
+  // ./agentPaths is the single place that decides it.
+  door: { column: "name", hrefFor: (row) => agentHref(row) },
   useRowActions: useAgentListRowActions,
   favorite: {
     isFavorite: (row) => row.is_favorite,

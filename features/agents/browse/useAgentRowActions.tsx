@@ -28,6 +28,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { buildAgentMenu } from "./agentActionRegistry";
+import { agentHref, isSystemAgentRow } from "./agentPaths";
 import type { AgentBrowseRow } from "./types";
 
 export interface AgentRowActionsHost {
@@ -165,16 +166,19 @@ export function useAgentRowActions({
     [saveField],
   );
 
+  // Every destination is resolved from the ROW (./agentPaths), never from the
+  // page: a builtin opens in the admin System Agents shell whichever list the
+  // user reached it from.
   const runAgent = useCallback(
-    (agent: AgentBrowseRow) => router.push(`/agents/${agent.id}/run`),
+    (agent: AgentBrowseRow) => router.push(agentHref(agent, "/run")),
     [router],
   );
   const editAgent = useCallback(
-    (agent: AgentBrowseRow) => router.push(`/agents/${agent.id}/build`),
+    (agent: AgentBrowseRow) => router.push(agentHref(agent, "/build")),
     [router],
   );
   const viewAgent = useCallback(
-    (agent: AgentBrowseRow) => router.push(`/agents/${agent.id}`),
+    (agent: AgentBrowseRow) => router.push(agentHref(agent)),
     [router],
   );
 
@@ -186,7 +190,17 @@ export function useAgentRowActions({
         // repo threw it away — so the user made a copy and had no way to reach
         // it but to go hunting in the list. The door is the whole point of the
         // toast.
-        const newAgentId = await dispatch(duplicateAgent(agent.id)).unwrap();
+        // Duplicating a builtin produces a builtin — a system agent copied
+        // into someone's personal corpus is a silent demotion, and the admin
+        // who clicked Duplicate on the System tab meant "another one of these".
+        // The RPC re-checks is_super_admin() and rejects if the caller cannot.
+        const newAgentId = await dispatch(
+          duplicateAgent(
+            isSystemAgentRow(agent)
+              ? { agentId: agent.id, asSystem: true }
+              : agent.id,
+          ),
+        ).unwrap();
         toast.success(`Duplicated "${agent.name}"`, {
           action: toastDoor("agent", newAgentId),
         });
@@ -239,7 +253,8 @@ export function useAgentRowActions({
         onEdit: () => editAgent(agent),
         onView: () => viewAgent(agent),
         onPeek: () => setPeekAgentId(agent.id),
-        onVersions: () => router.push(`/agents/${agent.id}/v/${agent.version}`),
+        onVersions: () =>
+          router.push(agentHref(agent, `/v/${agent.version}`)),
         onEditDetails: () =>
           dispatch(
             openOverlay({
@@ -266,7 +281,7 @@ export function useAgentRowActions({
           ),
 
         onCopyLink: () => {
-          const url = `${window.location.origin}/agents/${agent.id}/run`;
+          const url = `${window.location.origin}${agentHref(agent, "/run")}`;
           void navigator.clipboard.writeText(url);
           toast.success("Link copied");
         },

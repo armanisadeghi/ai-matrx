@@ -2,13 +2,17 @@
 
 // lib/entity-list/components/EntityScopeTabs.tsx
 //
-// THE VIEW LAW made visible: the fixed five destinations, each a different
+// THE VIEW LAW made visible: the fixed destinations, each a different
 // question, each with a TRUE server-side count.
 //
-// The surface declares WHICH of the five it supports (`scopes` prop) — it
-// cannot invent a sixth, and a scope the user learns here means the same thing
-// on every other list page. Agents declares four; Industry appears the moment
-// a feature grows an industry grant table.
+// The surface declares WHICH of them it supports (`scopes` prop) — it cannot
+// invent one of its own, and a scope the user learns here means the same thing
+// on every other list page. Agents declares four, plus System for a Matrx
+// admin; Industry appears the moment a feature grows an industry grant table.
+//
+// A scope may be CONDITIONAL on who is looking (System is admin-only). That
+// decision belongs to the page, which can read auth state — it passes the
+// resolved list down. This component never gates anything itself.
 //
 // Why "My Orgs" (and Industry) is ONE tab with a dropdown rather than a chip
 // per entity, the shape components/official/ListScopeSwitcher uses today: a
@@ -28,6 +32,7 @@ import {
   Users2,
   Globe,
   Factory,
+  Landmark,
   ChevronDown,
   Check,
 } from "lucide-react";
@@ -83,6 +88,11 @@ const SCOPE_META: Record<
     title: "Published for industries your organizations have attached",
   },
   public: { label: "Public", icon: Globe, title: "Published platform-wide" },
+  system: {
+    label: "System",
+    icon: Landmark,
+    title: "The platform's own records — visible to Matrx admins",
+  },
 };
 
 function CountPill({ n, active }: { n: number; active: boolean }) {

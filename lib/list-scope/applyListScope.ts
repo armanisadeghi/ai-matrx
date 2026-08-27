@@ -44,6 +44,9 @@ export interface ApplyListScopeOpts {
  *                attachment join).
  * - "public"   → throws (each feature names its own published-visibility
  *                predicate; there is no universal column).
+ * - "system"   → throws (the platform corpus is admin-gated, and the gate has
+ *                to be re-checked server-side; a client `.eq()` cannot be the
+ *                authorization for it).
  */
 export function applyListScope<Q extends EqCapable<Q>>(
   query: Q,
@@ -77,6 +80,13 @@ export function applyListScope<Q extends EqCapable<Q>>(
         "[list-scope] applyListScope does not support 'industry' — reach is " +
           "'record granted to industry I' AND 'one of my orgs has attached I', " +
           "which is two joins. Use this feature's *_list_scoped RPC.",
+      );
+    case "system":
+      throw new Error(
+        "[list-scope] applyListScope does not support 'system' — the platform " +
+          "corpus is admin-gated, and a client-side .eq() is not an " +
+          "authorization check. Use this feature's *_list_scoped RPC, which " +
+          "re-verifies public.is_platform_admin() server-side.",
       );
     case "public":
       throw new Error(

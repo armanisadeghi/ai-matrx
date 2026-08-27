@@ -15,14 +15,14 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { Database, Json } from "@/types/database.types";
-import type {
-  AgentBrowseRow,
-  AgentRowEdit,
-  BrowseFacets,
-  BrowseQuery,
-  BrowseScopeCounts,
-} from "./types";
-import { EMPTY_SCOPE_COUNTS, scopeOrgId } from "./types";
+import type { AgentBrowseRow, AgentRowEdit } from "./types";
+import {
+  EMPTY_SCOPE_COUNTS,
+  type EntityFacets as BrowseFacets,
+  type EntityListQuery as BrowseQuery,
+  type EntityScopeCounts as BrowseScopeCounts,
+} from "@/lib/entity-list/types";
+import { scopeOrgId } from "@/lib/list-scope/types";
 
 export interface AgentBrowsePage {
   rows: AgentBrowseRow[];

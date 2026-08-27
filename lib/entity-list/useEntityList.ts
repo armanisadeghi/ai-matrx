@@ -13,7 +13,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
-import { useUrlSearchParams } from "@/lib/url-state/useUrlState";
+import {
+  commitUrlParams,
+  useUrlSearchParams,
+} from "@/lib/url-state/useUrlState";
 import type { EntityListController, EntityListService } from "./config";
 import {
   DEFAULT_ENTITY_LIST_QUERY,
@@ -24,12 +27,7 @@ import {
   type EntityListQuery,
   type EntityScopeCounts,
 } from "./types";
-import {
-  commitUrlParams,
-  historyModeFor,
-  queryToParamPatch,
-  readQueryFromParams,
-} from "./urlQuery";
+import { historyModeFor, queryToParamPatch, readQueryFromParams } from "./urlQuery";
 import type { ListScope } from "@/lib/list-scope/types";
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -51,6 +49,16 @@ export interface UseEntityListArgs<TRow> {
    * buried in SQL that the user can never see or undo.
    */
   defaultFilters?: EntityFilters;
+  /**
+   * Where this surface STARTS, when that is not "Mine". A page mounted inside
+   * a shell that is already about one scope (the admin System Agents route is
+   * only ever about the platform corpus) opens there instead of showing the
+   * user an empty Mine tab and asking them to find the right one.
+   *
+   * This is the starting point, never a cage: the scope tabs still switch
+   * away from it, and `resetFilters` returns here.
+   */
+  defaultScope?: ListScope;
   /**
    * Put the query in the URL (scope / search / filters / archived / deep /
    * page). Off by default so existing surfaces are untouched; on, the URL is
@@ -105,11 +113,17 @@ export function useEntityList<TRow>({
   entityLabelPlural,
   view,
   defaultFilters,
+  defaultScope,
   urlState = false,
 }: UseEntityListArgs<TRow>): EntityListController<TRow> {
-  const defaultQuery: EntityListQuery = defaultFilters
-    ? { ...DEFAULT_ENTITY_LIST_QUERY, filters: defaultFilters }
-    : DEFAULT_ENTITY_LIST_QUERY;
+  const defaultQuery: EntityListQuery =
+    defaultFilters || defaultScope
+      ? {
+          ...DEFAULT_ENTITY_LIST_QUERY,
+          ...(defaultFilters ? { filters: defaultFilters } : {}),
+          ...(defaultScope ? { scope: defaultScope } : {}),
+        }
+      : DEFAULT_ENTITY_LIST_QUERY;
   const [query, setQuery] = useQueryState(urlState, defaultQuery);
   // Seeded from the query, not from "" — a URL-backed surface opened at
   // `?q=seo` must not fire one throwaway unfiltered fetch before the debounce
@@ -183,7 +197,6 @@ export function useEntityList<TRow>({
         }
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- queryKey is the serialized dep set
   }, [queryKey]);
 
   // Counts depend on every filter EXCEPT the scope and the page, so they don't
@@ -215,7 +228,6 @@ export function useEntityList<TRow>({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- countsKey is the serialized dep set
   }, [countsKey]);
 
   // Facets depend on scope + search + archived only. They deliberately ignore
@@ -244,7 +256,6 @@ export function useEntityList<TRow>({
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- facetsKey is the serialized dep set
   }, [facetsKey]);
 
   // Plain functions, NOT useCallback: `setQuery` is re-created per render for a
@@ -284,7 +295,6 @@ export function useEntityList<TRow>({
       setRows((prev) => prev.filter((r) => getRowId(r) !== id));
       setTotal((prev) => Math.max(prev - 1, 0));
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- getRowId is config, static per surface
     [],
   );
 
@@ -294,7 +304,6 @@ export function useEntityList<TRow>({
         prev.map((r) => (getRowId(r) === id ? { ...r, ...patch } : r)),
       );
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- getRowId is config, static per surface
     [],
   );
 

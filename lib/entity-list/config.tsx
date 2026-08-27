@@ -130,8 +130,15 @@ export interface EntityListConfig<TRow> {
   surfaceKey: string;
   /** "agent" / "agents" — search placeholder, toasts, empty states. */
   entityLabel: { singular: string; plural: string };
-  /** Which of the fixed five scopes this surface supports, in display order.
-   *  It cannot invent a sixth — see lib/list-scope/types.ts. */
+  /**
+   * Which scopes this surface supports, in display order. It cannot invent one
+   * of its own — see lib/list-scope/types.ts.
+   *
+   * A scope that is CONDITIONAL on who is looking (`system` is Matrx-admin
+   * only) is not declared here: the config is a module constant and cannot read
+   * auth state. The page passes the resolved list via `EntityListPage`'s
+   * `scopes` prop, which wins over this.
+   */
   scopes: ListScopeKind[];
   service: EntityListService<TRow>;
   columns: EntityColumnSpec<TRow>[];

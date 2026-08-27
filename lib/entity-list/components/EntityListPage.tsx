@@ -25,16 +25,16 @@ import { Button } from "@/components/ui/button";
 import { ItemContextMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
-import { useUrlSearchParams } from "@/lib/url-state/useUrlState";
-import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
-import { defaultHiddenColumns } from "../columns";
-import type { EntityListConfig, EntityListController } from "../config";
-import { useEntityList } from "../useEntityList";
 import {
   commitUrlParams,
-  readSortFromParams,
-  sortToParamPatch,
-} from "../urlQuery";
+  useUrlSearchParams,
+} from "@/lib/url-state/useUrlState";
+import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
+import { defaultHiddenColumns } from "../columns";
+import type { ListScope, ListScopeKind } from "@/lib/list-scope/types";
+import type { EntityListConfig, EntityListController } from "../config";
+import { useEntityList } from "../useEntityList";
+import { readSortFromParams, sortToParamPatch } from "../urlQuery";
 import { entityListRowHref } from "../doors";
 import { countActiveFilters } from "../types";
 import { EntityScopeTabs } from "./EntityScopeTabs";
@@ -92,6 +92,19 @@ export interface EntityListPageProps<TRow> {
   emptyAction?: ReactNode;
   /** Agent surface this list emits its live values to (manifest-backed). */
   surface?: EntityListSurface<TRow>;
+  /**
+   * The scopes to render, overriding `config.scopes`. Only a page can decide a
+   * scope that depends on WHO is looking — `system` is Matrx-admin only — and
+   * a module-constant config cannot read auth state. Values still come from
+   * the shared vocabulary; this is which subset, never a new one.
+   */
+  scopes?: ListScopeKind[];
+  /**
+   * Where this page STARTS when that is not "Mine" — e.g. the admin System
+   * Agents route, whose whole shell is already about the platform corpus.
+   * The tabs still switch away from it.
+   */
+  defaultScope?: ListScope;
 }
 
 export function EntityListPage<TRow>({
@@ -100,7 +113,10 @@ export function EntityListPage<TRow>({
   headerActions,
   emptyAction,
   surface,
+  scopes,
+  defaultScope,
 }: EntityListPageProps<TRow>) {
+  const visibleScopes = scopes ?? config.scopes;
   const defaultHidden = defaultHiddenColumns(config.columns);
   const { prefs, setPrefs, reset } = useListViewPrefs(config.surfaceKey, {
     version: config.prefsVersion,
@@ -146,6 +162,7 @@ export function EntityListPage<TRow>({
     getRowId: config.getRowId,
     entityLabelPlural: config.entityLabel.plural,
     defaultFilters: config.defaultFilters,
+    defaultScope,
     urlState: config.urlState,
     view: {
       sort: effectiveSort.sort,
@@ -260,7 +277,7 @@ export function EntityListPage<TRow>({
           <div className="min-w-0 flex-1 sm:flex-none">
             <EntityScopeTabs
               scope={list.query.scope}
-              scopes={config.scopes}
+              scopes={visibleScopes}
               counts={list.counts}
               onChange={list.setScope}
             />

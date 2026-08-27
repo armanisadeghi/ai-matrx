@@ -7,12 +7,13 @@ RLS is the ceiling, never the view definition. A list query that relies on
 belongs to more than one org (every user does — personal org + N
 companies). Every list query MUST declare its own scope explicitly.
 
-## The canonical scope model — a FIXED vocabulary of five
+## The canonical scope model — a FIXED vocabulary
 
-Ratified 2026-07-26. A list surface declares WHICH of these five it supports
-and supplies the predicate. **It may not invent a sixth.** The flexibility is
-in which subset applies, not in the vocabulary — a scope the user learns on one
-page must mean the same thing on every other page.
+Ratified 2026-07-26 (five), extended 2026-08-26 (`system`). A list surface
+declares WHICH of these it supports and supplies the predicate. **It may not
+invent one of its own** — the vocabulary grows HERE or not at all. The
+flexibility is in which subset applies, not in the vocabulary: a scope the user
+learns on one page must mean the same thing on every other page.
 
 | Scope              | The question it answers          | Reach                                                                                                 |
 | ------------------ | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
@@ -20,11 +21,34 @@ page must mean the same thing on every other page.
 | **My Orgs**        | What does my team have?          | created by someone else, in a **non-personal** org I belong to, at a visibility that admits org-mates |
 | **Shared with me** | What did someone hand me?        | an explicit `iam.permissions` grant (to me, or to one of my orgs)                                     |
 | **Industry**       | What does my field publish?      | see below                                                                                             |
-| **Public**         | What has the platform published? | `visibility = 'public'`, not mine                                                                     |
+| **Public**         | What has a tenant published?     | `visibility = 'public'`, not mine                                                                     |
+| **System**         | What does the PLATFORM ship?     | the platform's own corpus (builtin agents, global shortcuts), admin-only — see below                  |
 
 `My Orgs` and `Shared with me` may overlap on the same row. That is correct —
 they answer different questions, and hiding an org row because it also carries
 a grant would make "what does my team have?" lie.
+
+### System — the platform's own corpus, admin-gated on both ends
+
+`system` answers a question none of the other five could: **what does AI Matrx
+itself publish**, as distinct from what a tenant published (`public`).
+
+It exists because its absence produced real drift. `/agents/all` could not
+express it, so `/administration/agents/system-agents/agents` was built as a
+SECOND list UI over the same table — and every capability added to the
+canonical list (server-side facets, sortable/filterable columns, the one action
+menu, doors, Orchestras) silently skipped the system corpus for a year.
+
+Two gates, and both are load-bearing:
+
+- **The surface** only renders the tab for a Matrx admin (`selectIsAdmin` —
+  any tier, matching the `/administration` route gate).
+- **The RPC** re-checks `public.is_platform_admin()` and returns zero rows
+  otherwise. The tab being hidden is a UI convenience, never the security.
+
+A feature adopting `system` declares it in its scope list and teaches its own
+`*_list_scoped` RPC the predicate + the admin re-check. There is no generic
+column for "the platform made this" — agents use `agent_type = 'builtin'`.
 
 ### Industry — subscription, not ambient reach
 

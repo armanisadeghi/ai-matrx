@@ -326,7 +326,7 @@ export default function TaskListPane() {
   return (
     <div className="flex flex-col h-full min-h-0 bg-background">
       {/* Quick-add — title moved to the shell header (PageHeader). */}
-      <div className="shrink-0 px-2 py-2 border-b border-border/40 bg-muted/20 flex items-center gap-2">
+      <div className="shrink-0 px-2 py-2 border-b border-border/40 bg-muted/20 flex flex-wrap items-center gap-2">
         <span
           className="text-[11px] text-muted-foreground tabular-nums shrink-0 pl-1"
           data-surface-value="task_count"
@@ -367,7 +367,7 @@ export default function TaskListPane() {
             <LayoutGrid className="h-3.5 w-3.5" />
           </Button>
         </div>
-        <div className="flex gap-1 flex-1 min-w-0">
+        <div className="order-last flex basis-full gap-1 min-w-0">
           <ProInput
             ref={quickAddInputRef}
             value={newTaskTitle}

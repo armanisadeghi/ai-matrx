@@ -48,6 +48,9 @@ import {
 } from "lucide-react";
 import type { ItemMenuConfig, ItemMenuEntry } from "@/components/official/item/types";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
+// The row decides its own shell (a builtin lives under the admin System Agents
+// tree); ./agentPaths is the one place that answers it.
+import { agentHref as rowHref, AGENT_BASE_PATH } from "./agentPaths";
 import type { AgentBrowseRow } from "./types";
 
 /**
@@ -74,10 +77,6 @@ export interface AgentMenuContext {
   onCopyForAgent: () => void;
   onRename: () => void;
   onDelete: () => void;
-}
-
-function agentHref(id: string, sub: string): string {
-  return `/agents/${id}${sub}`;
 }
 
 /**
@@ -134,7 +133,7 @@ export function buildAgentMenu(ctx: AgentMenuContext): ItemMenuConfig {
             id: "open-new-tab",
             label: "Open in new tab",
             icon: ExternalLink,
-            href: agentHref(agent.id, "/run"),
+            href: rowHref(agent, "/run"),
             target: "_blank",
           },
         ],
@@ -212,7 +211,7 @@ export function buildAgentMenu(ctx: AgentMenuContext): ItemMenuConfig {
                   id: "source-agent",
                   label: "Open source agent",
                   icon: GitFork,
-                  href: agentHref(agent.source_agent_id, ""),
+                  href: `${AGENT_BASE_PATH}/${agent.source_agent_id}`,
                 },
               ]
             : []),
@@ -221,14 +220,14 @@ export function buildAgentMenu(ctx: AgentMenuContext): ItemMenuConfig {
             id: "shortcuts",
             label: "Shortcuts",
             icon: LayoutPanelTop,
-            href: agentHref(agent.id, "/shortcuts"),
+            href: rowHref(agent, "/shortcuts"),
           },
           {
             kind: "link",
             id: "surfaces",
             label: "Surfaces",
             icon: AppWindow,
-            href: agentHref(agent.id, "/surfaces"),
+            href: rowHref(agent, "/surfaces"),
           },
           comingSoon("agents.create-app", "Create app from agent", AppWindow),
           comingSoon("agents.save-as-template", "Save as template", LayoutPanelTop),
