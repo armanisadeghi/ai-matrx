@@ -207,6 +207,12 @@ declare
 
   -- SHAPE 1: the rung the selector walks, now speakable
   v_r3_old constant text := $o$  -- ---------- RULE 3. TOP OF CHART.$o$;
+  v_up_old constant text := $o$  if v_subject is not null
+     and exists (select 1 from hr.workflow_step_definition sd$o$;
+  v_up_new constant text := $o$  if v_subject is not null
+     and coalesce(v_mode, 'require_second_actor') = 'auto_record'
+     and exists (select 1 from hr.workflow_step_definition sd$o$;
+
   v_r3_new constant text := $o$  -- ---------- 🚨 RULE 2b. THE REPORTING LINE — THE RUNG THE SELECTOR ACTUALLY WALKS.
   -- hr.wf_resolve_approvers produces the subject's manager at its `reporting_line` rung and then
   -- filters every candidate through THIS function (its RECORDED DECISION 1). Without this rule
@@ -219,6 +225,15 @@ declare
   -- whole chain counts, not just the direct manager, because §2.2's rung climbs "until an eligible
   -- employment is found" and escalation legitimately reaches those ancestors.
   if v_subject is not null
+     -- BOTH halves, and the second is the one that matters. Nearly every step definition carries
+     -- the PLATFORM DEFAULT chain, which includes `reporting_line` — so the routing plan alone is
+     -- effectively no scope at all and would have handed line managers `pay_change_approve`.
+     -- §1.4 rule 3 already splits the actions by risk, and that split is exactly the right one
+     -- here: `auto_record` is the operational tier (timecard, leave, swap, overtime, schedule)
+     -- where a line manager acting is the normal case, and `require_second_actor` is the tier the
+     -- spec says needs a second deliberate actor (pay change, termination, offer, adverse action).
+     -- The reporting line satisfies the first and never the second.
+     and coalesce(v_mode, 'require_second_actor') = 'auto_record'
      and exists (select 1 from hr.workflow_step_definition sd
                   where sd.deleted_at is null
                     and sd.authority_action = p_action_type
@@ -238,8 +253,20 @@ begin
    where n.nspname = 'hr' and p.proname = 'can_approve';
   if v_oid is null then raise exception 'hr_c4_20: hr.can_approve does not exist'; end if;
   v_def := pg_get_functiondef(v_oid);
-  if position($chk$RULE 2b$chk$ in v_def) > 0 then
-    raise notice 'hr_c4_20: hr.can_approve already speaks the reporting-line rung';
+  -- 🚨 THREE STATES, NOT TWO. An earlier run of this file installed RULE 2b scoped by the routing
+  -- plan ALONE — which is no scope at all, because the platform default chain carries
+  -- `reporting_line` on nearly every step, so line managers gained `pay_change_approve`. So this
+  -- block also has to UPGRADE a half-installed body, not just install or skip. The marker is the
+  -- tier predicate itself; `= 'auto_record'` alone would also match RULE 1's carve-out.
+  if position($chk$coalesce(v_mode, 'require_second_actor') = 'auto_record'$chk$ in v_def) > 0 then
+    raise notice 'hr_c4_20: hr.can_approve already speaks the reporting-line rung, tier-scoped';
+  elsif position($chk$RULE 2b$chk$ in v_def) > 0 then
+    -- UPGRADE: the rung is installed but unscoped. Confine it to §1.4 rule 3's operational tier.
+    if position(v_up_old in v_def) = 0 then
+      raise exception 'hr_c4_20: hr.can_approve carries RULE 2b in a shape this file does not recognise';
+    end if;
+    execute replace(v_def, v_up_old, v_up_new);
+    raise notice 'hr_c4_20: hr.can_approve''s reporting-line rung confined to the auto_record tier';
   else
     if position(v_r1_old in v_def) = 0 or position(v_r3_old in v_def) = 0 then
       raise exception 'hr_c4_20: hr.can_approve does not carry the expected rules — refusing to half-apply';
@@ -410,6 +437,12 @@ begin
    where n.nspname = 'hr' and p.proname = 'can_approve';
   if v_src !~ 'RULE 2b' or v_src !~ 'reporting_line'' = any\(sd\.fallback_chain\)' then
     raise exception 'hr_c4_20: hr.can_approve does not speak the reporting-line rung from the routing plan';
+  end if;
+  -- and the rung is confined to §1.4 rule 3's OPERATIONAL tier: the platform default chain carries
+  -- `reporting_line` on nearly every step, so without this the rung would hand line managers
+  -- pay_change_approve / termination_approve.
+  if v_src !~ 'coalesce\(v_mode, ''require_second_actor''\) = ''auto_record''' then
+    raise exception 'hr_c4_20: RULE 2b is not confined to the auto_record tier';
   end if;
   -- shape 2: the carve-out is reachable, and still requires ALL THREE of §3's conditions
   if v_src !~ 'v_mode = ''auto_record''\s*\n\s*and hr\.manager_as_of' then

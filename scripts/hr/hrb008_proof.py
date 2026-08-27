@@ -1175,14 +1175,34 @@ async def main():
             "ends_on, requested_hours, state, engine_key, engine_version) "
             "values ($1,$2,$3,current_date + 600, current_date + 600, 8,'submitted','proof','1') returning id",
             org, people["erin"]["employment"], lp)
+        # 🚨 strip the reporting line TOO, not just the authority rows. Since hr_c4_20 the
+        # subject's manager can approve an `auto_record` action with no authority row at all — so
+        # deactivating authority alone no longer makes anything unroutable, and this fixture would
+        # be quietly testing a request that routed perfectly well.
         await conn.execute(
             "update hr.approval_authority set is_active=false where organization_id=$1 "
             "and action_type='leave_approve'", org)
+        await conn.execute(
+            "update hr.position_assignment set manager_employment_id=null where employment_id=$1",
+            people["erin"]["employment"])
+        # and the top-of-chart backstop, which correctly catches it once the line is gone. All three
+        # rungs have to be empty for a request to be genuinely unroutable — that is the point.
+        await conn.execute("update hr.role_assignment set is_active=false where organization_id=$1", org)
+        await conn.execute(
+            "update iam.memberships set role='member' where organization_id=$1 "
+            "and container_type='organization'", org)
         await as_user(people["erin"]["uid"])
         stale_req = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", stale_lr, org)
         await as_owner()
         await conn.execute(
             "update hr.approval_authority set is_active=true where organization_id=$1", org)
+        await conn.execute("update hr.role_assignment set is_active=true where organization_id=$1", org)
+        await conn.execute(
+            "update iam.memberships set role='owner' where organization_id=$1 "
+            "and container_type='organization' and user_id=$2", org, people["carol"]["uid"])
+        await conn.execute(
+            "update hr.position_assignment set manager_employment_id=$1 where employment_id=$2",
+            people["carol"]["employment"], people["erin"]["employment"])
         stale_inst = stale_req.get("instance_id")
         rec("§1.8 queue hygiene", "an unroutable request opens a real failure row a human owns",
             await conn.fetchval(
