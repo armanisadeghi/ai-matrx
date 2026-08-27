@@ -20,6 +20,12 @@ import { Suspense, type ReactNode } from "react";
 
 import { HrProvider } from "@/features/hr/shared/HrProvider";
 import { HrLoading } from "@/features/hr/shared/HrStates";
+import { createRouteMetadata } from "@/utils/route-metadata";
+
+export const metadata = createRouteMetadata("/hr", {
+  title: "Human Resources",
+  description: "Manage people, time, payroll, compliance, and workforce operations.",
+});
 
 export default function HrLayout({ children }: { children: ReactNode }) {
   return (

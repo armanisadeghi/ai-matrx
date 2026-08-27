@@ -38,6 +38,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 // ── Load .env.local before anything imports the Supabase client singleton. ──────────────────────
+// This headless acceptance script resolves a checkout-local file at runtime. Keep Turbopack from
+// tracing the dynamic checkout root into production bundles.
+/* turbopackIgnore: true */
 const envPath = resolve(__dirname, "../../../../../.env.local");
 if (existsSync(envPath)) {
   for (const line of readFileSync(envPath, "utf8").split("\n")) {
@@ -49,7 +52,6 @@ if (existsSync(envPath)) {
 }
 process.env.NEXT_PUBLIC_HR_MOCK = "1";
 
-/* eslint-disable @typescript-eslint/no-var-requires */
 async function main(): Promise<void> {
   // Imported AFTER the env is populated, so the module-scope Supabase client can construct.
   const { callHrTimeRpc } = await import("@/features/hr/time/api/rpc");

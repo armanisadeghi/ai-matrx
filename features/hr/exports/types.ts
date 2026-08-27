@@ -115,7 +115,7 @@ export type ExportSupersedeBody = JsonBody<operations["hr_exports_supersede"]>;
  * One row of `public.hr_payroll_export_list`.
  *
  * HAND-WRITTEN, verified against the reader's projection 2026-08-26. `hr` is not exposed to
- * PostgREST (`.schema("hr")` answers PGRST106), so this list cannot be a table read; the
+ * PostgREST (a browser client pointed there answers PGRST106), so this list cannot be a table read; the
  * `SECURITY DEFINER` reader in `public` is the only client-reachable door, and its generated
  * signature returns `Json`. Replace this shape the day the RPC returns a typed row — do not
  * reconcile the two.

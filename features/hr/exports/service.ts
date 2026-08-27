@@ -243,8 +243,8 @@ export async function supersedeExport(
 /**
  * `public.hr_payroll_export_list` — the export history.
  *
- * 🚨 NOT A TABLE READ. `hr` is not exposed to PostgREST, so `supabase.schema("hr")` answers
- * PGRST106 and reaches nothing from a browser. This `SECURITY DEFINER` reader in `public` is the
+ * 🚨 NOT A TABLE READ. `hr` is not exposed to PostgREST, so a browser client pointed at that
+ * schema answers PGRST106 and reaches nothing. This `SECURITY DEFINER` reader in `public` is the
  * only client-reachable door.
  *
  * 🚨 A `granted:false` RESULT IS RETURNED, NOT THROWN, AND IT IS NOT AN EMPTY LIST. The caller
