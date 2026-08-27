@@ -253,6 +253,7 @@ export function HrOrgChart() {
                 checked={showDotted}
                 onCheckedChange={setShowDotted}
                 aria-label="Show dotted-line reporting"
+                className="relative h-11 w-11 border-transparent bg-transparent pl-1 shadow-none before:absolute before:left-1 before:top-1/2 before:h-4 before:w-9 before:-translate-y-1/2 before:rounded-full before:border-2 before:border-zinc-300 before:bg-zinc-100 before:content-[''] data-[state=checked]:bg-transparent data-[state=checked]:before:bg-primary data-[state=unchecked]:bg-transparent dark:before:border-zinc-700 dark:before:bg-zinc-800 lg:h-4 lg:w-9 lg:border-zinc-300 lg:bg-zinc-100 lg:pl-0 lg:shadow-sm lg:before:hidden lg:data-[state=checked]:bg-primary lg:data-[state=unchecked]:bg-zinc-100 dark:lg:border-zinc-700 dark:lg:data-[state=unchecked]:bg-zinc-800"
               />
               <Label
                 htmlFor="hr-dotted-lines"
@@ -549,14 +550,14 @@ function ChartNode(props: {
       <div className="flex min-w-0 items-center gap-1">
         <Link
           href={props.href}
-          className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground underline-offset-2 hover:text-primary hover:underline"
+          className="flex min-h-11 min-w-0 flex-1 flex-col justify-center text-foreground underline-offset-2 hover:text-primary hover:underline lg:min-h-0"
         >
-          {props.name}
+          <span className="truncate text-xs font-semibold">{props.name}</span>
+          <span className="truncate text-[0.6875rem] font-normal text-muted-foreground">
+            {[props.jobTitle, props.department].filter(Boolean).join(" · ")}
+          </span>
         </Link>
         <HrWorkerClassChip workerClass={props.workerClass} />
-      </div>
-      <div className="truncate text-[0.6875rem] text-muted-foreground">
-        {[props.jobTitle, props.department].filter(Boolean).join(" · ")}
       </div>
 
       <div className="flex items-center gap-1">

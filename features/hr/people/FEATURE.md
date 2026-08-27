@@ -76,6 +76,7 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
 
 ## Change Log
 
+- `2026-08-26` — Org-chart dotted-line and person doors retain 44px touch targets below desktop.
 - `2026-08-26` — Historical org-chart counts no longer open contradictory current-team lists;
   tablet/mobile chart controls, profile tabs, and new-employee fields meet the touch and label
   contracts.

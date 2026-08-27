@@ -27,9 +27,9 @@
 //     legible as a change rather than a redraw.
 
 export const NODE_WIDTH = 210;
-export const NODE_HEIGHT = 88;
+export const NODE_HEIGHT = 104;
 export const NODE_GAP_X = 22;
-export const LEVEL_GAP_Y = 124;
+export const LEVEL_GAP_Y = 140;
 
 export type OrgLayoutInput = {
   /** Stable key. `employment_id` — a person may hold two spells over time. */
