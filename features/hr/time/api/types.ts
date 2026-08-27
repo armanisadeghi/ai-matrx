@@ -655,6 +655,14 @@ export interface Timesheet {
     hoursDoubletime: number;
     premiumLineCount: number;
     boundaryNote: string | null;
+    /**
+     * 🚨 The rollup row exists but nothing has been CALCULATED into it yet (a placeholder written by
+     * `hr.pay_period_enrollment` when the employee joined the period). The surface must say
+     * "Not computed yet" — rendering 0.00 claims the person worked nothing.
+     */
+    notComputedYet?: boolean;
+    /** At least one interval has no amount, so the period's money total is absent, not zero. */
+    amountsIncomplete?: boolean;
   };
 
   attestation: {

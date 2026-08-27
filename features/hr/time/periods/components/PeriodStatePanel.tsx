@@ -26,6 +26,7 @@ import { AlertTriangle } from "lucide-react";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { formatLocalDate } from "../../shared/format";
 import type { PayPeriodRow } from "../../api/types";
+import type { PeriodWorkflowHealth } from "../api/periodReads";
 import {
   PERIOD_STATE_MEANING,
   disputeSentence,
@@ -39,6 +40,12 @@ export interface PeriodStatePanelProps {
   period: PayPeriodRow;
   role: PeriodViewerRole;
   allowPeriodReopen: boolean;
+  /**
+   * The row-health rollup. The header renders ONE line from it, because the counts beside it —
+   * "N of M approved" — cannot say whether the undecided ones are waiting on a person or on a flow
+   * that died, and that ambiguity is what made a stuck period look normal.
+   */
+  workflow?: PeriodWorkflowHealth;
   /** The server's own reopen wording, preferred over the client constant when present. */
   reopenNotice?: string | null;
   todayLocalDate: string;
@@ -50,6 +57,7 @@ export function PeriodStatePanel({
   period,
   role,
   allowPeriodReopen,
+  workflow,
   reopenNotice,
   todayLocalDate,
   mockCase,
@@ -109,6 +117,36 @@ export function PeriodStatePanel({
           <Count label="With a disagreement" value={period.counts.disputed} />
           <Count label="Manager approved" value={period.counts.approved} />
         </dl>
+
+        {/*
+          🚨 THE LINE THAT DISAMBIGUATES THE COUNTS ABOVE IT. `open` rows split into ones somebody
+          was actually asked about and ones nobody was — and only the first are legitimately
+          "waiting". Rendered here, beside the counts, not only in the panel below.
+        */}
+        {workflow && workflow.awaiting + workflow.stuck + workflow.noFlow + workflow.done > 0 ? (
+          <p className="mt-3 text-[12px] leading-relaxed text-muted-foreground">
+            Of these, <span className="text-foreground">{workflow.awaiting} awaiting a person</span>
+            {workflow.stuck > 0 ? (
+              <>
+                ,{" "}
+                <span className="font-medium text-destructive">
+                  {workflow.stuck} stuck on a failed flow
+                </span>
+              </>
+            ) : null}
+            {workflow.noFlow > 0 ? (
+              <>
+                , <span className="text-foreground">{workflow.noFlow} never started</span>
+              </>
+            ) : null}
+            {workflow.done > 0 ? (
+              <>
+                , <span className="text-foreground">{workflow.done} done</span>
+              </>
+            ) : null}
+            .
+          </p>
+        ) : null}
 
         {disputes ? (
           <p className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-relaxed text-amber-800 dark:text-amber-300">

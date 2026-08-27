@@ -30,6 +30,7 @@ import { ExportRunPanel } from "@/features/hr/exports/components/ExportRunPanel"
 import { usePayPeriod, useTimeAdjustments } from "../hooks/usePayPeriods";
 import { resolvePeriodRole as resolveRole } from "../periodStateMachine";
 import { BoundaryWeeksPanel } from "./BoundaryWeeksPanel";
+import { WorkflowHealthPanel } from "./WorkflowHealthPanel";
 import { useMockCase } from "./PayPeriodsPage";
 import { PeriodStatePanel } from "./PeriodStatePanel";
 import { PostLockAdjustments } from "./PostLockAdjustments";
@@ -82,12 +83,21 @@ export function PeriodDetailPage({ payPeriodId }: { payPeriodId: string }) {
                * that had switched it off. A cast was hiding the field's existence.
                */
               allowPeriodReopen={period.reopenAllowed}
+              workflow={period.workflow}
               /* The server's own wording, verbatim, in preference to ours. */
               reopenNotice={period.reopenNotice}
               todayLocalDate={todayLocalDate}
               mockCase={mockCase}
               onTransitioned={reload}
             />
+
+            {/*
+              🚨 Sits immediately under the header's row-state counts, and that placement is the
+              point: the counts above say how many timecards are undecided, this says whether
+              anybody was actually ASKED. Separating them by a scroll is how "3 awaiting" and "3
+              flows that never started" stayed indistinguishable.
+            */}
+            <WorkflowHealthPanel workflow={period.workflow} />
 
             <BoundaryWeeksPanel
               boundaryWorkweekIds={period.boundaryWorkweekIds}

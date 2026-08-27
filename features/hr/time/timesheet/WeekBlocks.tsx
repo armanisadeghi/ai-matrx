@@ -558,19 +558,40 @@ function PeriodTotals({ timesheet }: { timesheet: Timesheet }) {
         {timesheet.payPeriod.payGroupName}
       </p>
 
-      <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
-        <Total label="Total hours" value={formatHours(t.totalHours)} />
-        <Total label="Overtime" value={formatHours(t.hoursOvertime)} />
-        <Total label="Double time" value={formatHours(t.hoursDoubletime)} />
-        <Total label="Premium lines" value={String(t.premiumLineCount)} />
-        {HOURS_CATEGORY_ORDER.map((category) => (
-          <Total
-            key={category}
-            label={HOURS_CATEGORY_LABELS[category]}
-            value={formatHours(t.hoursByCategory[category] ?? 0)}
-          />
-        ))}
-      </dl>
+      {/*
+        * 🚨 A PLACEHOLDER ROLLUP RENDERS A SENTENCE, NOT ZEROS (T5). The row is written when the
+        * employee joins the period, before any recompute runs. Printing 0.00 for every category
+        * under a real total is a breakdown that contradicts the number above it — and printing
+        * 0.00 for the total itself claims they worked nothing.
+        */}
+      {t.notComputedYet ? (
+        <p className="mt-3 rounded-md border border-border bg-muted/40 px-2.5 py-2 text-xs">
+          These hours have not been calculated yet. The punches are recorded; the breakdown appears
+          once payroll runs the calculation for this period.
+        </p>
+      ) : (
+        <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
+          <Total label="Total hours" value={formatHours(t.totalHours)} />
+          <Total label="Overtime" value={formatHours(t.hoursOvertime)} />
+          <Total label="Double time" value={formatHours(t.hoursDoubletime)} />
+          <Total label="Premium lines" value={String(t.premiumLineCount)} />
+          {HOURS_CATEGORY_ORDER.map((category) => (
+            <Total
+              key={category}
+              label={HOURS_CATEGORY_LABELS[category]}
+              value={formatHours(t.hoursByCategory[category] ?? 0)}
+            />
+          ))}
+        </dl>
+      )}
+
+      {/* The engine's own finding: an amount is missing somewhere, so the total is absent, not 0. */}
+      {t.amountsIncomplete ? (
+        <p className="mt-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-2.5 py-2 text-xs">
+          At least one line in this period has no amount calculated, so there is no money total for
+          it. The hours are correct and are paid.
+        </p>
+      ) : null}
 
       {t.boundaryNote ? (
         <p className="mt-3 rounded-md border border-border bg-muted/40 px-2.5 py-2 text-xs">

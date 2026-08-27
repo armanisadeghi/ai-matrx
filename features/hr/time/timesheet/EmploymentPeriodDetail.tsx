@@ -56,6 +56,11 @@ import { HrTimeReadState, RefusalNotice } from "../shared/RefusalNotice";
 import { RuleSnapshotProvider } from "../shared/RuleSnapshot";
 import { useHrMockCase, useHrTimeQuery } from "../shared/useHrTimeQuery";
 import { decideWorkflowStep } from "../shared/workflowApi";
+import {
+  getTimecardDecisionState,
+  UNKNOWN_DECISION,
+  type TimecardDecisionState,
+} from "./decisionSource";
 import { RecomputedBanner } from "./RecomputedBanner";
 import { TimesheetWeeks } from "./WeekBlocks";
 
@@ -217,15 +222,26 @@ function DecisionBar({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // The step id lives on the workflow, and `timesheet.attestation.stepId` is the ATTESTATION step —
-  // never the approval one. Without an approval step id from `hr_wf_for_target`, this surface says
-  // so rather than firing a decision at the wrong step.
-  const stepId = timesheet.attestation.stepId;
-  const decidable =
-    stepId !== null &&
-    (timesheet.rowState === "attested" ||
-      timesheet.rowState === "disputed" ||
-      timesheet.rowState === "open");
+  /*
+   * 🚨 THE SAME SOURCE THE PERIOD PAGE PROJECTS (T4). This used to read
+   * `timesheet.attestation.stepId` — the ATTESTATION step — and say "no open decision" whenever it
+   * was absent, while the period page read the workflow projection and correctly said "Awaiting
+   * decision 1" for the very same row. Two sources, two answers, one timecard.
+   */
+  const decision = useHrTimeQuery<TimecardDecisionState>(
+    (signal) =>
+      getTimecardDecisionState(timesheet.payPeriod.id, timesheet.employmentId, {
+        mockCase,
+        signal,
+      }),
+    [timesheet.payPeriod.id, timesheet.employmentId, mockCase],
+    Boolean(timesheet.payPeriod.id && timesheet.employmentId),
+  );
+
+  const state = decision.data ?? UNKNOWN_DECISION;
+  const stepId = state.stepId ?? timesheet.attestation.stepId;
+  // Only a LIVE instance offers a decision. A stuck flow gets named, not a button that will refuse.
+  const decidable = state.health === "awaiting";
 
   async function decide(decision: "approve" | "reject", why: string | null) {
     if (!stepId) return;
@@ -317,9 +333,34 @@ function DecisionBar({
             Send it back
           </Button>
         </div>
+      ) : state.health === "stuck" ? (
+        /* The flow is DEAD. Saying "no open decision" here is how a stuck period looked
+           "awaiting" for four rounds — the row needs a person, and nobody was told. */
+        <div className="mt-3 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-2 text-xs">
+          <p className="font-medium">This timecard&rsquo;s approval has failed and is stuck.</p>
+          <p className="mt-1">
+            {state.failureClass
+              ? `The workflow reported: ${state.failureClass}.`
+              : "The workflow stopped before anyone could decide it."}{" "}
+            It will not move on its own — an HR administrator has to resolve the failure.
+          </p>
+          <Link
+            href="/hr/tasks?scope=queue"
+            className="mt-1 inline-flex font-medium underline underline-offset-4"
+          >
+            Open the workflow queue
+          </Link>
+        </div>
+      ) : state.health === "done" ? (
+        <p className="mt-3 text-xs text-muted-foreground">
+          This timecard has already been decided.
+        </p>
+      ) : decision.loading ? (
+        <p className="mt-3 text-xs text-muted-foreground">Checking for an open decision&hellip;</p>
       ) : (
         <p className="mt-3 text-xs text-muted-foreground">
-          There is no open decision on this timecard right now.
+          No approval has been requested for this timecard yet. It starts when the pay period is
+          submitted.
         </p>
       )}
     </section>

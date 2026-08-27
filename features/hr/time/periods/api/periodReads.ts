@@ -237,6 +237,74 @@ export interface PayPeriodDetail extends PayPeriodRow {
   reopenNotice: string | null;
   /** Corrections tagged to this period, either as origin or as target. Server-counted. */
   adjustmentsTaggedHere: number;
+  /**
+   * 🚨 WHAT THE ROW-STATE COUNTS CANNOT SAY: is this timecard waiting on a PERSON, or is its flow
+   * dead? An `open` row with a failed instance behind it reads identically to one with a live
+   * instance — which is how a stuck period looked "awaiting" for four review rounds.
+   */
+  workflow: PeriodWorkflowHealth;
+}
+
+/** How a row's attestation flow is actually doing, as the server classifies it. */
+export type RowHealth = "awaiting" | "stuck" | "no_flow" | "done";
+
+export interface PeriodWorkflowRow {
+  payPeriodEmploymentId: string;
+  employmentId: string;
+  /** The ROW state machine (`hr.pay_period_employment.state`) — not the period's. */
+  rowState: string;
+  health: RowHealth;
+  flowKey: string | null;
+  instanceId: string | null;
+  instanceState: string | null;
+  /**
+   * 🚨 An OPEN failure on this row's instance, and it is independent of {@link health}. A row can be
+   * `awaiting` — instance alive, order normal — and still carry an unresolved failure. That
+   * combination is the one that hides: it looks healthy in the rollup and is not.
+   */
+  failureClass: string | null;
+  failureId: string | null;
+}
+
+export interface PeriodWorkflowHealth {
+  awaiting: number;
+  stuck: number;
+  noFlow: number;
+  done: number;
+  rows: PeriodWorkflowRow[];
+}
+
+function mapWorkflowRow(raw: unknown): PeriodWorkflowRow {
+  const r = rec(raw);
+  const health = str(r.health);
+  return {
+    payPeriodEmploymentId: str(r.payPeriodEmploymentId),
+    employmentId: str(r.employmentId),
+    rowState: str(r.rowState),
+    // Anything the server starts classifying that this client does not know reads as `no_flow`
+    // rather than being silently dropped — an unrecognised health is not a healthy one.
+    health: (["awaiting", "stuck", "no_flow", "done"].includes(health)
+      ? health
+      : "no_flow") as RowHealth,
+    flowKey: strOrNull(r.flowKey),
+    instanceId: strOrNull(r.instanceId),
+    instanceState: strOrNull(r.instanceState),
+    failureClass: strOrNull(r.failureClass),
+    failureId: strOrNull(r.failureId),
+  };
+}
+
+function mapWorkflowHealth(raw: unknown): PeriodWorkflowHealth {
+  const w = rec(raw);
+  const rows = Array.isArray(w.rows) ? w.rows : [];
+  return {
+    awaiting: num(w.awaiting, 0),
+    stuck: num(w.stuck, 0),
+    // `no_flow` camelizes to `noFlow`.
+    noFlow: num(w.noFlow, 0),
+    done: num(w.done, 0),
+    rows: rows.map(mapWorkflowRow),
+  };
 }
 
 export async function getPayPeriod(
@@ -257,6 +325,7 @@ export async function getPayPeriod(
     reopenAllowed: r.reopenAllowed !== false,
     reopenNotice: strOrNull(r.reopenNotice),
     adjustmentsTaggedHere: num(r.adjustmentsTaggedHere, 0),
+    workflow: mapWorkflowHealth(r.workflow),
   };
 }
 

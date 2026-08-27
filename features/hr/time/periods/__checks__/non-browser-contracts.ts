@@ -56,6 +56,9 @@ async function main(): Promise<void> {
   // Imported AFTER the env is populated, so the module-scope Supabase client can construct.
   const { callHrTimeRpc } = await import("@/features/hr/time/api/rpc");
   const { serveFromFixtures } = await import("@/features/hr/mock/transport");
+  const { HR_TIME_RPC_FIXTURES } = await import(
+    "@/features/hr/time/api/mock/registry"
+  );
   const {
     offeredTransitions,
     disputeSentence,
@@ -381,6 +384,40 @@ async function main(): Promise<void> {
     (o) => o.to === "submitted",
   );
   ok("submit is offered once the end date has passed", late?.unavailableBecause === null);
+
+  // ── T3: row health must distinguish "waiting on a person" from "the flow is dead". ──────────
+  const { failureWords, isManagerFlagged, HEALTH_LABEL } = await import(
+    "@/features/hr/time/periods/workflowHealth"
+  );
+  ok("a stuck row is not labelled the same as an awaiting one",
+     HEALTH_LABEL.stuck !== HEALTH_LABEL.awaiting);
+  ok("no health label is a raw token",
+     Object.values(HEALTH_LABEL).every((l) => !l.includes("_")));
+  ok("approver_ineligible renders in words, not as a token",
+     (failureWords("approver_ineligible") ?? "").includes("cannot"));
+  ok("not_attested says it was never treated as agreed",
+     (failureWords("not_attested") ?? "").includes("never treated as agreed"));
+  ok("an unrecognised failure class is still rendered, never swallowed",
+     (failureWords("some_new_class") ?? "").includes("some new class"));
+  ok("no failure class means no sentence", failureWords(null) === null);
+  ok("not_attested is flagged for a manager",
+     isManagerFlagged({ failureClass: "not_attested", instanceState: "active" } as never));
+  ok("a live awaiting row is NOT flagged",
+     !isManagerFlagged({ failureClass: null, instanceState: "active" } as never));
+
+  const getEdge = HR_TIME_RPC_FIXTURES.hr_pay_period_get?.edge?.data as {
+    workflow: { stuck: number; awaiting: number; noFlow: number; rows: Array<Record<string, unknown>> };
+  };
+  ok("the edge fixture carries a genuinely stuck row", getEdge.workflow.stuck === 1);
+  ok(
+    "…and an AWAITING row that still carries an open failure — the case that hides",
+    getEdge.workflow.rows.some((r) => r.health === "awaiting" && r.failureClass !== null),
+  );
+  ok(
+    "…and a not_attested row for the manager flag",
+    getEdge.workflow.rows.some((r) => r.failureClass === "not_attested"),
+  );
+  ok("…and a row nobody ever started", getEdge.workflow.noFlow === 1);
 
   // ── S4: the capability tokens must be the SERVER's, and hr_admin must actually reach. ───────
   //

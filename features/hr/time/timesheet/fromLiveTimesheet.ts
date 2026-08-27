@@ -235,6 +235,56 @@ function day(raw: Live, tz: string): TimesheetDay {
   };
 }
 
+/**
+ * 🚨 THE CATEGORY BREAKDOWN LIVES IN THE ROLLUP'S `calc`, NOT IN COLUMNS (G2 round-5, T5).
+ *
+ * `hr.pay_period_employment` has **no per-category columns**. It carries `total_hours` and a `calc`
+ * jsonb, and the recompute refresher writes the breakdown into that jsonb:
+ *
+ *   calc.totals_by_category        {worked: 0.08}   ← at the COLUMN's scale; this is what we render
+ *   calc.totals_by_category_exact  {worked: 0.0757} ← full precision, kept for the engine
+ *   calc.hours_overtime / hours_doubletime / premium_line_count
+ *   calc.amounts_incomplete + calc.amounts_note     ← the period-level money-withheld signal
+ *
+ * The old mapping read `totals.pay_period.by_category`, which does not exist, so every category
+ * rendered **0.00 underneath a correct total** — a breakdown that silently contradicts the number
+ * above it, on a wage record.
+ *
+ * ⚠️ `calc` IS DELIBERATELY LEFT SNAKE_CASE by the response mapper: it sits inside a calc block, and
+ * `camelizeDeep` treats a calc block's inner `calc` as the engine's opaque payload (renaming inside
+ * it would corrupt evidence). So the keys are read in snake here, on purpose. Both spellings are
+ * accepted only so a future contract change cannot silently zero this row again.
+ */
+function rollupTotals(row: Live): {
+  hoursByCategory: Record<HoursCategory, number>;
+  hoursOvertime: number;
+  hoursDoubletime: number;
+  premiumLineCount: number;
+  notComputedYet: boolean;
+  amountsIncomplete: boolean;
+} {
+  const calcRef = obj(row.calcRef);
+  const c = obj(calcRef.calc);
+
+  /*
+   * 🚨 A PLACEHOLDER ENROLLMENT IS NOT A ZERO. `hr.pay_period_enrollment` writes the row when the
+   * employee joins the period, before any recompute has run. Rendering 0.00 there is a claim that
+   * they worked nothing; the truth is that nobody has calculated yet, and the surface says so.
+   */
+  const engineKey = str(calcRef.engineKey ?? row.engineKey);
+  const notComputedYet = engineKey === "hr.pay_period_enrollment";
+
+  return {
+    hoursByCategory: categories(c.totals_by_category ?? c.totalsByCategory),
+    hoursOvertime: num(c.hours_overtime ?? c.hoursOvertime),
+    hoursDoubletime: num(c.hours_doubletime ?? c.hoursDoubletime),
+    premiumLineCount: num(c.premium_line_count ?? c.premiumLineCount),
+    notComputedYet,
+    // The engine's own note: at least one interval has no amount, so the period total is NOT zero.
+    amountsIncomplete: c.amounts_incomplete === true || c.amountsIncomplete === true,
+  };
+}
+
 function workweek(raw: Live, employmentId: string, payGroupId: string): WorkweekRow {
   const h = obj(raw.hours);
   const components = arr(raw.rateComponents);
@@ -426,10 +476,7 @@ export function fromLiveTimesheet(payload: unknown): Timesheet {
     periodTotals: {
       // The server's own display sum. Never recomputed here.
       totalHours: num(totalsPeriod.hours ?? row.totalHours),
-      hoursByCategory: categories(totalsPeriod.byCategory),
-      hoursOvertime: num(totalsPeriod.overtime),
-      hoursDoubletime: num(totalsPeriod.doubletime),
-      premiumLineCount: num(totalsPeriod.premiumLineCount),
+      ...rollupTotals(row),
       boundaryNote: nstr(totalsPeriod.boundaryNote),
     },
     attestation: {

@@ -1551,6 +1551,13 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
         reopenAllowed: true,
         reopenNotice: "Reopening does NOT un-export and does NOT re-pay. A delivered export is never regenerated in place, because that pays the same hours twice. The fix is an adjustment.",
         adjustmentsTaggedHere: 1,
+        // Healthy: everyone was asked, the flows are alive.
+        workflow: {
+          awaiting: 3, stuck: 0, noFlow: 0, done: 285,
+          rows: [
+            { payPeriodEmploymentId: "aaaa0001-0000-4000-8000-000000000001", employmentId: "11111111-1111-4111-8111-111111111111", rowState: "open", health: "awaiting", flowKey: "timecard_attestation", instanceId: "470e7247-0000-4000-8000-000000000001", instanceState: "active", failureClass: null, failureId: null },
+          ],
+        },
       },
     },
     // NOT approvable: two timecards still open. No boundary weeks — the "no straddle" panel state.
@@ -1568,6 +1575,15 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
         reopenAllowed: false,
         reopenNotice: null,
         adjustmentsTaggedHere: 0,
+        // 🚨 NOBODY WAS ASKED. Two rows are `open` and neither has a flow — the case that reads as
+        // "awaiting" in the row counts and is nothing of the sort.
+        workflow: {
+          awaiting: 0, stuck: 0, noFlow: 2, done: 286,
+          rows: [
+            { payPeriodEmploymentId: "aaaa0002-0000-4000-8000-000000000001", employmentId: "11111111-1111-4111-8111-111111111111", rowState: "open", health: "no_flow", flowKey: null, instanceId: null, instanceState: null, failureClass: null, failureId: null },
+            { payPeriodEmploymentId: "aaaa0002-0000-4000-8000-000000000002", employmentId: "22222222-2222-4222-8222-222222222222", rowState: "open", health: "no_flow", flowKey: null, instanceId: null, instanceState: null, failureClass: null, failureId: null },
+          ],
+        },
       },
     },
     error: {
@@ -1593,6 +1609,20 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
         reopenAllowed: true,
         reopenNotice: "Reopening does NOT un-export and does NOT re-pay. A delivered export is never regenerated in place, because that pays the same hours twice. The fix is an adjustment.",
         adjustmentsTaggedHere: 2,
+        // 🚨 ALL FOUR HEALTHS PLUS THE TWO CASES THAT HIDE:
+        //   • a `stuck` row — the flow is dead and waiting will never move it;
+        //   • an `awaiting` row that STILL CARRIES AN OPEN FAILURE — counted as progressing, is not;
+        //   • a `not_attested` row, the engine's coming terminal: flagged to a manager and NEVER
+        //     treated as agreement.
+        workflow: {
+          awaiting: 2, stuck: 1, noFlow: 1, done: 284,
+          rows: [
+            { payPeriodEmploymentId: "aaaa0003-0000-4000-8000-000000000001", employmentId: "11111111-1111-4111-8111-111111111111", rowState: "open", health: "stuck", flowKey: "timecard_attestation", instanceId: "470e7247-0000-4000-8000-000000000002", instanceState: "failed", failureClass: "approver_ineligible", failureId: "131f98b1-0000-4000-8000-000000000001" },
+            { payPeriodEmploymentId: "aaaa0003-0000-4000-8000-000000000002", employmentId: "22222222-2222-4222-8222-222222222222", rowState: "open", health: "awaiting", flowKey: "timecard_attestation", instanceId: "470e7247-0000-4000-8000-000000000003", instanceState: "active", failureClass: "approver_ineligible", failureId: "131f98b1-0000-4000-8000-000000000002" },
+            { payPeriodEmploymentId: "aaaa0003-0000-4000-8000-000000000003", employmentId: "33333333-3333-4333-8333-333333333335", rowState: "open", health: "awaiting", flowKey: "timecard_attestation", instanceId: "470e7247-0000-4000-8000-000000000004", instanceState: "not_attested", failureClass: "not_attested", failureId: "131f98b1-0000-4000-8000-000000000003" },
+            { payPeriodEmploymentId: "aaaa0003-0000-4000-8000-000000000004", employmentId: "44444444-0000-4000-8000-000000000009", rowState: "open", health: "no_flow", flowKey: null, instanceId: null, instanceState: null, failureClass: null, failureId: null },
+          ],
+        },
       },
     },
   },
