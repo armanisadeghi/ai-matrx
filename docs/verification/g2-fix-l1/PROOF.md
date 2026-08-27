@@ -180,3 +180,47 @@ between actions, so some steps were proven through PostgREST rather than by clic
 says so above, and the transport used is the same one the browser uses. The screenshots that were
 captured — the rendered profile (F1), the pay-groups create affordances and the open create form
 (F3) — are the ones where the affordance itself was the thing under test.
+
+## 🚨 The fix for F5 was itself broken, and clicking the button is what found it
+
+`hr_module_set_enabled` shipped, returned `{"ok": true, "module_enabled": true}`, and **wrote
+nothing**. `/hr?org=castellano-reyes` still said *"HR isn't turned on for this organization"* and
+`iam.organizations.settings #> '{hr}'` was still NULL.
+
+Not RLS, not permissions:
+
+```sql
+jsonb_set('{}'::jsonb, array['hr','module_enabled'], 'true', true)  →  {}
+```
+
+**`create_missing` creates only the LAST element of a path.** When any PARENT is absent,
+`jsonb_set` returns the document unchanged — no error, no warning, and the UPDATE genuinely ran,
+so nothing downstream could tell. Every organization whose `settings` had no `hr` key — i.e. every
+org that had never used HR, i.e. exactly the ones the function exists for — was unwritable.
+
+**The second victim was worse and nobody had clicked it yet.** `hr_knob_set` writes
+`array['hr', v_slug, p_key]` the same way, so an org's **first** knob override silently did nothing
+while route 67 reported the key as overridden. The *second* override on the same slug would have
+worked — a bug that fixes itself after one confusing failure and leaves no trace.
+
+Both now build the path with `||` (which creates parents) **and read the value back**, refusing
+with `write_did_not_land` if it is not what was asked for. That read-back, not the operator, is
+what makes the class impossible: this is the same law `hr._wf_apply` already states — *"an apply
+that did not happen is NEVER recorded as happened"* — and both functions had been building their
+success envelope from their INPUT.
+
+Migration `hr_l1_14_jsonb_set_cannot_create_parents`, with a planted known-bad probe: it writes
+through an org that has no `hr` settings key, asserts the value landed, and restores the original
+document.
+
+**Live, end to end, in the browser:**
+
+```
+iam.organizations.settings->'hr'  →  {"module_enabled": true}
+hr._l1_module_enabled(…)          →  true
+```
+
+`/hr?org=castellano-reyes` now renders **"Set up HR for this employer — Tell us who the employer of
+record is, where people work, and who runs HR. It takes three steps and you can change all of it
+later."** with a **Set up HR** button. The circular dead end is closed: module off → enable →
+activation wizard.
