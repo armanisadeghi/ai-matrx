@@ -307,9 +307,61 @@ async def main():
             r1.get("reason"))
 
         # ---- the exclusive binding: a second open leave_request on the same target
+        await as_owner()
+        inst_before = await conn.fetchval(
+            "select count(*) from hr.workflow_instance where organization_id=$1", org)
+        await as_user(people["alice"]["uid"])
         r2 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", lr, org)
         rec("§1.6 binding", "a second open instance on the same (target, flow) is refused",
             r2.get("granted") is False and r2.get("reason") == "WF_BINDING_OPEN", r2.get("reason"))
+        rec("§1.6 binding", "and it names the instance already holding the binding, so the caller can go to it",
+            r2.get("existing_instance_id") == str(inst), r2.get("existing_instance_id"))
+        # 🚨 D275: A REFUSAL WRITES NOTHING. The engine used to insert the instance and only THEN
+        # try the binding, returning the refusal from inside the catch — so every duplicate submit
+        # stranded a `validating` instance with no binding, no steps and no event, on a table §1.3
+        # forbids ever deleting from. Fixed at the source in hr_c4_10 (pre-check, plus both inserts
+        # in ONE exception block so even losing the concurrent race rolls the instance back).
+        await as_owner()
+        inst_after = await conn.fetchval(
+            "select count(*) from hr.workflow_instance where organization_id=$1", org)
+        rec("§1.6 binding", "🚨 and the refusal leaves NO instance row behind — an instance is evidence, and evidence is never deleted (D275)",
+            inst_after == inst_before, f"before={inst_before} after={inst_after}")
+        rec("§1.6 binding", "no orphan can exist even in principle: zero instances in this org lack a binding",
+            await conn.fetchval(
+                "select count(*)=0 from hr.workflow_instance i where i.organization_id=$1 "
+                "and not exists (select 1 from hr.workflow_binding b where b.workflow_instance_id=i.id)",
+                org),
+            str(await conn.fetchval(
+                "select string_agg(i.state||':'||i.flow_key, ', ') from hr.workflow_instance i "
+                "where i.organization_id=$1 and not exists "
+                "(select 1 from hr.workflow_binding b where b.workflow_instance_id=i.id)", org)))
+
+        # ---- §4.2 idempotency: a replay RETURNS the existing instance, it does not error and it
+        # does not write a second one. hr_c4_10 moved this handler into the binding's exception
+        # block, so it is PROVEN here rather than assumed — nothing else in the suite drove it.
+        idem_target = await conn.fetchval(
+            "insert into hr.leave_request (organization_id, employment_id, leave_policy_id, starts_on, "
+            "ends_on, requested_hours, state, engine_key, engine_version) "
+            "values ($1,$2,$3,current_date + 500, current_date + 500, 8,'submitted','proof','1') returning id",
+            org, people["alice"]["employment"], lp)
+        idem_key = f"hrb008-idem-{uuid.uuid4()}"
+        await as_user(people["alice"]["uid"])
+        ri1 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb,null,false,$4)",
+                      idem_target, org, json.dumps({"total_hours": 8}), idem_key)
+        await as_owner()
+        idem_before = await conn.fetchval(
+            "select count(*) from hr.workflow_instance where organization_id=$1", org)
+        await as_user(people["alice"]["uid"])
+        ri2 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb,null,false,$4)",
+                      idem_target, org, json.dumps({"total_hours": 8}), idem_key)
+        await as_owner()
+        rec("§4.2 idempotency", "a replay of the same idempotency key RETURNS the first instance instead of erroring",
+            ri2.get("granted") is True and ri2.get("replayed") is True
+            and ri2.get("instance_id") == ri1.get("instance_id"), json.dumps(ri2)[:180])
+        rec("§4.2 idempotency", "and it writes no second instance row",
+            await conn.fetchval("select count(*) from hr.workflow_instance where organization_id=$1", org)
+            == idem_before)
+        await as_user(people["alice"]["uid"])
 
         # ---- the manager approves
         await as_user(people["bob"]["uid"])
