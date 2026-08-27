@@ -186,10 +186,35 @@ export type HrRelationsList = {
  * an error and it is not an empty list — it is `partial: true`, and the surface
  * says so in words.
  */
+/**
+ * 🚨 `organizationId` IS REQUIRED, AND OMITTING IT DID NOT MEAN "EVERY EMPLOYER" —
+ * IT MEANT "WHICHEVER ONE THE VIEWER HAPPENS TO WORK FOR FIRST".
+ *
+ * `hr._door_list` resolves the employer in three steps, verified live in its body:
+ *
+ *     v_org := nullif(p_filter ->> 'organization_id','')::uuid;
+ *     if v_org is null then
+ *       select em.organization_id into v_org
+ *         from hr.employment em where em.id = any(hr.employments_of(v_uid)) limit 1;
+ *     end if;
+ *     if v_org is null then raise …
+ *
+ * That middle fallback is a `limit 1` with **no ORDER BY**. So a call with no
+ * `organization_id` was silently scoped to an arbitrary one of the VIEWER's own
+ * employments — not to the employer whose page they are looking at. For an HR
+ * admin who is employed by one company and administers another, this queue showed
+ * the wrong company's cases or, as observed live on 2026-08-27, none at all:
+ * `row_count: 0` with **`granted: true`**, so it did not even look like a refusal.
+ * The surface rendered its "nothing here" empty state over a real, existing row.
+ *
+ * The organization is now always passed explicitly. Both call sites already held
+ * it and already guarded on it — they simply never sent it.
+ */
 export async function fetchHrRelationsCases(
+  organizationId: string,
   filter: HrRelationsFilter = {},
 ): Promise<HrResult<HrRelationsList>> {
-  const serverFilter: Record<string, unknown> = {};
+  const serverFilter: Record<string, unknown> = { organization_id: organizationId };
   if (filter.state) serverFilter.state = filter.state;
   if (filter.assigneeEmploymentId) {
     serverFilter.assignee_employment_id = filter.assigneeEmploymentId;

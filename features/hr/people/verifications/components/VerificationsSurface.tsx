@@ -81,7 +81,7 @@ export function VerificationsSurface() {
     setIsLoading(true);
 
     (async () => {
-      const result = await fetchHrVerificationLetters({});
+      const result = await fetchHrVerificationLetters({ organizationId });
       if (cancelled) return;
       if (result.ok) {
         setRows(result.data.rows ?? []);
@@ -149,7 +149,16 @@ export function VerificationsSurface() {
       cell: (row) => (
         <span className="min-w-0">
           <span className="block truncate text-sm font-medium text-foreground">
-            {row.subject_name ?? "Not on record here"}
+            {/*
+              🚨 "Not on record here" WAS A CLAIM WE HAD NOT EARNED. The door
+              projects `to_jsonb()` over `hr.verification_letter_request`, which
+              carries `employment_id` and NO `subject_name` — verified live
+              2026-08-27 against the row's actual keys. So this fallback fired on
+              every request in the queue and told the reader that a person who is
+              squarely on record is not. Absence of a name we never asked the
+              server for is not evidence about the person; say what we do know.
+            */}
+            {row.subject_name ?? "Employee on this request"}
           </span>
           {/* A former employee's letter reads in the past tense — say so where
               the reader will act on it. */}

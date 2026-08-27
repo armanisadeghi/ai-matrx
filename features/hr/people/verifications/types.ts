@@ -54,22 +54,43 @@ export const HR_VERIFICATION_SOURCE_LABELS: Record<HrVerificationSource, string>
   lender: "A lender",
 };
 
+/**
+ * 🚨 THE THIRD VALUE IS `income_only`, AND IT WAS `income` UNTIL 2026-08-27 — WHICH
+ * MADE "INCOME ONLY" UNSELECTABLE IN THE PRODUCT.
+ *
+ * Two authorities agree with each other and disagreed with this file:
+ *   • `hr.verification_letter_request_verification_kind_check` allows exactly
+ *     `employment | employment_and_income | income_only`;
+ *   • `hr_verification_request_create` computes consent from
+ *     `v_kind in ('employment_and_income','income_only')`.
+ *
+ * So a request submitted as `income` failed the CHECK with 23514 — a constraint
+ * violation, which reaches the surface as "could not be saved" rather than as a
+ * worded refusal, because it is a breakage and not a decision. And the consent
+ * gate below compounded it: `includesCompensation('income')` answered TRUE while
+ * the server would have answered FALSE for that same string, so the dialog
+ * promised a consent step for a request that could never be written at all.
+ *
+ * The database is right and this list was wrong. Verified live against the
+ * constraint definition and the function body.
+ */
 export const HR_VERIFICATION_KINDS = [
   "employment",
   "employment_and_income",
-  "income",
+  "income_only",
 ] as const;
 export type HrVerificationKind = (typeof HR_VERIFICATION_KINDS)[number];
 
 export const HR_VERIFICATION_KIND_LABELS: Record<HrVerificationKind, string> = {
   employment: "Employment only",
   employment_and_income: "Employment and income",
-  income: "Income only",
+  income_only: "Income only",
 };
 
 /** Income in any form pulls in the consent gate. */
 export function includesCompensation(kind: HrVerificationKind): boolean {
-  return kind === "employment_and_income" || kind === "income";
+  // Mirrors the door exactly: `v_kind in ('employment_and_income','income_only')`.
+  return kind === "employment_and_income" || kind === "income_only";
 }
 
 export const HR_VERIFICATION_DELIVERY_METHODS = [

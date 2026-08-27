@@ -58,6 +58,7 @@ export function useHrRelationsCases(
 
     (async () => {
       const result = await fetchHrRelationsCases(
+        organizationId,
         JSON.parse(filterKey) as HrRelationsFilter,
       );
       if (cancelled) return;

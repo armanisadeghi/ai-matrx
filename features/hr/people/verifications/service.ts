@@ -37,15 +37,44 @@ import {
 
 export const HR_VERIFICATION_TOKEN = "hr_verification_letter_request";
 
+/**
+ * 🚨 `organizationId` IS REQUIRED, AND OMITTING IT DID NOT MEAN "EVERY EMPLOYER" —
+ * IT MEANT "WHICHEVER ONE THE VIEWER HAPPENS TO WORK FOR FIRST".
+ *
+ * `hr._door_list` resolves the employer in three steps, verified live in its body:
+ *
+ *     v_org := nullif(p_filter ->> 'organization_id','')::uuid;
+ *     if v_org is null then
+ *       select em.organization_id into v_org
+ *         from hr.employment em where em.id = any(hr.employments_of(v_uid)) limit 1;
+ *     end if;
+ *     if v_org is null then raise …
+ *
+ * That middle fallback is a `limit 1` with **no ORDER BY**. So a call with no
+ * `organization_id` was silently scoped to an arbitrary one of the VIEWER's own
+ * employments — not to the employer whose page they are looking at. For an HR
+ * admin who is employed by one company and administers another, this queue showed
+ * the wrong company's cases or, as observed live on 2026-08-27, none at all:
+ * `row_count: 0` with **`granted: true`**, so it did not even look like a refusal.
+ * The surface rendered its "nothing here" empty state over a real, existing row.
+ *
+ * The organization is now always passed explicitly. Both call sites already held
+ * it and already guarded on it — they simply never sent it.
+ */
 export function fetchHrVerificationLetters(args: {
+  organizationId: string;
   state?: string | null;
-  subjectEmployeeId?: string | null;
+  subjectEmploymentId?: string | null;
   limit?: number;
   cursor?: string | null;
 }): Promise<HrResult<HrAuditedPage<HrVerificationLetterRow>>> {
-  const filter: Record<string, unknown> = {};
+  const filter: Record<string, unknown> = { organization_id: args.organizationId };
   if (args.state) filter.state = args.state;
-  if (args.subjectEmployeeId) filter.subject_employee_id = args.subjectEmployeeId;
+  // 🚨 THE COLUMN IS `employment_id`. `hr.verification_letter_request` has no
+  // `subject_employee_id` — verified live 2026-08-27 from the row's own keys — so
+  // filtering by that name narrowed nothing and a per-person view would have shown
+  // the whole employer's queue.
+  if (args.subjectEmploymentId) filter.employment_id = args.subjectEmploymentId;
 
   return fetchHrConfidentialList<HrVerificationLetterRow>({
     token: HR_VERIFICATION_TOKEN,
