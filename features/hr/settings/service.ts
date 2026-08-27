@@ -7,6 +7,16 @@
 //
 // 🚨 A REFUSAL IS DATA. `supabase.rpc()` does not throw when the server says no,
 // and nothing below throws either. Never let a refusal look like an empty panel.
+//
+// 🚨 MAPPED, NOT CAST — the same law `features/hr/time/api/service.ts` runs on. A
+// `return data as SomeType` cannot fail, so the day the live payload moves, the fields
+// arrive `undefined` and the surface renders a blank, a NaN, or a crash — at runtime,
+// only once real data exists. Eight defects of that class landed across this codebase in
+// a single day. So every door below either has a field-by-field mapper whose header
+// records the live-vs-`types.ts` diff it found, or it carries a dated ✅ VERIFIED ALIGNED
+// note saying how the alignment was checked, so the next sweep can skip it without
+// re-reading the database. `types.ts` is NOT rewritten to match the wire: where the two
+// genuinely disagree, the mapper says which side is right and why.
 
 import { supabase } from "@/utils/supabase/client";
 
@@ -46,18 +56,155 @@ function failed(message: string, code?: string | null): HrResult<never> {
   return { ok: false, kind: "failed", message, code: code ?? null };
 }
 
+// ── Narrowers, so a mapper can be read at a glance ──────────────────────────
+//
+// Each one answers "did the wire actually send this, in this shape?" and returns
+// `null` when it did not. NOTHING here invents a value: a missing number stays
+// missing rather than becoming 0, and a missing boolean stays missing rather than
+// becoming `false`. Both of those coercions are live defects on this surface —
+// see `mapEmployerProfileRow`.
+
+function asBag(v: unknown): Record<string, unknown> | null {
+  return v !== null && typeof v === "object" && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : null;
+}
+const asText = (v: unknown): string | null => (typeof v === "string" ? v : null);
+const asNumber = (v: unknown): number | null =>
+  typeof v === "number" && Number.isFinite(v) ? v : null;
+const asBool = (v: unknown): boolean | null => (typeof v === "boolean" ? v : null);
+/** A jsonb column declared `not null default '{}'`; anything else is an empty bag. */
+const asJsonObject = (v: unknown): Record<string, unknown> => asBag(v) ?? {};
+/** A `text[]` column declared `not null default '{}'`; non-strings are dropped, loudly typed. */
+const asTextList = (v: unknown): string[] =>
+  Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+
 // ── Route 68 — the employer of record ───────────────────────────────────────
+
+/**
+ * 🚨 **MAPPED, NOT CAST.** `hr._project_row` builds this row as `to_jsonb(t)` over the
+ * whole `hr.employer_profile` table, so the envelope carries EVERY column and the
+ * column list is free to move under a cast that can never fail. Verified field by
+ * field against `information_schema.columns` and against the live sandbox row
+ * (`2643e470-…`) on **2026-08-26**.
+ *
+ * THE LIVE-VS-`types.ts` DIFF, in full:
+ *   • Every field `HrEmployerProfileRead` declares EXISTS on the wire, under the same
+ *     snake_case name. `supabase.rpc()` does not camelize, so the keys are read as-is.
+ *   • `ein_last4` does NOT exist — there is no such column and no projection builds one.
+ *     `types.ts` already declares it optional and says why. This mapper therefore
+ *     **omits the key entirely** unless the server one day sends it, which is what makes
+ *     the type's "the panel lights up the moment the lane ships it" promise real. It is
+ *     never defaulted to a string, because a fabricated last-4 is worse than no last-4.
+ *   • The wire carries SIX fields the type does not declare — `created_by`, `updated_by`,
+ *     `created_at`, `deleted_at`, `metadata`, `visibility`. types.ts is RIGHT to omit
+ *     them: none is route 68's business, and `_door_list` already filters `deleted_at`.
+ *     They are dropped here rather than widened into the type.
+ *   • `ein` is stripped upstream by `hr._project_row` (`client_excluded_columns = {ein}`
+ *     on `platform.entity_types`), so it never reaches this function at all.
+ *
+ * THREE FIELDS WHERE A DEFAULT WOULD BE A LIE, not a convenience:
+ *   • `headcount_total` is nullable and IS null on the live row. `HrEmployerPanel` renders
+ *     `Derived: ${headcount_total} employees as of …` whenever it is non-null, so a `?? 0`
+ *     here prints **"Derived: 0 employees"** underneath the FMLA and ACA flags — a
+ *     confident, wrong statement of law. Null stays null and the panel says nobody has
+ *     established it.
+ *   • the four `is_*` applicability flags are nullable and ALL null on the live row. A
+ *     `=== true` narrowing turns "nobody has established this" into a confident **false**
+ *     — "not FMLA covered" asserted by nobody. Null is preserved exactly.
+ *   • `version` is the optimistic-concurrency token the save path sends as
+ *     `expected_version`. A manufactured version does not fail loudly; it either blocks
+ *     every save or clobbers a concurrent one. So a row that arrives without a numeric
+ *     `version` is REJECTED below rather than defaulted.
+ */
+function mapEmployerProfileRow(raw: unknown): HrEmployerProfileRead | null {
+  const r = asBag(raw);
+  if (!r) return null;
+
+  // Identity + the concurrency token. Without all three this is not an employer profile
+  // the editor can safely open, and handing the panel a half-row is how a save silently
+  // targets the wrong version.
+  const id = asText(r.id);
+  const organizationId = asText(r.organization_id);
+  const version = asNumber(r.version);
+  if (id === null || organizationId === null || version === null) {
+    console.error(
+      "[hr/settings] The audited door returned an employer-profile row without an id, " +
+        "organization_id, or version. It is being dropped rather than rendered, because " +
+        "the editor sends `version` back as `expected_version`.",
+      { hasId: id !== null, hasOrganizationId: organizationId !== null, hasVersion: version !== null },
+    );
+    return null;
+  }
+
+  return {
+    id,
+    organization_id: organizationId,
+    // `legal_name` is `not null` in the table, so an absent one means the envelope changed
+    // shape. A loud placeholder beats an empty heading nobody can diagnose.
+    legal_name:
+      asText(r.legal_name) ?? "(the server did not send this employer's legal name)",
+    dba_name: asText(r.dba_name),
+    entity_form: asText(r.entity_form),
+    formation_state: asText(r.formation_state),
+    primary_address: asJsonObject(r.primary_address),
+    workers_comp_policy: asJsonObject(r.workers_comp_policy),
+    careers_slug: asText(r.careers_slug),
+    applicability_basis: asJsonObject(r.applicability_basis),
+
+    // Nullable on purpose — see the header. Never 0, never false.
+    headcount_total: asNumber(r.headcount_total),
+    headcount_asof_date: asText(r.headcount_asof_date),
+    is_fmla_covered: asBool(r.is_fmla_covered),
+    is_aca_ale: asBool(r.is_aca_ale),
+    is_eeo1_filer: asBool(r.is_eeo1_filer),
+    is_federal_contractor: asBool(r.is_federal_contractor),
+
+    everify_required_states: asTextList(r.everify_required_states),
+    settings: asJsonObject(r.settings),
+    version,
+    // `not null` in the table. The empty-string fallback is deliberately FALSY, so a
+    // future `updated_at && formatDate(...)` renders nothing rather than "Invalid Date";
+    // no timestamp is manufactured.
+    updated_at: asText(r.updated_at) ?? "",
+
+    // Present only if the server ever projects it. See the header.
+    ...(typeof r.ein_last4 === "string" ? { ein_last4: r.ein_last4 } : {}),
+  };
+}
 
 /**
  * The one employer profile for this org, through the AUDITED confidential door.
  *
- * 🚨 WHY A LIST CALL FOR A SINGLE ROW. `hr_confidential_get` takes the profile's
- * **id**, and nothing the browser can already reach carries it: `hr_my_context`
- * returns no `employer_profile_id`, `hr_structure_list` returns no
- * `employer_profile_id`, and the `hr` schema is not in PostgREST so the row cannot
- * be selected. `hr_confidential_list('hr_employer_profile', {organization_id})`
- * filters by org inside `hr._door_list`, applies the same per-row verdict, and
- * writes the same audit row — so it is the only reachable read, not a shortcut.
+ * 🚨 WHY A LIST CALL FOR A SINGLE ROW — CORRECTED 2026-08-26. The reason this comment
+ * used to give is now FALSE and was deleted: it claimed `hr_my_context` and
+ * `hr_structure_list` return no `employer_profile_id`. **Both return it today** — read
+ * out of both function bodies, where the server lane labelled the addition "RECORDED
+ * DECISION 28: route 68 had to make an audited confidential call just to learn the id of
+ * the profile it was editing." `hr_my_context` sends it at `.active.employer_profile_id`;
+ * `hr_structure_list` sends it at the top level.
+ *
+ * What IS still true, and is the whole reason this call stays a list call:
+ *   • the `hr` schema is genuinely NOT in PostgREST — the `authenticator` role's
+ *     `pgrst.db_schemas` names `platform`, `iam`, and 50 others, and not `hr` — so every
+ *     client read of an `hr` table goes through a `public.hr_*` SECURITY DEFINER door;
+ *   • `hr_confidential_get` takes the profile's **id**, and this function's ONE call site
+ *     (`HrEmployerPanel`) passes an organization. `hr_confidential_list` filters by org
+ *     inside `hr._door_list`, so it is the one door that turns what the call site has into
+ *     the row it wants. Resolving the id here instead would mean a second RPC that only
+ *     repeats work `useHrContext` already did.
+ *
+ * 🔭 THE SWITCH THE NEXT AGENT SHOULD MAKE, and the concrete thing it buys. `hr._door_list`
+ * returns `granted: false` on exactly ONE branch — `d.caps is null`, the "this token has no
+ * door" case — and `hr._door_spec('hr_employer_profile')` returns
+ * `caps = {working_record.read}`, so **that branch can never fire for this token**. A caller
+ * with no standing therefore gets `granted: true, row_count: 0` while the door's own audit
+ * row records `granted = false, basis = 'refused'`. A refusal is indistinguishable from an
+ * absent profile on this wire, which is why the panel's empty state has to hedge in prose.
+ * `hr_confidential_get` answers `{granted: false, reason, detail, audit_id}` with the real
+ * per-row verdict. Once `HrEmployerPanel` passes the `employer_profile_id` it ALREADY holds
+ * in `useHrContext().active`, move this to `hr_confidential_get` and the hedge becomes an
+ * answer. `HrSettingsStructure.employer_profile_id` was added to `types.ts` for that.
  *
  * The returned row has `ein` STRIPPED by `hr._project_row` (`client_excluded_columns`
  * on `platform.entity_types`). See `types.ts` — the panel says so in words rather
@@ -66,7 +213,18 @@ function failed(message: string, code?: string | null): HrResult<never> {
 export async function fetchHrEmployerProfile(args: {
   organizationId: string;
   purpose?: string;
-}): Promise<HrResult<{ profile: HrEmployerProfileRead | null; audit_id: string | null }>> {
+}): Promise<
+  HrResult<{
+    profile: HrEmployerProfileRead | null;
+    audit_id: string | null;
+    /**
+     * What the door said it kept, straight off `hr._door_list`'s `row_count`. Reported
+     * so "0 of N" can never be assembled out of a length this file guessed at; `null`
+     * means the envelope did not carry it.
+     */
+    row_count: number | null;
+  }>
+> {
   const { data, error } = await supabase.rpc("hr_confidential_list" as never, {
     p_token: "hr_employer_profile",
     p_filter: { organization_id: args.organizationId },
@@ -87,24 +245,25 @@ export async function fetchHrEmployerProfile(args: {
     );
   }
 
-  const payload = data as
-    | {
-        granted?: boolean;
-        reason?: string;
-        detail?: string | null;
-        audit_id?: string | null;
-        rows?: unknown[];
-      }
-    | null;
-
-  if (!payload || typeof payload !== "object") {
+  // 🚨 `<unknown>` FROM THE DOOR, THEN MAPPED. The envelope below is the literal
+  // `jsonb_build_object` at the end of `hr._door_list` (read live 2026-08-26): the granted
+  // branch builds `{granted, rows, row_count, next_cursor, audit_id}` and the no-door
+  // branch builds `{granted, reason, detail, audit_id}`. The old inline type declared
+  // neither `row_count` nor `next_cursor`, so a pager built on it would have had to invent
+  // a total from `rows.length`.
+  const payload = asBag(data);
+  if (!payload) {
     return failed(
       "The employer profile came back in a shape this app does not understand.",
       null,
     );
   }
+
+  const auditId = asText(payload.audit_id);
   if (payload.granted === false) {
-    return denied(payload.reason ?? "not_reachable", payload.detail, payload.audit_id);
+    // Unreachable for this token today (see the header), and kept anyway: the day a
+    // capability is pulled off `hr._door_spec`, this is the branch that must not be missing.
+    return denied(asText(payload.reason) ?? "not_reachable", asText(payload.detail), auditId);
   }
 
   const rows = Array.isArray(payload.rows) ? payload.rows : [];
@@ -118,11 +277,14 @@ export async function fetchHrEmployerProfile(args: {
     );
   }
 
+  const profile = rows.length > 0 ? mapEmployerProfileRow(rows[0]) : null;
+
   return {
     ok: true,
     data: {
-      profile: (rows[0] as HrEmployerProfileRead | undefined) ?? null,
-      audit_id: payload.audit_id ?? null,
+      profile,
+      audit_id: auditId,
+      row_count: asNumber(payload.row_count),
     },
   };
 }
@@ -179,6 +341,21 @@ export async function fetchHrKnobMetadata(): Promise<HrResult<HrKnobMetadata[]>>
     );
   }
 
+  // ✅ VERIFIED ALIGNED 2026-08-26 — CAST LEFT ALONE ON PURPOSE, so the next cast sweep
+  // skips it. How it was verified: every one of the eleven selected columns was read out
+  // of `information_schema.columns` for `platform.feature_knob`, and four live `hr.%` rows
+  // were serialised through `to_jsonb()` — the same path PostgREST takes — to check the
+  // JSON types rather than the SQL ones. Findings:
+  //   • `min_value` / `max_value` are `numeric`, and `to_jsonb` emits them UNQUOTED
+  //     (`480`, `5`, `10`, `0`), so `number | null` is true and a bounds check will not
+  //     silently compare against a string. Note `min_value: 0` occurs for real, which is
+  //     exactly why a `?? 0` default anywhere near this shape would be undetectable.
+  //   • `review_due` is `date` → `"2026-11-24"`; `allowed_values` is `jsonb` → array or
+  //     null, correctly typed `unknown`; `unit` is null on most rows.
+  //   • `label` and `description` are `not null` in the table while `HrKnobMetadata`
+  //     declares them `string | null`. That is a WIDENING, not a mismatch — the type
+  //     tolerates a column that has not been backfilled — so it is left as it stands.
+  // A mapper here would restate the select list with no defect to prevent.
   return { ok: true, data: (data ?? []) as HrKnobMetadata[] };
 }
 
@@ -259,6 +436,20 @@ export async function fetchHrCustomFieldRegistry(args: {
     );
   }
 
+  // ✅ VERIFIED ALIGNED 2026-08-26 — BOTH CASTS LEFT ALONE ON PURPOSE. How it was
+  // verified: both select lists were checked column by column against
+  // `information_schema.columns` for `platform.custom_field_definition` and
+  // `platform.custom_field_target`, and live `hr_*` target rows were serialised through
+  // `to_jsonb()`. Every selected column exists, and every nullability matches what
+  // `types.ts` declares — `target_token` and `notes` nullable; `field_order`,
+  // `is_required`, `is_multi`, `sensitivity_tier`, `ai_exposure`, `is_enabled`,
+  // `validation_mode`, `sensitivity_ceiling`, `ai_exposure_ceiling` all `not null`;
+  // `max_fields` / `max_custom_bytes` nullable and null on every live row, which
+  // `number | null` says correctly and a `?? 0` would turn into a ceiling of zero.
+  // `options` is nullable `jsonb`, typed `unknown`, which is right — L14 owns its schema.
+  // This is a plain RLS-checked PostgREST read: `platform` IS in the `authenticator`
+  // role's `pgrst.db_schemas`, and `hr` genuinely is NOT (checked live in
+  // `pg_db_role_setting`), which is the standing reason the `hr` reads above use doors.
   return {
     ok: true,
     data: {

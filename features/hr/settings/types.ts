@@ -175,6 +175,36 @@ export type HrDeductionCode = {
   is_active: boolean;
 };
 
+// ── Route 68 — employer tax registrations (NOT a confidential-door shape) ───
+
+/**
+ * One `hr.tax_registration` row, as `hr_structure_list` builds it — including the
+ * `jurisdiction_key` / `jurisdiction_name` it left-joins in, which are NOT columns
+ * on the table.
+ *
+ * 🚨 THIS RIDES THE STRUCTURE READ, NOT AN AUDITED DOOR, and the function body says
+ * why in as many words: `hr_tax_registration` is absent from `hr._door_spec`, so
+ * `hr_confidential_get` / `_list` RAISE on it. Employer-of-record configuration (an
+ * account number, a rate) is not personal data. The whole member is `[]` for a
+ * non-admin caller — the function gates it on `v_admin`, so an empty array here means
+ * "you are not an admin" just as much as it means "there are none".
+ */
+export type HrTaxRegistration = {
+  id: string;
+  jurisdiction_id: string;
+  /** From the LEFT JOIN on `hr.jurisdiction`, so null if the row is orphaned. */
+  jurisdiction_key: string | null;
+  jurisdiction_name: string | null;
+  registration_kind: string;
+  account_number: string | null;
+  registered_on: string | null;
+  status: string;
+  /** Nullable `numeric`. A missing rate is UNKNOWN, never 0 — 0% is a real answer. */
+  rate: number | null;
+  rate_effective_on: string | null;
+  new_hire_report_endpoint: string | null;
+};
+
 // ── The whole structure envelope, typed for this lane ───────────────────────
 
 /**
@@ -193,6 +223,23 @@ export type HrSettingsStructure = {
   deduction_codes: HrDeductionCode[];
   establishments: HrEstablishment[];
   jurisdictions: HrJurisdiction[];
+  /**
+   * 🚨 ADDED 2026-08-26 — THE DOOR SENDS THIS AND THIS TYPE DID NOT DECLARE IT, which
+   * made the doc-comment above ("narrowed to what the function actually builds") false
+   * and cost route 68 an audited confidential list call to learn an id it was already
+   * being handed. The server lane labelled the addition in the SQL itself: "RECORDED
+   * DECISION 28: route 68 had to make an audited confidential call just to learn the id
+   * of the profile it was editing." `hr_my_context` also carries it, at
+   * `.active.employer_profile_id`.
+   *
+   * Null means the org has NO `hr.employer_profile` row — it is not activated. It is
+   * never null for a reachability reason: the function selects the id with no capability
+   * filter, because an id is not confidential. See `fetchHrEmployerProfile` in
+   * `service.ts` for the switch this unblocks.
+   */
+  employer_profile_id: string | null;
+  /** Admin-only; `[]` for everyone else. See {@link HrTaxRegistration}. */
+  tax_registrations: HrTaxRegistration[];
 };
 
 // ── Route 73 — the custom-field registry (READ ONLY, L14 owns authoring) ────
