@@ -40,10 +40,27 @@ declare
 begin
   v_def := pg_get_functiondef('hr.punch_write_path_conformance()'::regprocedure);
 
-  if position('pay_period_rollup_matches_its_breakdown' in v_def) > 0 then
-    raise notice 'hr_l3_45: the checks are already present';
+  -- Already in the fixed form: nothing to do.
+  if position('''insert '' || ''into hr' in v_def) > 0 then
+    raise notice 'hr_l3_45: the checks are already present in their fixed form';
     return;
   end if;
+
+  -- An earlier build spelled the check-17 pattern out, which made the gate match ITSELF. Repair
+  -- that one literal in place rather than truncating and rebuilding the function: `left()` on a
+  -- `pg_get_functiondef` result cuts off the closing dollar-quote tag, which is how the first
+  -- attempt at this failed.
+  if position('pay_period_rollup_matches_its_breakdown' in v_def) > 0 then
+    v_def := replace(v_def,
+      'p.prosrc ~ ''insert into hr\.work_interval''',
+      'p.prosrc ~ (''insert '' || ''into hr\.work_interval'')');
+    v_def := replace(v_def,
+      'p.prosrc !~ ''_ppe_rollup_refresh''',
+      'p.prosrc !~ (''_ppe'' || ''_rollup_refresh'')');
+    execute v_def;
+    return;
+  end if;
+
   if position(v_anchor in v_def) = 0 then
     raise exception 'hr_l3_45: could not find the end of the conformance function; refusing to guess';
   end if;
@@ -103,8 +120,12 @@ begin
     into v_bad
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = ''hr'' and p.prokind = ''f''
-     and p.prosrc ~ ''insert into hr\.work_interval''
-     and p.prosrc !~ ''_ppe_rollup_refresh'';
+     -- 🚨 the pattern is CONCATENATED, never written out. A gate whose own body contains
+     -- ``insert into hr.work_interval`` is itself matched by hr.stable_doors_that_write(), which
+     -- scans prosrc -- this check went red on ITSELF the first time it shipped. Same trap as the
+     -- arm_write self-match in hr_l3_30.
+     and p.prosrc ~ (''insert '' || ''into hr\.work_interval'')
+     and p.prosrc !~ (''_ppe'' || ''_rollup_refresh'');
   ok       := (v_bad = ''[]''::jsonb);
   severity := ''blocking'';
   detail   := jsonb_build_object(''violations'', v_bad,

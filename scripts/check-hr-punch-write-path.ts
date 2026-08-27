@@ -114,6 +114,20 @@ const EXPECTED_CHECKS = [
   // silently falls past the platform rung to its caller default, in EVERY org, unfixable by any
   // admin action. hr._clock_knob read `hr.clock`, which has no registered keys.
   "knob_readers_use_registered_features",
+  // Round-4 blocker S6 (hr_l3_44/45), asserted twice on purpose. The DATA check: no stored
+  // pay-period rollup may disagree with the breakdown stored beside it — the original form showed
+  // every category as 0.00 under a non-zero total, which is a number a manager approves rather
+  // than a page anybody reports. The STRUCTURAL check: any function that inserts a current
+  // hr.work_interval and does not refresh the rollup in the same body IS that defect by
+  // construction, and it catches a new writer before anyone has used it.
+  "pay_period_rollup_matches_its_breakdown",
+  "interval_writers_refresh_the_rollup",
+  // Round-4 blocker S1 (hr_l3_43/46): a READ door that evaluates the reader's capability as-of the
+  // RECORD's date refuses an HR admin every period that ended before their own role began. Current
+  // standing governs what history you may read; the punch DATE still governs what you may write.
+  // This one is a grep and cannot see a date laundered through a local variable — it catches the
+  // copy-paste that put the pattern in seven doors, not every possible spelling of it.
+  "read_authority_is_as_of_now",
 ] as const;
 
 interface ConformanceRow {
