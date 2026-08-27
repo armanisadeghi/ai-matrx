@@ -15,12 +15,22 @@ import { CategoryTagPicker } from "@/features/scopes/components/CategoryTagPicke
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
+import { useCategories } from "@/features/scopes/hooks/useCategories";
+import { useAssociations } from "@/features/scopes/hooks/useAssociations";
+import { isUuid } from "@/features/scopes/service/associationGuards";
 import {
   allowPartyContact,
   blockPartyContact,
   updateParty,
 } from "../../service";
-import type { PartyListRow, PartyUpdate } from "../../types";
+import {
+  EXPERT_STATUSES,
+  type PartyListRow,
+  type PartyUpdate,
+} from "../../types";
+import { parseIdentityFields } from "../../agent-context/crmRecordSurfaceWrite";
 import { SectionCard } from "./SectionCard";
 
 interface Props {
@@ -93,10 +103,10 @@ function InlineField({
   };
 
   const inputClasses =
-    "w-full rounded border border-primary/40 bg-background px-1.5 py-0.5 text-sm text-foreground outline-none focus:border-primary";
+    "min-h-11 w-full rounded border border-primary/40 bg-background px-1.5 py-0.5 text-base text-foreground outline-none focus:border-primary sm:min-h-0 sm:text-sm";
 
   return (
-    <div className="flex items-start gap-2 py-0.5">
+    <div className="flex min-h-11 items-start gap-2 py-0.5 sm:min-h-0">
       <span className="w-24 shrink-0 pt-0.5 text-right text-xs text-muted-foreground">
         {spec.label}
       </span>
@@ -133,7 +143,7 @@ function InlineField({
           type="button"
           onClick={start}
           className={cn(
-            "min-w-0 flex-1 rounded px-1.5 py-0.5 text-left text-sm hover:bg-accent/50",
+            "min-h-11 min-w-0 flex-1 rounded px-1.5 py-0.5 text-left text-sm hover:bg-accent/50 sm:min-h-0",
             value ? "text-foreground" : "text-muted-foreground/60",
             saving && "opacity-60",
             spec.multiline ? "whitespace-pre-wrap" : "truncate",
@@ -149,6 +159,19 @@ function InlineField({
 
 export function PartyIdentityCard({ party, onChanged }: Props) {
   const userId = useAppSelector(selectUserId);
+  const { categories: lifecycleStages } = useCategories({
+    dimension: CATEGORY_DIMENSIONS.crmLifecycleStage,
+  });
+  const { categories: ratings } = useCategories({
+    dimension: CATEGORY_DIMENSIONS.crmRating,
+  });
+  const { categories: roleCategories } = useCategories({
+    dimension: CATEGORY_DIMENSIONS.partyRole,
+  });
+  const { edges, setTargets } = useAssociations({
+    type: "party",
+    id: party.id,
+  });
   const isPerson = party.party_kind === "person";
   const fields = FIELDS.filter(
     (f) => !(f.personOnly && !isPerson) && !(f.companyOnly && isPerson),
@@ -188,35 +211,123 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
    * on the value itself stays blocked until it is lifted in Contact, which is
    * where that value's state is shown.
    */
+  const setDoNotContact = async (next: boolean) => {
+    if (!userId) {
+      throw new Error(
+        "Sign in again — the audit trail needs to name who changed it.",
+      );
+    }
+    if (next) {
+      await blockPartyContact({
+        partyId: party.id,
+        orgId: party.organization_id,
+        userId,
+        reason: party.do_not_contact_reason,
+      });
+    } else {
+      await allowPartyContact({
+        partyId: party.id,
+        orgId: party.organization_id,
+        userId,
+      });
+    }
+    await onChanged();
+  };
+
   const toggleDnc = async (next: boolean) => {
     try {
-      if (!userId) {
-        toast.error(
-          "Sign in again — the audit trail needs to name who changed it",
-        );
-        return;
-      }
-      if (next) {
-        // Flagging writes the same timeline note lifting always did — the
-        // consequential half of the pair was the unaudited one (D224).
-        await blockPartyContact({
-          partyId: party.id,
-          orgId: party.organization_id,
-          userId,
-          reason: party.do_not_contact_reason,
-        });
-      } else {
-        await allowPartyContact({
-          partyId: party.id,
-          orgId: party.organization_id,
-          userId,
-        });
-      }
-      await onChanged();
+      await setDoNotContact(next);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Save failed");
     }
   };
+
+  useSurfaceWriteHandlers(CRM_RECORD_SURFACE_NAME, {
+    identity_fields: async (value: unknown) => {
+      await updateParty(party.id, parseIdentityFields(value));
+      await onChanged();
+    },
+    lifecycle_stage_id: async (value: unknown) => {
+      if (value !== null && !isUuid(value)) {
+        throw new Error("lifecycle_stage_id expects a category UUID or null.");
+      }
+      if (
+        value !== null &&
+        !lifecycleStages.some((category) => category.id === value)
+      ) {
+        throw new Error(
+          "lifecycle_stage_id is not a lifecycle stage available on this page.",
+        );
+      }
+      await updateParty(party.id, { lifecycle_stage_id: value });
+      await onChanged();
+    },
+    rating_id: async (value: unknown) => {
+      if (value !== null && !isUuid(value)) {
+        throw new Error("rating_id expects a category UUID or null.");
+      }
+      if (
+        value !== null &&
+        !ratings.some((category) => category.id === value)
+      ) {
+        throw new Error("rating_id is not a rating available on this page.");
+      }
+      await updateParty(party.id, { rating_id: value });
+      await onChanged();
+    },
+    party_role_ids: async (value: unknown) => {
+      if (!Array.isArray(value) || !value.every(isUuid)) {
+        throw new Error("party_role_ids expects an array of category UUIDs.");
+      }
+      const unknownRole = value.find(
+        (id) => !roleCategories.some((category) => category.id === id),
+      );
+      if (unknownRole) {
+        throw new Error(
+          `party_role_ids includes ${unknownRole}, which is not a role available on this page.`,
+        );
+      }
+      const roleCategoryIds = new Set(
+        roleCategories.map((category) => category.id),
+      );
+      const preservedOtherCategoryIds = edges
+        .filter(
+          (edge) =>
+            edge.direction === "outgoing" &&
+            edge.otherType === "category" &&
+            edge.role === "member" &&
+            !roleCategoryIds.has(edge.otherId),
+        )
+        .map((edge) => edge.otherId);
+      const result = await setTargets({
+        targetType: "category",
+        targetIds: [...preservedOtherCategoryIds, ...value],
+        orgId: party.organization_id,
+        role: "member",
+      });
+      if (!result.ok) throw new Error(result.error);
+      await onChanged();
+    },
+    expert_status: async (value: unknown) => {
+      const status =
+        value === null
+          ? null
+          : EXPERT_STATUSES.find((candidate) => candidate === value);
+      if (value !== null && !status) {
+        throw new Error(
+          `expert_status expects ${EXPERT_STATUSES.join(" | ")}, or null.`,
+        );
+      }
+      await updateParty(party.id, { expert_status: status ?? null });
+      await onChanged();
+    },
+    do_not_contact: async (value: unknown) => {
+      if (typeof value !== "boolean") {
+        throw new Error("do_not_contact expects a boolean.");
+      }
+      await setDoNotContact(value);
+    },
+  });
 
   return (
     <SectionCard title="Identity" Icon={IdCard}>
@@ -240,7 +351,9 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
               <CategorySelect
                 dimension={CATEGORY_DIMENSIONS.crmLifecycleStage}
                 value={party.lifecycle_stage_id}
-                onChange={(id) => void commitCategoryFk("lifecycle_stage_id", id)}
+                onChange={(id) =>
+                  void commitCategoryFk("lifecycle_stage_id", id)
+                }
                 placeholder="Set stage"
               />
             </div>
@@ -281,7 +394,9 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
           <PhoneOff
             className={cn(
               "h-3.5 w-3.5",
-              party.do_not_contact ? "text-destructive" : "text-muted-foreground",
+              party.do_not_contact
+                ? "text-destructive"
+                : "text-muted-foreground",
             )}
           />
           <span className="text-xs text-foreground">Do not contact</span>

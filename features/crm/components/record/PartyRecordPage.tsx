@@ -10,6 +10,7 @@
 // Dense two-column layout on desktop (identity rail + activity main), single
 // stacked scroll on mobile. One scroll area per view.
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { Building2, User } from "lucide-react";
@@ -25,6 +26,10 @@ import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
+import { useCategories } from "@/features/scopes/hooks/useCategories";
+import { useAssociations } from "@/features/scopes/hooks/useAssociations";
+import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
+import type { Comment } from "@/features/comments/types";
 import { buildCrmRecordContextData } from "../../agent-context/buildCrmRecordContextData";
 import { CRM_RECORD_CONTEXT_MENU_PROPS } from "../../agent-context/crmRecordContextMenuProps";
 import { usePartyDetail } from "../../hooks/usePartyDetail";
@@ -70,6 +75,18 @@ function RecordSkeleton() {
 export function PartyRecordPage({ partyId }: Props) {
   const router = useRouter();
   const { detail, isLoading, error, refresh } = usePartyDetail(partyId);
+  const [notes, setNotes] = useState<Comment[]>([]);
+  const [notesLoadError, setNotesLoadError] = useState<string | null>(null);
+  const { categories: lifecycleStages } = useCategories({
+    dimension: CATEGORY_DIMENSIONS.crmLifecycleStage,
+  });
+  const { categories: ratings } = useCategories({
+    dimension: CATEGORY_DIMENSIONS.crmRating,
+  });
+  const { categories: partyRoles } = useCategories({
+    dimension: CATEGORY_DIMENSIONS.partyRole,
+  });
+  const { edges: partyEdges } = useAssociations({ type: "party", id: partyId });
 
   const party = detail?.party ?? null;
   const isPerson = party?.party_kind === "person";
@@ -92,11 +109,39 @@ export function PartyRecordPage({ partyId }: Props) {
     }
   };
 
-  // The agent surface for ONE record. Read-only by design — see
-  // `crm-record.manifest.ts`: every party mutation is either governed (the
-  // server-side resolver) or destructive (merge/delete/primary flips).
+  const lifecycleStage = lifecycleStages.find(
+    (category) => category.id === party?.lifecycle_stage_id,
+  );
+  const rating = ratings.find((category) => category.id === party?.rating_id);
+  const selectedRoleIds = new Set(
+    partyEdges
+      .filter(
+        (edge) =>
+          edge.direction === "outgoing" &&
+          edge.otherType === "category" &&
+          edge.role === "member",
+      )
+      .map((edge) => edge.otherId),
+  );
+  const roles = partyRoles
+    .filter((category) => selectedRoleIds.has(category.id))
+    .map((category) => ({ id: category.id, name: category.name }));
+
+  // The record scope is sampled at execution time, so category labels and
+  // independently-loaded notes are as fresh as the data visible on the page.
   const getScope = () =>
-    buildCrmRecordContextData({ detail, isLoading, loadError: error });
+    buildCrmRecordContextData({
+      detail,
+      isLoading,
+      loadError: error,
+      lifecycleStage: lifecycleStage
+        ? { id: lifecycleStage.id, name: lifecycleStage.name }
+        : null,
+      rating: rating ? { id: rating.id, name: rating.name } : null,
+      roles,
+      notes,
+      notesLoadError,
+    });
 
   return (
     <SurfaceRuntimeProvider
@@ -266,11 +311,17 @@ export function PartyRecordPage({ partyId }: Props) {
                   interactions={detail.interactions}
                   onChanged={refresh}
                   getApplicationScope={getScope}
+                  writeSurfaceName={CRM_RECORD_SURFACE_NAME}
                 />
                 <PartyNotes
                   partyId={party.id}
                   orgId={party.organization_id}
                   getApplicationScope={getScope}
+                  writeSurfaceName={CRM_RECORD_SURFACE_NAME}
+                  onNotesStateChange={(nextNotes, nextError) => {
+                    setNotes(nextNotes);
+                    setNotesLoadError(nextError);
+                  }}
                 />
                 <PrimaryEntityProvider
                   value={{

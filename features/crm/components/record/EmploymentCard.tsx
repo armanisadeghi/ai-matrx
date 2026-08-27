@@ -19,11 +19,15 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import {
   addAffiliation,
   endAffiliation,
+  fetchPartiesByIds,
   searchEmployerCandidates,
 } from "../../service";
+import { parseEmployment } from "../../agent-context/crmRecordSurfaceWrite";
 import type {
   AffiliationWithEmployer,
   AffiliationWithPerson,
@@ -97,14 +101,14 @@ function EmployerPicker({
 
   if (selected) {
     return (
-      <span className="inline-flex h-7 items-center gap-1.5 rounded border border-border bg-background px-2 text-xs text-foreground">
+      <span className="inline-flex h-11 items-center gap-1.5 rounded border border-border bg-background px-2 text-sm text-foreground sm:h-7 sm:text-xs">
         <Building2 className="h-3 w-3 text-muted-foreground" />
         {selected.display_name}
         <button
           type="button"
           aria-label="Clear employer"
           onClick={() => onSelect(null)}
-          className="text-muted-foreground hover:text-foreground"
+          className="ml-auto inline-flex h-11 w-11 items-center justify-center text-muted-foreground hover:text-foreground sm:h-6 sm:w-6"
         >
           <X className="h-3 w-3" />
         </button>
@@ -120,7 +124,7 @@ function EmployerPicker({
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder="Search companies…"
-        className="h-7 text-xs"
+        className="h-11 text-base sm:h-7 sm:text-xs"
       />
       {open && options.length > 0 && (
         <ul className="absolute z-20 mt-1 max-h-44 w-full overflow-y-auto rounded-md border border-border bg-popover py-1 shadow-md">
@@ -207,6 +211,53 @@ export function EmploymentCard(props: Props) {
     }
   };
 
+  useSurfaceWriteHandlers(isPerson ? CRM_RECORD_SURFACE_NAME : null, {
+    add_employment: async (raw: unknown) => {
+      if (!isPerson) {
+        throw new Error("add_employment is available only on a person record.");
+      }
+      const parsed = parseEmployment(raw);
+      const [candidate] = await fetchPartiesByIds([parsed.employerPartyId]);
+      if (
+        !candidate ||
+        candidate.party_kind !== "organization" ||
+        candidate.organization_id !== props.orgId
+      ) {
+        throw new Error(
+          "add_employment.employer_party_id must name a visible company in this record's organization.",
+        );
+      }
+      await addAffiliation({
+        partyId: props.partyId,
+        employerPartyId: parsed.employerPartyId,
+        orgId: props.orgId,
+        title: parsed.title,
+        department: parsed.department,
+        startDate: parsed.startDate,
+        isCurrent: parsed.isCurrent,
+        isPrimary: parsed.isPrimary,
+      });
+      await props.onChanged();
+    },
+    end_employment: async (raw: unknown) => {
+      if (!isPerson || typeof raw !== "string") {
+        throw new Error(
+          "end_employment expects a current affiliation id from this person record.",
+        );
+      }
+      const affiliation = props.affiliations.find(
+        (candidate) => candidate.id === raw && candidate.is_current,
+      );
+      if (!affiliation) {
+        throw new Error(
+          "end_employment expects a current affiliation id from affiliations on this record.",
+        );
+      }
+      await endAffiliation(affiliation.id);
+      await props.onChanged();
+    },
+  });
+
   return (
     <SectionCard
       title={isPerson ? "Employment" : "People"}
@@ -218,7 +269,7 @@ export function EmploymentCard(props: Props) {
             type="button"
             onClick={() => setAdding((v) => !v)}
             aria-label={adding ? "Cancel add" : "Add employment"}
-            className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
           >
             {adding ? (
               <X className="h-3.5 w-3.5" />
@@ -242,16 +293,16 @@ export function EmploymentCard(props: Props) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Title"
-              className="h-7 w-32 text-xs"
+              className="h-11 w-36 text-base sm:h-7 sm:w-32 sm:text-xs"
             />
             <Input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="h-7 w-32 text-xs"
+              className="h-11 w-36 text-base sm:h-7 sm:w-32 sm:text-xs"
               aria-label="Start date"
             />
-            <label className="flex items-center gap-1.5 text-xs text-foreground">
+            <label className="flex min-h-11 items-center gap-1.5 text-sm text-foreground sm:min-h-7 sm:text-xs">
               <Checkbox
                 checked={isCurrent}
                 onCheckedChange={(v) => setIsCurrent(v === true)}
@@ -260,7 +311,7 @@ export function EmploymentCard(props: Props) {
             </label>
             <Button
               size="sm"
-              className="h-7 px-2 text-xs"
+              className="h-11 px-3 text-sm sm:h-7 sm:px-2 sm:text-xs"
               onClick={submit}
               disabled={saving || !employer}
             >
@@ -321,16 +372,17 @@ export function EmploymentCard(props: Props) {
                       aria-label="End this stint"
                       title="End this stint"
                       onClick={() =>
-                        void end(a.id, a.employer?.display_name ?? "this company")
+                        void end(
+                          a.id,
+                          a.employer?.display_name ?? "this company",
+                        )
                       }
-                      className="shrink-0 rounded p-0.5 text-muted-foreground/40 opacity-0 hover:text-destructive group-hover:opacity-100"
+                      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
                     >
                       <LogOut className="h-3.5 w-3.5" />
                     </button>
                   ) : (
-                    <span
-                      className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[11px] leading-none text-muted-foreground"
-                    >
+                    <span className="shrink-0 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[11px] leading-none text-muted-foreground">
                       Past
                     </span>
                   )}

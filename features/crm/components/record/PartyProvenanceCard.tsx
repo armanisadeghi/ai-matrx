@@ -33,6 +33,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { updateParty } from "../../service";
 import type { PartyRow } from "../../types";
 import { SectionCard, SectionEmpty } from "./SectionCard";
@@ -188,7 +190,7 @@ export function PartyProvenanceCard({
   onChanged,
 }: {
   party: PartyRow;
-  onChanged: () => void;
+  onChanged: () => void | Promise<void>;
 }) {
   const [items, setItems] = useState<ProvenanceItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -218,6 +220,21 @@ export function PartyProvenanceCard({
     };
   }, [party.id, attempt]);
 
+  const promoteRecord = async () => {
+    if (party.record_class === "contact") return;
+    await updateParty(party.id, { record_class: "contact" });
+    await onChanged();
+  };
+
+  useSurfaceWriteHandlers(CRM_RECORD_SURFACE_NAME, {
+    promote_to_contact: async (value: unknown) => {
+      if (value !== true) {
+        throw new Error("promote_to_contact expects true.");
+      }
+      await promoteRecord();
+    },
+  });
+
   // Nothing to explain: a hand-entered contact has no provenance edge and no
   // origin stamp, and an empty card would be noise on every ordinary record.
   if (!discovered && !party.source && (items?.length ?? 0) === 0 && !error)
@@ -226,9 +243,8 @@ export function PartyProvenanceCard({
   const promote = async () => {
     setPromoting(true);
     try {
-      await updateParty(party.id, { record_class: "contact" });
+      await promoteRecord();
       toast.success(`${party.display_name} is now one of your contacts.`);
-      onChanged();
     } catch (e) {
       toast.error(
         e instanceof Error ? e.message : "Could not add this to your contacts",
@@ -271,7 +287,10 @@ export function PartyProvenanceCard({
 
         {party.source && (
           <p className="text-xs text-muted-foreground">
-            Origin: <span className="text-foreground">{party.source.replaceAll("_", " ")}</span>
+            Origin:{" "}
+            <span className="text-foreground">
+              {party.source.replaceAll("_", " ")}
+            </span>
             {party.source_detail ? (
               <>
                 {" · "}
@@ -290,9 +309,7 @@ export function PartyProvenanceCard({
                     {party.source_detail}
                   </a>
                 ) : (
-                  <span className="text-foreground">
-                    {party.source_detail}
-                  </span>
+                  <span className="text-foreground">{party.source_detail}</span>
                 )}
               </>
             ) : null}

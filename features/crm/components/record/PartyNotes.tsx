@@ -18,6 +18,7 @@ import {
 } from "@/components/official/CollapsibleText";
 import type { Comment } from "@/features/comments/types";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { formatRelativeTime } from "@/utils/datetime";
 import { SectionCard, SectionEmpty } from "./SectionCard";
 
@@ -32,6 +33,8 @@ interface Props {
    */
   entityType?: "party" | "crm_deal";
   getApplicationScope?: () => ApplicationScope;
+  writeSurfaceName?: string;
+  onNotesStateChange?: (comments: Comment[], error: string | null) => void;
 }
 
 export function PartyNotes({
@@ -39,6 +42,8 @@ export function PartyNotes({
   orgId,
   entityType = "party",
   getApplicationScope,
+  writeSurfaceName,
+  onNotesStateChange,
 }: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
   // A failed load is NOT an empty list. Rendering "No notes yet" over a failure
@@ -53,6 +58,10 @@ export function PartyNotes({
     new Set(),
   );
   const generationRef = useRef(0);
+  const onNotesStateChangeRef = useRef(onNotesStateChange);
+  useEffect(() => {
+    onNotesStateChangeRef.current = onNotesStateChange;
+  });
 
   useEffect(() => {
     // Timer = async boundary, so no setState runs synchronously in the effect.
@@ -64,9 +73,11 @@ export function PartyNotes({
         if (result.ok) {
           setComments(result.data.comments);
           setLoadError(null);
+          onNotesStateChangeRef.current?.(result.data.comments, null);
         } else {
           console.error("[crm] notes load failed:", result.error);
           setLoadError(result.error.message);
+          onNotesStateChangeRef.current?.(comments, result.error.message);
         }
       };
       void load();
@@ -108,6 +119,36 @@ export function PartyNotes({
       toast.error(result.error.message);
     }
   };
+
+  useSurfaceWriteHandlers(writeSurfaceName ?? null, {
+    add_note: async (value: unknown) => {
+      if (typeof value !== "string" || !value.trim()) {
+        throw new Error("add_note expects a non-empty string.");
+      }
+      const result = await commentsService.add({
+        entityType,
+        entityId: partyId,
+        body: value.trim(),
+        orgId,
+      });
+      if (!result.ok) throw new Error(result.error.message);
+
+      const refreshed = await commentsService.listForEntity(
+        entityType,
+        partyId,
+      );
+      if (!refreshed.ok) {
+        setLoadError(refreshed.error.message);
+        onNotesStateChangeRef.current?.(comments, refreshed.error.message);
+        throw new Error(
+          `The note was saved, but the updated note list could not be loaded: ${refreshed.error.message}`,
+        );
+      }
+      setComments(refreshed.data.comments);
+      setLoadError(null);
+      onNotesStateChangeRef.current?.(refreshed.data.comments, null);
+    },
+  });
 
   const remove = async (comment: Comment) => {
     const ok = await confirm({
@@ -151,7 +192,7 @@ export function PartyNotes({
         submitDisabled={saving || !draft.trim()}
         isSubmitting={saving}
         submitLabel="Save note"
-        surfaceName="matrx-user/crm-record"
+        surfaceName={writeSurfaceName}
         sourceFeature="crm"
         getApplicationScope={getApplicationScope}
         enableTextStats
@@ -195,7 +236,7 @@ export function PartyNotes({
                   type="button"
                   aria-label="Delete note"
                   onClick={() => void remove(comment)}
-                  className="ml-auto rounded p-0.5 text-muted-foreground/40 opacity-0 hover:text-destructive group-hover:opacity-100"
+                  className="ml-auto inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
                 >
                   <Trash2 className="h-3 w-3" />
                 </button>

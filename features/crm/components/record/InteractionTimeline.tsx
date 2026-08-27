@@ -36,7 +36,9 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { logInteraction, removeInteraction } from "../../service";
+import { parseInteraction } from "../../agent-context/crmRecordSurfaceWrite";
 import type {
   InteractionChannel,
   InteractionDirection,
@@ -70,6 +72,8 @@ interface Props {
   /** When set, logged activity binds to this deal's timeline (deal record page). */
   dealId?: string | null;
   getApplicationScope?: () => ApplicationScope;
+  /** Registers the record-only write target when this shared component mounts there. */
+  writeSurfaceName?: string;
 }
 
 export function InteractionTimeline({
@@ -79,6 +83,7 @@ export function InteractionTimeline({
   onChanged,
   dealId,
   getApplicationScope,
+  writeSurfaceName,
 }: Props) {
   const [channel, setChannel] = useState<InteractionChannel>("call");
   const [direction, setDirection] = useState<InteractionDirection>("outbound");
@@ -150,6 +155,24 @@ export function InteractionTimeline({
     }
   };
 
+  useSurfaceWriteHandlers(writeSurfaceName ?? null, {
+    log_interaction: async (raw: unknown) => {
+      const parsed = parseInteraction(raw);
+      await logInteraction({
+        partyId,
+        orgId,
+        channel: parsed.channel,
+        direction: parsed.direction,
+        subject: parsed.subject,
+        body: parsed.body,
+        durationSeconds: parsed.durationSeconds,
+        occurredAt: parsed.occurredAt,
+        dealId: dealId ?? null,
+      });
+      await onChanged();
+    },
+  });
+
   return (
     <SectionCard
       title="Activity"
@@ -176,7 +199,7 @@ export function InteractionTimeline({
                 type="button"
                 onClick={() => setChannel(c)}
                 className={cn(
-                  "inline-flex h-6 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors",
+                  "inline-flex h-11 items-center gap-1 rounded px-2 text-[11px] font-medium transition-colors sm:h-6",
                   channel === c
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -194,7 +217,7 @@ export function InteractionTimeline({
               setDirection(direction === "outbound" ? "inbound" : "outbound")
             }
             title="Toggle direction"
-            className="inline-flex h-6 items-center gap-1 rounded px-2 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+            className="inline-flex h-11 items-center gap-1 rounded px-2 text-[11px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6"
           >
             {direction === "outbound" ? (
               <ArrowUpRight className="h-3 w-3" />
@@ -209,7 +232,7 @@ export function InteractionTimeline({
               onChange={(e) => setMinutes(e.target.value)}
               placeholder="min"
               inputMode="numeric"
-              className="h-6 w-14 text-xs"
+              className="h-11 w-16 text-base sm:h-6 sm:w-14 sm:text-xs"
               aria-label="Duration in minutes"
             />
           )}
@@ -234,7 +257,7 @@ export function InteractionTimeline({
             submitDisabled={saving || (!subject.trim() && !body.trim())}
             isSubmitting={saving}
             submitLabel="Log activity"
-            surfaceName="matrx-user/crm-record"
+            surfaceName={writeSurfaceName}
             sourceFeature="crm"
             getApplicationScope={getApplicationScope}
             enableTextStats
@@ -328,7 +351,7 @@ export function InteractionTimeline({
                   type="button"
                   aria-label="Delete entry"
                   onClick={() => void remove(row)}
-                  className="mt-0.5 shrink-0 rounded p-0.5 text-muted-foreground/40 opacity-0 hover:text-destructive group-hover:opacity-100"
+                  className="mt-0.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

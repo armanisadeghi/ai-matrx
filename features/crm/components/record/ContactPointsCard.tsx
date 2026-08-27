@@ -36,6 +36,8 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import {
   addContactPoint,
   removeContactPoint,
@@ -51,7 +53,12 @@ import {
   isTenantSuppressed,
   mediumBlocks,
 } from "../../reachability";
-import type { ContactChannel, ContactPoint } from "../../types";
+import { parseContactPoint } from "../../agent-context/crmRecordSurfaceWrite";
+import {
+  CRM_RECORD_ADDABLE_CONTACT_CHANNELS,
+  type ContactChannel,
+  type ContactPoint,
+} from "../../types";
 import { SectionCard, SectionEmpty } from "./SectionCard";
 
 const CHANNEL_ICONS: Record<string, LucideIcon> = {
@@ -63,12 +70,10 @@ const CHANNEL_ICONS: Record<string, LucideIcon> = {
   external_id: Globe,
 };
 
-const ADDABLE_CHANNELS: { value: ContactChannel; label: string }[] = [
-  { value: "email", label: "Email" },
-  { value: "phone", label: "Phone" },
-  { value: "social", label: "Social" },
-  { value: "url", label: "URL" },
-];
+const CHANNEL_LABELS: Record<
+  (typeof CRM_RECORD_ADDABLE_CONTACT_CHANNELS)[number],
+  string
+> = { email: "Email", phone: "Phone", social: "Social", url: "URL" };
 
 interface Props {
   partyId: string;
@@ -97,7 +102,12 @@ function deliverabilityBadge(point: ContactPoint) {
   );
 }
 
-export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) {
+export function ContactPointsCard({
+  partyId,
+  orgId,
+  points,
+  onChanged,
+}: Props) {
   // The acting user — stamped on the suppression audit trail (the timeline
   // note and the medium's own history entry).
   const userId = useAppSelector(selectUserId);
@@ -168,7 +178,9 @@ export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) 
     });
     if (!ok) return;
     if (!userId) {
-      toast.error("Sign in again — the audit trail needs to name who lifted it");
+      toast.error(
+        "Sign in again — the audit trail needs to name who lifted it",
+      );
       return;
     }
     try {
@@ -187,7 +199,9 @@ export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) 
         toast.success(`${value} can be contacted again`);
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not lift suppression");
+      toast.error(
+        e instanceof Error ? e.message : "Could not lift suppression",
+      );
     }
   };
 
@@ -208,6 +222,38 @@ export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) 
     }
   };
 
+  useSurfaceWriteHandlers(CRM_RECORD_SURFACE_NAME, {
+    add_contact_point: async (raw: unknown) => {
+      const parsed = parseContactPoint(raw);
+      const hasPrimaryForChannel = points.some(
+        (point) =>
+          point.channel === parsed.channel && Boolean(point.is_primary),
+      );
+      await addContactPoint({
+        partyId,
+        orgId,
+        channel: parsed.channel,
+        value: parsed.value,
+        label: parsed.label,
+        purpose: parsed.purpose,
+        makePrimary: parsed.makePrimary ?? !hasPrimaryForChannel,
+      });
+      await onChanged();
+    },
+    set_primary_contact_point: async (raw: unknown) => {
+      if (
+        typeof raw !== "string" ||
+        !points.some((point) => point.id === raw)
+      ) {
+        throw new Error(
+          "set_primary_contact_point expects an id from contact_points on this record.",
+        );
+      }
+      await setPrimaryContactPoint(raw);
+      await onChanged();
+    },
+  });
+
   return (
     <SectionCard
       title="Contact"
@@ -218,9 +264,13 @@ export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) 
           type="button"
           onClick={() => setAdding((v) => !v)}
           aria-label={adding ? "Cancel add" : "Add contact method"}
-          className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
         >
-          {adding ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+          {adding ? (
+            <X className="h-3.5 w-3.5" />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
         </button>
       }
     >
@@ -230,13 +280,17 @@ export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) 
             value={channel}
             onValueChange={(v) => setChannel(v as ContactChannel)}
           >
-            <SelectTrigger className="h-7 w-24 text-xs">
+            <SelectTrigger className="h-11 w-24 text-base sm:h-7 sm:text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {ADDABLE_CHANNELS.map((c) => (
-                <SelectItem key={c.value} value={c.value} className="text-xs">
-                  {c.label}
+              {CRM_RECORD_ADDABLE_CONTACT_CHANNELS.map((channelOption) => (
+                <SelectItem
+                  key={channelOption}
+                  value={channelOption}
+                  className="text-xs"
+                >
+                  {CHANNEL_LABELS[channelOption]}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -254,18 +308,18 @@ export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) 
                   ? "+1 310 555 1234"
                   : "Value"
             }
-            className="h-7 min-w-[10rem] flex-1 text-xs"
+            className="h-11 min-w-[10rem] flex-1 text-base sm:h-7 sm:text-xs"
             autoFocus
           />
           <Input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Label"
-            className="h-7 w-20 text-xs"
+            className="h-11 w-24 text-base sm:h-7 sm:w-20 sm:text-xs"
           />
           <Button
             size="sm"
-            className="h-7 px-2 text-xs"
+            className="h-11 px-3 text-sm sm:h-7 sm:px-2 sm:text-xs"
             onClick={submit}
             disabled={saving || !value.trim()}
           >
@@ -303,7 +357,7 @@ export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) 
                     <button
                       type="button"
                       onClick={() => void unsuppress(point)}
-                      className="rounded px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/10"
+                      className="min-h-11 rounded px-2 text-xs font-medium text-primary hover:bg-primary/10 sm:min-h-6 sm:px-1.5 sm:text-[11px]"
                     >
                       Allow contact
                     </button>
@@ -319,10 +373,10 @@ export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) 
                       if (!point.is_primary) void makePrimary(point);
                     }}
                     className={cn(
-                      "rounded p-0.5",
+                      "inline-flex h-11 w-11 items-center justify-center rounded sm:h-6 sm:w-6",
                       point.is_primary
                         ? "text-amber-500"
-                        : "text-muted-foreground/40 opacity-0 hover:text-amber-500 group-hover:opacity-100",
+                        : "text-muted-foreground/60 opacity-100 hover:text-amber-500 sm:opacity-0 sm:group-hover:opacity-100",
                     )}
                   >
                     <Star
@@ -336,7 +390,7 @@ export function ContactPointsCard({ partyId, orgId, points, onChanged }: Props) 
                     type="button"
                     aria-label="Remove contact method"
                     onClick={() => void remove(point)}
-                    className="rounded p-0.5 text-muted-foreground/40 opacity-0 hover:text-destructive group-hover:opacity-100"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

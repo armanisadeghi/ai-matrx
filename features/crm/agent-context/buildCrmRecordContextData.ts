@@ -16,10 +16,12 @@
 
 import {
   createCrmRecordScope,
+  type CrmRecordCategoryScope,
   type CrmRecordContactPointScope,
   type CrmRecordContactableSummary,
 } from "@/features/surfaces/manifests/crm-record.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { Comment } from "@/features/comments/types";
 import {
   CONTACT_BLOCK_REASON_LABELS,
   contactPointBlockReason,
@@ -30,6 +32,11 @@ export interface BuildCrmRecordContextDataArgs {
   detail: PartyDetail | null;
   isLoading: boolean;
   loadError?: string | null;
+  lifecycleStage?: CrmRecordCategoryScope | null;
+  rating?: CrmRecordCategoryScope | null;
+  roles?: CrmRecordCategoryScope[];
+  notes?: Comment[];
+  notesLoadError?: string | null;
 }
 
 /** Newest-first interaction timestamp — `last_touch_at` is never stored. */
@@ -84,11 +91,13 @@ export function buildCrmRecordContextData(
 ): SurfaceScopePayload {
   const { detail, isLoading } = args;
   const loadError = args.loadError ?? undefined;
+  const notesLoadError = args.notesLoadError ?? undefined;
 
   if (!detail) {
     return createCrmRecordScope({
       is_loading: isLoading,
       load_error: loadError,
+      notes_load_error: notesLoadError,
     });
   }
 
@@ -99,6 +108,39 @@ export function buildCrmRecordContextData(
     party_id: party.id,
     party_kind: party.party_kind,
     display_name: party.display_name,
+    record: party,
+    first_name: party.first_name ?? undefined,
+    last_name: party.last_name ?? undefined,
+    preferred_name: party.preferred_name ?? undefined,
+    legal_name: party.legal_name ?? undefined,
+    job_title: party.job_title ?? undefined,
+    headline: party.headline ?? undefined,
+    bio: party.bio ?? undefined,
+    primary_domain: party.primary_domain ?? undefined,
+    timezone: party.timezone ?? undefined,
+    lifecycle_stage: args.lifecycleStage ?? undefined,
+    rating: args.rating ?? undefined,
+    roles: args.roles ?? [],
+    expert_status: party.expert_status ?? undefined,
+    record_class: party.record_class,
+    source: party.source ?? undefined,
+    source_detail: party.source_detail ?? undefined,
+    organization_id: party.organization_id,
+    visibility: party.visibility,
+    assigned_to: party.assigned_to ?? undefined,
+    primary_employer: party.employer
+      ? { id: party.employer.id, name: party.employer.display_name }
+      : undefined,
+    aliases: party.aka,
+    pronouns: party.pronouns ?? undefined,
+    locale: party.locale ?? undefined,
+    date_of_birth: party.date_of_birth ?? undefined,
+    founded_year: party.founded_year ?? undefined,
+    industry_id: party.industry_id ?? undefined,
+    do_not_contact_reason: party.do_not_contact_reason ?? undefined,
+    became_customer_at: party.became_customer_at ?? undefined,
+    created_at: party.created_at,
+    updated_at: party.updated_at,
     identity: {
       first_name: party.first_name,
       last_name: party.last_name,
@@ -127,6 +169,8 @@ export function buildCrmRecordContextData(
     members: detail.members,
     interactions: detail.interactions,
     last_touch_at: deriveLastTouch(detail),
+    notes: args.notes ?? [],
+    notes_load_error: notesLoadError,
     merge_state: party.canonical_id
       ? { merged_into_party_id: party.canonical_id, is_canonical: false }
       : undefined,

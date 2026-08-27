@@ -15,7 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
 import { addAddress, removeAddress } from "../../service";
+import { parseAddress } from "../../agent-context/crmRecordSurfaceWrite";
 import type { AddressPurpose, AddressRow } from "../../types";
 import { ADDRESS_PURPOSES } from "../../types";
 import { SectionCard, SectionEmpty } from "./SectionCard";
@@ -97,6 +100,25 @@ export function AddressesCard({ partyId, orgId, addresses, onChanged }: Props) {
     }
   };
 
+  useSurfaceWriteHandlers(CRM_RECORD_SURFACE_NAME, {
+    add_address: async (raw: unknown) => {
+      const parsed = parseAddress(raw);
+      await addAddress({
+        party_id: partyId,
+        organization_id: orgId,
+        purpose_code: parsed.purpose,
+        label: parsed.label,
+        line1: parsed.line1,
+        line2: parsed.line2,
+        locality: parsed.locality,
+        region: parsed.region,
+        postal_code: parsed.postalCode,
+        country_code: parsed.countryCode,
+      });
+      await onChanged();
+    },
+  });
+
   return (
     <SectionCard
       title="Addresses"
@@ -107,9 +129,13 @@ export function AddressesCard({ partyId, orgId, addresses, onChanged }: Props) {
           type="button"
           onClick={() => setAdding((v) => !v)}
           aria-label={adding ? "Cancel add" : "Add address"}
-          className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+          className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground sm:h-6 sm:w-6"
         >
-          {adding ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+          {adding ? (
+            <X className="h-3.5 w-3.5" />
+          ) : (
+            <Plus className="h-3.5 w-3.5" />
+          )}
         </button>
       }
     >
@@ -120,7 +146,7 @@ export function AddressesCard({ partyId, orgId, addresses, onChanged }: Props) {
               value={purpose}
               onValueChange={(v) => setPurpose(v as AddressPurpose)}
             >
-              <SelectTrigger className="h-7 w-24 text-xs">
+              <SelectTrigger className="h-11 w-24 text-base sm:h-7 sm:text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -135,7 +161,7 @@ export function AddressesCard({ partyId, orgId, addresses, onChanged }: Props) {
               value={line1}
               onChange={(e) => setLine1(e.target.value)}
               placeholder="Street"
-              className="h-7 flex-1 text-xs"
+              className="h-11 flex-1 text-base sm:h-7 sm:text-xs"
               autoFocus
             />
           </div>
@@ -144,30 +170,30 @@ export function AddressesCard({ partyId, orgId, addresses, onChanged }: Props) {
               value={locality}
               onChange={(e) => setLocality(e.target.value)}
               placeholder="City"
-              className="h-7 flex-1 text-xs"
+              className="h-11 flex-1 text-base sm:h-7 sm:text-xs"
             />
             <Input
               value={region}
               onChange={(e) => setRegion(e.target.value)}
               placeholder="State"
-              className="h-7 w-16 text-xs"
+              className="h-11 w-20 text-base sm:h-7 sm:w-16 sm:text-xs"
             />
             <Input
               value={postal}
               onChange={(e) => setPostal(e.target.value)}
               placeholder="ZIP"
-              className="h-7 w-20 text-xs"
+              className="h-11 w-24 text-base sm:h-7 sm:w-20 sm:text-xs"
             />
             <Input
               value={country}
               onChange={(e) => setCountry(e.target.value)}
               placeholder="US"
               maxLength={2}
-              className="h-7 w-12 text-xs uppercase"
+              className="h-11 w-16 text-base uppercase sm:h-7 sm:w-12 sm:text-xs"
             />
             <Button
               size="sm"
-              className="h-7 px-2 text-xs"
+              className="h-11 px-3 text-sm sm:h-7 sm:px-2 sm:text-xs"
               onClick={submit}
               disabled={saving}
             >
@@ -196,7 +222,7 @@ export function AddressesCard({ partyId, orgId, addresses, onChanged }: Props) {
                 type="button"
                 aria-label="Remove address"
                 onClick={() => void remove(address)}
-                className="ml-auto shrink-0 rounded p-0.5 text-muted-foreground/40 opacity-0 hover:text-destructive group-hover:opacity-100"
+                className="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded text-muted-foreground/60 opacity-100 hover:text-destructive sm:h-6 sm:w-6 sm:opacity-0 sm:group-hover:opacity-100"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>

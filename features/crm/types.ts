@@ -139,6 +139,16 @@ export const CONTACT_CHANNELS = [
 ] as const;
 export type ContactChannel = (typeof CONTACT_CHANNELS)[number];
 
+/** Channels the record-page Contact card can add directly. */
+export const CRM_RECORD_ADDABLE_CONTACT_CHANNELS = [
+  "email",
+  "phone",
+  "social",
+  "url",
+] as const satisfies readonly ContactChannel[];
+export type CrmRecordAddableContactChannel =
+  (typeof CRM_RECORD_ADDABLE_CONTACT_CHANNELS)[number];
+
 /**
  * The expert tier ladder (the live CHECK on `crm.party.expert_status`).
  *
