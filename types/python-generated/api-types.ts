@@ -5200,6 +5200,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/google-integrations/ads/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Google Ads Customers */
+        post: operations["google_ads_customers_google_integrations_ads_customers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/ads/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Google Ads Report */
+        post: operations["google_ads_report_google_integrations_ads_report_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-integrations/internal/credential": {
         parameters: {
             query?: never;
@@ -42983,6 +43017,117 @@ export interface components {
             /** Processed Connections */
             processed_connections: number;
         };
+        /** GoogleAdsCampaignMetric */
+        GoogleAdsCampaignMetric: {
+            /** Campaign Id */
+            campaign_id: string;
+            /** Campaign Name */
+            campaign_name: string;
+            /** Status */
+            status?: string | null;
+            /** Impressions */
+            impressions: number;
+            /** Clicks */
+            clicks: number;
+            /** Cost Micros */
+            cost_micros: number;
+            /** Conversions */
+            conversions: number;
+            /** Conversion Value */
+            conversion_value: number;
+        };
+        /** GoogleAdsCustomer */
+        GoogleAdsCustomer: {
+            /** Customer Id */
+            customer_id: string;
+            /** Login Customer Id */
+            login_customer_id: string;
+            /** Descriptive Name */
+            descriptive_name: string;
+            /** Manager */
+            manager: boolean;
+            /** Test Account */
+            test_account: boolean;
+            /** Level */
+            level: number;
+            /** Status */
+            status?: string | null;
+            /** Currency Code */
+            currency_code?: string | null;
+            /** Time Zone */
+            time_zone?: string | null;
+        };
+        /** GoogleAdsCustomerInventory */
+        GoogleAdsCustomerInventory: {
+            /** Customers */
+            customers: components["schemas"]["GoogleAdsCustomer"][];
+            /**
+             * Api Version
+             * @default v25
+             */
+            api_version?: string;
+            /**
+             * Access Mode
+             * @default read_only
+             * @constant
+             */
+            access_mode?: "read_only";
+        };
+        /** GoogleAdsCustomersRequest */
+        GoogleAdsCustomersRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** GoogleAdsReport */
+        GoogleAdsReport: {
+            customer: components["schemas"]["GoogleAdsCustomer"];
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Campaigns */
+            campaigns: components["schemas"]["GoogleAdsCampaignMetric"][];
+            /**
+             * Api Version
+             * @default v25
+             */
+            api_version?: string;
+            /**
+             * Access Mode
+             * @default read_only
+             * @constant
+             */
+            access_mode?: "read_only";
+        };
+        /** GoogleAdsReportRequest */
+        GoogleAdsReportRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Customer Id */
+            customer_id: string;
+            /** Login Customer Id */
+            login_customer_id: string;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
         /** GoogleConnectionCredentialResponse */
         GoogleConnectionCredentialResponse: {
             /** Refresh Token */
@@ -43009,6 +43154,12 @@ export interface components {
             owner_type: string;
             /** Organization Id */
             organization_id?: string | null;
+            /**
+             * Connection Purpose
+             * @default general
+             * @enum {string}
+             */
+            connection_purpose?: "general" | "google_ads_isolated";
         };
         /** GoogleExchangeResponse */
         GoogleExchangeResponse: {
@@ -81501,6 +81652,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["YouTubeChannelPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_ads_customers_google_integrations_ads_customers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleAdsCustomersRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleAdsCustomerInventory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_ads_report_google_integrations_ads_report_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleAdsReportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleAdsReport"];
                 };
             };
             /** @description Validation Error */

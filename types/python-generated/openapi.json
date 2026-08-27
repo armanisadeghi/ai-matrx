@@ -13423,6 +13423,88 @@
         }
       }
     },
+    "/google-integrations/ads/customers": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Ads Customers",
+        "operationId": "google_ads_customers_google_integrations_ads_customers_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleAdsCustomersRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleAdsCustomerInventory"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-integrations/ads/report": {
+      "post": {
+        "tags": [
+          "Google Integrations"
+        ],
+        "summary": "Google Ads Report",
+        "operationId": "google_ads_report_google_integrations_ads_report_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleAdsReportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoogleAdsReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-integrations/internal/credential": {
       "get": {
         "tags": [
@@ -111752,6 +111834,283 @@
         ],
         "title": "GitHubWebhookResponse"
       },
+      "GoogleAdsCampaignMetric": {
+        "properties": {
+          "campaign_id": {
+            "type": "string",
+            "title": "Campaign Id"
+          },
+          "campaign_name": {
+            "type": "string",
+            "title": "Campaign Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "impressions": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Impressions"
+          },
+          "clicks": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Clicks"
+          },
+          "cost_micros": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Cost Micros"
+          },
+          "conversions": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Conversions"
+          },
+          "conversion_value": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Conversion Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "campaign_id",
+          "campaign_name",
+          "impressions",
+          "clicks",
+          "cost_micros",
+          "conversions",
+          "conversion_value"
+        ],
+        "title": "GoogleAdsCampaignMetric"
+      },
+      "GoogleAdsCustomer": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "pattern": "^[0-9]{10}$",
+            "title": "Customer Id"
+          },
+          "login_customer_id": {
+            "type": "string",
+            "pattern": "^[0-9]{10}$",
+            "title": "Login Customer Id"
+          },
+          "descriptive_name": {
+            "type": "string",
+            "title": "Descriptive Name"
+          },
+          "manager": {
+            "type": "boolean",
+            "title": "Manager"
+          },
+          "test_account": {
+            "type": "boolean",
+            "title": "Test Account"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Level"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "currency_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency Code"
+          },
+          "time_zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Zone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "login_customer_id",
+          "descriptive_name",
+          "manager",
+          "test_account",
+          "level"
+        ],
+        "title": "GoogleAdsCustomer"
+      },
+      "GoogleAdsCustomerInventory": {
+        "properties": {
+          "customers": {
+            "items": {
+              "$ref": "#/components/schemas/GoogleAdsCustomer"
+            },
+            "type": "array",
+            "title": "Customers"
+          },
+          "api_version": {
+            "type": "string",
+            "title": "Api Version",
+            "default": "v25"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only",
+            "title": "Access Mode",
+            "default": "read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customers"
+        ],
+        "title": "GoogleAdsCustomerInventory"
+      },
+      "GoogleAdsCustomersRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "GoogleAdsCustomersRequest"
+      },
+      "GoogleAdsReport": {
+        "properties": {
+          "customer": {
+            "$ref": "#/components/schemas/GoogleAdsCustomer"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "campaigns": {
+            "items": {
+              "$ref": "#/components/schemas/GoogleAdsCampaignMetric"
+            },
+            "type": "array",
+            "title": "Campaigns"
+          },
+          "api_version": {
+            "type": "string",
+            "title": "Api Version",
+            "default": "v25"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only",
+            "title": "Access Mode",
+            "default": "read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer",
+          "start_date",
+          "end_date",
+          "campaigns"
+        ],
+        "title": "GoogleAdsReport"
+      },
+      "GoogleAdsReportRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "pattern": "^[0-9]{10}$",
+            "title": "Customer Id"
+          },
+          "login_customer_id": {
+            "type": "string",
+            "pattern": "^[0-9]{10}$",
+            "title": "Login Customer Id"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Start Date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date",
+            "title": "End Date"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "customer_id",
+          "login_customer_id",
+          "start_date",
+          "end_date"
+        ],
+        "title": "GoogleAdsReportRequest"
+      },
       "GoogleConnectionCredentialResponse": {
         "properties": {
           "refresh_token": {
@@ -111821,6 +112180,15 @@
               }
             ],
             "title": "Organization Id"
+          },
+          "connection_purpose": {
+            "type": "string",
+            "enum": [
+              "general",
+              "google_ads_isolated"
+            ],
+            "title": "Connection Purpose",
+            "default": "general"
           }
         },
         "type": "object",
