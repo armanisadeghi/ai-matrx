@@ -107,6 +107,15 @@ export const FINDING_CATALOG: Record<FindingCode, FindingCodeSpec> = {
     how: "Add the key to the block dispatch table in this repo, or repoint the component row at a key that exists.",
     measuredOnBoard: true,
   },
+  "manual-data-only-flag": {
+    code: "manual-data-only-flag",
+    label: "Manual data-only flag returned",
+    severity: "red",
+    lane: "code-change",
+    what: "A kind_definition row carries metadata.data_only. That per-row flag was eradicated 2026-08-27 (Arman's ruling) — the render-leg exemption is FAMILY-derived only (workflow_io/tool_io/action_io), with no per-row override. Zero backlog by construction.",
+    how: "Strip the key: UPDATE content_ir.kind_definition SET metadata = metadata - 'data_only' WHERE id = '<id>'. Then find and fix whatever code path wrote it — none should.",
+    measuredOnBoard: true,
+  },
   "unknown-loading-component": {
     code: "unknown-loading-component",
     label: "Unknown loading component",

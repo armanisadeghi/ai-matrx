@@ -138,7 +138,7 @@ describe("deriveShapeRenderStatus", () => {
     ]);
   });
 
-  it("data_only flagged while an active custom component exists — the lie the incident was about", () => {
+  it("family-derived data-only while an active custom component exists — the lie the incident was about", () => {
     const status = deriveShapeRenderStatus(
       base({
         dataOnly: true,
@@ -152,11 +152,11 @@ describe("deriveShapeRenderStatus", () => {
       }),
     );
     expect(status.problems).toEqual([
-      "This shape is marked \"data only\", which hides its component tools and monitoring — but it has an active component and renders as itself. That flag looks wrong.",
+      "This shape's family classifies it as data-only (no render leg expected) — but it has an active component and renders as itself. That looks like a family mismatch worth checking.",
     ]);
   });
 
-  it("data_only flagged with no component at all is consistent — no problem raised", () => {
+  it("family-derived data-only with no component at all is consistent — no problem raised", () => {
     const status = deriveShapeRenderStatus(base({ dataOnly: true, candidateCount: 0 }));
     expect(status.source).toBe("generic");
     expect(status.problems).toEqual([]);
@@ -197,7 +197,7 @@ describe("deriveShapeRenderStatus", () => {
     );
     expect(status.problems).toHaveLength(3);
     expect(status.problems[0]).toMatch(/not live/);
-    expect(status.problems[1]).toMatch(/data only/);
+    expect(status.problems[1]).toMatch(/data-only/);
     expect(status.problems[2]).toMatch(/turned off/);
   });
 });

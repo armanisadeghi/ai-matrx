@@ -26,18 +26,14 @@
  *       beats silently substituting the generic form for a binding that
  *       promised something better.
  *
- * DATA-ONLY IS A NOTE, NOT A QUARANTINE (post-eviction, 2026-08-24).
- * The hard refusal here dated from 2026-07-15, when 986 machine-minted
- * contracts lived in this registry and `data_only` was their marker.
- * Since the contract-artifact eviction, machine contracts reside in
- * `content_ir.io_contract` and NEVER reach this resolver — every kind that
- * gets here is a real shape. The surviving `data_only: true` rows are
- * hand-seeded, machine-PRODUCED data kinds (SEO/research agent outputs):
- * humans don't author them in production flows, but a human on the shapes
- * TEST BENCH absolutely may construct an instance to exercise the
- * component. So `dataOnly` now annotates the resolved path instead of
- * refusing it; the refusal that guarded against contract rows is enforced
- * upstream by residence, not here.
+ * HISTORY: a `dataOnly` signal used to ride through here (2026-07-15 through
+ * 2026-08-27), first as a hard refusal, then — post-eviction of machine
+ * contracts into `content_ir.io_contract` — as an informational "machine-
+ * produced" note. It was sourced from the row's own `metadata.data_only`,
+ * the manual per-row flag eradicated 2026-08-27 (Arman's ruling: "if it's
+ * dead completely, let's drop it completely and forget it existed"). The
+ * instance-JSON fallback below never actually needed that signal — it rests
+ * on `hasEmittedSchema` alone, which is what it always needed.
  */
 
 import type { ComponentResolution } from "../registry/component-registry";
@@ -51,45 +47,24 @@ import type { KindSchema } from "@ai-matrx/content-ir";
 export const GENERIC_INPUT_COMPONENT_KEY = "generic_structured";
 
 export type KindInputPath =
-  | { mode: "bridged-form"; note?: string }
-  | { mode: "instance-json"; note?: string }
+  | { mode: "bridged-form" }
+  | { mode: "instance-json" }
   | { mode: "refused"; reason: string };
-
-/** Shown beside the form for machine-produced kinds — informative, never blocking. */
-export function dataOnlyNote(kind: string): string {
-  return `"${kind}" is a machine-produced kind — in production flows an agent or pipeline fills it, not a person. This form exists so you can construct a test instance and exercise the component.`;
-}
 
 export function decideKindInputPath(
   kind: string,
   resolution: ComponentResolution | null,
   schema: KindSchema | null,
-  dataOnly = false,
   hasEmittedSchema = false,
 ): KindInputPath {
   if (resolution === null) {
     // A REGISTERED SHAPE WITH A CONTRACT IS NEVER A DEAD END. The
     // instance-JSON editor can edit anything that has an `emitted_json_schema`
     // to validate against, so a missing input-component row costs the nicer
-    // form, never the bench.
-    //
-    // This fallback used to be reachable only via `dataOnly`, and `dataOnly`
-    // used to be derived from the kind's FAMILY NAME. That coupling was doing
-    // two unrelated jobs at once, and dropping the family leg (2026-08-25)
-    // silently took the fallback with it — 13 real workflow-I/O shapes
-    // (`table_rows`, `parsed_json`, `saved_row`, `user_inputs`, …) have no
-    // input row and no compiled floor entry, and every one of them would have
-    // started refusing AND filing an incident on a working surface.
-    //
-    // So the fallback now rests on what it always actually needed — a
-    // contract to edit — and `dataOnly` is left to do only its own job: the
-    // note. The refusal is reserved for a row with nothing to edit at all,
-    // which is a genuine registry gap worth screaming about.
-    if (dataOnly || hasEmittedSchema) {
-      return {
-        mode: "instance-json",
-        note: dataOnly ? dataOnlyNote(kind) : undefined,
-      };
+    // form, never the bench. The refusal is reserved for a row with nothing
+    // to edit at all, which is a genuine registry gap worth screaming about.
+    if (hasEmittedSchema) {
+      return { mode: "instance-json" };
     }
     return {
       mode: "refused",
@@ -109,6 +84,5 @@ export function decideKindInputPath(
     };
   }
   const hasFields = schema !== null && Object.keys(schema.fields).length > 0;
-  const note = dataOnly ? dataOnlyNote(kind) : undefined;
-  return hasFields ? { mode: "bridged-form", note } : { mode: "instance-json", note };
+  return hasFields ? { mode: "bridged-form" } : { mode: "instance-json" };
 }

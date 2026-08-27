@@ -35,7 +35,6 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import {
-  clearShapeDataOnlyFlag,
   evaluateShapeActivation,
   setShapeActivation,
   type ShapeActivationVerdict,
@@ -65,10 +64,6 @@ interface ShapeActivationControlProps {
   emittedJsonSchema?: Json | null;
   /** Display name, for a brief a human can read back. */
   label?: string;
-  /** `metadata.data_only === true` — drives the n/a banner's cause and the remove-flag action. */
-  dataOnly?: boolean;
-  /** Re-fetch after the data-only flag is removed (in addition to the verdict refresh). */
-  onDataOnlyCleared?: () => void;
 }
 
 export default function ShapeActivationControl({
@@ -79,8 +74,6 @@ export default function ShapeActivationControl({
   onVerdict,
   emittedJsonSchema = null,
   label,
-  dataOnly = false,
-  onDataOnlyCleared,
 }: ShapeActivationControlProps) {
   // NO DEAD ENDS: a blocked render leg is a detected problem, so it ships with
   // its one-click fix — the studio's Component Artisan role, launched in a
@@ -91,7 +84,6 @@ export default function ShapeActivationControl({
   const [loadingVerdict, setLoadingVerdict] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [clearingDataOnly, setClearingDataOnly] = useState(false);
   // Ref-held so a caller passing an inline callback cannot re-trigger the
   // verdict fetch on every render.
   const onVerdictRef = useRef(onVerdict);
@@ -162,25 +154,6 @@ export default function ShapeActivationControl({
     }
   }
 
-  async function removeDataOnly(): Promise<void> {
-    setClearingDataOnly(true);
-    try {
-      await clearShapeDataOnlyFlag(supabase, kindDefinitionId, "owner");
-      toast.success('Removed the "data only" flag.');
-      await refreshVerdict();
-      onDataOnlyCleared?.();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      captureError({
-        source: "content-ir",
-        message: `Failed to clear data_only for "${kind}": ${message}`,
-      });
-      toast.error('Failed to remove the "data only" flag', { description: message });
-    } finally {
-      setClearingDataOnly(false);
-    }
-  }
-
   const blockers = verdict?.reasons ?? [];
   const canActivate = verdict?.wouldActivate ?? false;
   // A kind with an ACTIVE component must never be told "no component is
@@ -189,9 +162,7 @@ export default function ShapeActivationControl({
   // the gate's own claim.
   const hasActiveComponent = (verdict?.componentPlatforms.length ?? 0) > 0;
   const dataOnlyLooksWrong =
-    verdict !== null &&
-    !verdict.renderLegApplicable &&
-    (dataOnly || hasActiveComponent);
+    verdict !== null && !verdict.renderLegApplicable && hasActiveComponent;
 
   return (
     <section className="rounded-lg border border-border bg-card p-3">
@@ -298,28 +269,11 @@ export default function ShapeActivationControl({
             <p className="flex items-start gap-1.5 text-xs text-amber-700 dark:text-amber-300">
               <CircleAlert className="mt-0.5 h-3 w-3 shrink-0" />
               <span>
-                This shape is marked &quot;data only&quot;, which hides
-                component tools and monitoring — but{" "}
-                {hasActiveComponent
-                  ? "it has an active render component"
-                  : "it does not belong to a data-only contract family"}
-                . That looks wrong if it ever renders on screen.
+                This shape&apos;s family classifies it as data-only (no render
+                leg expected) — but it has an active render component. That
+                looks like a family mismatch worth checking.
               </span>
             </p>
-            {dataOnly && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={clearingDataOnly}
-                onClick={() => void removeDataOnly()}
-              >
-                {clearingDataOnly ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : null}
-                Remove &quot;data only&quot; flag
-              </Button>
-            )}
           </div>
         ) : (
           <p className="mt-2 border-t border-border pt-2 text-xs text-muted-foreground">

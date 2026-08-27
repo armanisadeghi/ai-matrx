@@ -8,6 +8,10 @@ import "server-only";
 
 import { createClient } from "@/utils/supabase/server";
 import { kindTitleKeyFromMetadata } from "./instance-title";
+import {
+  GENERATED_CONTRACT_FAMILY_VALUES,
+  kindFamilyFromMetadata,
+} from "@/features/content-ir/registry/schema-source-kind-tables";
 import type { Json } from "@/types/database.types";
 
 export interface ShapeDetail {
@@ -24,20 +28,15 @@ export interface ShapeDetail {
   titleKey: string | null;
   /** `metadata.loading_component` — loading-library slug (or null/generic). */
   loadingComponent: string | null;
-  /** `metadata.data_only === true` — hides component tooling; see FEATURE incident notes. */
+  /**
+   * Family-derived render-leg exemption (generated-contract families:
+   * action_io/tool_io/workflow_io/agent_io). The manual per-row
+   * `metadata.data_only` flag this used to read was eradicated 2026-08-27
+   * (Arman's ruling) — never read here or anywhere else.
+   */
   dataOnly: boolean;
   /** True only when `created_by` is the viewer; grants do not imply ownership. */
   isOwnedByViewer: boolean;
-}
-
-function metadataBool(metadata: Json, key: string): boolean {
-  const record =
-    typeof metadata === "object" &&
-    metadata !== null &&
-    !Array.isArray(metadata)
-      ? (metadata as Record<string, unknown>)
-      : null;
-  return record?.[key] === true || record?.[key] === "true";
 }
 
 function metadataString(metadata: Json, key: string): string | null {
@@ -92,7 +91,9 @@ export async function getShapeDetail(
     emittedJsonSchema: data.emitted_json_schema,
     titleKey: kindTitleKeyFromMetadata(data.metadata),
     loadingComponent: metadataString(data.metadata, "loading_component"),
-    dataOnly: metadataBool(data.metadata, "data_only"),
+    dataOnly: GENERATED_CONTRACT_FAMILY_VALUES.has(
+      kindFamilyFromMetadata(data.metadata) ?? "",
+    ),
     isOwnedByViewer: Boolean(auth.user && data.created_by === auth.user.id),
   };
 }

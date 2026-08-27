@@ -817,6 +817,24 @@ async function main(): Promise<number> {
     inferredLoadingSlugs: inferredLoadingSlugs(db.kinds),
   });
 
+  // GUARD AGAINST RETURN (Arman's ruling, 2026-08-27): the manual
+  // `metadata.data_only` flag on content_ir.kind_definition is eradicated —
+  // no row may ever carry the key again, regardless of value. This has a
+  // zero backlog by construction (every row was stripped in the eradication
+  // migration), so it is a real `--gate` candidate, not just a report row.
+  for (const kind of db.kinds) {
+    const metadata = kind.metadata as Record<string, unknown> | null;
+    if (metadata && typeof metadata === "object" && "data_only" in metadata) {
+      report.findings.unshift({
+        severity: "red",
+        code: "manual-data-only-flag",
+        kind: kind.kind,
+        message: `kind "${kind.kind}" carries metadata.data_only — that flag was eradicated 2026-08-27 (Arman's ruling) and must never be written again. The render-leg exemption is FAMILY-derived only (content_ir.evaluate_kind_activation); strip this key.`,
+      });
+      report.totals.red += 1;
+    }
+  }
+
   // Coverage inputs are load-bearing for the strict gate — a missing/corrupt
   // crosswalk or manifest snapshot means the gate is BLIND, which is itself red.
   for (const failure of [crosswalk.failure, manifest.failure]) {

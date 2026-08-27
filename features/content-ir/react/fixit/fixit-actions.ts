@@ -7,8 +7,9 @@
  * the custom renderer").
  *
  * Kept beside the bar rather than in shape-authoring-service: these compose
- * the service's stable primitives into render-context repairs, and the
- * service file is under concurrent edit by the data_only eradication.
+ * the service's stable primitives into render-context repairs, kept separate
+ * from that file's own churn (most recently the 2026-08-27 manual
+ * `data_only`-flag eradication).
  */
 
 import { createClient } from "@/utils/supabase/client";

@@ -7,7 +7,6 @@
 import {
   mergeEditableShapeMetadata,
   planShapeComponentDefaultSwitch,
-  removeDataOnlyFlag,
   type ShapeComponentCandidate,
 } from "../studio/shape-authoring-service";
 
@@ -55,22 +54,6 @@ describe("mergeEditableShapeMetadata", () => {
         loadingComponent: null,
       }),
     ).toEqual({ title_key: "title" });
-  });
-});
-
-describe("removeDataOnlyFlag", () => {
-  it("drops data_only while preserving unrelated metadata", () => {
-    expect(
-      removeDataOnlyFlag({ data_only: true, family: "seo_contract", title_key: "x" }),
-    ).toEqual({ family: "seo_contract", title_key: "x" });
-  });
-
-  it("is a no-op on metadata without the flag", () => {
-    expect(removeDataOnlyFlag({ title_key: "x" })).toEqual({ title_key: "x" });
-  });
-
-  it("recovers loudly-safe from non-object metadata", () => {
-    expect(removeDataOnlyFlag("not an object" as unknown as never)).toEqual({});
   });
 });
 

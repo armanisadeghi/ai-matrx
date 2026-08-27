@@ -380,6 +380,7 @@ export type FindingCode =
   | "coverage-input-missing" // emitted by the CLI when crosswalk/manifest snapshot is unreadable
   | "surface-token-undetectable" // an ACTIVE kind_surface token no host literal can fire
   | "unknown-loading-component" // declared loading_component slug is not in the loading library
+  | "manual-data-only-flag" // metadata.data_only key on a row — eradicated 2026-08-27, must never return
   // yellow
   | "no-loading-component" // renderable kind: no declared loader AND its shape derives none (generic fallback)
   | "no-example"

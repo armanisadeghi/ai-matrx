@@ -27,7 +27,6 @@ import {
   decideKindInputPath,
   GENERIC_INPUT_COMPONENT_KEY,
 } from "../input/kind-input-resolution";
-import { isDataOnlyKindMetadata } from "../registry/schema-source-kind-tables";
 import type { ComponentResolution } from "../registry/component-registry";
 
 /** The compiled input floor every ACTIVE display root resolves to. */
@@ -91,50 +90,28 @@ const LIVE = {
 } as const;
 
 describe("the Shape test bench opens, against live registry rows", () => {
-  it("topic_assignment_batch_v1 renders its form, annotated — never refused", () => {
-    const dataOnly = isDataOnlyKindMetadata(LIVE.topic_assignment_batch_v1);
-    // Still honestly machine-produced: an SEO mandate emits it.
-    expect(dataOnly).toBe(true);
-
+  it("topic_assignment_batch_v1 renders its form — never refused", () => {
     const path = decideKindInputPath(
       "topic_assignment_batch_v1",
       COMPILED_FLOOR,
       null,
-      dataOnly,
     );
     // THE REGRESSION THIS FILE EXISTS FOR.
     expect(path.mode).not.toBe("refused");
     expect(path.mode).toBe("instance-json");
-    if (path.mode === "instance-json") {
-      expect(path.note).toContain("machine-produced");
-    }
   });
 
   it.each([["web_result"], ["rating"]] as const)(
-    "%s renders its form with NO machine-produced note",
+    "%s renders its form",
     (slug) => {
-      const dataOnly = isDataOnlyKindMetadata(LIVE[slug]);
-      expect(dataOnly).toBe(false);
-
-      const path = decideKindInputPath(slug, COMPILED_FLOOR, null, dataOnly);
+      const path = decideKindInputPath(slug, COMPILED_FLOOR, null);
       expect(path.mode).toBe("instance-json");
-      if (path.mode === "instance-json") {
-        expect(path.note).toBeUndefined();
-      }
     },
   );
 
-  it("the curated workflow_io kind `text` is no longer called machine-produced", () => {
-    // Before 2026-08-25 this was `true` — derived from the family name alone —
-    // and 20 curated workflow_io kinds with a real human input component wore
-    // a banner saying a machine fills them.
-    expect(isDataOnlyKindMetadata(LIVE.text)).toBe(false);
-
-    const path = decideKindInputPath("text", COMPILED_FLOOR, null, false);
+  it("the curated workflow_io kind `text` opens the instance editor", () => {
+    const path = decideKindInputPath("text", COMPILED_FLOOR, null);
     expect(path.mode).toBe("instance-json");
-    if (path.mode === "instance-json") {
-      expect(path.note).toBeUndefined();
-    }
   });
 
   /**
@@ -177,22 +154,17 @@ describe("the Shape test bench opens, against live registry rows", () => {
         slug,
         null, // the resolver genuinely answers null for these
         null, // no reconstructed field schema either
-        false, // NOT data-only — this is the case the family leg used to mask
-        true, // but it does carry an emitted_json_schema
+        true, // it carries an emitted_json_schema
       );
       expect(path.mode).not.toBe("refused");
       expect(path.mode).toBe("instance-json");
-      if (path.mode === "instance-json") {
-        // No contract to call it machine-produced, so no note.
-        expect(path.note).toBeUndefined();
-      }
     },
   );
 
   it("still refuses — loudly — when there is genuinely nothing to edit", () => {
     // The fallback must not become a validator that cannot fail: a row with no
     // component, no field schema AND no emitted schema is a real registry gap.
-    const path = decideKindInputPath("some_empty_kind", null, null, false, false);
+    const path = decideKindInputPath("some_empty_kind", null, null, false);
     expect(path.mode).toBe("refused");
     if (path.mode === "refused") {
       expect(path.reason).toContain("emitted_json_schema");

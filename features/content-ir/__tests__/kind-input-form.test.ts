@@ -8,8 +8,7 @@
  *      compiled floor alone (DB outage can't remove input capability), and the
  *      DB-only workflow input kinds resolve once their `kind_component` rows
  *      (mirrored from `migrations/content_ir_input_component_bindings.sql`)
- *      ingest. Data-only generated contract families are non-interactive BY
- *      CLASSIFICATION — they must NOT resolve.
+ *      ingest.
  *   3. ROUTING LAW — `decideKindInputPath`: unknown/missing → refused (loud),
  *      inactive → refused, unrouted dedicated key → refused, generic + fields
  *      → bridged-form, generic + no field list → instance-json.
@@ -35,7 +34,6 @@ import {
   decideKindInputPath,
   GENERIC_INPUT_COMPONENT_KEY,
 } from "../input/kind-input-resolution";
-import { isDataOnlyKindMetadata } from "../registry/schema-source-kind-tables";
 import {
   assembleKindInstance,
   attributeStructuralErrors,
@@ -126,24 +124,6 @@ describe("generic input key parity", () => {
 });
 
 describe("input-path coverage", () => {
-  it("reads the ROW's own data_only flag, never a family name", () => {
-    expect(isDataOnlyKindMetadata({ data_only: true })).toBe(true);
-    expect(isDataOnlyKindMetadata({ data_only: false })).toBe(false);
-    expect(isDataOnlyKindMetadata({ family: "render_block" })).toBe(false);
-    // THE FAMILY LEG IS GONE (2026-08-25). A family NAME is not evidence about
-    // a shape: machine contracts are quarantined by residence in
-    // `content_ir.io_contract` and never reach this registry, so the leg only
-    // ever fired on REAL rows a seeder had misnamed. These 33 curated
-    // `workflow_io` kinds ship an active human input component — 20 of them —
-    // and were being told a machine fills them.
-    expect(isDataOnlyKindMetadata({ family: "workflow_io" })).toBe(false);
-    expect(isDataOnlyKindMetadata({ family: "agent_io" })).toBe(false);
-    // A row that says so itself is still honest, whatever its family.
-    expect(
-      isDataOnlyKindMetadata({ family: "seo", data_only: true }),
-    ).toBe(true);
-  });
-
   it("every ACTIVE display root resolves an input path from the compiled floor alone", () => {
     for (const kind of ACTIVE_DISPLAY_ROOTS) {
       const resolution = resolveComponent(kind, "web", "input");
@@ -168,9 +148,9 @@ describe("input-path coverage", () => {
     }
   });
 
-  it("kinds with no input rows and no data-only flag refuse (registry gap, loud)", () => {
+  it("kinds with no input rows and no emitted schema refuse (registry gap, loud)", () => {
     // Post-eviction: machine contracts never reach this resolver, so a null
-    // resolution without dataOnly is a real registry gap and stays a refusal.
+    // A null resolution without an emitted schema is a real registry gap.
     for (const kind of ["tool_web_search_input", "action_http_get_output"]) {
       expect(resolveComponent(kind, "web", "input")).toBeNull();
       expect(decideKindInputPath(kind, null, null)).toMatchObject({
@@ -224,24 +204,15 @@ describe("decideKindInputPath — the routing law", () => {
     }
   });
 
-  it("data-only is a NOTE, not a quarantine (post-eviction 2026-08-24): the test bench renders, annotated", () => {
-    // The 2026-07-15 hard refusal guarded against the 986 machine contracts
-    // that then lived in this registry. They were evicted to io_contract and
-    // never reach the resolver; surviving data_only rows are REAL machine-
-    // produced kinds (SEO/research agent outputs), and a human on the shapes
-    // test bench may construct an instance to exercise the component.
+  it("an emitted schema keeps the test bench available when no input binding exists", () => {
     const withBinding = decideKindInputPath(
       "topic_assignment_batch_v1",
       active(GENERIC_INPUT_COMPONENT_KEY),
       fieldSchema,
-      true,
     );
     expect(withBinding.mode).toBe("bridged-form");
-    if (withBinding.mode === "bridged-form") {
-      expect(withBinding.note).toContain("machine-produced");
-    }
-    // Even with NO input row, a data-only kind falls back to the instance-JSON
-    // editor instead of dead-ending — annotated, never blocking.
+    // With no input row, the stored emitted schema is sufficient for the
+    // instance-JSON editor instead of a dead end.
     const withoutBinding = decideKindInputPath(
       "topic_assignment_batch_v1",
       null,
@@ -249,9 +220,6 @@ describe("decideKindInputPath — the routing law", () => {
       true,
     );
     expect(withoutBinding.mode).toBe("instance-json");
-    if (withoutBinding.mode === "instance-json") {
-      expect(withoutBinding.note).toContain("machine-produced");
-    }
   });
 
   it("generic + stored fields → bridged-form; no field list → instance-json", () => {

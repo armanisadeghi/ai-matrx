@@ -4,7 +4,6 @@
 // production kind route (shared engine, same one the admin page uses).
 
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
 import { FlaskConical } from "lucide-react";
 import Link from "next/link";
 import KindExamplePreview from "@/features/content-ir/studio/components/KindExamplePreview";
@@ -51,7 +50,6 @@ export default function ShapePreviewTab({
   updatedAt,
   fieldData,
 }: ShapePreviewTabProps) {
-  const router = useRouter();
   const [examplesRevision, setExamplesRevision] = useState(0);
   const examples = useKindExamples(kindDefinitionId, examplesRevision);
   // The dual-gate verdict is fetched ONCE, inside ShapeActivationControl
@@ -133,7 +131,6 @@ export default function ShapePreviewTab({
           dataOnly={dataOnly}
           isOwnedByViewer={isOwnedByViewer}
           emittedJsonSchema={emittedJsonSchema}
-          onDataOnlyCleared={() => router.refresh()}
         />
       </div>
       {isOwnedByViewer && (
@@ -146,7 +143,6 @@ export default function ShapePreviewTab({
           loadingComponent={loadingComponent}
           emittedJsonSchema={emittedJsonSchema}
           isActive={isActive}
-          dataOnly={dataOnly}
           examples={examples}
           onExamplesChanged={() =>
             setExamplesRevision((revision) => revision + 1)

@@ -4,7 +4,10 @@
  * sees this (owner or not); it is the fix for the 2026-08-26 incident where a
  * kind rendered live in the app while its studio page told the owner — mid
  * customer call — that "this is hardcoded into the frontend" and hid the
- * build-component affordance behind a lying `data_only` flag.
+ * build-component affordance behind a manual `metadata.data_only` flag that
+ * had drifted from reality. That manual flag was eradicated 2026-08-27
+ * (Arman's ruling) — `dataOnly` below is now ALWAYS family-derived (the
+ * generated-contract families), with no per-row override to drift.
  *
  * Pure derivation only. No fetching, no React — the strip component and any
  * future consumer (agent surface scope, admin honesty panel) call this with
@@ -28,7 +31,7 @@ export interface ShapeRenderResolutionInput {
 export interface ShapeRenderStatusInput {
   /** `kind_definition.is_active` — the dual-gate verdict, not the component's own flag. */
   kindIsActive: boolean;
-  /** `metadata.data_only === true` — the flag that hides component tooling. */
+  /** Family-derived render-leg exemption (generated-contract families). No per-row override exists. */
   dataOnly: boolean;
   /** What the resolver currently answers for (kind, "web", "output"); null = no answer at all. */
   resolution: ShapeRenderResolutionInput | null;
@@ -79,8 +82,8 @@ export function deriveShapeRenderStatus(
         ? "no registered component for this shape is turned on"
         : "no component has been created for this shape yet";
     if (dataOnly) {
-      // Generic + data_only is the ONE consistent combination — a contract
-      // kind genuinely has no render leg. Not a problem.
+      // Generic + a data-only family is the ONE consistent combination — a
+      // contract kind genuinely has no render leg. Not a problem.
     }
     return {
       source: "generic",
@@ -96,7 +99,7 @@ export function deriveShapeRenderStatus(
 
   if (dataOnly) {
     problems.push(
-      "This shape is marked \"data only\", which hides its component tools and monitoring — but it has an active component and renders as itself. That flag looks wrong.",
+      "This shape's family classifies it as data-only (no render leg expected) — but it has an active component and renders as itself. That looks like a family mismatch worth checking.",
     );
   }
 

@@ -56,18 +56,10 @@ export interface KindValidationResult {
   errors: string[];
   /** Non-null exactly when `checked === false`. */
   degradedReason: KindValidationDegradedReason | null;
-  /**
-   * True when the row's own `metadata.data_only` says machines PRODUCE this
-   * shape in production flows. Informational — a person may still author an
-   * instance on the test bench. Not "a generated machine contract": those live
-   * in `content_ir.io_contract` and never reach this registry.
-   */
-  dataOnly: boolean | null;
 }
 
 interface CachedContract {
   emittedJsonSchema: unknown;
-  dataOnly: boolean;
   fetchedAt: number;
 }
 
@@ -87,7 +79,6 @@ function degraded(
   kind: string,
   degradedReason: KindValidationDegradedReason,
   message: string,
-  dataOnly: boolean | null = null,
 ): KindValidationResult {
   return {
     kind,
@@ -95,7 +86,6 @@ function degraded(
     ok: false,
     errors: [message],
     degradedReason,
-    dataOnly,
   };
 }
 
@@ -135,7 +125,6 @@ export async function validateAgainstKind(
       }
       contract = {
         emittedJsonSchema: fetched.emittedJsonSchema,
-        dataOnly: fetched.dataOnly,
         fetchedAt: Date.now(),
       };
       contractCache.set(kind, contract);
@@ -158,7 +147,6 @@ export async function validateAgainstKind(
       kind,
       "schema_unavailable",
       `kind "${kind}" has no emitted_json_schema — nothing to validate against`,
-      contract.dataOnly,
     );
   }
 
@@ -172,7 +160,6 @@ export async function validateAgainstKind(
       kind,
       "schema_invalid",
       `kind "${kind}" has an uncompilable emitted_json_schema: ${leg.detail}`,
-      contract.dataOnly,
     );
   }
 
@@ -182,6 +169,5 @@ export async function validateAgainstKind(
     ok: leg.ok,
     errors: leg.ok ? [] : [leg.detail ?? "validation failed"],
     degradedReason: null,
-    dataOnly: contract.dataOnly,
   };
 }

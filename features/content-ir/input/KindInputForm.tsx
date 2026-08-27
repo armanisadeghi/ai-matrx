@@ -149,15 +149,13 @@ export default function KindInputForm({
           kind,
           resolveComponent(kind, "web", "input"),
           contract.schema,
-          contract.dataOnly,
           // A stored JSON Schema is enough to edit against, so a kind with no
           // input-component row still gets the instance-JSON bench instead of
           // a dead end.
           contract.emittedJsonSchema !== null,
         );
         if (path.mode === "refused") {
-          // Post-eviction, dataOnly no longer refuses (it annotates), so every
-          // refusal reaching here is a real registry gap — always incident it.
+          // Every refusal reaching here is a real registry gap — always incident it.
           captureError({
             source: "content-ir",
             message: refusalMessage(kind, path.reason),
@@ -243,9 +241,6 @@ export default function KindInputForm({
 
   const { path, emittedJsonSchema, pairs, emptyStringFields } = state;
   const schemaMissing = emittedJsonSchema === null;
-  // Machine-produced kinds carry an informational note (post-eviction:
-  // data_only annotates, never blocks) — shown once, above the form.
-  const pathNote = "note" in path ? path.note : undefined;
 
   async function emit(instance: unknown): Promise<void> {
     const leg = validateStructuralLeg(instance, emittedJsonSchema);
@@ -305,13 +300,6 @@ export default function KindInputForm({
           : submitInstanceJson());
       }}
     >
-      {pathNote && (
-        <div className="flex items-start gap-2 rounded-md border border-sky-500/30 bg-sky-500/5 px-3 py-2 text-xs text-sky-800 dark:text-sky-200">
-          <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          {pathNote}
-        </div>
-      )}
-
       {schemaMissing && (
         <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
           <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />

@@ -8,10 +8,13 @@
  *
  * Built after the 2026-08-26 incident: an owner mid customer-call opened this
  * page and got no answer at all — the render truth was buried behind an admin
- * tab that called a live component "hardcoded into the frontend" and a
- * `data_only` metadata flag that hid the build-component action for a shape
- * that WAS rendering. See features/content-ir/studio/shape-render-status.ts
- * for the pure derivation this strip is a thin view over.
+ * tab that called a live component "hardcoded into the frontend" and a manual
+ * `metadata.data_only` flag that hid the build-component action for a shape
+ * that WAS rendering. That manual flag was eradicated 2026-08-27 (Arman's
+ * ruling) — `dataOnly` is now purely family-derived, with no clear-the-flag
+ * action because there is no longer a flag to clear. See
+ * features/content-ir/studio/shape-render-status.ts for the pure derivation
+ * this strip is a thin view over.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -34,7 +37,6 @@ import {
 } from "@/features/content-ir/registry/component-registry";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
 import {
-  clearShapeDataOnlyFlag,
   listShapeComponentCandidates,
   setDefaultShapeComponent,
   type ShapeComponentCandidate,
@@ -56,7 +58,6 @@ interface ShapeRenderStatusStripProps {
   dataOnly: boolean;
   isOwnedByViewer: boolean;
   emittedJsonSchema: Json | null;
-  onDataOnlyCleared?: () => void;
 }
 
 const SOURCE_ICON: Record<ShapeRenderStatus["source"], typeof BadgeCheck> = {
@@ -73,7 +74,6 @@ export default function ShapeRenderStatusStrip({
   dataOnly,
   isOwnedByViewer,
   emittedJsonSchema,
-  onDataOnlyCleared,
 }: ShapeRenderStatusStripProps) {
   const { launch: launchArtisan, launching: artisanLaunching } =
     useKindAgentLaunch(SHAPES_SURFACE_NAME, SHAPE_COMPONENT_ROLE);
@@ -89,7 +89,6 @@ export default function ShapeRenderStatusStrip({
     null,
   );
   const [switchingId, setSwitchingId] = useState<string | null>(null);
-  const [clearingDataOnly, setClearingDataOnly] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -203,24 +202,6 @@ export default function ShapeRenderStatusStrip({
     }
   }
 
-  async function removeDataOnly(): Promise<void> {
-    setClearingDataOnly(true);
-    try {
-      await clearShapeDataOnlyFlag(supabase, kindDefinitionId, "owner");
-      toast.success('Removed the "data only" flag.');
-      onDataOnlyCleared?.();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      toast.error('Failed to remove the "data only" flag', { description: message });
-      captureError({
-        source: "content-ir",
-        message: `Failed to clear data_only for "${kind}": ${message}`,
-      });
-    } finally {
-      setClearingDataOnly(false);
-    }
-  }
-
   // Every row is listed, including the generic fallback — switching TO
   // generic is a legitimate choice (e.g. temporarily disabling a broken
   // custom component), so it must not be hidden from the switcher either.
@@ -272,20 +253,6 @@ export default function ShapeRenderStatusStrip({
 
         {isOwnedByViewer && (
           <div className="flex flex-wrap items-center gap-1.5">
-            {dataOnly && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={clearingDataOnly}
-                onClick={() => void removeDataOnly()}
-              >
-                {clearingDataOnly ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : null}
-                Remove &quot;data only&quot; flag
-              </Button>
-            )}
             {status.source !== "custom" && (
               <Button
                 type="button"

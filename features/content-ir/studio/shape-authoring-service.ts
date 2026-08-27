@@ -74,19 +74,6 @@ function isJsonObject(
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/**
- * Clear `metadata.data_only`, preserving every other key. The flag hides
- * component tooling and monitoring on the theory that the shape's render leg
- * is n/a — wrong the moment the shape actually has an active component.
- */
-export function removeDataOnlyFlag(metadata: Json): Json {
-  const next: { [key: string]: Json | undefined } = isJsonObject(metadata)
-    ? { ...metadata }
-    : {};
-  delete next.data_only;
-  return next;
-}
-
 /** Merge only user-editable metadata keys while preserving every other key. */
 export function mergeEditableShapeMetadata(
   metadata: Json,
@@ -598,39 +585,6 @@ export async function setShapeActivation(
     wasActive: row.was_active,
     gated: row.gated,
   };
-}
-
-/**
- * Remove `metadata.data_only`. Same version-bump-and-write path as
- * `updateOwnedShapeProfile` uses for its own metadata keys, kept separate
- * because this write is not part of the Details form — it is the one-click
- * fix on the render-status strip and the activation banner for a kind whose
- * flag turned out to be wrong.
- */
-export async function clearShapeDataOnlyFlag(
-  client: ShapeWriteClient,
-  definitionId: string,
-  mode: ShapeAuthMode = "owner",
-): Promise<void> {
-  const userId = await requireCurrentUserId(client);
-  const current = await fetchWritableDefinition(client, definitionId, userId, mode);
-  const metadata = removeDataOnlyFlag(current.metadata);
-  let updateQuery = client
-    .schema("content_ir")
-    .from("kind_definition")
-    .update({ metadata, updated_by: userId, version: current.version + 1 })
-    .eq("id", current.id)
-    .eq("version", current.version);
-  if (mode === "owner") updateQuery = updateQuery.eq("created_by", userId);
-  const { data, error } = await updateQuery.select("id").maybeSingle();
-  if (error) {
-    throw new Error(`Failed to clear the data-only flag: ${error.message}`);
-  }
-  if (!data) {
-    throw new Error(
-      "The Shape changed while you were editing it. Refresh the page and try again.",
-    );
-  }
 }
 
 // ─── Component switching ───────────────────────────────────────────────────

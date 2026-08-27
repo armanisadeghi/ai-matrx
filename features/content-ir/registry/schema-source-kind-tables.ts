@@ -75,7 +75,7 @@ export interface KindDefProjection {
   data: Json;
   /** Dual-gate render-trust flag; optional so schema-only callers stay valid. */
   is_active?: boolean | null;
-  /** Raw `kind_definition.metadata` (family / data_only live here). */
+  /** Raw `kind_definition.metadata` (`family` lives here; the eradicated manual `data_only` flag never will again). */
   metadata?: Json | null;
   /**
    * The materialized `emitted_json_schema`. Optional so schema-only callers
@@ -406,14 +406,6 @@ export interface KindInputContract {
   schema: KindSchema | null;
   /** The materialized `kind_definition.emitted_json_schema` — the structural-leg authority. */
   emittedJsonSchema: Json | null;
-  /**
-   * True when the row's own `metadata.data_only` says machines produce this
-   * shape in production flows. INFORMATIONAL: it annotates the input path, it
-   * never removes one (`kind-input-resolution.ts`). Machine I/O contracts are
-   * quarantined by RESIDENCE in `content_ir.io_contract` and never reach this
-   * registry at all.
-   */
-  dataOnly: boolean;
 }
 
 /** The generated machine-contract families (mirrors aidream ContractFamily). */
@@ -453,37 +445,20 @@ export function kindFamilyFromMetadata(metadata: Json | null): string | null {
 }
 
 /**
- * Does the ROW ITSELF say machines produce this shape?
- *
- * Reads `metadata.data_only` and nothing else. There used to be a second leg
- * here — `family ∈ GENERATED_CONTRACT_FAMILY_VALUES` — and it was the bug:
- * a family NAME is not evidence about a shape. Post-eviction, machine
- * contracts are quarantined by residence in `content_ir.io_contract`, so every
- * row that reaches this registry is real, and the family leg only ever fired
- * on real rows that a seeder had misnamed. It refused
- * `/shapes/topic_assignment_batch_v1/test` (a hand-seeded SEO output), and it
- * still stamps "machines fill it, humans never do" on the 20 curated
- * `workflow_io` kinds — `text`, `string_list`, `json`, `number`, `boolean` —
- * that ship an active human input component.
- *
- * The RENDER leg keeps its family-based exemption (`KindGateTab`): a data
- * contract legitimately owns no output component. That is a different
- * question from whether a person may fill this shape in.
- */
-export function isDataOnlyKindMetadata(metadata: Json | null): boolean {
-  if (metadata === null || typeof metadata !== "object" || Array.isArray(metadata)) {
-    return false;
-  }
-  return (metadata as Record<string, Json | undefined>).data_only === true;
-}
-
-/**
  * Cold tier for the INPUT path (D1): one kind's field schema PLUS its
  * `emitted_json_schema` in the same read pattern. `KindInputForm` validates
  * assembled instances against `emittedJsonSchema` via `validateStructuralLeg`
  * (the activation gate's own ajv leg) — the field schema alone cannot play
  * that role, and a python-owned kind has no stored field list at all.
  * Returns null only when the kind slug does not exist (the caller screams).
+ *
+ * This contract used to also carry a `dataOnly` flag read from the row's own
+ * `metadata.data_only` (an "informational, never blocking" note for the
+ * shapes test bench). That manual per-row flag was eradicated 2026-08-27
+ * (Arman's ruling) along with every row that carried it — `kind-input-resolution.ts`
+ * no longer takes a dataOnly signal at all, and rests its instance-JSON
+ * fallback on `emittedJsonSchema !== null` alone, which is what it always
+ * actually needed.
  */
 export async function getKindInputContractBySlug(
   kind: string,
@@ -508,6 +483,5 @@ export async function getKindInputContractBySlug(
   return {
     schema,
     emittedJsonSchema: def.emitted_json_schema,
-    dataOnly: isDataOnlyKindMetadata(def.metadata),
   };
 }
