@@ -143,6 +143,7 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
 
 ## Change log
 
+- `2026-08-27` — **Google Tasks can enter the existing deliberate import flow without changing the source.** The internal-test Google read-only workspace loads a bounded real Google Tasks preview through the canonical vault-backed connection, maps the returned list/task hierarchy into `ImportTasksModal`, and lets the user choose which rows and destination project to create in AI Matrx. The provider adapter has no complete/edit/delete operation, and ordinary users cannot request the unapproved scope.
 - `2026-08-27` — **Smart-view targets stay touch-sized wherever their responsive surface is visible.** The desktop sidebar controls remain compact at large widths and grow to 44px through tablet widths; mobile overflow items were already 44px.
 - `2026-08-26` — **Task association reads honor platform-admin visibility.** `get_task_associations` now includes the `workspace.tasks` policy's platform-admin lane instead of rejecting admin-visible internal tasks as inaccessible; rollback SQL proves the exact cross-owner/cross-org case.
 - `2026-08-26` — **The narrow `/tasks` list toolbar keeps every control clickable.** Count, List/Table toggle, and copy/export actions stay on the first row; quick-add owns the full second row, so its absolute voice/submit controls cannot cover the Table toggle.

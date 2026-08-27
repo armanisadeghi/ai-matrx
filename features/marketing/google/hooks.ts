@@ -7,6 +7,10 @@ import {
   getYouTubeChannelPreview,
   getGoogleAdsCustomers,
   getGoogleAdsReport,
+  getGoogleCalendarAgenda,
+  getGoogleTasksPreview,
+  getTagManagerInventory,
+  getYouTubeAnalyticsPreview,
   listGoogleConnectionInventory,
 } from "@/features/marketing/google/service";
 import type { GoogleConnectionOwner } from "@/features/marketing/google/types";
@@ -81,4 +85,20 @@ export function useGoogleAdsCustomers() {
 
 export function useGoogleAdsReport() {
   return useMutation({ mutationFn: getGoogleAdsReport });
+}
+
+export function useGoogleCalendarAgenda() {
+  return useMutation({ mutationFn: getGoogleCalendarAgenda });
+}
+
+export function useGoogleTasksPreview() {
+  return useMutation({ mutationFn: getGoogleTasksPreview });
+}
+
+export function useYouTubeAnalyticsPreview() {
+  return useMutation({ mutationFn: getYouTubeAnalyticsPreview });
+}
+
+export function useTagManagerInventory() {
+  return useMutation({ mutationFn: getTagManagerInventory });
 }

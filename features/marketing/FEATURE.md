@@ -593,6 +593,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-27 — Codex: **The Google read-only sweep now has real internal-test product paths.** A super-admin-only workspace at `/marketing/connections/google/read-only` (reused unchanged by `/google-read-only-review`) owns focused disclosures and incremental authorization for owned-calendar agenda, Google Tasks, non-monetary YouTube Analytics, and Tag Manager inventory, plus a door to the existing Google Contacts import. Each action calls the canonical vault-backed aidream connection, renders the real bounded provider result, and exposes no provider write. Google Tasks hands the returned rows to the existing task preview/selection/project-import modal so the permission ends in a normal AI Matrx operation. `/marketing/calendar` now reaches this guarded workspace; ordinary users see an explicit awaiting-verification state and cannot request an unapproved scope.
 - 2026-08-27 — Codex: **Google Ads now has a real isolated internal-test lane.**
   `/marketing/ads` gives super admins one focused reporting workflow: dedicated
   identity consent, Ads-account discovery, exact customer selection, a bounded

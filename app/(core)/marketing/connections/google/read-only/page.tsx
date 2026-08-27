@@ -1,5 +1,5 @@
 import { ReadOnlySweepWorkspace } from "@/features/marketing/google/ReadOnlySweepWorkspace";
 
-export default function Page() {
+export default function GoogleReadOnlyConnectionsPage() {
   return <ReadOnlySweepWorkspace />;
 }

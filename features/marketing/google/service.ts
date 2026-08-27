@@ -9,6 +9,10 @@ import type {
   YouTubeChannelPreview,
   GoogleAdsCustomerInventory,
   GoogleAdsReport,
+  CalendarAgendaPreview,
+  GoogleTasksPreview,
+  TagManagerInventory,
+  YouTubeAnalyticsPreview,
 } from "@/features/marketing/google/types";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
@@ -266,4 +270,72 @@ export async function getGoogleAdsReport(input: {
     "Unable to load the selected Google Ads report.",
   );
   return (await response.json()) as GoogleAdsReport;
+}
+
+export async function getGoogleCalendarAgenda(input: {
+  connectionId: string;
+  days?: number;
+  organizationId?: string | null;
+}): Promise<CalendarAgendaPreview> {
+  const response = await postGoogleBackend(
+    "/api/google-integrations/calendar/agenda",
+    {
+      connection_id: input.connectionId,
+      organization_id: input.organizationId ?? null,
+      days: input.days ?? 14,
+    },
+    "Unable to read the primary Google Calendar agenda.",
+  );
+  return (await response.json()) as CalendarAgendaPreview;
+}
+
+export async function getGoogleTasksPreview(input: {
+  connectionId: string;
+  organizationId?: string | null;
+}): Promise<GoogleTasksPreview> {
+  const response = await postGoogleBackend(
+    "/api/google-integrations/tasks/preview",
+    {
+      connection_id: input.connectionId,
+      organization_id: input.organizationId ?? null,
+    },
+    "Unable to read Google Tasks.",
+  );
+  return (await response.json()) as GoogleTasksPreview;
+}
+
+export async function getYouTubeAnalyticsPreview(input: {
+  connectionId: string;
+  channelId: string;
+  startDate: string;
+  endDate: string;
+  organizationId?: string | null;
+}): Promise<YouTubeAnalyticsPreview> {
+  const response = await postGoogleBackend(
+    "/api/google-integrations/youtube/analytics",
+    {
+      connection_id: input.connectionId,
+      channel_id: input.channelId,
+      start_date: input.startDate,
+      end_date: input.endDate,
+      organization_id: input.organizationId ?? null,
+    },
+    "Unable to read YouTube Analytics.",
+  );
+  return (await response.json()) as YouTubeAnalyticsPreview;
+}
+
+export async function getTagManagerInventory(input: {
+  connectionId: string;
+  organizationId?: string | null;
+}): Promise<TagManagerInventory> {
+  const response = await postGoogleBackend(
+    "/api/google-integrations/tag-manager/inventory",
+    {
+      connection_id: input.connectionId,
+      organization_id: input.organizationId ?? null,
+    },
+    "Unable to read Google Tag Manager.",
+  );
+  return (await response.json()) as TagManagerInventory;
 }

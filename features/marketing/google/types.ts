@@ -93,6 +93,87 @@ export interface YouTubeChannelPreview {
   recent_videos: YouTubeVideoPreview[];
 }
 
+export interface CalendarAgendaEvent {
+  event_id: string;
+  title: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  all_day: boolean;
+  status: string | null;
+  location: string | null;
+  html_url: string | null;
+}
+
+export interface CalendarAgendaPreview {
+  calendar: "primary";
+  window_start: string;
+  window_end: string;
+  events: CalendarAgendaEvent[];
+  access_mode: "read_only";
+}
+
+export interface GoogleTaskItemPreview {
+  task_id: string;
+  title: string;
+  notes: string | null;
+  due_at: string | null;
+  completed_at: string | null;
+  status: string | null;
+  parent_task_id: string | null;
+  position: string | null;
+}
+
+export interface GoogleTaskListPreview {
+  task_list_id: string;
+  title: string;
+  tasks: GoogleTaskItemPreview[];
+}
+
+export interface GoogleTasksPreview {
+  task_lists: GoogleTaskListPreview[];
+  access_mode: "read_only";
+}
+
+export interface YouTubeAnalyticsDay {
+  day: string;
+  views: number;
+  estimated_minutes_watched: number;
+  average_view_duration_seconds: number;
+  subscribers_gained: number;
+}
+
+export interface YouTubeAnalyticsPreview {
+  channel_id: string;
+  start_date: string;
+  end_date: string;
+  days: YouTubeAnalyticsDay[];
+  access_mode: "read_only_non_monetary";
+}
+
+export interface TagManagerWorkspacePreview {
+  workspace_id: string;
+  name: string;
+}
+
+export interface TagManagerContainerPreview {
+  container_id: string;
+  name: string;
+  public_id: string | null;
+  usage_context: string[];
+  workspaces: TagManagerWorkspacePreview[];
+}
+
+export interface TagManagerAccountPreview {
+  account_id: string;
+  name: string;
+  containers: TagManagerContainerPreview[];
+}
+
+export interface TagManagerInventory {
+  accounts: TagManagerAccountPreview[];
+  access_mode: "read_only";
+}
+
 export type GoogleAdsCustomer = components["schemas"]["GoogleAdsCustomer"];
 
 export type GoogleAdsCustomerInventory =
