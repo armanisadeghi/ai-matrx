@@ -61155,6 +61155,20 @@ export type Database = {
         Args: { p_employment_id: string; p_pin: string }
         Returns: Json
       }
+      hr_ssn_probe_authorize: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      hr_ssn_store: {
+        Args: {
+          p_ciphertext: string
+          p_employee_id: string
+          p_hmac: string
+          p_key_id: string
+          p_last4: string
+        }
+        Returns: Json
+      }
       hr_structure_deactivate: {
         Args: { p_id: string; p_kind: string }
         Returns: Json
