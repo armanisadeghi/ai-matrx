@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { MyTimesheet } from "@/features/hr/time/timesheet/MyTimesheet";
+import { MyTimesheetContext } from "@/features/hr/me/MyTimesheetContext";
 
 /**
  * Route 5 — `/hr/me/timesheet` (SPEC-UI-IA §3.1 row 5, SPEC-TIME §2.2).
@@ -9,10 +9,15 @@ import { MyTimesheet } from "@/features/hr/time/timesheet/MyTimesheet";
  * The employee's own current pay period: attest, attest with an exception, or ask for a
  * correction. Self-only by construction — a manager reviewing a report uses route 29.
  *
- * The ids arrive as search params today. SPEC-TIME §2.2 writes the read as
- * `hr.timesheet_get(self, current_period)`, but the live contract takes two concrete uuids and no
- * self/current resolver is wired yet (see `MyTimesheet`'s `UnresolvedContext` for the full note).
- * Without them the surface says so instead of showing a blank grid.
+ * SPEC-TIME §2.2 writes the read as `hr.timesheet_get(self, current_period)`; the live door takes
+ * two concrete uuids. `MyTimesheetContext` resolves both — the employment from the ONE
+ * `hr_my_context` the `/hr` layout already resolved (the server's as-of spell, never
+ * `current_employment_id`, per SPEC-EMPLOYEES §2.1), and the current period from
+ * `hr_pay_period_list`.
+ *
+ * 🚨 SEARCH PARAMS STILL WIN. `?employment=…&period=…` is an explicit request — a manager
+ * following a deep link, or anybody re-opening a specific period — and resolution is the fallback
+ * for the bare route, never an override of what was asked for.
  */
 export const metadata = { title: "My timesheet" };
 
@@ -35,7 +40,7 @@ export default async function MyTimesheetPage({
             <div className="h-full animate-pulse bg-card/40" aria-label="Loading your timesheet" />
           }
         >
-          <MyTimesheet
+          <MyTimesheetContext
             employmentId={employment ?? null}
             payPeriodId={period ?? null}
           />
