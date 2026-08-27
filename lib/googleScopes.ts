@@ -24,8 +24,7 @@ export const GOOGLE_SCOPE = {
   calendarEventsOwnedReadonly:
     "https://www.googleapis.com/auth/calendar.events.owned.readonly",
   tasksReadonly: "https://www.googleapis.com/auth/tasks.readonly",
-  tagManagerReadonly:
-    "https://www.googleapis.com/auth/tagmanager.readonly",
+  tagManagerReadonly: "https://www.googleapis.com/auth/tagmanager.readonly",
   googleAds: "https://www.googleapis.com/auth/adwords",
 } as const;
 
@@ -118,6 +117,22 @@ export const GOOGLE_READ_ONLY_SWEEP_CLOUD_SCOPES = [
   GOOGLE_SCOPE.contactsReadonly,
   GOOGLE_SCOPE.calendarEventsOwnedReadonly,
   GOOGLE_SCOPE.tasksReadonly,
+  GOOGLE_SCOPE.youtubeAnalyticsReadonly,
+  GOOGLE_SCOPE.tagManagerReadonly,
+] as const;
+
+/**
+ * One durable authorization for the read-only sweep. YouTube account read is
+ * already verified, but remains in the runtime request because Analytics
+ * reports must be tied to an owned channel. Ads, Gmail read, and every write
+ * scope stay out of this credential.
+ */
+export const GOOGLE_READ_ONLY_SWEEP_SCOPES = [
+  ...GOOGLE_IDENTITY_SCOPES,
+  GOOGLE_SCOPE.contactsReadonly,
+  GOOGLE_SCOPE.calendarEventsOwnedReadonly,
+  GOOGLE_SCOPE.tasksReadonly,
+  GOOGLE_SCOPE.youtubeReadonly,
   GOOGLE_SCOPE.youtubeAnalyticsReadonly,
   GOOGLE_SCOPE.tagManagerReadonly,
 ] as const;

@@ -15,6 +15,11 @@ import type {
   YouTubeAnalyticsPreview,
 } from "@/features/marketing/google/types";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import type { components } from "@/types/python-generated/api-types";
+
+export type GoogleConnectionPurpose = NonNullable<
+  components["schemas"]["GoogleExchangeRequest"]["connection_purpose"]
+>;
 
 // `credential_item_id` / `vault_secret_key` are REFERENCES, never secrets (a
 // vault item id and a key name). Reading them is what lets the UI tell the
@@ -183,7 +188,7 @@ export async function postGoogleBackend(
 export async function connectGoogle(
   code: string,
   owner: GoogleConnectionOwner,
-  connectionPurpose: "general" | "google_ads_isolated" = "general",
+  connectionPurpose: GoogleConnectionPurpose = "general",
 ): Promise<GoogleConnectionResult> {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   if (!clientId) {

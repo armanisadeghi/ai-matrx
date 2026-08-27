@@ -6,6 +6,7 @@ import {
   GOOGLE_CALENDAR_AGENDA_SCOPES,
   GOOGLE_CONTACTS_IMPORT_SCOPES,
   GOOGLE_READ_ONLY_SWEEP_CLOUD_SCOPES,
+  GOOGLE_READ_ONLY_SWEEP_SCOPES,
   GOOGLE_SCOPE,
   GOOGLE_TAG_MANAGER_SCOPES,
   GOOGLE_TASKS_IMPORT_SCOPES,
@@ -134,6 +135,23 @@ describe("Google OAuth connection resources", () => {
         GOOGLE_SCOPE.youtubeAnalyticsReadonly,
         GOOGLE_SCOPE.tagManagerReadonly,
       ]),
+    );
+  });
+
+  it("authorizes the read-only sweep as one complete runtime credential", () => {
+    expect(GOOGLE_READ_ONLY_SWEEP_SCOPES).toEqual(
+      expect.arrayContaining([
+        ...GOOGLE_READ_ONLY_SWEEP_CLOUD_SCOPES,
+        GOOGLE_SCOPE.youtubeReadonly,
+      ]),
+    );
+    expect(GOOGLE_READ_ONLY_SWEEP_SCOPES).not.toContain(GOOGLE_SCOPE.googleAds);
+    expect(GOOGLE_READ_ONLY_SWEEP_SCOPES).not.toContain(
+      GOOGLE_SCOPE.gmailReadonly,
+    );
+    expect(GOOGLE_READ_ONLY_SWEEP_SCOPES).not.toContain(GOOGLE_SCOPE.driveFile);
+    expect(new Set(GOOGLE_READ_ONLY_SWEEP_SCOPES).size).toBe(
+      GOOGLE_READ_ONLY_SWEEP_SCOPES.length,
     );
   });
 });

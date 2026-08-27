@@ -29,12 +29,9 @@ import {
 import type { GoogleConnectionSummary } from "@/features/marketing/google/types";
 import type { TaskItemType } from "@/components/mardown-display/blocks/tasks/TaskChecklist";
 import {
-  GOOGLE_CALENDAR_AGENDA_SCOPES,
-  GOOGLE_CONTACTS_IMPORT_SCOPES,
+  GOOGLE_READ_ONLY_SWEEP_CLOUD_SCOPES,
+  GOOGLE_READ_ONLY_SWEEP_SCOPES,
   GOOGLE_SCOPE,
-  GOOGLE_TAG_MANAGER_SCOPES,
-  GOOGLE_TASKS_IMPORT_SCOPES,
-  GOOGLE_YOUTUBE_ANALYTICS_SCOPES,
 } from "@/lib/googleScopes";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -43,26 +40,33 @@ import { cn } from "@/lib/utils";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 
-type SweepCapability = "calendar" | "tasks" | "youtube" | "tag_manager";
+type SweepCapability =
+  "contacts" | "calendar" | "tasks" | "youtube" | "tag_manager";
 
 const CAPABILITY = {
+  contacts: {
+    scope: GOOGLE_SCOPE.contactsReadonly,
+  },
   calendar: {
     scope: GOOGLE_SCOPE.calendarEventsOwnedReadonly,
-    scopes: GOOGLE_CALENDAR_AGENDA_SCOPES,
   },
   tasks: {
     scope: GOOGLE_SCOPE.tasksReadonly,
-    scopes: GOOGLE_TASKS_IMPORT_SCOPES,
   },
   youtube: {
     scope: GOOGLE_SCOPE.youtubeAnalyticsReadonly,
-    scopes: GOOGLE_YOUTUBE_ANALYTICS_SCOPES,
   },
   tag_manager: {
     scope: GOOGLE_SCOPE.tagManagerReadonly,
-    scopes: GOOGLE_TAG_MANAGER_SCOPES,
   },
 } as const;
+
+const SWEEP_REQUIRED_CONNECTION_SCOPES = [
+  ...GOOGLE_READ_ONLY_SWEEP_CLOUD_SCOPES,
+  GOOGLE_SCOPE.youtubeReadonly,
+] as const;
+
+const SWEEP_CAPABILITIES = Object.keys(CAPABILITY) as SweepCapability[];
 
 function isoDate(daysAgo: number): string {
   const value = new Date();
@@ -125,13 +129,16 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
   );
   const resources = inventory.data?.resources ?? [];
 
-  const connectionsFor = (capability: SweepCapability) =>
-    connections.filter((connection) =>
-      connection.scopes.includes(CAPABILITY[capability].scope),
-    );
+  const sweepConnections = connections.filter((connection) =>
+    SWEEP_REQUIRED_CONNECTION_SCOPES.every((scope) =>
+      connection.scopes.includes(scope),
+    ),
+  );
+
+  const connectionsFor = () => sweepConnections;
 
   const selectedConnection = (capability: SweepCapability) => {
-    const candidates = connectionsFor(capability);
+    const candidates = connectionsFor();
     const selected = selectedConnections[capability];
     return (
       candidates.find((connection) => connection.id === selected) ??
@@ -140,13 +147,17 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
     );
   };
 
-  const authorize = async (capability: SweepCapability) => {
+  const allDisclosuresAccepted = SWEEP_CAPABILITIES.every(
+    (capability) => accepted[capability],
+  );
+
+  const authorizeSweep = async () => {
     try {
-      if (!accepted[capability]) {
-        throw new Error("Confirm the read-only disclosure first.");
+      if (!allDisclosuresAccepted) {
+        throw new Error("Confirm all five read-only disclosures first.");
       }
       const code = await google.requestAuthorizationCode(
-        [...CAPABILITY[capability].scopes],
+        [...GOOGLE_READ_ONLY_SWEEP_SCOPES],
         undefined,
         { forceConsent: reviewMode },
       );
@@ -154,13 +165,16 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
         code,
         owner: { type: "user" },
       });
-      setSelectedConnections((current) => ({
-        ...current,
-        [capability]: result.connectionId,
-      }));
-      setAccepted((current) => ({ ...current, [capability]: false }));
+      setSelectedConnections(
+        Object.fromEntries(
+          SWEEP_CAPABILITIES.map((capability) => [
+            capability,
+            result.connectionId,
+          ]),
+        ),
+      );
       await inventory.refetch();
-      toast.success("Google read-only access saved");
+      toast.success("Combined Google read-only access saved");
     } catch (error) {
       toast.error("Google authorization did not finish", {
         description: error instanceof Error ? error.message : "Try again.",
@@ -277,6 +291,43 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
           </Button>
         </header>
 
+        <Card className="border-primary/40 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShieldCheck className="h-5 w-5 text-primary" /> One
+              authorization, five read-only features
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-muted-foreground">
+              Review each disclosure below, then authorize the complete batch
+              once. The resulting credential contains no Google Ads, Gmail read,
+              broad Drive, or write permission.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                className="min-h-11"
+                onClick={() => void authorizeSweep()}
+                disabled={!allDisclosuresAccepted || connect.isPending}
+              >
+                {connect.isPending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : null}
+                Authorize all five read-only features
+              </Button>
+              {sweepConnections.length ? (
+                <Badge variant="secondary">
+                  Combined read-only connection ready
+                </Badge>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  Confirm every disclosure to enable authorization.
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -291,25 +342,47 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
                 Contacts.
               </p>
               <code className="block break-all rounded bg-muted p-2 text-xs">
-                {GOOGLE_CONTACTS_IMPORT_SCOPES.at(-1)}
+                {CAPABILITY.contacts.scope}
               </code>
-              <Button asChild className="min-h-11">
-                <Link href="/crm/import">Open Google Contacts import</Link>
-              </Button>
+              <label className="flex min-h-11 items-start gap-3 rounded border p-3 text-sm">
+                <Checkbox
+                  checked={Boolean(accepted.contacts)}
+                  onCheckedChange={(value) =>
+                    setAccepted((current) => ({
+                      ...current,
+                      contacts: value === true,
+                    }))
+                  }
+                  aria-label="Confirm Google Contacts import read-only disclosure"
+                />
+                <span>
+                  Read my Google contacts so I can preview field mapping and
+                  import only selected records. AI Matrx never creates, edits,
+                  or deletes Google Contacts.
+                </span>
+              </label>
+              {sweepConnections.length ? (
+                <Button asChild className="min-h-11">
+                  <Link href="/crm/import">Open Google Contacts import</Link>
+                </Button>
+              ) : (
+                <Button className="min-h-11" disabled>
+                  Authorize the batch above first
+                </Button>
+              )}
             </CardContent>
           </Card>
 
           <CapabilityCard
             icon={<CalendarDays className="h-5 w-5" />}
             title="Primary calendar agenda"
-            capability="calendar"
             scope={CAPABILITY.calendar.scope}
             disclosure="Read upcoming events from my primary calendar for a 14-day agenda. AI Matrx cannot create, edit, share, or delete calendar events."
             accepted={Boolean(accepted.calendar)}
             onAccepted={(value) =>
               setAccepted((current) => ({ ...current, calendar: value }))
             }
-            connections={connectionsFor("calendar")}
+            connections={connectionsFor()}
             selectedId={selectedConnection("calendar")?.id ?? ""}
             onSelect={(value) =>
               setSelectedConnections((current) => ({
@@ -317,9 +390,8 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
                 calendar: value,
               }))
             }
-            onAuthorize={() => void authorize("calendar")}
             onLoad={() => void loadCalendar()}
-            loading={connect.isPending || calendar.isPending}
+            loading={calendar.isPending}
             resultLabel="Load 14-day agenda"
           >
             {calendar.data ? (
@@ -342,14 +414,13 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
           <CapabilityCard
             icon={<CheckSquare2 className="h-5 w-5" />}
             title="Google Tasks import"
-            capability="tasks"
             scope={CAPABILITY.tasks.scope}
             disclosure="Read my Google task lists and tasks so I can preview and import selected items. AI Matrx never completes, edits, or deletes the source tasks."
             accepted={Boolean(accepted.tasks)}
             onAccepted={(value) =>
               setAccepted((current) => ({ ...current, tasks: value }))
             }
-            connections={connectionsFor("tasks")}
+            connections={connectionsFor()}
             selectedId={selectedConnection("tasks")?.id ?? ""}
             onSelect={(value) =>
               setSelectedConnections((current) => ({
@@ -357,9 +428,8 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
                 tasks: value,
               }))
             }
-            onAuthorize={() => void authorize("tasks")}
             onLoad={() => void loadTasks()}
-            loading={connect.isPending || tasks.isPending}
+            loading={tasks.isPending}
             resultLabel="Preview Google Tasks"
           >
             {tasks.data ? (
@@ -394,14 +464,13 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
           <CapabilityCard
             icon={<BarChart3 className="h-5 w-5" />}
             title="YouTube channel performance"
-            capability="youtube"
             scope={CAPABILITY.youtube.scope}
             disclosure="Read non-monetary performance metrics for the owned channel I select. AI Matrx cannot upload, edit, comment, manage, or read revenue data."
             accepted={Boolean(accepted.youtube)}
             onAccepted={(value) =>
               setAccepted((current) => ({ ...current, youtube: value }))
             }
-            connections={connectionsFor("youtube")}
+            connections={connectionsFor()}
             selectedId={youtubeConnection?.id ?? ""}
             onSelect={(value) => {
               setSelectedConnections((current) => ({
@@ -410,9 +479,8 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
               }));
               setYoutubeChannelId("");
             }}
-            onAuthorize={() => void authorize("youtube")}
             onLoad={() => void loadYouTube()}
-            loading={connect.isPending || youtube.isPending}
+            loading={youtube.isPending}
             resultLabel="Load 30-day performance"
             loadDisabled={!youtubeChannelId}
             extraControl={
@@ -457,14 +525,13 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
           <CapabilityCard
             icon={<Tags className="h-5 w-5" />}
             title="Tag Manager inventory"
-            capability="tag_manager"
             scope={CAPABILITY.tag_manager.scope}
             disclosure="Read my Tag Manager accounts, containers, and workspaces for an inventory. AI Matrx cannot create tags, change versions, publish, or modify access."
             accepted={Boolean(accepted.tag_manager)}
             onAccepted={(value) =>
               setAccepted((current) => ({ ...current, tag_manager: value }))
             }
-            connections={connectionsFor("tag_manager")}
+            connections={connectionsFor()}
             selectedId={selectedConnection("tag_manager")?.id ?? ""}
             onSelect={(value) =>
               setSelectedConnections((current) => ({
@@ -472,9 +539,8 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
                 tag_manager: value,
               }))
             }
-            onAuthorize={() => void authorize("tag_manager")}
             onLoad={() => void loadTagManager()}
-            loading={connect.isPending || tagManager.isPending}
+            loading={tagManager.isPending}
             resultLabel="Load Tag Manager inventory"
           >
             {tagManager.data ? (
@@ -535,7 +601,6 @@ function CapabilityCard({
   connections,
   selectedId,
   onSelect,
-  onAuthorize,
   onLoad,
   loading,
   resultLabel,
@@ -545,7 +610,6 @@ function CapabilityCard({
 }: {
   icon: React.ReactNode;
   title: string;
-  capability: SweepCapability;
   scope: string;
   disclosure: string;
   accepted: boolean;
@@ -553,7 +617,6 @@ function CapabilityCard({
   connections: GoogleConnectionSummary[];
   selectedId: string;
   onSelect: (value: string) => void;
-  onAuthorize: () => void;
   onLoad: () => void;
   loading: boolean;
   resultLabel: string;
@@ -581,15 +644,6 @@ function CapabilityCard({
           />
           <span>{disclosure}</span>
         </label>
-        <Button
-          className="min-h-11"
-          variant="outline"
-          onClick={onAuthorize}
-          disabled={!accepted || loading}
-        >
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Authorize {title}
-        </Button>
         {connections.length ? (
           <>
             <select
@@ -616,7 +670,11 @@ function CapabilityCard({
               {resultLabel}
             </Button>
           </>
-        ) : null}
+        ) : (
+          <p className="rounded border border-dashed p-3 text-sm text-muted-foreground">
+            Authorize the complete read-only batch above to use this feature.
+          </p>
+        )}
         {children}
       </CardContent>
     </Card>

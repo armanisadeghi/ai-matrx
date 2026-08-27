@@ -13,6 +13,7 @@ import {
   getYouTubeAnalyticsPreview,
   listGoogleConnectionInventory,
 } from "@/features/marketing/google/service";
+import type { GoogleConnectionPurpose } from "@/features/marketing/google/service";
 import type { GoogleConnectionOwner } from "@/features/marketing/google/types";
 
 export const googleConnectionKeys = {
@@ -37,7 +38,7 @@ export function useConnectGoogle() {
     }: {
       code: string;
       owner: GoogleConnectionOwner;
-      connectionPurpose?: "general" | "google_ads_isolated";
+      connectionPurpose?: GoogleConnectionPurpose;
     }) => connectGoogle(code, owner, connectionPurpose),
     onSuccess: () =>
       queryClient.invalidateQueries({
