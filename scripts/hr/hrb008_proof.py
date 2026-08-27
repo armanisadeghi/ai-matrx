@@ -1220,6 +1220,109 @@ async def main():
                 "where i.organization_id=$1 and i.state='failed' and f.state in ('open','retrying')", org),
             "a failed instance's queue entry is the mechanism for getting it moving again")
 
+        # ===================================== §1.4 THE PREDICATE SPEAKS THE RUNGS THE SELECTOR WALKS
+        # 🚨 A TIMECARD NOBODY CAN APPROVE STALLS PAYROLL WITH NO ERROR ANYWHERE. Two shapes, both
+        # of them `hr.can_approve` being unable to say a rule the rest of the system already states:
+        # the reporting-line rung the selector walks, and §1.4 rule 3's sole-proprietor carve-out
+        # that was written but sat unreachable behind RULE 1's unconditional self-refusal.
+        await as_owner()
+        # a fresh org with a manager chain and ZERO approval_authority rows — the state every new
+        # org is in, and the state in which §8.2's manager_approval step used to be undeliverable.
+        rl_mgr_uid = await conn.fetchval("select hr._wf_login_of($1)", people["bob"]["employment"])
+        await conn.execute(
+            "update hr.approval_authority set is_active=false where organization_id=$1 "
+            "and action_type='timecard_approve'", org)
+        rec("§1.4 rung", "🚨 with ZERO timecard_approve authority rows, the subject's MANAGER can approve — the rung the selector walks is speakable at last",
+            await conn.fetchval(
+                "select hr.can_approve($1,'timecard_approve','hr.pay_period_employment',$2)",
+                rl_mgr_uid, chain["alice"]["ppe"]))
+        rec("§1.4 rung", "and it is scoped to the ROUTING PLAN, not a list in code — an action no step routes to a manager stays refused",
+            not await conn.fetchval(
+                "select hr.can_approve($1,'pay_change_approve','hr.pay_period_employment',$2)",
+                rl_mgr_uid, chain["alice"]["ppe"]))
+        rec("§1.4 rung", "🚨 and it is the LINE, not the org: somebody who is not in this subject's chain is still refused",
+            not await conn.fetchval(
+                "select hr.can_approve($1,'timecard_approve','hr.pay_period_employment',$2)",
+                people["erin"]["uid"], chain["alice"]["ppe"]))
+        rec("§1.4 rung", "never-approve-yourself still stands above it — the subject cannot ride their own manager rung",
+            not await conn.fetchval(
+                "select hr.can_approve($1,'timecard_approve','hr.pay_period_employment',$2)",
+                people["alice"]["uid"], chain["alice"]["ppe"]))
+        await conn.execute(
+            "update hr.approval_authority set is_active=true where organization_id=$1", org)
+
+        # ---- §1.4 rule 3: the sole proprietor. One person, top of the chart, no second actor.
+        solo_org = await conn.fetchval(
+            "insert into iam.organizations (name, slug, abbreviation) values "
+            "('HRB-008 Solo Org','hrb008-solo-'||substr(gen_random_uuid()::text,1,8),'SOL') returning id")
+        solo_uid = await conn.fetchval(
+            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+            "email_confirmed_at, created_at, updated_at) values "
+            "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
+            "$1,'x',now(),now(),now()) returning id", f"solo.{uuid.uuid4().hex[:8]}@example.invalid")
+        await conn.execute(
+            "insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) "
+            "values ($1,'organization',$1,$2,'owner','active')", solo_org, solo_uid)
+        solo_party = await conn.fetchval(
+            "insert into crm.party (organization_id, party_kind, display_name) "
+            "values ($1,'person','Sam Solo') returning id", solo_org)
+        solo_e = await conn.fetchval(
+            "insert into hr.employee (organization_id, party_id, login_user_id, employee_number, "
+            "legal_first_name, legal_last_name, display_name) values ($1,$2,$3,'EMP-solo','Sam','Solo','Sam Solo') "
+            "returning id", solo_org, solo_party, solo_uid)
+        solo_er = await conn.fetchval(
+            "insert into hr.employer_profile (organization_id, legal_name, ein) "
+            "values ($1,'Solo Co','00-0000000') returning id", solo_org)
+        solo_pg = await conn.fetchval(
+            "insert into hr.pay_group (organization_id, employer_profile_id, name, pay_frequency, "
+            "first_period_start_on, workweek_effective_from) values "
+            "($1,$2,'Solo Biweekly','biweekly',current_date - 60, current_date - 60) returning id",
+            solo_org, solo_er)
+        solo_emp = await conn.fetchval(
+            "insert into hr.employment (organization_id, employee_id, employer_profile_id, pay_group_id, "
+            "hire_date, status) values ($1,$2,$3,$4,current_date - 365,'active') returning id",
+            solo_org, solo_e, solo_er, solo_pg)
+        solo_pp = await conn.fetchval(
+            "insert into hr.pay_period (organization_id, pay_group_id, period_start_on, period_end_on, "
+            "sequence_number) values ($1,$2,current_date - 15, current_date - 1, 1) returning id",
+            solo_org, solo_pg)
+        solo_ppe = await conn.fetchval(
+            "insert into hr.pay_period_employment (organization_id, pay_period_id, employment_id, state, "
+            "engine_key, engine_version) values ($1,$2,$3,'open','proof','1') returning id",
+            solo_org, solo_pp, solo_emp)
+        rec("§1.4 rule 3", "🚨 the SOLE PROPRIETOR may take their own timecard — `auto_record` is what §1.4 rule 3 says, and it was unreachable dead code",
+            await conn.fetchval(
+                "select hr.can_approve($1,'timecard_approve','hr.pay_period_employment',$2)",
+                solo_uid, solo_ppe))
+        rec("§1.4 rule 3", "🚨 but NOT for a `require_second_actor` action — a sole owner still cannot approve their own pay change",
+            not await conn.fetchval(
+                "select hr.can_approve($1,'pay_change_approve','hr.pay_period_employment',$2)",
+                solo_uid, solo_ppe))
+        # the moment a second actor exists, the carve-out closes again
+        second_uid = await conn.fetchval(
+            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+            "email_confirmed_at, created_at, updated_at) values "
+            "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
+            "$1,'x',now(),now(),now()) returning id", f"second.{uuid.uuid4().hex[:8]}@example.invalid")
+        second_party = await conn.fetchval(
+            "insert into crm.party (organization_id, party_kind, display_name) "
+            "values ($1,'person','Ada Second') returning id", solo_org)
+        second_e = await conn.fetchval(
+            "insert into hr.employee (organization_id, party_id, login_user_id, employee_number, "
+            "legal_first_name, legal_last_name, display_name) values ($1,$2,$3,'EMP-2nd','Ada','Second','Ada Second') "
+            "returning id", solo_org, second_party, second_uid)
+        second_emp = await conn.fetchval(
+            "insert into hr.employment (organization_id, employee_id, employer_profile_id, pay_group_id, "
+            "hire_date, status) values ($1,$2,$3,$4,current_date - 365,'active') returning id",
+            solo_org, second_e, solo_er, solo_pg)
+        await conn.execute(
+            "insert into hr.role_assignment (organization_id, employment_id, role_key, scope_kind, effective_from) "
+            "values ($1,$2,'hr_owner','org',current_date - 400)", solo_org, second_emp)
+        rec("§1.4 rule 3", "🚨 and the moment a SECOND ACTOR exists the carve-out closes — it is a sole-proprietor rule, not a self-approval loophole",
+            not await conn.fetchval(
+                "select hr.can_approve($1,'timecard_approve','hr.pay_period_employment',$2)",
+                solo_uid, solo_ppe))
+
         # ================================================================= §4.2 DOOR GRANTS
         # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
         # GRANT, so hr_c4_07's door assertion would stay green on a surface reachable only because
