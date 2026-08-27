@@ -204,6 +204,21 @@ export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[]
   const legal = PERIOD_EDGES[period.state] ?? [];
   const offers: PeriodActionOffer[] = [];
 
+  /**
+   * 🚨 THIS MIRRORS THE SERVER'S ONE-LINE RULE AND MUST NOT DRIFT FROM IT.
+   *
+   * `hr.pay_period_transition`:
+   *   `v_cap := case when p_to_state = 'exported' then 'payroll.export' else 'payroll.read' end`
+   *
+   * So EVERY transition this bar offers — submit, approve, lock, close, reopen — is gated on
+   * `payroll.read`, which is the `hr_admin` role here. Only `exported` needs `payroll.export`, and
+   * `exported` is never a button (it is reached by an export run completing).
+   *
+   * Both roles that hold the capability are therefore allowed on every offer. Passing a narrower
+   * list is how this surface previously over-tightened `lock` to payroll-admin-only while the
+   * server was happy to accept it from an HR admin — a disabled button with a reason that was
+   * simply untrue.
+   */
   const roleBlock = (allowed: PeriodViewerRole[], what: string): string | null => {
     if (allowed.includes(role)) return null;
     if (role === "manager") {
@@ -212,6 +227,9 @@ export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[]
     return `${what} requires the payroll administrator role.`;
   };
 
+  /** The transitions gated on `payroll.read` — which is all of them except export. */
+  const CAN_TRANSITION: PeriodViewerRole[] = ["hr_admin", "payroll_admin"];
+
   for (const to of legal) {
     if (to === "submitted") {
       const tooEarly = !endDateHasPassed(period, todayLocalDate);
@@ -219,7 +237,7 @@ export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[]
         to,
         label: "Submit period",
         unavailableBecause:
-          roleBlock(["hr_admin", "payroll_admin"], "Submitting a period") ??
+          roleBlock(CAN_TRANSITION, "Submitting a period") ??
           (tooEarly
             ? `This period runs through ${period.periodEndOn}. It can be submitted once that day has passed.`
             : null),
@@ -239,7 +257,7 @@ export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[]
         to,
         label: period.state === "reopened" ? "Re-approve period" : "Approve period",
         unavailableBecause:
-          roleBlock(["hr_admin", "payroll_admin"], "Approving a period") ??
+          roleBlock(CAN_TRANSITION, "Approving a period") ??
           (stillOpen > 0
             ? `${stillOpen} ${stillOpen === 1 ? "timecard is" : "timecards are"} still awaiting a ` +
               `decision. Every timecard must be decided before the period is approved.`
@@ -263,7 +281,7 @@ export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[]
       offers.push({
         to,
         label: "Lock period",
-        unavailableBecause: roleBlock(["payroll_admin"], "Locking a period"),
+        unavailableBecause: roleBlock(CAN_TRANSITION, "Locking a period"),
         reasonRequired: false,
         consequence:
           "After lock nothing in this period is editable. Corrections become adjustments that ride " +
@@ -277,7 +295,7 @@ export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[]
       offers.push({
         to,
         label: "Close period",
-        unavailableBecause: roleBlock(["hr_admin", "payroll_admin"], "Closing a period"),
+        unavailableBecause: roleBlock(CAN_TRANSITION, "Closing a period"),
         reasonRequired: false,
         consequence: "The period is finished and retained as a record. Nothing further happens to it.",
         destructiveTone: true,
@@ -290,7 +308,7 @@ export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[]
         to,
         label: "Reopen period",
         unavailableBecause:
-          roleBlock(["hr_admin", "payroll_admin"], "Reopening a period") ??
+          roleBlock(CAN_TRANSITION, "Reopening a period") ??
           (allowPeriodReopen
             ? null
             : "Reopening is switched off for this organization (hr.time_and_attendance.allow_period_reopen)."),

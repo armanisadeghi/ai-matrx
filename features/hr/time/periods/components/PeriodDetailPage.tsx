@@ -35,17 +35,44 @@ import { PeriodStatePanel } from "./PeriodStatePanel";
 import { PostLockAdjustments } from "./PostLockAdjustments";
 
 /**
+ * 🚨 THE TWO CAPABILITY TOKENS THE SERVER ACTUALLY USES. `hr.pay_period_transition` decides in one
+ * line — `case when p_to_state = 'exported' then 'payroll.export' else 'payroll.read' end` — so
+ * every transition except export is gated on **`payroll.read`**, and nothing else.
+ *
+ * These are constants rather than inline strings because getting them wrong is invisible: a
+ * capability token that does not exist is not a compile error and not a runtime error, it is
+ * silently `false` forever.
+ */
+const CAP_EXPORT = "payroll.export";
+const CAP_TRANSITION = "payroll.read";
+
+/**
  * Resolve §2.7's three roles from the caller's capability list.
  *
- * Deliberately narrowing: the DEFAULT is `manager`, the read-only role. A capability we cannot see
- * resolves to the least reach, never the most — over-tightening is visible and fixable, while
- * accidentally offering a payroll administrator's controls to a manager is neither.
+ * ═════════════════════════════════════════════════════════════════════════════════════════════
+ * 🚨 THIS FUNCTION WAS THE S4 BLOCKER: THE SUBMIT BUTTON WAS INERT.
+ *
+ * It used to test `time.approve_period` and `hr.admin`. **Neither capability exists** — the live
+ * set in `hr.access_role` has 37 tokens and those are not among them, so the `hr_admin` branch
+ * could never be reached and every viewer without `payroll.export` collapsed to `manager`, the
+ * read-only role. Every transition control rendered DISABLED. A verifier clicked Submit, nothing
+ * happened, and probing `hr_pay_period_transition` directly succeeded — because the door was fine
+ * and only the client's idea of who may knock was wrong.
+ *
+ * The lesson worth keeping: an invented capability token fails CLOSED and SILENTLY. There is no
+ * error anywhere — the string simply never matches, the button greys out, and the surface looks
+ * like a considered permission decision instead of a typo. That is why the tokens are now
+ * constants checked against the server's own rule, and why the mapper-style discipline
+ * (verify against the live definition, never against a guess) applies to authority too.
+ * ═════════════════════════════════════════════════════════════════════════════════════════════
+ *
+ * Still deliberately narrowing: the DEFAULT is `manager`. A capability we cannot see resolves to
+ * the least reach — but "cannot see" must now mean the capability is genuinely absent, not that we
+ * were looking for a name nobody issues.
  */
 export function resolvePeriodRole(capabilities: string[]): PeriodViewerRole {
-  if (capabilities.includes("payroll.export")) return "payroll_admin";
-  if (capabilities.includes("time.approve_period") || capabilities.includes("hr.admin")) {
-    return "hr_admin";
-  }
+  if (capabilities.includes(CAP_EXPORT)) return "payroll_admin";
+  if (capabilities.includes(CAP_TRANSITION)) return "hr_admin";
   return "manager";
 }
 

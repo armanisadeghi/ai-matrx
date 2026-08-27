@@ -420,6 +420,29 @@ export interface PeriodTransitionResult {
   disputesOpen: number;
   transitionedAt: string;
   notice?: string;
+
+  /*
+   * ── Added by lane L3 on 2026-08-27, and the reason is worth recording ─────────────────────────
+   * The three members below EXIST on the live envelope and were simply not declared here. The
+   * "checked and already aligned" note below was true when it was written and had since gone stale:
+   * the server grew fields, the type did not, and because the call site is a cast rather than a
+   * mapper nothing went red — the data arrived and was invisible.
+   *
+   * That is the same failure mode as a cast at a seam, reached from the other direction: alignment
+   * verified ONCE is not alignment, because only one side is pinned. Additive, so nothing breaks.
+   */
+
+  /** `hr.pay_period_employment` rows opened by this transition. */
+  rowsOpened?: number;
+  /**
+   * 🚨 Workflow instances started by this transition — on `submitted`, one `timecard_attestation`
+   * per included employment. The surface reports this because "the period is submitted" and "312
+   * people have actually been asked to attest" are different facts, and only the second one means
+   * the attestation deadline has started running for anybody.
+   */
+  workflowInstancesOpened?: number;
+  /** Which flow was opened (`timecard_attestation` on submit). Null on every other transition. */
+  workflowFlowKey?: string | null;
 }
 
 /**
@@ -437,10 +460,17 @@ export function transitionPayPeriod(
   opts?: HrRpcOptions,
 ): Promise<PeriodTransitionResult> {
   /*
-   * ✅ CHECKED AND ALREADY ALIGNED — not a cast seam, recorded so the next sweep does not "fix" it.
-   * `hr.pay_period_transition` builds its payload in camelCase already (`payPeriodId`, `fromState`,
-   * `toState`, `disputesOpen`, `transitionedAt`, `notice`), matching this type field for field.
-   * Verified against the live function body 2026-08-26.
+   * ✅ SPELLING IS ALIGNED — `hr.pay_period_transition` builds its payload in camelCase already, so
+   * this needs no snake→camel mapper and the cast is not the usual seam hazard.
+   *
+   * ⚠️ BUT ALIGNMENT IS NOT A ONE-TIME FACT. Re-verified 2026-08-27: the live envelope had GROWN
+   * `rowsOpened`, `workflowInstancesOpened`, `workflowFlowKey`, `actorEmploymentId`,
+   * `reopenDoesNotUnexport` and `provenance` since the previous check. The first three are now
+   * declared above; the rest are deliberately not, because nothing renders them yet.
+   *
+   * A cast cannot tell you a field APPEARED any more than it can tell you one vanished — the data
+   * arrived and was simply invisible, which is how the submit surface ended up unable to report how
+   * many attestation instances it had started. If this call gains a mapper later, that is why.
    */
   return callHrTimeRpc<PeriodTransitionResult>(
     "hr_pay_period_transition",

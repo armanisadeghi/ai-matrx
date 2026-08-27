@@ -1,7 +1,7 @@
 # FEATURE.md — `hr/time/periods`
 
 **Status:** `scaffolded` — the surfaces are built; **no SQL RPC in this lane exists yet**
-**Tier:** `2` · **Lane:** L3 / register item **HRB-015** · **Last updated:** `2026-08-26`
+**Tier:** `2` · **Lane:** L3 / register item **HRB-015** · **Last updated:** `2026-08-27`
 **Behaviour spec:** `../../../../../common-docs/projects/hr-domain/specs/SPEC-TIME.md` §2.7, §7 —
 *that* document says what these screens do; this file says how the code is arranged and what a
 change here must not break.
@@ -77,6 +77,8 @@ deprecated twin ([no-legacy](../../../../../common-docs/policies/no-legacy.md)).
 
 ## Change log
 
+- **2026-08-27** — Period-role resolution now uses the live transition capabilities:
+  `payroll.read` for non-export transitions and `payroll.export` for export controls.
 - **2026-08-26** — Built routes 32/33. Deleted this lane's export fork per the coordinator's
   deconfliction ruling and mounted L13's components; added the org-wide export history to route 32.
   Moved route metadata onto `createRouteMetadata`. Scoped `public.hr_payroll_export_list`'s
