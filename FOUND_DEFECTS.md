@@ -15,7 +15,9 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D275 — the hire form lets you submit without a job title or department, and the user gets raw Postgres (2026-08-26)
+### D277 — the hire form lets you submit without a job title or department, and the user gets raw Postgres (2026-08-26)
+
+> (Renumbered from a colliding D275 — that id belongs to the resolved wf_request orphan-instance defect below.)
 
 `features/hr/people/new/HrNewEmployee.tsx` mirrors the server's validation for start date,
 location, jurisdiction, FLSA basis, FTE and last name — but **not** for job title or department.
