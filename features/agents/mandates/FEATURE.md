@@ -129,19 +129,25 @@ Law: `../../../../common-docs/systems/agents/agent-variable-binding/FEATURE.md` 
 
 ## Invariants
 
-- 🚨 **THE HOLDER GATE — only an `agent` Holder EXECUTES, and anything else REFUSES.** The bind
-  path accepts `holder_type='workflow'`, and such a binding carries NO `agent_id` by
-  construction. Every resolver checks the binding's declared `holder_type` against
-  `EXECUTABLE_HOLDER_TYPES` **before applying any half of the binding** (agent swap or settings)
-  and throws `holderNotExecutableMessage(...)` — naming the mandate, the layer, the row and the
-  holder type, mirroring aidream's `MandateResolutionError`. Silently falling through to the
-  system default was the live defect fixed 2026-08-27: the user's deliberate binding evaporated
-  and the caller was told `provenance: "system"`. `parseBindingWave1` therefore returns the
-  DECLARED holder type verbatim (absent/blank reads as `agent`) — an unrecognized value must
-  refuse, never masquerade as an agent. `ResolvedMandate.holderType` carries the deciding
-  layer's Holder type so callers read it instead of assuming. There is no workflow-Holder
-  execution path in this repo yet; building one is a later phase, not a fallback.
-  Tests: `__tests__/holder-type-resolution.test.ts`.
+- 🚨 **THE HOLDER GATE — the BROWSER resolver runs `agent` Holders only, and anything else
+  REFUSES.** This is a limit of the client path, not of the platform: workflow Holders execute
+  end to end on the server (aidream `services/mandates/workflow_holder.py` — the workflow runs
+  as a child run and answers with the deliverable whose kind is the mandate's output kind). The
+  browser resolver's whole job is handing `POST /agents/{id}` an agent id, so it has no channel
+  to start a workflow run. Every resolver therefore checks the binding's declared `holder_type`
+  against `EXECUTABLE_HOLDER_TYPES` **before applying any half of the binding** (agent swap or
+  settings) and throws `holderNotExecutableMessage(...)` — naming the mandate, the layer, the
+  row and the holder type, and naming the REAL reason rather than claiming the capability is
+  unbuilt. Silently falling through to the system default was the live defect fixed 2026-08-27:
+  the user's deliberate binding evaporated and the caller was told `provenance: "system"`.
+  `parseBindingWave1` returns the DECLARED holder type verbatim (absent/blank reads as `agent`)
+  plus `holderId`/`holderVersionId` — an unrecognized value must refuse, never masquerade as an
+  agent. Tests: `__tests__/holder-type-resolution.test.ts`.
+- 🚨 **A BINDING NAMES ONE HOLDER.** An agent binding carries `agent_id` XOR `agent_version_id`
+  and no workflow identity; a workflow binding carries `holder_id` (always a
+  `workflow.definition` id, NEVER a version id) with an optional `holder_version_id` pin, and no
+  agent identity at all. `bindings.py` 422s on any mixture, and `buildBindingSavePayload` refuses
+  before the wire. Tests: `workspace/__tests__/workflow-holder-payload.test.ts`.
 - **User bindings key on the USER** (`principal_type='user'`, `subject_user_id`); `organization_id` on those rows is trigger-stamped and incidental. Org bindings pass the target org explicitly and are editable only by that org's admins/owners (RLS enforces; the UI offers org tabs only for admin/owner orgs).
 - **Version pinning is the USER'S choice** (rule 6): `putMandateBinding` carries the honest triple (`agentId` XOR `agentVersionId` + `useLatest`); Step 1 offers it via the canonical `AgentVersionPicker`; pinned-and-behind renders drift. Open gap (D1): the CLIENT resolvers still refuse pins loudly — the run endpoint's `is_version` channel exists; threading it through `ResolvedMandate` is the tracked follow-up.
 - **Settings overrides ride the canonical instance-overrides layer ONLY** (`instanceModelOverrides` + `RunConfigOverrides` + `selectSettingsOverridesForApi` — genuine diffs, base-equal never ships). A hand-rolled model/thinking pair is the defect the 2026-08-26 rework deleted.
@@ -248,6 +254,28 @@ entry in `scripts/hardcoded-agents-allowlist.json`. Baseline
 commit time.
 
 ## Change Log
+
+- 2026-08-28 — **"Use a Workflow" is real.** The Holder step binds a Workflow end to end now
+  that aidream executes one (`workflow_holder.py`), so the `mandates.workflow-holder`
+  coming-soon entry is RETIRED rather than left "blocked" beside a working feature.
+  `workflow-holders.ts` lists candidates from `workflow.definition`, putting the workflows that
+  DECLARE this mandate's `output_kind` first and listing the rest rather than hiding them — the
+  bind gate also accepts a workflow whose compiled deliverables produce the kind, and no column
+  can know that. Step 3 maps onto the workflow's ONE compiled input surface
+  (`GET /workflows/{id}/run-form`, never derived here) — the same map, keyed the same way, that
+  `bindings.py::_check_target` validates. The gate is the only judge for a workflow Holder and
+  its refusals stay ON THE PAGE, not just in a toast.
+- 2026-08-28 — **THE GOAL, and the org pages answering for the ORG.** A mandate's goal is an
+  aidream code declaration with no column and no write path, so it reaches this repo through
+  `catalogue.ts` (`GET /mandates`) and `useMandateGoal`, and is shown READ-ONLY with a note
+  saying where it is edited — the workspace used to print `description` and call a mandate with
+  a perfectly good goal "a registry gap". `ProvisionOfferList` was extracted from §1 so the
+  admin drawer reuses it instead of growing a second copy. Separately, `mnd_list_scoped` had
+  carried `p_scope`/`p_org_id` since it was written and ignored both: the org settings pages
+  resolved the CALLER's funnel, so an org admin with a personal override saw their own agent
+  under "Fulfilled by". The RPC now honours org scope (personal bindings excluded, only the
+  named org may decide, membership proved inside the SECURITY DEFINER body) and
+  `MandateWorkspace` resolves for the principal the surface speaks for.
 
 - 2026-08-27 — **The client resolvers were HOLDER-BLIND; a workflow binding resolved to the
   system default.** `resolveMandate` / `resolveMandateServer` never selected `holder_type`, so a

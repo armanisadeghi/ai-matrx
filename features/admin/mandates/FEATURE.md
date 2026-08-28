@@ -86,6 +86,34 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
+- 2026-08-28 — **The coverage board, the real GOAL, the full Provision, and four
+  offenders closed.**
+  - **Coverage board** (`MandateCoverageBoard.tsx` + `mandate-coverage.ts`): three
+    counted, click-to-filter tiles — **Assigned** / **Running on fallback** /
+    **Nothing assigned** — from the live `GET /mandates/coverage`, in the
+    readiness-rollup shape of `SurfacesContainer`. The server names only the
+    orange and red rows and counts the green, so green is DERIVED here by the
+    same rule (`coverageBucketOf`); red wins a collision. Orange names the
+    leader Mandate carrying it, red names its reason, both inline and one click
+    from the workbench, capped with a "+N more" that says where the rest are.
+    An unreadable report renders the failure, never an empty board.
+  - **The goal is CODE.** `agent.mandate` has no `goal` column and aidream
+    exposes no write path, so goals arrive through `GET /mandates`
+    (`features/agents/mandates/catalogue.ts` → `useMandateGoal`) and every
+    surface shows them read-only and says where they are edited. New Goal
+    column; a blank cell distinguishes "no goal declared" from "the catalogue
+    could not be read".
+  - **The Provision, in full.** The drawer shows every offered value with kind,
+    guaranteed, lazy and description via `ProvisionOfferList` — the SAME
+    renderer the personal workspace uses, extracted rather than copied.
+  - **Offenders closed:** the two permanently-disabled remedy buttons are gone
+    (both were states, not actions — now stated as facts); `CreateSystemTwinButton`
+    routes its rebind through `useGuardedRebind`, so there is exactly ONE rebind
+    write path; the code↔agent drift strip counts what it truncates instead of
+    silently stopping at three; and the drawer keeps its place across a refresh
+    because selection moved onto the table's own `urlState` key, which this
+    console had switched OFF.
+
 - 2026-08-26 — **Test cases generalized to the AGENT level: `agent.mandate_exemplar` → `agent.exemplar`** (token `agent_exemplar`). `agent_id` is now the NOT NULL subject; `mandate_id` is optional call-site context, so this bench reads the same table filtered by `mandate_id` while the builder/runner/admin sample surfaces (`features/agents/samples/`, `features/agents/components/samples/`) read it by `agent_id`. New columns: `status` (`candidate`/`approved`/`archived` — approval via `public.agx_exemplar_approve`, cap = knob `agent_exemplars.max_approved_per_agent`), `agent_version`, `input_contract_hash`/`output_contract_hash` (staleness vs the head is DERIVED, never stamped), `source_conversation_id` (borrow provenance), and `source` gains `borrowed`. `createMandateExemplar`/`saveAdHocResultAsExemplar` now take the full mandate row and stamp `agent_id` (`requireMandateAgentId`). Bench saves land as `candidate` — approval is the separate agent-level curation step, and only approved samples surface as one-click defaults (via the builder-only floating launcher — samples never add page chrome). A TEMPORARY `agent.mandate_exemplar` alias view exists until the FE release + aidream deploy; agent-level batch runs live at aidream `POST /agent-testing/agents/{id}/tests` (results under `metadata.agent_test_results`, separate from this bench's `test_bench_results`).
 
 - 2026-08-25 — Repaired the omitted stored-data leg of the Mandate rename: all persisted bench histories now use `mandate_key`, and field-level parser diagnostics identify the exact exemplar/result without accepting `slot_key` as a runtime alias.
