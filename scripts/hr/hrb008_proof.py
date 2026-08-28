@@ -142,6 +142,15 @@ async def main():
         lp = await conn.fetchval(
             "insert into hr.leave_policy (organization_id, name, leave_kind, accrual_method, accrual_rate) "
             "values ($1,'PTO','pto','unlimited',null) returning id", org)
+        # 🚨 THE LEAVE LANE MADE ENROLMENT STRUCTURAL AFTER THIS SUITE WAS WRITTEN: leave_request's
+        # validate_fn now raises the hard finding `not_enrolled`, so a fixture that never enrolled
+        # anybody was asserting against a request the engine is RIGHT to refuse at intake. Same
+        # class as §8.2's `period_not_submitted`. Everybody who might request leave is enrolled.
+        for _k in people:
+            await conn.execute(
+                "insert into hr.leave_enrollment (organization_id, employment_id, leave_policy_id, "
+                "balance_hours, effective_from) values ($1,$2,$3,400,current_date - 365)",
+                org, people[_k]["employment"], lp)
         lr = await conn.fetchval(
             "insert into hr.leave_request (organization_id, employment_id, leave_policy_id, starts_on, "
             "ends_on, requested_hours, state, engine_key, engine_version) "

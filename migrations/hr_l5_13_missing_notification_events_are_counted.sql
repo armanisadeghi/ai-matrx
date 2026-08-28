@@ -19,7 +19,22 @@
 -- Authority: SPEC-LEAVE §13; SPEC-NOTIFICATIONS §2.4; /policies (loud patches).
 -- Applied live as `hr_l5_13_missing_notification_events_are_counted`. Idempotent.
 
-create or replace function hr.leave_notification_gap()
+-- 🚨 OWNERSHIP YIELDED, 2026-08-27. The notification lane has since SEEDED all nineteen events
+-- and re-cut this reporter's columns to SPEC-LEAVE §13's own names (`declared_by` / `is_declared`,
+-- with `carryover_expiring` renamed). Their version is the better one and their spec owns the
+-- vocabulary — SPEC-NOTIFICATIONS §2.4, exactly as L5-A2 recorded. So this file now DEFERS: it
+-- creates the reporter only if nobody else has, and replaying it can never clobber the owner's
+-- column names with mine. A `create or replace` here used to be a quiet way to win an argument
+-- I had already conceded in writing.
+do $seal$
+begin
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'hr' and p.proname = 'leave_notification_gap') then
+    raise notice 'hr_l5_13: hr.leave_notification_gap already exists and is owned elsewhere — left alone.';
+    return;
+  end if;
+  execute $fn$
+create function hr.leave_notification_gap()
 returns table(event_key text, declared_in text, exists_live boolean, consequence text)
 language sql
 stable
@@ -54,30 +69,41 @@ as $function$
          d.consequence
     from declared d
    order by 3, 1;
-$function$;
+$function$
+  $fn$;
+end
+$seal$;
 
-comment on function hr.leave_notification_gap() is
+do $c$ begin execute $q$comment on function hr.leave_notification_gap() is
   'THE LOUD PATCH for amendment-queue item L5-A2. SPEC-LEAVE §13 declares nineteen leave events; '
   'SPEC-NOTIFICATIONS §2.4 owns the vocabulary and declares six. This lane seeded nothing and '
   'renamed nothing — the conflict includes a privacy law (whether a manager may be told a '
   'protected absence exists) and needs a ruling. Meanwhile the doors return the event_key they '
-  'WOULD raise, and this counts the ones that cannot. A gap nobody can count becomes permanent.';
+  'WOULD raise, and this counts the ones that cannot. A gap nobody can count becomes permanent.'$q$; end $c$;
 
 do $$
-declare v_missing integer; v_present integer; v_names text;
+declare v_missing integer; v_present integer; v_total integer;
 begin
-  select count(*) filter (where not exists_live), count(*) filter (where exists_live)
-    into v_missing, v_present from hr.leave_notification_gap();
-  select string_agg(event_key, ', ' order by event_key) into v_names
-    from hr.leave_notification_gap() where not exists_live;
+  -- Read the reporter through a shape-agnostic count, because the owning lane may re-cut its
+  -- columns again and this file must not care.
+  execute 'select count(*) from hr.leave_notification_gap()' into v_total;
+  begin
+    execute 'select count(*) filter (where is_declared), count(*) filter (where not is_declared) '
+         || 'from hr.leave_notification_gap()' into v_present, v_missing;
+  exception when undefined_column then
+    execute 'select count(*) filter (where exists_live), count(*) filter (where not exists_live) '
+         || 'from hr.leave_notification_gap()' into v_present, v_missing;
+  end;
 
-  -- The scream. Not an exception — the gap is a ruling somebody else owes, not a build failure,
-  -- and refusing to apply would only hide it. But it is COUNTED and it is LOUD.
-  raise notice E'\n🚨 hr_l5_13 — LEAVE NOTIFICATION GAP: % of 19 SPEC-LEAVE §13 events do not exist and CANNOT FIRE.\n   Live: %. Missing: %\n   This is amendment-queue item L5-A2 and it needs a RULING (the two specs also disagree about\n   whether a manager may be told a protected absence exists). Count it with hr.leave_notification_gap().',
-    v_missing, v_present, v_names;
+  if v_total <> 19 then
+    raise exception 'hr_l5_13: the reporter no longer covers SPEC-LEAVE §13''s nineteen events (%)',
+      v_total;
+  end if;
 
-  -- the control: this must be able to report a DIFFERENT number tomorrow, so assert it measured
-  if v_missing + v_present <> 19 then
-    raise exception 'hr_l5_13: the gap function does not cover SPEC-LEAVE §13''s nineteen events';
+  if v_missing = 0 then
+    raise notice E'\nhr_l5_13 — LEAVE NOTIFICATION GAP: CLOSED. All 19 of SPEC-LEAVE §13''s events are declared.\n   The gap this file was written to keep visible no longer exists; the reporter stays as the standing check.';
+  else
+    raise notice E'\n🚨 hr_l5_13 — LEAVE NOTIFICATION GAP: % of 19 SPEC-LEAVE §13 events cannot fire (% declared).\n   Count them with hr.leave_notification_gap().',
+      v_missing, v_present;
   end if;
 end $$;
