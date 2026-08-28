@@ -19,7 +19,7 @@
 // keyboard-reachable. A `<button>` that swaps local state would break all three.
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,7 @@ import { HR_PROFILE_TAB_LABELS, type HrProfileTab } from "../../constants";
 import {
   hrEmployeeCustomTabHref,
   hrEmployeeHref,
+  hrMeTabHref,
   type HrOrgRef,
 } from "../../routes";
 
@@ -52,7 +53,25 @@ export function profileTabHref(
   employeeId: string,
   segment: string,
   org: HrOrgRef,
+  /**
+   * 🚨 TABS MUST STAY ON THE SURFACE THEY ARE RENDERED ON.
+   *
+   * `/hr/me` renders this very tab bar, and it always built `/hr/people/<id>/<tab>`
+   * — the HR-facing route. An admin never noticed, because they can read that
+   * route. Anybody who is only an employee here CANNOT: every tab on their own
+   * record was a link out of the one surface they are entitled to and into one
+   * the server refuses them. A contractor arriving from the clock's door landed
+   * correctly on their Job tab and then had nowhere to click.
+   *
+   * Keyed on the surface, NOT on `viewer === "self"`: an HR admin reading their
+   * own record at `/hr/people/<their id>` is also "self", and their tabs belong
+   * on the people route where they started.
+   */
+  selfSurface = false,
 ): string {
+  if (selfSurface) {
+    return hrMeTabHref(segment, org);
+  }
   return segment.startsWith("c/")
     ? hrEmployeeCustomTabHref(employeeId, segment.slice(2), org)
     : hrEmployeeHref(employeeId, segment, { org });
@@ -71,6 +90,15 @@ export function ProfileTabBar({
   className?: string;
 }) {
   const pathname = usePathname() ?? "";
+  // The surface decides, not the viewer: `/hr/me` keeps its tabs on `/hr/me`.
+  const selfSurface = pathname.startsWith("/hr/me");
+  /*
+    On the self surface every tab shares ONE path and differs only by `?tab=`, so
+    comparing paths alone would mark all of them current at once. The people
+    surface is the opposite — the tab IS the path and there is no query to read.
+  */
+  const searchParams = useSearchParams();
+  const currentTab = searchParams?.get("tab")?.trim() || "personal";
 
   return (
     <nav
@@ -81,9 +109,11 @@ export function ProfileTabBar({
       )}
     >
       {tabs.map((segment) => {
-        const href = profileTabHref(employeeId, segment, org);
+        const href = profileTabHref(employeeId, segment, org, selfSurface);
         const path = href.split("?")[0];
-        const active = pathname === path;
+        const active = selfSurface
+          ? segment === currentTab
+          : pathname === path;
         return (
           <Link
             key={segment}

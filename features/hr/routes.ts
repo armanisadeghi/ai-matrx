@@ -65,6 +65,14 @@ export function hrSwitchEmployerHref(pathname: string, org: string): string {
 export function hrMeHref(org?: HrOrgRef): string {
   return hrUrl("/hr/me", org);
 }
+/**
+ * A tab of my own record. `/hr/me` reads `?tab=`, so the self surface links to
+ * itself rather than to `/hr/people/<id>/<tab>` — a route a plain employee has
+ * no standing to read. `personal` is the default and carries no parameter.
+ */
+export function hrMeTabHref(segment: string, org?: HrOrgRef): string {
+  return hrUrl("/hr/me", org, segment && segment !== "personal" ? { tab: segment } : undefined);
+}
 /** Route 3 — my compensation. Never accepts an employeeId; self only. */
 export function hrMePayHref(org?: HrOrgRef): string {
   return hrUrl("/hr/me/pay", org);
