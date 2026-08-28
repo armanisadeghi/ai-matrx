@@ -11,9 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import {
     Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useToast } from '@/components/ui/use-toast';
@@ -33,6 +30,9 @@ import {
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { selectBuiltinAgents } from '@/features/agents/redux/agent-definition/selectors';
 import { fetchAgentsListFull } from '@/features/agents/redux/agent-definition/thunks';
+import { AgentListDropdown } from '@/features/agents/components/agent-listings/AgentListDropdown';
+
+const SYSTEM_AGENT_TAB = ['system'] as const;
 
 export function AgentWiringDashboard() {
     const dispatch = useAppDispatch();
@@ -284,25 +284,39 @@ export function AgentWiringDashboard() {
                                                         <div className="flex-1 min-w-0">
                                                             {isEditing ? (
                                                                 <div className="flex items-center gap-2">
-                                                                    <Select
-                                                                        defaultValue={val ?? '__none__'}
-                                                                        onValueChange={v => handleAgentChange(template.id, key, v)}
-                                                                        disabled={saving}
-                                                                    >
-                                                                        <SelectTrigger className="h-8 text-xs">
-                                                                            <SelectValue />
-                                                                        </SelectTrigger>
-                                                                        <SelectContent>
-                                                                            <SelectItem value="__none__">
-                                                                                <span className="text-muted-foreground">System default</span>
-                                                                            </SelectItem>
-                                                                            {builtins.map(b => (
-                                                                                <SelectItem key={b.id} value={b.id}>
-                                                                                    {b.name}
-                                                                                </SelectItem>
-                                                                            ))}
-                                                                        </SelectContent>
-                                                                    </Select>
+                                                                    <AgentListDropdown
+                                                                        consumerId={`research-agent-wiring-${template.id}-${key}`}
+                                                                        onSelect={agentId => void handleAgentChange(template.id, key, agentId)}
+                                                                        activeAgentId={val ?? null}
+                                                                        label={val ? (builtinNames[val] ?? 'Select system agent') : 'System default'}
+                                                                        initialTab="system"
+                                                                        visibleTabs={SYSTEM_AGENT_TAB}
+                                                                        systemTabLabel="System"
+                                                                        showPinnedAgent={Boolean(val)}
+                                                                        triggerSlot={
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                className="h-8 min-w-0 flex-1 justify-between px-2 text-xs"
+                                                                                disabled={saving}
+                                                                            >
+                                                                                <span className="truncate">{val ? (builtinNames[val] ?? 'Select system agent') : 'System default'}</span>
+                                                                                <ChevronDown className="h-3 w-3 shrink-0" />
+                                                                            </Button>
+                                                                        }
+                                                                    />
+                                                                    {val && !saving && (
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="h-8 px-2 text-xs"
+                                                                            onClick={() => void handleAgentChange(template.id, key, '__none__')}
+                                                                        >
+                                                                            Default
+                                                                        </Button>
+                                                                    )}
                                                                     {saving && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                                                                 </div>
                                                             ) : (

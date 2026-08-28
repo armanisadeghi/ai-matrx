@@ -53,6 +53,9 @@ export interface AgentListCoreOptions {
    * keeping them to their own tab. See `makeSelectFilteredAgents`.
    */
   includeSystemInAll?: boolean;
+  /** Hide records that are invalid for this call site (for example, a seed
+   * member cannot also be chosen as an Orchestra conductor). */
+  excludeAgentIds?: readonly string[];
 }
 
 /**
@@ -71,6 +74,7 @@ export function useAgentListCore({
   activeAgentIdOverride,
   initialTab,
   includeSystemInAll = false,
+  excludeAgentIds = [],
 }: AgentListCoreOptions) {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -90,7 +94,12 @@ export function useAgentListCore({
     () => makeSelectFilteredAgents(consumerId, includeSystemInAll),
     [consumerId, includeSystemInAll],
   );
-  const agents = useAppSelector(selectFiltered);
+  const filteredAgents = useAppSelector(selectFiltered);
+  const excludedAgentIds = new Set(excludeAgentIds);
+  const agents =
+    excludedAgentIds.size === 0
+      ? filteredAgents
+      : filteredAgents.filter((agent) => !excludedAgentIds.has(agent.id));
   const sliceStatus = useAppSelector(selectAgentsSliceStatus);
   const reduxActiveAgentId = useAppSelector(selectActiveAgentId);
   // `null` is an intentional "nothing selected" value for assignment

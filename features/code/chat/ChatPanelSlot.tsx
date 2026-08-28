@@ -15,7 +15,6 @@ import {
 import { SidePanelHeader, SidePanelAction } from "../views/SidePanelChrome";
 import { AVATAR_RESERVE } from "../styles/tokens";
 import { AgentPicker } from "./AgentPicker";
-import { useCodeWorkspaceHistory } from "./useCodeWorkspaceHistory";
 import { ContextChip } from "../agent-context/ContextChip";
 import { useSyncEditorContext } from "../agent-context/useSyncEditorContext";
 import { useBindAgentToSandbox } from "../agent-context/useBindAgentToSandbox";
@@ -54,9 +53,7 @@ const CODE_WORKSPACE_SETTINGS_TAB = "editor.codeWorkspace";
  * otherwise shows an inline picker. Pure UI-level composition — no Redux
  * state owned here.
  *
- * The inline / empty-state pickers are seeded with the user's saved
- * `coding.agentFilter` so the roster stays focused on coding agents; the
- * user can bypass the filter or open Settings directly from the picker.
+ * Both inline and empty-state selection reuse the canonical agent picker.
  */
 export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   basePath = "/code",
@@ -87,7 +84,6 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
     // an agentId it stays sticky across reruns.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultAgentId]);
-  const { filter } = useCodeWorkspaceHistory();
   const farRightOpen = useAppSelector(selectFarRightOpen);
   const freshSessionKey = useAppSelector(selectCodeWorkspaceFreshSessionNonce);
   const isFreshRoute = !!agentId && !conversationIdFromUrl;
@@ -171,11 +167,7 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
         actions={
           <div className="flex items-center gap-1">
             <ContextChip conversationId={conversationId} />
-            <AgentPicker
-              variant="inline"
-              filter={filter}
-              settingsTabId={CODE_WORKSPACE_SETTINGS_TAB}
-            />
+            <AgentPicker variant="inline" />
             {agentId && (
               <SidePanelAction
                 icon={Plus}
@@ -212,11 +204,7 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
             retainOnUnmount
           />
         ) : (
-          <AgentPicker
-            variant="empty-state"
-            filter={filter}
-            settingsTabId={CODE_WORKSPACE_SETTINGS_TAB}
-          />
+          <AgentPicker variant="empty-state" />
         )}
       </div>
     </div>

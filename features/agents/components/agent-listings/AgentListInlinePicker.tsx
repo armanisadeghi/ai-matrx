@@ -45,6 +45,8 @@ export interface AgentListInlinePickerProps {
   resolveAgentHref?: (agent: AgentDefinitionRecord) => string;
   /** Show the globally active agent above the filtered list. Default true. */
   showPinnedAgent?: boolean;
+  /** Hide records that are invalid for this call site. */
+  excludeAgentIds?: readonly string[];
 }
 
 export function AgentListInlinePicker({
@@ -59,6 +61,7 @@ export function AgentListInlinePicker({
   systemTabLabel,
   resolveAgentHref,
   showPinnedAgent = true,
+  excludeAgentIds,
 }: AgentListInlinePickerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [catSearch, setCatSearch] = useState("");
@@ -89,6 +92,7 @@ export function AgentListInlinePicker({
     activeAgentIdOverride: activeAgentId,
     initialTab,
     includeSystemInAll,
+    excludeAgentIds,
   });
 
   useEffect(() => {
@@ -177,7 +181,9 @@ export function AgentListInlinePicker({
         rightPanel={null}
         tabCounts={tabCounts}
         visibleTabs={visibleTabs}
-        systemTabLabel={systemTabLabel ?? (includeSystemInAll ? "System" : undefined)}
+        systemTabLabel={
+          systemTabLabel ?? (includeSystemInAll ? "System" : undefined)
+        }
         pinnedAgent={showPinnedAgent ? pinnedAgent : null}
         listOpen
       />

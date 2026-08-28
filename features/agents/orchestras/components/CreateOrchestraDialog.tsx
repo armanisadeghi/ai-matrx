@@ -1,10 +1,7 @@
 // features/agents/orchestras/components/CreateOrchestraDialog.tsx
 //
-// Create an Orchestra from an EXISTING agent as its conductor. The picker reuses the
-// CANONICAL agent filter (the same `useAgentConsumer` + filtered selectors +
-// <DesktopFilterPanel> as /agents/all and the builder rail) — Mine/Shared/All tabs,
-// category/tag filters, sort, search, and per-row peek — never an alphabetical dump.
-// Agents load once via useEnsureAgentsLoaded (no refetch).
+// Create an Orchestra from an EXISTING agent as its conductor. The picker is
+// `AgentListInlinePicker` — the exact canonical roster used across chat.
 //
 // A Matrx admin also gets the SYSTEM tab, and that is what makes a system
 // Orchestra possible at all: an Orchestra IS a conductor agent plus its
@@ -15,9 +12,9 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, Network, Search } from "lucide-react";
+import { Loader2, Network } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
 import {
@@ -30,39 +27,24 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
-import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
-import {
-  makeSelectFilteredAgents,
-  selectAllAgentCategories,
-  selectAllAgentTags,
-  selectTotalSharedAgentsCount,
-} from "@/features/agents/redux/agent-consumers/selectors";
-import { DesktopFilterPanel } from "@/features/agents/components/shared/DesktopFilterPanel";
+import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import {
   createOrchestra,
   addAgentToOrchestra,
 } from "@/features/agents/redux/orchestras/thunks";
-import { useEnsureAgentsLoaded } from "../hooks/useEnsureAgentsLoaded";
-import { AgentPeekButton } from "./AgentPeekButton";
 import { accentClasses } from "./accents";
-import { DEFAULT_ORCHESTRA_ACCENT, ORCHESTRA_ACCENTS, type OrchestraAccent } from "../constants";
+import {
+  DEFAULT_ORCHESTRA_ACCENT,
+  ORCHESTRA_ACCENTS,
+  type OrchestraAccent,
+} from "../constants";
 
 const PICKER_CONSUMER = "orchestras-conductor-picker";
-
-/** Bridge DesktopFilterPanel's whole-array setter onto the consumer's per-item toggle. */
-function applyArrayViaToggle(
-  current: string[],
-  next: string[],
-  toggle: (v: string) => void,
-) {
-  const cur = new Set(current);
-  const nxt = new Set(next);
-  current.forEach((v) => !nxt.has(v) && toggle(v));
-  next.forEach((v) => !cur.has(v) && toggle(v));
-}
+const USER_AGENT_TABS = ["mine", "shared", "all"] as const;
+const ADMIN_AGENT_TABS = ["mine", "shared", "all", "system"] as const;
 
 export interface CreateOrchestraDialogProps {
   open: boolean;
@@ -81,44 +63,20 @@ export function CreateOrchestraDialog({
 }: CreateOrchestraDialogProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  // Only fetch when the dialog is open — closed instances must be free.
-  useEnsureAgentsLoaded(open);
 
   const isAdmin = useAppSelector(selectIsAdmin);
-  const consumer = useAgentConsumer(PICKER_CONSUMER, { initialTab: "mine" });
-  // ONE selector for every tab — mine / shared / all / system — instead of the
-  // owned+shared pair this dialog used to union by hand, which had no way to
-  // express the platform corpus. `includeSystemInAll` is the admin reading of
-  // "All": for an admin, system agents ARE their agents.
-  const selAgents = useMemo(
-    () => makeSelectFilteredAgents(PICKER_CONSUMER, isAdmin),
-    [isAdmin],
-  );
-  const agents = useAppSelector(selAgents);
-  const allCategories = useAppSelector(selectAllAgentCategories);
-  const allTags = useAppSelector(selectAllAgentTags);
-  const totalShared = useAppSelector(selectTotalSharedAgentsCount);
 
   const [conductorId, setConductorId] = useState<string | null>(null);
   const [label, setLabel] = useState("");
   const [tagline, setTagline] = useState("");
-  const [accent, setAccent] = useState<OrchestraAccent>(DEFAULT_ORCHESTRA_ACCENT);
+  const [accent, setAccent] = useState<OrchestraAccent>(
+    DEFAULT_ORCHESTRA_ACCENT,
+  );
   const [busy, setBusy] = useState(false);
 
-  const candidates = useMemo(
-    () => agents.filter((a) => a.id !== seedMemberId),
-    [agents, seedMemberId],
+  const selected = useAppSelector((state) =>
+    conductorId ? selectAgentById(state, conductorId) : undefined,
   );
-
-  const selected = conductorId
-    ? agents.find((a) => a.id === conductorId)
-    : null;
-
-  const activeFilterCount =
-    consumer.includedCats.length +
-    consumer.includedTags.length +
-    (consumer.favFilter !== "all" ? 1 : 0) +
-    (consumer.archFilter !== "active" ? 1 : 0);
 
   const handleOpenChange = (next: boolean) => {
     if (busy) return;
@@ -147,7 +105,9 @@ export function CreateOrchestraDialog({
       return;
     }
     if (seedMemberId)
-      await dispatch(addAgentToOrchestra({ conductorId, agentId: seedMemberId }));
+      await dispatch(
+        addAgentToOrchestra({ conductorId, agentId: seedMemberId }),
+      );
     toast.success("Orchestra created.");
     handleOpenChange(false);
     router.push(`/agents/orchestras/${conductorId}`);
@@ -155,15 +115,15 @@ export function CreateOrchestraDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Network className="h-4 w-4 text-primary" />
             New Orchestra
           </DialogTitle>
           <DialogDescription>
-            Pick the agent that presides over this Orchestra as its conductor, then
-            add members on the builder canvas.
+            Pick the agent that presides over this Orchestra as its conductor,
+            then add members on the builder canvas.
             {onGenerateInstead && (
               <>
                 {" "}
@@ -182,105 +142,23 @@ export function CreateOrchestraDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* conductor picker — canonical filter */}
+          {/* conductor picker — canonical roster */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">
               Conductor agent
             </label>
-            <div className="flex items-center gap-1.5">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={consumer.searchTerm}
-                  onChange={(e) => consumer.setSearchTerm(e.target.value)}
-                  placeholder="Search your agents…"
-                  className="pl-8"
-                />
-              </div>
-              <DesktopFilterPanel
-                iconOnly
-                sortBy={consumer.sortBy}
-                setSortBy={consumer.setSortBy}
-                activeTab={consumer.tab}
-                setActiveTab={consumer.setTab}
-                includedCats={consumer.includedCats}
-                setIncludedCats={(next) =>
-                  applyArrayViaToggle(
-                    consumer.includedCats,
-                    next,
-                    consumer.toggleCategory,
-                  )
-                }
-                includedTags={consumer.includedTags}
-                setIncludedTags={(next) =>
-                  applyArrayViaToggle(
-                    consumer.includedTags,
-                    next,
-                    consumer.toggleTag,
-                  )
-                }
-                favFilter={consumer.favFilter}
-                setFavFilter={consumer.setFavFilter}
-                archFilter={consumer.archFilter}
-                setArchFilter={consumer.setArchFilter}
-                favoritesFirst={consumer.favoritesFirst}
-                setFavoritesFirst={(v) => {
-                  if (v !== consumer.favoritesFirst)
-                    consumer.toggleFavoritesFirst();
-                }}
-                allCategories={allCategories}
-                allTags={allTags}
-                resetFilters={consumer.resetFilters}
-                activeFilterCount={activeFilterCount}
-                hasShared={totalShared > 0}
-                hasSystem={isAdmin}
-                nounPlural="Agents"
+            <div className="h-64 overflow-hidden rounded-md border border-border">
+              <AgentListInlinePicker
+                consumerId={PICKER_CONSUMER}
+                onSelect={setConductorId}
+                activeAgentId={conductorId}
+                initialTab="mine"
+                includeSystemInAll={isAdmin}
+                visibleTabs={isAdmin ? ADMIN_AGENT_TABS : USER_AGENT_TABS}
+                excludeAgentIds={seedMemberId ? [seedMemberId] : undefined}
+                className="h-full"
               />
             </div>
-            <ScrollArea className="h-44 rounded-md border border-border">
-              <div className="divide-y divide-border">
-                {candidates.length === 0 && (
-                  <div className="p-4 text-center text-xs text-muted-foreground">
-                    No agents match. Adjust filters or search.
-                  </div>
-                )}
-                {candidates.map((a) => {
-                  const isSel = a.id === conductorId;
-                  return (
-                    <div
-                      key={a.id}
-                      className={cn(
-                        "group flex items-center gap-2 px-3 py-2 transition-colors hover:bg-muted/60",
-                        isSel && "bg-primary/5",
-                      )}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setConductorId(a.id)}
-                        className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium text-foreground">
-                            {a.name || "Untitled Agent"}
-                          </div>
-                          {a.category && (
-                            <div className="truncate text-[11px] text-muted-foreground">
-                              {a.category}
-                            </div>
-                          )}
-                        </div>
-                        {isSel && (
-                          <Check className="h-4 w-4 shrink-0 text-primary" />
-                        )}
-                      </button>
-                      <span className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
-                        <AgentPeekButton agentId={a.id} />
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
           </div>
 
           {/* identity */}

@@ -15,7 +15,6 @@ import {
   X,
   Copy,
   Circle,
-  Search,
   Play,
   GitBranch,
   Clock,
@@ -34,14 +33,12 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
   fetchFullAgent,
-  initializeChatAgents,
   saveAgentField,
 } from "@/features/agents/redux/agent-definition/thunks";
 import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { toast } from "@/lib/toast";
-import { makeSelectFilteredAgents } from "@/features/agents/redux/agent-consumers/selectors";
-import { useAgentConsumer } from "@/features/agents/hooks/useAgentConsumer";
+import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import { Messages } from "@/features/agents/components/builder/message-builders/Messages";
 import { SystemMessage } from "@/features/agents/components/builder/message-builders/system-instructions/SystemMessage";
 import { AgentVariablesPanel } from "@/features/agents/components/variables-management/AgentVariablesPanel";
@@ -54,7 +51,6 @@ import { AgentSharePanel } from "@/features/agents/components/sharing/AgentShare
 import { AgentSaveStatus } from "@/features/agents/components/shared/AgentSaveStatus";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
 import { useMemo } from "react";
 import { AgentRunWrapper } from "@/features/agents/components/smart/AgentRunWrapper";
 import { AgentVersionDiffPage } from "@/features/agents/components/diff/AgentVersionDiffPage";
@@ -330,30 +326,6 @@ interface AgentPickerFallbackProps {
 
 function AgentPickerFallback({ onSelect }: AgentPickerFallbackProps) {
   const dispatch = useAppDispatch();
-  const [search, setSearch] = useState("");
-  const consumer = useAgentConsumer(PICKER_CONSUMER_ID, {
-    unregisterOnUnmount: true,
-  });
-  const selectFiltered = useMemo(
-    () => makeSelectFilteredAgents(PICKER_CONSUMER_ID),
-    [],
-  );
-  const agents = useAppSelector(selectFiltered);
-
-  useEffect(() => {
-    dispatch(initializeChatAgents());
-  }, [dispatch]);
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return agents;
-    const q = search.toLowerCase();
-    return agents.filter(
-      (a) =>
-        a.name?.toLowerCase().includes(q) ||
-        a.id?.toLowerCase().includes(q) ||
-        (a.description ?? "").toLowerCase().includes(q),
-    );
-  }, [agents, search]);
 
   const handleSelect = (agentId: string) => {
     dispatch(fetchFullAgent(agentId));
@@ -370,37 +342,13 @@ function AgentPickerFallback({ onSelect }: AgentPickerFallbackProps) {
           Choose an agent to open in the editor.
         </p>
       </div>
-      <div className="relative mb-3">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search agents…"
-          className="h-8 pl-8 text-xs"
-        />
-      </div>
-      <ScrollArea className="flex-1">
-        <div className="space-y-1">
-          {filtered.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-6">
-              No agents found.
-            </p>
-          )}
-          {filtered.map((agent) => (
-            <button
-              key={agent.id}
-              onClick={() => handleSelect(agent.id)}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left hover:bg-accent transition-colors"
-            >
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-foreground truncate">
-                  {agent.name || "Untitled"}
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </ScrollArea>
+      <AgentListInlinePicker
+        consumerId={PICKER_CONSUMER_ID}
+        onSelect={handleSelect}
+        activeAgentId={null}
+        className="flex-1"
+        showPinnedAgent={false}
+      />
     </div>
   );
 }
@@ -602,10 +550,7 @@ export function TabContent({
       {activeTab === "run" && (
         <div className="h-full w-full flex justify-center min-w-0 overflow-hidden">
           <div className="h-full w-full max-w-[800px]">
-            <AgentRunWrapper
-              agentId={agentId}
-              sourceFeature="agent-builder"
-            />
+            <AgentRunWrapper agentId={agentId} sourceFeature="agent-builder" />
           </div>
         </div>
       )}
@@ -903,12 +848,10 @@ export default function AgentContentWindow({
                 ): ResolvedContextMenuContext | null => {
                   const clickedId = target
                     ?.closest<HTMLElement>("[data-agent-tab-id]")
-                    ?.getAttribute("data-agent-tab-id") as
-                    | AgentContentTab
-                    | null;
-                  const clickedDef = activeTabs.find(
-                    (t) => t.id === clickedId,
-                  );
+                    ?.getAttribute(
+                      "data-agent-tab-id",
+                    ) as AgentContentTab | null;
+                  const clickedDef = activeTabs.find((t) => t.id === clickedId);
                   return {
                     content: clickedDef
                       ? `${agentName ?? "Agent"} — ${clickedDef.label} tab`
@@ -948,9 +891,7 @@ export default function AgentContentWindow({
                           icon: Copy,
                           disabled: !agentName,
                           onSelect: () => {
-                            void navigator.clipboard.writeText(
-                              agentName ?? "",
-                            );
+                            void navigator.clipboard.writeText(agentName ?? "");
                             toast.success("Agent name copied");
                           },
                         },

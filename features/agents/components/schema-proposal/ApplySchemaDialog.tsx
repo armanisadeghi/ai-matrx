@@ -4,23 +4,20 @@
  * ApplySchemaDialog — pick one of the user's agents and write a proposed
  * output schema to its `agent.definition.output_schema`.
  *
- * Reuses the canonical agent data paths — never a parallel store:
- *   - list:  `fetchAgentsListFull` thunk + `selectAllAgents` selector.
+ * Reuses the canonical agent picker and data paths — never a parallel roster:
+ *   - picker: `AgentListDropdown` (the same control as the chat header).
  *   - write: `saveAgentField({ field: "outputSchema" })` thunk (optimistic +
  *            rollback, hits `agent.definition` via the standard converter). RLS gates
  *            the write; a denied update surfaces loudly as a toast.error.
  *
- * Standard `@/components/ui/dialog` (Radix). Searchable list via `cmdk`
- * (`@/components/ui/command`). No browser dialogs.
+ * Standard `@/components/ui/dialog` (Radix). No browser dialogs.
  */
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Check, Loader2, Search } from "lucide-react";
+import React, { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
 
-import { cn } from "@/lib/utils";
-import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,13 +27,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAllAgents } from "@/features/agents/redux/agent-definition/selectors";
-import {
-  fetchAgentsListFull,
-  saveAgentField,
-} from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
+import { saveAgentField } from "@/features/agents/redux/agent-definition/thunks";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import type { OutputSchema } from "@/features/agents/types/json-schema";
 
 interface ApplySchemaDialogProps {
@@ -46,10 +40,7 @@ interface ApplySchemaDialogProps {
   schema: OutputSchema;
 }
 
-interface PickableAgent {
-  id: string;
-  name: string;
-}
+const WRITABLE_AGENT_TABS = ["mine"] as const;
 
 export const ApplySchemaDialog: React.FC<ApplySchemaDialogProps> = ({
   open,
@@ -57,60 +48,16 @@ export const ApplySchemaDialog: React.FC<ApplySchemaDialogProps> = ({
   schema,
 }) => {
   const dispatch = useAppDispatch();
-  const agents = useAppSelector(selectAllAgents);
-
-  const [loading, setLoading] = useState(false);
-  const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
+  const selectedAgent = useAppSelector((state) =>
+    selectedId ? selectAgentById(state, selectedId) : undefined,
+  );
 
-  // Load the agent list once per open. Reuses the canonical full-list thunk so
-  // pickers, dropdowns, and this dialog all share one source of truth.
-  useEffect(() => {
-    if (!open) return undefined;
-    let cancelled = false;
-    setLoading(true);
-    void dispatch(fetchAgentsListFull())
-      .unwrap()
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        toast.error(
-          err instanceof Error ? err.message : "Failed to load agents",
-        );
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [open, dispatch]);
-
-  // Only the user's own, live (non-version, non-archived) agents are writable.
-  // Builtins and shared records are excluded — RLS would reject the write and
-  // they aren't the user's to repurpose.
-  const pickable = useMemo<PickableAgent[]>(() => {
-    const rows = Object.values(agents)
-      .filter(
-        (a) =>
-          a &&
-          !a.isVersion &&
-          a.agentType === "user" &&
-          !a.isArchived &&
-          a.isOwner !== false,
-      )
-      .map((a) => ({ id: a.id, name: a.name || "Untitled agent" }));
-    rows.sort((x, y) => x.name.localeCompare(y.name));
-    return rows;
-  }, [agents]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return pickable;
-    return pickable.filter((a) => a.name.toLowerCase().includes(q));
-  }, [pickable, query]);
-
-  const selectedAgent = pickable.find((a) => a.id === selectedId) ?? null;
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) setSelectedId(null);
+    onOpenChange(nextOpen);
+  };
 
   const handleApply = async () => {
     if (!selectedAgent || applying) return;
@@ -126,9 +73,8 @@ export const ApplySchemaDialog: React.FC<ApplySchemaDialogProps> = ({
       toast.success(`Updated ${selectedAgent.name} output schema`, {
         action: toastDoor("agent", selectedAgent.id),
       });
-      onOpenChange(false);
+      handleOpenChange(false);
       setSelectedId(null);
-      setQuery("");
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to update output schema",
@@ -139,7 +85,7 @@ export const ApplySchemaDialog: React.FC<ApplySchemaDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Apply output schema</DialogTitle>
@@ -149,75 +95,21 @@ export const ApplySchemaDialog: React.FC<ApplySchemaDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex items-center gap-2 rounded-md border border-border bg-muted px-2.5 py-1.5">
-          <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search agents…"
-            className="w-full bg-transparent text-base outline-none placeholder:text-muted-foreground"
-          />
-        </div>
-
-        <ScrollArea className="h-64 rounded-md border border-border">
-          {loading ? (
-            <div className="flex h-full items-center justify-center py-10 text-sm text-muted-foreground">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Loading agents…
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex h-full items-center justify-center py-10 text-sm text-muted-foreground">
-              {pickable.length === 0
-                ? "No editable agents found."
-                : "No agents match your search."}
-            </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {filtered.map((agent) => {
-                const isSelected = agent.id === selectedId;
-                return (
-                  <li key={agent.id} className="group relative">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(agent.id)}
-                      className={cn(
-                        "flex w-full items-center justify-between gap-2 px-3 py-2 pr-20 text-left text-sm",
-                        "hover:bg-accent",
-                        isSelected && "bg-accent",
-                      )}
-                    >
-                      <span className="truncate text-foreground">
-                        {agent.name}
-                      </span>
-                      {isSelected && (
-                        <Check className="h-4 w-4 shrink-0 text-primary" />
-                      )}
-                    </button>
-                    {/* THE DOOR LAW: the user is choosing which agent to
-                        overwrite the output schema of, with nothing but a name
-                        to go on — and getting it wrong is a destructive edit.
-                        Doors are an absolutely-positioned SIBLING because the
-                        row is a `<button>` whose click means "select"; `pr-20`
-                        reserves room so they never cover the checkmark. */}
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                      <EntityDoorControls
-                        token="agent"
-                        id={agent.id}
-                        name={agent.name}
-                        alwaysShowActions
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </ScrollArea>
+        <AgentListDropdown
+          consumerId="apply-schema-agent-picker"
+          onSelect={setSelectedId}
+          label={selectedAgent?.name ?? "Select an agent"}
+          activeAgentId={selectedId}
+          initialTab="mine"
+          visibleTabs={WRITABLE_AGENT_TABS}
+          showPinnedAgent={false}
+          className="h-10 w-full justify-between text-sm"
+        />
 
         <DialogFooter>
           <Button
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
             disabled={applying}
           >
             Cancel

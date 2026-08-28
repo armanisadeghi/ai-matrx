@@ -73,6 +73,8 @@ export interface AgentListDropdownProps {
   resolveAgentHref?: (agent: AgentDefinitionRecord) => string;
   /** Show the active agent above the filtered list. Default true. */
   showPinnedAgent?: boolean;
+  /** Hide records that are invalid for this call site. */
+  excludeAgentIds?: readonly string[];
 }
 
 export function AgentListDropdown({
@@ -92,6 +94,7 @@ export function AgentListDropdown({
   systemTabLabel,
   resolveAgentHref: resolveAgentHrefProp,
   showPinnedAgent = true,
+  excludeAgentIds,
 }: AgentListDropdownProps) {
   const isMobile = useIsMobile();
   const dialogContainer = useDialogContainer();
@@ -131,6 +134,7 @@ export function AgentListDropdown({
     activeAgentIdOverride: activeAgentIdProp,
     initialTab,
     includeSystemInAll,
+    excludeAgentIds,
   });
 
   const displayLabel = label ?? pinnedAgent?.name ?? "Agents";

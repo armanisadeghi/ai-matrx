@@ -82,6 +82,9 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectBuiltinAgents } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
+import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+
+const SYSTEM_AGENT_TAB = ["system"] as const;
 
 function jsonToStringArray(value: Json | null | undefined): string[] {
   if (value == null) return [];
@@ -504,28 +507,30 @@ export function TemplatesManager() {
                   </Tooltip>
                 </TooltipProvider>
               </div>
-              <Select
-                value={formData.agent_config[key] ?? ""}
-                onValueChange={(v) =>
-                  setAgentConfig(key, v === "__none__" ? "" : v)
-                }
-              >
-                <SelectTrigger className="flex-1 text-xs h-8">
-                  <SelectValue placeholder="System default" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">
-                    <span className="text-muted-foreground">
-                      System default
-                    </span>
-                  </SelectItem>
-                  {builtins.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex min-w-0 flex-1 items-center gap-1">
+                <AgentListDropdown
+                  consumerId={`research-template-agent-${key}`}
+                  onSelect={(agentId) => setAgentConfig(key, agentId)}
+                  activeAgentId={formData.agent_config[key] || null}
+                  label={builtins.find((agent) => agent.id === formData.agent_config[key])?.name ?? "System default"}
+                  initialTab="system"
+                  visibleTabs={SYSTEM_AGENT_TAB}
+                  systemTabLabel="System"
+                  showPinnedAgent={Boolean(formData.agent_config[key])}
+                  className="h-8 w-full justify-between text-xs"
+                />
+                {formData.agent_config[key] && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 px-2 text-xs"
+                    onClick={() => setAgentConfig(key, "")}
+                  >
+                    Default
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>
