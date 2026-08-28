@@ -36,6 +36,10 @@ interface TimelinePeriod {
 interface TimelineBlockProps {
   timeline: TimelineData;
   taskId?: string;
+  artifactId?: string;
+  conversationId?: string;
+  messageId?: string;
+  blockIndex?: number;
 }
 
 /** Collapse all periods except Phase 1 (if present) or the first period. */
@@ -53,6 +57,10 @@ function getInitialCollapsedPeriods(periods: TimelinePeriod[]): Set<string> {
 const TimelineBlock: React.FC<TimelineBlockProps> = ({
   timeline: initialTimeline,
   taskId,
+  artifactId,
+  conversationId,
+  messageId,
+  blockIndex,
 }) => {
   const [timeline, setTimeline] = useState<TimelineData>(initialTimeline);
   const blockContentRef = useRef<HTMLDivElement>(null);
@@ -275,7 +283,13 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
         controls={headerControls}
         canvasType="timeline"
         canvasData={timeline}
-        canvasMetadata={{ title: timeline.title }}
+        canvasMetadata={{
+          title: timeline.title,
+          artifactId,
+          conversationId,
+          messageId,
+          artifactIndex: blockIndex,
+        }}
         taskId={taskId}
         exportData={timeline}
         exportFilename={

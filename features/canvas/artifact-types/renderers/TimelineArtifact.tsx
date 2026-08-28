@@ -21,6 +21,9 @@ export default function TimelineArtifact({
   taskId,
   artifactId,
   isStreamActive,
+  conversationId,
+  messageId,
+  blockIndex,
 }: ArtifactRendererProps) {
   const timeline = useMemo(
     () =>
@@ -43,6 +46,10 @@ export default function TimelineArtifact({
       <TimelineBlock
         timeline={timeline}
         taskId={artifactDedupKey(taskId, artifactId)}
+        artifactId={artifactId}
+        conversationId={conversationId}
+        messageId={messageId}
+        blockIndex={blockIndex}
       />
     </Suspense>
   );
