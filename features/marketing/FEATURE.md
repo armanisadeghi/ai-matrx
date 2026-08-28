@@ -601,9 +601,10 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
   longer lies.** The table reuses the canonical Offering picker and placement
   write on every row, keeps Decided by at the same compact width as the other
   meaning controls, and shows AI/matcher provenance beside effective dimension
-  answers. Only a human override offers Clear; zero-row clears report failure,
-  while a successful clear explains that the computed or AI fallback is now
-  visible.
+  answers. The Offering picker absorbs its row click instead of opening keyword
+  detail behind itself. Only a human override offers Clear; zero-row clears
+  report failure, while a successful clear explains that the computed or AI
+  fallback is now visible.
 
 - 2026-08-28 — Codex: **Keyword Value gives the first screen back to the
   keyword work.** The duplicate body-level destination row is gone: normal
