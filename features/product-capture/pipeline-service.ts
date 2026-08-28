@@ -528,7 +528,6 @@ export async function splitItem(
   if (groups.length < 2) {
     throw new Error("A split needs at least two groups.");
   }
-  const sb = createClient().schema("workbench");
   const created: PipelineItem[] = [];
 
   for (const group of groups.slice(1)) {
@@ -549,7 +548,8 @@ export async function splitItem(
     if (error) throw error;
     const newItem = toPipelineItem(data as PipelineItemRow);
 
-    const { error: moveErr } = await sb
+    const { error: moveErr } = await createClient()
+      .schema("workbench")
       .from("product_capture_file")
       .update({ item_id: newItem.id })
       .eq("item_id", original.id)
