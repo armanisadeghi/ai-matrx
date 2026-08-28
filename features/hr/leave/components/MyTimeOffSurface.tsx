@@ -49,6 +49,13 @@ function TimeOffBody({ employmentId }: { employmentId: string }) {
   const [result, setResult] = useState<HrResult<MyTimeOff> | null>(null);
   const [reasons, setReasons] = useState<LeaveReasonCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  /*
+    🚨 A refusal the FORM could not keep on screen. Acting on a stale selection refetches, and the
+    refetch can leave no enrolled active policy — at which point LeaveRequestForm renders null and
+    its own alert goes with it. This state lives in the HOST so the employee still gets the reason
+    for the outcome they just got, whether or not the form survives it.
+  */
+  const [detachedRefusal, setDetachedRefusal] = useState<string | null>(null);
 
   /**
    * The read. It sets no state synchronously — `loading` starts true and is cleared when the
@@ -167,12 +174,27 @@ function TimeOffBody({ employmentId }: { employmentId: string }) {
             this page who is not its subject gets NO FORM IN THE DOM, not a greyed one.
           */}
           {data.canRequest ? (
+            <>
+            {detachedRefusal ? (
+              <p
+                role="alert"
+                className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+              >
+                {detachedRefusal}
+              </p>
+            ) : null}
+
             <LeaveRequestForm
               employmentId={data.employmentId ?? employmentId}
               policies={data.policies}
               reasonCategories={reasons}
-              onSubmitted={() => void load()}
+              onSubmitted={() => {
+                setDetachedRefusal(null);
+                void load();
+              }}
+              onDetachedRefusal={setDetachedRefusal}
             />
+            </>
           ) : null}
 
           <div id="your-requests" className="scroll-mt-4">

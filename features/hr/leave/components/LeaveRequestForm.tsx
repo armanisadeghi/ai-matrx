@@ -77,6 +77,15 @@ export interface LeaveRequestFormProps {
   reasonCategories: LeaveReasonCategory[];
   /** Re-read the surface after a successful submit. */
   onSubmitted: () => void;
+  /**
+   * A refusal the FORM cannot render, because acting on it unmounts the form.
+   *
+   * 🚨 A stale selection makes the picker refetch, and if the refetch leaves no enrolled active
+   * policy this component returns null — taking its own `role="alert"` with it. The employee
+   * clicks Send, the form disappears, and nothing says why: the exact swallow round 30 reported,
+   * recreated by the fix for it. So this class of refusal is handed UP to a host that survives.
+   */
+  onDetachedRefusal: (message: string) => void;
 }
 
 export function LeaveRequestForm({
@@ -84,6 +93,7 @@ export function LeaveRequestForm({
   policies,
   reasonCategories,
   onSubmitted,
+  onDetachedRefusal,
 }: LeaveRequestFormProps) {
   const [policyId, setPolicyId] = useState<string>(policies[0]?.policyId ?? "");
   const [startsOn, setStartsOn] = useState<string>(todayIso());
@@ -274,6 +284,22 @@ export function LeaveRequestForm({
             ? res.message
             : "That request was not accepted.",
       );
+      /*
+        🚨 THE DISPLAY-PINNED-TO-DOOR LAW, closed the rest of the way. Round 30 found the form
+        OFFERING a leave type the door then refused, because the policy had been changed or
+        removed while this page sat open. The door now says so explicitly with
+        `staleSelection`, and the honest response is not to make the person reload — it is to
+        REFETCH so the picker stops offering something that no longer exists. The sentence still
+        renders, because they are owed the reason for the outcome they just got.
+      */
+      if (isHrDenied(res) && res.payload?.staleSelection === true) {
+        // Hand the sentence to the host FIRST — refetching may unmount this component.
+        onDetachedRefusal(
+          res.detail ??
+            "That leave type changed while this page was open. The list has been refreshed.",
+        );
+        onSubmitted();
+      }
       return;
     }
 
