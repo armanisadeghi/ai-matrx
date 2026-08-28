@@ -41,11 +41,28 @@ feature. There is no cross-employer HR view, in v1 or later.
   `HrHomeGrid` card grid, per-persona composition and queue cards are L9's; the
   `TODO(L9…)` in that file names the swap.
 - Section routes mount `HrShell` or `HrSubShell` from their own `layout.tsx`.
-- `app/(core)/hr/compliance/laws/page.tsx` — **route 85c, the org LAW PORTAL (D25)**.
-  The employment-law rules that reach this employer (platform baseline, read-only)
-  and the rules the org layers over them. `app/(core)/hr/compliance/page.tsx`
-  redirects the section root to it, closing the dead end the "Compliance" nav item
-  had been pointing at since the nav shipped.
+- `app/(core)/hr/compliance/laws/page.tsx` — **route 85c, the org LAW PORTAL
+  (D25 + D26)**. The employment-law rules that reach this employer, each one a dense
+  collapsible row the org can REMOVE for itself (D26), plus the rules the org layers
+  over them. `app/(core)/hr/compliance/page.tsx` redirects the section root to it,
+  closing the dead end the "Compliance" nav item had been pointing at since the nav
+  shipped.
+
+**Compliance surface** (`features/hr/compliance/`)
+
+- `HrComplianceShell.tsx` — `HrComplianceChrome` + `HR_COMPLIANCE_TABS`. Runs no
+  gate; every page under `/hr/compliance` renders its own server refusal in place.
+- `LawPortalSurface.tsx` — the portal itself: the operating-jurisdiction line, the
+  per-rule-class collapsible sections (count + `applies / removed / overridden`
+  summary), the D26 remove/restore control and its confirm dialog, the all-rules
+  toggle, and the org's own rules with add / edit / retire.
+- `LawRuleRow.tsx` — `PlatformLawRuleRow` · `OrgLawRuleRow` · `LawParameterList` ·
+  `LawCitationLine` · `LawStatusBadge` · `LawRawParameters`. ONE rule is ONE row,
+  collapsed by default; parameters, citation and `basis` live behind the chevron.
+- `OrgLawRuleEditor.tsx` — authoring an org rule, with the server's refusal
+  (`unlawful_configuration` / `warnings_unacknowledged`) rendered verbatim.
+- `law-parameters.ts` — flat-schema form fields, or `null` meaning "show JSON and
+  say why". Never a partial form.
 
 **Shell + primitives** (`features/hr/shared/`)
 
@@ -129,6 +146,9 @@ place. See `types.ts` for the full contract.
 | `HrEmptyOrg` renders a door, not the wizard                     | `features/hr/settings/activation/HrActivationWizard.tsx` does not exist yet (checked 2026-08-26), and a `next/dynamic` import of a missing module is a build error. The door links to `/hr/settings/employer`. **When the wizard lands, replace the `<Link>` with ONE `next/dynamic` edge behind the same `canActivate` condition** — one boundary, at the edge, conditionally rendered. |
 | Cancel takes a required reason via `TextInputDialog`            | `hr_pending_change_cancel` requires `p_reason`; browser prompts are banned. The dialog states, before the click, that nothing in the history is erased and that the cancellation is itself recorded.                                                                                                                                                                                     |
 | Assist surface names are string constants                       | The `matrx-user/hr*` surface **manifests** do not exist yet under `features/surfaces/manifests/`. `HR_ASSIST_SURFACES` holds the §3 names so there is one spelling to point at the manifests when that lane lands.                                                                                                                                                                       |
+| D26 removal is keyed by class × jurisdiction, never rule id     | `hr_org_jurisdiction_rule_set_applies` takes `p_rule_class` + `p_jurisdiction_key`, so amending the platform rule row later cannot silently re-apply a law the organization removed. The surface therefore patches EVERY loaded rule sharing that key after a granted call, and reloads so `opt_outs` (who decided, when, why) stays the server's answer.                                                                                                          |
+| Restore has no confirm dialog; removal has a loud short one     | Restore returns the org to the safe default — every platform rule applying — which is never the dangerous direction. Removal is the direction that stops enforcement, so it names the rule, its citation authority and one consequence sentence, and takes an optional reason. An essay there would be read by nobody, which is the failure D26's "make removal loud" is guarding against.                                                          |
+| A removed rule stays visible in its section                     | Hiding it would hide the organization's own compliance exposure. It keeps its row, gains a full-contrast `Removed by your organization` badge and a tinted row, and the section header counts it — so a removal is impossible to lose track of.                                                                                                                                                                                                    |
 | Law portal: an unreadable rule `status` maps to `advisory`      | `advisory` law flags and never computes pay, `active` binds. Reporting an unknown value as `active` would present unverified law as binding; the other direction only under-claims. So the mapper narrows to `active` on an exact match and to `advisory` otherwise (`mapHrLawStatus`).                                                                                                  |
 | Law portal: a nested `parameter_schema` gets a JSON field       | The shipped class schemas range from four scalar keys to nested objects with `$defs`/`$ref`. A generated form that silently dropped what it could not draw would write a rule the author did not describe, so `flatParameterFields` returns ALL fields or `null`, and `null` means the editor shows JSON and says why.                                                                   |
 | `/hr/compliance` redirects to the law portal                    | The "Compliance" nav item has resolved to `/hr/compliance` since the nav shipped and no route existed — a live 404. The section's first real surface is the law portal, so the root opens it through the builder. The lane that builds a Compliance landing surface replaces that file and adds its tab in `HrComplianceShell`.                                                        |
@@ -147,6 +167,28 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-08-28 (D26 + law-portal UI overhaul)** — Organizations now choose which
+  platform rules apply to them, and the portal was rebuilt around reading rather than
+  scrolling. **D26:** every platform rule row carries an applies control; by default
+  everything applies, and removal is REAL — the resolver stops enforcing the rule with
+  a traced `opted_out_by_org` outcome. Removal opens a short, loud confirm (rule +
+  jurisdiction, citation authority, one consequence sentence, optional reason);
+  restore is one click and no dialog, because it returns to the safe default. A
+  removed rule keeps its row with a full-contrast "Removed by your organization" mark
+  and is counted in its section header, so nothing is hidden. Door:
+  `setHrPlatformLawRuleApplies` → `hr_org_jurisdiction_rule_set_applies`, keyed by
+  (rule class × jurisdiction); `hr_law_portal_data` now also maps `opted_out` per
+  platform rule and a top-level `opt_outs` list (`HrLawOptOut`, `HrLawAppliesAck`).
+  **UI:** each rule class is a simple collapsible section — a header row with chevron,
+  count and an `applies / removed / overridden` summary — and each rule inside it is
+  ONE dense row (jurisdiction, level, status, pending-verification badge, action),
+  collapsed by default; parameters, citation and the rule's long `basis` prose open
+  behind the chevron, the `basis` in a clamped scrollable block rather than a wall.
+  No card-in-card layering was added. Every paragraph of on-screen explanation was cut
+  to a single line or removed, and every `text-muted-foreground` on primary content —
+  rule names, parameter keys and values, statuses, citations, refusal sentences — was
+  raised to `text-foreground`; muted tone now survives only on timestamps and the
+  source-confidence annotation. `LawRuleCard.tsx` was replaced by `LawRuleRow.tsx`.
 - **2026-08-28 (D25)** — The org **law portal** shipped at `/hr/compliance/laws`:
   the platform's employment-law baseline shown read-only and grouped by rule class,
   with advisory rules visually distinct ("flags only, never computes pay"), a
