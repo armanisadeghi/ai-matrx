@@ -68,6 +68,7 @@ export function OrderWindow({
   values,
   missing,
   surfaceProblem,
+  loading,
   onFieldChange,
   starting,
   onStart,
@@ -75,6 +76,12 @@ export function OrderWindow({
 }: {
   /** The SERVED input surface. The draft lives on the page (values out). */
   inputs: readonly ServedInput[];
+  /**
+   * The surface is still being read. "Nothing needed from you" is an ANSWER,
+   * and a form that has not been read yet does not have it — printing it early
+   * is the same lie as an empty run form on a backend that serves no surface.
+   */
+  loading: boolean;
   kinds: Record<string, VariantResolvableKind>;
   values: Record<string, unknown>;
   /** Labels still blocking the start, computed by the page's gate. */
@@ -95,10 +102,19 @@ export function OrderWindow({
         />
       ) : null}
       <p className="text-sm text-muted-foreground">
-        {inputs.length > 0
-          ? "A few things it needs from you, then it takes over."
-          : "Nothing needed from you — it has everything it needs."}
+        {loading
+          ? "Reading what it needs from you…"
+          : inputs.length > 0
+            ? "A few things it needs from you, then it takes over."
+            : "Nothing needed from you — it has everything it needs."}
       </p>
+
+      {loading ? (
+        <div className="mt-5 space-y-3">
+          <div className="h-10 animate-pulse rounded-md bg-muted/50" />
+          <div className="h-10 animate-pulse rounded-md bg-muted/30" />
+        </div>
+      ) : null}
 
       <div className="mt-5 space-y-3">
         {inputs.map((input) => (
@@ -127,7 +143,7 @@ export function OrderWindow({
       <div className="mt-6 flex items-center gap-3">
         <button
           type="button"
-          disabled={starting || missing.length > 0}
+          disabled={starting || loading || missing.length > 0}
           onClick={onStart}
           className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-50"
         >
@@ -135,9 +151,11 @@ export function OrderWindow({
           {starting ? "Starting…" : "Start the work"}
         </button>
         <span className="text-xs text-muted-foreground">
-          {missing.length > 0
-            ? `Still needed: ${missing.join(", ")}`
-            : `${stepCount} steps will run on their own.`}
+          {loading
+            ? "Reading what it needs…"
+            : missing.length > 0
+              ? `Still needed: ${missing.join(", ")}`
+              : `${stepCount} steps will run on their own.`}
         </span>
       </div>
     </div>

@@ -47,7 +47,7 @@ export function Intake({
   const missing = unsatisfiedServedInputs(inputs, values, touched).map(
     (i) => i.label,
   );
-  const ready = missing.length === 0;
+  const ready = missing.length === 0 && state.status !== "loading";
 
   return (
     <section className="rounded-xl border border-border bg-card">
@@ -123,7 +123,11 @@ export function Intake({
             )}
             {starting ? "Starting…" : "Start"}
           </button>
-          {!ready ? (
+          {state.status === "loading" ? (
+            <p className="text-[11px] text-muted-foreground">
+              Reading what it needs…
+            </p>
+          ) : missing.length > 0 ? (
             <p className="text-[11px] text-muted-foreground">
               Still needed: {missing.join(", ")}
             </p>

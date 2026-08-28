@@ -83,11 +83,11 @@ export function DenseIntake({
           ) : null}
           <button
             type="button"
-            disabled={starting || missing.length > 0}
+            disabled={starting || state.status === "loading" || missing.length > 0}
             onClick={() => onStart(buildSubmission(inputs, values, touched))}
             className={cn(
               "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground transition-opacity",
-              starting || missing.length > 0
+              starting || state.status === "loading" || missing.length > 0
                 ? "opacity-60"
                 : "hover:opacity-90",
             )}

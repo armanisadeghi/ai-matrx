@@ -51,7 +51,8 @@ export function IntakePanel({
   const missing = unsatisfiedServedInputs(inputs, values, touched).map(
     (i) => i.label,
   );
-  const canStart = missing.length === 0 && !starting;
+  const canStart =
+    missing.length === 0 && !starting && state.status !== "loading";
 
   const promise =
     deliverableNames.length > 0
@@ -62,7 +63,11 @@ export function IntakePanel({
     <section className="rounded-xl border border-border bg-card">
       <header className="border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold text-foreground">
-          {inputs.length > 0 ? "Before we start" : "Ready when you are"}
+          {state.status === "loading"
+            ? "One moment"
+            : inputs.length > 0
+              ? "Before we start"
+              : "Ready when you are"}
         </h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
           This runs {stepCount} {stepCount === 1 ? "step" : "steps"} on its own

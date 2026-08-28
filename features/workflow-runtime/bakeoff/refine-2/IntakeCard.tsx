@@ -57,14 +57,18 @@ export function IntakeCard({
     >
       <header className="border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold text-foreground">
-          {inputs.length > 0
-            ? `What should “${workflowName}” work with?`
-            : `“${workflowName}” needs nothing from you to start.`}
+          {state.status === "loading"
+            ? `Reading what “${workflowName}” needs…`
+            : inputs.length > 0
+              ? `What should “${workflowName}” work with?`
+              : `“${workflowName}” needs nothing from you to start.`}
         </h2>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {inputs.length > 0
-            ? "Answer below, press Start, and watch it deliver."
-            : "Press Start and watch it deliver."}
+          {state.status === "loading"
+            ? "Its declared inputs are being read."
+            : inputs.length > 0
+              ? "Answer below, press Start, and watch it deliver."
+              : "Press Start and watch it deliver."}
         </p>
       </header>
 
@@ -118,7 +122,7 @@ export function IntakeCard({
         <div className="flex items-center gap-3 pt-1">
           <button
             type="button"
-            disabled={starting || missing.length > 0}
+            disabled={starting || state.status === "loading" || missing.length > 0}
             onClick={() => onStart(buildSubmission(inputs, values, touched))}
             className="flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50"
           >

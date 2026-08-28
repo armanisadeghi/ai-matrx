@@ -318,6 +318,7 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
             <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
               <OrderWindow
                 inputs={servedInputs}
+                loading={served.status === "loading"}
                 kinds={kinds}
                 values={formValues}
                 missing={missing}

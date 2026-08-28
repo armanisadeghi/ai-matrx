@@ -534,7 +534,7 @@ function IntakeBrief({
       <div className="mt-5 flex items-center gap-3">
         <button
           type="button"
-          disabled={starting || missing.length > 0}
+          disabled={starting || state.status === "loading" || missing.length > 0}
           onClick={() => void onStart(buildSubmission(inputs, values, touched))}
           className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
