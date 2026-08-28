@@ -356,7 +356,8 @@ function WatchedStep({
  * The Delivered tab, now driven by THE DECLARED CONTRACT rather than by the
  * definition walk this bake-off used to do.
  *
- * What changed and why: `keepableDeliverables` had to EXCLUDE every
+ * What changed and why: the deliverables walk (`keepableDeliverables`, now
+ * deleted) had to EXCLUDE every
  * `output.to_frontend` node ("those are emissions") because listing them
  * beside their own emissions promised the same thing twice. That exclusion was
  * a workaround for a missing rule. SPEC §3's dedupe is the rule — key

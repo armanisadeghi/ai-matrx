@@ -16,24 +16,62 @@
  *               (LiveProgressRail + ResearchActivityFeed).
  *   STAGE     — the authored readouts, wide enough to actually read, each one
  *               streaming its content through the canonical pipeline.
- *   ASIDES    — what the workflow deliberately showed mid-run: every
- *               `node_emitted` from a "Show on Screen" step, rendered through
- *               its authored component when it has one (RunEmissions).
- *   DELIVER   — the finished shapes appearing one by one as their real kind
- *               components (MediaOptionsGrid).
+ *   SHOWCASE  — the ONE thing the author staged for the person to look at,
+ *               page-centered, reserved from the declared contract before the
+ *               run exists (ShowcaseSlot).
+ *   DELIVER   — the declared deliverables as reserved slots that their own
+ *               settled output or claimed emission fills in, and beneath them
+ *               every emission no slot claimed (DeliveredStream).
  *
  * Two laws hold the composition together. The surface only ever GROWS —
  * deliverables land at the BOTTOM, the hero reserves its lines, and nothing
  * that has rendered is unmounted because data arrived. And nothing here parses
  * a stream: every token reaches the screen through LiveRunDisplay /
  * MarkdownStream / the kind registry.
+ *
+ * ─── Volley 5: THE EMISSION CONTRACT, adopted ───────────────────────────────
+ * The mid-run asides and the finished goods used to be two independent
+ * sections — `RunEmissions` walked `run.emissions` and `RunDeliverables`
+ * walked the DEFINITION for producer steps — with nothing joining them, so a
+ * "Show on Screen" node that was also a deliverable could promise the same
+ * payload twice under two names. SPEC-workflow-ui-contract §3 is the rule that
+ * ends that, and `kind-emissions/` is the proven implementation of it:
+ * `useResultSchema` reserves the slots from the SERVED promise before a run
+ * exists, `splitByPresentation` lifts the one staged reveal out of the stream,
+ * and `DeliveredStream` owns the dedupe (widened key: a deliverable that
+ * declares NO kind claims any emission from its own node) so the two halves
+ * can never disagree.
+ *
+ * A result schema that cannot be read is NOT a dead page — it degrades to the
+ * definition-derived deliverables shelf plus the raw emission stream, which is
+ * exactly what this stage showed before the contract existed.
+ *
+ * 🚨 The `workflow-emit` import boundary (D115) still binds this file — see
+ * `RunEmissions.tsx:29-39`. Emission rendering reaches that feature only
+ * through `kind-emissions/EmissionRender`, which imports `DbEmitRenderer` and
+ * nothing else.
  */
 
 import { useEffect, useMemo, useRef } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 
-import { selectNodeAggregatePhases } from "../../redux/workflow-runs.selectors";
+import {
+  selectNodeAggregatePhases,
+  selectRunEmissions,
+  selectRunStatus,
+} from "../../redux/workflow-runs.selectors";
+import { DeliveredStream } from "../../kind-emissions/DeliveredStream";
+import { splitByPresentation } from "../../kind-emissions/emission-routing";
+import {
+  panelDeliverables,
+  showcaseDeliverables,
+} from "../../kind-emissions/result-schema";
+import { ShowcaseSlot } from "../../kind-emissions/ShowcaseSlot";
+import {
+  resultSchemaOrNull,
+  useResultSchema,
+} from "../../kind-emissions/useResultSchema";
 import {
   deriveDefaultSurfaceConfig,
   type ProgressRailSource,
@@ -43,8 +81,8 @@ import type { WorkflowDefinitionLike } from "../../trigger-points";
 import { InterruptCard, RunResultCard } from "../readout-parts";
 import { RunSurfaceView } from "../RunSurfaceView";
 import { RunActivityFeed } from "./RunActivityFeed";
+import { RunControlBar } from "./RunControlBar";
 import { RunDeliverables } from "./RunDeliverables";
-import { RunEmissions } from "./RunEmissions";
 import { RunFailureCard } from "./RunFailureCard";
 import { RunHero } from "./RunHero";
 import { RunJourney } from "./RunJourney";
@@ -82,10 +120,7 @@ function collectSyntheticSteps(
  * section then carries exactly what the surface leaves out (on Study Pack:
  * the assembled study pack, which no page renders).
  */
-function undisplayedDeliverables(
-  deliverables: RunStepPresentation[],
-  config: RunSurfaceConfig,
-): RunStepPresentation[] {
+function surfaceShownNodeIds(config: RunSurfaceConfig): Set<string> {
   const shown = new Set<string>();
   for (const readout of config.readouts) {
     if (readout.source.kind === "node") shown.add(readout.source.nodeId);
@@ -93,6 +128,13 @@ function undisplayedDeliverables(
       for (const nodeId of readout.source.nodeIds) shown.add(nodeId);
     }
   }
+  return shown;
+}
+
+function undisplayedDeliverables(
+  deliverables: RunStepPresentation[],
+  shown: ReadonlySet<string>,
+): RunStepPresentation[] {
   return deliverables.filter((step) => !shown.has(step.nodeId));
 }
 
@@ -136,6 +178,7 @@ function useFollowRunningStep(
 
 export function RunStage({
   runId,
+  definitionId,
   definition,
   workflowName,
   workflowDescription,
@@ -144,6 +187,8 @@ export function RunStage({
   onRetry,
 }: {
   runId: string;
+  /** The workflow this run belongs to — the declared result contract's key. */
+  definitionId: string;
   definition: WorkflowDefinitionLike;
   workflowName: string;
   workflowDescription?: string | null;
@@ -158,9 +203,10 @@ export function RunStage({
     [config, definition],
   );
   const synthetic = useMemo(() => collectSyntheticSteps(surface), [surface]);
+  const shownBySurface = useMemo(() => surfaceShownNodeIds(surface), [surface]);
   const ownDeliverables = useMemo(
-    () => undisplayedDeliverables(deliverables, surface),
-    [deliverables, surface],
+    () => undisplayedDeliverables(deliverables, shownBySurface),
+    [deliverables, shownBySurface],
   );
   const stepLabels = useMemo(() => {
     const labels: Record<string, string> = {};
@@ -170,6 +216,24 @@ export function RunStage({
 
   const phases = useAppSelector(selectNodeAggregatePhases(runId));
   const railRef = useFollowRunningStep(steps, phases);
+
+  // ── THE DECLARED PROMISE + THE LIVE EMISSIONS (SPEC §3) ─────────────────
+  // The schema is read from the workflow, NOT from the run: the slots exist
+  // before this run reported anything, and would exist before it started at
+  // all. The split lifts the one staged reveal out of the stream; the panel
+  // half and the declared panel deliverables meet inside `DeliveredStream`,
+  // which owns the dedupe.
+  const status = useAppSelector(selectRunStatus(runId));
+  const emissions = useAppSelector(selectRunEmissions(runId));
+  const declared = resultSchemaOrNull(useResultSchema(definitionId));
+  const { showcase, panel } = splitByPresentation(emissions);
+  // An authored surface that already places a node's readout keeps it — the
+  // author's layout is the intent, and rendering one shape twice on one screen
+  // is what THE CANONICAL COMPONENT LAW exists to prevent.
+  const declaredPanel = panelDeliverables(declared).filter(
+    (d) => !shownBySurface.has(d.nodeId),
+  );
+  const declaredShowcase = showcaseDeliverables(declared);
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-4 px-3 py-3 sm:px-5 sm:py-4">
@@ -182,6 +246,10 @@ export function RunStage({
         totalSteps={steps.length}
       />
 
+      {/* The run's own controls (census #34) — pause / resume / stop / cancel,
+          disabled with their reason rather than hidden. */}
+      <RunControlBar runId={runId} />
+
       <RunFailureCard
         runId={runId}
         stepLabels={stepLabels}
@@ -189,6 +257,16 @@ export function RunStage({
         onRetry={onRetry}
       />
       <InterruptCard runId={runId} />
+
+      {/* THE SHOWCASE — page-centered, above the columns, reserved from the
+          declared contract and never also in the stream below. Renders
+          nothing at all when this workflow stages nothing. */}
+      <ShowcaseSlot
+        runId={runId}
+        emission={showcase}
+        declared={declaredShowcase}
+        started={status !== null}
+      />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
         {/* The rail comes FIRST on mobile — on a phone, "what is happening"
@@ -223,13 +301,39 @@ export function RunStage({
             hideRunStatusCards
             hideProgressRails
           />
-          <RunEmissions runId={runId} stepLabels={stepLabels} />
-          <RunDeliverables runId={runId} deliverables={ownDeliverables} />
+          {/* THE DELIVERED STREAM — declared slots first (reserved, then
+              settled by their own output or their claimed emission), then
+              every emission no slot claimed. One component, so the dedupe is
+              structural rather than a discipline. */}
+          <section className="space-y-2">
+            {declaredPanel.length > 0 || panel.length > 0 ? (
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Your deliverables
+              </h2>
+            ) : null}
+            <DeliveredStream
+              runId={runId}
+              declared={declaredPanel}
+              emissions={panel}
+            />
+          </section>
+
+          {/* THE DEGRADE. With no readable result schema there is no declared
+              promise to reserve from, so the definition-derived shelf carries
+              the producer steps exactly as it did before the contract — and it
+              is suppressed entirely once the promise IS readable, because
+              `DeliveredStream` is then already drawing those same nodes. */}
+          {declared === null ? (
+            <RunDeliverables runId={runId} deliverables={ownDeliverables} />
+          ) : null}
+
           {/* The run's own `run_result` packet — shown ONLY when no deliverable
               section is drawing those same terminal payloads. Rendering one
               shape twice on one screen is the duplication THE CANONICAL
               COMPONENT LAW exists to prevent. */}
-          {deliverables.length === 0 ? <RunResultCard runId={runId} /> : null}
+          {deliverables.length === 0 && declaredPanel.length === 0 ? (
+            <RunResultCard runId={runId} />
+          ) : null}
         </div>
       </div>
     </div>

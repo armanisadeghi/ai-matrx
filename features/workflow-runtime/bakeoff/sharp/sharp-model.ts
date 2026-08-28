@@ -63,15 +63,14 @@ export function deliverableChipState(
   }
 }
 
-/**
- * The deliverable steps a reader keeps, minus the pure "show on screen"
- * nodes — those render through the emissions path (DbEmitRenderer), and
- * listing them twice would promise the same thing under two names.
+/*
+ * `keepableDeliverables` used to live here: it EXCLUDED every
+ * `output.to_frontend` node from the deliverables list because listing one
+ * beside its own emission promised the same thing twice. That exclusion was a
+ * workaround for a missing rule, and SPEC-workflow-ui-contract §3 is the rule
+ * — dedupe key `(node_id, kind)`, widened so a deliverable that declares no
+ * kind claims any emission from its own node, with the deliverable slot
+ * winning inside `DeliveredStream`. The two cannot both survive: the exclusion
+ * would hide the very node the dedupe exists to render exactly once. Deleted
+ * at adoption (Volley 5), not deprecated.
  */
-export function keepableDeliverables(
-  deliverables: RunStepPresentation[],
-): RunStepPresentation[] {
-  return deliverables.filter(
-    (step) => step.specType !== "output.to_frontend",
-  );
-}

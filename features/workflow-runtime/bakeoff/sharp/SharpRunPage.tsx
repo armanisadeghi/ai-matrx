@@ -69,7 +69,7 @@ import {
   useResultSchema,
 } from "../../kind-emissions/useResultSchema";
 import { ShowcaseSlot } from "../../kind-emissions/ShowcaseSlot";
-import { keepableDeliverables, liveNodeId } from "./sharp-model";
+import { liveNodeId } from "./sharp-model";
 import { SharpStatusBand } from "./SharpStatusBand";
 import { SharpPlanSpine } from "./SharpPlanSpine";
 import { SharpScreen, type SharpTab } from "./SharpScreen";
@@ -187,7 +187,7 @@ function SharpOffer({
   onOpenRun: (runId: string) => void;
 }) {
   const steps = describeWorkflowSteps(loaded.definition);
-  const deliverables = keepableDeliverables(deliverableSteps(steps));
+  const deliverables = deliverableSteps(steps);
 
   // R12 PROVING GROUND — THE DECLARED RESULT CONTRACT (SPEC §2.4).
   // `GET /workflows/{id}/result-schema` says what this workflow PROMISES,
@@ -408,7 +408,7 @@ function SharpLiveSurface({
   const { ensureLane } = useWorkflowRun(runId);
   const steps = describeWorkflowSteps(loaded.definition);
   const stepsById = stepsByNodeId(steps);
-  const deliverables = keepableDeliverables(deliverableSteps(steps));
+  const deliverables = deliverableSteps(steps);
   const stepLabels = Object.fromEntries(
     steps.map((step) => [step.nodeId, step.label]),
   );
