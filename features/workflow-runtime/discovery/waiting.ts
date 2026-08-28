@@ -19,22 +19,6 @@
  * Pure — no React, no Redux, no fetch.
  */
 
-import type { components } from "@/types/python-generated/api-types";
-
-/**
- * The wire rows, straight from the generated OpenAPI schema — never mirrored.
- *
- * 🚨 These aliases are also the TRIPWIRE. `/runs/waiting` landed in aidream
- * before the deployed server carried it, and a routine "restore the live API
- * contract" regen against production silently deleted the paths and schemas
- * this feature is built on. Referencing the generated schema here turns that
- * regen into a compile error instead of a surface that quietly stops working;
- * `__tests__/waiting-contract.test.ts` says the same thing in CI.
- */
-export type WaitingRunWire = components["schemas"]["WaitingRun"];
-export type WaitingSnapshotWire = components["schemas"]["WaitingSnapshot"];
-export type WaitingGapWire = components["schemas"]["WaitingGap"];
-
 /** One missing input on an `awaiting_input` park. */
 export interface WaitingGap {
   name: string;

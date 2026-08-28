@@ -11983,30 +11983,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -17537,38 +17513,6 @@ export interface paths {
          *     path wins route matching.
          */
         get: operations["stream_run_announcements_runs_stream_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/runs/waiting": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Waiting Runs Endpoint
-         * @description THE "waiting on you" inbox (SPEC-workflow-ui-contract §4.3 leg 3).
-         *
-         *     Every run of the caller's that is holding for a person — ``interrupted``
-         *     (a question mid-run) and ``awaiting_input`` (a start-time park for a
-         *     missing require/ask input) — with the snapshot of WHAT it is waiting for
-         *     on each row. One bounded read: no event replay, no per-run checkpoint
-         *     fetch (except the documented fallback for runs interrupted before the
-         *     snapshot contract existed).
-         *
-         *     Same auth posture as ``GET /runs/stream``: authenticated caller required,
-         *     scoped to their own runs unioned with their access kernel's discoverable
-         *     ids, RLS underneath. Declared BEFORE ``/runs/{run_id}`` so the literal
-         *     path wins route matching.
-         */
-        get: operations["list_waiting_runs_endpoint_runs_waiting_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -38115,33 +38059,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -71849,105 +71766,6 @@ export interface components {
             url?: string | null;
         };
         /**
-         * WaitingGap
-         * @description One missing input on an ``awaiting_input`` park — the compiled input
-         *     surface's own declaration, so the form renders from this row alone.
-         */
-        WaitingGap: {
-            /** Name */
-            name: string;
-            /** Kind */
-            kind?: string | null;
-            /** Sourcing */
-            sourcing?: string | null;
-            /** Variant */
-            variant?: string | null;
-            /** Label */
-            label?: string | null;
-            /** Help */
-            help?: string | null;
-            /** Placeholder */
-            placeholder?: string | null;
-            /** Options */
-            options?: unknown[];
-            /** Json Schema */
-            json_schema?: {
-                [key: string]: unknown;
-            } | null;
-        };
-        /**
-         * WaitingRun
-         * @description One row of the inbox. Every field a "Waiting on you" list needs, and
-         *     per ``no-dead-ends.md`` the ids to open the run itself.
-         */
-        WaitingRun: {
-            /** Run Id */
-            run_id: string;
-            /** Definition Id */
-            definition_id?: string | null;
-            /** Workflow Name */
-            workflow_name?: string | null;
-            /** Status */
-            status: string;
-            snapshot: components["schemas"]["WaitingSnapshot"];
-            /** Asked At */
-            asked_at?: string | null;
-            /** Deadline */
-            deadline?: string | null;
-            /** Parent Run Id */
-            parent_run_id?: string | null;
-        };
-        /** WaitingRunsResponse */
-        WaitingRunsResponse: {
-            /** Runs */
-            runs: components["schemas"]["WaitingRun"][];
-            /** Total */
-            total: number;
-        };
-        /**
-         * WaitingSnapshot
-         * @description WHAT the run is waiting for — the two park shapes under one roof.
-         *
-         *     ``kind='interrupt'`` fills the question block (``node_id`` /
-         *     ``checkpoint_id`` / ``prompt`` / ``title`` / ``schema_hint`` / ``preset``);
-         *     ``kind='awaiting_input'`` fills ``missing``. ``presentation`` and ``preset``
-         *     are always present because both defaults ARE today's behavior — a client
-         *     never has to reason about absence.
-         */
-        WaitingSnapshot: {
-            /** Kind */
-            kind: string;
-            /** Node Id */
-            node_id?: string | null;
-            /** Checkpoint Id */
-            checkpoint_id?: string | null;
-            /** Title */
-            title?: string | null;
-            /** Prompt */
-            prompt?: string | null;
-            /**
-             * Presentation
-             * @default panel
-             */
-            presentation?: string;
-            /**
-             * Preset
-             * @default free_text
-             */
-            preset?: string;
-            /** Schema Hint */
-            schema_hint?: {
-                [key: string]: unknown;
-            } | null;
-            /** Missing */
-            missing?: components["schemas"]["WaitingGap"][];
-            /**
-             * Stale
-             * @default false
-             */
-            stale?: boolean;
-        };
-        /**
          * WalkHop
          * @description One human answer in the walk — evidence, verbatim (D-40 typed hop).
          */
@@ -94218,41 +94036,6 @@ export interface operations {
             };
         };
     };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -104291,38 +104074,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-        };
-    };
-    list_waiting_runs_endpoint_runs_waiting_get: {
-        parameters: {
-            query?: {
-                limit?: number;
-                offset?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WaitingRunsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
