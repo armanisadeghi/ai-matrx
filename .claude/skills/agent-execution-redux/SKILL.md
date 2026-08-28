@@ -43,17 +43,25 @@ Static definitions. What agents and shortcuts exist.
 |-----------|------|
 | `appContext` | Org, workspace, project, task IDs. Injected into every API call by `assembleRequest()`. |
 
-### Layer 3 — Execution Instances (10 slices under `execution-system/`)
+### Layer 3 — Per-conversation slices (under `execution-system/`)
 
-Ephemeral runtime state. Each instance is self-contained.
+Ephemeral runtime state. Each conversation is self-contained.
 
-**Core invariant: `agentId` is read exactly ONCE at instance creation. After that, the instance owns all its data. The agent definition can change or be deleted — the running instance is unaffected.**
+> **Rename landed (2026-08):** the "execution instance" is now the **conversation**. Every
+> per-conversation slice keys on `byConversationId: Record<string, T>` — `byInstanceId` no longer
+> exists anywhere in `execution-system/`. The shell slice is `conversations`
+> (`conversations/conversations.slice.ts`, "formerly 'execution instance'");
+> `generateInstanceId` survives only as a `@deprecated` alias of `generateConversationId`
+> (`utils/ids.ts`). The family has also grown well past the ten slices this doc originally
+> listed — the table below shows the core request-assembly set; see the `execution-system/`
+> directory listing for the full current set (messages, observability, run-sets,
+> instance-working-document, inbox, durable-runs, …).
 
-All 10 slices use `byInstanceId: Record<string, T>`.
+**Core invariant: `agentId` is read exactly ONCE at conversation creation. After that, the conversation owns all its data. The agent definition can change or be deleted — the running conversation is unaffected.**
 
 | Redux Key | Sent to API? | What it owns |
 |-----------|:------------:|-------------|
-| `executionInstances` | No | Shell: agentId, origin, status (`draft → ready → running → streaming → paused → complete → error`) |
+| `conversations` | No | Shell: agentId, origin, status (`draft → ready → running → streaming → paused → complete → error`) |
 | `instanceModelOverrides` | `config_overrides` | Base LLM settings snapshot + user deltas (only deltas sent) |
 | `instanceVariableValues` | `variables` | Definitions snapshot + three-tier resolution: defaults → scope → user |
 | `instanceResources` | merged into `user_input` | Attached files/content with status tracking |
@@ -61,16 +69,16 @@ All 10 slices use `byInstanceId: Record<string, T>`.
 | `instanceUserInput` | `user_input` | Text + multimodal content blocks |
 | `instanceClientTools` | `client_tools` | Client-side tool IDs |
 | `instanceUIState` | **Never** | Display mode, panels, variable focus, creator flags — purely visual |
-| `instanceConversationHistory` | No | Turn history, conversation mode, server conversation ID |
+| `messages` | No | The committed transcript (turn history) |
 | `activeRequests` | No | Per-request stream state: accumulated text, data payloads, pending tool calls, client metrics |
 
 ### Layer 4 — Thunks + Cross-Cutting Selectors
 
 | File | Role |
 |------|------|
-| `thunks/create-instance.thunk.ts` | Instance factory. 5 creation paths. Reads agent once, dispatches `init*` to all 10 slices. |
-| `thunks/execute-instance.thunk.ts` | Convergence point. `assembleRequest()` reads all instance slices → fetch → NDJSON stream → dispatches to `activeRequests` + `instanceConversationHistory`. |
-| `selectors/aggregate.selectors.ts` | Cross-cutting: instanceId → latest request → derived state (executing, streaming, text, errors, tools). |
+| `thunks/create-instance.thunk.ts` | Conversation factory. 5 creation paths. Reads agent once, dispatches `init*` to every sibling per-conversation slice. |
+| `thunks/execute-instance.thunk.ts` | Convergence point. `assembleRequest()` reads all per-conversation slices → fetch → NDJSON stream → dispatches to `activeRequests` + `messages`. |
+| `selectors/aggregate.selectors.ts` | Cross-cutting: conversationId → latest request → derived state (executing, streaming, text, errors, tools). |
 
 ---
 
@@ -79,12 +87,12 @@ All 10 slices use `byInstanceId: Record<string, T>`.
 ```
 createManualInstance(agentId)
   ├── readAgentSnapshot() — reads agentDefinition ONCE
-  ├── createInstance() — shell in executionInstances
-  └── init* dispatches to all 10 sibling slices
+  ├── createInstance() — shell in `conversations`
+  └── init* dispatches to every sibling per-conversation slice
        │
        ▼
-executeInstance(instanceId)
-  ├── assembleRequest(state, instanceId)
+executeInstance(conversationId)
+  ├── assembleRequest(state, conversationId)
   │     reads: instanceUserInput, instanceResources,
   │            instanceVariableValues, instanceModelOverrides,
   │            instanceContext, instanceClientTools, appContext
@@ -110,9 +118,9 @@ executeInstance(instanceId)
 
 **Snapshot isolation** — Instances never read back from `agentDefinition`. The creation thunk copies what it needs; execution only touches instance slices.
 
-**Request ≠ Instance** — One instance, multiple requests (multi-turn). `activeRequests` keyed by `requestId`, reverse-indexed by `instanceId`. Components only know `instanceId` — aggregate selectors bridge.
+**Request ≠ Conversation** — One conversation, multiple requests (multi-turn). `activeRequests` keyed by `requestId`, reverse-indexed by `conversationId`. Components only know `conversationId` — aggregate selectors bridge.
 
-**Cleanup** — `activeRequests`, `instanceConversationHistory`, and `instanceUIState` listen to `destroyInstance` via `extraReducers`. Other slices rely on the creation thunk for init and the shell for truth.
+**Cleanup** — `activeRequests`, `messages`, and `instanceUIState` listen to `destroyInstance` via `extraReducers`. Other slices rely on the creation thunk for init and the shell for truth.
 
 **Progressive fetch** — `AgentFetchStatus`: `list < execution < customExecution < full < versionSnapshot`. Never downgrades. `shouldUpgradeFetchStatus()` enforces this.
 
@@ -132,7 +140,7 @@ executeInstance(instanceId)
 | Variable values for this run | `instanceVariableValues` |
 | Contextual data sent to the agent | `instanceContext` / `instanceClientTools` |
 | What happened during execution (stream, chunks, tools) | `activeRequests` |
-| Conversation record (turns, mode) | `instanceConversationHistory` |
+| Conversation record (turns, mode) | `conversations` / `messages` |
 | Agent definition itself (permanent, not per-run) | `agentDefinition` |
 | How a list of agents is filtered/sorted | `agentConsumers` |
 | Pre-configured launch config | `agentShortcut` |
@@ -182,17 +190,17 @@ variableDisplayLayout: action.payload.variableDisplayLayout ?? "form",
 
 // New action:
 setVariableDisplayLayout(state, action: PayloadAction<{
-  instanceId: string;
+  conversationId: string;
   layout: "form" | "stepper" | "stacked" | "minimal";
 }>) {
-  const entry = state.byInstanceId[action.payload.instanceId];
+  const entry = state.byConversationId[action.payload.conversationId];
   if (entry) entry.variableDisplayLayout = action.payload.layout;
 },
 
 // New selector:
 export const selectVariableDisplayLayout =
-  (instanceId: string) => (state: RootState) =>
-    state.instanceUIState.byInstanceId[instanceId]?.variableDisplayLayout;
+  (conversationId: string) => (state: RootState) =>
+    state.instanceUIState.byConversationId[conversationId]?.variableDisplayLayout;
 ```
 
 4. **What the whole system gains:**
