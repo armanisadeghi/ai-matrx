@@ -41,10 +41,11 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { MandateResolutionRibbon } from "../components/MandateResolutionRibbon";
+import { ProvisionOfferList } from "../components/ProvisionOfferList";
+import { useMandateGoal } from "../useMandateGoal";
 import { MandateNotesPanel } from "../components/MandateNotesPanel";
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
 import { splitMandateKey } from "../mandate-key";
-import type { OfferedValue } from "../provision-shapes";
 import { OverrideFlow, type WorkspacePrincipal } from "./OverrideFlow";
 import {
   useMandateWorkspaceData,
@@ -228,18 +229,42 @@ function Section({
 // ── §1 The Job ───────────────────────────────────────────────────────────────
 
 function JobSection({ data }: { data: MandateWorkspaceData }) {
+  // THE GOAL comes from the code declaration, not from this row. `description`
+  // is a different field and was standing in for it — that is why this section
+  // used to say "no written goal" about mandates that have one.
+  const { goal, loading, error, loaded } = useMandateGoal(
+    data.mandate.mandate_key,
+  );
   return (
     <Section title="The job">
       <div className="space-y-3 rounded-xl border border-border/60 bg-card p-4">
-        {data.mandate.description ? (
-          <p className="text-[13.5px] leading-relaxed text-foreground">
+        <div className="space-y-1">
+          {goal ? (
+            <p className="text-[15px] font-medium leading-snug text-foreground">
+              {goal}
+            </p>
+          ) : loading ? (
+            <p className="text-[13px] text-muted-foreground">Reading the goal…</p>
+          ) : error ? (
+            <p className="text-[13px] text-amber-700 dark:text-amber-400">
+              The goal could not be read: {error}
+            </p>
+          ) : loaded ? (
+            <p className="text-[13px] italic text-muted-foreground">
+              No goal declared — a registry gap worth fixing.
+            </p>
+          ) : null}
+          {goal ? (
+            <p className="text-[11px] text-muted-foreground/70">
+              Declared in code — edited where the Mandate is declared, not here.
+            </p>
+          ) : null}
+        </div>
+        {data.mandate.description && data.mandate.description !== goal ? (
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
             {data.mandate.description}
           </p>
-        ) : (
-          <p className="text-[13px] italic text-muted-foreground">
-            No written goal — a registry gap worth fixing.
-          </p>
-        )}
+        ) : null}
 
         {/* Inputs — the Provision IS the input declaration. */}
         <div className="space-y-1.5">
@@ -250,15 +275,10 @@ function JobSection({ data }: { data: MandateWorkspaceData }) {
               : "Inputs"}
           </div>
           {data.offer ? (
-            <ul className="divide-y divide-border/40 rounded-lg border border-border/50">
-              {data.offer.values.map((value) => (
-                <OfferedValueRow
-                  key={value.name}
-                  value={value}
-                  pinned={data.pinnedContext.includes(value.name)}
-                />
-              ))}
-            </ul>
+            <ProvisionOfferList
+              values={data.offer.values}
+              pinnedContext={data.pinnedContext}
+            />
           ) : data.contract.requiredVariables.length > 0 ? (
             <div className="rounded-lg border border-border/50 px-3 py-2">
               <p className="text-[11px] text-muted-foreground">
@@ -330,63 +350,6 @@ function JobSection({ data }: { data: MandateWorkspaceData }) {
         </div>
       </div>
     </Section>
-  );
-}
-
-function OfferedValueRow({
-  value,
-  pinned,
-}: {
-  value: OfferedValue;
-  pinned: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <li>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-muted/40"
-      >
-        <span className="min-w-0 flex-1 truncate text-[12.5px] text-foreground">
-          {value.name}
-        </span>
-        <code className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
-          {value.kind}
-        </code>
-        <Badge
-          variant="outline"
-          className={cn(
-            "shrink-0 py-0 text-[9.5px]",
-            value.guaranteed
-              ? "border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
-              : "border-border/70 text-muted-foreground",
-          )}
-        >
-          {value.guaranteed ? "Guaranteed" : "Optional"}
-        </Badge>
-        {value.lazy ? (
-          <Badge variant="outline" className="shrink-0 py-0 text-[9.5px] text-muted-foreground">
-            Lazy
-          </Badge>
-        ) : null}
-        {pinned ? <Lock className="h-3 w-3 shrink-0 text-muted-foreground" /> : null}
-        <ChevronDown
-          className={cn(
-            "h-3 w-3 shrink-0 text-muted-foreground/60 transition-transform",
-            open && "rotate-180",
-          )}
-        />
-      </button>
-      {open ? (
-        <div className="px-3 pb-2 text-[11.5px] leading-relaxed text-muted-foreground">
-          {value.description || "No description."}
-          {pinned
-            ? " — delivered automatically as locked context; never mapped by hand."
-            : null}
-        </div>
-      ) : null}
-    </li>
   );
 }
 

@@ -16,6 +16,7 @@ import React, {
   useState,
 } from "react";
 import { useSearchParams } from "next/navigation";
+import { stringUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
 import {
   AlertTriangle,
   Copy,
@@ -62,6 +63,19 @@ import {
 } from "@/features/surfaces/manifests/mandates.manifest";
 import { onMandateCacheInvalidated } from "@/features/agents/mandates/service";
 import { parseMandateContract } from "@/features/agents/mandates/overrides";
+import {
+  fetchMandateCatalogue,
+  type MandateCatalogue,
+} from "@/features/agents/mandates/catalogue";
+import { MandateCoverageBoard } from "./MandateCoverageBoard";
+import {
+  COVERAGE_META,
+  buildCoverageIndex,
+  coverageBucketOf,
+  fetchMandateCoverage,
+  type MandateCoverageBucket,
+  type MandateCoverageResponse,
+} from "./mandate-coverage";
 import { readMandateBenchSnapshot } from "./bench-draft";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
 import { MandateDetailView } from "./MandateDetailPanel";
@@ -132,9 +146,34 @@ function toMandateDetail(
   };
 }
 
-export function humanRow(r: MandateRow): string {
+/**
+ * A console row: the health row PLUS the two facts that come from outside the
+ * DB — the GOAL (an aidream code declaration, read through `GET /mandates`)
+ * and COVERAGE (the server's green/orange/red verdict). Neither is a column on
+ * `agent.mandate`, so neither can be derived here.
+ */
+export interface ConsoleRow extends MandateRow {
+  goal: string | null;
+  coverage: MandateCoverageBucket;
+  /** Coverage tooltip: the leader carrying it, or why nothing does. */
+  coverageDetail: string | null;
+}
+
+/** The table id — also the prefix of the URL key that holds the open row. */
+export const MANDATES_TABLE_ID = "mandates";
+
+/** Named jump buttons before the drift strip starts counting. */
+export const DRIFT_STRIP_NAMED_CAP = 6;
+
+function describe(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+export function humanRow(r: ConsoleRow): string {
   return [
     `Mandate: ${r.mandateKey}${r.label ? ` (${r.label})` : ""}`,
+    ...(r.goal ? [`Goal: ${r.goal}`] : []),
+    `Coverage: ${COVERAGE_META[r.coverage].label}${r.coverageDetail ? ` — ${r.coverageDetail}` : ""}`,
     `Agent: ${r.agentName}`,
     `Pin: ${r.pinLabel}${r.drift ? ` — ${r.drift}` : ""}`,
     `Health: ${r.health}`,
@@ -158,9 +197,32 @@ export function MandatesConsole() {
     Record<string, MandateCodeTruth>
   >({});
   const [codeTruthError, setCodeTruthError] = useState<string | null>(null);
+  // Coverage + the code declarations. Both come from aidream and BOTH degrade
+  // honestly: a failure names itself instead of rendering an empty board or a
+  // blank Goal column that reads as "no goal declared".
+  const [coverage, setCoverage] = useState<MandateCoverageResponse | null>(null);
+  const [coverageError, setCoverageError] = useState<string | null>(null);
+  const [catalogue, setCatalogue] = useState<MandateCatalogue | null>(null);
+  const [catalogueError, setCatalogueError] = useState<string | null>(null);
+  const [coverageFilter, setCoverageFilter] =
+    useState<MandateCoverageBucket | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // SELECTION LIVES IN THE URL — the table's OWN `urlState.selectedRow` key,
+  // read and written here so the console's programmatic openers (the coverage
+  // board, the drift strip, the right-click menu, the `?mandate=` door and the
+  // agent write target) and a row click are the SAME selection. The console
+  // used to hold this in component state with the table's persistence switched
+  // OFF, so a refresh — or any navigation back — closed the open workbench.
+  const [urlSelectedId, setUrlSelectedId] = useUrlState(
+    `table.${MANDATES_TABLE_ID}.row`,
+    stringUrlCodec(),
+  );
+  const selectedId = urlSelectedId || null;
+  const setSelectedId = useCallback(
+    (id: string | null) => setUrlSelectedId(id ?? ""),
+    [setUrlSelectedId],
+  );
   // DEEP LINK — `?mandate=<mandate_key>` selects that mandate on arrival.
   // Any surface that names the AI it runs links here (see
   // top Agents menu); without this the link would open the
@@ -201,8 +263,22 @@ export function MandatesConsole() {
     Promise.allSettled([
       fetchMandateConsoleData(),
       fetchMandateCodeTruthReport(dispatch),
+      fetchMandateCoverage(dispatch),
+      fetchMandateCatalogue(dispatch, { refresh: true }),
     ])
-      .then(([consoleResult, truthResult]) => {
+      .then(([consoleResult, truthResult, coverageResult, catalogueResult]) => {
+        if (coverageResult.status === "rejected") {
+          setCoverageError(describe(coverageResult.reason));
+        } else {
+          setCoverage(coverageResult.value);
+          setCoverageError(null);
+        }
+        if (catalogueResult.status === "rejected") {
+          setCatalogueError(describe(catalogueResult.reason));
+        } else {
+          setCatalogue(catalogueResult.value);
+          setCatalogueError(null);
+        }
         if (consoleResult.status === "rejected") {
           toast.error(
             `Failed to load mandates: ${consoleResult.reason instanceof Error ? consoleResult.reason.message : String(consoleResult.reason)}`,
@@ -251,7 +327,7 @@ export function MandatesConsole() {
   useEffect(() => onMandateCacheInvalidated(() => reload()), [reload]);
 
   const toggleEnabled = useCallback(
-    async (row: MandateRow, enabled: boolean) => {
+    async (row: ConsoleRow, enabled: boolean) => {
       try {
         await updateMandateDefinition(row.id, { is_enabled: enabled });
         toast.success(`${row.mandateKey} ${enabled ? "enabled" : "disabled"}.`);
@@ -265,18 +341,49 @@ export function MandatesConsole() {
     [reload],
   );
 
-  const rows = useMemo(() => {
+  const coverageIndex = useMemo(
+    () => (coverage ? buildCoverageIndex(coverage) : {}),
+    [coverage],
+  );
+
+  const allRows = useMemo((): ConsoleRow[] => {
     if (!data) return [];
     return data.mandates
-      .map((mandate) =>
-        buildRow(mandate, data, codeTruthByMandateKey[mandate.mandate_key]),
-      )
+      .map((mandate) => {
+        const base = buildRow(
+          mandate,
+          data,
+          codeTruthByMandateKey[mandate.mandate_key],
+        );
+        const entry = coverageIndex[base.mandateKey];
+        return {
+          ...base,
+          goal: catalogue?.[base.mandateKey]?.goal ?? null,
+          coverage: coverageBucketOf(coverageIndex, base.mandateKey),
+          coverageDetail: entry
+            ? entry.bucket === "orange"
+              ? (entry.leaderKey ?? entry.reason)
+              : entry.reason
+            : null,
+        };
+      })
       .sort(
         (left, right) =>
           HEALTH_PRIORITY[left.health] - HEALTH_PRIORITY[right.health] ||
           left.mandateKey.localeCompare(right.mandateKey),
       );
-  }, [codeTruthByMandateKey, data]);
+  }, [catalogue, codeTruthByMandateKey, coverageIndex, data]);
+
+  // A coverage tile narrows the table's DATA (the tiles are the filter, the
+  // Coverage column filters further). Same idiom as the surfaces readiness
+  // rollup: the scoreboard IS the work order.
+  const rows = useMemo(
+    () =>
+      coverageFilter === null
+        ? allRows
+        : allRows.filter((row) => row.coverage === coverageFilter),
+    [allRows, coverageFilter],
+  );
 
   const codeAgentDriftRows = rows.filter(
     (row) => row.health === "code ↔ agent drift",
@@ -289,7 +396,7 @@ export function MandatesConsole() {
   // selection state the table's own row click and the `?mandate=` deep link
   // both drive — a right-clicked mandate opens the same detail panel, never a
   // second viewer.
-  const [menuRow, setMenuRow] = useState<MandateRow | null>(null);
+  const [menuRow, setMenuRow] = useState<ConsoleRow | null>(null);
 
   const resolveMandateMenuTarget = (
     target: HTMLElement | null,
@@ -476,16 +583,16 @@ export function MandatesConsole() {
   // Both are reassigned from the wrapper's `ref` callback below — the same
   // live-ref idiom `UserTableViewer` uses, and the only one that stays fresh
   // every render without touching a ref during render.
-  const rowsRef = useRef<MandateRow[]>(rows);
+  const rowsRef = useRef<ConsoleRow[]>(rows);
   // Runs once per distinct ?mandate= value, after rows load.
   useEffect(() => {
-    if (!deepLinkKey || rows.length === 0) return;
+    if (!deepLinkKey || allRows.length === 0) return;
     if (deepLinkedRef.current === deepLinkKey) return;
-    const match = rows.find((row) => row.mandateKey === deepLinkKey);
+    const match = allRows.find((row) => row.mandateKey === deepLinkKey);
     if (!match) return;
     deepLinkedRef.current = deepLinkKey;
     setSelectedId(match.id);
-  }, [deepLinkKey, rows]);
+  }, [deepLinkKey, allRows]);
 
   const selectedIdRef = useRef<string | null>(selectedId);
 
@@ -534,7 +641,7 @@ export function MandatesConsole() {
     },
   });
 
-  const columns = useMemo((): MatrxColumnDef<MandateRow>[] => {
+  const columns = useMemo((): MatrxColumnDef<ConsoleRow>[] => {
     return [
       {
         id: "feature",
@@ -570,6 +677,58 @@ export function MandatesConsole() {
         ),
       },
       { id: "label", accessorKey: "label", header: "Label", width: 180 },
+      {
+        // THE GOAL — what this Mandate is FOR, in the words the declaration
+        // uses. It is code, not a row: absent means the catalogue could not be
+        // read, or the declaration never wrote one. The two say so differently.
+        id: "goal",
+        accessorKey: "goal",
+        header: "Goal",
+        width: 280,
+        cell: (r) =>
+          r.goal ? (
+            <span
+              className="line-clamp-2 text-xs leading-snug text-foreground"
+              title={r.goal}
+            >
+              {r.goal}
+            </span>
+          ) : catalogue ? (
+            <span className="text-xs text-amber-700 dark:text-amber-400">
+              No goal declared
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          ),
+      },
+      {
+        // COVERAGE — the server's verdict, per row. Orange names the Mandate
+        // whose Holder is carrying this one; red names why nothing does.
+        id: "coverage",
+        accessorKey: "coverage",
+        header: "Coverage",
+        filter: "select",
+        width: 190,
+        cell: (r) => {
+          const meta = COVERAGE_META[r.coverage];
+          return (
+            <div className="flex flex-col items-start gap-0.5">
+              <Badge
+                variant="outline"
+                className={meta.toneClassName}
+                title={r.coverageDetail ?? meta.description}
+              >
+                {meta.label}
+              </Badge>
+              {r.coverage === "orange" && r.coverageDetail ? (
+                <span className="font-mono text-[10px] leading-tight text-amber-700 dark:text-amber-400">
+                  {r.coverageDetail}
+                </span>
+              ) : null}
+            </div>
+          );
+        },
+      },
       {
         id: "agentName",
         accessorKey: "agentName",
@@ -682,6 +841,7 @@ export function MandatesConsole() {
                   mandate={r.mandate}
                   agentId={r.agentId}
                   agentName={r.agentName}
+                  codeTruth={r.codeTruth}
                   onSaved={reload}
                 />
               )}
@@ -757,7 +917,24 @@ export function MandatesConsole() {
         width: 110,
       },
     ];
-  }, [toggleEnabled, lineageIndex, reload]);
+  }, [toggleEnabled, lineageIndex, reload, catalogue]);
+
+  // The coverage board's rows open the workbench — the SAME selection the
+  // table click, the right-click menu and `?mandate=` all drive.
+  const openMandateByKey = useCallback(
+    (mandateKey: string) => {
+      const match = allRows.find((row) => row.mandateKey === mandateKey);
+      if (!match) {
+        toast.error(
+          `${mandateKey} is not in the loaded console rows — it may be a placeholder, or disabled.`,
+        );
+        return;
+      }
+      setCoverageFilter(null);
+      setSelectedId(match.id);
+    },
+    [allRows],
+  );
 
   return (
     <SurfaceRuntimeProvider
@@ -774,6 +951,29 @@ export function MandatesConsole() {
         }}
         className="flex h-full min-h-0 flex-col gap-3 p-4"
       >
+        <MandateCoverageBoard
+          report={coverage}
+          loading={loading}
+          error={coverageError}
+          active={coverageFilter}
+          onToggle={(bucket) =>
+            setCoverageFilter((current) => (current === bucket ? null : bucket))
+          }
+          onOpenMandate={openMandateByKey}
+        />
+        {catalogueError && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <div className="font-medium">Goals are unavailable.</div>
+              <div className="text-muted-foreground">
+                A Mandate&apos;s goal lives in the aidream code declaration, not
+                in this database. Until it answers, the Goal column is blank
+                rather than wrong: {catalogueError}
+              </div>
+            </div>
+          </div>
+        )}
         {codeTruthError && (
           <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -794,7 +994,7 @@ export function MandatesConsole() {
               {codeAgentDriftRows.length === 1 ? "" : "s"} disagree with the
               code that calls them.
             </span>
-            {codeAgentDriftRows.slice(0, 3).map((row) => (
+            {codeAgentDriftRows.slice(0, DRIFT_STRIP_NAMED_CAP).map((row) => (
               <Button
                 key={row.id}
                 size="sm"
@@ -805,6 +1005,16 @@ export function MandatesConsole() {
                 Review {row.mandateKey}
               </Button>
             ))}
+            {/* The strip used to stop at three with no sign there were more —
+                a silently truncated work queue. It now counts the rest and
+                says where they are. */}
+            {codeAgentDriftRows.length > DRIFT_STRIP_NAMED_CAP && (
+              <span className="text-[11px] text-muted-foreground">
+                +{codeAgentDriftRows.length - DRIFT_STRIP_NAMED_CAP} more —
+                filter Health by &ldquo;code ↔ agent drift&rdquo; to see them
+                all
+              </span>
+            )}
           </div>
         )}
         <div className="min-h-0 flex-1" data-surface-value="mandates_summary">
@@ -816,7 +1026,7 @@ export function MandatesConsole() {
             extraSections={mandateMenuSections}
           >
           <MatrxDataTable
-            urlState={{ id: "mandates", selectedRow: false }}
+            urlState={{ id: MANDATES_TABLE_ID }}
             data={rows}
             columns={columns}
             getRowId={(r) => r.id}
@@ -824,8 +1034,6 @@ export function MandatesConsole() {
             isLoading={loading}
             isFetching={fetching}
             pageSize={50}
-            selectedId={selectedId}
-            onSelectedIdChange={setSelectedId}
             emptyState={{
               title: "No mandates yet",
               description:

@@ -46,6 +46,12 @@ import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeC
 import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
 import { MandateNotesPanel } from "@/features/agents/mandates/components/MandateNotesPanel";
 import { MandateResolutionRibbon } from "@/features/agents/mandates/components/MandateResolutionRibbon";
+import { ProvisionOfferList } from "@/features/agents/mandates/components/ProvisionOfferList";
+import { useMandateGoal } from "@/features/agents/mandates/useMandateGoal";
+import {
+  fetchProvision,
+  type ProvisionOffer,
+} from "@/features/agents/mandates/provisions";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { parseMandateContract } from "@/features/agents/mandates/overrides";
@@ -534,6 +540,7 @@ function NonSystemPanel({
               mandate={row.mandate}
               agentId={row.agentId}
               agentName={row.agentName}
+              codeTruth={row.codeTruth}
               onSaved={onSaved}
             />
             <LinkedSyncButton
@@ -701,6 +708,7 @@ function UnresolvedPinPanel({
                 mandate={row.mandate}
                 agentId={agent.id}
                 agentName={agent.name}
+                codeTruth={row.codeTruth}
                 onSaved={onSaved}
               />
             ) : null}
@@ -767,6 +775,9 @@ function CodeAgentDriftPanel({
             Keep the code value and route it to a variable the agent already
             declares.
           </div>
+          {/* NO DECORATION. When there is nothing to map onto, that is a FACT
+              about this agent, stated — not a button shaped like an action
+              that can never be pressed. */}
           {agentVariables.length > 0 ? (
             <CopyButton
               content={`${brief}\n\nPREFERRED OPTION: map the code value to one of the existing agent variables (${agentVariables.join(", ")}). Confirm meaning before choosing; do not guess from the name alone.`}
@@ -775,15 +786,10 @@ function CodeAgentDriftPanel({
               className="mt-2"
             />
           ) : (
-            <Button
-              size="sm"
-              variant="outline"
-              className="mt-2 h-7 text-xs"
-              disabled
-              title="This agent declares no variables to map onto"
-            >
-              No agent variable available
-            </Button>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Not available here — this agent declares no variables to map
+              onto. Use &ldquo;Declare it on the agent&rdquo; instead.
+            </p>
           )}
         </div>
 
@@ -792,19 +798,20 @@ function CodeAgentDriftPanel({
           <div className="mt-0.5 text-[11px] text-muted-foreground">
             Safe only when the declared agent variable actually has a default.
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-2 h-7 text-xs"
-            disabled
-            title={
+          {/* This option is never something to CLICK — it is a state the
+              verdicts above either report or do not. Stated as a fact. */}
+          <p
+            className={cn(
+              "mt-2 text-[11px]",
               usesDefault
-                ? "The verdict above confirms the default is already in use"
-                : "No applicable agent default was reported"
-            }
+                ? "text-emerald-700 dark:text-emerald-400"
+                : "text-muted-foreground",
+            )}
           >
-            {usesDefault ? "Default already used" : "No default available"}
-          </Button>
+            {usesDefault
+              ? "Already in effect — the verdicts above report the agent default being used for this value. Nothing to do."
+              : "Not available here — no applicable agent default was reported for this value."}
+          </p>
         </div>
 
         <div className="rounded border border-border bg-card p-2">
@@ -1440,6 +1447,130 @@ function OverridesList({
   );
 }
 
+// ── The goal + the provision — what the mandate IS ───────────────────────────
+
+/**
+ * THE GOAL. Read-only by construction: `agent.mandate` has no `goal` column and
+ * aidream exposes no write path for it, so this block shows the declared goal
+ * and names where it is changed. It never renders an editor it cannot save.
+ */
+function MandateGoalBlock({
+  mandateKey,
+  description,
+}: {
+  mandateKey: string;
+  description: string | null;
+}) {
+  const { goal, loading, error, loaded } = useMandateGoal(mandateKey);
+  return (
+    <div className="space-y-1 rounded-md border border-border bg-card px-3 py-2.5">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        Goal
+      </div>
+      {goal ? (
+        <>
+          <p className="text-[13.5px] font-medium leading-snug text-foreground">
+            {goal}
+          </p>
+          <p className="text-[11px] text-muted-foreground/70">
+            Declared in code — edited where the Mandate is declared, not here.
+          </p>
+        </>
+      ) : loading ? (
+        <p className="text-xs text-muted-foreground">Reading the goal…</p>
+      ) : error ? (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          The goal could not be read: {error}
+        </p>
+      ) : loaded ? (
+        <p className="text-xs italic text-muted-foreground">
+          No goal declared for {mandateKey}.
+        </p>
+      ) : null}
+      {description && description !== goal ? (
+        <p className="pt-1 text-xs text-muted-foreground">{description}</p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * THE PROVISION, in full — every offered value with its kind, whether it is
+ * guaranteed, whether it is lazy, and its description. The facts panel names
+ * the provision KEY; this names what the key actually offers.
+ */
+function MandateProvisionPanel({ row }: { row: MandateRow }) {
+  const provisionKey = parseMandateWave1(row.mandate).provisionKey;
+  const pinnedContext = parseMandateWave1(row.mandate).pinnedContext;
+  const [offer, setOffer] = useState<ProvisionOffer | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(Boolean(provisionKey));
+  // Open by default: the Provision IS the input declaration — you cannot judge
+  // a Holder without seeing what the job hands it.
+  const [open, setOpen] = useState(true);
+
+  useEffect(() => {
+    if (!provisionKey) return;
+    let cancelled = false;
+    setLoading(true);
+    fetchProvision(provisionKey)
+      .then((result) => {
+        if (cancelled) return;
+        setOffer(result);
+        setError(null);
+        setLoading(false);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(describeError(err));
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [provisionKey]);
+
+  if (!provisionKey) return null;
+
+  return (
+    <Section
+      title="Provision"
+      meta={
+        offer
+          ? `${offer.values.length} value${offer.values.length === 1 ? "" : "s"} offered · ${provisionKey}`
+          : provisionKey
+      }
+      open={open}
+      onToggle={setOpen}
+    >
+      <div className="space-y-2 p-3">
+        {loading ? (
+          <p className="text-xs text-muted-foreground">Loading the offer…</p>
+        ) : error ? (
+          <p className="text-xs text-rose-600">
+            The Provision could not be read: {error}
+          </p>
+        ) : offer ? (
+          <>
+            {offer.description ? (
+              <p className="text-xs text-muted-foreground">{offer.description}</p>
+            ) : null}
+            <ProvisionOfferList
+              values={offer.values}
+              pinnedContext={pinnedContext}
+            />
+          </>
+        ) : (
+          <p className="text-xs text-rose-600">
+            This Mandate names Provision <code>{provisionKey}</code>, but no live
+            row exists for it — a data defect, not an empty offer.
+          </p>
+        )}
+      </div>
+    </Section>
+  );
+}
+
 // ── The drawer ───────────────────────────────────────────────────────────────
 
 /** Full mandate workbench — status verdict + fix, agent identity, then rebind /
@@ -1531,9 +1662,13 @@ export function MandateDetailView({
     // The table's detail container owns the scroll (MatrxDataTable wraps every
     // custom `detail.render` in `h-full min-h-0 overflow-y-auto`).
     <div className="space-y-3 p-3">
-      {row.mandate.description && (
-        <p className="text-xs text-muted-foreground">{row.mandate.description}</p>
-      )}
+      {/* THE GOAL first — what this Mandate is FOR. It is a code declaration
+          read through the catalogue, not a column on this row, so it is shown
+          read-only and says so. `description` is a different, lesser field. */}
+      <MandateGoalBlock
+        mandateKey={row.mandateKey}
+        description={row.mandate.description}
+      />
 
       {/* Facts first — what IS. The verdict on what's wrong comes second. */}
       <FactsPanel
@@ -1543,6 +1678,10 @@ export function MandateDetailView({
         verdictsError={liveVerdictState?.error ?? null}
         onSaved={onSaved}
       />
+
+      {/* THE PROVISION — the offered values themselves, not just the key.
+          Same renderer the personal workspace uses. */}
+      <MandateProvisionPanel row={row} />
 
       <StatusBanner
         row={row}

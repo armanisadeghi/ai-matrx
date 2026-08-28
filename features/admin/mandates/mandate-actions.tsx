@@ -21,11 +21,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
 import { agentHref } from "./mandate-health";
 import { useGuardedRebind } from "./useGuardedRebind";
-import {
-  updateMandateDefinition,
-  type MandateCodeTruth,
-  type MandateDefinitionRow,
-} from "./service";
+import type { MandateCodeTruth, MandateDefinitionRow } from "./service";
 
 /** A lineage relative, always rendered with a door. */
 export function LineageChip({
@@ -156,80 +152,91 @@ export function LinkedSyncButton({
  * ONE-CLICK promote: duplicate the pinned agent as a system agent
  * (`agx_duplicate_agent(p_as_system => true)` — super-admin-gated in the RPC)
  * and immediately rebind the mandate to the new twin, tracking latest.
+ *
+ * 🚨 THE REBIND WRITE GOES THROUGH THE GUARD. This button used to call
+ * `updateMandateDefinition` directly — the ONE unguarded rebind path left in
+ * the console, sitting inches from the guarded one. A duplicate is usually a
+ * clean swap, so the guard usually writes straight through and the admin sees
+ * nothing; when it is not clean, the same impact dialog every other rebind
+ * gets appears here too. There is now exactly one rebind write path.
  */
 export function CreateSystemTwinButton({
   mandate,
   agentId,
   agentName,
+  codeTruth,
   onSaved,
   label = "Create system twin + rebind",
 }: {
   mandate: MandateDefinitionRow;
   agentId: string;
   agentName?: string;
+  codeTruth?: MandateCodeTruth | null;
   onSaved: () => void;
   label?: string;
 }) {
   const dispatch = useAppDispatch();
   const [busy, setBusy] = useState(false);
+  const { requestRebind, dialog, checking, saving } = useGuardedRebind({
+    mandate,
+    currentAgentId: agentId,
+    codeTruth,
+    onSaved,
+  });
+  const working = busy || checking || saving;
   return (
-    <Button
-      size="sm"
-      variant="outline"
-      className="h-6 gap-1 px-1.5 text-[11px]"
-      disabled={busy}
-      title={`Duplicate ${agentName ?? "the pinned agent"} as a system agent and rebind ${mandate.mandate_key} to the new twin (tracks latest)`}
-      onClick={async (e) => {
-        e.stopPropagation();
-        setBusy(true);
-        let twinId: string | null = null;
-        try {
-          twinId = await dispatch(
-            duplicateAgent({ agentId, asSystem: true }),
-          ).unwrap();
-          await updateMandateDefinition(mandate.id, {
-            default_agent_id: twinId,
-            default_agent_version_id: null,
-            use_latest: true,
-          });
-          toast.success(
-            `Created a system twin and rebound ${mandate.mandate_key} to it (latest).`,
-            {
-              action: toastDoor("agent", twinId, {
-                href: agentHref(twinId, "builtin"),
-              }),
-            },
-          );
-          onSaved();
-        } catch (error: unknown) {
-          const message =
-            error instanceof Error ? error.message : String(error);
-          if (twinId) {
-            // The twin exists — never bury that. Hand the admin its door and
-            // reload so the rebind can be finished in the editor.
-            toast.error(
-              `System twin created, but the rebind failed: ${message}`,
-              {
-                action: toastDoor("agent", twinId, {
-                  href: agentHref(twinId, "builtin"),
-                }),
-              },
-            );
-            onSaved();
-          } else {
-            toast.error(`Create system twin failed: ${message}`);
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-6 gap-1 px-1.5 text-[11px]"
+        disabled={working}
+        title={`Duplicate ${agentName ?? "the pinned agent"} as a system agent and rebind ${mandate.mandate_key} to the new twin (tracks latest)`}
+        onClick={async (e) => {
+          e.stopPropagation();
+          setBusy(true);
+          let twinId: string | null = null;
+          try {
+            twinId = await dispatch(
+              duplicateAgent({ agentId, asSystem: true }),
+            ).unwrap();
+            await requestRebind({
+              agentId: twinId,
+              agentName: agentName ?? "the new system twin",
+              useLatest: true,
+              successMessage: `Created a system twin and rebound ${mandate.mandate_key} to it (latest).`,
+            });
+          } catch (error: unknown) {
+            const message =
+              error instanceof Error ? error.message : String(error);
+            if (twinId) {
+              // The twin exists — never bury that. Hand the admin its door and
+              // reload so the rebind can be finished in the editor.
+              toast.error(
+                `System twin created, but the rebind failed: ${message}`,
+                {
+                  action: toastDoor("agent", twinId, {
+                    href: agentHref(twinId, "builtin"),
+                  }),
+                },
+              );
+              onSaved();
+            } else {
+              toast.error(`Create system twin failed: ${message}`);
+            }
+          } finally {
+            setBusy(false);
           }
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      {busy ? (
-        <Loader2 className="h-3 w-3 animate-spin" />
-      ) : (
-        <Copy className="h-3 w-3" />
-      )}
-      {label}
-    </Button>
+        }}
+      >
+        {working ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : (
+          <Copy className="h-3 w-3" />
+        )}
+        {label}
+      </Button>
+      {dialog}
+    </>
   );
 }
