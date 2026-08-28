@@ -27,7 +27,7 @@ export interface RoutableEmission {
   /** Did the payload validate against that kind's schema? Null = not checked. */
   kindOk: boolean | null;
   /** "panel" (the stream) or "showcase" (the page-centered slot). */
-  presentation: string | null | undefined;
+  presentation: "panel" | "showcase" | null | undefined;
   /** Durable event seq — THE stable identity across refolds and refreshes. */
   seq: number | null;
 }
