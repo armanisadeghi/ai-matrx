@@ -319,26 +319,46 @@ export function PersonalTab({
             because when a door is broken platform-wide that is advice this
             surface has no way to stand behind.
           */}
-          {selfUpdate.failure || selfUpdatePrivate.failure ? (
-            <div
-              role="alert"
-              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2"
-            >
-              <p className="text-sm font-medium text-foreground">
-                {selfUpdate.failure ?? selfUpdatePrivate.failure}
-              </p>
-              <button
-                type="button"
-                className="mt-1 text-[0.6875rem] text-muted-foreground underline underline-offset-2"
-                onClick={() => {
-                  selfUpdate.clearFailure();
-                  selfUpdatePrivate.clearFailure();
-                }}
+          {(() => {
+            const failure = selfUpdate.failure ?? selfUpdatePrivate.failure;
+            if (!failure) return null;
+            return (
+              <div
+                role="alert"
+                className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2"
               >
-                Dismiss
-              </button>
-            </div>
-          ) : null}
+                <p className="text-sm font-medium text-foreground">
+                  {failure.sentence}
+                </p>
+                {/*
+                  The machine's own words stay REACHABLE but out of the sentence.
+                  Whoever debugs this needs "column v_pf_any does not exist"; the
+                  person trying to change their pronouns does not, and pasting it
+                  onto the end of their sentence served neither of them.
+                */}
+                {failure.technical ? (
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-[0.6875rem] text-muted-foreground">
+                      Technical details
+                    </summary>
+                    <p className="mt-1 break-words font-mono text-[0.6875rem] text-muted-foreground">
+                      {failure.technical}
+                    </p>
+                  </details>
+                ) : null}
+                <button
+                  type="button"
+                  className="mt-1 text-[0.6875rem] text-muted-foreground underline underline-offset-2"
+                  onClick={() => {
+                    selfUpdate.clearFailure();
+                    selfUpdatePrivate.clearFailure();
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            );
+          })()}
           <SensitiveGrid>
             {SELF_SERVICE_FIELDS.map(({ field, source }) => {
               const bag = source === "confidential" ? priv : personal;

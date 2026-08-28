@@ -52,6 +52,16 @@ function HrHomeStarters() {
     capabilities: all,
     employmentId,
     org: orgRef,
+    /*
+      🚨 THE SAME CLASS THE LEFT RAIL USES. This grid is built from the same
+      resolver, and it was calling it WITHOUT the worker class — so the left rail
+      correctly hid "My Timesheet" from a contractor while this card grid still
+      offered it, on the same screen. The default that saved the rail ("null hides
+      nothing") is exactly what made this silent: nothing errored, the grid simply
+      stayed ungated. A resolver with an optional honesty argument gets called
+      without it eventually; this is the second caller and both now pass it.
+    */
+    workerClass: active?.worker_class ?? null,
   });
   // The home is not a door to itself.
   const doors = nav.items.filter((item) => item.key !== "home");

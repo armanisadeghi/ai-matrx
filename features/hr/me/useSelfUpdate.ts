@@ -49,7 +49,7 @@ export type HrSelfUpdateState = {
     it. It survives the field unmounting, and it is cleared by the next
     successful write rather than by a timer.
   */
-  failure: string | null;
+  failure: { sentence: string; technical: string | null } | null;
   clearFailure: () => void;
   /** `true` only when the write actually landed — the caller closes its editor on that. */
   save: (field: string, value: unknown) => Promise<boolean>;
@@ -74,7 +74,9 @@ export function useSelfUpdate(args: {
   const [rejected, setRejected] = useState<{ field: string; policy: string }[]>(
     [],
   );
-  const [failure, setFailure] = useState<string | null>(null);
+  const [failure, setFailure] = useState<
+    { sentence: string; technical: string | null } | null
+  >(null);
   const clearFailure = useCallback(() => setFailure(null), []);
 
   const savePatch = useCallback(
@@ -82,7 +84,10 @@ export function useSelfUpdate(args: {
       if (!employeeId) {
         // Not "nothing happened": there is no record to write to, and saying so
         // beats a control that silently does nothing every time it is pressed.
-        setFailure("This record is not ready to take changes yet.");
+        setFailure({
+          sentence: "This record is not ready to take changes yet.",
+          technical: null,
+        });
         return false;
       }
       setSaving(true);
@@ -124,7 +129,7 @@ export function useSelfUpdate(args: {
               );
             }
             const sentence = parts.join(" ");
-            setFailure(sentence);
+            setFailure({ sentence, technical: null });
             toast.error(sentence);
             return false;
           }
@@ -148,7 +153,10 @@ export function useSelfUpdate(args: {
             ? result.detail?.trim() ||
               "That change is not something you can make here."
             : result.message;
-        setFailure(sentence);
+        setFailure({
+          sentence,
+          technical: result.kind === "failed" ? result.technical ?? null : null,
+        });
         toast.error(sentence);
         return false;
       }
@@ -170,7 +178,7 @@ export function useSelfUpdate(args: {
           );
         }
         const sentence = parts.join(" ");
-        setFailure(sentence);
+        setFailure({ sentence, technical: null });
         toast.error(sentence);
         return false;
       }
@@ -205,7 +213,7 @@ export function useSelfUpdate(args: {
       const unknownShape =
         "The change came back in a shape this app does not understand. " +
         "Whether it was saved is not known from here.";
-      setFailure(unknownShape);
+      setFailure({ sentence: unknownShape, technical: null });
       toast.error(unknownShape);
       return false;
     },

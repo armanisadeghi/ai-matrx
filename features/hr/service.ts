@@ -131,8 +131,18 @@ function denied(
   };
 }
 
-function failed(message: string, code?: string | null): HrResult<never> {
-  return { ok: false, kind: "failed", message, code: code ?? null };
+function failed(
+  message: string,
+  code?: string | null,
+  technical?: string | null,
+): HrResult<never> {
+  return {
+    ok: false,
+    kind: "failed",
+    message,
+    code: code ?? null,
+    technical: technical?.trim() || null,
+  };
 }
 
 /**
@@ -212,12 +222,12 @@ async function callHrRaw(
       error: { code?: string; message?: string } | null;
     });
   } catch (thrown) {
+    // Human sentence; the driver's own words ("TypeError: Failed to fetch")
+    // go to `technical`, not onto the end of it.
     return failed(
-      `${options.whatFailed} did not reach the server. ` +
-        (thrown instanceof Error && thrown.message.trim()
-          ? thrown.message
-          : "The request failed before a reply came back."),
+      `${options.whatFailed} did not reach the server.`,
       null,
+      thrown instanceof Error ? thrown.message : String(thrown),
     );
   }
 
@@ -250,10 +260,9 @@ async function callHrRaw(
       while describing it as a fetch. The verb comes from the caller's lane now.
     */
     return failed(
-      `${options.whatFailed} ${options.write ? "did not go through" : "could not be loaded"}. ${
-        error.message?.trim() || "The database did not say why."
-      }`,
+      `${options.whatFailed} ${options.write ? "did not go through" : "could not be loaded"}.`,
       error.code ?? null,
+      error.message ?? null,
     );
   }
 

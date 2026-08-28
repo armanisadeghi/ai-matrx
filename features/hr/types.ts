@@ -111,6 +111,21 @@ export type HrFailed = {
   /** Already phrased for a human. Never a bare Postgres code (SPEC-EMPLOYEES §2). */
   message: string;
   code: string | null;
+  /**
+   * 🚨 THE MACHINE'S OWN WORDS, KEPT OUT OF THE SENTENCE.
+   * `message` promised to be human and was being built by concatenating raw
+   * driver and Postgres text onto the end of it — so a person read "…did not go
+   * through. column "v_pf_any" does not exist" or "…TypeError: Failed to fetch".
+   * The tail is genuinely useful to whoever debugs it, so it is kept HERE and
+   * rendered behind a details affordance, instead of being deleted or pasted
+   * into a sentence aimed at somebody trying to change their own pronouns.
+   *
+   * OPTIONAL on purpose: other lanes build `HrFailed` literals of their own, and
+   * making this required would have broken four files — some being edited right
+   * now — to add a field they have nothing to put in. Absent means "no machine
+   * text to show", which renders as no affordance at all.
+   */
+  technical?: string | null;
 };
 
 export type HrResult<T> = HrGranted<T> | HrDenied | HrFailed;
