@@ -210,7 +210,8 @@ export function MermaidViewport({
   useEffect(() => {
     const frame = frameRef.current;
     const host = hostRef.current;
-    if (!frame || !host || typeof ResizeObserver === "undefined") return undefined;
+    if (!frame || !host || typeof ResizeObserver === "undefined")
+      return undefined;
     const ro = new ResizeObserver(() => {
       setCanPan(
         frame.scrollWidth > frame.clientWidth + 1 ||
@@ -311,25 +312,25 @@ export function MermaidViewport({
       </div>
 
       {!hideControls && (
-        <div className="pointer-events-auto absolute bottom-2 right-2 z-10 flex items-center gap-0.5 rounded-md border border-border bg-card/90 p-0.5 opacity-70 shadow-sm backdrop-blur-sm transition-opacity group-hover/viewport:opacity-100 focus-within:opacity-100">
+        <div className="pointer-events-auto absolute bottom-2 right-2 z-10 flex items-center gap-0.5 rounded-md border border-border bg-card/90 p-0.5 opacity-100 shadow-sm backdrop-blur-sm transition-opacity sm:opacity-70 sm:group-hover/viewport:opacity-100 focus-within:opacity-100">
           <SimpleTooltip text="Zoom out">
             <button
               type="button"
               aria-label="Zoom out"
-              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground sm:h-auto sm:w-auto sm:p-1.5"
               onClick={() => zoomBy(1 / ZOOM_STEP)}
             >
               <Minus className="h-3.5 w-3.5" />
             </button>
           </SimpleTooltip>
-          <span className="min-w-[2.75rem] text-center text-[11px] tabular-nums text-muted-foreground">
+          <span className="flex h-11 min-w-11 items-center justify-center text-center text-[11px] tabular-nums text-muted-foreground sm:h-auto">
             {Math.round(scale * 100)}%
           </span>
           <SimpleTooltip text="Zoom in">
             <button
               type="button"
               aria-label="Zoom in"
-              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground sm:h-auto sm:w-auto sm:p-1.5"
               onClick={() => zoomBy(ZOOM_STEP)}
             >
               <Plus className="h-3.5 w-3.5" />
@@ -340,7 +341,7 @@ export function MermaidViewport({
             <button
               type="button"
               aria-label="Fit to view"
-              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground sm:h-auto sm:w-auto sm:p-1.5"
               onClick={fit}
             >
               <Scan className="h-3.5 w-3.5" />
@@ -350,7 +351,7 @@ export function MermaidViewport({
             <button
               type="button"
               aria-label="Actual size"
-              className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground sm:h-auto sm:w-auto sm:p-1.5"
               onClick={oneToOne}
             >
               <Maximize className="h-3.5 w-3.5" />
