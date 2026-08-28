@@ -150,6 +150,14 @@ export type HrActiveEmployer = {
   employee_id: string | null;
   /** null when there is no active spell today — a nav item that needs one is ABSENT. */
   employment_id: string | null;
+  /**
+   * The viewer's own worker class today, off their primary assignment. Nav uses it
+   * to stop offering surfaces the server refuses for that class — a contractor was
+   * being shown "My Timesheet" while `hr.clock_state` blocked the destination and
+   * her own profile had already dropped the tab. `null` where there is no
+   * assignment; nav hides nothing on null rather than guessing.
+   */
+  worker_class: string | null;
   employee_count: number;
   /** owner/admin, and no `hr_owner` assigned yet. The activation wizard's one gate. */
   can_activate: boolean;

@@ -93,6 +93,8 @@ export function HrShell({
     capabilities: all,
     employmentId,
     org: orgRef,
+    // So the menu stops offering a contractor surfaces the server refuses her.
+    workerClass: active?.worker_class ?? null,
   });
 
   const navItems: RouteNavItem[] = nav.items.map((item) => ({

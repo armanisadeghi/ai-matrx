@@ -80,8 +80,26 @@ type HrNavDef = {
     href: (org: HrOrgRef) => string;
     /** Needs an active spell today. No spell → the item is ABSENT. */
     needsEmployment?: boolean;
+    /*
+      🚨 WORKER CLASSES THIS ENTRY IS ABSENT FOR — NAV MUST NOT OFFER WHAT THE
+      SERVER REFUSES. A contractor was shown a "My Timesheet" entry whose
+      destination `hr.clock_state` blocks outright ("Contractors do not clock in.
+      Your time is invoiced through your engagement."), while her own profile had
+      already dropped the matching tab. The nav and the tab bar were describing
+      the same person differently, and the nav was the one that was wrong.
+
+      This mirrors a rule the SERVER already enforces — it never invents one. Each
+      entry below names where its verdict comes from. §4.2: absence, not a
+      disabled item and not an explainer panel.
+    */
+    hiddenForWorkerClass?: readonly string[];
   };
 };
+
+/** Contractors do not clock and are not scheduled: their time is invoiced. */
+const NOT_CLOCKED = ["contractor"] as const;
+/** No leave accrual, so no balance to show — the same rule the hire form applies. */
+const NO_LEAVE_ACCRUAL = ["contractor", "volunteer"] as const;
 
 const NAV: HrNavDef[] = [
   {
@@ -121,7 +139,13 @@ const NAV: HrNavDef[] = [
     description: "Timesheets, punches, exceptions and pay periods",
     href: hrTimeHref,
     requires: ["time.read"],
-    self: { label: "My Timesheet", href: hrMeTimesheetHref, needsEmployment: true },
+    self: {
+      label: "My Timesheet",
+      href: hrMeTimesheetHref,
+      needsEmployment: true,
+      // `hr.clock_state` blocks a contractor outright, naming the reason.
+      hiddenForWorkerClass: NOT_CLOCKED,
+    },
   },
   {
     key: "schedule",
@@ -130,7 +154,13 @@ const NAV: HrNavDef[] = [
     description: "Build, publish and staff the schedule",
     href: hrScheduleHref,
     requires: ["working_record.read"],
-    self: { label: "My Schedule", href: hrMeScheduleHref, needsEmployment: true },
+    self: {
+      label: "My Schedule",
+      href: hrMeScheduleHref,
+      needsEmployment: true,
+      // Not on the shift roster for the same reason they do not clock.
+      hiddenForWorkerClass: NOT_CLOCKED,
+    },
   },
   {
     key: "leave",
@@ -139,7 +169,13 @@ const NAV: HrNavDef[] = [
     description: "Requests, balances and the team calendar",
     href: hrLeaveHref,
     requires: ["working_record.read"],
-    self: { label: "My Time Off", href: hrMeTimeOffHref, needsEmployment: true },
+    self: {
+      label: "My Time Off",
+      href: hrMeTimeOffHref,
+      needsEmployment: true,
+      // The profile already drops this tab for these classes (T-L1-4).
+      hiddenForWorkerClass: NO_LEAVE_ACCRUAL,
+    },
   },
   {
     key: "onboarding",
@@ -253,8 +289,13 @@ export function resolveHrNav(args: {
   capabilities: string[];
   employmentId: string | null;
   org: HrOrgRef;
+  /**
+   * The viewer's own worker class today, from `hr_my_context().active`. `null`
+   * hides nothing — an unknown class must not silently strip somebody's nav.
+   */
+  workerClass?: string | null;
 }): HrNavResolution {
-  const { persona, employmentId, org } = args;
+  const { persona, employmentId, org, workerClass = null } = args;
   const held = new Set(args.capabilities);
   const isEmployee = persona === "employee";
 
@@ -267,6 +308,15 @@ export function resolveHrNav(args: {
     // their version of this item.
     if (isEmployee && def.self) {
       if (def.self.needsEmployment && !employmentId) continue;
+      // Absent for this worker class — the destination would refuse them, and the
+      // profile has already dropped the matching tab. Not counted toward the
+      // collapse rule either: an item that does not exist cannot make the nav feel full.
+      if (
+        workerClass &&
+        def.self.hiddenForWorkerClass?.includes(workerClass)
+      ) {
+        continue;
+      }
       selfServiceCount += 1;
       items.push({
         key: def.key,
