@@ -91,6 +91,23 @@ async def main():
         await conn.execute("select set_config('request.jwt.claims', '', true)")
         await arm()
 
+    async def as_owner_impersonating(uid):
+        """Owner DATABASE ROLE, but the CALLER identity stays `uid`.
+
+        🚨 For the doorless queue of record, `hr.wf_pending`. B5 compares the inbox door against
+        that queue FOR THE SAME CALLER, so running it as the owner would compare two different
+        people and silently stop proving anything — the trade the SQL lane rightly refused. But the
+        client-role EXECUTE grant was never what the assertion needed: `hr.wf_pending` scopes on
+        `auth.uid()`, which reads `request.jwt.claims` — a GUC, NOT the database role. Keeping the
+        claims and dropping only the role exercises the identical caller-scoping while letting the
+        check-33 campaign revoke that grant.
+        """
+        await conn.execute("reset role")
+        await conn.execute(
+            "select set_config('request.jwt.claims', $1, true)",
+            json.dumps({"sub": str(uid), "role": "authenticated"}))
+        await arm()
+
     async def own(q, *a):
         await arm()
         return await conn.fetchval(q, *a)
@@ -405,8 +422,17 @@ async def main():
         else:
             gap("B decorated fields", "the approver's step never appeared in needs_my_decision")
 
-        # B5 — the door DECORATES: identical step-id set to the queue of record, same caller
+        # B5 — the door DECORATES: identical step-id set to the queue of record, same caller.
+        # The queue of record has no door and is losing its client grant (check 33's last batch), so
+        # it is called under the owner role with BOB'S CLAIMS — same auth.uid(), same scoping.
+        await as_owner_impersonating(people["bob"]["uid"])
         pending = await j("select hr.wf_pending()")
+        await as_user(people["bob"]["uid"])
+        rec("B queue", "🚨 the queue of record still answers AS BOB when the database role is the "
+                       "owner — auth.uid() reads the claims GUC, so the caller-scoping this "
+                       "assertion exists to prove is genuinely exercised",
+            isinstance(pending, dict) and pending.get("granted") is True,
+            f"granted={(pending or {}).get('granted')} reason={(pending or {}).get('reason')}")
         p_ids = ids_of(pending.get("needs_my_decision"))
         i_ids = ids_of(bob_rows)
         rec("B queue", "🚨 the door's needs_my_decision step ids are EXACTLY hr.wf_pending's — "

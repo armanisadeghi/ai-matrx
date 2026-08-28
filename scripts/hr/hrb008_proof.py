@@ -806,7 +806,7 @@ async def main():
             "select workflow_definition_id, definition_version from hr.workflow_instance where id=$1",
             ro.get("instance_id"))
         await as_user(people["carol"]["uid"])
-        rr = await j("select hr.wf_publish_definition($1)", newdef)
+        rr = await j("select public.hr_wf_publish_definition($1)", newdef)
         await as_owner()
         after = await conn.fetchrow(
             "select workflow_definition_id, definition_version from hr.workflow_instance where id=$1",
@@ -824,7 +824,7 @@ async def main():
             "label, step_order, resolver_kind, authority_action, allows_self) "
             "values ($1,$2,'self','Self',10,'authority','leave_approve',true)", org, bad)
         await as_user(people["carol"]["uid"])
-        rs = await j("select hr.wf_publish_definition($1)", bad)
+        rs = await j("select public.hr_wf_publish_definition($1)", bad)
         rec("§9.1 P-only", "an org definition setting allows_self is refused at publish time",
             rs.get("granted") is False and rs.get("reason") == "definition_invalid", rs.get("detail"))
 
