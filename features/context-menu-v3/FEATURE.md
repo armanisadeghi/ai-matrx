@@ -57,6 +57,11 @@ defaults are CAPS constants in `types.ts` — flipping the platform default is a
 one-line change, and a per-user preference (settings-system) is the natural
 next step once a layout is chosen.
 
+Both density presets keep every menu item, checkbox, and submenu trigger at a
+44px minimum below `lg`; the compact/comfortable desktop row density resumes at
+`lg`. A tablet that still uses the desktop renderer is a touch surface, not an
+exception to the platform touch floor.
+
 🚨 **THE LOSSLESS LAW (Arman, 2026-08-22):** no layout may hide, rename, drop, or fold a Classic row under a coined heading. A new arrangement may only _group_ rows Arman has explicitly approved (today: History). Disabled = greyed, like Classic. Verify any new layout by diffing its leaf set against Classic's — it must be identical.
 
 **Surface sections stay "minor local changes":** in tiered/command a section
@@ -360,6 +365,8 @@ v3 is the only UNIVERSAL menu. Full-repo census 2026-08-25 (`onContextMenu=` swe
 ---
 
 ## Change Log
+
+- `2026-08-28` — **Tablet menus keep the 44px touch floor.** Both desktop-renderer density presets now apply `max-lg:min-h-11` to every item, checkbox, and submenu trigger while preserving their existing `lg` desktop density. The contract is source-pinned in `components/MenuContent.responsive-contract.test.ts`.
 
 - `2026-08-26` — **Listening goes universal: one "Listen" submenu on every menu, mandate-backed default agent.** The two listening rows collapsed into ONE `listen` submenu role (single slot, classic + arranged layouts; leaf parity preserved). Agent resolution now falls back from the current surface's `spoken_summary` role to the platform home role (`LISTEN_SUMMARY_HOME_SURFACE` = `matrx-user/assistant-message`), whose manifest declares `mandateKey: "ambient.spoken_summary"`; the mandate's default is the new system-org builtin "Listening Summary" (copied from the proven personal agent, `source_agent_id` provenance, purpose registered) — so every user on every surface gets working Listen actions with no personal binding.
 

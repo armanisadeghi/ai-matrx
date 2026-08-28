@@ -95,7 +95,7 @@ interface DensityTokens {
 }
 const DENSITY: Record<ContextMenuDensity, DensityTokens> = {
   comfortable: {
-    row: "",
+    row: "max-lg:min-h-11",
     icon: "h-4 w-4 mr-2",
     label: "px-2 py-1.5 text-xs text-muted-foreground",
     hint: "ml-auto pl-3 text-xs text-muted-foreground",
@@ -106,9 +106,10 @@ const DENSITY: Record<ContextMenuDensity, DensityTokens> = {
     filter: "h-8 text-[13px]",
   },
   compact: {
-    row: "py-1 text-[13px] leading-5",
+    row: "max-lg:min-h-11 py-1 text-[13px] leading-5",
     icon: "h-3.5 w-3.5 mr-2",
-    label: "px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground/80",
+    label:
+      "px-2 py-1 text-[10px] uppercase tracking-wide text-muted-foreground/80",
     hint: "ml-auto pl-3 text-[11px] text-muted-foreground",
     description: "text-[11px] text-muted-foreground",
     subWidth: "w-56",
@@ -142,7 +143,8 @@ export default function MenuContent(props: MenuContentProps) {
   const renderIcon = (node: MenuLeafNode | MenuSubmenuNode) => {
     if (!node.icon) return null;
     const Icon = node.icon;
-    const iconClassName = "iconClassName" in node ? node.iconClassName : undefined;
+    const iconClassName =
+      "iconClassName" in node ? node.iconClassName : undefined;
     const iconStyle = "iconStyle" in node ? node.iconStyle : undefined;
     return <Icon className={cn(d.icon, iconClassName)} style={iconStyle} />;
   };
@@ -188,7 +190,12 @@ export default function MenuContent(props: MenuContentProps) {
         );
       case "link":
         return (
-          <Item key={node.id} asChild disabled={node.disabled} className={d.row}>
+          <Item
+            key={node.id}
+            asChild
+            disabled={node.disabled}
+            className={d.row}
+          >
             <a
               href={node.href}
               target={node.target}
@@ -204,7 +211,10 @@ export default function MenuContent(props: MenuContentProps) {
           <Sub key={node.id}>
             <SubTrigger
               disabled={node.disabled}
-              className={cn(d.row, node.disabled && "opacity-50 cursor-not-allowed")}
+              className={cn(
+                d.row,
+                node.disabled && "opacity-50 cursor-not-allowed",
+              )}
             >
               {renderIcon(node)}
               <span className="truncate">{node.label}</span>
@@ -273,7 +283,11 @@ export default function MenuContent(props: MenuContentProps) {
   // ── Strip (tiered / command): icon-only universal verbs in one row ───────
   const strip =
     arranged.strip.length > 0 ? (
-      <div className="flex items-stretch gap-0.5 px-1 pb-1" role="group" aria-label="Quick edit">
+      <div
+        className="flex items-stretch gap-0.5 px-1 pb-1"
+        role="group"
+        aria-label="Quick edit"
+      >
         {arranged.strip.map((node) =>
           node.kind === "item" ? (
             <Item
@@ -405,9 +419,10 @@ export default function MenuContent(props: MenuContentProps) {
     }
   };
 
-  const results = isCommand && query.trim()
-    ? filterLeaves(collectAllLeaves(model), query)
-    : null;
+  const results =
+    isCommand && query.trim()
+      ? filterLeaves(collectAllLeaves(model), query)
+      : null;
 
   const filterBox = isCommand ? (
     <div className="px-1 pb-1">
@@ -474,7 +489,8 @@ export default function MenuContent(props: MenuContentProps) {
       </div>
       {isCommand && !results && (
         <div className="flex items-center gap-1 px-2 pt-1 text-[10px] text-muted-foreground/70">
-          <ChevronRight className="h-3 w-3" /> type to filter · ↵ runs the first match
+          <ChevronRight className="h-3 w-3" /> type to filter · ↵ runs the first
+          match
         </div>
       )}
     </div>
