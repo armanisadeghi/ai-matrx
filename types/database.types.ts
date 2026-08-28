@@ -42991,6 +42991,10 @@ export type Database = {
         Args: { p_limits: Json; p_target_id: string; p_target_table: string }
         Returns: boolean
       }
+      _names_a_call: {
+        Args: { p_code: string; p_qname: string }
+        Returns: boolean
+      }
       _note_kind_caps: {
         Args: { p_note_kind: string }
         Returns: {
