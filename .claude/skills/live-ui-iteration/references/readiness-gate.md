@@ -7,6 +7,7 @@ This is the pre-handoff gate for `live-ui-iteration`. It does not replace `surfa
 - Reproduce the original issue or requested state before the fix when safely possible.
 - Exercise the exact changed interaction against real data after the fix.
 - Verify persistence, refresh, reconnect, and feedback behavior when the change touches them.
+- For clear/revert actions, verify a real mutation, truthful zero-mutation feedback, and visible fallback provenance after an override is removed.
 - Confirm the requested change is visible on localhost before continuing the broader pass.
 
 ## Surface contract
