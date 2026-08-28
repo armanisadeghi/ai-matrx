@@ -386,15 +386,26 @@ async def main():
             st_hr and st_hr["state"] == "skipped" and st_hr["state_reason"] == "condition_false",
             st_hr["state_reason"] if st_hr else None)
         inst_row = await conn.fetchrow("select state, state_reason, applied_at from hr.workflow_instance where id=$1", inst)
-        rec("§4.3 apply", "🚨 the FAIL-CLOSED apply stub refused: applying -> failed, never a silent success",
-            inst_row["state"] == "failed" and inst_row["applied_at"] is None,
+        # 🚨 THE LEAVE LANE BUILT ITS APPLY HOOK. When this suite was written every flow carried
+        # hr.wf_apply_unimplemented and leave_request went `applying -> failed` with
+        # `pillar_lane_not_built`. hr.leave_wf_apply is real now, so the honest assertion is that
+        # the request APPLIES and completes. The fail-closed law is still proven, below, on the
+        # stub itself — eleven flows still carry it.
+        rec("§4.3 apply", "the leave lane's apply hook is BUILT, so the request applies for real and the instance completes",
+            inst_row["state"] in ("completed", "closed") and inst_row["applied_at"] is not None,
             f'state={inst_row["state"]} reason={inst_row["state_reason"]} ev=' + str(await conn.fetchval(
                 "select string_agg(event_kind||coalesce(\':\'||(detail->>\'detail\'),\'\'), \' | \' order by occurred_at) "
                 "from hr.workflow_event where workflow_instance_id=$1", inst)))
-        rec("§1.8 failure", "an apply_failed failure row opened naming pillar_lane_not_built",
+        rec("§4.3 apply", "🚨 and the FAIL-CLOSED stub still refuses rather than silently succeeding — the law, proven on the stub eleven live flows still carry",
+            (lambda v: v.get("ok") is False
+             and v.get("reason") == "pillar_lane_not_built"
+             and v.get("failure_class") == "apply_failed")(
+                await j("select hr.wf_apply_unimplemented($1)", inst)),
+            json.dumps(await j("select hr.wf_apply_unimplemented($1)", inst))[:180])
+        rec("§4.3 apply", "and it is still what those eleven unbuilt flows point at — an unbuilt lane fails closed, it does not quietly approve",
             await conn.fetchval(
-                "select count(*)=1 from hr.workflow_failure where workflow_instance_id=$1 "
-                "and failure_class='apply_failed' and detail->>'reason'='pillar_lane_not_built'", inst))
+                "select count(*)>=11 from hr.workflow_flow_type where deleted_at is null and is_active "
+                "and apply_fn::text = 'hr.wf_apply_unimplemented(uuid)'"))
         rec("§1.3 grant revoked", "the approver's grant was deleted when the step closed",
             await conn.fetchval(
                 "select count(*)=0 from iam.permissions where review_note='auto:wf_step:'||$1::text", str(step["id"])))
@@ -1275,8 +1286,13 @@ async def main():
             await conn.fetchval(
                 "select count(*)>0 from hr.workflow_failure f "
                 "join hr.workflow_instance i on i.id=f.workflow_instance_id "
-                "where i.organization_id=$1 and i.state='failed' and f.state in ('open','retrying')", org),
-            "a failed instance's queue entry is the mechanism for getting it moving again")
+                "where i.id=$1 and i.state='failed' and f.state in ('open','retrying')",
+                r5.get("instance_id")),
+            str(await conn.fetchval(
+                "select i.state||' / '||coalesce(string_agg(f.state,','),'(no rows)') "
+                "from hr.workflow_instance i left join hr.workflow_failure f "
+                "on f.workflow_instance_id=i.id where i.id=$1 group by i.state",
+                r5.get("instance_id"))))
 
         # ===================================== §1.4 THE PREDICATE SPEAKS THE RUNGS THE SELECTOR WALKS
         # 🚨 A TIMECARD NOBODY CAN APPROVE STALLS PAYROLL WITH NO ERROR ANYWHERE. Two shapes, both
