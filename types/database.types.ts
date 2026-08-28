@@ -51659,18 +51659,21 @@ export type Database = {
       }
       definer_client_grant_grandfather: {
         Row: {
+          argtypes: string | null
           function_name: string
           identity_args: string
           schema_name: string
           snapshotted_at: string
         }
         Insert: {
+          argtypes?: string | null
           function_name: string
           identity_args: string
           schema_name: string
           snapshotted_at?: string
         }
         Update: {
+          argtypes?: string | null
           function_name?: string
           identity_args?: string
           schema_name?: string

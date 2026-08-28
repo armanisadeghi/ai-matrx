@@ -58,8 +58,21 @@ DECLARE
   v_f      jsonb := coalesce(p_filters, '{}'::jsonb);
   v_sort   text := coalesce(p_sort, 'label');
   v_dir    text := CASE WHEN lower(coalesce(p_dir,'asc')) = 'desc' THEN 'desc' ELSE 'asc' END;
+  -- WHOSE resolution the caller is looking at. 'mine' answers "who fulfils
+  -- this job FOR ME"; 'org' answers "who fulfils it for EVERY MEMBER of this
+  -- organization" — the only honest answer on an org-settings page, where the
+  -- admin's own personal override is irrelevant and used to win anyway.
+  v_org    uuid := CASE WHEN lower(coalesce(p_scope,'mine')) = 'org' THEN p_org_id END;
 BEGIN
   IF v_uid IS NULL THEN RETURN; END IF;
+  -- Membership is proved here, never trusted from the argument (SECURITY
+  -- DEFINER). A non-member asking for an org's resolution gets nothing.
+  IF v_org IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM iam.organization_member om
+    WHERE om.user_id = v_uid AND om.organization_id = v_org
+  ) THEN
+    RETURN;
+  END IF;
 
   RETURN QUERY
   WITH my_orgs AS (
@@ -69,17 +82,22 @@ BEGIN
   ),
   -- The caller's deciding bindings. Only an agent-swapping binding moves the
   -- layer (mirrors resolve_mandate); settings-only bindings surface separately.
+  -- In ORG scope the caller's PERSONAL binding is not part of the answer: an
+  -- org admin asking what their organization runs must not be shown their own
+  -- override winning. The CTE stays in the query and simply matches nothing.
   user_b AS (
     SELECT DISTINCT ON (b.mandate_id)
            b.mandate_id AS ub_mandate_id, b.agent_id AS ub_agent_id,
            b.agent_version_id AS ub_version_id, b.use_latest AS ub_use_latest,
            b.updated_at AS ub_updated_at
     FROM agent.mandate_binding b
-    WHERE b.deleted_at IS NULL AND b.is_enabled
+    WHERE v_org IS NULL
+      AND b.deleted_at IS NULL AND b.is_enabled
       AND b.principal_type = 'user' AND b.subject_user_id = v_uid
       AND (b.agent_id IS NOT NULL OR b.agent_version_id IS NOT NULL)
     ORDER BY b.mandate_id, b.updated_at DESC, b.id
   ),
+  -- 'mine': any of the caller's orgs may decide. 'org': only the named one.
   org_b AS (
     SELECT DISTINCT ON (b.mandate_id)
            b.mandate_id AS ob_mandate_id, b.agent_id AS ob_agent_id,
@@ -88,6 +106,7 @@ BEGIN
     JOIN my_orgs mo ON mo.org_id = b.organization_id
     WHERE b.deleted_at IS NULL AND b.is_enabled
       AND b.principal_type = 'org'
+      AND (v_org IS NULL OR b.organization_id = v_org)
       AND (b.agent_id IS NOT NULL OR b.agent_version_id IS NOT NULL)
     ORDER BY b.mandate_id, b.updated_at DESC, b.id
   ),
@@ -97,9 +116,12 @@ BEGIN
     WHERE b.deleted_at IS NULL AND b.is_enabled
       AND b.config_overrides IS NOT NULL
       AND (
-        (b.principal_type = 'user' AND b.subject_user_id = v_uid)
-        OR (b.principal_type = 'org'
-            AND b.organization_id IN (SELECT mo2.org_id FROM my_orgs mo2))
+        CASE WHEN v_org IS NOT NULL
+          THEN b.principal_type = 'org' AND b.organization_id = v_org
+          ELSE (b.principal_type = 'user' AND b.subject_user_id = v_uid)
+            OR (b.principal_type = 'org'
+                AND b.organization_id IN (SELECT mo2.org_id FROM my_orgs mo2))
+        END
       )
   ),
   resolved AS (
