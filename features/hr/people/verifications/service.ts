@@ -129,10 +129,15 @@ function readErrorCode(payload: unknown): string | null {
 /**
  * Generate the letter.
  *
- * 🚨 THE CONSENT GATE IS CHECKED HERE **AND** IN THE UI **AND** BY A TABLE
- * CHECK. Three places on purpose (§4.9 validation): a client that forgets, a
- * server that trusts the client, and a database that catches both. Never remove
- * one because "the other two cover it".
+ * 🚨 THE CONSENT GATE IS CHECKED HERE **AND** IN THE UI **AND** IN THE DOOR
+ * `public.hr_verification_generate_apply`. Three places on purpose (§4.9
+ * validation): a client that forgets, a server that trusts the client, and a
+ * database that catches both. Never remove one because "the other two cover it".
+ *
+ * The third place used to be a CHECK on the request TABLE, which stopped the row
+ * existing rather than stopping the letter emitting — so nobody was ever asked for
+ * consent. `hr_l1_53` moved it into the door, where it refuses by name
+ * (`consent_required`, field `employee_consent_at`) as a refusal envelope.
  *
  * Pass `post` from `useBackendApi().fetch` — see the file header for why the
  * transport is not `callApi`.

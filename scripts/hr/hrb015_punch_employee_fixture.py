@@ -158,8 +158,12 @@ async def main() -> None:  # noqa: C901
             emp = res.get("employment_id") or res.get("employmentId")
             print(f"employment      CREATED   {emp}")
 
-        employee_id = await conn.fetchval(
-            "select employee_id from hr.employment where id = $1::uuid", emp)
+        # asyncpg hands back UUID OBJECTS while the door hands back strings, and httpx refuses to
+        # serialise a UUID — so the create path worked and the idempotent re-run crashed. Normalise
+        # once, here, rather than at each of the call sites below.
+        emp = str(emp)
+        employee_id = str(await conn.fetchval(
+            "select employee_id from hr.employment where id = $1::uuid", emp))
 
         # ---- 3. membership + login link, through the invite door (idempotent) ----------
         linked = await conn.fetchval(
@@ -273,10 +277,15 @@ async def main() -> None:  # noqa: C901
         r = await http.post(f"{base}/rest/v1/rpc/hr_clock_state", headers=as_them,
                             json={"p_employment_id": OTHER_EMPLOYMENT})
         other = r.json() if r.status_code < 400 else {}
-        refused = (other.get("reason_code") or (other.get("blocked") or {}).get("reason_code")) \
-            == "hr_no_clock_read_authority"
-        print(f"someone else's  refused={refused}  "
-              f"needed={(other.get('details') or other.get('context') or {}).get('needed')}")
+        # The refusal shape is `{ok:false, error:{code, message, details}}` — NOT the `blocked`
+        # block that a *permitted* reader gets. Reading the wrong key here reported this walk as
+        # a failure on the first run while the door was behaving perfectly.
+        err = other.get("error") or {}
+        refused = err.get("code") == "hr_no_clock_read_authority"
+        needed = (err.get("details") or {}).get("needed")
+        print(f"someone else's  refused={refused}  needed={needed}  "
+              f"(the door must NAME what was missing, not merely fail)")
+        refused = refused and needed == "working_record.read"
 
         roles = await conn.fetchval(
             "select coalesce(jsonb_agg(ra.role_key order by ra.role_key), '[]'::jsonb) "
