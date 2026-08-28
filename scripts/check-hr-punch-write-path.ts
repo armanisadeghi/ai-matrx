@@ -239,6 +239,19 @@ const EXPECTED_CHECKS = [
   // expected=true is a FALSE NEGATIVE: an over-firing detector gets investigated, a blind one lets
   // a STABLE door write in silence.
   "edge_matcher_sees_every_call_shape",
+  // hr_l3_81. A SECURITY DEFINER function created without an explicit revoke carries the implicit
+  // PUBLIC execute grant, so it runs AS ITS OWNER for anyone who can reach it. L1 found four of its
+  // own returning a home address, a salary and a leave request with no permission check of their
+  // own BY DESIGN, because one caller gates for all of them — correct while only that caller can
+  // reach them, a hole the moment anything else can. hr being absent from pgrst.db_schemas is a
+  // DEPLOYMENT FACT, not a property of the function. Measured: 297 definer functions in hr, 202
+  // reachable by authenticated, 101 by anon, 99 never revoked at all. The door set is DERIVED and
+  // empty (check 1 asserts hr is not exposed; pg_depend shows zero hr functions called by any RLS
+  // policy, CHECK constraint or column default — the only places a client role evaluates one
+  // itself). The 202 ride a dated baseline so the gate is not red on arrival; the debt prints every
+  // run. This check FLAGS and never revokes — revoking is a migration with a proof through the
+  // public door, one door at a time.
+  "definer_helpers_are_not_client_reachable",
 ] as const;
 
 interface ConformanceRow {

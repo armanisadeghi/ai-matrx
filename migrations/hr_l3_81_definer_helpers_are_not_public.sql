@@ -49,15 +49,19 @@
 --    stops violating and its baseline row goes inert. The debt is printed on every run, so it
 --    cannot quietly become permanent — the failure mode of check 26's allowlist, which this lane
 --    watched get deleted rather than re-dated once the source was fixed.
--- 5. 🚨 THE EXEMPTION TEST HIT L1'S OWN PREFIX BUG, IN MY CODE, ON THE FIRST RUN. The first cut
---    asked `position(proname in blob) > 0`, and three functions were silently exempted: `leave_enroll`
---    twice — because a policy names the TABLE `hr.leave_enrollment`, of which the function name is a
---    PREFIX — and `position_subtree` on a bare identifier. An over-exemption here is the dangerous
---    direction: a genuinely public definer function escapes the check entirely. Fixed by reusing
---    `hr._names_a_call` (hr_l3_80) on the SCHEMA-QUALIFIED name, so the exemption requires an
---    identifier-bounded `hr.<name>` and a table whose name merely starts with a function's cannot
---    grant one. Reusing the matcher rather than writing a second one is the point: this is the
---    third place the same class has appeared, and it now has one implementation.
+-- 5. 🚨 THE EXEMPTION IS A CATALOG DEPENDENCY, AFTER TEXT MATCHING FAILED TWICE IN ONE SITTING.
+--    First cut: `position(proname in blob) > 0` — three functions silently exempted, `leave_enroll`
+--    twice because a policy names the TABLE `hr.leave_enrollment`, of which the function name is a
+--    PREFIX. That is L1's own prefix bug, reappearing in my code. Second cut: identifier-boundary
+--    matching on the qualified `hr.<name>` — which FAILED its falsification, because `pg_get_expr`
+--    renders a policy expression UNQUALIFIED when the schema is in `search_path`, so the qualified
+--    form is simply not in the text to find. Both cuts were wrong in the DANGEROUS direction, where
+--    a genuinely public definer function escapes the check.
+--    The right source was never text: Postgres records a pg_depend row from every policy, CHECK
+--    constraint and column default to each function it calls — 13,522 such rows live. Exact,
+--    search_path-independent, prefix-proof, and it needs no matcher at all. Measured through it,
+--    ZERO `hr` functions are depended on by any policy, constraint or default, which is the same
+--    conclusion the text scan reached by a method that would have broken the moment it mattered.
 -- 4. `anon` AND `authenticated` AND `PUBLIC` ARE ALL TESTED, because they fail differently.
 --    `has_function_privilege` answers TRUE for a role that inherits a PUBLIC grant, so the ACL-null
 --    case (99 functions) is caught by the role test; the explicit-grant case is caught the same way.
@@ -93,30 +97,6 @@ stable
 security definer
 set search_path = hr, public
 as $fn$
-  with exprs as (
-    -- every place a CLIENT ROLE would evaluate a function itself. Built once, scanned once.
-    select coalesce(string_agg(e, ' '), '') as blob
-      from (
-        select coalesce(pg_get_expr(pol.polqual, pol.polrelid), '') || ' ' ||
-               coalesce(pg_get_expr(pol.polwithcheck, pol.polrelid), '') as e
-          from pg_policy pol
-          join pg_class c on c.oid = pol.polrelid
-          join pg_namespace n on n.oid = c.relnamespace
-         where n.nspname = 'hr'
-        union all
-        select pg_get_expr(d.adbin, d.adrelid)
-          from pg_attrdef d
-          join pg_class c on c.oid = d.adrelid
-          join pg_namespace n on n.oid = c.relnamespace
-         where n.nspname = 'hr'
-        union all
-        select pg_get_constraintdef(c.oid)
-          from pg_constraint c
-          join pg_class t on t.oid = c.conrelid
-          join pg_namespace n on n.oid = t.relnamespace
-         where n.nspname = 'hr' and c.contype = 'c'
-      ) s
-  )
   select n.nspname || '.' || p.proname,
          pg_get_function_identity_arguments(p.oid),
          has_function_privilege('anon', p.oid, 'EXECUTE'),
@@ -127,15 +107,19 @@ as $fn$
                     and b.identity_args = pg_get_function_identity_arguments(p.oid))
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
-    cross join exprs
    where n.nspname = 'hr'
      and p.prosecdef
      and (has_function_privilege('anon', p.oid, 'EXECUTE')
        or has_function_privilege('authenticated', p.oid, 'EXECUTE'))
-     -- derived exemption: a client role evaluates this function itself, so it NEEDS the grant.
-     -- Matched with hr._names_a_call on the QUALIFIED name (decision 5) -- a bare-substring test
-     -- exempted `leave_enroll` because a policy mentions the TABLE hr.leave_enrollment.
-     and not hr._names_a_call(exprs.blob, 'hr.' || p.proname)
+     -- DERIVED EXEMPTION, FROM THE CATALOG NOT FROM TEXT (decision 5). A client role evaluates a
+     -- function itself only where an RLS policy, a CHECK constraint or a column DEFAULT calls it,
+     -- and Postgres records every one of those as a pg_depend row. Exact, search_path-independent,
+     -- and immune to the name-matching traps that text scanning kept walking into.
+     and not exists (
+       select 1 from pg_depend d
+        where d.refclassid = 'pg_proc'::regclass
+          and d.refobjid = p.oid
+          and d.classid in ('pg_policy'::regclass, 'pg_constraint'::regclass, 'pg_attrdef'::regclass))
    order by 1, 2;
 $fn$;
 
