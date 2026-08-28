@@ -42845,8 +42845,12 @@ export type Database = {
       }
       _leave_hours_text: { Args: { p_hours: number }; Returns: string }
       _leave_jurisdiction_key_or_federal: {
-        Args: { p_employment_id: string }
-        Returns: string
+        Args: {
+          p_as_of?: string
+          p_employment_id: string
+          p_leave_policy_id: string
+        }
+        Returns: Json
       }
       _leave_lead_days: {
         Args: { p_key: string; p_organization_id?: string }

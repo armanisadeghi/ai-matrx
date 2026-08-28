@@ -29,6 +29,62 @@
 -- Authority: SPEC-LEAVE §2.4, §2.5, §2.6; SPEC-JURISDICTION §5.2/§5.6; the key-grain
 -- advisory ruling. Applied live as `hr_l5_20_statutory_floor_cards`. Idempotent.
 
+create or replace function hr._leave_floor_field(
+  p_field text, p_floor jsonb, p_configured jsonb, p_direction text,
+  p_rule_status text, p_unverified jsonb, p_param_key text, p_sentence text
+) returns jsonb
+language plpgsql
+immutable
+as $function$
+declare v_state text; v_floor numeric; v_conf numeric;
+begin
+  -- An ABSENT floor is not a floor of zero. A rule that carries null for a cap is a rule that
+  -- sets no cap, and rendering that as "locked at 0" would invent a limit the law never set.
+  if p_floor is null or jsonb_typeof(p_floor) = 'null' then
+    return '[]'::jsonb;
+  end if;
+  v_floor := (p_floor #>> '{}')::numeric;
+
+  -- 🚨 THE KEY-GRAIN RULE. A key named in the rule's own `_unverified` list is unverified even
+  -- when the RULE is active — California's sick-leave floor is active and lists three cap keys as
+  -- unverified. Rendering those as locked floors would put a citation behind a number nobody
+  -- checked.
+  if p_rule_status <> 'active'
+     or coalesce(p_unverified, '[]'::jsonb) @> to_jsonb(p_param_key) then
+    v_state := 'unverified';
+  else
+    v_conf := nullif(p_configured #>> '{}','')::numeric;
+    if v_conf is null then
+      v_state := 'locked_at_floor';
+    elsif (p_direction = 'at_most'  and v_conf <  v_floor)
+       or (p_direction = 'at_least' and v_conf >  v_floor) then
+      v_state := 'above_floor';        -- the org went further than the law asks
+    else
+      v_state := 'locked_at_floor';
+    end if;
+  end if;
+
+  return jsonb_build_array(jsonb_build_object(
+    'field', p_field,
+    'state', v_state,
+    'floor_value', v_floor,
+    'configured_value', p_configured,
+    'direction', p_direction,
+    'parameter_key', p_param_key,
+    'sentence', case v_state
+      when 'unverified' then 'We have not verified this number. Your policy runs as you configure '
+                          || 'it, and we will tell you if verification changes anything.'
+      when 'above_floor' then p_sentence || ' Yours is more generous than that.'
+      else p_sentence end));
+end
+$function$;
+
+comment on function hr._leave_floor_field(text, jsonb, jsonb, text, text, jsonb, text, text) is
+  'One §2.5 floor card field. The state is chosen by the rule status AND by whether this '
+  'particular key is in the rule''s own _unverified list — an active rule can still carry '
+  'unverified keys, and a locked control over an unchecked number is a citation behind a guess. '
+  'A null floor renders NOTHING, because an absent limit is not a limit of zero.';
+
 create or replace function hr.leave_policy_floors(p_organization_id uuid, p_payload jsonb default '{}'::jsonb)
 returns jsonb
 language plpgsql
@@ -40,9 +96,6 @@ declare
   v_rung text; v_keys text[]; v_key text; v_cards jsonb := '[]'::jsonb;
   v_res jsonb; v_rule jsonb; v_p jsonb; v_unver jsonb; v_fields jsonb;
   v_name text; v_cite jsonb; v_status text; v_uses jsonb := '[]'::jsonb;
-
-  -- one field card, with the state chosen by BOTH the rule's status and the key's own verification
-  function_placeholder boolean;
 begin
   v_rung := hr._leave_admin_rung(p_organization_id);
   if v_rung not in ('hr_admin','hr_owner') then
@@ -189,3 +242,42 @@ begin
         || 'jurisdiction to check a policy against yet.' end);
 end
 $function$;
+
+create or replace function public.hr_leave_policy_floors(
+  p_organization_id uuid, p_payload jsonb default '{}'::jsonb)
+returns jsonb language sql security definer set search_path to 'public','hr'
+as $function$ select hr.leave_policy_floors(p_organization_id, p_payload); $function$;
+
+grant execute on function public.hr_leave_policy_floors(uuid, jsonb) to authenticated;
+
+do $$
+declare v_out jsonb;
+begin
+  -- a null floor renders nothing at all
+  if hr._leave_floor_field('balance_cap','null'::jsonb,null,'at_least','active','[]'::jsonb,'k','s')
+     <> '[]'::jsonb then
+    raise exception 'hr_l5_20: an absent floor was rendered as a floor';
+  end if;
+  -- the key-grain rule: active rule, unverified key => unverified field
+  v_out := hr._leave_floor_field('balance_cap','80'::jsonb,null,'at_least','active',
+             '["accrual_cap_hours"]'::jsonb,'accrual_cap_hours','s');
+  if v_out #>> '{0,state}' <> 'unverified' then
+    raise exception 'hr_l5_20: an unverified key inside an ACTIVE rule rendered as %',
+      v_out #>> '{0,state}';
+  end if;
+  -- and the control can fail: the same key, not listed, locks
+  v_out := hr._leave_floor_field('balance_cap','80'::jsonb,null,'at_least','active',
+             '[]'::jsonb,'accrual_cap_hours','s');
+  if v_out #>> '{0,state}' <> 'locked_at_floor' then
+    raise exception 'hr_l5_20: a verified key did not lock — the check cannot distinguish';
+  end if;
+  -- more generous than the floor reads as above_floor
+  v_out := hr._leave_floor_field('usable_after_days','90'::jsonb,'30'::jsonb,'at_most','active',
+             '[]'::jsonb,'use_permitted_after_days','s');
+  if v_out #>> '{0,state}' <> 'above_floor' then
+    raise exception 'hr_l5_20: a more-generous value did not read as above the floor';
+  end if;
+  if (select count(*) from hr.leave_door_grant_audit() where verdict like 'DEFECT%') > 0 then
+    raise exception 'hr_l5_20: the new floors door checks nobody';
+  end if;
+end $$;
