@@ -27,7 +27,7 @@
 // registered, so the box renders honestly disabled with a registered promise
 // behind it rather than pretending to work or silently vanishing.
 
-import { useState } from "react";
+import { useState, useRef} from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -72,7 +72,12 @@ import type {
 import { formatFullDate } from "../shared/HrStatusChip";
 import { HrWorkerClassChip } from "../shared/HrWorkerClassChip";
 import { HrEmployeePhoto } from "../../shared/HrEmployeePhoto";
-import { downloadOrgChartCsv, orgChartExportName } from "./orgChartExport";
+import {
+  downloadOrgChartCsv,
+  downloadOrgChartPdf,
+  downloadOrgChartPng,
+  orgChartExportName,
+} from "./orgChartExport";
 import {
   LEVEL_GAP_Y,
   NODE_HEIGHT,
@@ -142,6 +147,54 @@ export function HrOrgChart() {
   const chart = useOrgChart(organizationId, asOfParam);
 
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const captureRef = useRef<HTMLDivElement | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  /*
+    PNG and PDF rasterise the LIVE node, so both share one path: the same
+    guard, the same failure sentence, the same toast naming the file. The
+    as-of date comes from the loaded chart, never from the picker — an export
+    must describe the data on screen, not a date somebody typed a moment ago
+    that has not loaded yet.
+  */
+  const exportImage = async (kind: "png" | "pdf") => {
+    if (exporting) return;
+    const node = captureRef.current;
+    /*
+      🚨 NOT A SILENT RETURN. On a date with no chart drawn — the "No managers
+      assigned yet" state — there is no node to rasterise, and returning quietly
+      makes the menu item do exactly the nothing this whole row was filed over.
+      CSV still works there because it exports the DATA, not the drawing; these
+      two cannot, and say so.
+    */
+    if (!data) {
+      toast.error("There is no chart loaded yet, so there is nothing to export.");
+      return;
+    }
+    if (!node) {
+      toast.error(
+        "There is no chart drawn on this date, so there is no picture to export. " +
+          "The CSV still works — it exports the rows rather than the drawing.",
+      );
+      return;
+    }
+    setExporting(true);
+    try {
+      if (kind === "png") await downloadOrgChartPng(node, data.as_of);
+      else await downloadOrgChartPdf(node, data.as_of);
+      toast.success(`Exported ${orgChartExportName(data.as_of, kind)}`);
+    } catch (e) {
+      // Said as a fact. Rasterising can fail on a huge chart or a blocked font,
+      // and a silent no-op here is the defect this whole row was filed over.
+      toast.error(
+        e instanceof Error && e.message.trim()
+          ? `The ${kind.toUpperCase()} was not created. ${e.message}`
+          : `The ${kind.toUpperCase()} was not created.`,
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
   const [showDotted, setShowDotted] = useState(false);
   const [zoom, setZoom] = useState(1);
   // The NL query's answer, when the mandate is wired: a highlighted set of
@@ -338,18 +391,18 @@ export function HrOrgChart() {
                   CSV — the chart&apos;s rows, with the as-of date
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={() =>
-                    void announceComingSoon("hr.people.chart-image-export")
-                  }
+                  onSelect={() => {
+                    void exportImage("pdf");
+                  }}
                 >
-                  PDF
+                  PDF — the chart as drawn, dated on the page
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onSelect={() =>
-                    void announceComingSoon("hr.people.chart-image-export")
-                  }
+                  onSelect={() => {
+                    void exportImage("png");
+                  }}
                 >
-                  PNG
+                  PNG — the chart as drawn, dated on the image
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -410,6 +463,13 @@ export function HrOrgChart() {
         ) : (
           <div className="min-h-0 flex-1 overflow-auto p-4">
             <div
+              /*
+                The capture node for PNG and PDF. It is the SCALED wrapper, so an
+                export is exactly the chart the person is looking at — including
+                withheld nodes, which stay statements rather than turning back
+                into names on the way out.
+              */
+              ref={captureRef}
               style={{
                 width: layout.width * zoom,
                 height: (layout.height + NODE_HEIGHT) * zoom,
