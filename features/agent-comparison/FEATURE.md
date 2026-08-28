@@ -175,6 +175,9 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-08-28 — Request Mod columns now inherit the shared Smart Agent Input's
+  content-only textarea measurement, preventing the last/focused column from
+  opening with an empty 200px composer while its siblings remain compact.
 - 2026-08-25 — Comparison metric headers and Master Input labels now preserve
   blind-test anonymity while opening configured agents through canonical
   `EntityRef` doors; unconfigured labels remain inert.

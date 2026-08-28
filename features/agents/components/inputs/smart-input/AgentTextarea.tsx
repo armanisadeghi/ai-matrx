@@ -271,7 +271,14 @@ export function AgentTextarea({
     }
 
     const minH = compact ? 20 : 40;
-    el.style.height = "auto"; // reset so scrollHeight reflects actual content
+    // Measure from a collapsed block size. `height: auto` is self-referential
+    // inside constrained flex columns: the browser can allocate the remaining
+    // column height to the focused textarea, then expose that allocation as its
+    // `scrollHeight`. Request Mod made this visible when the last of three
+    // freshly-mounted composers opened at the 200px cap despite an empty draft.
+    // Zeroing first makes scrollHeight describe content only; the inline
+    // min-height below still supplies the compact empty-state floor.
+    el.style.height = "0px";
     const natural = Math.max(minH, Math.min(el.scrollHeight, 200));
     el.style.height = `${natural}px`;
   }, [visibleText, isExpanded, singleRow, compact]);
