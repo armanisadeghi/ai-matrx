@@ -43115,6 +43115,7 @@ export type Database = {
         }
         Returns: number
       }
+      _wf_prior_deciders: { Args: { p_instance: string }; Returns: string[] }
       _wf_project_step: { Args: { p_step: string }; Returns: number }
       _wf_revoke_step: { Args: { p_step: string }; Returns: number }
       _wf_route: { Args: { p_instance: string }; Returns: Json }
@@ -43123,6 +43124,10 @@ export type Database = {
         Returns: Json
       }
       _wf_target_table: { Args: { p_token: string }; Returns: string }
+      _wf_two_actor_action: {
+        Args: { p_action_type: string }
+        Returns: boolean
+      }
       _wf_unproject_step: {
         Args: { p_outcome?: string; p_step: string }
         Returns: number
