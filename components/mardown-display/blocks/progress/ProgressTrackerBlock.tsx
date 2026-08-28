@@ -110,6 +110,8 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
       void openArtifact({
         canvasType: "progress",
         title: tracker.title,
+        // ProgressTrackerData is registry-derived and carries no raw markdown
+        // (unlike ResearchBlock's parser-local shape) — JSON is the content.
         content: JSON.stringify(tracker),
         conversationId,
         messageId,

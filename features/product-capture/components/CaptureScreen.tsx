@@ -35,6 +35,8 @@ import { useRouter } from "next/navigation";
 import {
   Camera as CameraIcon,
   Check,
+  Eye,
+  EyeOff,
   FileAudio,
   LayoutGrid,
   Loader2,
@@ -78,9 +80,14 @@ import { ItemsSheet } from "./ItemsSheet";
 const PHOTO_JPEG_QUALITY = 0.92;
 const QR_MODE_STORAGE_KEY = "product-capture:qr-auto";
 
-export function CaptureScreen() {
+export interface CaptureScreenProps {
+  /** Open with this item current (the `?item=` deep link). */
+  initialItemId?: string | null;
+}
+
+export function CaptureScreen({ initialItemId = null }: CaptureScreenProps) {
   const router = useRouter();
-  const session = useProductCaptureSession();
+  const session = useProductCaptureSession({ initialItemId });
 
   // ── Camera lease (scanner contract) ──────────────────────────────────────
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -325,6 +332,17 @@ export function CaptureScreen() {
   const [previewArtifact, setPreviewArtifact] =
     useState<PendingArtifact | null>(null);
 
+  // Hide every overlay control (except the toggle itself) so the full frame
+  // can be checked unobstructed. Recording/QR feedback chips stay — honesty
+  // beats a clean frame while something is actively happening.
+  const [controlsHidden, setControlsHidden] = useState(false);
+  const toggleControls = useCallback(() => {
+    setControlsHidden((h) => {
+      if (!h) setNotesOpen(false);
+      return !h;
+    });
+  }, []);
+
   const { currentItem, artifacts } = session;
   const photoCount = artifacts.filter((a) => a.kind === "photo").length;
   const itemLabel = currentItem
@@ -338,17 +356,21 @@ export function CaptureScreen() {
     session.organizationId === null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black">
-      {/* ── Stage ── */}
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black">
+      {/* ── Full-bleed stage: the preview fills the whole screen (viewport
+           crop); the SHUTTER still captures the full sensor frame — the
+           listing pipeline gets everything the sensor saw. ── */}
+      <div className="absolute inset-0">
         <CameraPreview
           stream={stream}
-          framing="full-frame"
+          framing="viewport-crop"
           videoRef={videoRef}
         />
-        {flash && <div className="absolute inset-0 z-20 bg-white/70" />}
+      </div>
+      {flash && <div className="absolute inset-0 z-20 bg-white/70" />}
 
-        {/* Top bar */}
+      {/* Top bar */}
+      {!controlsHidden && (
         <div className="absolute inset-x-0 top-0 z-30 flex items-center gap-2 bg-gradient-to-b from-black/70 to-transparent p-3 pt-safe">
           <Button
             variant="ghost"
@@ -396,56 +418,75 @@ export function CaptureScreen() {
             </Button>
           )}
         </div>
+      )}
 
-        {/* QR auto-switch feedback */}
-        {qrMode && (
-          <div className="pointer-events-none absolute inset-x-0 top-16 z-30 mt-safe flex justify-center">
-            {qrFlash ? (
-              <span className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-lg">
-                <Check className="h-4 w-4" />
-                {qrFlash}
-              </span>
-            ) : (
+      {/* Hide/show controls — always present, same spot in both states so
+          the thumb never has to hunt for it. */}
+      <button
+        type="button"
+        onClick={toggleControls}
+        aria-label={controlsHidden ? "Show controls" : "Hide controls"}
+        aria-pressed={controlsHidden}
+        className={cn(
+          "absolute right-3 z-40 flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors",
+          controlsHidden
+            ? "top-14 mt-safe bg-black/50 hover:bg-black/70"
+            : "top-14 mt-safe bg-white/10 hover:bg-white/20",
+        )}
+      >
+        {controlsHidden ? (
+          <Eye className="h-5 w-5" />
+        ) : (
+          <EyeOff className="h-5 w-5" />
+        )}
+      </button>
+
+      {/* QR auto-switch feedback */}
+      {qrMode && (
+        <div className="pointer-events-none absolute inset-x-0 top-16 z-30 mt-safe flex justify-center">
+          {qrFlash ? (
+            <span className="flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground shadow-lg">
+              <Check className="h-4 w-4" />
+              {qrFlash}
+            </span>
+          ) : (
+            !controlsHidden && (
               <span className="rounded-full bg-black/50 px-3 py-1 text-[11px] text-white/80">
                 QR auto-switch on — scan a code to start its item
               </span>
-            )}
-          </div>
-        )}
+            )
+          )}
+        </div>
+      )}
 
-        {recording && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 flex justify-center">
-            <span className="flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-sm font-medium text-white">
-              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
-              {Math.floor(recordElapsed / 60)}:
-              {String(recordElapsed % 60).padStart(2, "0")}
-            </span>
-          </div>
-        )}
+      {recording && (
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-x-0 z-30 flex justify-center",
+            controlsHidden ? "bottom-6 mb-safe" : "top-28 mt-safe",
+          )}
+        >
+          <span className="flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-sm font-medium text-white">
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
+            {Math.floor(recordElapsed / 60)}:
+            {String(recordElapsed % 60).padStart(2, "0")}
+          </span>
+        </div>
+      )}
 
-        {cameraBlocked && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80 px-8 text-center">
-            <p className="text-sm text-white/90">
-              The in-page camera isn&apos;t available here. Use your device
-              camera instead — each photo is added the moment you take it.
-              Notes, SKU and voice notes keep working.
-            </p>
-            <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
-              <CameraIcon className="mr-1.5 h-4 w-4" />
-              Open system camera
-            </Button>
-          </div>
-        )}
-
-        <NotesPanel
-          open={notesOpen}
-          notes={session.notes}
-          saving={session.notesSaving}
-          transcribing={session.transcribingCount > 0}
-          onChange={session.setNotes}
-          onClose={() => setNotesOpen(false)}
-        />
-      </div>
+      {cameraBlocked && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80 px-8 text-center">
+          <p className="text-sm text-white/90">
+            The in-page camera isn&apos;t available here. Use your device
+            camera instead — each photo is added the moment you take it.
+            Notes, SKU and voice notes keep working.
+          </p>
+          <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
+            <CameraIcon className="mr-1.5 h-4 w-4" />
+            Open system camera
+          </Button>
+        </div>
+      )}
 
       <input
         ref={fallbackInputRef}
@@ -456,8 +497,13 @@ export function CaptureScreen() {
         className="hidden"
       />
 
-      {/* ── Bottom controls — below the letterboxed frame, never over it ── */}
-      <div className="z-30 shrink-0 bg-black px-3 pb-safe">
+      {/* ── Bottom controls — overlaid on the frame over a gradient scrim ── */}
+      <div
+        className={cn(
+          "absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-3 pb-safe pt-8",
+          controlsHidden && "hidden",
+        )}
+      >
         {artifacts.length > 0 && (
           <div className="flex items-center gap-1.5 overflow-x-auto py-2">
             {artifacts.slice(-12).map((artifact) => (
@@ -613,6 +659,15 @@ export function CaptureScreen() {
       </div>
 
       {/* ── Artifact preview overlay ── */}
+      <NotesPanel
+        open={notesOpen && !controlsHidden}
+        notes={session.notes}
+        saving={session.notesSaving}
+        transcribing={session.transcribingCount > 0}
+        onChange={session.setNotes}
+        onClose={() => setNotesOpen(false)}
+      />
+
       {previewArtifact && (
         <div className="absolute inset-0 z-40 flex flex-col bg-black">
           <div className="relative min-h-0 flex-1">

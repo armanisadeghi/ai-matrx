@@ -25,6 +25,10 @@ const CaptureScreen = dynamic(
   { ssr: false, loading },
 );
 
-export default function ProductCaptureRouteClient() {
-  return <CaptureScreen />;
+export default function ProductCaptureRouteClient({
+  initialItemId,
+}: {
+  initialItemId: string | null;
+}) {
+  return <CaptureScreen initialItemId={initialItemId} />;
 }

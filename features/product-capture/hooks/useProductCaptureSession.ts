@@ -30,7 +30,6 @@ import {
 import { toast } from "@/lib/toast";
 import { toAudioFile } from "@/features/audio/utils/audio-mime";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
-import { fileHandler } from "@/features/files/handler/handler";
 
 import type {
   CaptureItem,
@@ -45,9 +44,8 @@ import {
   loadItem,
   setItemCode,
   setItemNotes,
-  unlinkFile,
 } from "../service";
-import { uploadItemFile } from "../uploads";
+import { removeItemFile, uploadItemFile } from "../uploads";
 
 const NOTES_AUTOSAVE_MS = 800;
 
@@ -87,7 +85,16 @@ export interface UseProductCaptureSessionResult {
   removeArtifact: (localId: string) => void;
 }
 
-export function useProductCaptureSession(): UseProductCaptureSessionResult {
+export interface UseProductCaptureSessionOptions {
+  /** Open with this item current (the `?item=` deep link from the list /
+   *  detail pages). Wins over the localStorage mid-item resume. */
+  initialItemId?: string | null;
+}
+
+export function useProductCaptureSession(
+  options: UseProductCaptureSessionOptions = {},
+): UseProductCaptureSessionResult {
+  const { initialItemId = null } = options;
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
 
   const [currentItem, setCurrentItem] = useState<CaptureItem | null>(null);
@@ -268,16 +275,19 @@ export function useProductCaptureSession(): UseProductCaptureSessionResult {
     [finishCurrentItem, adoptItem],
   );
 
-  // Resume the mid-item state after a reload (once per org resolution).
+  // Resume on mount (once per org resolution): an explicit `?item=` deep
+  // link wins; otherwise the localStorage mid-item state after a reload.
   const resumeTriedRef = useRef(false);
   useEffect(() => {
     if (!organizationId || resumeTriedRef.current) return;
     resumeTriedRef.current = true;
-    let stored: string | null = null;
-    try {
-      stored = window.localStorage.getItem(resumeKey(organizationId));
-    } catch {
-      return;
+    let stored: string | null = initialItemId;
+    if (!stored) {
+      try {
+        stored = window.localStorage.getItem(resumeKey(organizationId));
+      } catch {
+        return;
+      }
     }
     if (!stored) return;
     const storedId = stored;
@@ -289,7 +299,7 @@ export function useProductCaptureSession(): UseProductCaptureSessionResult {
       });
     }, 0);
     return () => clearTimeout(timer);
-  }, [organizationId, resumeItem]);
+  }, [organizationId, resumeItem, initialItemId]);
 
   // ── Codes ─────────────────────────────────────────────────────────────────
 
@@ -470,18 +480,12 @@ export function useProductCaptureSession(): UseProductCaptureSessionResult {
       const target = prev.find((a) => a.localId === localId);
       const fileId = target?.fileId;
       if (target && fileId) {
-        // Best-effort: unlink + drop the cloud file. The link row also
-        // cascades if the file row goes first.
-        void (async () => {
-          try {
-            const files = await listItemFiles(target.itemId);
-            const link = files.find((f) => f.fileId === fileId);
-            if (link) await unlinkFile(link.id);
-            await fileHandler.remove(fileId, { hard: true });
-          } catch (err) {
+        // Best-effort: unlink + drop the cloud file.
+        void removeItemFile({ itemId: target.itemId, fileId }).catch(
+          (err: unknown) => {
             console.warn("[product-capture] artifact cleanup failed", err);
-          }
-        })();
+          },
+        );
       }
       const url = previewUrlsRef.current.get(localId);
       if (url) {
