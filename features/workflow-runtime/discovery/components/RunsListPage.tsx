@@ -18,7 +18,7 @@ import { ListOrdered } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 
-import { fetchWorkflowNames } from "../service";
+import { fetchWorkflowFacts } from "../service";
 import { RunsList } from "./RunsList";
 import { WaitingBadge } from "./WaitingBadge";
 
@@ -28,9 +28,9 @@ export function RunsListPage({ definitionId }: { definitionId?: string }) {
   useEffect(() => {
     if (!definitionId) return undefined;
     let live = true;
-    void fetchWorkflowNames([definitionId])
-      .then((names) => {
-        if (live) setName(names.get(definitionId) ?? null);
+    void fetchWorkflowFacts([definitionId])
+      .then((facts) => {
+        if (live) setName(facts.get(definitionId)?.name ?? null);
       })
       // The name is chrome; the runs below it are the record. A failed lookup
       // leaves the generic title rather than an error page over a working list.

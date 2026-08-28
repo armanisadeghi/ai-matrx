@@ -31,11 +31,18 @@ import { ListX } from "lucide-react";
 import { RunStatusChip, runStatusLabel } from "../../run-status";
 import { runDurationMs, runHref, type RunListRow } from "../runs";
 import { useRunsList } from "../useRunsList";
-import { useWorkflowNames } from "../useWorkflowNames";
+import { useWorkflowFacts } from "../useWorkflowFacts";
 
-/** A row plus the workflow name resolved for it. */
+/** A row plus the workflow facts resolved for it. */
 interface RunRowView extends RunListRow {
   workflowName: string | null;
+  /**
+   * What this run's workflow DECLARES it produces. Not the run's own result:
+   * `GET /runs` never returns `result` (it is derived by `GET /runs/{id}`), so
+   * a column fed from the list row could only ever render "—". See
+   * `service.ts` § WorkflowFacts.
+   */
+  declaredKind: string | null;
 }
 
 const STATUS_FILTER_OPTIONS = [
@@ -58,12 +65,18 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
   const { rows, loading, error } = useRunsList({ definitionId });
-  const names = useWorkflowNames(rows.map((row) => row.definitionId));
+  const facts = useWorkflowFacts(rows.map((row) => row.definitionId));
 
-  const view: RunRowView[] = rows.map((row) => ({
-    ...row,
-    workflowName: row.definitionId ? (names.get(row.definitionId) ?? null) : null,
-  }));
+  const view: RunRowView[] = rows.map((row) => {
+    const fact = row.definitionId ? facts.get(row.definitionId) : undefined;
+    return {
+      ...row,
+      workflowName: fact?.name ?? null,
+      // The run's own declared kind when the wrapper ever carries one, else
+      // the workflow's declaration — the only source a LIST row can have.
+      declaredKind: row.deliverableKind ?? fact?.outputKind ?? null,
+    };
+  });
 
   const columns: MatrxColumnDef<RunRowView>[] = [
     // Dropped on a per-workflow list: every row would say the same name.
@@ -127,13 +140,13 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
     },
     {
       id: "delivers",
-      accessorKey: "deliverableKind",
+      accessorKey: "declaredKind",
       header: "Delivers",
       width: 160,
       mobileHidden: true,
       cell: (row) =>
-        row.deliverableKind ? (
-          <span className="text-muted-foreground">{row.deliverableKind}</span>
+        row.declaredKind ? (
+          <span className="text-muted-foreground">{row.declaredKind}</span>
         ) : (
           <Muted>—</Muted>
         ),
