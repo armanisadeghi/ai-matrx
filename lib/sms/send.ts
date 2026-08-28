@@ -201,11 +201,24 @@ export async function sendNotificationSms(options: {
   }
 
   // Check consent
+  //
+  // 🚨 A NOTIFICATION SEND REQUIRES `'notifications'` CONSENT — NOT A LEGACY ACCOUNT GRANT.
+  // This gated on `['transactional', 'all']`, so a number that had only ever consented to
+  // account TRANSACTIONS (or held the blanket legacy `'all'` token) silently authorized
+  // workforce notifications — the exact inheritance the enable-path commit (77305f15bd,
+  // "separate SMS notification consent") closed on the spine sender. This is the SECOND,
+  // non-spine sender, and it never got the fix: `app/api/sms/preferences/route.ts` enables
+  // notifications only on `.eq('consent_type', 'notifications')`, and the verify route
+  // records that purpose row explicitly (its own comment: "keeps legacy account SMS consent
+  // from silently authorizing workforce notifications"). This now sits on the same basis.
+  // `'all'` is dropped on both branches deliberately — a blanket/legacy grant is precisely
+  // what must not authorize a purpose-gated send.
+  const consentBasis = category === 'marketing' ? ['marketing'] : ['notifications'];
   const { data: consent } = await supabase
     .schema('communication').from('sms_consent')
     .select('status')
     .eq('phone_number', prefs.phone_number)
-    .in('consent_type', [category === 'marketing' ? 'marketing' : 'transactional', 'all'])
+    .in('consent_type', consentBasis)
     .eq('status', 'opted_in')
     .limit(1)
     .single();
