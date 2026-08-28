@@ -42975,6 +42975,14 @@ export type Database = {
         Returns: Json
       }
       _leave_viewer: { Args: { p_employment_id: string }; Returns: Json }
+      _leave_worker_class_ok: {
+        Args: {
+          p_as_of?: string
+          p_employment_id: string
+          p_leave_policy_id: string
+        }
+        Returns: Json
+      }
       _legality_envelope: {
         Args: { p_class: string; p_rules: Json }
         Returns: Json
@@ -43305,6 +43313,7 @@ export type Database = {
         Args: { p_contentless?: boolean; p_step: string }
         Returns: Json
       }
+      _wf_door_smoke: { Args: never; Returns: Json }
       _wf_event: {
         Args: {
           p_actor_emp?: string
@@ -43906,17 +43915,40 @@ export type Database = {
           verdict: string
         }[]
       }
-      leave_enroll: {
-        Args: {
-          p_effective_from?: string
-          p_employment_ids: string[]
-          p_leave_policy_id: string
-        }
-        Returns: Json
-      }
+      leave_enroll:
+        | {
+            Args: {
+              p_effective_from?: string
+              p_employment_ids: string[]
+              p_leave_policy_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_effective_from?: string
+              p_employment_ids: string[]
+              p_leave_policy_id: string
+              p_override_reason?: string
+            }
+            Returns: Json
+          }
       leave_enrollment_refresh: {
         Args: { p_employment_id: string; p_leave_policy_id: string }
         Returns: undefined
+      }
+      leave_enrollments_out_of_scope: {
+        Args: { p_organization_id: string }
+        Returns: {
+          created_by_a_door: boolean
+          employee_name: string
+          employment_id: string
+          enrollment_id: string
+          override_reason: string
+          policy_name: string
+          policy_scope: string[]
+          worker_class: string
+        }[]
       }
       leave_figures: {
         Args: {
@@ -61630,14 +61662,24 @@ export type Database = {
         }
         Returns: Json
       }
-      hr_leave_enroll: {
-        Args: {
-          p_effective_from?: string
-          p_employment_ids: string[]
-          p_leave_policy_id: string
-        }
-        Returns: Json
-      }
+      hr_leave_enroll:
+        | {
+            Args: {
+              p_effective_from?: string
+              p_employment_ids: string[]
+              p_leave_policy_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_effective_from?: string
+              p_employment_ids: string[]
+              p_leave_policy_id: string
+              p_override_reason?: string
+            }
+            Returns: Json
+          }
       hr_leave_ledger_export: {
         Args: {
           p_as_of?: string
