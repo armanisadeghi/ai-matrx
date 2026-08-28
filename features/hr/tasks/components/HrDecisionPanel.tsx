@@ -241,9 +241,16 @@ export function HrDecisionPanel({
                                     whose pay change this is is being asked for a signature, not a
                                     decision (T-L10-5). The door decides whether they may be told;
                                     this only renders the answer. */}
-                                {detail.subject_label
-                                    ? `${str(instance, "flow_key")} — ${detail.subject_label}`
-                                    : str(instance, "flow_key")}
+                                {/* `flow_label` is the human name of the kind ("Address
+                                    change"); `flow_key` is the machine one (`address_change`)
+                                    and was being shown as the heading of the whole screen. */}
+                                {(() => {
+                                    const kind =
+                                        str(shownStep, "flow_label") || str(instance, "flow_key");
+                                    return detail.subject_label
+                                        ? `${kind} — ${detail.subject_label}`
+                                        : kind;
+                                })()}
                             </h1>
                             {detail.subject_withheld ? (
                                 <p className="text-xs text-muted-foreground">
