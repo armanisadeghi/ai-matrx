@@ -79,6 +79,9 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-08-27` — Saved-item and artifact-library opens now share `useOpenCanvasItem`, which validates
+  the persisted type and opens a `{ artifactId }` pointer; materialized panes expose an explicit
+  full-page door, and `/artifacts/[id]` resolves either artifact identity.
 - `2026-08-27` — Public shared-canvas guests no longer attempt actor-owned `canvas_views` inserts;
   authenticated view rows still require both actor and explicit organization.
 - `2026-08-27` — Canvas preview now hydrates materialized `{ artifactId }` pointers from the

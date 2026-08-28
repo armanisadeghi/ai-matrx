@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectArtifactById } from "@/lib/redux/selectors/artifactSelectors";
+import { selectArtifactByEitherId } from "@/lib/redux/selectors/artifactSelectors";
 import { fetchUserArtifactsThunk } from "@/lib/redux/thunks/artifactThunks";
 import { deleteArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
 import {
@@ -139,8 +139,10 @@ interface CmsArtifactDetailProps {
 export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  // The route param is either a chat.artifact id (the library's links) or a
+  // canvas_items id (what the canvas pane's "Open full page" knows).
   const artifact = useAppSelector((state) =>
-    selectArtifactById(state, artifactId),
+    selectArtifactByEitherId(state, artifactId),
   );
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);

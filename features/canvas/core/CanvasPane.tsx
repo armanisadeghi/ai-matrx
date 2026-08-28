@@ -18,12 +18,14 @@
 
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import {
   ArrowDownUp,
   Bug,
   ChevronDown,
   Cloud,
   CloudOff,
+  ExternalLink,
   Code,
   Eye,
   Layers,
@@ -83,6 +85,7 @@ interface CanvasPaneProps {
 
 export function CanvasPane({ paneRole }: CanvasPaneProps) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const currentItem = useAppSelector(selectCurrentCanvasItem);
   const secondaryItem = useAppSelector(selectSecondaryCanvasItem);
   const allItems = useAppSelector(selectCanvasItems);
@@ -385,6 +388,30 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
               }
               onClick={handleSync}
               disabled={isSyncing}
+            />
+          )}
+
+          {/* Open full page — the return leg of "artifacts open in the canvas
+              everywhere". Clicking an artifact anywhere slides it in here;
+              this is how the user reaches its dedicated page, with the
+              metadata and destructive actions the pane deliberately lacks.
+              Only meaningful once the item has a real row to address. */}
+          {isMaterializedArtifactId(
+            content.metadata?.canvasItemId ?? item.savedItemId,
+          ) && (
+            <TapTargetButton
+              icon={<ExternalLink className="h-4 w-4" />}
+              ariaLabel="Open full page"
+              tooltip="Open full page"
+              onClick={() => {
+                // Put the pane away on the way out — the page you land on is
+                // the same artifact at full size, so leaving the pane open
+                // shows it to the user twice.
+                handleCloseAll();
+                router.push(
+                  `/artifacts/${content.metadata?.canvasItemId ?? item.savedItemId}`,
+                );
+              }}
             />
           )}
 

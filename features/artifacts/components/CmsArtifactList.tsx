@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
 import { fetchUserArtifactsThunk } from "@/lib/redux/thunks/artifactThunks";
 import {
   deleteArtifactThunk,
@@ -113,6 +114,9 @@ interface ArtifactCardProps {
   artifact: CxArtifactRecord;
   isNavigating: boolean;
   isAnyNavigating: boolean;
+  /** Default click: open the artifact in the canvas (falls back to the page). */
+  onOpen: (artifact: CxArtifactRecord) => void;
+  /** Explicit "go to the dedicated page" — cmd-click, menu, detail button. */
   onNavigate: (id: string) => void;
   onDelete: (id: string) => void;
   onArchive: (id: string) => void;
@@ -123,6 +127,7 @@ function ArtifactCard({
   artifact,
   isNavigating,
   isAnyNavigating,
+  onOpen,
   onNavigate,
   onDelete,
   onArchive,
@@ -144,7 +149,7 @@ function ArtifactCard({
       return;
     }
     if (!isDisabled) {
-      onNavigate(artifact.id);
+      onOpen(artifact);
     }
   };
 
@@ -199,6 +204,13 @@ function ArtifactCard({
                         </a>
                       </DropdownMenuItem>
                     )}
+                    <DropdownMenuItem
+                      className="flex items-center gap-2"
+                      onClick={() => onNavigate(artifact.id)}
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      Open full page
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       className="flex items-center gap-2"
                       onClick={() => onOpenEditor(artifact)}
@@ -307,6 +319,7 @@ function ArtifactCard({
 
 export function CmsArtifactList() {
   const dispatch = useAppDispatch();
+  const { openItem } = useOpenCanvasItem();
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -358,6 +371,27 @@ export function CmsArtifactList() {
     }
     return true;
   });
+
+  /**
+   * Clicking an artifact opens it IN THE CANVAS, the same as clicking it in a
+   * note or a chat message — one artifact, one behaviour, wherever it appears.
+   * The dedicated page stays reachable (cmd-click, the card menu, and the
+   * pane's own "Open full page"), because it is where an artifact's metadata
+   * and destructive actions live.
+   *
+   * Rows with no `canvasItemId` (external-system artifacts such as html_page,
+   * ~23 of 665 today) have no canvas row to point at, so they still navigate.
+   */
+  const handleOpen = (artifact: CxArtifactRecord) => {
+    if (artifact.canvasItemId) {
+      void openItem({
+        artifactId: artifact.canvasItemId,
+        title: artifact.title,
+      });
+      return;
+    }
+    handleNavigate(artifact.id);
+  };
 
   const handleNavigate = (id: string) => {
     if (navigatingId) return;
@@ -532,6 +566,7 @@ export function CmsArtifactList() {
               artifact={artifact}
               isNavigating={navigatingId === artifact.id}
               isAnyNavigating={navigatingId !== null}
+              onOpen={handleOpen}
               onNavigate={handleNavigate}
               onDelete={handleDelete}
               onArchive={handleArchive}

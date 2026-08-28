@@ -34,6 +34,9 @@ directory must not get wrong.
   rather than returning a dead one — the natural-key index spans soft-deleted rows.
 - Normalize `external_system` (`"" → null`) once, so the write and the recovery read agree.
 - `app/api/artifacts/route.ts` is a middle tier queued for deletion — do not add to it.
+- **Library cards open materialized artifacts in Canvas by pointer.** The dedicated `/artifacts/[id]`
+  page remains an explicit action and accepts either the `chat.artifact` id or its `canvas_items` id;
+  artifacts without a materialized canvas row continue to open the page.
 
 **Keep-docs-live:** a change to the discovery index's identity, ownership, or route surface updates
 the node's `STATE.md` in the same session.

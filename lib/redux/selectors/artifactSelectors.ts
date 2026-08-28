@@ -50,6 +50,24 @@ export const selectArtifactById = (
   id: string,
 ): CxArtifactRecord | undefined => selectArtifactsById(state)[id];
 
+/**
+ * Single artifact addressed by EITHER identity.
+ *
+ * `/artifacts/[id]` historically accepted only a `chat.artifact` id, but the
+ * canvas — which is where artifacts now open from every surface — only ever
+ * holds the `canvas_items` id. Rather than make the pane look up a second id
+ * just to offer "Open full page", the route resolves either one, so both
+ * identities address the same artifact and neither is a dead link.
+ */
+export const selectArtifactByEitherId = (
+  state: RootState,
+  id: string,
+): CxArtifactRecord | undefined => {
+  const direct = selectArtifactsById(state)[id];
+  if (direct) return direct;
+  return selectAllArtifacts(state).find((a) => a.canvasItemId === id);
+};
+
 // ── Message-based lookups ─────────────────────────────────────────────────────
 
 /** All artifacts linked to a specific message. */

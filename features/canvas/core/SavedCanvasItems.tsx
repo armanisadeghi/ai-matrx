@@ -3,8 +3,7 @@ import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDi
 
 import React, { useEffect, useState } from "react";
 import { useCanvasItems } from "@/features/canvas/hooks/useCanvasItems";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { openCanvas } from "@/features/canvas/redux/canvasSlice";
+import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
 import {
   Star,
   Archive,
@@ -45,7 +44,7 @@ interface SavedCanvasItemsProps {
  * - Batch operations
  */
 export function SavedCanvasItems({ showArchived = false }: SavedCanvasItemsProps) {
-  const dispatch = useAppDispatch();
+  const { openItem } = useOpenCanvasItem();
   const {
     items,
     isLoading,
@@ -86,8 +85,16 @@ export function SavedCanvasItems({ showArchived = false }: SavedCanvasItemsProps
     });
   };
 
+  // Open by POINTER, not by snapshot. This list holds the row id, so there is
+  // never a reason to push a copy of its content into the slice — that copy
+  // could not be deduped against an item already showing the same artifact,
+  // and it drifted the moment the row changed.
   const handleOpenInCanvas = (item: CanvasItemRow) => {
-    dispatch(openCanvas(item.content));
+    void openItem({
+      artifactId: item.id,
+      type: item.content?.type,
+      title: item.title,
+    });
   };
 
   const handleStartEdit = (item: CanvasItemRow) => {
