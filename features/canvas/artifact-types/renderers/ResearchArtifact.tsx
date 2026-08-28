@@ -21,6 +21,9 @@ export default function ResearchArtifact({
   taskId,
   artifactId,
   isStreamActive,
+  conversationId,
+  messageId,
+  blockIndex,
 }: ArtifactRendererProps) {
   const research = useMemo(
     () =>
@@ -43,6 +46,10 @@ export default function ResearchArtifact({
       <ResearchBlock
         research={research}
         taskId={artifactDedupKey(taskId, artifactId)}
+        artifactId={artifactId}
+        conversationId={conversationId}
+        messageId={messageId}
+        blockIndex={blockIndex}
       />
     </Suspense>
   );

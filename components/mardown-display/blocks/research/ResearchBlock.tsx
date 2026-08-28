@@ -16,6 +16,9 @@ import {
   BarChart3, Users, Briefcase, Scale, Clock, Star, Printer
 } from 'lucide-react';
 import { useCanvas } from '@/features/canvas/hooks/useCanvas';
+import { useOpenArtifactInCanvas } from '@/features/canvas/hooks/useOpenArtifactInCanvas';
+import { isMaterializedArtifactId } from '@/features/canvas/artifact-types/artifactId';
+import { getArtifactDef } from '@/features/canvas/artifact-types/artifact-type-registry';
 
 interface UnrecognizedSection {
   id: string;
@@ -89,9 +92,20 @@ interface ResearchData {
 interface ResearchBlockProps {
   research: ResearchData;
   taskId?: string; // Task ID for canvas deduplication
+  artifactId?: string;
+  conversationId?: string;
+  messageId?: string;
+  blockIndex?: number;
 }
 
-const ResearchBlock: React.FC<ResearchBlockProps> = ({ research, taskId }) => {
+const ResearchBlock: React.FC<ResearchBlockProps> = ({
+  research,
+  taskId,
+  artifactId,
+  conversationId,
+  messageId,
+  blockIndex,
+}) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const blockContentRef = useRef<HTMLDivElement>(null);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -112,6 +126,33 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({ research, taskId }) => {
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'HIGH' | 'MEDIUM' | 'LOW'>('all');
   const [activeTab, setActiveTab] = useState<'overview' | 'findings' | 'analysis' | 'recommendations' | 'debug'>('overview');
   const { open: openCanvas } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
+
+  const handleOpenCanvas = () => {
+    const def = getArtifactDef('research');
+
+    if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+      void openArtifact({
+        canvasType: 'research',
+        title: research.title,
+        content: research.rawContent || JSON.stringify(research),
+        conversationId,
+        messageId,
+        artifactId,
+        artifactIndex: blockIndex && blockIndex > 0 ? blockIndex : 1,
+      });
+      return;
+    }
+
+    openCanvas({
+      type: 'research',
+      data: research,
+      metadata: {
+        title: research.title,
+        sourceTaskId: taskId,
+      },
+    });
+  };
 
   // Filter findings by confidence level
   const filteredSections = useMemo(() => {
@@ -222,14 +263,7 @@ const ResearchBlock: React.FC<ResearchBlockProps> = ({ research, taskId }) => {
                   {!isFullScreen && (
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => openCanvas({
-                          type: 'research',
-                          data: research,
-                          metadata: { 
-                            title: research.title,
-                            sourceTaskId: taskId
-                          }
-                        })}
+                        onClick={handleOpenCanvas}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all"
                       >
                         <ExternalLink className="h-4 w-4" />
