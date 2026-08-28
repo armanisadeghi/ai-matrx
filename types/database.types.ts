@@ -61477,6 +61477,10 @@ export type Database = {
         Returns: Json
       }
       hr_employee_create: { Args: { p_payload: Json }; Returns: Json }
+      hr_employee_grant_missing_membership: {
+        Args: { p_employee_id: string }
+        Returns: Json
+      }
       hr_employee_invite: {
         Args: { p_email?: string; p_employee_id: string; p_expires_at?: string }
         Returns: Json
