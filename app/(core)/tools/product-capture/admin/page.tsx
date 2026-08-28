@@ -131,7 +131,28 @@ const PRODUCT_CAPTURE_ADMIN_MAP: FeatureAdminMap = {
       name: "ItemDetailView",
       filePath: "features/product-capture/components/ItemDetailView.tsx",
       description:
-        "View mode: media grid with add/delete, SKU + notes autosave, Capture hand-off.",
+        "View mode: media grid (tap → pager, long-press → delete) with add/delete, SKU + notes autosave, Capture hand-off.",
+      status: "Live",
+    },
+    {
+      name: "MediaPager",
+      filePath: "features/product-capture/components/MediaPager.tsx",
+      description:
+        "Full-screen swipeable media viewer: swipe left/right between files, swipe down to dismiss, counter + dots, desktop chevrons and arrow keys.",
+      status: "Live",
+    },
+    {
+      name: "SwipeableRow + ItemSwipeRow + ItemActionsDrawer",
+      filePath: "features/product-capture/components/ItemSwipeRow.tsx",
+      description:
+        "The gesture layer: iOS Mail-style swipe actions, the ONE shared item row (tap/swipe/long-press), and the long-press action sheet — used by ItemsSheet and the /all mobile card list.",
+      status: "Live",
+    },
+    {
+      name: "useLongPress",
+      filePath: "features/product-capture/hooks/useLongPress.ts",
+      description:
+        "Pointer long-press hook (450 ms, movement-cancel, click suppression, haptic tick).",
       status: "Live",
     },
   ],

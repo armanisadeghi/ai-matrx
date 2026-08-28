@@ -42,14 +42,21 @@ features/product-capture/
   components/NotesPanel.tsx           quick-access textarea (caret-to-end contract)
   components/VoiceNoteButton.tsx      useSimpleRecorder wrapper
   components/ItemsSheet.tsx           in-capture review drawer (Drawer, CaptureThumb, ConfirmDialog)
-  components/ProductCaptureHeader.tsx shared RouteHeader (back + title + actions) for the manage pages
-  components/AllItemsTable.tsx        MatrxDataTable over listAllItems/listAllFiles
-  components/ItemDetailView.tsx       view mode (media grid, add/delete files, SKU/notes autosave)
+  components/ProductCaptureHeader.tsx shared RouteHeader (optional back + title + actions) for the manage pages — it INJECTS ITSELF; never wrap it in a second <PageHeader> (splits the center zone in half)
+  components/AllItemsTable.tsx        desktop: MatrxDataTable over listAllItems/listAllFiles; mobile: ItemSwipeRow card list
+  components/ItemDetailView.tsx       view mode (media grid + long-press delete, MediaPager, add/delete files, SKU/notes autosave)
+  components/MediaPager.tsx           full-screen swipeable viewer (swipe ← → page, ↓ dismiss; desktop chevrons/keys; InlineMediaRef contain-fit slides)
+  components/SwipeableRow.tsx         iOS Mail-style swipe actions (motion drag; leading = positive, trailing = destructive)
+  components/ItemSwipeRow.tsx         the ONE gesture item row (tap/swipe/long-press) shared by ItemsSheet + /all mobile
+  components/ItemActionsDrawer.tsx    long-press action sheet (View / Capture / Mark ready-Reprocess / Delete)
+  hooks/useLongPress.ts               pointer long-press (450 ms, slop-cancel, click suppression, haptic)
 app/(core)/tools/product-capture/          capture page (SSR auth gate, ?item= deep link) + layout (metadata "PC") + ssr:false client boundary
-app/(core)/tools/product-capture/all/      manage list (PageHeader + AllItemsTable)
+app/(core)/tools/product-capture/all/      manage list
 app/(core)/tools/product-capture/item/[id]/  view mode
 app/(core)/tools/product-capture/admin/    FeatureAdminPage map — add every new route/component here
 ```
+
+**Gesture contract (mobile-first, iOS conventions):** every list row — the in-capture ItemsSheet and the /all mobile card list, both on `ItemSwipeRow` — answers tap (host primary: resume in capture, view on /all), swipe RIGHT (positive: Details in capture, Capture on /all), swipe LEFT (Delete, confirmed), and long-press (`ItemActionsDrawer` with all four actions). Media tiles on the detail page: tap → `MediaPager`, long-press → delete confirm. The pager swipes ← → between files, ↓ dismisses (iOS Photos), with counter + dots and desktop chevrons/arrow keys.
 
 Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPreview` / `capturePhotoFromVideo` canvas path / `startVideoRecording`), `lib/qr/decode.ts` (THE decoder), `useSimpleRecorder` + `toAudioFile` + `transcribeCloudFile` (the audio invariants: captureLock, shared mic, one controller), `fileHandler`, `CaptureThumb`/`InlineMediaRef`, `guardedUpdate`, `ConfirmDialog`, Drawer, `@/lib/toast`. ONE `ssr:false` boundary at the route client (Fragmentation Law); everything beneath is static.
 
@@ -63,6 +70,8 @@ Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPrevi
 6. **The `capturing → captured` transition IS the workflow handoff.** Items are born `capturing`; `service.closeItem` flips to `captured` when the photographer moves on (`finishCurrentItem` — Next, QR-advance, item switch — plus the manage/detail "Mark ready" action), and that DB transition fires the table's workflow event trigger (`workflow.watch_table` attached `workflow.emit_trigger_events`; matrx-graph event triggers, aidream `packages/matrx-graph/matrx_graph/workers/FEATURE.md` § Trigger watchers). `reopenItem` (capture surface adopting an existing item) flips back to `capturing`, so closing again re-fires — more photos mean a reprocess; likewise "Reprocess" on a `processed` item is just `closeItem`. Never fire workflows from client code — the status write is the only trigger path, so agents/SQL/imports behave identically to the UI.
 
 ## Change log
+
+- 2026-08-28 — Gestures + header fix (Arman's round-3 feedback): fixed the manage-page shell header (the pages wrapped self-injecting `RouteHeader` in a second `PageHeader`, splitting the center zone 50/50 — back button appeared mid-header and the title crushed); `MediaPager` swipeable viewer everywhere a file opens full-screen; `ItemSwipeRow` + `SwipeableRow` + `useLongPress` + `ItemActionsDrawer` give every list surface tap/swipe-left/swipe-right/long-press per the gesture contract; /all renders the card list on mobile (canonical table stays on desktop). type-check/eslint green.
 
 - 2026-08-28 — v3 (workflow handoff): `status` becomes the real capture lifecycle `capturing`/`captured`/`processed` (migration `workbench_product_capture_status_capturing_2026_08_28.sql`, applied live + ledgered; default now `capturing`) and the table is instrumented with `workflow.watch_table` so the `→ captured` transition durably enqueues the org's event trigger (invariant 6). `closeItem`/`reopenItem` in `service.ts`; close-on-finish + reopen-on-adopt in `useProductCaptureSession`; "Mark ready"/"Reprocess" actions + `Capturing`/`Ready`/`Processed` labels on the manage table and detail view.
 - 2026-08-27 — Persisted thumbnails now resolve from `file_id` through `CaptureThumb`'s authenticated blob transport, fixing post-refresh image failures in iOS Safari.

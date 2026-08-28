@@ -36,9 +36,12 @@ import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import type { CaptureItem } from "../types";
 import { closeItem, deleteItem, listAllFiles, listAllItems } from "../service";
+import { ItemSwipeRow } from "./ItemSwipeRow";
+import { ItemActionsDrawer } from "./ItemActionsDrawer";
 
 interface ItemTableRow {
   id: string;
@@ -75,8 +78,10 @@ export function AllItemsTable() {
   const router = useRouter();
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
 
+  const isMobile = useIsMobile();
   const [rows, setRows] = useState<ItemTableRow[] | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ItemTableRow | null>(null);
+  const [actionsTarget, setActionsTarget] = useState<ItemTableRow | null>(null);
 
   const load = useCallback(async () => {
     if (!organizationId) return;
@@ -266,6 +271,101 @@ export function AllItemsTable() {
       ),
     },
   ];
+
+  // Mobile: a swipeable card list on the shared gesture row (tap → view,
+  // swipe RIGHT → capture, swipe LEFT → delete, long-press → all actions —
+  // the iOS-native shape of the same list). Desktop keeps the canonical
+  // data table with its full sort/filter/search surface.
+  if (isMobile) {
+    return (
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {rows === null ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : rows.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            Nothing captured yet — photos land here as you shoot.
+          </p>
+        ) : (
+          <ul className="space-y-2 pb-safe">
+            {rows.map((row) => (
+              <li key={row.id}>
+                <ItemSwipeRow
+                  row={{
+                    id: row.id,
+                    code: row.code,
+                    notes: row.notes,
+                    createdAt: row.createdAt,
+                    photoCount: row.photoCount,
+                    videoCount: row.videoCount,
+                    audioCount: row.audioCount,
+                    firstPhotoFileId: row.firstPhotoFileId,
+                    statusLabel: STATUS_LABELS[row.status] ?? row.status,
+                  }}
+                  onTap={() => openView(row)}
+                  leading={{
+                    icon: <Camera className="h-4 w-4" />,
+                    label: "Capture",
+                    className: "bg-primary text-primary-foreground",
+                    onTrigger: () => openCapture(row),
+                  }}
+                  onDelete={() => setConfirmDelete(row)}
+                  onLongPress={() => setActionsTarget(row)}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <ItemActionsDrawer
+          target={
+            actionsTarget
+              ? {
+                  id: actionsTarget.id,
+                  code: actionsTarget.code,
+                  status: actionsTarget.status,
+                }
+              : null
+          }
+          onOpenChange={(o) => {
+            if (!o) setActionsTarget(null);
+          }}
+          onView={() => {
+            if (actionsTarget) openView(actionsTarget);
+          }}
+          onCapture={() => {
+            if (actionsTarget) openCapture(actionsTarget);
+          }}
+          onMarkReady={() => {
+            if (actionsTarget) void markReady(actionsTarget);
+          }}
+          onDelete={() => {
+            if (actionsTarget) setConfirmDelete(actionsTarget);
+          }}
+        />
+
+        <ConfirmDialog
+          open={confirmDelete !== null}
+          onOpenChange={(o) => {
+            if (!o) setConfirmDelete(null);
+          }}
+          title="Delete this item?"
+          description={
+            confirmDelete?.code
+              ? `“${confirmDelete.code}” is removed from the capture list. Uploaded files stay in your organization's file tree.`
+              : "The item is removed from the capture list. Uploaded files stay in your organization's file tree."
+          }
+          confirmLabel="Delete"
+          variant="destructive"
+          onConfirm={() => {
+            if (confirmDelete) void remove(confirmDelete);
+            setConfirmDelete(null);
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
