@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 483 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 484 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "73763edaa5a3";
+export const KIND_REGISTRY_FINGERPRINT = "38270a57575a";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -7070,6 +7070,75 @@ export interface DomainFoldReport {
   skipped?: SkippedFoldRow[];
   already_linked?: number;
   organization_id: string;
+}
+
+/**
+ * Kind `electronics_intake_analysis` (registry v2).
+ */
+export interface ElectronicsIntakeAnalysis {
+  __kind: "electronics_intake_analysis";
+  status: string;
+  products: ({
+    __kind: "product_entry";
+    quantity?: {
+    __kind: "quantity_assessment";
+    unit_type?: string;
+    quantity_notes?: string;
+    estimated_count?: string | number | boolean | Record<string, unknown> | unknown[] | null;
+  };
+    condition?: {
+    __kind: "condition_assessment";
+    damage_flags?: unknown[];
+    overall_grade?: string;
+    positive_flags?: unknown[];
+    condition_notes?: string;
+  };
+    analyst_notes?: string;
+    image_indices?: number[];
+    product_index?: number;
+    identification?: {
+    brand?: {
+    value?: string;
+    confidence?: string;
+  };
+    __kind: "product_identification";
+    summary?: string;
+    category?: string;
+    model_name?: {
+    value?: string;
+    confidence?: string;
+  };
+    part_number?: {
+    value?: string;
+    confidence?: string;
+  };
+    model_number?: {
+    value?: string;
+    confidence?: string;
+  };
+    serial_number?: {
+    value?: string;
+    confidence?: string;
+  };
+    manufacture_year?: {
+    value?: string;
+    confidence?: string;
+  };
+    version_revision?: {
+    value?: string;
+    confidence?: string;
+  };
+    other_identifiers?: ({
+    label?: string;
+    value?: string;
+    __kind: "identifier_entry";
+    confidence?: string;
+  })[];
+  };
+    accessories_and_components?: unknown[];
+  })[];
+  status_notes?: string;
+  image_count_received?: number;
 }
 
 /**
@@ -18921,6 +18990,7 @@ export type GeneratedKindSlug =
   | "dispatch_result"
   | "document_quad_detection"
   | "domain_fold_report"
+  | "electronics_intake_analysis"
   | "entity_card"
   | "entity_mention"
   | "episode_title_options"
@@ -19407,6 +19477,7 @@ export interface KindPayloadBySlug {
   "dispatch_result": DispatchResult;
   "document_quad_detection": DocumentQuadDetection;
   "domain_fold_report": DomainFoldReport;
+  "electronics_intake_analysis": ElectronicsIntakeAnalysis;
   "entity_card": EntityCard;
   "entity_mention": EntityMention;
   "episode_title_options": EpisodeTitleOptions;
@@ -19897,6 +19968,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "dispatch_result",
   "document_quad_detection",
   "domain_fold_report",
+  "electronics_intake_analysis",
   "entity_card",
   "entity_mention",
   "episode_title_options",
