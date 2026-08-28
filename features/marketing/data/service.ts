@@ -260,7 +260,7 @@ export function assertMutated(
 
 /** Every `web.site` column — ONE list so selects can never drift per call site. */
 export const SITE_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync, plan_profile_id";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, slug, root_url, domain, status, visibility, integrations, homepage_screenshot_id, settings, brand_id, description, favicon_url, logo_url, og_image_url, initialized_at, initialization, gsc_synced_at, gsc_sync, plan_profile_id";
 
 /**
  * VIEW LAW: listSites / listSiteOptions are DELIBERATE org-browse surfaces,
@@ -2419,7 +2419,7 @@ export async function dismissDiscoveredItem(itemId: string): Promise<void> {
 // ============================================================================
 
 const BRAND_COLUMNS =
-  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings, profile";
+  "id, organization_id, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata, name, slug, description, website_url, logo_url, favicon_url, og_image_url, industry, notes, status, visibility, settings, profile";
 
 export async function listBrands(
   state: MatrxDataTableQueryState,
