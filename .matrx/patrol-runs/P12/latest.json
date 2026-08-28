@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P12",
   "runId": "20260818T161811Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-18T16:18:35.541Z",
-  "summary": "Detector batch is ready for exact-candidate adversarial certification.",
+  "state": "delivered",
+  "updatedAt": "2026-08-28T16:13:30.463Z",
+  "summary": "Certified detector candidate is integrated and contained in release v0.4.1390; delivery bookkeeping reconciled.",
   "source": "20260818T161811Z.json",
-  "eventHash": "c141451d6f3415abc54bc2337134487890e4c36d3bd1ab120d3cfa189a22a19b"
+  "eventHash": "a7e9fc274bfcd575a411835060e42d790d314a5ba31bcfa0fb68e4dfcf33547b"
 }

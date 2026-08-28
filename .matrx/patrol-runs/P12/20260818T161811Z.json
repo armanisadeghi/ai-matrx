@@ -42,6 +42,63 @@
       ],
       "previousEventHash": "893b9db79acbc4146f818375ffeeb0e5861b47c48275250c0b2ea11012a13350",
       "eventHash": "c141451d6f3415abc54bc2337134487890e4c36d3bd1ab120d3cfa189a22a19b"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-18T16:26:15.288Z",
+      "actor": "codex-p12-certifier",
+      "summary": "Independent adversarial review CERTIFIED the exact detector candidate with no batch-caused defect.",
+      "evidence": [
+        "Independent counts: 174 overlay ids, 25 declared, 149 missing, 0 unknown, 0 duplicates.",
+        "Phantom and duplicate mutation tests both failed loudly; missing-only backlog exited 0."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "569247bedbe04ebaa55efbce82a19f5dd4d9c7b5",
+        "certifierTaskId": "/root/p12_certifier",
+        "checks": [
+          "Scoped ESLint, Prettier, git diff --check, surface-drift, and surface-routes passed.",
+          "Baseline and candidate type-check diagnostics were byte-identical: 31 errors across 14 unrelated files."
+        ]
+      },
+      "previousEventHash": "c141451d6f3415abc54bc2337134487890e4c36d3bd1ab120d3cfa189a22a19b",
+      "eventHash": "abcf6c4063c27544e46c71f57e2b784c90c78b7a4fc363702c3292329b3adc73"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-18T16:26:30.020Z",
+      "actor": "codex-p12-worker",
+      "summary": "Certified detector candidate queued for fast integration; release remains serialized.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P12/20260818T161811Z"
+      ],
+      "delivery": {
+        "candidateSha": "569247bedbe04ebaa55efbce82a19f5dd4d9c7b5",
+        "preservedRef": "refs/heads/patrol-runs/P12/20260818T161811Z"
+      },
+      "previousEventHash": "abcf6c4063c27544e46c71f57e2b784c90c78b7a4fc363702c3292329b3adc73",
+      "eventHash": "535b38d2ae15fd502f660ee0b259c46dc34d26c176b4afcc0c8df59013d7517b"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-28T16:13:30.463Z",
+      "actor": "codex-p12-worker",
+      "summary": "Certified detector candidate is integrated and contained in release v0.4.1390; delivery bookkeeping reconciled.",
+      "evidence": [
+        "candidate 569247bedbe04ebaa55efbce82a19f5dd4d9c7b5 is an ancestor of origin/main",
+        "v0.4.1390 contains origin/main at 6683efa17d70497a59e4072f4a3fe94a6bab1dd6"
+      ],
+      "delivery": {
+        "candidateSha": "569247bedbe04ebaa55efbce82a19f5dd4d9c7b5",
+        "preservedRef": "refs/heads/patrol-runs/P12/20260818T161811Z",
+        "integratedSha": "6683efa17d70497a59e4072f4a3fe94a6bab1dd6",
+        "release": "v0.4.1390"
+      },
+      "previousEventHash": "535b38d2ae15fd502f660ee0b259c46dc34d26c176b4afcc0c8df59013d7517b",
+      "eventHash": "a7e9fc274bfcd575a411835060e42d790d314a5ba31bcfa0fb68e4dfcf33547b"
     }
   ]
 }
