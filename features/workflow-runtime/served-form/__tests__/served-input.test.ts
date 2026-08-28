@@ -226,6 +226,21 @@ describe("the 409 gap list — a refused start is never a dead end", () => {
     ]);
   });
 
+  it("recognizes the FLATTENED 409 the live middleware actually sends, and reports it un-enumerated", () => {
+    // Verified live against aidream at HEAD, 2026-08-28: the API error
+    // middleware normalizes the HTTPException detail and DROPS `missing`.
+    // Recognizable (not null) but empty — the form says exactly that.
+    expect(
+      readInputsRequiredGaps({
+        error: "inputs_required",
+        message: "This workflow needs input before it can start.",
+        user_message: "Something went wrong. Please try again later.",
+        details: null,
+        request_id: "f5338d0808224f2ea426c89699e175cb",
+      }),
+    ).toEqual([]);
+  });
+
   it("returns null for any other failure, so a real error is never shown as a gap", () => {
     expect(readInputsRequiredGaps({ detail: "boom" })).toBeNull();
     expect(readInputsRequiredGaps(null)).toBeNull();

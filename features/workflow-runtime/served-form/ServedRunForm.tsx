@@ -270,10 +270,21 @@ export function ServedRunForm({
         {serverGaps && (
           <div className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-3">
             <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
-              The server needs {serverGaps.length}{" "}
-              {serverGaps.length === 1 ? "input" : "inputs"} before this run can
-              start:
+              {serverGaps.length === 0
+                ? "The server refused to start this run for want of an input — but it did not say which."
+                : `The server needs ${serverGaps.length} ${
+                    serverGaps.length === 1 ? "input" : "inputs"
+                  } before this run can start:`}
             </p>
+            {serverGaps.length === 0 && (
+              <p className="mt-1 text-[11px] text-amber-800/80 dark:text-amber-200/80">
+                🚨 The 409 carried <code className="font-mono">inputs_required</code>{" "}
+                but no <code className="font-mono">missing</code> list — aidream&apos;s
+                error middleware flattens the detail and drops it. Server-side
+                defect: carry the gap list through the normalizer. Nothing you
+                entered was lost.
+              </p>
+            )}
             <ul className="mt-1 space-y-0.5">
               {serverGaps.map((gap) => (
                 <li

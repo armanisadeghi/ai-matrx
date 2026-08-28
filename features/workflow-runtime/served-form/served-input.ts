@@ -266,6 +266,14 @@ export interface ServedInputGap {
  * `409 {detail: {error: "inputs_required", missing: [...]}}` — the form
  * renders those gaps instead of a dead end. Returns null when the failure is
  * anything else, so a real error is never mistaken for a gap.
+ *
+ * 🚨 LIVE DEFECT, verified 2026-08-28 against aidream at HEAD: the API's
+ * error middleware FLATTENS the HTTPException detail to
+ * `{error, message, user_message, details, request_id}` and DROPS `missing`.
+ * So a real refusal arrives recognizable but un-enumerated — an empty array,
+ * not null. The form says exactly that rather than rendering "0 inputs
+ * needed"; the fix belongs on the server (carry `missing` through the
+ * normalizer), and this parser already reads it the moment it survives.
  */
 export function readInputsRequiredGaps(
   serverDetail: unknown,
