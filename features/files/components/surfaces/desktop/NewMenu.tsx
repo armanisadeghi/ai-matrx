@@ -13,9 +13,7 @@ import { extractErrorMessage } from "@/utils/errors";
 import {
   FileSpreadsheet,
   FileText,
-  FileUp,
   FolderPlus,
-  FolderUp,
   Plus,
   Presentation,
   Webhook,
@@ -52,6 +50,7 @@ import { setFocusedId } from "@/features/files/redux/slice";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useRagUploadPreference } from "@/features/files/handler/hooks/useRagUploadPreference";
 import { TooltipIcon } from "@/features/files/components/core/Tooltip/TooltipIcon";
+import { FileAcquisitionActions } from "@/features/files/components/core/FileAcquisition/FileAcquisitionActions";
 
 export interface NewMenuProps {
   parentFolderId: string | null;
@@ -123,8 +122,6 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
   );
   const { uploadMany: upload } = useFileUpload();
   const { triggerNow, setTriggerNow } = useRagUploadPreference();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const folderInputRef = useRef<HTMLInputElement | null>(null);
   const folderNameInputRef = useRef<HTMLInputElement | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
@@ -138,10 +135,9 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
     : undefined;
 
   const handleUploadFiles = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(event.target.files ?? []);
+    async (files: File[]) => {
       if (files.length) {
-        void (async () => {
+        try {
           const result = await upload(files, {
             parentFolderId,
             options: uploadOptions,
@@ -150,28 +146,19 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
           if (result?.uploaded?.length) {
             dispatch(setFocusedId(result.uploaded[result.uploaded.length - 1]));
           }
-        })();
-      }
-      event.target.value = "";
-    },
-    [dispatch, upload, parentFolderId, uploadOptions],
-  );
-
-  const handleUploadFolder = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const files = Array.from(event.target.files ?? []);
-      if (files.length) {
-        void (async () => {
-          const result = await upload(files, {
-            parentFolderId,
-            options: uploadOptions,
-          });
-          if (result?.uploaded?.length) {
-            dispatch(setFocusedId(result.uploaded[result.uploaded.length - 1]));
+          if (result.failed.length) {
+            toast.error("Some files could not be added", {
+              description: result.failed
+                .map((failure) => `${failure.name}: ${failure.error}`)
+                .join("; "),
+            });
           }
-        })();
+        } catch (error: unknown) {
+          toast.error("Files could not be added", {
+            description: extractErrorMessage(error),
+          });
+        }
       }
-      event.target.value = "";
     },
     [dispatch, upload, parentFolderId, uploadOptions],
   );
@@ -219,14 +206,12 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
           </DropdownMenuTrigger>
         </TooltipIcon>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuItem onSelect={() => fileInputRef.current?.click()}>
-            <FileUp className="mr-2 h-4 w-4" />
-            Upload files
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => folderInputRef.current?.click()}>
-            <FolderUp className="mr-2 h-4 w-4" />
-            Upload folder
-          </DropdownMenuItem>
+          <FileAcquisitionActions
+            presentation="menu"
+            onFiles={handleUploadFiles}
+            onError={(message) => toast.error(message)}
+            enableExistingFiles={false}
+          />
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setCreateOpen(true)}>
             <FolderPlus className="mr-2 h-4 w-4" />
@@ -262,24 +247,6 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
           </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        hidden
-        onChange={handleUploadFiles}
-      />
-      <input
-        ref={folderInputRef}
-        type="file"
-        multiple
-        hidden
-        onChange={handleUploadFolder}
-        // @ts-expect-error — non-standard but widely supported. MATRX-EXCEPTION: webkitdirectory isn't in React's InputHTMLAttributes typing; a global JSX augmentation is out of this feature's scope.
-        webkitdirectory="true"
-        directory=""
-      />
 
       <AlertDialog open={createOpen} onOpenChange={setCreateOpen}>
         <AlertDialogContent

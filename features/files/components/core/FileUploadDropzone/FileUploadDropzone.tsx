@@ -22,6 +22,12 @@ import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { UploadProgressList } from "./UploadProgressList";
 import type { UploadFilesArg } from "@/features/files/types";
 import { extractErrorMessage } from "@/utils/errors";
+import { FileAcquisitionActions } from "@/features/files/components/core/FileAcquisition/FileAcquisitionActions";
+
+export interface FileUploadDropzoneActions {
+  openLocalPicker: () => void;
+  uploadFiles: (files: File[]) => Promise<void>;
+}
 
 export interface FileUploadDropzoneProps {
   /** Parent folder for uploads. null = root. */
@@ -34,10 +40,18 @@ export interface FileUploadDropzoneProps {
   maxSize?: number;
   /** Enable paste from clipboard (images only). Defaults true. */
   enablePaste?: boolean;
+  /** Show local-folder acquisition in inline/action formats. */
+  enableLocalFolder?: boolean;
+  /** Show the auth-aware Google Drive source. */
+  enableGoogleDrive?: boolean;
+  /** Optional existing-Files door for picker hosts. */
+  onChooseExisting?: () => void;
   /** Rendering mode. */
   mode?: "overlay" | "inline";
   /** Children render inside the drop surface. */
-  children?: React.ReactNode;
+  children?:
+    | React.ReactNode
+    | ((actions: FileUploadDropzoneActions) => React.ReactNode);
   className?: string;
   /** Fires the moment an upload batch STARTS (before any network completes).
    *  Hosts use it to open the context-assignment prompt while bytes move. */
@@ -56,6 +70,9 @@ export function FileUploadDropzone({
   accept,
   maxSize,
   enablePaste = true,
+  enableLocalFolder = true,
+  enableGoogleDrive = true,
+  onChooseExisting,
   mode = "overlay",
   children,
   className,
@@ -151,6 +168,10 @@ export function FileUploadDropzone({
 
   const rootProps = getRootProps();
   const highlighted = isDragActive || pasteHighlight;
+  const renderedChildren =
+    typeof children === "function"
+      ? children({ openLocalPicker: openPicker, uploadFiles: handleUpload })
+      : children;
 
   if (mode === "inline") {
     return (
@@ -166,22 +187,23 @@ export function FileUploadDropzone({
         <input {...getInputProps()} />
         <Upload className="h-8 w-8" aria-hidden="true" />
         <div className="text-center">
-          <p>
-            Drag & drop files here, or{" "}
-            <button
-              type="button"
-              onClick={openPicker}
-              className="underline font-medium text-foreground"
-            >
-              browse
-            </button>
-          </p>
+          <p>Drag & drop files here.</p>
           {enablePaste ? (
             <p className="text-xs mt-1 opacity-75">
               You can also paste an image with ⌘V.
             </p>
           ) : null}
         </div>
+        <FileAcquisitionActions
+          presentation="inline"
+          onFiles={handleUpload}
+          onError={onError}
+          accept={accept?.join(",")}
+          enableLocalFolder={enableLocalFolder}
+          enableExistingFiles={Boolean(onChooseExisting)}
+          onChooseExisting={onChooseExisting}
+          enableGoogleDrive={enableGoogleDrive}
+        />
         {visibleUploads.length > 0 ? (
           <UploadProgressList
             uploads={visibleUploads}
@@ -200,7 +222,7 @@ export function FileUploadDropzone({
       data-drop-active={highlighted ? "true" : undefined}
     >
       <input {...getInputProps()} />
-      {children}
+      {renderedChildren}
       {highlighted ? (
         <div
           className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-md border-2 border-dashed border-primary bg-primary/10"
