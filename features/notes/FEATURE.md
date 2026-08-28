@@ -53,6 +53,10 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 
 ## Key flows
 
+**Auth boundary:** Realtime catch-up reads run only while the subscribing user
+still matches `userAuth.id`; a stale `SUBSCRIBED` callback after logout or an
+account switch tears down its channel without dispatching authenticated thunks.
+
 ### Flow 1 — Create / edit a note
 
 1. User opens editor → `notes` slice hydrates the target row via `service/`
@@ -210,5 +214,7 @@ Key types live in `features/notes/` — import from the feature barrel, not inte
 - `2026-04-22` — claude: initial FEATURE.md extracted from README.md.
 
 ---
+
+- `2026-08-28` — Realtime catch-up now rejects stale `SUBSCRIBED` callbacks after logout/account switch, preventing guest `fetchNotesList` rejections.
 
 > **Keep-docs-live:** changes to the DB schema, realtime pattern, or the save-from-anywhere programmatic API must update this doc. Keep `README.md` focused on user-facing guidance; architecture notes go here.

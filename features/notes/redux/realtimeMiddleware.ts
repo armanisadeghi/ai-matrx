@@ -378,6 +378,14 @@ export const notesRealtimeMiddleware: Middleware<
       )
       .subscribe((status, err) => {
         if (status === "SUBSCRIBED") {
+          const currentUserId = (storeApi.getState() as RootState).userAuth?.id;
+          if (!currentUserId || currentUserId !== subscribedUserId) {
+            // Supabase may deliver a stale SUBSCRIBED callback after logout or
+            // an account switch. Never let that old channel issue authenticated
+            // catch-up reads under the new (or absent) identity.
+            unsubscribe();
+            return;
+          }
           console.log("[Notes RT] Connected");
           if (backoffResetTimer) clearTimeout(backoffResetTimer);
           backoffResetTimer = setTimeout(() => {

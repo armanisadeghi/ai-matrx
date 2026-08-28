@@ -13,8 +13,8 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 
 type SubscriptionCallback = (
-  status: "CHANNEL_ERROR",
-  error: Error,
+  status: "SUBSCRIBED" | "CHANNEL_ERROR",
+  error?: Error,
 ) => void;
 
 const subscriptionCallbacks: SubscriptionCallback[] = [];
@@ -89,5 +89,36 @@ describe("notes realtime disconnect logging", () => {
     handle({ type: "notes/resetNotesState" });
     warn.mockRestore();
     error.mockRestore();
+  });
+
+  it("drops a stale subscribed callback after auth identity disappears", () => {
+    const dispatched: unknown[] = [];
+    const state = {
+      userAuth: { id: "user-1" as string | null },
+    } as RootState;
+    const storeApi = {
+      getState: () => state,
+      dispatch: (action: unknown) => {
+        dispatched.push(action);
+        return action;
+      },
+    } as MiddlewareAPI;
+    const handle = notesRealtimeMiddleware(storeApi)(
+      jest.fn((action: unknown) => action),
+    );
+
+    handle(fetchNotesList.fulfilled(undefined, "request-1", undefined));
+    expect(subscriptionCallbacks).toHaveLength(1);
+
+    state.userAuth.id = null;
+    subscriptionCallbacks[0]("SUBSCRIBED");
+
+    expect(supabase.removeChannel).toHaveBeenCalledWith(mockChannel);
+    expect(dispatched).not.toContainEqual(
+      expect.objectContaining({ type: "notes/fetchNotesList/pending" }),
+    );
+    expect(dispatched).not.toContainEqual(
+      expect.objectContaining({ type: "notes/fetchSharedNotesList/pending" }),
+    );
   });
 });
