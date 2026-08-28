@@ -1,5 +1,5 @@
 ---
-status: active
+status: blocked
 updated: 2026-08-27
 repos: [matrx-frontend]
 scope: tail
@@ -35,15 +35,6 @@ its `canvas_items` row — instead of each one pushing its own private copy into
 - Dev server: `pnpm preview:start` (port 3001, ONE machine-wide). Login: `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/artifacts`
 - Review queue: `b8b0091f-0cbf-49f4-bc83-cefe28224ef4` (`submitted`).
 
-## Remaining work
-
-- In the isolated in-app Browser, click each converted block's OWN Canvas control twice and prove
-  one pane item remains. Saved direct routes exist for quiz, comparison, presentation, research,
-  resources, recipe, decision-tree, diagram, and timeline; the Browser became unavailable before
-  this exact control-path pass could run.
-- Create or locate deterministic saved fixtures for progress, troubleshooting, and math problem,
-  then run the same direct-control/dedupe check. The current live DB has zero rows for those types.
-
 ## EXEMPT — do not touch, these are correct
 
 | File | Why |
@@ -69,6 +60,17 @@ so whether they are artifacts is a product call, not a refactor. Leave them and 
 
 ## Done
 
+- Fresh isolated in-app Browser passes exercised every converted renderer's own Canvas control
+  twice and proved one pane remained. Quiz, comparison, presentation, research, resources,
+  progress, troubleshooting, recipe, decision-tree, diagram, timeline, and math all rendered and
+  remained contained on desktop and mobile; deterministic saved fixtures now cover the formerly
+  missing progress, troubleshooting, and math types. Math's own control was exercised in the
+  canonical Shape preview, while its saved pointer dedupe was exercised from the library card;
+  its dedicated route correctly omits the opener because it is already a direct-render surface.
+- The saved diagram detail route now supplies the canonical workspace renderer a bounded viewport,
+  and viewport fitting uses the mounted React Flow bounds helper. Fresh certification rendered all
+  five nodes and edges, exercised zoom and mini-map, and reported zero runtime, sizing, or bounds
+  warnings.
 - All 10 typed blocks and both generic wrappers open materialized artifacts by pointer while
   retaining the snapshot fallback — see `features/canvas/FEATURE.md`.
 - Independent `/artifacts` tests passed renderer interactions, full-page routes, list-card dedupe,
