@@ -59,14 +59,15 @@ function isMetaCountField(key: string, val: unknown): val is number {
   );
 }
 
-function formatMetaNumber(n: number): string {
+/** Fixed locale keeps server HTML byte-identical to the browser's first render. */
+export function formatMetaNumber(n: number): string {
   if (Number.isInteger(n) && Math.abs(n) >= 10_000) {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat("en-US", {
       notation: "compact",
       maximumFractionDigits: 1,
     }).format(n);
   }
-  return n.toLocaleString();
+  return n.toLocaleString("en-US");
 }
 
 /** True when a value renders on a single short line (fit for an inline row). */

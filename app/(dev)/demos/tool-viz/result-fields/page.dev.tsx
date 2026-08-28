@@ -19,6 +19,7 @@ import { Play, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
+import { RESULT_MEDIA_DEMO_REF } from "@/features/tool-call-visualization/result-fields/demo-fixtures";
 import { GenericRenderer } from "@/features/tool-call-visualization/registry/GenericRenderer";
 import { ToolCallVisualization } from "@/features/tool-call-visualization/components/ToolCallVisualization";
 import { ToolCallBatch } from "@/features/tool-call-visualization/components/ToolCallBatch";
@@ -172,13 +173,8 @@ const FIXTURES: Array<{ label: string; value: unknown }> = [
     },
   },
   {
-    label: "media — image FileRef (REGRESSION: must still render as <img>)",
-    value: {
-      file_id: "a1b2c3d4-1111-2222-3333-444455556666",
-      mime_type: "image/png",
-      file_name: "chart.png",
-      url: "https://cdn.example.com/files/chart.png",
-    },
+    label: "media — deterministic image ref (REGRESSION: must still render as <img>)",
+    value: RESULT_MEDIA_DEMO_REF,
   },
   { label: "empty (null)", value: null },
   { label: "empty (empty object)", value: {} },
@@ -1017,7 +1013,7 @@ const SCRAPE_READING_SNAPSHOT: ToolLifecycleEntry = {
     event: "tool_progress" as const,
     call_id: "scrape-reading-snapshot",
     tool_name: "core_web_read_web_pages",
-    timestamp: Date.now() + i,
+    timestamp: Date.parse("2026-06-22T10:00:03.000Z") + i,
     message: `Browsing ${url}`,
     data: undefined,
   })),
