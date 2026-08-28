@@ -100,6 +100,12 @@ raises** on a refusal. That is the whole reason this surface can tell a person *
   a friendlier paraphrase is a worse sentence.
 - A transport failure (`error` from supabase-js) is a different thing and still throws.
 
+**`public.hr_wf_instance` is `VOLATILE`, even though its granted path reads.** A refusal reaches
+`hr._governance_refusal`, which writes the required audit row; PostgREST runs `STABLE` RPCs in a
+read-only transaction and otherwise replaces the refusal envelope with SQLSTATE `25006`. Any
+migration that recreates this door must preserve `VOLATILE`; `hr.stable_doors_that_write()` must
+remain empty for it.
+
 ## 🚨 THE SENSITIVITY SPLIT IS COMPUTED IN THE DATABASE, NOT HERE
 
 A restricted-tier flow (`pay_change`, adverse action, corrective action) renders a **deliberately
@@ -199,6 +205,8 @@ the fix is in that pillar's flow declaration — never a second list on this pag
 
 # Change Log
 
+- 2026-08-28 — Restored `hr_wf_instance` to `VOLATILE` after the subject-display migration
+  recreated it as `STABLE`, making governance refusals fail with read-only-transaction `25006`.
 - 2026-08-28 — Protected the `/hr` route family at the shared proxy boundary so guests reach
   sign-in before any HR RPC runs, with the exact task path and query preserved as their destination.
 - 2026-08-27 — Decision controls now translate through the one server-verified past-tense verb map,
