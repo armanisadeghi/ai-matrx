@@ -259,7 +259,7 @@ async def main():
 
         # ================================================================= §8.1 LEAVE, END TO END
         await as_user(people["alice"]["uid"])
-        res = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
+        res = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
                       lr, org, json.dumps({"total_hours": 8, "notice_days": 30,
                                            "leave_type": "pto", "coverage_pct": 100}))
         inst = res.get("instance_id")
@@ -311,7 +311,7 @@ async def main():
 
         # ---- NEVER APPROVE YOURSELF, direction 1: the subject calls wf_decide with the real step id
         await as_user(people["alice"]["uid"])
-        r1 = await j("select hr.wf_decide($1,'approved')", step["id"])
+        r1 = await j("select public.hr_wf_decide($1,'approved')", step["id"])
         rec("never-self", "the SUBJECT calling wf_decide on the real step is refused",
             r1.get("granted") is False, r1.get("reason"))
         rec("never-self", "and the refusal is an ENVELOPE, not a raise (refusal-envelope law)",
@@ -323,7 +323,7 @@ async def main():
         inst_before = await conn.fetchval(
             "select count(*) from hr.workflow_instance where organization_id=$1", org)
         await as_user(people["alice"]["uid"])
-        r2 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", lr, org)
+        r2 = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2)", lr, org)
         rec("§1.6 binding", "a second open instance on the same (target, flow) is refused",
             r2.get("granted") is False and r2.get("reason") == "WF_BINDING_OPEN", r2.get("reason"))
         rec("§1.6 binding", "and it names the instance already holding the binding, so the caller can go to it",
@@ -358,13 +358,13 @@ async def main():
             org, people["alice"]["employment"], lp)
         idem_key = f"hrb008-idem-{uuid.uuid4()}"
         await as_user(people["alice"]["uid"])
-        ri1 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb,null,false,$4)",
+        ri1 = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb,null,false,$4)",
                       idem_target, org, json.dumps({"total_hours": 8}), idem_key)
         await as_owner()
         idem_before = await conn.fetchval(
             "select count(*) from hr.workflow_instance where organization_id=$1", org)
         await as_user(people["alice"]["uid"])
-        ri2 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb,null,false,$4)",
+        ri2 = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb,null,false,$4)",
                       idem_target, org, json.dumps({"total_hours": 8}), idem_key)
         await as_owner()
         rec("§4.2 idempotency", "a replay of the same idempotency key RETURNS the first instance instead of erroring",
@@ -377,7 +377,7 @@ async def main():
 
         # ---- the manager approves
         await as_user(people["bob"]["uid"])
-        r3 = await j("select hr.wf_decide($1,'approved')", step["id"])
+        r3 = await j("select public.hr_wf_decide($1,'approved')", step["id"])
         rec("§8.1 leave", "the manager's approval is recorded and the step closes",
             r3.get("granted") and r3.get("decision") == "approved", json.dumps(r3)[:200])
 
@@ -437,7 +437,7 @@ async def main():
             "values ($1,$2,$3,current_date + 60, current_date + 60, 8,'submitted','proof','1') returning id",
             org, people["alice"]["employment"], lp)
         await as_user(people["alice"]["uid"])
-        r4 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
+        r4 = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
                      lr2, org, json.dumps({"total_hours": 8}))
         await as_owner()
         p2 = await conn.fetchval(
@@ -468,7 +468,7 @@ async def main():
             "values ($1,$2,$3,current_date + 90, current_date + 90, 8,'submitted','proof','1') returning id",
             org, people["alice"]["employment"], lp)
         await as_user(people["alice"]["uid"])
-        r5 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", lr3, org)
+        r5 = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2)", lr3, org)
         await as_owner()
         f5 = await conn.fetchval(
             "select failure_class from hr.workflow_failure where workflow_instance_id=$1 limit 1",
@@ -486,7 +486,7 @@ async def main():
             "select id from hr.workflow_failure where workflow_instance_id=$1 and state='open' limit 1",
             r5.get("instance_id"))
         await as_user(people["carol"]["uid"])
-        f5_hide = await j("select hr.wf_resolve_failure($1,'resolve','tidy it away')", f5_id)
+        f5_hide = await j("select public.hr_wf_resolve_failure($1,'resolve','tidy it away')", f5_id)
         await as_owner()
         rec("§1.8 failure", "🚨 `resolve` is REFUSED while the step is still unroutable — a dead step may not be tidied away",
             f5_hide.get("granted") is False
@@ -516,7 +516,7 @@ async def main():
         await as_owner()
         await conn.execute("update hr.pay_period set state='submitted' where id=$1", pp)
         await as_user(people["alice"]["uid"])
-        ra = await j("select hr.wf_request('timecard_attestation','hr_pay_period_employment',$1,$2,$3::jsonb)",
+        ra = await j("select public.hr_wf_request('timecard_attestation','hr_pay_period_employment',$1,$2,$3::jsonb)",
                      ppe, org, json.dumps({"total_hours": 80, "exception_count": 0}))
         att_inst = ra.get("instance_id")
         await as_owner()
@@ -532,13 +532,13 @@ async def main():
 
         # somebody ELSE cannot attest for you: allows_self makes SELF the only true case
         await as_user(people["bob"]["uid"])
-        rb = await j("select hr.wf_decide($1,'attested')", att_step["id"])
+        rb = await j("select public.hr_wf_decide($1,'attested')", att_step["id"])
         rec("§8.2 attestation", "the manager cannot attest on the employee's behalf",
             rb.get("granted") is False, rb.get("reason"))
 
         # PRESERVED DISAGREEMENT: attested_with_exception is a decision row with a reason
         await as_user(people["alice"]["uid"])
-        rc = await j("select hr.wf_decide($1,'attested_with_exception','Thursday shows 6h; I worked 8h.')",
+        rc = await j("select public.hr_wf_decide($1,'attested_with_exception','Thursday shows 6h; I worked 8h.')",
                      att_step["id"])
         rec("§8.2 attestation", "the employee attests WITH EXCEPTION and it is accepted",
             rc.get("granted") is True, json.dumps(rc)[:160])
@@ -575,7 +575,7 @@ async def main():
                 "from hr.workflow_instance where id=$1", tc_inst))
         pp_state_before = await conn.fetchval("select state from hr.pay_period where id=$1", pp)
         await as_user(people["bob"]["uid"])
-        rf = await j("select hr.wf_decide($1,'rejected','Thursday needs a correction before I approve.')",
+        rf = await j("select public.hr_wf_decide($1,'rejected','Thursday needs a correction before I approve.')",
                      tc_step["id"])
         await as_owner()
         # 🚨 §8.2 node J2 IS ABOUT THE ROW, NOT THE WORD. `timecard_approval` ships
@@ -603,7 +603,7 @@ async def main():
             "values ($1,$2,$3,current_date + 120, current_date + 121, 16,'submitted','proof','1') returning id",
             org, people["alice"]["employment"], lp)
         await as_user(people["alice"]["uid"])
-        rh = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
+        rh = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
                      lr4, org, json.dumps({"total_hours": 16}))
         tgt_inst = rh.get("instance_id")
         await as_owner()
@@ -615,7 +615,7 @@ async def main():
         # a MATERIAL change: the dates move
         await conn.execute("update hr.leave_request set ends_on=current_date + 125, requested_hours=40 where id=$1", lr4)
         await as_user(people["bob"]["uid"])
-        ri = await j("select hr.wf_decide($1,'approved')", tgt_step)
+        ri = await j("select public.hr_wf_decide($1,'approved')", tgt_step)
         rec("§3.4 versioned target", "🚨 approving a request whose target changed materially is REFUSED with WF_TARGET_CHANGED",
             ri.get("granted") is False and ri.get("reason") == "WF_TARGET_CHANGED", ri.get("reason"))
         rec("§3.4 versioned target", "the default policy is `restart`, and it says so",
@@ -631,7 +631,7 @@ async def main():
 
         # ================================================================= §8.3 TERMINATION
         await as_user(people["carol"]["uid"])
-        rj = await j("select hr.wf_request('termination','hr_employment',$1,$2,$3::jsonb,$4)",
+        rj = await j("select public.hr_wf_request('termination','hr_employment',$1,$2,$3::jsonb,$4)",
                      people["erin"]["employment"], org,
                      json.dumps({"voluntary": False, "last_day": "2026-09-30",
                                  "separation_reason": "position_eliminated",
@@ -653,10 +653,10 @@ async def main():
         t_step = await conn.fetchval(
             "select id from hr.workflow_step where workflow_instance_id=$1 and step_key='hr_review'", term)
         await as_user(people["carol"]["uid"])
-        rk0 = await j("select hr.wf_decide($1,'approved')", t_step)
+        rk0 = await j("select public.hr_wf_decide($1,'approved')", t_step)
         rec("§4.2 refusals", "approving a requires_reason step with NO reason is refused",
             rk0.get("granted") is False and rk0.get("reason") == "WF_REASON_REQUIRED", rk0.get("reason"))
-        rk0b = await j("select hr.wf_decide($1,'rejected')", t_step)
+        rk0b = await j("select public.hr_wf_decide($1,'rejected')", t_step)
         rec("§4.2 refusals", "rejecting with no reason is refused — a hard rule, never a knob (§9.1)",
             rk0b.get("granted") is False and rk0b.get("reason") == "WF_REASON_REQUIRED", rk0b.get("reason"))
         # 🚨 SINCE hr_c4_22 A TERMINATION NEEDS TWO ACTORS ON ITS LADDER, and the fixture had one.
@@ -671,7 +671,7 @@ async def main():
             "values ($1,'employment',$2,'termination_approve','org',95,current_date - 300)",
             org, str(people["dave"]["employment"]))
         await as_user(people["carol"]["uid"])
-        rk = await j("select hr.wf_decide($1,'approved','Position eliminated; approved by HR.')", t_step)
+        rk = await j("select public.hr_wf_decide($1,'approved','Position eliminated; approved by HR.')", t_step)
         rec("§8.3 termination", "HR review approves with a mandatory reason", rk.get("granted"),
             json.dumps(rk)[:160])
         await as_owner()
@@ -686,13 +686,13 @@ async def main():
             str(await conn.fetchval(
                 "select resolved_approver_ids::text from hr.workflow_step where id=$1", e_step)))
         await as_user(people["carol"]["uid"])
-        rl_self = await j("select hr.wf_decide($1,'approved','Same person, second level.')", e_step)
+        rl_self = await j("select public.hr_wf_decide($1,'approved','Same person, second level.')", e_step)
         rec("§1.4 two actors", "and the decide door refuses her by name if she reaches it anyway",
             rl_self.get("granted") is False
             and rl_self.get("reason") in ("WF_DISTINCT_ACTOR_REQUIRED", "WF_NOT_APPROVER"),
             rl_self.get("reason"))
         await as_user(people["dave"]["uid"])
-        rl = await j("select hr.wf_decide($1,'approved','Confirmed.')", e_step)
+        rl = await j("select public.hr_wf_decide($1,'approved','Confirmed.')", e_step)
         await as_owner()
         rec("§1.4 two actors", "🚨 the SUBSTITUTE rung carries the second actor and the two-level review actually happens — two distinct deciders on the ladder",
             rl.get("granted") is True and await conn.fetchval(
@@ -720,7 +720,7 @@ async def main():
             "update hr.workflow_step set state='awaiting_result', activated_at=now(), "
             "result_due_at=now() - interval '1 hour' where id=$1", shut["id"])
         await as_user(people["carol"]["uid"])
-        rm = await j("select hr.wf_record_result($1,$2::jsonb,true)", shut["id"],
+        rm = await j("select public.hr_wf_record_result($1,$2::jsonb,true)", shut["id"],
                      json.dumps({"accounts_disabled": ["okta", "gsuite"], "note": "claimed by the integration"}))
         rec("§0 law 5", "🚨 a caller CLAIMING verified is refused when the flow type's probe says otherwise",
             rm.get("granted") is False and rm.get("reason") == "result_unverified", rm.get("reason"))
@@ -744,7 +744,7 @@ async def main():
         rec("§8.3 termination", "🚨 the instance NEVER reached completed with a failed shutoff",
             await conn.fetchval("select state <> 'completed' from hr.workflow_instance where id=$1", term))
         await as_user(people["carol"]["uid"])
-        rn = await j("select hr.wf_resolve_failure($1,'resolve','Disabled by hand in Okta and Google; screenshots filed.')",
+        rn = await j("select public.hr_wf_resolve_failure($1,'resolve','Disabled by hand in Okta and Google; screenshots filed.')",
                      fail_id)
         rec("§1.8 failure", "a human resolving it WITH EVIDENCE closes the branch — the only way it can close",
             rn.get("granted") is True, json.dumps(rn)[:160])
@@ -761,7 +761,7 @@ async def main():
             "values ($1,$2,$3,current_date + 200, current_date + 200, 8,'submitted','proof','1') returning id",
             org, people["alice"]["employment"], lp)
         await as_user(people["alice"]["uid"])
-        ro = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", lr5, org)
+        ro = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2)", lr5, org)
         await as_owner()
         sweep_step = await conn.fetchval(
             "select id from hr.workflow_step where workflow_instance_id=$1 and state='active'", ro.get("instance_id"))
@@ -786,10 +786,10 @@ async def main():
 
         # ================================================================= BULK, PER-STEP REFUSAL
         await as_user(people["bob"]["uid"])
-        rp = await j("select hr.wf_bulk_decide(array[$1]::uuid[],'approved')", tgt_step)
+        rp = await j("select public.hr_wf_bulk_decide(array[$1]::uuid[],'approved')", tgt_step)
         rec("§5.2 bulk", "bulk returns PER-STEP outcomes, not all-or-nothing",
             rp.get("granted") is True and isinstance(rp.get("results"), list), json.dumps(rp)[:200])
-        rq = await j("select hr.wf_bulk_decide(array[$1]::uuid[],'approved')", t_step)
+        rq = await j("select public.hr_wf_bulk_decide(array[$1]::uuid[],'approved')", t_step)
         rec("§5.2 bulk", "bulk is refused outright for a flow whose definition forbids it (termination)",
             rq.get("granted") is False and rq.get("reason") == "WF_BULK_FORBIDDEN", rq.get("reason"))
 
@@ -832,7 +832,7 @@ async def main():
         await as_owner()
         await conn.execute("update hr.approval_authority set is_active=true where id=$1", auth_ids["leave_approve"])
         await as_user(people["bob"]["uid"])
-        rt = await j("select hr.wf_delegate('employment',$1,'leave_approve',null,now(),now()+interval '10 days','Vacation cover')",
+        rt = await j("select public.hr_wf_delegate('employment',$1,'leave_approve',null,now(),now()+interval '10 days','Vacation cover')",
                      people["dave"]["employment"])
         rec("§4.2 delegate", "the delegation INTENT is written and returns a pending delegation id",
             rt.get("granted") and rt.get("state") == "pending", json.dumps(rt)[:200])
@@ -858,7 +858,7 @@ async def main():
             "values ($1,$2,$3,current_date + 300, current_date + 300, 8,'submitted','proof','1') returning id",
             org, people["alice"]["employment"], lp)
         await as_user(people["alice"]["uid"])
-        rv = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", lr6, org)
+        rv = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2)", lr6, org)
         await as_owner()
         dstep = await conn.fetchrow(
             "select resolution_path, resolved_approver_ids from hr.workflow_step "
@@ -880,14 +880,14 @@ async def main():
         # dave is now deciding an OPEN step whose SUBJECT is alice; handing that authority to
         # alice would be never-approve-yourself wearing a different hat.
         await as_user(people["dave"]["uid"])
-        rw = await j("select hr.wf_delegate('employment',$1,'leave_approve',null,now(),now()+interval '5 days','x')",
+        rw = await j("select public.hr_wf_delegate('employment',$1,'leave_approve',null,now(),now()+interval '5 days','x')",
                      people["alice"]["employment"])
         rec("§4.2 delegate", "delegating to the SUBJECT of your own open steps is refused (self-approval by proxy)",
             rw.get("granted") is False, rw.get("reason"))
 
         # ================================================================= WITHDRAW keeps decisions
         await as_user(people["alice"]["uid"])
-        rx = await j("select hr.wf_withdraw($1,'Changed my mind')", rv.get("instance_id"))
+        rx = await j("select public.hr_wf_withdraw($1,'Changed my mind')", rv.get("instance_id"))
         rec("§3.3 withdraw", "the requester may withdraw, and the instance closes as withdrawn",
             rx.get("granted") and rx.get("state") == "withdrawn", json.dumps(rx)[:160])
         await as_owner()
@@ -914,7 +914,7 @@ async def main():
             org, people["alice"]["employment"], lp)
         await conn.execute("select set_config('hr.privileged_write','',true)")   # COLD
         await as_user(people["alice"]["uid"])
-        rg = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
+        rg = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
                      lrg, org, json.dumps({"total_hours": 8}))
         guard_flag = await conn.fetchval("select current_setting('hr.privileged_write', true)")
         await conn.execute("reset role")
@@ -1032,7 +1032,7 @@ async def main():
         # ---- C→H: the employee attests, and the apply hook opens the manager's approval
         for key, mgr in (("alice", "bob"), ("bob", "carol")):
             await as_user(people[key]["uid"])
-            await j("select hr.wf_decide($1,'attested')", chain[key]["step"]["id"])
+            await j("select public.hr_wf_decide($1,'attested')", chain[key]["step"]["id"])
             await as_owner()
             chain[key]["mgr_step"] = await conn.fetchrow(
                 "select s.id from hr.workflow_step s join hr.workflow_instance i on i.id=s.workflow_instance_id "
@@ -1063,7 +1063,7 @@ async def main():
         # ---- H→L: the managers approve, the rows advance, and the period closes
         for key, mgr in (("alice", "bob"), ("bob", "carol")):
             await as_user(people[mgr]["uid"])
-            await j("select hr.wf_decide($1,'approved')", chain[key]["mgr_step"]["id"])
+            await j("select public.hr_wf_decide($1,'approved')", chain[key]["mgr_step"]["id"])
         await as_owner()
         rec("§8.2 H→L chain", "each manager approves and THAT employment's timecard row advances to approved",
             await conn.fetchval(
@@ -1128,7 +1128,7 @@ async def main():
             "select id from hr.workflow_failure where workflow_step_id=$1 "
             "and failure_class='unactionable_no_reach'", nr_step["id"])
         await as_user(people["carol"]["uid"])
-        nr_retry = await j("select hr.wf_resolve_failure($1,'retry','try again')", nr_fail)
+        nr_retry = await j("select public.hr_wf_resolve_failure($1,'retry','try again')", nr_fail)
         rec("§8.2 node G", "retry is REFUSED by name, and the refusal says what the class does offer",
             nr_retry.get("granted") is False
             and nr_retry.get("reason") == "unknown_action"
@@ -1136,7 +1136,7 @@ async def main():
             json.dumps(nr_retry)[:200])
         # 🚨 ESCALATE IS THE ONE CONTROL THIS STEP MUST NEVER TAKE — it hands somebody else the
         # employee's own signature, and it is what killed the real G2V timecard on 2026-08-27.
-        nr_esc = await j("select hr.wf_escalate($1,'nobody is answering')", nr_step["id"])
+        nr_esc = await j("select public.hr_wf_escalate($1,'nobody is answering')", nr_step["id"])
         await as_owner()
         rec("§8.2 node G", "🚨 ESCALATE is refused on a self-step — escalating an attestation hands somebody else the employee's signature",
             nr_esc.get("granted") is False
@@ -1148,7 +1148,7 @@ async def main():
         # `resolve` is not even on this class's menu — an unreachable step is not something you
         # declare fixed. The vocabulary refuses it before any step state is consulted.
         await as_user(people["carol"]["uid"])
-        nr_hide = await j("select hr.wf_resolve_failure($1,'resolve','tidy it away')", nr_fail)
+        nr_hide = await j("select public.hr_wf_resolve_failure($1,'resolve','tidy it away')", nr_fail)
         rec("§8.2 node G", "🚨 `resolve` is not offered for an unreachable step at all — you cannot declare it fixed",
             nr_hide.get("granted") is False
             and nr_hide.get("reason") == "unknown_action"
@@ -1157,7 +1157,7 @@ async def main():
 
         # the terminal path, through the product door
         await as_user(people["carol"]["uid"])
-        nr_term = await j("select hr.wf_resolve_failure($1,'not_attested','Nobody can reach this employee; closing it honestly.')",
+        nr_term = await j("select public.hr_wf_resolve_failure($1,'not_attested','Nobody can reach this employee; closing it honestly.')",
                           nr_fail)
         await as_owner()
         rec("§8.2 node G", "🚨 the failure lane closes it as NOT_ATTESTED — and the envelope carries `outcome` for the task page",
@@ -1178,7 +1178,7 @@ async def main():
             and list(nr_mgr_step["resolved_approver_ids"]) == [people["bob"]["employment"]],
             str(nr_mgr_step["id"]) if nr_mgr_step else None)
         await as_user(people["bob"]["uid"])
-        await j("select hr.wf_decide($1,'approved','Approved despite no attestation; the flag travels to the export.')",
+        await j("select public.hr_wf_decide($1,'approved','Approved despite no attestation; the flag travels to the export.')",
                 nr_mgr_step["id"])
         await as_owner()
         rec("§8.2 node G", "🚨 the manager approves a NOT-ATTESTED timecard and the row advances — approve-despite, flagged, never forged",
@@ -1244,7 +1244,7 @@ async def main():
             "update iam.memberships set role='member' where organization_id=$1 "
             "and container_type='organization'", org)
         await as_user(people["erin"]["uid"])
-        stale_req = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", stale_lr, org)
+        stale_req = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2)", stale_lr, org)
         await as_owner()
         await conn.execute(
             "update hr.approval_authority set is_active=true where organization_id=$1", org)
@@ -1274,7 +1274,7 @@ async def main():
                 "select count(*)>0 from hr.workflow_failure where workflow_instance_id=$1 and state='open'",
                 stale_inst))
         await as_user(people["carol"]["uid"])
-        await j("select hr.wf_cancel($1,'no longer needed')", stale_inst)
+        await j("select public.hr_wf_cancel($1,'no longer needed')", stale_inst)
         await as_owner()
         rec("§1.8 queue hygiene", "🚨 cancelling the instance CLOSES its open failure rows — a queue entry never outlives the work it described",
             await conn.fetchval(
@@ -1362,7 +1362,7 @@ async def main():
             "values ($1,$2,$3,current_date + 700, current_date + 700, 8,'submitted','proof','1') returning id",
             org, people["alice"]["employment"], lp)
         await as_user(people["alice"]["uid"])
-        rl_req = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", rl_lr, org)
+        rl_req = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2)", rl_lr, org)
         await as_owner()
         rl_step = await conn.fetchrow(
             "select resolution_path, resolved_approver_ids from hr.workflow_step "
@@ -1558,7 +1558,7 @@ async def main():
         before_n = await conn.fetchval(
             "select count(*) from hr.workflow_instance where organization_id=$1", act_org)
         await as_user(act_uid)
-        pf = await j("select hr.wf_request('pay_change','hr_position_assignment',$1,$2)", act_pa, act_org)
+        pf = await j("select public.hr_wf_request('pay_change','hr_position_assignment',$1,$2)", act_pa, act_org)
         await as_owner()
         rec("§4.2 pre-flight", "🚨 the SUBMISSION is refused at the front door — the named condition, not a post-hoc approver_ineligible",
             pf.get("granted") is False and pf.get("reason") == "WF_NO_POSSIBLE_APPROVER",
@@ -1577,7 +1577,7 @@ async def main():
         await conn.execute(
             "update hr.approval_authority set is_active=true where organization_id=$1", act_org)
         await as_user(act_uid)
-        pf_self = await j("select hr.wf_request('pay_change','hr_position_assignment',$1,$2)", act_pa, act_org)
+        pf_self = await j("select public.hr_wf_request('pay_change','hr_position_assignment',$1,$2)", act_pa, act_org)
         await as_owner()
         rec("§4.2 pre-flight", "🚨 the sole holder PROPOSING the pay change is refused at the front door too — §2.2 rule 2 strikes the requester, and the pre-flight knows it",
             pf_self.get("granted") is False and pf_self.get("reason") == "WF_NO_POSSIBLE_APPROVER",
@@ -1599,7 +1599,7 @@ async def main():
             "insert into hr.employment (organization_id, employee_id, employer_profile_id, hire_date, status) "
             "values ($1,$2,$3,current_date - 200,'active')", act_org, gil_e, act_er)
         await as_user(gil_uid)
-        pf2 = await j("select hr.wf_request('pay_change','hr_position_assignment',$1,$2)", act_pa, act_org)
+        pf2 = await j("select public.hr_wf_request('pay_change','hr_position_assignment',$1,$2)", act_pa, act_org)
         await as_owner()
         rec("§4.2 pre-flight", "and proposed by somebody who is NOT the approver, the very same request goes through — the refusal was always about reach",
             pf2.get("granted") is True, json.dumps(pf2)[:200])
@@ -1630,7 +1630,7 @@ async def main():
             act_org, ta_emp, act_jt, act_dept, act_loc, act_owner_emp)
         # only Fay qualifies: she holds every founding authority in this org
         await as_user(gil_uid)
-        ta_req = await j("select hr.wf_request('pay_change','hr_position_assignment',$1,$2)", ta_pa, act_org)
+        ta_req = await j("select public.hr_wf_request('pay_change','hr_position_assignment',$1,$2)", ta_pa, act_org)
         await as_owner()
         ta_inst = ta_req.get("instance_id")
         ta_step1 = await conn.fetchrow(
@@ -1640,7 +1640,7 @@ async def main():
             ta_step1 is not None and act_owner_emp in list(ta_step1["resolved_approver_ids"]),
             ta_step1["step_key"] if ta_step1 else None)
         await as_user(act_uid)
-        ta_d1 = await j("select hr.wf_decide($1,'approved','First level.')", ta_step1["id"])
+        ta_d1 = await j("select public.hr_wf_decide($1,'approved','First level.')", ta_step1["id"])
         await as_owner()
         rec("§1.4 two actors", "the first level is decided normally",
             ta_d1.get("granted") is True, json.dumps(ta_d1)[:140])
@@ -1672,7 +1672,7 @@ async def main():
             "resolved_user_ids=array[$3]::uuid[] where id=$1",
             ta_step2["id"], act_owner_emp, act_uid)
         await as_user(act_uid)
-        ta_d2 = await j("select hr.wf_decide($1,'approved','Second level, same person.')", ta_step2["id"])
+        ta_d2 = await j("select public.hr_wf_decide($1,'approved','Second level, same person.')", ta_step2["id"])
         await as_owner()
         rec("§1.4 two actors", "🚨 ARM TWO: even handed the step directly, the decide door REFUSES the prior decider — one mechanism, enforced twice",
             ta_d2.get("granted") is False
@@ -1712,7 +1712,7 @@ async def main():
             ta_step2b["state"] == "active" and gil_emp in list(ta_step2b["resolved_approver_ids"]),
             f'state={ta_step2b["state"]} approvers={list(ta_step2b["resolved_approver_ids"])}')
         await as_user(ivy_uid)
-        ta_d3 = await j("select hr.wf_decide($1,'approved','Second level, second person.')", ta_step2["id"])
+        ta_d3 = await j("select public.hr_wf_decide($1,'approved','Second level, second person.')", ta_step2["id"])
         await as_owner()
         rec("§1.4 two actors", "🚨 and the chain completes with TWO DISTINCT deciders — a two-level review that actually happened",
             ta_d3.get("granted") is True

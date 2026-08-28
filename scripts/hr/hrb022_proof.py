@@ -362,13 +362,13 @@ async def main():
         # ============================================================ B. THE ONE QUEUE
         # B3 — a real request driven through wf_request(draft) + wf_submit, as the real employee
         await as_user(people["alice"]["uid"])
-        draft = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb,null,true)",
+        draft = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb,null,true)",
                         lr1, org, json.dumps({"total_hours": 8, "notice_days": 30,
                                               "leave_type": "pto", "coverage_pct": 100}))
         leave1 = draft.get("instance_id")
         rec("B queue", "hr.wf_request opened a real draft instance on a target that actually exists",
             draft.get("granted") is True and draft.get("state") == "draft", json.dumps(draft)[:200])
-        sub = await j("select hr.wf_submit($1)", leave1)
+        sub = await j("select public.hr_wf_submit($1)", leave1)
         rec("B queue", "hr.wf_submit routed the draft to an ACTIVE step",
             sub.get("granted") is True and sub.get("state") == "active", json.dumps(sub)[:200])
 
@@ -425,7 +425,7 @@ async def main():
         pay_step = None
         if restricted is not None:
             await as_user(people["bob"]["uid"])
-            payr = await j("select hr.wf_request($1,$2,$3,$4,$5::jsonb)",
+            payr = await j("select public.hr_wf_request($1,$2,$3,$4,$5::jsonb)",
                            restricted["flow_key"], restricted["target_token"], pos["alice"], org,
                            json.dumps({"new_rate": 42.0}))
             await as_owner()
@@ -565,7 +565,7 @@ async def main():
 
         # dave's own request gives bob's `team` scope something it must NOT return
         await as_user(people["dave"]["uid"])
-        dr = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
+        dr = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
                      lr_dave, org, json.dumps({"total_hours": 8}))
         await as_owner()
         dstep = await conn.fetchval(
@@ -629,9 +629,9 @@ async def main():
 
         # E11 — two real steps, per-step outcomes
         await as_user(people["alice"]["uid"])
-        b1 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
+        b1 = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
                      lr2, org, json.dumps({"total_hours": 8}))
-        b2 = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
+        b2 = await j("select public.hr_wf_request('leave_request','hr_leave_request',$1,$2,$3::jsonb)",
                      lr3, org, json.dumps({"total_hours": 8}))
         await as_owner()
         s1 = await conn.fetchval(
