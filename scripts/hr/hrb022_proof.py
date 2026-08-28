@@ -299,6 +299,20 @@ async def main():
             "insert into hr.leave_policy (organization_id, name, leave_kind, accrual_method, accrual_rate) "
             "values ($1,'PTO','pto','unlimited',null) returning id", org)
 
+        # 🚨 ENROLMENT IS STRUCTURAL NOW, AND THIS FIXTURE PREDATES IT. The leave lane built
+        # `hr.leave_wf_validate`, which returns the hard finding `not_enrolled` ("You are not
+        # enrolled in PTO."), so `hr.wf_request` closes the instance `rejected_at_intake` before it
+        # ever routes — and every inbox assertion downstream had nothing to read. A policy is what an
+        # org offers; an ENROLMENT is what makes a given employment eligible under it, and the
+        # engine was always going to call the hook that checks. Same class as §8.2's
+        # `period_not_submitted`: the fixture went stale the moment the pillar built its hook.
+        # The bars are untouched — only the world the suite sets up is now the real one.
+        for _key in people:
+            await own_exec(
+                "insert into hr.leave_enrollment (organization_id, employment_id, leave_policy_id, "
+                "balance_hours, effective_from) values ($1,$2,$3,400,current_date - 365)",
+                org, people[_key]["employment"], lp)
+
         async def leave_row(emp, day):
             return await own(
                 "insert into hr.leave_request (organization_id, employment_id, leave_policy_id, starts_on, "

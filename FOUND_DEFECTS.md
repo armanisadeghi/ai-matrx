@@ -15,35 +15,31 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D280 — `scripts/hr/hrb022_proof.py` never enrols anybody, so every leave request now dies `not_enrolled` (2026-08-28)
+### D281 — `esign.envelope` is not in `hr._approval_subject`'s allowlist, so `signature_request` can never route (2026-08-28)
 
-The leave lane made enrolment structural: `hr.leave_wf_validate` returns the hard finding
-`not_enrolled` ("You are not enrolled in PTO."), so `hr.wf_request` closes the instance
-`rejected_at_intake` before it ever routes. `hrb022_proof.py` creates a `hr.leave_policy` and a
-`hr.leave_request` but no `hr.leave_enrollment` row, so its whole inbox chain collapses:
+`hrb011_proof.py` aborts at 106 assertions with:
 
 ```
-[FAIL] hr.wf_submit routed the draft to an ACTIVE step  << rejected_at_intake / not_enrolled
-[FAIL] the active step resolved to the manager who holds leave_approve
-[FAIL] needs_my_decision carries the step that is actually waiting on this approver
-[FAIL] the door's needs_my_decision step ids are EXACTLY hr.wf_pending's
-[FAIL] the `queue` scope WITH the capability returns rows
-... 10 RED in total, and the suite ends at 59 assertions instead of 69
+InvalidParameterValueError: hr.can_approve: esign.envelope is not an approvable target table
+HINT: Add it to hr._approval_subject's allowlist together with the column that names its
+      subject employment.
 ```
 
-Not caused by the C4 engine work: the finding appeared in `hrb008_proof.py` before `hr_c4_24`
-landed, and `hr.leave_wf_validate` is the L2 lane's. `hrb008_proof.py` was fixed by enrolling its
-fixture people; `hrb022` needs the same one block, after its `leave_policy` insert:
+The `signature_request` flow type targets `esign_envelope`, and `hr.wf_resolve_approvers` puts every
+candidate back to `hr.can_approve` (its RECORDED DECISION 1), which calls `hr._approval_subject` to
+find the subject employment. That function's allowlist has no `esign.envelope` entry, so the
+predicate raises and the flow cannot resolve an approver at all.
 
-```sql
-insert into hr.leave_enrollment (organization_id, employment_id, leave_policy_id,
-                                 balance_hours, effective_from)
-values (<org>, <employment>, <policy>, 400, current_date - 365);
-```
+**The engine is not at fault and does not need changing.** `hr.wf_resolve_approvers` already catches
+this exact raise and fails closed with `definition_invalid` /
+`approval_subject_unmapped: hr.can_approve cannot resolve a subject for esign.envelope` (RECORDED
+DECISION 5) — it never routes on a guess. `hrb011` sees the raw raise because it calls
+`hr.can_approve` directly rather than through the engine.
 
-Same class as `period_not_submitted` (§8.2) and `pillar_lane_not_built` (§4.3): a proof fixture
-going stale the moment a pillar lane builds the hook the engine was always going to call. Owner:
-the HRB-022 inbox lane.
+Fix, one entry, in the access lane's `hr._approval_subject`: map `esign.envelope` to whichever
+column names its subject employment (`signer_employment_id` or equivalent — read the live table
+before choosing). Owners: the access lane owns the function; the esign lane owns the flow and the
+column choice. Until it lands, `signature_request` is registered and unroutable.
 
 ### D279 — Shape Studio reports an inactive DB override as the live renderer even when the compiled kind bridge actually renders (2026-08-27)
 
@@ -2347,6 +2343,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D280** — `hrb022_proof.py` never enrolled anybody, so the leave lane's new `hr.leave_wf_validate` closed every request `rejected_at_intake` with `not_enrolled` and the whole inbox chain collapsed (10 RED, suite ending at 59 instead of 69). Fixed in the FIXTURE, with no assertion weakened: the people the suite creates are now enrolled in the policy it creates, which is what a policy plus an eligible employment actually means. Back to 69/69. `scripts/hr/hrb022_proof.py`. 2026-08-28.
 
 - **D200 — RESOLVED 2026-08-27:** shortcut/category creation now carries the selected org through `resolveShortcutWriteScope` and every shortcut writer; the next editor preserves the RTK rejection detail without duplicating its captured incident.
 - **D279 — RESOLVED 2026-08-27:** the collapsed sidebar server toggle now identifies itself and its current state in both its tooltip and accessible name (`features/shell/components/controls/SidebarEnvToggle.tsx`).
