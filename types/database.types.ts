@@ -42970,6 +42970,10 @@ export type Database = {
         Args: { p_employment_id: string; p_local_work_date: string }
         Returns: string
       }
+      _period_pending: {
+        Args: { p_employment_id: string; p_workweek_id?: string }
+        Returns: Json
+      }
       _ppe_rollup_refresh: {
         Args: {
           p_batch?: string
@@ -43230,6 +43234,10 @@ export type Database = {
           p_uid: string
         }
         Returns: string
+      }
+      _week_start_is_provisional: {
+        Args: { p_employment_id: string }
+        Returns: boolean
       }
       _wf_absent: {
         Args: { p_at?: string; p_employment_id: string }
@@ -88587,6 +88595,7 @@ export type Database = {
           entry_nodes: Json
           grounding_score: number | null
           id: string
+          input_kind: string | null
           is_active: boolean
           is_archived: boolean
           is_favorite: boolean
@@ -88595,6 +88604,7 @@ export type Database = {
           name: string
           nodes: Json
           organization_id: string
+          output_kind: string | null
           project_id: string | null
           promotion_threshold_k: number | null
           source_definition_id: string | null
@@ -88630,6 +88640,7 @@ export type Database = {
           entry_nodes?: Json
           grounding_score?: number | null
           id?: string
+          input_kind?: string | null
           is_active?: boolean
           is_archived?: boolean
           is_favorite?: boolean
@@ -88638,6 +88649,7 @@ export type Database = {
           name: string
           nodes?: Json
           organization_id: string
+          output_kind?: string | null
           project_id?: string | null
           promotion_threshold_k?: number | null
           source_definition_id?: string | null
@@ -88673,6 +88685,7 @@ export type Database = {
           entry_nodes?: Json
           grounding_score?: number | null
           id?: string
+          input_kind?: string | null
           is_active?: boolean
           is_archived?: boolean
           is_favorite?: boolean
@@ -88681,6 +88694,7 @@ export type Database = {
           name?: string
           nodes?: Json
           organization_id?: string
+          output_kind?: string | null
           project_id?: string | null
           promotion_threshold_k?: number | null
           source_definition_id?: string | null
@@ -88716,11 +88730,13 @@ export type Database = {
           edges: Json | null
           entry_nodes: Json | null
           id: string
+          input_kind: string | null
           is_active: boolean | null
           metadata: Json
           name: string | null
           nodes: Json | null
           organization_id: string
+          output_kind: string | null
           strict_channels: boolean | null
           tags: string[] | null
           updated_at: string
@@ -88746,11 +88762,13 @@ export type Database = {
           edges?: Json | null
           entry_nodes?: Json | null
           id?: string
+          input_kind?: string | null
           is_active?: boolean | null
           metadata?: Json
           name?: string | null
           nodes?: Json | null
           organization_id: string
+          output_kind?: string | null
           strict_channels?: boolean | null
           tags?: string[] | null
           updated_at?: string
@@ -88776,11 +88794,13 @@ export type Database = {
           edges?: Json | null
           entry_nodes?: Json | null
           id?: string
+          input_kind?: string | null
           is_active?: boolean | null
           metadata?: Json
           name?: string | null
           nodes?: Json | null
           organization_id?: string
+          output_kind?: string | null
           strict_channels?: boolean | null
           tags?: string[] | null
           updated_at?: string
