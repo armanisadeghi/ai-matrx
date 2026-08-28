@@ -146,8 +146,7 @@ The OverlayController passes an `onClose` prop to every overlay component that d
 function MyDialog({ isOpen, onClose }: MyDialogProps) {
   return (
     <Dialog open={isOpen} onClose={onClose}>
-      …
-      <button onClick={onClose}>Cancel</button>
+      …<button onClick={onClose}>Cancel</button>
     </Dialog>
   );
 }
@@ -164,8 +163,8 @@ const openUploader = useOpenImageUploaderWindow();
 const handle = openUploader({
   preset: "logo",
   currentUrl: form.logoUrl,
-  onUploaded: (e) => setLogoUrl(e.result.primary_url),    // feels like a normal callback
-  onCleared:  () => setLogoUrl(""),
+  onUploaded: (e) => setLogoUrl(e.result.primary_url), // feels like a normal callback
+  onCleared: () => setLogoUrl(""),
 });
 // …later
 handle.close();
@@ -173,19 +172,20 @@ handle.close();
 
 Internally, the opener creates a callback group via `callbackManager`, passes the `callbackGroupId` string through Redux, and the component subscribes. **Functions never travel through Redux.** Callback contracts live in [`features/window-panels/windows/<feature>/callbacks.ts`](../window-panels/windows/) (will move to `features/overlays/callbacks/` in a future cleanup pass).
 
-Current callback-aware openers: `imageUploaderWindow`, `smartCodeEditorWindow`, `multiFileSmartCodeEditorWindow`, `curatedIconPickerWindow`, `contentEditorWindow`, `contentEditorListWindow`, `contentEditorWorkspaceWindow`, `googleConnectWindow`, `fullScreenEditor` and `htmlPreview` (both on the group contract in [`callbacks/fullScreenEditor.ts`](./callbacks/fullScreenEditor.ts)).
+Current callback-aware openers: `imageUploaderWindow`, `smartCodeEditorWindow`, `multiFileSmartCodeEditorWindow`, `curatedIconPickerWindow`, `contentEditorWindow`, `contentEditorListWindow`, `contentEditorWorkspaceWindow`, `googleConnectWindow` (`callbacks/googleConnectWindow.ts`), `fullScreenEditor` and `htmlPreview` (both on the group contract in [`callbacks/fullScreenEditor.ts`](./callbacks/fullScreenEditor.ts)).
 
 ### The severed-callback bug class (`onSave={undefined} /* pass via callbackGroupId */`)
 
 When the explicit controller was seeded by codegen, every component prop that was a **function** got stubbed to `undefined` with a `/* fn — pass via callbackGroupId */ /* TODO: review */` marker — correct (a function can't travel through Redux) but **incomplete**: no callback group was wired to replace it. A stub left this way means **that callback silently never fires** — the button looks alive and does nothing. This is exactly what broke chat's Edit / Edit & resubmit (`fullScreenEditor.onSave`) and HTML-preview Save (`htmlPreview.onSave`).
 
 Two correct ways to finish a stub:
+
 1. **Callback group** — make the opener callback-aware (`callbacks/<overlayId>.ts` + `callbackManager`), pass `callbackGroupId` through data, subscribe in the component. Use when the caller needs the result (`fullScreenEditor`).
 2. **Self-handle** — if the component already has the ids it needs, do the work inside it and delete the prop from the controller. Use when there's nothing to hand back (`htmlPreview` self-saves chat messages via `editMessage` when opened without a callback group — a passed `callbackGroupId` always wins so non-chat sources can own the save).
 
 A third guard backs both: the public `openOverlay` / `toggleOverlay` wrappers in `lib/redux/slices/overlaySlice.ts` scan `data` for function values, `console.error` loudly, and strip them — a raw callback in Redux data is now a screaming bug at dispatch time, never a silently dead button.
 
-**Never leave a `undefined /* pass via callbackGroupId */` stub for a callback a user can trigger.** `grep "pass via callbackGroupId" OverlayController.tsx` lists every remaining one — each is a latent silent-no-op until finished. As of 2026-06-14 the count is **0**: the 11 that remained after R1 were each audited, found to have zero consumers, and deleted (the *delete-dead-prop* completion — see [FOUND_DEFECTS.md](../../FOUND_DEFECTS.md) R2). The grep is the standing guard — any future stub it surfaces is a new latent bug.
+**Never leave a `undefined /* pass via callbackGroupId */` stub for a callback a user can trigger.** `grep "pass via callbackGroupId" OverlayController.tsx` lists every remaining one — each is a latent silent-no-op until finished. As of 2026-06-14 the count is **0**: the 11 that remained after R1 were each audited, found to have zero consumers, and deleted (the _delete-dead-prop_ completion — see [FOUND_DEFECTS.md](../../FOUND_DEFECTS.md) R2). The grep is the standing guard — any future stub it surfaces is a new latent bug.
 
 ---
 
@@ -203,7 +203,11 @@ A new overlay uses one explicit registration flow:
      onClose: () => void;
      initialFoo?: string;
    }
-   export default function MyDialog({ isOpen, onClose, initialFoo }: MyDialogProps) {
+   export default function MyDialog({
+     isOpen,
+     onClose,
+     initialFoo,
+   }: MyDialogProps) {
      if (!isOpen) return null;
      return <Dialog onClose={onClose}>…</Dialog>;
    }
@@ -218,35 +222,58 @@ A new overlay uses one explicit registration flow:
    **Cardinal rule:** the JSX block MUST be gated on `isOpen` — never render a component ungated in the controller (an ungated render mounts on every route and, if the component doesn't self-gate, paints its UI everywhere — that was the QuickTasksSheet bug). The shape is:
 
    - Controller block (in `OverlayController.tsx`):
+
      ```tsx
      // top — ALWAYS lazyOverlay, never bare next/dynamic (see "Lazy loading" below)
      const MyDialog = lazyOverlay(() => import("@/features/foo/MyDialog"));
      // ...
      // in JSX:
-     {(() => {
-       const isOpen = isOpenById.myDialog;
-       const data = dataById.myDialog as Record<string, unknown> | null | undefined;
-       if (!isOpen) return null;
-       return (
-         <MyDialog
-           isOpen
-           onClose={() => dispatch(closeOverlay({ overlayId: "myDialog" }))}
-           initialFoo={typeof data?.initialFoo === "string" ? data.initialFoo : undefined}
-         />
-       );
-     })()}
+     {
+       (() => {
+         const isOpen = isOpenById.myDialog;
+         const data = dataById.myDialog as
+           Record<string, unknown> | null | undefined;
+         if (!isOpen) return null;
+         return (
+           <MyDialog
+             isOpen
+             onClose={() => dispatch(closeOverlay({ overlayId: "myDialog" }))}
+             initialFoo={
+               typeof data?.initialFoo === "string"
+                 ? data.initialFoo
+                 : undefined
+             }
+           />
+         );
+       })();
+     }
      ```
 
    - Opener file (`features/overlays/openers/myDialog.tsx`):
+
      ```tsx
-     export interface OpenMyDialogOptions { initialFoo?: string }
-     export interface MyDialogHandle { close: () => void }
+     export interface OpenMyDialogOptions {
+       initialFoo?: string;
+     }
+     export interface MyDialogHandle {
+       close: () => void;
+     }
      export function useOpenMyDialog() {
        const dispatch = useAppDispatch();
-       return useCallback((opts: OpenMyDialogOptions = {}): MyDialogHandle => {
-         dispatch(openOverlay({ overlayId: "myDialog", data: { initialFoo: opts.initialFoo } }));
-         return { close: () => dispatch(closeOverlay({ overlayId: "myDialog" })) };
-       }, [dispatch]);
+       return useCallback(
+         (opts: OpenMyDialogOptions = {}): MyDialogHandle => {
+           dispatch(
+             openOverlay({
+               overlayId: "myDialog",
+               data: { initialFoo: opts.initialFoo },
+             }),
+           );
+           return {
+             close: () => dispatch(closeOverlay({ overlayId: "myDialog" })),
+           };
+         },
+         [dispatch],
+       );
      }
      export function MyDialogController(props: OpenMyDialogOptions): null {
        const open = useOpenMyDialog();
@@ -266,10 +293,10 @@ A new overlay uses one explicit registration flow:
 
 The catalogue's `instanceMode` is the source of truth:
 
-| Mode | What `useOpenX()` does | What the controller renders |
-|---|---|---|
+| Mode                  | What `useOpenX()` does                                                   | What the controller renders      |
+| --------------------- | ------------------------------------------------------------------------ | -------------------------------- |
 | `singleton` (default) | Dispatches with the default instanceId. Subsequent opens reuse the slot. | One block: `{isOpen && <X … />}` |
-| `multi` | Generates a fresh `instanceId` per call, returns it in the handle. | `.map(selectOpenInstances)` |
+| `multi`               | Generates a fresh `instanceId` per call, returns it in the handle.       | `.map(selectOpenInstances)`      |
 
 The opener encapsulates the mode choice; callers don't think about it.
 
@@ -302,7 +329,7 @@ Every overlay is code-split with `ssr: false` (required — the initial bundle w
 `features/overlays/boundary/lazyOverlay.tsx` closes it. It is a 1:1 drop-in for `dynamic()` and guarantees, for every overlay, one of exactly three outcomes — **the component, a loading state, or a meaningful error — never nothing**:
 
 - **`OverlayLoadingFallback`** — canonical spinner while the chunk loads, with a 10s loud stall console-warning.
-- **Hard load timeout (the key fix).** A hung `import()` that never resolves *and* never rejects isn't an error, so an error boundary alone can't catch it (confirmed in prod: trace `B2` fired, `B3` never did). `lazyOverlay` races the import against a `OVERLAY_LOAD_TIMEOUT_MS` (12s) timeout that **rejects** with a `ChunkLoadError`, converting a stall into a catchable error so the rich admin error fallback always takes over.
+- **Hard load timeout (the key fix).** A hung `import()` that never resolves _and_ never rejects isn't an error, so an error boundary alone can't catch it (confirmed in prod: trace `B2` fired, `B3` never did). `lazyOverlay` races the import against a `OVERLAY_LOAD_TIMEOUT_MS` (12s) timeout that **rejects** with a `ChunkLoadError`, converting a stall into a catchable error so the rich admin error fallback always takes over.
 - **`OverlayErrorBoundary`** — per-render error boundary that catches `ChunkLoadError` / render throws, `console.error`s loudly, and renders `OverlayErrorFallback`.
 - **`OverlayErrorFallback`** — cause-neutral failure message + an **inconsistent deployment-ID banner** only when loaded scripts actually disagree on `?dpl=`, plus "Try again" / "Reload page". For **admins** (`selectIsAdmin`) it adds an expandable view of **targeted diagnostics** and a **"Copy for AI"** button (`buildOverlayErrorAgentPayload`). The payload is NOT a full Redux dump (noise for a chunk failure) — it's `overlayDiagnostics.ts`: the error + component stack + failing module, deployment-ID observations (build id and `?dpl=` values), **network/chunk forensics** (which `_next/static` chunks failed or hung, connection state), and ONLY the overlay-relevant slices (`overlays` / `windowManager` / `appContext` + a redacted user summary).
 - **Genuine retry.** "Try again" builds a **fresh loadable per attempt** (`lazyOverlay` caches `dynamic()` by attempt number). A bare `dynamic()` caches the import result for the module's life, so a naive re-mount would replay the same rejection — retry would be a no-op. The fresh loadable makes retry actually re-import; page reload remains the user-chosen last resort.

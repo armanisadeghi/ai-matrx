@@ -15,7 +15,7 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
   createGoogleConnectCallbackGroup,
   type GoogleConnectWindowHandlers,
-} from "@/features/window-panels/windows/google/callbacks";
+} from "@/features/overlays/callbacks/googleConnectWindow";
 
 const OVERLAY_ID = "googleConnectWindow" as const;
 

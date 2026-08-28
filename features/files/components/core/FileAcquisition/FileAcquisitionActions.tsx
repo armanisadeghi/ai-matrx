@@ -97,6 +97,11 @@ export function FileAcquisitionActions({
     },
     [deliverFiles],
   );
+  const openLocalFiles = useCallback(() => fileInputRef.current?.click(), []);
+  const openLocalFolder = useCallback(
+    () => folderInputRef.current?.click(),
+    [],
+  );
 
   const googleLabel = inventory.isLoading
     ? "Checking Google Drive"
@@ -138,19 +143,13 @@ export function FileAcquisitionActions({
     return (
       <>
         {enableLocalFiles ? (
-          <DropdownMenuItem
-            disabled={disabled}
-            onSelect={() => fileInputRef.current?.click()}
-          >
+          <DropdownMenuItem disabled={disabled} onSelect={openLocalFiles}>
             <FileUp className="mr-2 h-4 w-4" />
             Upload files
           </DropdownMenuItem>
         ) : null}
         {enableLocalFolder ? (
-          <DropdownMenuItem
-            disabled={disabled}
-            onSelect={() => folderInputRef.current?.click()}
-          >
+          <DropdownMenuItem disabled={disabled} onSelect={openLocalFolder}>
             <FolderUp className="mr-2 h-4 w-4" />
             Upload folder
           </DropdownMenuItem>
@@ -191,7 +190,7 @@ export function FileAcquisitionActions({
           key: "files",
           label: "Upload files",
           icon: FileUp,
-          onClick: () => fileInputRef.current?.click(),
+          onClick: openLocalFiles,
         }
       : null,
     enableLocalFolder
@@ -199,7 +198,7 @@ export function FileAcquisitionActions({
           key: "folder",
           label: "Upload folder",
           icon: FolderUp,
-          onClick: () => folderInputRef.current?.click(),
+          onClick: openLocalFolder,
         }
       : null,
     enableExistingFiles && onChooseExisting

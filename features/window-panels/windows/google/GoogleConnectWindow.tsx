@@ -51,7 +51,7 @@ import {
 import type { SelectedGoogleFile } from "@/features/google-workspace/types";
 import { extractErrorMessage } from "@/utils/errors";
 import { materializeGoogleDriveFiles } from "@/features/google-workspace/import/materializeGoogleDriveFile";
-import { emitGoogleConnectEvent } from "./callbacks";
+import { emitGoogleConnectEvent } from "@/features/overlays/callbacks/googleConnectWindow";
 
 const WINDOW_ID = "google-connect-window";
 const OVERLAY_ID = "googleConnectWindow" as const;
