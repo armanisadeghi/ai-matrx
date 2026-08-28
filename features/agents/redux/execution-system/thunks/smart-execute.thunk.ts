@@ -77,7 +77,10 @@ export const smartExecute = createAsyncThunk<
     // cannot expose `running` while surface/sandbox/scope gates are resolving,
     // so two UI events could otherwise both admit the same draft.
     if (!claimSubmit(conversationId)) {
-      console.error(
+      // This is the guard succeeding, not an execution failure. Keep a
+      // development breadcrumb without feeding the production console-error
+      // capture lane a false incident.
+      console.debug(
         `[smart-execute] duplicate submit dropped for conversation "${conversationId}" — ` +
           "the same submission is already passing the pre-send boundary.",
       );
@@ -181,7 +184,10 @@ export const smartExecute = createAsyncThunk<
         const inputEntry =
           state.instanceUserInput.byConversationId[conversationId];
         if (isDuplicateSubmittedInput(inputEntry)) {
-          console.error(
+          // An unchanged draft submitted twice is expected user-input
+          // deduplication. The server was not contacted, so this must not be
+          // classified as an operational error.
+          console.debug(
             `[smart-execute] duplicate submit dropped for conversation "${conversationId}" — ` +
               "this exact draft is already the live turn. A newly typed draft remains eligible for Queue or Steer.",
           );
