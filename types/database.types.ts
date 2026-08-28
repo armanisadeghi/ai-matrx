@@ -42991,6 +42991,10 @@ export type Database = {
         Args: { p_limits: Json; p_target_id: string; p_target_table: string }
         Returns: boolean
       }
+      _money_text: {
+        Args: { p_amount: number; p_currency?: string }
+        Returns: string
+      }
       _names_a_call: {
         Args: { p_code: string; p_qname: string }
         Returns: boolean
@@ -43381,6 +43385,10 @@ export type Database = {
           p_org: string
         }
         Returns: number
+      }
+      _wf_pay_change_digest: {
+        Args: { p_assignment: string; p_payload: Json }
+        Returns: Json
       }
       _wf_prior_deciders: { Args: { p_instance: string }; Returns: string[] }
       _wf_project_step: { Args: { p_step: string }; Returns: number }
