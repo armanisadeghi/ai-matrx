@@ -43392,6 +43392,10 @@ export type Database = {
         }
         Returns: string[]
       }
+      _wf_instance_visible: {
+        Args: { p_instance: string; p_user: string }
+        Returns: boolean
+      }
       _wf_join: { Args: { p_instance: string }; Returns: Json }
       _wf_login_of: { Args: { p_employment_id: string }; Returns: string }
       _wf_may_see_change: {
