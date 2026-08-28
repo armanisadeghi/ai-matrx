@@ -2,31 +2,63 @@
 
 // Shared taxonomy + tiny presentation helpers for the System Context admin
 // feature — used by the console (table cells) and the authoring dialogs.
+//
+// System Context is the platform's THIRD context source (what is simply TRUE),
+// stored in `context.system_context_item`. Items belong to one of three fixed
+// classes — there are no user-defined categories here.
 
+import { Clock, Globe, Database as DatabaseIcon } from "lucide-react";
 import type { Database as DB } from "@/types/database.types";
-import type { SystemContextItem } from "@/app/api/admin/system-context/route";
-import { CONTEXT_REFERENCE_TYPE_OPTIONS } from "@/features/scopes/utils/referenceCell";
+import type {
+  SystemContextItem,
+  SystemItemClass,
+} from "@/app/api/admin/system-context/route";
 
 export type ValueType = DB["public"]["Enums"]["context_value_type"];
 export type Sensitivity = DB["public"]["Enums"]["context_sensitivity"];
 
-// Reference types a global System Context item may attach. Two exclusions:
-//  - `scope`: org-relative, and the member-less system org isn't in the admin's
-//    scope tree, so the scope sub-picker can't resolve it.
-//  - `data_store`: Knowledge stores have a dedicated "dataset" feed (which hands the
-//    agent a queryable pointer); a data_store reference has no resolver, so
-//    offering both paths is a confusing dead end. Use the dataset feed instead.
-export const SYSTEM_CONTEXT_REFERENCE_TYPES =
-  CONTEXT_REFERENCE_TYPE_OPTIONS.filter(
-    (t) => t !== "scope" && t !== "data_store",
-  );
+// The three classes of System Context. Fixed — a class is a kind of truth, not
+// a folder an admin invents.
+export const CLASS_META: Record<
+  SystemItemClass,
+  {
+    label: string;
+    plural: string;
+    description: string;
+    icon: typeof Clock;
+    tone: string;
+  }
+> = {
+  ambient: {
+    label: "Ambient",
+    plural: "Ambient",
+    description:
+      "Computed fresh by the server on every request (date, time, current user). Read-only.",
+    icon: Clock,
+    tone: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+  },
+  curated: {
+    label: "Curated",
+    plural: "Curated",
+    description:
+      "Admin-maintained platform truths (the app's name, one day today's news).",
+    icon: Globe,
+    tone: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200",
+  },
+  dataset: {
+    label: "Dataset",
+    plural: "Datasets",
+    description:
+      "Industry reference bodies delivered to agents as queryable RAG pointers.",
+    icon: DatabaseIcon,
+    tone: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200",
+  },
+};
 
-// Direct-entry primitives + "reference" (attach an entity). Reference authoring
-// wires the scope-system's `ReferenceConfigFields` (allowed types / cardinality /
-// allowed scope types) into the manual-feed editor; `ContextValueInput`'s
-// reference branch then renders the entity picker against the item's config.
-// The full context_value_type taxonomy — every type `ContextValueInput` renders
-// and `buildScopeValuePayload` routes to a column. Grouped for scan-ability.
+export const CLASS_ORDER: SystemItemClass[] = ["ambient", "curated", "dataset"];
+
+// Direct-entry value types for curated items. (Reference/document authoring
+// belongs to org scope items; a System dataset is wired through its feed.)
 export const VALUE_TYPE_OPTIONS: { value: ValueType; label: string }[] = [
   { value: "string", label: "Text (string)" },
   { value: "markdown", label: "Markdown" },
@@ -43,8 +75,6 @@ export const VALUE_TYPE_OPTIONS: { value: ValueType; label: string }[] = [
   { value: "color", label: "Color" },
   { value: "object", label: "Object (JSON)" },
   { value: "array", label: "Array (JSON)" },
-  { value: "document", label: "Document / media" },
-  { value: "reference", label: "Reference (attach an entity)" },
 ];
 
 export const SENSITIVITY_OPTIONS: { value: Sensitivity; label: string }[] = [
@@ -93,11 +123,10 @@ export function itemSummary(it: SystemContextItem): string {
   return [
     `Key: ${it.key}`,
     `Name: ${it.display_name}`,
-    `Category: ${it.scope_type_label}`,
+    `Class: ${CLASS_META[it.item_class]?.label ?? it.item_class}`,
     `Type: ${it.value_type}`,
-    `Component: ${it.component_type ?? "—"}`,
+    `Feed: ${it.feed_type}`,
     `Sensitivity: ${it.sensitivity}`,
-    `Status: ${it.status}`,
     `Value: ${it.is_computed ? "(computed at runtime)" : (it.current_value ?? "—")}`,
     it.description ? `Description: ${it.description}` : null,
   ]

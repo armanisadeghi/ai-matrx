@@ -1,33 +1,8 @@
 "use client";
 
-// System Context console — Super Admin only.
-//
-// The (admin) layout already requires Super Admin and the
-// /api/admin/system-context route re-checks server-side. This is the control
-// plane for platform-wide "System Context resources" that resolve for EVERY
-// user with no scope selection (their scope types carry is_system=true in the
-// member-less "Matrx System" org).
-//
-// A resource is a DEFINITION + a FEED — the value is the feed's output, not the
-// authored thing. Feeds (see FeedConfigEditor.tsx):
-//   - dataset  — points at a Knowledge data store; agents query it (LIVE: the AMA
-//     Guides). Resolves to a pointer via resolve_full_context loop 4c.
-//   - manual   — a typed value (rare; the component-aware editor). LIVE.
-//   - computed — code/expression at resolution (the ambient current_* keys are
-//     reserved computes in matrx_ai.context_engine; user-defined code later).
-//   - agent / api / web — definition captured now; executor lands later
-//     (feed_status='pending', honestly labeled in the UI).
-// "Preview agent context" shows exactly what an agent receives globally.
-//
-// List surface: canonical MatrxDataTable (per-column sort+filter, search,
-// Copy for AI, side-panel detail). Categories are a toolbar facet; selecting
-// one exposes its scoped Add-item / Delete-category actions.
-//
-// THE DOOR LAW (common-docs/policies/no-dead-ends.md): a feed POINTS at a real
-// record — the dataset it queries, the agent it runs — so that record opens
-// (`EntityRef`, routes from the entity registry). The Category cell reaches the
-// items in its category. The toolbar's `Label · count` facets are already
-// doors: clicking one narrows the table to exactly those rows.
+// Super-admin control plane for platform-wide System Context. Items live in
+// `context.system_context_item` and belong to one of three fixed classes:
+// ambient, curated, or dataset. A row is a definition + feed + current value.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -36,13 +11,11 @@ import {
   Database,
   Eye,
   Globe,
-  Layers,
   Loader2,
   Lock,
   Pencil,
   Plus,
   RefreshCw,
-  Tag,
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -53,11 +26,10 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
 import type {
-  SystemContextCategory,
   SystemContextItem,
   SystemContextPayload,
+  SystemItemClass,
 } from "@/app/api/admin/system-context/route";
 import {
   feedTypeMeta,
@@ -66,63 +38,49 @@ import {
   OpenSourceLink,
   asFeedConfig,
 } from "./FeedConfigEditor";
-import {
-  AddItemDialog,
-  EditItemDialog,
-  NewScopeTypeDialog,
-} from "./ItemDialogs";
+import { AddItemDialog, EditItemDialog } from "./ItemDialogs";
 import { PreviewDialog } from "./PreviewDialog";
 import {
+  CLASS_META,
+  CLASS_ORDER,
   PAGE_LOCATION,
   SENSITIVITY_STYLES,
   itemSummary,
   valueTypeTone,
 } from "./shared";
 
-/**
- * The record a feed points at, as a token + id + name — or null when the feed
- * has no external source (manual value, ambient compute, or a definition whose
- * executor hasn't landed and therefore carries no id yet).
- *
- * THE DOOR LAW: this is what turns "→ AMA Guides" from a label into the store
- * itself. Tokens resolve their own route + peek through the entity registry
- * (`data_store` → /knowledge/data-stores?store_id=, `agent` → /agents/[id]), so this
- * function never writes a URL.
- */
 function feedTarget(
   item: SystemContextItem,
 ): { token: string; id: string; name: string | null } | null {
-  const cfg = asFeedConfig(item.feed_config);
-  const str = (key: string): string | null =>
-    typeof cfg[key] === "string" && cfg[key] ? (cfg[key] as string) : null;
+  const config = asFeedConfig(item.feed_config);
+  const readString = (key: string): string | null => {
+    const value = config[key];
+    return typeof value === "string" && value.length > 0 ? value : null;
+  };
   if (item.feed_type === "dataset") {
-    const id = str("data_store_id");
+    const id = readString("data_store_id");
     return id
-      ? { token: "data_store", id, name: str("data_store_name") }
+      ? { token: "data_store", id, name: readString("data_store_name") }
       : null;
   }
   if (item.feed_type === "agent") {
-    const id = str("agent_id");
-    return id ? { token: "agent", id, name: str("agent_name") } : null;
+    const id = readString("agent_id");
+    return id ? { token: "agent", id, name: readString("agent_name") } : null;
   }
   return null;
 }
 
-// The Feed cell — how the item is populated, with live status.
 function FeedCell({ item }: { item: SystemContextItem }) {
   const meta = feedTypeMeta(item.feed_type);
   const Icon = meta.icon;
-  const cfg = asFeedConfig(item.feed_config);
   const target = feedTarget(item);
-  // Only fall back to the bare "Open source" link when there is no id to hang a
-  // real EntityRef on — a link with no record behind it is the dead end.
-  const sourceLink = target ? null : feedSourceLink(item.feed_type, cfg);
+  const sourceLink = target
+    ? null
+    : feedSourceLink(item.feed_type, asFeedConfig(item.feed_config));
   return (
     <div className="group/entity-ref space-y-0.5">
       <span
-        className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${feedTypeTone(
-          item.feed_type,
-        )}`}
+        className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${feedTypeTone(item.feed_type)}`}
       >
         <Icon className="h-3 w-3" /> {meta.label}
       </span>
@@ -145,11 +103,15 @@ function FeedCell({ item }: { item: SystemContextItem }) {
           {item.feed_status}
         </div>
       )}
+      {item.feed_error && (
+        <div className="max-w-[180px] truncate text-[10px] text-destructive">
+          {item.feed_error}
+        </div>
+      )}
     </div>
   );
 }
 
-// The Output cell — the value (or what stands in for it per feed type).
 function OutputCell({ item }: { item: SystemContextItem }) {
   if (item.is_computed) {
     return (
@@ -172,18 +134,6 @@ function OutputCell({ item }: { item: SystemContextItem }) {
       </span>
     );
   }
-  // Reference cells store a canonical ```matrx fence in value_text — render it
-  // as live chips (the same renderer used everywhere a fence appears), never a
-  // raw fence string.
-  if (item.value_type === "reference") {
-    return (
-      <ContextValueDisplay
-        value={{ value_text: item.current_value }}
-        valueType="reference"
-        className="max-w-[220px]"
-      />
-    );
-  }
   return (
     <code className="block max-w-[220px] truncate font-mono text-xs text-foreground">
       {item.current_value}
@@ -191,13 +141,12 @@ function OutputCell({ item }: { item: SystemContextItem }) {
   );
 }
 
-// Sort/filter/search text standing in for the Output cell's rendered state.
-function outputText(it: SystemContextItem): string {
-  if (it.is_computed) return "(computed)";
-  if (it.feed_type === "dataset") return "(queried live)";
-  if (it.current_value === null)
-    return it.feed_type === "manual" ? "(not set)" : "(awaiting feed)";
-  return it.current_value;
+function outputText(item: SystemContextItem): string {
+  if (item.is_computed) return "(computed)";
+  if (item.feed_type === "dataset") return "(queried live)";
+  if (item.current_value === null)
+    return item.feed_type === "manual" ? "(not set)" : "(awaiting feed)";
+  return item.current_value;
 }
 
 function StatCard({
@@ -232,26 +181,25 @@ export function SystemContextConsole() {
   const [data, setData] = useState<SystemContextPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
-  const [scopeFilter, setScopeFilter] = useState<string>("all");
+  const [classFilter, setClassFilter] = useState<"all" | SystemItemClass>(
+    "all",
+  );
   const [editing, setEditing] = useState<SystemContextItem | null>(null);
-  const [creatingCategory, setCreatingCategory] = useState(false);
-  const [addItemPreset, setAddItemPreset] =
-    useState<SystemContextCategory | null>(null);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     setFetching(true);
     try {
-      const res = await fetch("/api/admin/system-context");
-      if (!res.ok) {
-        const { error } = await res
+      const response = await fetch("/api/admin/system-context");
+      if (!response.ok) {
+        const { error } = await response
           .json()
-          .catch(() => ({ error: res.statusText }));
+          .catch(() => ({ error: response.statusText }));
         toast.error(`Failed to load system context: ${error}`);
         return;
       }
-      setData((await res.json()) as SystemContextPayload);
+      setData((await response.json()) as SystemContextPayload);
     } finally {
       setLoading(false);
       setFetching(false);
@@ -262,128 +210,62 @@ export function SystemContextConsole() {
     void fetchData();
   }, [fetchData]);
 
-  const openAddItem = useCallback((category: SystemContextCategory | null) => {
-    setAddItemPreset(category);
-    setAddItemOpen(true);
-  }, []);
-
   const handleDeleteItem = useCallback(
-    async (it: SystemContextItem) => {
-      const ok = await confirm({
-        title: `Delete "${it.key}"?`,
-        description: `This removes the system context item and its stored value. Agents bound to it will fall back to their default. This cannot be undone.`,
+    async (item: SystemContextItem) => {
+      const accepted = await confirm({
+        title: `Delete "${item.key}"?`,
+        description:
+          "This removes the system context item and its current value. The item remains recoverable through version history.",
         confirmLabel: "Delete item",
         variant: "destructive",
       });
-      if (!ok) return;
-      const res = await fetch(
-        `/api/admin/system-context?type=item&id=${it.id}`,
+      if (!accepted) return;
+      const response = await fetch(
+        `/api/admin/system-context?type=item&id=${item.id}`,
         { method: "DELETE" },
       );
-      if (!res.ok) {
-        const { error } = await res
+      if (!response.ok) {
+        const { error } = await response
           .json()
-          .catch(() => ({ error: res.statusText }));
+          .catch(() => ({ error: response.statusText }));
         toast.error(`Delete failed: ${error}`);
         return;
       }
-      toast.success(`Deleted ${it.key}.`);
-      await fetchData();
-    },
-    [fetchData],
-  );
-
-  const handleDeleteCategory = useCallback(
-    async (category: SystemContextCategory) => {
-      const ok = await confirm({
-        title: `Delete category "${category.label_singular}"?`,
-        description: `This deletes the scope type and ALL ${category.item_count} item(s) and values inside it. This cannot be undone.`,
-        confirmLabel: "Delete category",
-        variant: "destructive",
-      });
-      if (!ok) return;
-      const res = await fetch(
-        `/api/admin/system-context?type=scope_type&id=${category.scope_type_id}`,
-        { method: "DELETE" },
-      );
-      if (!res.ok) {
-        const { error } = await res
-          .json()
-          .catch(() => ({ error: res.statusText }));
-        toast.error(`Delete failed: ${error}`);
-        return;
-      }
-      toast.success(`Deleted category ${category.label_singular}.`);
-      setScopeFilter("all");
+      toast.success(`Deleted ${item.key}.`);
       await fetchData();
     },
     [fetchData],
   );
 
   const items = useMemo(() => data?.items ?? [], [data]);
-  const categories = useMemo(() => data?.categories ?? [], [data]);
-
-  const stats = useMemo(() => {
-    const total = items.length;
-    const computed = items.filter((i) => i.is_computed).length;
-    const stored = total - computed;
-    return { total, computed, stored, categories: categories.length };
-  }, [items, categories]);
-
-  // Category narrowing is a toolbar facet; the table owns search + per-column
-  // filters over the narrowed rows.
+  const classCounts = useMemo(
+    () =>
+      Object.fromEntries(
+        CLASS_ORDER.map((itemClass) => [
+          itemClass,
+          items.filter((item) => item.item_class === itemClass).length,
+        ]),
+      ) as Record<SystemItemClass, number>,
+    [items],
+  );
   const rows = useMemo(
     () =>
-      scopeFilter === "all"
+      classFilter === "all"
         ? items
-        : items.filter((it) => it.scope_type_id === scopeFilter),
-    [items, scopeFilter],
+        : items.filter((item) => item.item_class === classFilter),
+    [classFilter, items],
   );
+  const stored = items.filter((item) => item.value !== null).length;
 
-  const activeCategory = useMemo(
-    () =>
-      scopeFilter === "all"
-        ? null
-        : (categories.find((c) => c.scope_type_id === scopeFilter) ?? null),
-    [categories, scopeFilter],
-  );
-  // The built-in Environment category holds the read-only ambient items; it
-  // can't be deleted (the API guards it too).
-  const activeCategoryProtected = useMemo(
-    () =>
-      activeCategory !== null &&
-      items.some(
-        (it) =>
-          it.scope_type_id === activeCategory.scope_type_id && it.is_computed,
-      ),
-    [activeCategory, items],
-  );
-
-  const columns = useMemo((): MatrxColumnDef<SystemContextItem>[] => {
-    return [
+  const columns = useMemo(
+    (): MatrxColumnDef<SystemContextItem>[] => [
       {
         id: "key",
+        accessorKey: "key",
         header: "Key",
-        // Tags ride along so global search + the column filter reach them.
-        accessorFn: (r) => [r.key, ...r.tags].join(" "),
-        width: 220,
-        cell: (r) => (
-          <div>
-            <code className="font-mono text-xs text-foreground">{r.key}</code>
-            {r.tags.length > 0 && (
-              <div className="mt-1 flex flex-wrap items-center gap-1">
-                <Tag className="h-3 w-3 text-muted-foreground" />
-                {r.tags.slice(0, 3).map((t) => (
-                  <span
-                    key={t}
-                    className="rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+        width: 210,
+        cell: (row) => (
+          <code className="font-mono text-xs text-foreground">{row.key}</code>
         ),
       },
       {
@@ -391,51 +273,50 @@ export function SystemContextConsole() {
         accessorKey: "display_name",
         header: "Name",
         width: 240,
-        cell: (r) => (
+        cell: (row) => (
           <div>
-            <div className="font-medium text-foreground">{r.display_name}</div>
-            {r.description && (
+            <div className="font-medium text-foreground">
+              {row.display_name}
+            </div>
+            {row.description && (
               <div className="mt-0.5 max-w-xs truncate text-xs text-muted-foreground">
-                {r.description}
+                {row.description}
               </div>
             )}
           </div>
         ),
       },
       {
-        id: "category",
-        accessorKey: "scope_type_label",
-        header: "Category",
+        id: "class",
+        accessorFn: (row) => CLASS_META[row.item_class].label,
+        header: "Class",
         filter: "select",
-        width: 140,
-        // A category is a `context.scope_types` row with no record route of its
-        // own — this console IS its home. So the door is the one destination
-        // that exists: narrow the table to that category (the same state the
-        // toolbar facet drives, which then exposes its Add-item / Delete
-        // actions). Naming a category without reaching its items was the dead
-        // end.
-        cell: (r) => (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setScopeFilter(r.scope_type_id);
-            }}
-            title={`Show only ${r.scope_type_label} items`}
-            className="inline-flex items-center gap-1 rounded px-1 py-0.5 text-xs text-foreground transition-colors hover:bg-accent hover:text-primary"
-          >
-            <Layers className="h-3 w-3 text-muted-foreground" />
-            {r.scope_type_label}
-          </button>
-        ),
+        width: 120,
+        cell: (row) => {
+          const meta = CLASS_META[row.item_class];
+          const Icon = meta.icon;
+          return (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setClassFilter(row.item_class);
+              }}
+              className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium ${meta.tone}`}
+              title={`Show only ${meta.plural.toLowerCase()} items`}
+            >
+              <Icon className="h-3 w-3" /> {meta.label}
+            </button>
+          );
+        },
       },
       {
         id: "feed",
         header: "Feed",
-        accessorFn: (r) => feedTypeMeta(r.feed_type).label,
+        accessorFn: (row) => feedTypeMeta(row.feed_type).label,
         filter: "select",
         width: 170,
-        cell: (r) => <FeedCell item={r} />,
+        cell: (row) => <FeedCell item={row} />,
       },
       {
         id: "value_type",
@@ -443,13 +324,11 @@ export function SystemContextConsole() {
         header: "Type",
         filter: "select",
         width: 110,
-        cell: (r) => (
+        cell: (row) => (
           <span
-            className={`inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium ${valueTypeTone(
-              r.value_type,
-            )}`}
+            className={`inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium ${valueTypeTone(row.value_type)}`}
           >
-            {r.value_type}
+            {row.value_type}
           </span>
         ),
       },
@@ -458,7 +337,7 @@ export function SystemContextConsole() {
         header: "Output",
         accessorFn: outputText,
         width: 230,
-        cell: (r) => <OutputCell item={r} />,
+        cell: (row) => <OutputCell item={row} />,
       },
       {
         id: "sensitivity",
@@ -466,21 +345,14 @@ export function SystemContextConsole() {
         header: "Sensitivity",
         filter: "select",
         width: 120,
-        cell: (r) => (
+        cell: (row) => (
           <span
-            className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
-              SENSITIVITY_STYLES[r.sensitivity] ??
-              "bg-muted text-muted-foreground"
-            }`}
+            className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${SENSITIVITY_STYLES[row.sensitivity] ?? "bg-muted text-muted-foreground"}`}
           >
-            {r.sensitivity}
+            {row.sensitivity}
           </span>
         ),
       },
-      // No `fk.token`: `context_item` is a registered entity token but has no
-      // `hrefFor` and no peek, so a token here would resolve to nothing. The id
-      // stays a copy-only uuid cell until the registry gains a door — the row
-      // itself opens through the detail panel. Reported as a registry gap.
       {
         id: "id",
         accessorKey: "id",
@@ -488,26 +360,21 @@ export function SystemContextConsole() {
         cellKind: "uuid",
         width: 110,
       },
-    ];
-  }, []);
+    ],
+    [],
+  );
 
   return (
-    <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
+    <div className="flex h-[calc(100dvh-2.5rem)] flex-col overflow-hidden bg-textured">
       <div className="flex min-h-0 flex-1 flex-col gap-4 p-6">
         <header className="flex flex-wrap items-start justify-between gap-4 pr-14">
           <div className="min-w-0">
             <h1 className="flex items-center gap-2 text-2xl font-semibold text-foreground">
-              <Globe className="h-6 w-6 text-sky-500" />
-              System Context
+              <Globe className="h-6 w-6 text-sky-500" /> System Context
             </h1>
             <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-              Platform-wide context items that resolve for{" "}
-              <span className="font-medium text-foreground">every user</span>{" "}
-              with no scope set — ambient (date / time / user), curated globals,
-              and industry datasets. Stored in the member-less{" "}
-              <code className="text-xs">matrx-system</code> org; served globally
-              because their scope types are{" "}
-              <code className="text-xs">is_system</code>.
+              Platform-wide truths available to every agent: ambient runtime
+              facts, curated values, and queryable industry datasets.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -516,58 +383,42 @@ export function SystemContextConsole() {
               size="sm"
               variant="outline"
               onClick={() => setPreviewOpen(true)}
-              title="What an agent receives for global system context"
             >
               <Eye className="mr-1.5 h-4 w-4" /> Preview agent context
             </Button>
             <Button
               type="button"
               size="sm"
-              variant="outline"
-              onClick={() => setCreatingCategory(true)}
-            >
-              <Layers className="mr-1.5 h-4 w-4" /> New category
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => openAddItem(activeCategory)}
-              disabled={categories.length === 0}
-              title={
-                categories.length === 0
-                  ? "Create a category first"
-                  : "Add a system context item"
-              }
+              onClick={() => setAddItemOpen(true)}
             >
               <Plus className="mr-1.5 h-4 w-4" /> Add item
             </Button>
           </div>
         </header>
 
-        {/* Stat cards */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
             icon={<Database className="h-4 w-4" />}
             label="Total items"
-            value={stats.total}
+            value={items.length}
             tone="text-foreground"
           />
           <StatCard
-            icon={<Layers className="h-4 w-4" />}
-            label="Categories"
-            value={stats.categories}
-            tone="text-indigo-600 dark:text-indigo-400"
+            icon={<Clock className="h-4 w-4" />}
+            label="Ambient"
+            value={classCounts.ambient}
+            tone="text-amber-600 dark:text-amber-400"
           />
           <StatCard
-            icon={<Clock className="h-4 w-4" />}
-            label="Computed (Class 1)"
-            value={stats.computed}
-            tone="text-amber-600 dark:text-amber-400"
+            icon={<Globe className="h-4 w-4" />}
+            label="Curated"
+            value={classCounts.curated}
+            tone="text-sky-600 dark:text-sky-400"
           />
           <StatCard
             icon={<Boxes className="h-4 w-4" />}
             label="Stored values"
-            value={stats.stored}
+            value={stored}
             tone="text-emerald-600 dark:text-emerald-400"
           />
         </div>
@@ -577,7 +428,7 @@ export function SystemContextConsole() {
             urlState={{ id: "system-context" }}
             data={rows}
             columns={columns}
-            getRowId={(r) => r.id}
+            getRowId={(row) => row.id}
             isLoading={loading}
             isFetching={fetching}
             pageSize={50}
@@ -585,72 +436,44 @@ export function SystemContextConsole() {
               items.length === 0
                 ? {
                     title: "No system context items",
-                    description:
-                      "No items found in the matrx-system org yet. Create a category, then add items.",
+                    description: "Add a curated value or dataset to begin.",
                   }
                 : { title: "No items match your filters" }
             }
             toolbar={{
               search: true,
-              searchPlaceholder: "Search key, name, description, tag…",
+              searchPlaceholder: "Search key, name, or description…",
               facets: [
                 {
                   type: "button-group",
-                  id: "category",
-                  label: "Category",
-                  value: scopeFilter,
+                  id: "class",
+                  label: "Class",
+                  value: classFilter,
                   defaultValue: "all",
                   options: [
                     { value: "all", label: `All · ${items.length}` },
-                    ...categories.map((c) => ({
-                      value: c.scope_type_id,
-                      label: `${c.label_singular} · ${c.item_count}`,
+                    ...CLASS_ORDER.map((itemClass) => ({
+                      value: itemClass,
+                      label: `${CLASS_META[itemClass].label} · ${classCounts[itemClass]}`,
                     })),
                   ],
-                  onChange: setScopeFilter,
+                  onChange: (value) =>
+                    setClassFilter(value as "all" | SystemItemClass),
                 },
               ],
               actions: (
-                <div className="flex items-center gap-1">
-                  {activeCategory && (
-                    <>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-2"
-                        onClick={() => openAddItem(activeCategory)}
-                      >
-                        <Plus className="mr-1 h-3 w-3" /> Add to{" "}
-                        {activeCategory.label_singular}
-                      </Button>
-                      {!activeCategoryProtected && (
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          title={`Delete category ${activeCategory.label_singular}`}
-                          onClick={() => handleDeleteCategory(activeCategory)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
-                    </>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void fetchData()}
+                  disabled={fetching}
+                >
+                  {fetching ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4" />
                   )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => void fetchData()}
-                    disabled={fetching}
-                  >
-                    {fetching ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+                </Button>
               ),
             }}
             copy={{
@@ -661,13 +484,13 @@ export function SystemContextConsole() {
               listKind: "system-context-items",
               rowDescription: "A single system context item.",
               humanRow: itemSummary,
-              rowAttributes: (r) => ({ id: r.id, key: r.key }),
+              rowAttributes: (row) => ({ id: row.id, key: row.key }),
             }}
-            rowActions={(r) =>
-              r.is_computed ? (
+            rowActions={(row) =>
+              row.is_computed ? (
                 <span
                   className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground"
-                  title="Computed at runtime — no stored value to edit"
+                  title="Computed at runtime"
                 >
                   <Lock className="h-3 w-3" /> read-only
                 </span>
@@ -678,9 +501,9 @@ export function SystemContextConsole() {
                     size="sm"
                     variant="outline"
                     className="h-7 px-2"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditing(r);
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setEditing(row);
                     }}
                   >
                     <Pencil className="mr-1 h-3 w-3" /> Edit
@@ -690,10 +513,10 @@ export function SystemContextConsole() {
                     size="icon"
                     variant="ghost"
                     className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                    title={`Delete ${r.key}`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void handleDeleteItem(r);
+                    title={`Delete ${row.key}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleDeleteItem(row);
                     }}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -702,22 +525,24 @@ export function SystemContextConsole() {
               )
             }
             detail={{
-              title: (r) => <code className="font-mono text-sm">{r.key}</code>,
-              description: (r) => r.display_name,
-              headerActions: (r) =>
-                r.is_computed ? undefined : (
+              title: (row) => (
+                <code className="font-mono text-sm">{row.key}</code>
+              ),
+              description: (row) => row.display_name,
+              headerActions: (row) =>
+                row.is_computed ? undefined : (
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     className="h-7 px-2"
-                    onClick={() => setEditing(r)}
+                    onClick={() => setEditing(row)}
                   >
                     <Pencil className="mr-1 h-3 w-3" /> Edit
                   </Button>
                 ),
             }}
-            window={{ title: (r) => r.key }}
+            window={{ title: (row) => row.key }}
           />
         </div>
       </div>
@@ -725,7 +550,6 @@ export function SystemContextConsole() {
       {editing && (
         <EditItemDialog
           item={editing}
-          categories={categories}
           onClose={() => setEditing(null)}
           onSaved={async () => {
             setEditing(null);
@@ -733,21 +557,9 @@ export function SystemContextConsole() {
           }}
         />
       )}
-
-      {creatingCategory && (
-        <NewScopeTypeDialog
-          onClose={() => setCreatingCategory(false)}
-          onSaved={async () => {
-            setCreatingCategory(false);
-            await fetchData();
-          }}
-        />
-      )}
-
       {addItemOpen && (
         <AddItemDialog
-          categories={categories}
-          preset={addItemPreset}
+          presetClass={classFilter === "all" ? null : classFilter}
           onClose={() => setAddItemOpen(false)}
           onSaved={async () => {
             setAddItemOpen(false);
@@ -755,7 +567,6 @@ export function SystemContextConsole() {
           }}
         />
       )}
-
       {previewOpen && <PreviewDialog onClose={() => setPreviewOpen(false)} />}
     </div>
   );

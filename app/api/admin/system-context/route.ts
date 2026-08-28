@@ -1,34 +1,35 @@
 // Super-Admin-only management surface for platform-wide "System Context Items".
 //
-// System context items live in a dedicated member-less org "Matrx System"
-// (slug `matrx-system`). Their scope types carry is_system=true, so the
-// resolver serves their values globally — to EVERY user, with no scope
-// selection. Because the org has no members, the membership-gated
-// set_scope_context_value RPC would block writes; this route therefore writes
-// values directly to ctx_context_item_values via the service client (RLS
-// bypass). requireSuperAdmin() gates every method.
+// System Context is the platform's THIRD context source — what is simply TRUE,
+// next to Scope-derived (what you're working on) and Surface-derived (where you
+// are working). Since 2026-08-27 (ctx_100) it lives in its own canonical table,
+// `context.system_context_item` — one row per item, ONE current value per row
+// (System context has no scope dimension). The platform trigger trio versions
+// every edit into history.row_versions, so value writes are plain UPDATEs —
+// the old INSERT-not-UPDATE value convention is gone with the scope scaffolding.
 //
-// Value writes follow the INSERT-not-UPDATE contract: a DB trigger flips
-// is_current/version, so a new value is a new row, never an in-place edit.
+// Three classes (item_class):
+//   ambient — computed per request by the server; stored value is a placeholder
+//   curated — admin-maintained platform truths (e.g. company_name)
+//   dataset — industry reference bodies delivered as RAG pointers (feed_config)
+//
+// Rows live in the member-less "Matrx System" org (global_readable). Because the
+// org has no members, writes use the service client (RLS bypass);
+// requireSuperAdmin() gates every method.
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { contextDb } from "@/utils/supabase/contextDb";
-import { createClient } from "@/utils/supabase/server";
 import type { Database, Json } from "@/types/database.types";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { toSlug } from "@/features/scope-system/utils/slugify";
+
+type AdminClient = SupabaseClient<Database>;
 
 const SYSTEM_ORG_SLUG = "matrx-system";
 
-// Authoring + value writes for platform-wide System Context (see header).
-type AdminClient = SupabaseClient<Database>;
-type ValueInsert =
-  Database["context"]["Tables"]["context_item_values"]["Insert"];
-
-// Class-1 ambient/computed items: the server computes the real value per
-// request, so the stored value is just a placeholder and these are read-only.
+// Ambient items: the server computes the real value per request
+// (matrx_ai.context_engine._apply_ambient), so the stored value is a
+// placeholder and these are read-only here.
 const COMPUTED_KEYS = new Set<string>([
   "current_date",
   "current_datetime",
@@ -39,63 +40,36 @@ const COMPUTED_KEYS = new Set<string>([
 
 type ValueType = Database["public"]["Enums"]["context_value_type"];
 type Sensitivity = Database["public"]["Enums"]["context_sensitivity"];
-type ItemStatus = Database["public"]["Enums"]["context_item_status"];
 type FeedType = Database["public"]["Enums"]["context_feed_type"];
+type SystemContextUpdate =
+  Database["context"]["Tables"]["system_context_item"]["Update"];
 
-interface ItemValueRow {
-  scope_id: string;
-  value_text: string | null;
-  value_number: number | null;
-  value_boolean: boolean | null;
-  value_json: Json | null;
-  value_date: string | null;
-  value_document_url: string | null;
-}
+export type SystemItemClass = "ambient" | "curated" | "dataset";
 
 export interface SystemContextItem {
   id: string;
   key: string;
   display_name: string;
-  description: string;
+  description: string | null;
+  item_class: SystemItemClass;
   value_type: ValueType;
-  custom_component: Json | null;
-  component_type: string | null;
-  sensitivity: Sensitivity;
-  status: ItemStatus;
-  category: string | null;
-  tags: string[];
-  sort_order: number;
-  is_active: boolean;
-  scope_type_id: string;
-  scope_type_label: string;
-  scope_id: string | null;
+  /** The stored jsonb value (null when unset; a placeholder for ambient items). */
+  value: Json | null;
+  /** Human-readable rendering of `value` for the grid. */
   current_value: string | null;
   is_computed: boolean;
-  // The feed — how this item's value is populated (the authored thing).
   feed_type: FeedType;
   feed_config: Json;
   feed_status: string | null;
+  feed_error: string | null;
   last_fed_at: string | null;
-  // Reference-config columns (only meaningful when value_type === "reference").
-  allowed_reference_types: string[] | null;
-  max_items: number | null;
-  allowed_scope_type_ids: string[] | null;
-}
-
-export interface SystemContextCategory {
-  scope_type_id: string;
-  label_singular: string;
-  label_plural: string;
-  icon: string;
-  color: string;
-  description: string;
-  scope_id: string | null;
-  item_count: number;
+  sensitivity: Sensitivity;
+  is_active: boolean;
+  sort_order: number;
 }
 
 export interface SystemContextPayload {
   organization_id: string;
-  categories: SystemContextCategory[];
   items: SystemContextItem[];
 }
 
@@ -109,47 +83,15 @@ function errorResponse(error: unknown) {
   return NextResponse.json({ error: message }, { status });
 }
 
-// Coerce the typed value columns into one display string (or null when unset).
-function coerceValue(
-  valueType: ValueType,
-  row: ItemValueRow | undefined,
-): string | null {
-  if (!row) return null;
-  switch (valueType) {
-    case "number":
-      return row.value_number === null ? null : String(row.value_number);
-    case "boolean":
-      return row.value_boolean === null ? null : String(row.value_boolean);
-    case "object":
-    case "array":
-      return row.value_json === null ? null : JSON.stringify(row.value_json);
-    case "date":
-      return row.value_date;
-    case "document":
-      return row.value_document_url;
-    case "reference":
-    case "string":
-    default:
-      return row.value_text;
-  }
-}
-
-function readComponentType(custom_component: Json | null): string | null {
-  if (
-    custom_component &&
-    typeof custom_component === "object" &&
-    !Array.isArray(custom_component) &&
-    typeof (custom_component as Record<string, unknown>).type === "string"
-  ) {
-    return (custom_component as Record<string, unknown>).type as string;
-  }
-  return null;
+function systemTable(admin: AdminClient) {
+  return admin.schema("context").from("system_context_item");
 }
 
 // Resolve the member-less Matrx System org id (service client; RLS-bypassing).
 async function resolveSystemOrgId(admin: AdminClient): Promise<string> {
   const { data: org, error } = await admin
-    .schema("iam").from("organizations")
+    .schema("iam")
+    .from("organizations")
     .select("id")
     .eq("slug", SYSTEM_ORG_SLUG)
     .maybeSingle();
@@ -159,106 +101,42 @@ async function resolveSystemOrgId(admin: AdminClient): Promise<string> {
   return org.id;
 }
 
-// Every system scope type carries exactly one scope (in the system org) that
-// its item values hang on. Return it, creating it if absent — values can't be
-// written until this "cell column" exists (trigger ctx_validate_value_scope_type
-// requires scope.scope_type_id === item.scope_type_id).
-async function ensureScopeForType(
-  admin: AdminClient,
-  organizationId: string,
-  scopeTypeId: string,
-  fallbackName: string,
-): Promise<string> {
-  const { data: existing, error: selErr } = await contextDb(admin)
-    .from("scopes")
-    .select("id")
-    .eq("organization_id", organizationId)
-    .eq("scope_type_id", scopeTypeId)
-    .limit(1)
-    .maybeSingle();
-  if (selErr) throw new Error(selErr.message);
-  if (existing) return existing.id;
-
-  const { data: created, error: insErr } = await contextDb(admin)
-    .from("scopes")
-    .insert({
-      organization_id: organizationId,
-      scope_type_id: scopeTypeId,
-      name: fallbackName,
-      slug: toSlug(fallbackName),
-    })
-    .select("id")
-    .single();
-  if (insErr) throw new Error(insErr.message);
-  return created.id;
+// Render the jsonb value as a display string for the grid.
+function renderValue(value: Json | null): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") return value;
+  return JSON.stringify(value);
 }
 
-// Copy a pre-routed value payload (built client-side by buildScopeValuePayload,
-// which honors each item's component — incl. media MediaRefs in value_json)
-// onto an insert row, whitelisting only the value_* columns. Mutates `row`.
-const VALUE_COLUMNS = [
-  "value_text",
-  "value_number",
-  "value_boolean",
-  "value_json",
-  "value_date",
-  "value_document_url",
-] as const;
-
-function applyValueColumns(
-  row: ValueInsert,
-  columns: Record<string, unknown>,
-): void {
-  for (const col of VALUE_COLUMNS) {
-    if (col in columns) {
-      (row as Record<string, unknown>)[col] = columns[col];
-    }
-  }
-}
-
-// Route a string (or already-structured JSON) value into the column matching
-// value_type. Mutates `row`. Returns an error message, or null on success.
-function applyValueToRow(
-  row: ValueInsert,
+// Route a raw string into the jsonb value column per value_type. Returns
+// [value, null] on success or [null, errorMessage].
+function coerceToJson(
   valueType: ValueType,
   raw: string,
-): string | null {
+): [Json | null, string | null] {
   switch (valueType) {
     case "number": {
       const n = Number(raw);
       if (raw.trim() === "" || Number.isNaN(n))
-        return "Value must be a valid number";
-      row.value_number = n;
-      return null;
+        return [null, "Value must be a valid number"];
+      return [n, null];
     }
     case "boolean": {
       const t = raw.trim().toLowerCase();
-      if (!["true", "false", "1", "0", "yes", "no"].includes(t)) {
-        return "Value must be a boolean (true/false)";
-      }
-      row.value_boolean = t === "true" || t === "1" || t === "yes";
-      return null;
+      if (!["true", "false", "1", "0", "yes", "no"].includes(t))
+        return [null, "Value must be a boolean (true/false)"];
+      return [t === "true" || t === "1" || t === "yes", null];
     }
     case "object":
     case "array": {
       try {
-        row.value_json = JSON.parse(raw) as Json;
+        return [JSON.parse(raw) as Json, null];
       } catch {
-        return `Value must be valid JSON for a ${valueType}`;
+        return [null, `Value must be valid JSON for a ${valueType}`];
       }
-      return null;
     }
-    case "date":
-      row.value_date = raw;
-      return null;
-    case "document":
-      row.value_document_url = raw;
-      return null;
-    case "reference":
-    case "string":
     default:
-      row.value_text = raw;
-      return null;
+      return [raw, null];
   }
 }
 
@@ -270,9 +148,9 @@ export interface ResolvedPreviewEntry {
   value: Json;
 }
 
-// Preview exactly what an agent receives for global system context (no scope
-// selected) — proves the whole feed pipeline end-to-end (ambient computes,
-// manual values, dataset pointers) by calling the live resolver.
+// Preview exactly what an agent receives for global System context (no scope
+// selected) — proves the whole pipeline end-to-end (ambient computes, curated
+// values, dataset pointers) by calling the live resolver.
 async function buildPreview(
   admin: AdminClient,
   userId: string,
@@ -311,9 +189,8 @@ async function buildPreview(
   return NextResponse.json({ resolved: entries });
 }
 
-// GET /api/admin/system-context — resolve the Matrx System org, its is_system
-// scope types (the "categories"), and every item joined with its current value.
-// GET ?preview=1 — what an agent actually receives for global system context.
+// GET /api/admin/system-context — every System Context Item with its value.
+// GET ?preview=1 — what an agent actually receives for global System context.
 export async function GET(request: NextRequest) {
   let userId: string;
   try {
@@ -328,206 +205,75 @@ export async function GET(request: NextRequest) {
     return buildPreview(admin, userId);
   }
 
-  const { data: org, error: orgError } = await admin
-    .schema("iam").from("organizations")
-    .select("id")
-    .eq("slug", SYSTEM_ORG_SLUG)
-    .maybeSingle();
-
-  if (orgError) {
-    return NextResponse.json({ error: orgError.message }, { status: 500 });
-  }
-  if (!org) {
+  let organization_id: string;
+  try {
+    organization_id = await resolveSystemOrgId(admin);
+  } catch (e) {
     return NextResponse.json(
-      { error: `Matrx System org (slug '${SYSTEM_ORG_SLUG}') not found` },
+      { error: e instanceof Error ? e.message : "Unknown error" },
       { status: 404 },
     );
   }
-  const organization_id = org.id;
 
-  // is_system scope types in this org = the System categories.
-  const { data: scopeTypes, error: stError } = await contextDb(admin)
-    .from("scope_types")
+  const { data: rows, error } = await systemTable(admin)
     .select(
-      "id, label_singular, label_plural, icon, color, description, sort_order",
+      "id, key, display_name, description, item_class, value_type, value, feed_type, feed_config, feed_status, feed_error, last_fed_at, sensitivity, is_active, sort_order",
     )
-    .eq("organization_id", organization_id)
-    .eq("is_system", true)
-    .order("sort_order", { ascending: true });
-
-  if (stError) {
-    return NextResponse.json({ error: stError.message }, { status: 500 });
-  }
-
-  const scopeTypeIds = (scopeTypes ?? []).map((t) => t.id);
-  if (scopeTypeIds.length === 0) {
-    const empty: SystemContextPayload = {
-      organization_id,
-      categories: [],
-      items: [],
-    };
-    return NextResponse.json(empty);
-  }
-
-  // Each scope type has one scope (in this org) holding its values.
-  const { data: scopes, error: scopeError } = await contextDb(admin)
-    .from("scopes")
-    .select("id, scope_type_id")
-    .eq("organization_id", organization_id)
-    .in("scope_type_id", scopeTypeIds);
-
-  if (scopeError) {
-    return NextResponse.json({ error: scopeError.message }, { status: 500 });
-  }
-  const scopeByType = new Map<string, string>();
-  for (const s of scopes ?? []) {
-    if (!scopeByType.has(s.scope_type_id)) {
-      scopeByType.set(s.scope_type_id, s.id);
-    }
-  }
-
-  const { data: items, error: itemError } = await contextDb(admin)
-    .from("context_items")
-    .select(
-      "id, key, display_name, description, value_type, custom_component, sensitivity, status, category, tags, sort_order, is_active, scope_type_id, feed_type, feed_config, feed_status, last_fed_at, allowed_reference_types, max_items, allowed_scope_type_ids",
-    )
-    .in("scope_type_id", scopeTypeIds)
+    .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("key", { ascending: true });
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
 
-  if (itemError) {
-    return NextResponse.json({ error: itemError.message }, { status: 500 });
-  }
-
-  const itemIds = (items ?? []).map((i) => i.id);
-
-  // Current value (is_current=true) for each item.
-  const valueByItem = new Map<string, ItemValueRow>();
-  if (itemIds.length > 0) {
-    const { data: values, error: valError } = await contextDb(admin)
-      .from("context_item_values")
-      .select(
-        "context_item_id, scope_id, value_text, value_number, value_boolean, value_json, value_date, value_document_url",
-      )
-      .in("context_item_id", itemIds)
-      .eq("is_current", true);
-
-    if (valError) {
-      return NextResponse.json({ error: valError.message }, { status: 500 });
-    }
-    for (const v of values ?? []) {
-      valueByItem.set(v.context_item_id, v);
-    }
-  }
-
-  const typeLabel = new Map<string, string>();
-  for (const t of scopeTypes ?? []) typeLabel.set(t.id, t.label_singular);
-
-  const shapedItems: SystemContextItem[] = (items ?? []).map((it) => {
-    const scope_id = scopeByType.get(it.scope_type_id) ?? null;
-    const valueRow = valueByItem.get(it.id);
-    const is_computed = COMPUTED_KEYS.has(it.key);
+  const items: SystemContextItem[] = (rows ?? []).map((r) => {
+    const is_computed = r.item_class === "ambient" || COMPUTED_KEYS.has(r.key);
     return {
-      id: it.id,
-      key: it.key,
-      display_name: it.display_name,
-      description: it.description,
-      value_type: it.value_type,
-      custom_component: it.custom_component,
-      component_type: readComponentType(it.custom_component),
-      sensitivity: it.sensitivity,
-      status: it.status,
-      category: it.category,
-      tags: it.tags ?? [],
-      sort_order: it.sort_order,
-      is_active: it.is_active,
-      scope_type_id: it.scope_type_id,
-      scope_type_label: typeLabel.get(it.scope_type_id) ?? "—",
-      scope_id,
-      current_value: is_computed ? null : coerceValue(it.value_type, valueRow),
+      id: r.id,
+      key: r.key,
+      display_name: r.display_name,
+      description: r.description,
+      item_class: r.item_class as SystemItemClass,
+      value_type: r.value_type,
+      value: r.value,
+      current_value: is_computed ? null : renderValue(r.value),
       is_computed,
-      feed_type: it.feed_type,
-      feed_config: it.feed_config,
-      feed_status: it.feed_status,
-      last_fed_at: it.last_fed_at,
-      allowed_reference_types: it.allowed_reference_types,
-      max_items: it.max_items,
-      allowed_scope_type_ids: it.allowed_scope_type_ids,
+      feed_type: r.feed_type,
+      feed_config: r.feed_config,
+      feed_status: r.feed_status,
+      feed_error: r.feed_error,
+      last_fed_at: r.last_fed_at,
+      sensitivity: r.sensitivity,
+      is_active: r.is_active,
+      sort_order: r.sort_order,
     };
   });
 
-  const counts = new Map<string, number>();
-  for (const it of shapedItems) {
-    counts.set(it.scope_type_id, (counts.get(it.scope_type_id) ?? 0) + 1);
-  }
-
-  const categories: SystemContextCategory[] = (scopeTypes ?? []).map((t) => ({
-    scope_type_id: t.id,
-    label_singular: t.label_singular,
-    label_plural: t.label_plural,
-    icon: t.icon,
-    color: t.color,
-    description: t.description,
-    scope_id: scopeByType.get(t.id) ?? null,
-    item_count: counts.get(t.id) ?? 0,
-  }));
-
-  const payload: SystemContextPayload = {
-    organization_id,
-    categories,
-    items: shapedItems,
-  };
+  const payload: SystemContextPayload = { organization_id, items };
   return NextResponse.json(payload);
 }
 
 // Request bodies, discriminated by `action`. Legacy callers that POST a bare
-// { itemId, scopeId, valueType, value } are treated as a "set_value".
-type CreateScopeTypeBody = {
-  action: "create_scope_type";
-  label_singular: string;
-  label_plural: string;
-  icon?: string;
-  color?: string;
-  description?: string;
-};
+// { itemId, value } are treated as a "set_value".
 type CreateItemBody = {
   action: "create_item";
-  scopeTypeId: string;
   key: string;
   display_name: string;
+  item_class?: SystemItemClass; // default 'curated'; 'ambient' is seed-only
   value_type: ValueType;
   sensitivity?: Sensitivity;
   description?: string;
-  custom_component?: Json | null;
-  // The feed — how this item is populated. Defaults to 'manual'.
   feed_type?: FeedType;
   feed_config?: Json;
-  // Reference-config (value_type === "reference" only): which entity types the
-  // cell may point at, its cardinality, and — when "scope" is allowed — which
-  // scope types. Ignored for non-reference items.
-  allowed_reference_types?: string[] | null;
-  max_items?: number | null;
-  allowed_scope_type_ids?: string[] | null;
-  // Initial value (manual feeds only): either a raw string (coerced by
-  // value_type) or pre-routed value_* columns built client-side.
   value?: string | null;
-  valueColumns?: Record<string, unknown>;
 };
 type SetValueBody = {
   action?: "set_value";
   itemId: string;
-  scopeId: string;
-  valueType: ValueType;
   value?: string;
-  valueColumns?: Record<string, unknown>;
 };
-type PostBody = CreateScopeTypeBody | CreateItemBody | SetValueBody;
+type PostBody = CreateItemBody | SetValueBody;
 
-// POST /api/admin/system-context — authoring + value writes for system context.
-// All writes use the service client (the system org is member-less, so RLS /
-// membership-gated RPCs would block them). The single exception is flipping
-// is_system, which the DB trigger gates on is_super_admin() against the live
-// JWT — done with the caller's authenticated client.
+// POST /api/admin/system-context — create items and set values.
 export async function POST(request: NextRequest) {
   try {
     await requireSuperAdmin();
@@ -544,8 +290,6 @@ export async function POST(request: NextRequest) {
 
   try {
     switch (body.action) {
-      case "create_scope_type":
-        return await createScopeType(admin, body);
       case "create_item":
         return await createItem(admin, body);
       case "set_value":
@@ -560,84 +304,12 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Create a new System category: a scope type (is_system=true) + its one scope.
-async function createScopeType(admin: AdminClient, body: CreateScopeTypeBody) {
-  const labelSingular = body.label_singular?.trim();
-  const labelPlural = body.label_plural?.trim() || labelSingular;
-  if (!labelSingular) {
-    return NextResponse.json(
-      { error: "label_singular is required" },
-      { status: 400 },
-    );
-  }
-  const slug = toSlug(labelPlural);
-  if (!slug) {
-    return NextResponse.json(
-      { error: "label_plural must contain letters or numbers for its URL slug" },
-      { status: 400 },
-    );
-  }
-
-  const organizationId = await resolveSystemOrgId(admin);
-
-  const { data: st, error: stErr } = await contextDb(admin)
-    .from("scope_types")
-    .insert({
-      organization_id: organizationId,
-      label_singular: labelSingular,
-      label_plural: labelPlural,
-      slug,
-      icon: body.icon?.trim() || "globe",
-      color: body.color?.trim() || "",
-      description: body.description?.trim() || "",
-    })
-    .select("id")
-    .single();
-  if (stErr) {
-    const dup = stErr.message.includes("unique_type_per_org");
-    return NextResponse.json(
-      {
-        error: dup
-          ? `A System category named "${labelSingular}" already exists`
-          : stErr.message,
-      },
-      { status: dup ? 409 : 500 },
-    );
-  }
-
-  // Flip is_system with the caller's super-admin JWT (the trigger re-checks
-  // is_super_admin() live; the service client's auth.uid() is null and fails).
-  const userClient = await createClient();
-  const { error: sysErr } = await userClient.rpc(
-    "admin_set_scope_type_system",
-    {
-      p_scope_type_id: st.id,
-      p_is_system: true,
-    },
-  );
-  if (sysErr) {
-    // Roll back the half-created type so it never shows in a non-system grid.
-    await contextDb(admin).from("scope_types").delete().eq("id", st.id);
-    return NextResponse.json(
-      { error: `Could not mark category as system: ${sysErr.message}` },
-      { status: 500 },
-    );
-  }
-
-  // The single scope that holds this category's values.
-  await ensureScopeForType(admin, organizationId, st.id, labelSingular);
-
-  return NextResponse.json({ ok: true, scope_type_id: st.id });
-}
-
-// Create a new System context item (the "column" definition) under a scope
-// type, optionally seeding its initial value.
 async function createItem(admin: AdminClient, body: CreateItemBody) {
   const key = body.key?.trim().toLowerCase();
   const displayName = body.display_name?.trim();
-  if (!key || !displayName || !body.scopeTypeId || !body.value_type) {
+  if (!key || !displayName || !body.value_type) {
     return NextResponse.json(
-      { error: "scopeTypeId, key, display_name, and value_type are required" },
+      { error: "key, display_name, and value_type are required" },
       { status: 400 },
     );
   }
@@ -656,147 +328,97 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
       { status: 409 },
     );
   }
+  const itemClass: SystemItemClass = body.item_class ?? "curated";
+  if (itemClass === "ambient") {
+    // Ambient items are seeded with their server-side provider; creating one
+    // here would produce a key the server never computes.
+    return NextResponse.json(
+      { error: "Ambient items are seeded by the platform, not created here" },
+      { status: 422 },
+    );
+  }
 
   const organizationId = await resolveSystemOrgId(admin);
   const feedType: FeedType = body.feed_type ?? "manual";
 
-  const { data: item, error: itemErr } = await contextDb(admin)
-    .from("context_items")
+  let value: Json | null = null;
+  if (feedType === "manual" && body.value != null && body.value !== "") {
+    const [coerced, valErr] = coerceToJson(body.value_type, body.value);
+    if (valErr) return NextResponse.json({ error: valErr }, { status: 400 });
+    value = coerced;
+  }
+
+  const { data: item, error } = await systemTable(admin)
     .insert({
-      scope_type_id: body.scopeTypeId,
       key,
       display_name: displayName,
-      value_type: body.value_type,
-      sensitivity: body.sensitivity ?? "internal",
       description: body.description?.trim() || "",
-      custom_component: body.custom_component ?? null,
-      status: "active",
-      source_type: "manual",
+      item_class: itemClass,
+      value_type: body.value_type,
+      value,
       feed_type: feedType,
       feed_config: body.feed_config ?? {},
       // A non-manual feed hasn't run yet; mark it pending so the UI tells the
       // truth (the executor populates the value later).
       feed_status: feedType === "manual" ? null : "pending",
-      // Reference-config — null for non-reference items (max_items keeps its
-      // DB default of 1). NOTE: this admin writes values via service-role direct
-      // insert (member-less system org), bypassing context.write_context_value —
-      // so these constraints are enforced only by the client picker here, not by
-      // a DB trigger. The ReferenceValuePicker constrains selection to them.
-      allowed_reference_types: body.allowed_reference_types ?? null,
-      max_items: body.max_items ?? 1,
-      allowed_scope_type_ids: body.allowed_scope_type_ids ?? null,
-      // `ensure_slug` derives slug from key. Generated DB types have not yet
-      // caught up with that trigger and still declare slug as required.
-    } as Database["context"]["Tables"]["context_items"]["Insert"])
+      sensitivity: body.sensitivity ?? "public",
+      organization_id: organizationId,
+    })
     .select("id")
     .single();
-  if (itemErr) {
-    const dup = itemErr.message.includes("context_items_key_per_type");
+  if (error) {
+    const dup = error.message.toLowerCase().includes("unique");
     return NextResponse.json(
       {
         error: dup
-          ? `An item with key "${key}" already exists in this category`
-          : itemErr.message,
+          ? `A System item with key "${key}" already exists`
+          : error.message,
       },
       { status: dup ? 409 : 500 },
     );
   }
 
-  // Seed the initial value if one was supplied (manual feeds only — other
-  // feeds produce their value through their executor, not a typed seed).
-  const hasColumns =
-    body.valueColumns != null && Object.keys(body.valueColumns).length > 0;
-  if (
-    feedType === "manual" &&
-    (hasColumns || (body.value != null && body.value !== ""))
-  ) {
-    const scopeId = await ensureScopeForType(
-      admin,
-      organizationId,
-      body.scopeTypeId,
-      key,
-    );
-    const row: ValueInsert = {
-      context_item_id: item.id,
-      scope_id: scopeId,
-      source_type: "manual",
-    };
-    if (hasColumns) {
-      applyValueColumns(row, body.valueColumns!);
-    } else {
-      const valErr = applyValueToRow(row, body.value_type, body.value!);
-      if (valErr) {
-        return NextResponse.json(
-          { error: valErr, item_id: item.id },
-          { status: 400 },
-        );
-      }
-    }
-    const { error: insErr } = await contextDb(admin)
-      .from("context_item_values")
-      .insert(row);
-    if (insErr) {
-      return NextResponse.json(
-        { error: insErr.message, item_id: item.id },
-        { status: 500 },
-      );
-    }
-  }
-
   return NextResponse.json({ ok: true, item_id: item.id });
 }
 
-// Set a stored value for a non-computed item (new is_current version row).
+// Set the value of a non-ambient item. A plain UPDATE — the platform version
+// trigger snapshots the previous row into history.row_versions.
 async function setValue(admin: AdminClient, body: SetValueBody) {
-  if (!body?.itemId || !body?.scopeId || !body?.valueType) {
-    return NextResponse.json(
-      { error: "itemId, scopeId, and valueType are required" },
-      { status: 400 },
-    );
+  if (!body?.itemId) {
+    return NextResponse.json({ error: "itemId is required" }, { status: 400 });
   }
 
-  const { data: item, error: itemErr } = await contextDb(admin)
-    .from("context_items")
-    .select("id, key")
+  const { data: item, error: itemErr } = await systemTable(admin)
+    .select("id, key, item_class, value_type")
     .eq("id", body.itemId)
     .maybeSingle();
   if (itemErr)
     return NextResponse.json({ error: itemErr.message }, { status: 500 });
   if (!item)
     return NextResponse.json(
-      { error: "Context item not found" },
+      { error: "System context item not found" },
       { status: 404 },
     );
-  if (COMPUTED_KEYS.has(item.key)) {
+  if (item.item_class === "ambient" || COMPUTED_KEYS.has(item.key)) {
     return NextResponse.json(
       { error: `'${item.key}' is computed at runtime and has no stored value` },
       { status: 422 },
     );
   }
 
-  const row: ValueInsert = {
-    context_item_id: body.itemId,
-    scope_id: body.scopeId,
-    source_type: "manual",
-  };
-  if (body.valueColumns != null && Object.keys(body.valueColumns).length > 0) {
-    applyValueColumns(row, body.valueColumns);
-  } else {
-    const valErr = applyValueToRow(row, body.valueType, body.value ?? "");
-    if (valErr) return NextResponse.json({ error: valErr }, { status: 400 });
-  }
+  const [value, valErr] = coerceToJson(item.value_type, body.value ?? "");
+  if (valErr) return NextResponse.json({ error: valErr }, { status: 400 });
 
-  const { error: insErr } = await contextDb(admin)
-    .from("context_item_values")
-    .insert(row);
-  if (insErr)
-    return NextResponse.json({ error: insErr.message }, { status: 500 });
+  const { error } = await systemTable(admin)
+    .update({ value })
+    .eq("id", body.itemId);
+  if (error)
+    return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }
 
-// PATCH /api/admin/system-context — edit an item's definition (metadata +
-// component). Value edits go through POST set_value (versioned).
+// PATCH /api/admin/system-context — edit an item's definition.
 export async function PATCH(request: NextRequest) {
   try {
     await requireSuperAdmin();
@@ -809,13 +431,11 @@ export async function PATCH(request: NextRequest) {
     display_name?: string;
     description?: string;
     sensitivity?: Sensitivity;
-    custom_component?: Json | null;
     is_active?: boolean;
+    item_class?: SystemItemClass;
     feed_type?: FeedType;
     feed_config?: Json;
-    allowed_reference_types?: string[] | null;
-    max_items?: number | null;
-    allowed_scope_type_ids?: string[] | null;
+    sort_order?: number;
   } | null;
 
   if (!body?.itemId) {
@@ -823,33 +443,35 @@ export async function PATCH(request: NextRequest) {
   }
 
   const admin = createAdminClient();
-  const patch: Database["context"]["Tables"]["context_items"]["Update"] = {};
+  const patch: SystemContextUpdate = {};
   if (body.display_name !== undefined)
     patch.display_name = body.display_name.trim();
   if (body.description !== undefined)
     patch.description = body.description.trim();
   if (body.sensitivity !== undefined) patch.sensitivity = body.sensitivity;
-  if (body.custom_component !== undefined)
-    patch.custom_component = body.custom_component;
   if (body.is_active !== undefined) patch.is_active = body.is_active;
+  if (body.item_class !== undefined) {
+    if (body.item_class === "ambient") {
+      return NextResponse.json(
+        { error: "Items cannot be reclassified as ambient" },
+        { status: 422 },
+      );
+    }
+    patch.item_class = body.item_class;
+  }
   if (body.feed_type !== undefined) {
     patch.feed_type = body.feed_type;
     // Re-mark feed status when the feed changes: manual has no executor.
     patch.feed_status = body.feed_type === "manual" ? null : "pending";
   }
   if (body.feed_config !== undefined) patch.feed_config = body.feed_config;
-  if (body.allowed_reference_types !== undefined)
-    patch.allowed_reference_types = body.allowed_reference_types;
-  if (body.max_items !== undefined) patch.max_items = body.max_items ?? 1;
-  if (body.allowed_scope_type_ids !== undefined)
-    patch.allowed_scope_type_ids = body.allowed_scope_type_ids;
+  if (body.sort_order !== undefined) patch.sort_order = body.sort_order;
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
   }
 
-  const { error } = await contextDb(admin)
-    .from("context_items")
+  const { error } = await systemTable(admin)
     .update(patch)
     .eq("id", body.itemId);
   if (error)
@@ -858,8 +480,7 @@ export async function PATCH(request: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-// DELETE /api/admin/system-context?type=item|scope_type&id=<uuid>
-// Deleting a scope type cascades to its items, scopes, and values.
+// DELETE /api/admin/system-context?id=<itemId> — soft-delete an item.
 export async function DELETE(request: NextRequest) {
   try {
     await requireSuperAdmin();
@@ -867,60 +488,36 @@ export async function DELETE(request: NextRequest) {
     return errorResponse(e);
   }
 
-  const url = new URL(request.url);
-  const type = url.searchParams.get("type");
-  const id = url.searchParams.get("id");
-  if (!id || (type !== "item" && type !== "scope_type")) {
-    return NextResponse.json(
-      { error: "type (item|scope_type) and id are required" },
-      { status: 400 },
-    );
-  }
+  const id = new URL(request.url).searchParams.get("id");
+  if (!id)
+    return NextResponse.json({ error: "id is required" }, { status: 400 });
 
   const admin = createAdminClient();
-
-  if (type === "item") {
-    const { data: item } = await contextDb(admin)
-      .from("context_items")
-      .select("key")
-      .eq("id", id)
-      .maybeSingle();
-    if (item && COMPUTED_KEYS.has(item.key)) {
-      return NextResponse.json(
-        {
-          error: `'${item.key}' is a built-in ambient item and cannot be deleted`,
-        },
-        { status: 422 },
-      );
-    }
-    const { error } = await contextDb(admin)
-      .from("context_items")
-      .delete()
-      .eq("id", id);
-    if (error)
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ ok: true });
-  }
-
-  // scope_type — guard the built-in Environment category (holds ambient items).
-  const { data: items } = await contextDb(admin)
-    .from("context_items")
-    .select("key")
-    .eq("scope_type_id", id);
-  if ((items ?? []).some((i) => COMPUTED_KEYS.has(i.key))) {
+  const { data: item, error: itemErr } = await systemTable(admin)
+    .select("id, item_class")
+    .eq("id", id)
+    .maybeSingle();
+  if (itemErr)
+    return NextResponse.json({ error: itemErr.message }, { status: 500 });
+  if (!item)
+    return NextResponse.json(
+      { error: "System context item not found" },
+      { status: 404 },
+    );
+  if (item.item_class === "ambient") {
     return NextResponse.json(
       {
-        error:
-          "This category holds built-in ambient items and cannot be deleted",
+        error: "Ambient items are platform infrastructure — deactivate instead",
       },
       { status: 422 },
     );
   }
-  const { error } = await contextDb(admin)
-    .from("scope_types")
-    .delete()
+
+  const { error } = await systemTable(admin)
+    .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
+
   return NextResponse.json({ ok: true });
 }

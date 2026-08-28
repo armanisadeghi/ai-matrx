@@ -14331,6 +14331,87 @@ export type Database = {
           },
         ]
       }
+      system_context_item: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          display_name: string
+          feed_config: Json
+          feed_error: string | null
+          feed_status: string | null
+          feed_type: Database["public"]["Enums"]["context_feed_type"]
+          id: string
+          is_active: boolean
+          item_class: string
+          key: string
+          last_fed_at: string | null
+          metadata: Json
+          organization_id: string
+          sensitivity: Database["public"]["Enums"]["context_sensitivity"]
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+          value: Json | null
+          value_type: Database["public"]["Enums"]["context_value_type"]
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          display_name: string
+          feed_config?: Json
+          feed_error?: string | null
+          feed_status?: string | null
+          feed_type?: Database["public"]["Enums"]["context_feed_type"]
+          id?: string
+          is_active?: boolean
+          item_class?: string
+          key: string
+          last_fed_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json | null
+          value_type?: Database["public"]["Enums"]["context_value_type"]
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          display_name?: string
+          feed_config?: Json
+          feed_error?: string | null
+          feed_status?: string | null
+          feed_type?: Database["public"]["Enums"]["context_feed_type"]
+          id?: string
+          is_active?: boolean
+          item_class?: string
+          key?: string
+          last_fed_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json | null
+          value_type?: Database["public"]["Enums"]["context_value_type"]
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       template_context_items: {
         Row: {
           description: string

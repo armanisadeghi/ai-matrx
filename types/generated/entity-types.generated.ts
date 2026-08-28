@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 595 active entity tokens. A token here is FK-valid for
+// 596 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -540,6 +540,7 @@ export type EntityTypeToken =
   | "study_reminder_delivery"
   | "study_session"
   | "surface"
+  | "system_context_item"
   | "system_error"
   | "system_personal_org_failure"
   | "system_write_failure"
@@ -1509,6 +1510,7 @@ export type ScopeableEntityToken =
   | "study_reminder_delivery"
   | "study_session"
   | "surface"
+  | "system_context_item"
   | "system_error"
   | "system_personal_org_failure"
   | "system_write_failure"
@@ -1687,6 +1689,7 @@ export type ListedEntityToken =
   | "seo_starter_pack"
   | "structured_list"
   | "surface"
+  | "system_context_item"
   | "workbook"
   | "workflow_runtime_surface";
 
@@ -2198,6 +2201,7 @@ export const ENTITY_TYPE_METADATA = {
   "study_reminder_delivery": { token: "study_reminder_delivery", schema: "education", table: "study_reminder_delivery", label: "Study Reminder Delivery", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "study_session": { token: "study_session", schema: "education", table: "study_session", label: "Study Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "surface": { token: "surface", schema: "ui", table: "ui_surface", label: "UI Surface", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
+  "system_context_item": { token: "system_context_item", schema: "context", table: "system_context_item", label: "System Context Item", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "system_error": { token: "system_error", schema: "ops", table: "system_error", label: "System Error", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "system_personal_org_failure": { token: "system_personal_org_failure", schema: "iam", table: "system_personal_org_failures", label: "System Personal Org Failure", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "system_write_failure": { token: "system_write_failure", schema: "ops", table: "system_write_failure", label: "System Write Failure", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2797,6 +2801,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "study_reminder_delivery",
   "study_session",
   "surface",
+  "system_context_item",
   "system_error",
   "system_personal_org_failure",
   "system_write_failure",
