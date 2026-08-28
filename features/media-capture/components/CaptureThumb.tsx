@@ -32,7 +32,9 @@ export function CaptureThumb({ fileId, alt }: CaptureThumbProps) {
       size="fill"
       alt={alt}
       fallback="icon"
-      transport="authenticated-blob"
+      // ID-backed crossOrigin media uses InlineMediaRef's bearer-authenticated
+      // blob cache. This avoids iOS Safari's cross-site cookie dependency.
+      crossOrigin="anonymous"
     />
   );
 }

@@ -58,7 +58,6 @@ export type InlineMediaRefSize =
   | { width: number; height: number };
 
 export type InlineMediaRefFit = "cover" | "contain" | "fill";
-export type InlineMediaRefTransport = "element" | "authenticated-blob";
 
 export interface InlineMediaRefProps {
   /**
@@ -183,15 +182,6 @@ export interface InlineMediaRefProps {
    * the canvas). When supplied, the component skips `next/image`.
    */
   crossOrigin?: "anonymous" | "use-credentials";
-  /**
-   * How an ID-backed file reaches the media element. `"element"` binds the
-   * durable file URL directly and authenticates with the file-session cookie.
-   * `"authenticated-blob"` fetches bytes with the normal bearer-authenticated
-   * file client and binds a cached `blob:` URL instead. Use the blob lane for
-   * mobile surfaces that must survive browsers blocking cross-site cookies.
-   * External URLs always keep their normal element transport.
-   */
-  transport?: InlineMediaRefTransport;
   /** Optional border style. Default `"none"`. */
   border?: "none" | "subtle";
   /** Extra class names. */
@@ -571,28 +561,27 @@ export function InlineMediaRef({
   onLoad,
   mediaElementRef,
   crossOrigin,
-  transport = "element",
   border = "none",
   className,
 }: InlineMediaRefProps) {
   const source = useMemo(() => toFileSource(ref), [ref]);
   const sourceFileId =
     source && source.kind === "file_id" ? source.fileId : null;
-  const needsAuthenticatedBlob = Boolean(
-    sourceFileId &&
-      (crossOrigin || transport === "authenticated-blob"),
-  );
+  const needsPixelReadableBlob = Boolean(crossOrigin && sourceFileId);
 
-  // Canvas consumers cannot use an authenticated download URL as <img src>,
-  // and some mobile browsers block the cross-site file-session cookie after
-  // reload. Both cases reuse the canonical authenticated byte cache: it
-  // downloads by file ID and exposes a same-origin blob: URL.
-  const { url: authenticatedBlobUrl, error: authenticatedBlobError } =
-    useFileBlob(needsAuthenticatedBlob ? sourceFileId : null);
-  // External canvas URLs still flow through the universal handler's
-  // fetchable transport. Ordinary external URLs use the display lane.
+  // Canvas consumers cannot use an authenticated download URL as <img src>
+  // (the element cannot attach our bearer token), and the CDN deliberately
+  // does not promise CORS headers. Reuse the canonical authenticated byte
+  // cache: it downloads by file ID and exposes a same-origin blob: URL whose
+  // pixels marker.js/canvas may safely read.
+  const { url: pixelReadableUrl, error: pixelReadableError } = useFileBlob(
+    needsPixelReadableBlob ? sourceFileId : null,
+  );
+  // Canvas-capable consumers need a URL whose bytes remain readable after
+  // load. File IDs use the authenticated blob cache above. External URLs
+  // still flow through the universal handler's fetchable transport.
   const { result: resolvedUrl, error: resolveError } = useFileAs(
-    needsAuthenticatedBlob ? null : source,
+    needsPixelReadableBlob ? null : source,
     crossOrigin ? { kind: "fetchable_url" } : { kind: "html_src" },
   );
   // Routes <audio>/<video> to the user's chosen output device (setSinkId) and
@@ -626,13 +615,13 @@ export function InlineMediaRef({
     onEnded: () => setIsMediaPlaying(false),
   };
   const durableSrc = useDurableSrc(
-    authenticatedBlobUrl ?? resolvedUrl,
-    !needsAuthenticatedBlob ? (sourceFileId ?? undefined) : undefined,
+    pixelReadableUrl ?? resolvedUrl,
+    !crossOrigin ? (sourceFileId ?? undefined) : undefined,
     onError,
   );
   const url = durableSrc.src || null;
   const mediaResolutionError =
-    authenticatedBlobError ?? resolveError?.message ?? null;
+    pixelReadableError ?? resolveError?.message ?? null;
   const dimensions = resolveDimensions(size);
   const isFill = dimensions === "fill";
   const elementType = inferElementType(ref, as);
