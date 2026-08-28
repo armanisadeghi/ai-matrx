@@ -43378,6 +43378,16 @@ export type Database = {
       _wf_project_step: { Args: { p_step: string }; Returns: number }
       _wf_revoke_step: { Args: { p_step: string }; Returns: number }
       _wf_route: { Args: { p_instance: string }; Returns: Json }
+      _wf_subject_may_self_act: {
+        Args: {
+          p_action_type: string
+          p_at: string
+          p_employment: string
+          p_target_id: string
+          p_target_table: string
+        }
+        Returns: boolean
+      }
       _wf_target_changed: {
         Args: { p_instance: string; p_new_digest: string }
         Returns: Json
