@@ -49,6 +49,15 @@
 --    stops violating and its baseline row goes inert. The debt is printed on every run, so it
 --    cannot quietly become permanent — the failure mode of check 26's allowlist, which this lane
 --    watched get deleted rather than re-dated once the source was fixed.
+-- 5. 🚨 THE EXEMPTION TEST HIT L1'S OWN PREFIX BUG, IN MY CODE, ON THE FIRST RUN. The first cut
+--    asked `position(proname in blob) > 0`, and three functions were silently exempted: `leave_enroll`
+--    twice — because a policy names the TABLE `hr.leave_enrollment`, of which the function name is a
+--    PREFIX — and `position_subtree` on a bare identifier. An over-exemption here is the dangerous
+--    direction: a genuinely public definer function escapes the check entirely. Fixed by reusing
+--    `hr._names_a_call` (hr_l3_80) on the SCHEMA-QUALIFIED name, so the exemption requires an
+--    identifier-bounded `hr.<name>` and a table whose name merely starts with a function's cannot
+--    grant one. Reusing the matcher rather than writing a second one is the point: this is the
+--    third place the same class has appeared, and it now has one implementation.
 -- 4. `anon` AND `authenticated` AND `PUBLIC` ARE ALL TESTED, because they fail differently.
 --    `has_function_privilege` answers TRUE for a role that inherits a PUBLIC grant, so the ACL-null
 --    case (99 functions) is caught by the role test; the explicit-grant case is caught the same way.
@@ -123,8 +132,10 @@ as $fn$
      and p.prosecdef
      and (has_function_privilege('anon', p.oid, 'EXECUTE')
        or has_function_privilege('authenticated', p.oid, 'EXECUTE'))
-     -- derived exemption: a client role evaluates this function itself, so it NEEDS the grant
-     and position(p.proname in exprs.blob) = 0
+     -- derived exemption: a client role evaluates this function itself, so it NEEDS the grant.
+     -- Matched with hr._names_a_call on the QUALIFIED name (decision 5) -- a bare-substring test
+     -- exempted `leave_enroll` because a policy mentions the TABLE hr.leave_enrollment.
+     and not hr._names_a_call(exprs.blob, 'hr.' || p.proname)
    order by 1, 2;
 $fn$;
 

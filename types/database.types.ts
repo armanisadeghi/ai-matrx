@@ -29695,6 +29695,30 @@ export type Database = {
         }
         Relationships: []
       }
+      definer_grant_baseline: {
+        Row: {
+          function_name: string
+          id: string
+          identity_args: string
+          noted_on: string
+          reason: string
+        }
+        Insert: {
+          function_name: string
+          id?: string
+          identity_args: string
+          noted_on?: string
+          reason: string
+        }
+        Update: {
+          function_name?: string
+          id?: string
+          identity_args?: string
+          noted_on?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       department: {
         Row: {
           category_id: string | null
@@ -43610,6 +43634,17 @@ export type Database = {
           holders: number
           reason: string
           token: string
+        }[]
+      }
+      definer_functions_client_reachable: {
+        Args: never
+        Returns: {
+          acl_is_null: boolean
+          anon_can: boolean
+          authenticated_can: boolean
+          baselined: boolean
+          identity_args: string
+          qname: string
         }[]
       }
       derive_grants_bulk: {
