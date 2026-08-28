@@ -366,60 +366,57 @@ export default function SystemJobsPage() {
           );
         },
       },
-      {
-        id: "actions",
-        header: "Actions",
-        accessorFn: () => "",
-        sortable: false,
-        width: 220,
-        cell: (r) => {
-          const isBusy = busy.has(r.id);
-          return (
-            <span className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant={r.enabled ? "outline" : "default"}
-                className="h-7 px-2 text-xs"
-                disabled={isBusy}
-                onClick={() => void toggleEnabled(r)}
-              >
-                {isBusy ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Power className="h-3 w-3" />
-                )}
-                {r.enabled ? "Disable" : "Enable"}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 px-2 text-xs"
-                disabled={isBusy}
-                onClick={() => setEditing(r)}
-              >
-                <Pencil className="h-3 w-3" />
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 px-2 text-xs"
-                disabled={isBusy || r.handler_registered === false}
-                title={
-                  r.handler_registered === false
-                    ? "No handler registered — nothing would run."
-                    : undefined
-                }
-                onClick={() => void runNow(r)}
-              >
-                <Play className="h-3 w-3" />
-                Run now
-              </Button>
-            </span>
-          );
-        },
-      },
   ];
+
+  // Rendered in the table's own trailing Actions column (`rowActions`) — a
+  // second hand-made actions column would duplicate the header the table
+  // already owns.
+  const renderRowActions = (r: SystemTaskResponse) => {
+    const isBusy = busy.has(r.id);
+    return (
+      <span className="flex items-center gap-1">
+        <Button
+          size="sm"
+          variant={r.enabled ? "outline" : "default"}
+          className="h-7 px-2 text-xs"
+          disabled={isBusy}
+          onClick={() => void toggleEnabled(r)}
+        >
+          {isBusy ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Power className="h-3 w-3" />
+          )}
+          {r.enabled ? "Disable" : "Enable"}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 px-2 text-xs"
+          disabled={isBusy}
+          onClick={() => setEditing(r)}
+        >
+          <Pencil className="h-3 w-3" />
+          Edit
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 px-2 text-xs"
+          disabled={isBusy || r.handler_registered === false}
+          title={
+            r.handler_registered === false
+              ? "No handler registered — nothing would run."
+              : undefined
+          }
+          onClick={() => void runNow(r)}
+        >
+          <Play className="h-3 w-3" />
+          Run now
+        </Button>
+      </span>
+    );
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
@@ -435,6 +432,7 @@ export default function SystemJobsPage() {
           isLoading={loading}
           isFetching={fetching}
           pageSize={50}
+          rowActions={(r) => renderRowActions(r)}
           emptyState={{
             title: loadError
               ? "System jobs could not be loaded"
