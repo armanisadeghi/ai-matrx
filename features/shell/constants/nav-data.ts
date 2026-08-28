@@ -1354,6 +1354,16 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        label: "Product Pipeline",
+        href: "/tools/product-capture/manage",
+        iconName: "TableProperties",
+        description:
+          "Manage captured products through AI analysis, research, review, and listing approval",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
         label: "Webscraper",
         href: "/scraper",
         guestHref: "/features",

@@ -62,6 +62,22 @@ const PRODUCT_CAPTURE_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/tools/product-capture/manage",
+      label: "Pipeline workspace",
+      description:
+        "Desktop-first stage stepper + per-item workspace: analysis (with mixed-folder split), research, HITL questions + resubmit, grading gate, listing approval + CSV/JSON export. Stage writes fire the workflow triggers.",
+      filePath: "app/(core)/tools/product-capture/manage/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/tools/product-capture/answer",
+      label: "Quick-answer queue",
+      description:
+        "Mobile Q&A: one question at a time, featured-image-first, answer / skip (back of queue) / defer (not a quick answer); voice answers transcribe in place.",
+      filePath: "app/(core)/tools/product-capture/answer/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/tools/product-capture/admin",
       label: "Admin map (this page)",
       description: "Admin index of every product-capture resource.",
@@ -153,6 +169,27 @@ const PRODUCT_CAPTURE_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/product-capture/hooks/useLongPress.ts",
       description:
         "Pointer long-press hook (450 ms, movement-cancel, click suppression, haptic tick).",
+      status: "Live",
+    },
+    {
+      name: "PipelineWorkspace + stage panels",
+      filePath: "features/product-capture/components/pipeline/PipelineWorkspace.tsx",
+      description:
+        "The /manage engine: StageStepper, StageItemList, ItemWorkspace with AnalysisPanel (SplitDialog), ResearchPanel, QuestionsPanel, GradingPanel, ListingPanel, FeaturedImageStrip (canonical InitialCropWindow crop).",
+      status: "Live",
+    },
+    {
+      name: "AnswerQueue",
+      filePath: "features/product-capture/components/pipeline/AnswerQueue.tsx",
+      description:
+        "The /answer engine: featured-image-first question cards, choice/boolean/text+voice answers, skip-to-back, defer-out.",
+      status: "Live",
+    },
+    {
+      name: "pipeline-service + pipeline-types",
+      filePath: "features/product-capture/pipeline-service.ts",
+      description:
+        "Stages (guarded CAS; transitions fire workflow triggers), payloads (jsonb-per-kind CAS), questions (answer/skip/defer/reopen), splitItem, featured image. Shape contracts in pipeline-types.ts.",
       status: "Live",
     },
   ],
