@@ -38,7 +38,9 @@ import type {
   HrEmployeeProfile,
   HrEmploymentHistory,
   HrKnobIndex,
+  HrLawAppliesAck,
   HrLawCitation,
+  HrLawOptOut,
   HrLawPortal,
   HrLawRuleClass,
   HrLawRuleStatus,
@@ -1880,6 +1882,18 @@ function mapHrPlatformLawRule(row: Record<string, unknown>): HrPlatformLawRule {
     unverified_keys: readTextArray(row, "unverified_keys"),
     version: readNumber(row, "version"),
     applies_to_org: row.applies_to_org === true,
+    opted_out: row.opted_out === true,
+  };
+}
+
+/** One D26 removal decision, mapped. `decided_by` is a user id, never a name. */
+function mapHrLawOptOut(row: Record<string, unknown>): HrLawOptOut {
+  return {
+    rule_class: readText(row, "rule_class") ?? "",
+    jurisdiction_key: readText(row, "jurisdiction_key") ?? "",
+    reason: readText(row, "reason"),
+    decided_at: readText(row, "decided_at"),
+    decided_by: readText(row, "decided_by"),
   };
 }
 
@@ -1961,6 +1975,55 @@ export async function fetchHrLawPortal(
       classes: readRows(row, "classes").map(mapHrLawRuleClass),
       platform_rules: readRows(row, "platform_rules").map(mapHrPlatformLawRule),
       org_rules: readRows(row, "org_rules").map(mapHrOrgLawRule),
+      opt_outs: readRows(row, "opt_outs").map(mapHrLawOptOut),
+    },
+  };
+}
+
+/**
+ * D26 — the organization decides whether ONE platform rule applies to it.
+ *
+ * 🚨 REMOVAL IS REAL, NOT COSMETIC. `applies: false` writes an
+ * `hr.jurisdiction_rule_org_decision` row and the resolver then excludes the rule
+ * with a traced `opted_out_by_org` outcome — the platform stops enforcing that law
+ * for this employer. So the caller must have made the consequence explicit BEFORE
+ * this door is opened; nothing downstream will ask again.
+ *
+ * Keyed by (rule class × jurisdiction), never by rule id, so amending the platform
+ * rule later cannot silently re-apply a law the organization removed.
+ *
+ * Refuses with `not_an_hr_admin` · `unknown_rule_class` · `unknown_jurisdiction`.
+ */
+export async function setHrPlatformLawRuleApplies(args: {
+  organizationId: string;
+  ruleClass: string;
+  jurisdictionKey: string;
+  applies: boolean;
+  /** The org's own words for WHY. Optional, and never invented on their behalf. */
+  reason?: string | null;
+}): Promise<HrResult<HrLawAppliesAck>> {
+  const result = await callHrRaw(
+    "hr_org_jurisdiction_rule_set_applies",
+    {
+      p_organization_id: args.organizationId,
+      p_rule_class: args.ruleClass,
+      p_jurisdiction_key: args.jurisdictionKey,
+      p_applies: args.applies,
+      p_reason: args.reason ?? null,
+    },
+    {
+      envelope: true,
+      whatFailed: args.applies ? "Restoring this rule" : "Removing this rule",
+      write: true,
+    },
+  );
+  if (!result.ok) return result;
+  return {
+    ok: true,
+    data: {
+      decision: readText(result.data, "decision") === "opted_out" ? "opted_out" : "applies",
+      rule_class: readText(result.data, "rule_class"),
+      jurisdiction_key: readText(result.data, "jurisdiction_key"),
     },
   };
 }

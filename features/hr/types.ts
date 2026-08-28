@@ -893,6 +893,13 @@ export type HrPlatformLawRule = {
   version: number | null;
   /** True when this rule's jurisdiction is on one of the org's chains. */
   applies_to_org: boolean;
+  /**
+   * D26 — the organization REMOVED this rule for itself. Keyed by
+   * (rule class × jurisdiction), so a later amendment of the rule row does not
+   * silently re-apply it. Removal is real: the resolver excludes the rule with a
+   * traced `opted_out_by_org` outcome and the platform stops enforcing it.
+   */
+  opted_out: boolean;
 };
 
 /** One rule this organization authored. Layered over the baseline, never replacing it. */
@@ -912,6 +919,20 @@ export type HrOrgLawRule = {
   version: number | null;
 };
 
+/**
+ * One removal decision this organization made over a platform rule (D26).
+ *
+ * The decision is the RECORD of why a law is not being enforced here, so it is
+ * never discarded on the client: it names who decided, when, and in whose words.
+ */
+export type HrLawOptOut = {
+  rule_class: string;
+  jurisdiction_key: string;
+  reason: string | null;
+  decided_at: string | null;
+  decided_by: string | null;
+};
+
 export type HrLawPortal = {
   /** Where the employer actually operates, derived from its locations and establishments. */
   org_jurisdiction_keys: string[];
@@ -920,6 +941,16 @@ export type HrLawPortal = {
   classes: HrLawRuleClass[];
   platform_rules: HrPlatformLawRule[];
   org_rules: HrOrgLawRule[];
+  /** Every rule this org removed (D26). Mirrors `opted_out` on the rules themselves. */
+  opt_outs: HrLawOptOut[];
+};
+
+/** What `hr_org_jurisdiction_rule_set_applies` answers on a granted call (D26). */
+export type HrLawAppliesAck = {
+  /** `applies` — back on the default. `opted_out` — the platform stops enforcing it. */
+  decision: "applies" | "opted_out";
+  rule_class: string | null;
+  jurisdiction_key: string | null;
 };
 
 /**

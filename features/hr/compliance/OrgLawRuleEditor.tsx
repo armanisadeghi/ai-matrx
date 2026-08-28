@@ -39,7 +39,7 @@ import { toast } from "@/lib/toast";
 
 import { readHrLawValidation, saveHrOrgLawRule } from "../service";
 import { isHrDenied, type HrDenied, type HrLawRuleClass, type HrLawValidationFinding, type HrOrgLawRule } from "../types";
-import { LawCitationLine } from "./LawRuleCard";
+import { LawCitationLine } from "./LawRuleRow";
 import { flatParameterFields, type LawParamField } from "./law-parameters";
 
 export type LawJurisdictionOption = { key: string; name: string };
@@ -109,7 +109,7 @@ function FindingList({
         <li key={`${finding.code ?? "finding"}-${index}`} className="space-y-1">
           {/* The server's sentence, verbatim — it is written for this reader. */}
           <p className="text-sm font-medium text-foreground">{finding.message}</p>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-foreground">
             {finding.jurisdiction_name ? (
               <span>Jurisdiction: {finding.jurisdiction_name}</span>
             ) : null}
@@ -122,7 +122,7 @@ function FindingList({
           </div>
           <LawCitationLine citation={finding.citation} />
           {tone === "violation" && finding.required !== null ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-foreground">
               Required: {JSON.stringify(finding.required)}
               {finding.configured !== null
                 ? ` · You entered: ${JSON.stringify(finding.configured)}`
@@ -158,7 +158,7 @@ function RefusalPanel({
         {validation && validation.violations.length > 0 ? (
           <FindingList findings={validation.violations} tone="violation" />
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-foreground">
             {refusal.detail ?? "The server refused this configuration."}
           </p>
         )}
@@ -178,7 +178,7 @@ function RefusalPanel({
         {validation && validation.warnings.length > 0 ? (
           <FindingList findings={validation.warnings} tone="warning" />
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-foreground">
             {refusal.detail ?? "The server raised a warning about this configuration."}
           </p>
         )}
@@ -323,11 +323,10 @@ export function OrgLawRuleEditor({
             </SelectContent>
           </Select>
           {selected ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-foreground">
               {selected.org_configurable === "more_generous_only"
-                ? "You may be more generous than the law here. You may never be less."
-                : "You choose inside the envelope the law defines here."}
-              {selected.description ? ` ${selected.description}` : ""}
+                ? "More generous than the law only — never less."
+                : "Inside the envelope the law defines."}
             </p>
           ) : null}
         </div>
@@ -360,10 +359,7 @@ export function OrgLawRuleEditor({
             value={effectiveFrom}
             onChange={(event) => setEffectiveFrom(event.target.value)}
           />
-          <p className="text-sm text-muted-foreground">
-            Leave it empty and the rule starts today — an org policy starts when the
-            organization adopts it.
-          </p>
+          <p className="text-xs text-foreground">Empty means it starts today.</p>
         </div>
 
         <div className="space-y-1.5">
@@ -439,10 +435,9 @@ export function OrgLawRuleEditor({
               className="font-mono text-xs"
               onChange={(event) => setJsonText(event.target.value)}
             />
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-foreground">
               This rule&apos;s shape is nested, so it is edited as JSON rather than a form
-              that would silently drop the parts it cannot draw. The server validates
-              whatever you send.
+              that would silently drop what it cannot draw.
             </p>
           </div>
         )}
