@@ -64,8 +64,3 @@ begin
   if v_src ~ 'is not a self-service target' then raise exception 'hr_l1_30: the raise survived'; end if;
   if v_src !~ 'A REQUEST NOBODY OPENED' then raise exception 'hr_l1_30: hr_l1_29 guard lost'; end if;
 end $verify$;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_30_forbidden_target_names_the_fields.sql',
-        md5('hr_l1_30_forbidden_target_names_the_fields'), now(), 0)
-on conflict do nothing;
