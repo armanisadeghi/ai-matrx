@@ -14,6 +14,7 @@ import {
   ListChecks,
   LayoutDashboard,
   Loader2,
+  ServerCog,
   Zap,
   AlertTriangle,
 } from "lucide-react";
@@ -38,6 +39,11 @@ const NAV_ITEMS = [
     label: "Runs",
     href: "/administration/automation/scheduling/runs",
     icon: Activity,
+  },
+  {
+    label: "System jobs",
+    href: "/administration/automation/scheduling/system-jobs",
+    icon: ServerCog,
   },
   {
     label: "Orphan leases",
@@ -81,7 +87,7 @@ export function SchedulingAdminLayoutClient({
     startTransition(() => router.push(href));
   };
 
-  // The shell is the only component mounted on all seven tabs, so it owns the
+  // The shell is the only component mounted on all eight tabs, so it owns the
   // surface's outer runtime. `active_tab` comes from the pathname here; each
   // tab publishes its own values into the module store the builder reads. The
   // Cron tester nests its own provider inside this one and wins there by

@@ -5,7 +5,7 @@
  *
  * Runtime scope plumbing for the `matrx-admin/scheduling` surface.
  *
- * The shape of this surface forces the indirection here. Seven route-tabbed
+ * The shape of this surface forces the indirection here. Eight route-tabbed
  * pages share one shell (`SchedulingAdminLayoutClient`), and the shell is the
  * only component always mounted — so it owns the OUTER
  * `SurfaceRuntimeProvider`. But every value except `active_tab` is state of
@@ -16,7 +16,7 @@
  * The Cron tester is the exception and does NOT publish here: it mounts its
  * own provider (`cron-tester-surface.ts`) nested inside the shell's, and the
  * registry resolves deepest-first, so its richer scope wins on that tab
- * outright. This module serves the other six.
+ * outright. This module serves the other seven.
  *
  * Two properties this buys, both deliberate:
  *
@@ -52,7 +52,7 @@ const BASE_PATH = "/administration/automation/scheduling";
  * Which tab a pathname is on. Mirrors the shell's NAV_ITEMS: Overview is the
  * exact base path, every other tab is a segment under it. An unrecognized
  * path under the base falls back to "overview" — the shell only renders on
- * these seven routes, so this is unreachable in practice rather than a guess
+ * these eight routes, so this is unreachable in practice rather than a guess
  * the surface would emit as fact.
  */
 export function adminSchedulingTabFromPathname(
@@ -66,6 +66,8 @@ export function adminSchedulingTabFromPathname(
       return "tasks";
     case "runs":
       return "runs";
+    case "system-jobs":
+      return "system_jobs";
     case "orphan-leases":
       return "orphan_leases";
     case "cron-tester":
