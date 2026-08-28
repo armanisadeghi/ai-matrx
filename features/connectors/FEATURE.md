@@ -20,6 +20,7 @@ The user-facing catalogue of external systems a person can attach to their accou
 - `features/connectors/DirectoryConnectorCards.tsx` — the directory presence for the first-party Google connectors, mounted on `/user-settings/integrations` (features/settings `IntegrationsSettingsPage`) between the GitHub card and the MCP catalog grid. Status from the Google connection inventory via `google-status.ts`; Docs/Sheets and Gmail connect through the floating Google connect window, Search Console doors to `/marketing/connections/google` (its OAuth lives there — never a wrong-scope popup).
 - `features/connectors/google-status.ts` — the ONE Google scope→connector mapping (`GOOGLE_CONNECTOR_SCOPES`, `googleConnectedIds`, `googleConnectionFor`). Both containers resolve through it; a scope mapping anywhere else is a fork.
 - `features/connectors/ChatConnectorStrip.tsx` — the container that answers "what has this user actually connected" from the Google inventory plus the per-user MCP catalog. Google connectors open the floating Google connect window; MCP-backed connectors match their connector id to the canonical MCP server slug and use the shared MCP OAuth popup. Mounted under the real chat composer by `AgentConversationColumn`. Any new surface mounting the strip should reuse this container rather than resolving status again.
+- `features/marketing/google/hooks.ts` — the shared Google inventory query is **auth-gated**. Core routes mount before async auth hydration; querying `users.integration_connections` while anonymous is a producer bug because the table is intentionally granted only to `authenticated`.
 
 **Config**
 
@@ -119,6 +120,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-08-28` — Auth-gated the shared Google inventory query so `/chat/new` cannot read the authenticated-only connection table during pre-hydration anonymous state.
 - `2026-08-22` — First-party Google connector cards now share one live scope-health reader across Chat and Settings; the directory exposes Workspace, Gmail, and Search Console with each connector's canonical management door.
 - `2026-08-19` — Codex: retired the legacy Slack demo callback that returned a bot token in the browser URL. Slack connections must use canonical MCP OAuth so tokens are sealed in Unified Credential Vault.
 - `2026-08-19` — Codex: removed Notion's stale Coming Soon promise and connected the real chat strip to the existing per-user MCP catalog and OAuth flow. MCP-backed connector ids now resolve generically by canonical server slug, so future official MCP providers reuse the same path.

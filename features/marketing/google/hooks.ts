@@ -1,6 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import {
   connectGoogle,
   disconnectGoogle,
@@ -21,9 +23,14 @@ export const googleConnectionKeys = {
 };
 
 export function useGoogleConnectionInventory() {
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
   return useQuery({
     queryKey: googleConnectionKeys.inventory,
     queryFn: ({ signal }) => listGoogleConnectionInventory(signal),
+    // `users.integration_connections` is deliberately unavailable to `anon`.
+    // Core routes can mount before the Redux auth slice hydrates, so do not
+    // issue the inventory read until the caller has an authenticated identity.
+    enabled: isAuthenticated,
     staleTime: 30_000,
   });
 }
