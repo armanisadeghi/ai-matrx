@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Trash2 } from 'lucide-react';
 import { MODEL_DESCRIPTION_MAX_CHARS } from '../model-metadata';
+import { ModelListDropdown } from '@/features/ai-models/components/lab/ModelListDropdown';
 import type { AiModelFormData, AiProvider, AiModel } from '../types';
 
 interface AiModelFormProps {
@@ -63,32 +64,9 @@ export default function AiModelForm({
     const toggle = (key: keyof AiModelFormData) => (checked: boolean) =>
         onChange({ ...data, [key]: checked });
 
-    // Fallback target options — every non-deprecated, non-self model grouped
-    // by provider for easy scanning. Used by the Mid + Guest fallback Selects.
-    const fallbackGroups = React.useMemo(() => {
-        const groups: Record<string, AiModel[]> = {};
-        for (const m of allModels) {
-            // Exclude self (no point pointing a row at itself) + deprecated rows
-            if (m.name === data.name) continue;
-            if (m.is_deprecated) continue;
-            const key = m.maker || "Other";
-            if (!groups[key]) groups[key] = [];
-            groups[key].push(m);
-        }
-        for (const key of Object.keys(groups)) {
-            groups[key].sort((a, b) =>
-                (a.common_name || a.name || "").localeCompare(b.common_name || b.name || ""),
-            );
-        }
-        return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-    }, [allModels, data.name]);
-
-    const fallbackTargetLabel = (id: string): string => {
-        if (!id) return "";
-        const m = allModels.find((x) => x.id === id);
-        if (!m) return id;
-        return m.common_name || m.name || id;
-    };
+    const fallbackModelIds = allModels
+        .filter((model) => model.name !== data.name && !model.is_deprecated)
+        .map((model) => model.id);
 
     return (
         <div className="space-y-3">
@@ -282,44 +260,19 @@ export default function AiModelForm({
                         label="Retry Fallback Model"
                         description="Substitute model when calls keep failing."
                     >
-                        <Select
-                            value={data.retry_fallback_id || "__none__"}
-                            onValueChange={(v) =>
-                                onChange({ ...data, retry_fallback_id: v === "__none__" ? "" : v })
+                        <ModelListDropdown
+                            value={data.retry_fallback_id}
+                            onValueChange={(modelId) =>
+                                onChange({ ...data, retry_fallback_id: modelId })
                             }
-                        >
-                            <SelectTrigger className="h-8 text-sm">
-                                <SelectValue placeholder="Choose retry fallback…">
-                                    {data.retry_fallback_id
-                                        ? fallbackTargetLabel(data.retry_fallback_id)
-                                        : "— no swap —"}
-                                </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent className="max-h-72">
-                                <SelectItem
-                                    value="__none__"
-                                    className="font-normal italic text-muted-foreground"
-                                >
-                                    — no swap —
-                                </SelectItem>
-                                {fallbackGroups.map(([provider, models]) => (
-                                    <div key={provider}>
-                                        <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 border-t mt-1 first:border-t-0 first:mt-0">
-                                            {provider}
-                                        </div>
-                                        {models.map((m) => (
-                                            <SelectItem
-                                                key={m.id}
-                                                value={m.id}
-                                                className="text-xs"
-                                            >
-                                                {m.common_name || m.name}
-                                            </SelectItem>
-                                        ))}
-                                    </div>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            inputModalities={[]}
+                            allowedModelIds={fallbackModelIds}
+                            catalogVariant="admin"
+                            emptyOptionLabel="No swap"
+                            onClear={() => onChange({ ...data, retry_fallback_id: "" })}
+                            placeholder="Choose retry fallback…"
+                            className="h-8 w-full justify-between text-sm"
+                        />
                     </FormField>
                     <FormField
                         label="Retry Max Attempts"
@@ -355,87 +308,37 @@ export default function AiModelForm({
                         label="Mid-tier Fallback"
                         description="Used when an authenticated user is past their soft limit (e.g. Opus → Sonnet)."
                     >
-                        <Select
-                            value={data.mid_fallback_id || "__none__"}
-                            onValueChange={(v) =>
-                                onChange({ ...data, mid_fallback_id: v === "__none__" ? "" : v })
+                        <ModelListDropdown
+                            value={data.mid_fallback_id}
+                            onValueChange={(modelId) =>
+                                onChange({ ...data, mid_fallback_id: modelId })
                             }
-                        >
-                            <SelectTrigger className="h-8 text-sm">
-                                <SelectValue placeholder="Choose mid-tier fallback…">
-                                    {data.mid_fallback_id
-                                        ? fallbackTargetLabel(data.mid_fallback_id)
-                                        : "— no swap —"}
-                                </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent className="max-h-72">
-                                <SelectItem
-                                    value="__none__"
-                                    className="font-normal italic text-muted-foreground"
-                                >
-                                    — no swap —
-                                </SelectItem>
-                                {fallbackGroups.map(([provider, models]) => (
-                                    <div key={provider}>
-                                        <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 border-t mt-1 first:border-t-0 first:mt-0">
-                                            {provider}
-                                        </div>
-                                        {models.map((m) => (
-                                            <SelectItem
-                                                key={m.id}
-                                                value={m.id}
-                                                className="text-xs"
-                                            >
-                                                {m.common_name || m.name}
-                                            </SelectItem>
-                                        ))}
-                                    </div>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            inputModalities={[]}
+                            allowedModelIds={fallbackModelIds}
+                            catalogVariant="admin"
+                            emptyOptionLabel="No swap"
+                            onClear={() => onChange({ ...data, mid_fallback_id: "" })}
+                            placeholder="Choose mid-tier fallback…"
+                            className="h-8 w-full justify-between text-sm"
+                        />
                     </FormField>
                     <FormField
                         label="Guest Fallback"
                         description="Used when the caller is an anonymous guest (X-Fingerprint-ID, no Bearer)."
                     >
-                        <Select
-                            value={data.guest_fallback_id || "__none__"}
-                            onValueChange={(v) =>
-                                onChange({ ...data, guest_fallback_id: v === "__none__" ? "" : v })
+                        <ModelListDropdown
+                            value={data.guest_fallback_id}
+                            onValueChange={(modelId) =>
+                                onChange({ ...data, guest_fallback_id: modelId })
                             }
-                        >
-                            <SelectTrigger className="h-8 text-sm">
-                                <SelectValue placeholder="Choose guest fallback…">
-                                    {data.guest_fallback_id
-                                        ? fallbackTargetLabel(data.guest_fallback_id)
-                                        : "— no swap —"}
-                                </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent className="max-h-72">
-                                <SelectItem
-                                    value="__none__"
-                                    className="font-normal italic text-muted-foreground"
-                                >
-                                    — no swap —
-                                </SelectItem>
-                                {fallbackGroups.map(([provider, models]) => (
-                                    <div key={provider}>
-                                        <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 border-t mt-1 first:border-t-0 first:mt-0">
-                                            {provider}
-                                        </div>
-                                        {models.map((m) => (
-                                            <SelectItem
-                                                key={m.id}
-                                                value={m.id}
-                                                className="text-xs"
-                                            >
-                                                {m.common_name || m.name}
-                                            </SelectItem>
-                                        ))}
-                                    </div>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            inputModalities={[]}
+                            allowedModelIds={fallbackModelIds}
+                            catalogVariant="admin"
+                            emptyOptionLabel="No swap"
+                            onClear={() => onChange({ ...data, guest_fallback_id: "" })}
+                            placeholder="Choose guest fallback…"
+                            className="h-8 w-full justify-between text-sm"
+                        />
                     </FormField>
                 </div>
             </div>

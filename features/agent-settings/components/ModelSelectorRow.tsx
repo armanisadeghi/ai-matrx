@@ -4,7 +4,7 @@ import { Settings2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import {
   selectEffectiveModelId,
   selectEffectiveSettings,
@@ -76,10 +76,10 @@ export function ModelSelectorRow({
     <div className="space-y-1.5">
       {/* Model selector + settings button */}
       <div className="flex items-center gap-1.5">
-        <SmartModelSelect
+        <ModelListDropdown
           value={effectiveModelId}
           onValueChange={handleModelChange}
-          placeholder="Select model…"
+          inputModalities={[]}
           className="h-7 text-xs flex-1 min-w-0"
         />
 

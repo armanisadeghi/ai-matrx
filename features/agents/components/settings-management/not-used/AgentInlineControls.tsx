@@ -18,7 +18,7 @@ import { setAgentField } from "@/features/agents/redux/agent-definition/slice";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentModelId } from "@/features/agents/redux/agent-definition/selectors";
 import { useCallback } from "react";
-import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { Label } from "@/components/ui/label";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
 
@@ -49,7 +49,11 @@ export function AgentInlineControls({
         <Label className="text-xs text-gray-600 dark:text-gray-400">
           Model
         </Label>
-        <SmartModelSelect value={modelId} onValueChange={handleModelChange} />
+        <ModelListDropdown
+          value={modelId}
+          onValueChange={handleModelChange}
+          inputModalities={[]}
+        />
       </div>
       <AgentVariablesModal agentId={agentId} />
       <AgentToolsModal agentId={agentId} />

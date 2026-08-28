@@ -38,19 +38,20 @@ import {
   selectIsMemoryEnabledForConversation,
   selectMemoryMetadata,
 } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.selectors";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { useModels } from "@/features/ai-models/hooks/useModels";
 
 /**
  * Curated list of models known to work well for Observer / Reflector.
  * Kept small + opinionated — if we need more freedom, we can swap to a
  * free-text input later.
  */
-const MEMORY_MODELS: ReadonlyArray<{ value: string; label: string }> = [
-  { value: "", label: "Default (MATRX_OM_DEFAULT_MODEL)" },
-  { value: "google/gemini-2.5-flash", label: "google/gemini-2.5-flash" },
-  { value: "google/gemini-2.5-flash-lite", label: "google/gemini-2.5-flash-lite" },
-  { value: "openai/gpt-5-mini", label: "openai/gpt-5-mini" },
-  { value: "openai/gpt-5-nano", label: "openai/gpt-5-nano" },
-  { value: "claude-haiku-4-5", label: "claude-haiku-4-5" },
+const MEMORY_MODEL_NAMES: readonly string[] = [
+  "google/gemini-2.5-flash",
+  "google/gemini-2.5-flash-lite",
+  "openai/gpt-5-mini",
+  "openai/gpt-5-nano",
+  "claude-haiku-4-5",
 ];
 
 interface MemoryControlsProps {
@@ -76,6 +77,13 @@ export function MemoryControls({
   const toggleTarget = useAppSelector(selectMemoryToggleTarget);
   const memoryModel = useAppSelector(selectMemoryModel);
   const memoryScope = useAppSelector(selectMemoryScope);
+  const { models } = useModels();
+  const eligibleMemoryModels = models.filter((model) =>
+    MEMORY_MODEL_NAMES.includes(model.name),
+  );
+  const memoryModelId =
+    eligibleMemoryModels.find((model) => model.name === memoryModel)?.id ??
+    null;
 
   // Effective shown state — pending toggle beats persisted state.
   const effectiveEnabled = toggleRequested
@@ -198,17 +206,21 @@ export function MemoryControls({
           <Label className="text-xs text-muted-foreground shrink-0">
             Model override
           </Label>
-          <select
-            value={memoryModel ?? ""}
-            onChange={(e) => handleModelChange(e.target.value)}
-            className="flex-1 max-w-[200px] h-6 px-1.5 rounded border border-input bg-background text-[11px] font-mono focus:outline-none focus:ring-1 focus:ring-ring"
-          >
-            {MEMORY_MODELS.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
+          <ModelListDropdown
+            value={memoryModelId}
+            onValueChange={(modelId) => {
+              const selectedModel = eligibleMemoryModels.find(
+                (model) => model.id === modelId,
+              );
+              if (selectedModel) handleModelChange(selectedModel.name);
+            }}
+            inputModalities={["text"]}
+            outputModalities={["text"]}
+            allowedModelIds={eligibleMemoryModels.map((model) => model.id)}
+            emptyOptionLabel="Default observational-memory model"
+            onClear={() => handleModelChange("")}
+            className="h-6 max-w-[240px] flex-1 text-[11px]"
+          />
         </div>
 
         <div className="flex items-center justify-between gap-2">

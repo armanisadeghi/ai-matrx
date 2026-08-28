@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { REASONING_EFFORT_OPTIONS } from "@/types/python-generated/llm-enums";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 
 interface Props {
   conversationId: string;
@@ -79,13 +80,9 @@ export function ColumnOverridesEditor({ conversationId }: Props) {
     );
   };
 
-  const modelOptions = models
-    .filter((m) => !m.is_deprecated)
-    .map((m) => ({
-      value: m.id,
-      label: m.common_name ?? m.name ?? m.id,
-      provider: m.maker ?? "",
-    }));
+  const allowedModelIds = models
+    .filter((model) => !model.is_deprecated)
+    .map((model) => model.id);
 
   return (
     <div className="w-[360px] max-h-[70dvh] overflow-y-auto p-3 space-y-3 text-xs">
@@ -96,21 +93,15 @@ export function ColumnOverridesEditor({ conversationId }: Props) {
             <ClearChip onClear={() => clearKey("model")} />
           )}
         </div>
-        <select
-          value={(effective.model as string | null) ?? ""}
-          onChange={(e) =>
-            update({ model: e.target.value || null })
-          }
-          className="w-full bg-background border border-border rounded px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary"
-        >
-          <option value="">— Agent default —</option>
-          {modelOptions.map((m) => (
-            <option key={m.value} value={m.value}>
-              {m.label}
-              {m.provider ? ` (${m.provider})` : ""}
-            </option>
-          ))}
-        </select>
+        <ModelListDropdown
+          value={(effective.model as string | null) ?? null}
+          onValueChange={(modelId) => update({ model: modelId })}
+          inputModalities={[]}
+          allowedModelIds={allowedModelIds}
+          emptyOptionLabel="Agent default"
+          onClear={() => clearKey("model")}
+          className="h-7 w-full justify-between text-xs"
+        />
       </div>
 
       <RangeRow

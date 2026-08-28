@@ -12,7 +12,6 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   CornerDownLeft,
-  ChevronDown,
   Loader2,
   List,
   Layers,
@@ -56,11 +55,7 @@ import {
 import { selectCurrentSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import {
-  selectActiveModels,
-  selectModelOptions,
-  fetchModelOptions,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { ResourceChips } from "@/features/agents/resources/ResourceChips";
@@ -186,7 +181,6 @@ export function ConversationInput({
   const [submitOnEnter, setSubmitOnEnter] = useState(false);
   const [previewSheetOpen, setPreviewSheetOpen] = useState(false);
   const [previewResource, setPreviewResource] = useState<Resource | null>(null);
-  const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
   const openDebugWindow = () =>
     dispatch(
       openOverlay({
@@ -253,23 +247,8 @@ export function ConversationInput({
     return qs ? `${pathname}?${qs}` : pathname;
   }, [useGuidedVars, searchParams, pathname]);
 
-  // ── Model registry ─────────────────────────────────────────────────────────
-  const modelOptions = useAppSelector(selectModelOptions);
-  const availableModels = useAppSelector(selectActiveModels);
-
   const currentModelId = (settingsForDialog as Record<string, unknown>)
     ?.model as string | undefined;
-  const currentModelName =
-    modelOptions.find((o) => o.value === currentModelId)?.label ??
-    currentModelId ??
-    "";
-
-  // Ensure models are loaded when model picker or settings are shown
-  useEffect(() => {
-    if ((showModelPicker || showSettings) && availableModels.length === 0) {
-      dispatch(fetchModelOptions());
-    }
-  }, [showModelPicker, showSettings, availableModels.length, dispatch]);
 
   // ── File upload ────────────────────────────────────────────────────────────
   const { upload, uploading: isUploading } = useFileUpload();
@@ -405,7 +384,6 @@ export function ConversationInput({
   const handleModelSelect = useCallback(
     (modelId: string) => {
       dispatch(setOverrides({ conversationId, changes: { model: modelId } }));
-      setIsModelPickerOpen(false);
     },
     [dispatch, conversationId],
   );
@@ -547,33 +525,13 @@ export function ConversationInput({
 
         {/* Model picker */}
         {showModelPicker && (
-          <div className="relative px-3">
-            <button
-              type="button"
-              onClick={() => setIsModelPickerOpen(!isModelPickerOpen)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <span>{currentModelName || "Select model"}</span>
-              <ChevronDown className="w-3 h-3" />
-            </button>
-            {isModelPickerOpen && (
-              <div className="absolute bottom-full left-0 mb-1 w-64 max-h-60 overflow-y-auto rounded-xl border border-border bg-background shadow-lg z-50">
-                {modelOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleModelSelect(opt.value)}
-                    className={[
-                      "w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors",
-                      currentModelId === opt.value
-                        ? "text-primary font-medium"
-                        : "text-foreground",
-                    ].join(" ")}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="px-3">
+            <ModelListDropdown
+              value={currentModelId}
+              onValueChange={handleModelSelect}
+              inputModalities={[]}
+              className="text-muted-foreground hover:text-foreground"
+            />
           </div>
         )}
 

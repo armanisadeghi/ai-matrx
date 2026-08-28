@@ -3,13 +3,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import {
   RefreshCcw,
   ArrowRightLeft,
@@ -200,24 +194,17 @@ export default function ModelUsageAudit({
             <ChevronRight className="h-3 w-3" />
             <span className="opacity-40">2 Review settings</span>
           </div>
-          <Select
-            value={replacementId || undefined}
+          <ModelListDropdown
+            value={replacementId}
             onValueChange={setReplacementId}
-          >
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Select replacement model..." />
-            </SelectTrigger>
-            <SelectContent>
-              {replacementOptions.map((m) => (
-                <SelectItem key={m.id} value={m.id} className="text-xs">
-                  {m.common_name || m.name}
-                  {m.is_primary && (
-                    <span className="ml-1 text-green-600">(primary)</span>
-                  )}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            inputModalities={[]}
+            allowedModelIds={replacementOptions.map(
+              (candidate) => candidate.id,
+            )}
+            catalogVariant="admin"
+            placeholder="Select replacement model…"
+            className="h-8 w-full justify-between text-xs"
+          />
           {replaceError && (
             <p className="text-destructive text-xs">{replaceError}</p>
           )}

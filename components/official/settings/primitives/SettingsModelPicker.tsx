@@ -1,15 +1,7 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { SettingsRow } from "../SettingsRow";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectSeparator,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { useModels } from "@/features/ai-models/hooks/useModels";
 import {
   selectPlatformDefaultImageModelName,
@@ -21,10 +13,6 @@ import type { RootState } from "@/lib/redux/store";
 import type { SettingsCommonProps } from "../types";
 
 type Scope = "all" | "active" | "inactive";
-
-// Radix Select items cannot carry an empty value — this internal sentinel
-// maps to `null` ("platform default") at the prop boundary and never leaks.
-const PLATFORM_DEFAULT_VALUE = "__platform_default__";
 
 export type SettingsModelPickerProps = SettingsCommonProps & {
   /** Selected model id; null = platform default (catalog-resolved). */
@@ -65,7 +53,7 @@ export function SettingsModelPicker({
   const id =
     rowProps.id ??
     `settings-${rowProps.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-  const { models, isLoading } = useModels();
+  const { models } = useModels();
   const activeIds = useSelector(
     (state: RootState) => state.userPreferences.aiModels.activeModels,
   );
@@ -89,40 +77,22 @@ export function SettingsModelPicker({
 
   return (
     <SettingsRow {...rowProps} id={id} variant="inline" last={last}>
-      {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-      ) : filtered.length === 0 && !allowPlatformDefault ? (
-        <span className="text-xs text-amber-500">
-          No {scope === "active" ? "active" : ""} models
-        </span>
-      ) : (
-        <Select
-          value={value ?? (allowPlatformDefault ? PLATFORM_DEFAULT_VALUE : "")}
-          onValueChange={(next) =>
-            onValueChange(next === PLATFORM_DEFAULT_VALUE ? null : next)
-          }
-          disabled={rowProps.disabled}
-        >
-          <SelectTrigger id={id} size="default" className="w-56">
-            <SelectValue placeholder={placeholder ?? "Choose a model"} />
-          </SelectTrigger>
-          <SelectContent>
-            {allowPlatformDefault ? (
-              <>
-                <SelectItem value={PLATFORM_DEFAULT_VALUE}>
-                  {platformDefaultLabel}
-                </SelectItem>
-                {filtered.length > 0 ? <SelectSeparator /> : null}
-              </>
-            ) : null}
-            {filtered.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.common_name || m.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
+      <ModelListDropdown
+        value={value}
+        onValueChange={onValueChange}
+        inputModalities={[]}
+        outputModalities={[defaultModality]}
+        allowedModelIds={filtered.map((model) => model.id)}
+        emptyOptionLabel={
+          allowPlatformDefault ? platformDefaultLabel : undefined
+        }
+        onClear={
+          allowPlatformDefault ? () => onValueChange(null) : undefined
+        }
+        placeholder={placeholder ?? "Choose a model"}
+        disabled={rowProps.disabled}
+        className="w-56 justify-between"
+      />
     </SettingsRow>
   );
 }

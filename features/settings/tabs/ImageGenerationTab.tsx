@@ -3,17 +3,10 @@
 import { Image as ImageIcon } from "lucide-react";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
+import { SettingsModelPicker } from "@/components/official/settings/primitives/SettingsModelPicker";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
-import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
-import { useModels } from "@/features/ai-models/hooks/useModels";
-import { selectPlatformDefaultImageModelName } from "@/features/ai-models/redux/platformDefaultModel";
-import { useAppSelector } from "@/lib/redux/hooks";
 import { useSetting } from "../hooks/useSetting";
-
-// Radix Select items cannot carry an empty value — this internal sentinel
-// maps to `null` ("platform default") at the preference boundary.
-const PLATFORM_DEFAULT_VALUE = "__platform_default__";
 
 export default function ImageGenerationTab() {
   // null = platform default (catalog-resolved via is_primary). The legacy
@@ -35,32 +28,6 @@ export default function ImageGenerationTab() {
     "userPreferences.imageGeneration.useAiEnhancements",
   );
 
-  // Catalog-driven: the image-model options are the live catalog rows whose
-  // capabilities declare image output — never a hardcoded model-name list.
-  const { models, isLoading } = useModelCatalog("user");
-  // Hydrates the model registry (no-op when the shell already did) so the
-  // platform-default resolver can name the is_primary model in the label.
-  useModels();
-  const platformDefaultName = useAppSelector(
-    selectPlatformDefaultImageModelName,
-  );
-  const imageModels = models.filter((m) => m.output.includes("image"));
-  const modelOptions = [
-    {
-      value: PLATFORM_DEFAULT_VALUE,
-      label: platformDefaultName
-        ? `Platform default (${platformDefaultName})`
-        : "Platform default",
-    },
-    ...imageModels.map((m) => ({ value: m.id, label: m.name })),
-  ];
-  // A previously-stored value that is no longer a routable image model still
-  // renders — visibly marked — so the user's stored preference is never
-  // silently blanked or rewritten.
-  if (model && !isLoading && !imageModels.some((m) => m.id === model)) {
-    modelOptions.push({ value: model, label: `${model} (unavailable)` });
-  }
-
   return (
     <>
       <SettingsSubHeader
@@ -69,14 +36,13 @@ export default function ImageGenerationTab() {
         icon={ImageIcon}
       />
       <SettingsSection title="Output">
-        <SettingsSelect
+        <SettingsModelPicker
           label="Model"
-          value={model ?? PLATFORM_DEFAULT_VALUE}
-          onValueChange={(next) =>
-            setModel(next === PLATFORM_DEFAULT_VALUE ? null : next)
-          }
-          options={modelOptions}
-          placeholder={isLoading ? "Loading models..." : "Select a model"}
+          value={model}
+          onValueChange={setModel}
+          scope="all"
+          allowPlatformDefault
+          defaultModality="image"
         />
         <SettingsSelect
           label="Resolution"

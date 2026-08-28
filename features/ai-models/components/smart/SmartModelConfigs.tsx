@@ -5,8 +5,8 @@
  *
  * Self-wired model selector + settings badge strip.
  *
- * The model dropdown (SmartModelSelect) fetches its own options from Redux —
- * no models array needed. Pass value / onModelChange to control selection.
+ * The canonical model picker fetches its own catalog — no models array needed.
+ * Pass value / onModelChange to control selection.
  *
  * Props:
  *   model                     — currently selected model ID
@@ -21,7 +21,7 @@
 import { AlertTriangle, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { SmartModelSelect } from "./SmartModelSelect";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 
 /** Stable display order mirroring agent-api-types `LLMParams` sections. */
@@ -225,7 +225,11 @@ export function SmartModelConfigs({
           <Label className="text-xs text-gray-600 dark:text-gray-400">
             Model
           </Label>
-          <SmartModelSelect value={model} onValueChange={onModelChange} />
+          <ModelListDropdown
+            value={model}
+            onValueChange={onModelChange}
+            inputModalities={[]}
+          />
         </div>
 
         <div className="flex items-center gap-1">

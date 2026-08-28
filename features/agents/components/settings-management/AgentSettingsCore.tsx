@@ -61,7 +61,7 @@ import {
   selectModelRegistryError,
   selectModelRegistryLoading,
 } from "@/features/ai-models/redux/modelRegistrySlice";
-import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
 import type {
   LLMParams,
@@ -1020,7 +1020,7 @@ export function AgentSettingsCore({
 
   // Settings need the model's full controls blob. The registry may only hold
   // lightweight options (or nothing) until explicitly fetched — same pattern as
-  // RunConfigOverrides and SmartModelSelect in the builder.
+  // RunConfigOverrides and the canonical model picker in the builder.
   useEffect(() => {
     dispatch(fetchModelOptions());
   }, [dispatch]);
@@ -1778,9 +1778,10 @@ export function AgentSettingsCore({
                 Model
               </Label>
               <div className="flex-1 flex justify-start">
-                <SmartModelSelect
+                <ModelListDropdown
                   value={modelId}
                   onValueChange={handleModelChange}
+                  inputModalities={[]}
                 />
               </div>
             </div>

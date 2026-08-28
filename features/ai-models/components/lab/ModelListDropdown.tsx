@@ -158,6 +158,30 @@ interface ModelListDropdownProps {
   /** Optional — output modalities the model must produce (seeds the filter). */
   outputModalities?: Modality[];
   /**
+   * Optional catalog constraint for specialized surfaces (for example a
+   * user's active-model preference or a replacement-model allowlist). The
+   * canonical picker still owns rendering, search, filters, favorites and
+   * details; callers only declare which model ids are eligible.
+   */
+  allowedModelIds?: readonly string[];
+  /**
+   * Force one catalog variant. Omit for the normal user picker with the
+   * super-admin Admin toggle. Administrative relationship editors use
+   * "admin" so non-routable/deprecated catalog rows remain selectable.
+   */
+  catalogVariant?: ModelCatalogVariant;
+  /**
+   * Adds a first-class null/default choice (for example "Platform default"
+   * or "Agent default"). `onClear` receives that choice; model selection
+   * continues through `onValueChange` with a real model id.
+   */
+  emptyOptionLabel?: string;
+  onClear?: () => void;
+  /** Text shown when no model/default is selected. */
+  placeholder?: string;
+  /** Eligible ids to float ahead of the normal alphabetical order. */
+  priorityModelIds?: readonly string[];
+  /**
    * Currently pinned `ai.offering` uuid (agent settings `offering_id`).
    * Only meaningful together with `onOfferingPinChange`. null/undefined =
    * "Auto (preferred)" — the server picks the preferred offering.
@@ -1303,6 +1327,12 @@ export function ModelListDropdown({
   onValueChange,
   inputModalities,
   outputModalities,
+  allowedModelIds,
+  catalogVariant,
+  emptyOptionLabel,
+  onClear,
+  placeholder = "Select a model…",
+  priorityModelIds,
   pinnedOfferingId,
   onOfferingPinChange,
   className,
@@ -1319,7 +1349,7 @@ export function ModelListDropdown({
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const [adminMode, setAdminMode] = useState(false);
   const variant: ModelCatalogVariant =
-    adminMode && isSuperAdmin ? "admin" : "user";
+    catalogVariant ?? (adminMode && isSuperAdmin ? "admin" : "user");
   const { models, isLoading, error } = useModelCatalog(variant);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -1367,6 +1397,15 @@ export function ModelListDropdown({
   };
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
+  const allowedModelSet = allowedModelIds
+    ? new Set(allowedModelIds)
+    : null;
+  const priorityModelSet = priorityModelIds
+    ? new Set(priorityModelIds)
+    : null;
+  const eligibleModels = allowedModelSet
+    ? models.filter((model) => allowedModelSet.has(model.id))
+    : models;
 
   const toggleFavorite = (id: string) => {
     const next = favoriteSet.has(id)
@@ -1381,55 +1420,62 @@ export function ModelListDropdown({
     );
   };
 
+  // Resolve the label from the whole fetched catalog even when a constrained
+  // caller no longer considers the persisted value eligible. The stale value
+  // stays visible until the user deliberately changes it.
   const selected = models.find((m) => m.id === value) ?? null;
 
   // Distinct maker / Service / vendor / API option lists from the catalog.
   const makerOptions = useMemo(
     () =>
       [
-        ...new Set(models.map((m) => m.maker).filter((v): v is string => !!v)),
+        ...new Set(
+          eligibleModels
+            .map((m) => m.maker)
+            .filter((v): v is string => !!v),
+        ),
       ].sort((a, b) => a.localeCompare(b)),
-    [models],
+    [eligibleModels],
   );
   const serviceOptions = useMemo(
     () =>
       [
         ...new Set(
-          models
+          eligibleModels
             .flatMap((m) => m.tiers.map((t) => t.servedVia))
             .filter(Boolean),
         ),
       ].sort((a, b) => a.localeCompare(b)),
-    [models],
+    [eligibleModels],
   );
   const vendorOptions = useMemo(
     () =>
       [
         ...new Set(
-          models
+          eligibleModels
             .flatMap((m) => (m.admin?.offerings ?? []).map((o) => o.vendor))
             .filter((v): v is string => !!v),
         ),
       ].sort((a, b) => a.localeCompare(b)),
-    [models],
+    [eligibleModels],
   );
   const apiOptions = useMemo(
     () =>
       [
         ...new Set(
-          models
+          eligibleModels
             .flatMap((m) => (m.admin?.offerings ?? []).map((o) => o.apiName))
             .filter((v): v is string => !!v),
         ),
       ].sort((a, b) => a.localeCompare(b)),
-    [models],
+    [eligibleModels],
   );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const hasAvailable = (m: CatalogModel) =>
       (m.admin?.offerings ?? []).some((o) => o.isAvailable);
-    const rows = models.filter((m) => {
+    const rows = eligibleModels.filter((m) => {
       if (tab === "favorites" && !favoriteSet.has(m.id)) return false;
       // Search matches name, maker, branded Service names — and, in the
       // admin variant, real vendor / api / provider_model_id too.
@@ -1542,14 +1588,20 @@ export function ModelListDropdown({
       }
     };
     const sorted = [...rows].sort(cmp);
+    const prioritize = (items: CatalogModel[]) => {
+      if (!priorityModelSet || priorityModelSet.size === 0) return items;
+      const priority = items.filter((m) => priorityModelSet.has(m.id));
+      const rest = items.filter((m) => !priorityModelSet.has(m.id));
+      return [...priority, ...rest];
+    };
     // On the All tab, favorites float to the top (still sorted among themselves).
     if (tab === "all") {
       const favs = sorted.filter((m) => favoriteSet.has(m.id));
       const rest = sorted.filter((m) => !favoriteSet.has(m.id));
-      return [...favs, ...rest];
+      return [...prioritize(favs), ...prioritize(rest)];
     }
-    return sorted;
-  }, [models, query, filters, tab, favoriteSet, variant]);
+    return prioritize(sorted);
+  }, [eligibleModels, query, filters, tab, favoriteSet, variant, priorityModelSet]);
 
   const activeFilterCount =
     filters.input.size +
@@ -1596,6 +1648,11 @@ export function ModelListDropdown({
     handleOpen(false);
   };
 
+  const handleClear = () => {
+    onClear?.();
+    handleOpen(false);
+  };
+
   /**
    * Pin/unpin a Service offering from the detail card. Pinning an offering of
    * a model that isn't currently selected also selects that model — the pin is
@@ -1636,7 +1693,11 @@ export function ModelListDropdown({
           </>
         ) : (
           <span className="min-w-0 truncate text-muted-foreground">
-            {isLoading ? "Loading models…" : "Select a model…"}
+            {isLoading
+              ? "Loading models…"
+              : emptyOptionLabel && !value
+                ? emptyOptionLabel
+                : placeholder}
           </span>
         )}
       </span>
@@ -1749,7 +1810,22 @@ export function ModelListDropdown({
             No models match your filters.
           </div>
         ) : (
-          filtered.map((m) => (
+          <>
+            {emptyOptionLabel && onClear && (
+              <button
+                type="button"
+                onClick={handleClear}
+                className={cn(
+                  "mb-1 w-full rounded px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted/60 focus:bg-muted/60 focus:outline-none",
+                  !value
+                    ? "bg-muted font-medium text-foreground"
+                    : "text-muted-foreground",
+                )}
+              >
+                {emptyOptionLabel}
+              </button>
+            )}
+            {filtered.map((m) => (
             <ModelRow
               key={m.id}
               model={m}
@@ -1770,7 +1846,8 @@ export function ModelListDropdown({
                     }
               }
             />
-          ))
+            ))}
+          </>
         )}
       </div>
 
@@ -1778,10 +1855,10 @@ export function ModelListDropdown({
           the in-place admin-variant toggle here. */}
       <div className="flex items-center justify-between gap-2 border-t border-border px-2 py-1 text-[10px] text-muted-foreground">
         <span>
-          {filtered.length} of {models.length} model
-          {models.length === 1 ? "" : "s"}
+          {filtered.length} of {eligibleModels.length} model
+          {eligibleModels.length === 1 ? "" : "s"}
         </span>
-        {isSuperAdmin && (
+        {isSuperAdmin && catalogVariant == null && (
           <button
             type="button"
             onClick={() => setVariantMode(variant !== "admin")}

@@ -6,7 +6,7 @@
  * One variant in the Model comparison. The body uses BoundColumn with
  * `hideInput` — the user types the locked message ONCE in the page-level
  * locked-input section, not per-column. The varied axis (the model)
- * lives in the column header's inline SmartModelSelect.
+ * lives in the column header's canonical ModelListDropdown.
  */
 
 import { ChevronsLeftRight } from "lucide-react";

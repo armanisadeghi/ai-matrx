@@ -22,7 +22,7 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { selectModelOptions } from "@/features/ai-models/redux/modelRegistrySlice";
 import { selectInstanceOverrideState } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import {
@@ -229,12 +229,13 @@ export function ModelColumnHeader({
           Model
         </span>
         <div className="flex-1 min-w-0">
-          <SmartModelSelect
+          <ModelListDropdown
             value={displayModel}
             onValueChange={handleModelChange}
+            inputModalities={[]}
             placeholder="Pick a model..."
             className="!h-7 !text-[11px]"
-            priorityValues={baseModel ? [baseModel] : undefined}
+            priorityModelIds={baseModel ? [baseModel] : undefined}
           />
         </div>
       </div>

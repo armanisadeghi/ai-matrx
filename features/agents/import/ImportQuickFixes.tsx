@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SmartModelSelect } from "@/features/ai-models/components/smart/SmartModelSelect";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import {
   applyAutoFixes,
   applyImportFix,
@@ -128,10 +128,10 @@ export function ImportQuickFixes({
             <Label className="text-xs text-muted-foreground shrink-0 w-14">
               Model
             </Label>
-            <SmartModelSelect
+            <ModelListDropdown
               value={modelId}
               onValueChange={(id) => patch({ kind: "pick-model" }, id)}
-              placeholder="Select a model…"
+              inputModalities={[]}
               className="min-w-[200px] flex-1"
             />
           </div>

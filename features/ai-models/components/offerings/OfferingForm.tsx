@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";
 import ModelPricingEditor from "@/features/ai-models/components/ModelPricingEditor";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import type {
   AiApi,
   AiEndpoint,
@@ -67,51 +68,24 @@ export default function OfferingForm({
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       onChange({ ...data, [key]: e.target.value });
 
-  // Models grouped by maker — same pattern as AiModelForm's fallback groups.
-  const modelGroups = React.useMemo(() => {
-    const groups: Record<string, AiModel[]> = {};
-    for (const m of models) {
-      if (m.is_deprecated) continue;
-      const key = m.maker || "Other";
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(m);
-    }
-    for (const key of Object.keys(groups)) {
-      groups[key].sort((a, b) =>
-        (a.common_name || a.name || "").localeCompare(
-          b.common_name || b.name || "",
-        ),
-      );
-    }
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-  }, [models]);
-
   const selectedModel = models.find((m) => m.id === data.model_id);
 
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <FormField label="Model" required>
-          <Select
-            value={data.model_id || undefined}
-            onValueChange={(v) => onChange({ ...data, model_id: v })}
-          >
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="Select model..." />
-            </SelectTrigger>
-            <SelectContent>
-              {modelGroups.map(([provider, group]) => (
-                <SelectGroup key={provider}>
-                  <SelectLabel>{provider}</SelectLabel>
-                  {group.map((m) => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {m.common_name || m.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              ))}
-            </SelectContent>
-          </Select>
+          <ModelListDropdown
+            value={data.model_id}
+            onValueChange={(modelId) =>
+              onChange({ ...data, model_id: modelId })
+            }
+            inputModalities={[]}
+            allowedModelIds={models
+              .filter((model) => !model.is_deprecated)
+              .map((model) => model.id)}
+            catalogVariant="admin"
+            className="h-8 w-full justify-between text-sm"
+          />
         </FormField>
         <FormField
           label="Endpoint"

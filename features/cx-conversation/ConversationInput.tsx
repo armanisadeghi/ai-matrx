@@ -11,7 +11,6 @@ import dynamic from "next/dynamic";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   CornerDownLeft,
-  ChevronDown,
   Loader2,
   Database,
   List,
@@ -65,11 +64,7 @@ import {
   selectUIState,
   selectShowDebugInfo,
 } from "./_legacy-stubs";
-import {
-  selectActiveModels,
-  selectModelOptions,
-  fetchModelOptions,
-} from "@/features/ai-models/redux/modelRegistrySlice";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectActiveChatAgent } from "./_legacy-stubs";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
@@ -198,7 +193,6 @@ export function ConversationInput({
   const [previewSheetOpen, setPreviewSheetOpen] = useState(false);
   const [previewResource, setPreviewResource] = useState<Resource | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
   const openDebugWindow = () =>
     dispatch(
       openOverlay({ overlayId: "chatDebugWindow", data: { sessionId } }),
@@ -292,22 +286,7 @@ export function ConversationInput({
     [dispatch, sessionId],
   );
 
-  // ── Model registry ─────────────────────────────────────────────────────────
-  const modelOptions = useAppSelector(selectModelOptions);
-  const availableModels = useAppSelector(selectActiveModels);
-
-  // Ensure models are loaded when model picker or settings are shown
-  useEffect(() => {
-    if ((showModelPicker || showSettings) && availableModels.length === 0) {
-      dispatch(fetchModelOptions());
-    }
-  }, [showModelPicker, showSettings, availableModels.length, dispatch]);
-
   const currentModelId = uiState?.modelOverride || null;
-  const currentModelName = currentModelId
-    ? (modelOptions.find((m) => m.value === currentModelId)?.label ??
-      currentModelId)
-    : null;
 
   // ── Resource picker state ──────────────────────────────────────────────────
   const [isResourcePickerOpen, setIsResourcePickerOpen] = useState(false);
@@ -531,7 +510,6 @@ export function ConversationInput({
           updates: { modelOverride: modelId },
         }),
       );
-      setIsModelPickerOpen(false);
     },
     [dispatch, sessionId],
   );
@@ -791,33 +769,13 @@ export function ConversationInput({
 
         {/* Model picker */}
         {showModelPicker && (
-          <div className="relative px-3">
-            <button
-              type="button"
-              onClick={() => setIsModelPickerOpen(!isModelPickerOpen)}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <span>{currentModelName || "Select model"}</span>
-              <ChevronDown className="w-3 h-3" />
-            </button>
-            {isModelPickerOpen && (
-              <div className="absolute bottom-full left-0 mb-1 w-64 max-h-60 overflow-y-auto rounded-xl border border-border bg-background shadow-lg z-50">
-                {modelOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => handleModelSelect(opt.value)}
-                    className={[
-                      "w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors",
-                      currentModelId === opt.value
-                        ? "text-primary font-medium"
-                        : "text-foreground",
-                    ].join(" ")}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="px-3">
+            <ModelListDropdown
+              value={currentModelId}
+              onValueChange={handleModelSelect}
+              inputModalities={[]}
+              className="text-muted-foreground hover:text-foreground"
+            />
           </div>
         )}
 

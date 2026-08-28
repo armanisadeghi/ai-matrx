@@ -12,7 +12,7 @@
  * card (same visual language as the other /administration/ai/ai-models pages).
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +33,7 @@ import type { AiModel, AiModelAliasRow } from "../../types";
 import { cn } from "@/lib/utils";
 import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 
 const ALIAS_KINDS = ["alias", "deprecated", "latest"] as const;
 type AliasKind = (typeof ALIAS_KINDS)[number];
@@ -104,23 +105,6 @@ export default function AliasesContainer() {
     },
     [modelName],
   );
-
-  const modelGroups = useMemo(() => {
-    const groups: Record<string, AiModel[]> = {};
-    for (const m of models) {
-      if (m.is_deprecated) continue;
-      const key = m.maker || "Other";
-      (groups[key] ??= []).push(m);
-    }
-    for (const key of Object.keys(groups)) {
-      groups[key].sort((a, b) =>
-        (a.common_name || a.name || "").localeCompare(
-          b.common_name || b.name || "",
-        ),
-      );
-    }
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-  }, [models]);
 
   const startNew = () => {
     setEditingId("new");
@@ -253,30 +237,19 @@ export default function AliasesContainer() {
               <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Target Model <span className="text-destructive">*</span>
               </Label>
-              <Select
-                value={form.model_id || undefined}
-                onValueChange={(v) => setForm({ ...form, model_id: v })}
-              >
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="Choose model…">
-                    {form.model_id ? modelLabel(form.model_id) : undefined}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="max-h-72">
-                  {modelGroups.map(([maker, group]) => (
-                    <div key={maker}>
-                      <div className="mt-1 border-t px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 first:mt-0 first:border-t-0">
-                        {maker}
-                      </div>
-                      {group.map((m) => (
-                        <SelectItem key={m.id} value={m.id} className="text-xs">
-                          {m.common_name || m.name}
-                        </SelectItem>
-                      ))}
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
+              <ModelListDropdown
+                value={form.model_id}
+                onValueChange={(modelId) =>
+                  setForm({ ...form, model_id: modelId })
+                }
+                inputModalities={[]}
+                allowedModelIds={models
+                  .filter((model) => !model.is_deprecated)
+                  .map((model) => model.id)}
+                catalogVariant="admin"
+                placeholder="Choose model…"
+                className="h-8 w-full justify-between text-sm"
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

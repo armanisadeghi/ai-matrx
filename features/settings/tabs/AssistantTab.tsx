@@ -5,6 +5,7 @@ import { SettingsSwitch } from "@/components/official/settings/primitives/Settin
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsSlider } from "@/components/official/settings/primitives/SettingsSlider";
 import { SettingsTextInput } from "@/components/official/settings/primitives/SettingsTextInput";
+import { SettingsModelPicker } from "@/components/official/settings/primitives/SettingsModelPicker";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { useSetting } from "../hooks/useSetting";
@@ -118,14 +119,14 @@ export default function AssistantTab() {
           onValueChange={setProvider}
           options={providerOptions}
         />
-        <SettingsTextInput
+        <SettingsModelPicker
           label="Preferred model"
-          description="Free-text model name. Use the AI Models tab for a picker."
-          value={model}
-          onValueChange={setModel}
-          placeholder="e.g., gpt-4, claude-3"
-          commitOnBlur
-          stacked
+          description="Used by the assistant when a surface does not choose a model."
+          value={model && model !== "default" ? model : null}
+          onValueChange={(modelId) => setModel(modelId ?? "default")}
+          scope="all"
+          allowPlatformDefault
+          defaultModality="text"
           last
         />
       </SettingsSection>

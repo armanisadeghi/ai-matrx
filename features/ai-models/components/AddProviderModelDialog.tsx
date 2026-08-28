@@ -14,13 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { Loader2, Plus, AlertCircle } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
 import { aiModelService } from "../service";
@@ -253,55 +247,21 @@ export default function AddProviderModelDialog({
                 <Label htmlFor="apm-template" className="text-xs">
                   Template model
                 </Label>
-                <Select value={templateId} onValueChange={setTemplateId}>
-                  <SelectTrigger id="apm-template" className="h-8 text-xs">
-                    <SelectValue placeholder="Select a similar model…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templateOptions.same.length > 0 && (
-                      <>
-                        <div className="px-2 py-1 text-[10px] font-semibold uppercase text-muted-foreground">
-                          Same provider
-                        </div>
-                        {templateOptions.same.map((m) => (
-                          <SelectItem
-                            key={m.id}
-                            value={m.id}
-                            className="text-xs"
-                          >
-                            <span className="font-medium">
-                              {m.common_name ?? m.name}
-                            </span>
-                            <span className="text-muted-foreground ml-2 font-mono">
-                              ({m.name})
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </>
-                    )}
-                    {templateOptions.other.length > 0 && (
-                      <>
-                        <div className="px-2 py-1 mt-1 text-[10px] font-semibold uppercase text-muted-foreground border-t">
-                          Other providers
-                        </div>
-                        {templateOptions.other.map((m) => (
-                          <SelectItem
-                            key={m.id}
-                            value={m.id}
-                            className="text-xs"
-                          >
-                            <span className="font-medium">
-                              {m.common_name ?? m.name}
-                            </span>
-                            <span className="text-muted-foreground ml-2">
-                              ({m.maker ?? "—"})
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </>
-                    )}
-                  </SelectContent>
-                </Select>
+                <ModelListDropdown
+                  value={templateId}
+                  onValueChange={setTemplateId}
+                  inputModalities={[]}
+                  allowedModelIds={[
+                    ...templateOptions.same,
+                    ...templateOptions.other,
+                  ].map((model) => model.id)}
+                  catalogVariant="admin"
+                  priorityModelIds={templateOptions.same.map(
+                    (model) => model.id,
+                  )}
+                  placeholder="Select a similar model…"
+                  className="h-8 w-full justify-between text-xs"
+                />
               </div>
 
               {template && (
