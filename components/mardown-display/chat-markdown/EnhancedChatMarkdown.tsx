@@ -892,9 +892,22 @@ export const EnhancedChatMarkdownInternal: React.FC<
     return `${block.type}-${block.content.slice(0, 100)}-${index}`;
   }, []);
 
-  // Memoize the render block function to prevent unnecessary re-renders
+  // Memoize the render block function to prevent unnecessary re-renders.
+  //
+  // 🚨 `index` is ONLY a positional key here — it is meaningful as a "which
+  // block is this" identity for the plain `processedBlocks` path and NOWHERE
+  // else. The unified-slot path and the persisted-segment path both synthesize
+  // indices (`i`, `i * 1000 + j`, `segIdx * 1000 + blockIdx`) that have no
+  // relationship to `processedBlocks`, so comparing them against
+  // `lastReasoningBlockIndex` marked an ARBITRARY thinking trace as the live
+  // one: whichever slot's index happened to collide with the last reasoning
+  // block of the unrelated array streamed its tail while the genuinely current
+  // trace sat collapsed as "Thought process". Those paths pass
+  // `isLastReasoning: false` and carry the authoritative signal on the block
+  // itself (`isStreamingBlock`), so the animation follows the run, not an
+  // index coincidence.
   const renderBlock = useCallback(
-    (block: RenderBlock, index: number) => {
+    (block: RenderBlock, index: number, isLastReasoning?: boolean) => {
       try {
         if (!block || typeof block !== "object") {
           console.warn("[MarkdownStream] Invalid block at index:", index);
@@ -912,7 +925,9 @@ export const EnhancedChatMarkdownInternal: React.FC<
             messageId={messageId}
             requestId={requestId}
             taskId={taskId}
-            isLastReasoningBlock={index === lastReasoningBlockIndex}
+            isLastReasoningBlock={
+              isLastReasoning ?? index === lastReasoningBlockIndex
+            }
             replaceBlockContent={replaceBlockContent}
             handleOpenEditor={handleOpenEditor}
           />
@@ -1078,13 +1093,14 @@ export const EnhancedChatMarkdownInternal: React.FC<
                 isStreamingBlock: isStreamingRb && j === lastReasoningIdx,
               } as RenderBlock,
               i * 1000 + j,
+              false,
             ),
           );
         }
       }
 
       const block = renderBlockToContentBlock(rb);
-      return renderBlock(block, i);
+      return renderBlock(block, i, false);
     }
     if (slot.kind === "tool") {
       return (
@@ -1120,6 +1136,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                 isStreamingBlock: isStreaming,
               } as RenderBlock,
               i,
+              false,
             )
           }
         />
@@ -1171,7 +1188,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         metadata: segment.metadata,
       };
       return expandTextBlocksInList([block]).map((expandedBlock, blockIdx) =>
-        renderBlock(expandedBlock, segIdx * 1000 + blockIdx),
+        renderBlock(expandedBlock, segIdx * 1000 + blockIdx, false),
       );
     }
     if (segment.type === "thinking") {
@@ -1190,7 +1207,11 @@ export const EnhancedChatMarkdownInternal: React.FC<
         }
       })();
       return thinkBlocks.map((block, blockIdx) =>
-        renderBlock({ ...block, type: "reasoning" }, segIdx * 1000 + blockIdx),
+        renderBlock(
+          { ...block, type: "reasoning" },
+          segIdx * 1000 + blockIdx,
+          false,
+        ),
       );
     }
     if (segment.type === "text") {
@@ -1209,7 +1230,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         }
       })();
       return segBlocks.map((block, blockIdx) =>
-        renderBlock(block, segIdx * 1000 + blockIdx),
+        renderBlock(block, segIdx * 1000 + blockIdx, false),
       );
     }
     return null;
