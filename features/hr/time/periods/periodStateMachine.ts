@@ -72,7 +72,13 @@ export const PERIOD_STATE_MEANING: Record<PayPeriodState, string> = {
    * about the rows, and `askingSentence` below derives it from them.
    */
   submitted: "The period is closed to new time.",
-  approved: "Every timecard has been decided. The period is ready for a payroll export.",
+  /*
+   * 🚨 "ready for a payroll export" WAS ASSERTED HERE, and this map cannot know it — same defect as
+   * the `submitted` sentence above. A period recomputed since its approval is NOT ready: the export
+   * door refuses it (hr_l3_100), and this line was rendering directly above a banner saying so.
+   * Readiness is derived beside the flag, in `exportReadinessSentence`.
+   */
+  approved: "Every timecard has been decided.",
   exported: "A payroll file has been generated for this period.",
   locked: "Nothing in this period is editable. Corrections are adjustments that ride the next export.",
   closed: "Finished. The period is retained as a record and nothing further happens to it.",
@@ -99,6 +105,20 @@ export function askingSentence(rowCount: number, unreachable: number): string | 
     (unreachable === 1 ? "1 person had" : `${unreachable} people had`) +
     " nobody to ask."
   );
+}
+
+/**
+ * Whether an approved period is actually exportable, derived rather than asserted by its state.
+ *
+ * Returns null when the period is stale — the §4.1 banner is already saying what happened and why,
+ * and repeating a contradiction of it in the state line is how a surface argues with itself.
+ */
+export function exportReadinessSentence(
+  state: PayPeriodState,
+  recomputedSinceApproval: boolean,
+): string | null {
+  if (state !== "approved") return null;
+  return recomputedSinceApproval ? null : "The period is ready for a payroll export.";
 }
 
 /** Semantic tone for the badge. Tokens only; the component maps these to `bg-*`/`text-*`. */

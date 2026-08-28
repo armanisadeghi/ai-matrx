@@ -26,10 +26,11 @@ import { AlertTriangle } from "lucide-react";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { formatLocalDate } from "../../shared/format";
 import type { PayPeriodRow } from "../../api/types";
-import type { PeriodWorkflowHealth } from "../api/periodReads";
+import type { PayPeriodDetail, PeriodWorkflowHealth } from "../api/periodReads";
 import {
   PERIOD_STATE_MEANING,
   askingSentence,
+  exportReadinessSentence,
   disputeSentence,
   rowProgressSentence,
   type PeriodViewerRole,
@@ -38,7 +39,12 @@ import { PeriodTransitionBar } from "./PeriodTransitionBar";
 import { StateBadge } from "./StateBadge";
 
 export interface PeriodStatePanelProps {
-  period: PayPeriodRow;
+  /*
+   * PayPeriodDetail, not PayPeriodRow: this panel reads `recomputedSinceApproval` and the two hour
+   * figures, which only `hr.pay_period_get` carries. It was already being handed the detail — the
+   * narrower type just meant the compiler could not see the fields the banner needs.
+   */
+  period: PayPeriodDetail;
   role: PeriodViewerRole;
   allowPeriodReopen: boolean;
   /**
@@ -73,6 +79,7 @@ export function PeriodStatePanel({
   // `workflow` is optional on this panel; with no rows in hand the asking truth is UNKNOWN, and
   // unknown must render as silence rather than as the old unconditional claim.
   const asking = workflow ? askingSentence(workflow.rows.length, workflow.unreachable) : null;
+  const readiness = exportReadinessSentence(period.state, period.recomputedSinceApproval);
 
   return (
     <section className="rounded-lg border border-border bg-card">
@@ -100,6 +107,7 @@ export function PeriodStatePanel({
           <StateBadge machine="period" state={period.state} />
           <span className="text-[12px] text-muted-foreground">
             {PERIOD_STATE_MEANING[period.state]}
+            {readiness ? ` ${readiness}` : ""}
             {asking ? ` ${asking}` : ""}
           </span>
         </div>
