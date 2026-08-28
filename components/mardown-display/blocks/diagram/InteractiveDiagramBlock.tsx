@@ -28,6 +28,7 @@ import {
   Position,
   useReactFlow,
   useNodesInitialized,
+  useStore,
   getNodesBounds,
   getViewportForBounds,
   NodeResizer,
@@ -1552,6 +1553,30 @@ const DiagramFlow: React.FC<{
     });
   }, [fitView, workspace]);
 
+  // Re-fit whenever the canvas actually changes size. The one-shot fit after
+  // auto-layout races the container: on a surface whose height comes from flex
+  // (the shared-canvas viewer, the canvas pane) React Flow can measure before
+  // the box has settled, so the animated fit lands on a stale size — or never
+  // visibly lands at all, leaving the viewport at identity while the graph sits
+  // off-screen. Watching React Flow's own measured width/height also covers
+  // phone rotation and desktop window resizes, which had no refit before.
+  const measuredWidth = useStore((s) => s.width);
+  const measuredHeight = useStore((s) => s.height);
+  useEffect(() => {
+    if (!nodesInitialized) return undefined;
+    if (!measuredWidth || !measuredHeight) return undefined;
+    const frame = requestAnimationFrame(() => {
+      fitView({ duration: 200, padding: workspace ? 0.12 : 0.2 });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [
+    measuredWidth,
+    measuredHeight,
+    nodesInitialized,
+    fitView,
+    workspace,
+  ]);
+
   // ── Layout helpers ──
   const applyDirectedLayout = useCallback(
     (direction: "TB" | "LR" | "BT" | "RL") => {
@@ -1738,7 +1763,11 @@ const DiagramFlow: React.FC<{
       snapGrid={[20, 20]}
       elementsSelectable={editing || Boolean(onNodeClick)}
       deleteKeyCode={null}
-      minZoom={workspace ? 0.2 : 0.5}
+      // fitView can never zoom out past minZoom. A wide graph on a phone
+      // needs far less than 0.2, so the old floor left the diagram clipped on
+      // both edges with no way to see it whole. The workspace presentation
+      // owns the viewport, so let it fit whatever the content needs.
+      minZoom={workspace ? 0.05 : 0.5}
       maxZoom={2}
       fitView={false}
       proOptions={{ hideAttribution: true }}
