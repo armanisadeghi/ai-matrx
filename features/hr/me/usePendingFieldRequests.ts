@@ -82,9 +82,25 @@ export function usePendingFieldRequests(employmentId: string | null): {
       const next: Record<string, HrPendingFieldRequest> = {};
       for (const instance of result.data.in_flight ?? []) {
         if (!FIELD_FLOWS.has(instance.flow_key)) continue;
-        const payload = instance.payload ?? null;
-        if (!payload) continue;
-        for (const [field, value] of Object.entries(payload)) {
+        /*
+          🚨 THE FIELDS LIVE UNDER `patch`, NOT AT THE TOP OF THE PAYLOAD.
+          `hr_self_update` builds the instance payload as
+          `{token, row_id, patch:{…the fields…}, approver_action_type}`. Reading the
+          top level keyed this map by `token`, `row_id`, `patch` and
+          `approver_action_type` — four things that are not fields — so
+          `byField["legal_first_name"]` was ALWAYS undefined and no pending state
+          could ever render. The person typed a new legal name, the request really
+          was opened, and the field then showed the old value as though nothing had
+          happened: §7.2's exact forbidden case, reached by reading one level too high.
+        */
+        const envelope = instance.payload ?? null;
+        if (!envelope) continue;
+        const patch = envelope.patch;
+        const fields =
+          patch && typeof patch === "object" && !Array.isArray(patch)
+            ? (patch as Record<string, unknown>)
+            : envelope;
+        for (const [field, value] of Object.entries(fields)) {
           const requested = stringify(value);
           if (requested === null) continue;
           next[field] = {

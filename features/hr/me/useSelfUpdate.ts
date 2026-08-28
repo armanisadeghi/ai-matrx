@@ -28,6 +28,7 @@ import {
   isSelfUpdateAck,
   isSelfUpdateRefusal,
   selfUpdateFields,
+  type HrSelfUpdateRefusal,
 } from "./selfServicePolicy";
 
 export type HrSelfUpdateState = {
@@ -65,8 +66,47 @@ export function useSelfUpdate(args: {
       setSaving(false);
 
       if (!result.ok) {
-        // A DENIED envelope here means the self lane itself refused — a
-        // terminated person, a record that is not theirs. Not a field problem.
+        /*
+          🚨 THE NAMED REFUSAL ARRIVES HERE, NOT BELOW — AND IT USED TO DIE HERE.
+          `hr_self_update` refuses with `{ok:false, reason:'fields_not_self_writable',
+          rejected:[{field,policy}], unknown:[…]}`, and the transport's
+          `isRefusalEnvelope` matches on `ok === false`, so EVERY field refusal became
+          a `denied` result before reaching the `isSelfUpdateRefusal` branch further
+          down. That branch — the whole naming machinery — was unreachable code, and
+          what the person actually saw was the door's generic sentence: "These fields
+          are held by HR and cannot be changed here." Which fields? It never said.
+          That is precisely the "some fields could not be saved" defect the
+          `rejected:[{field,policy}]` shape exists to replace, rebuilt by accident one
+          layer lower. `denied` carries the whole payload for exactly this reason.
+        */
+        if (result.kind === "denied") {
+          const raw = (result.payload ?? {}) as Partial<HrSelfUpdateRefusal> & {
+            fields?: unknown;
+          };
+          const named = Array.isArray(raw.rejected)
+            ? raw.rejected.map((r) => r.field)
+            : [];
+          const unknownFields = Array.isArray(raw.unknown) ? raw.unknown : [];
+
+          if (named.length > 0 || unknownFields.length > 0) {
+            setRejected(Array.isArray(raw.rejected) ? raw.rejected : []);
+            const parts: string[] = [];
+            if (named.length > 0) {
+              parts.push(`${listFields(named)} can only be changed by HR.`);
+            }
+            if (unknownFields.length > 0) {
+              parts.push(
+                `${listFields(unknownFields)} is not a field on your record.`,
+              );
+            }
+            toast.error(parts.join(" "));
+            return;
+          }
+        }
+
+        // Anything else: the self lane itself refused — a terminated person, a
+        // record that is not theirs, or an approval route that does not exist.
+        // `request_not_opened` already names its fields in `detail`.
         toast.error(
           result.kind === "denied"
             ? result.detail?.trim() ||

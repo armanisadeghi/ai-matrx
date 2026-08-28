@@ -80,7 +80,19 @@ export const HR_SELF_SERVICE_DEFAULTS: Record<string, HrSelfServicePolicy> = {
   worker_class: "hr_only",
   manager_employment_id: "hr_only",
   work_email: "hr_only",
-  work_phone: "hr_only",
+  /*
+    🚨 `work_phone` IS `self_free`, AND SAYING `hr_only` HERE LOCKED IT FOR NOTHING —
+    CORRECTED 2026-08-27 against the seeded row (`hr_employee.work_phone = self_free`),
+    proved by calling the door: it APPLIED a new work phone immediately.
+
+    This is the third time this exact mistake has been found in this table, and it is
+    always the same shape: a hint STRICTER than the boundary. It never fails loudly —
+    it renders a padlock and "Contact HR to change this" over a field the server would
+    have taken, so the capability is unreachable and nobody sees an error, because the
+    server is never asked. Seven controls rendered where eight fields were editable,
+    and the missing one looked deliberate.
+  */
+  work_phone: "free",
 };
 
 /**

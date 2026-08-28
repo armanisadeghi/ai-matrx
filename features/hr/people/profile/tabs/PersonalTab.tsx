@@ -56,6 +56,7 @@ import { SsnField } from "../../identity/SsnField";
 import { SelfServiceToggle } from "@/features/hr/me/SelfServiceToggle";
 import { useSelfUpdate } from "@/features/hr/me/useSelfUpdate";
 import { SelfServiceField } from "@/features/hr/me/SelfServiceField";
+import { SelfServiceAddressField } from "@/features/hr/me/SelfServiceAddressField";
 import { usePendingFieldRequests } from "@/features/hr/me/usePendingFieldRequests";
 import { HR_SELF_SERVICE_DEFAULTS } from "@/features/hr/me/selfServicePolicy";
 import { MoreSection } from "../MoreSection";
@@ -156,6 +157,29 @@ export function PersonalTab({
     onApplied: () => onChanged?.(),
   });
   /*
+    🚨 TWO TARGETS, TWO HOOKS — AND SENDING THEM ALL TO ONE WAS A DEFECT.
+    `hr.field_policy` is keyed by `(target_token, column_name)`. `personal_email`,
+    `personal_phone`, `home_address` and `mailing_address` are seeded under
+    `hr_employee_private`, whose row has its OWN id — not the employee's. Every
+    confidential field here was being sent with `p_token = 'hr_employee'` and the
+    employee id, so `hr_self_update` looked up a policy that does not exist for that
+    token, fell to its fail-closed arm, and refused them as UNKNOWN FIELDS: "personal
+    email is not a field on your record", about a field printed on the same screen.
+    Two of the controls on this panel could never have saved.
+  */
+  const privateRowId =
+    priv && typeof (priv as Record<string, unknown>).id === "string"
+      ? ((priv as Record<string, unknown>).id as string)
+      : null;
+  const selfUpdatePrivate = useSelfUpdate({
+    token: "hr_employee_private",
+    employeeId: privateRowId,
+    onApplied: () => onChanged?.(),
+  });
+  /** The door a field belongs to, decided by where its policy row lives. */
+  const updaterFor = (source: "personal" | "confidential") =>
+    source === "confidential" ? selfUpdatePrivate : selfUpdate;
+  /*
     §7.2's open requests, keyed by field. `SelfServiceField` renders the REQUESTED
     value for any field that has one — never the stored value as if nothing happened,
     and never the new value as if HR had agreed.
@@ -238,7 +262,13 @@ export function PersonalTab({
 
           <SensitiveFieldList source={priv} specs={PRIVATE_FIELDS} />
 
-          <HomeAddress priv={priv} />
+          {/*
+            HR and managers read the address here; the SUBJECT gets the editable
+            one below, in "Yours to change". Rendering both to the same person
+            would print the address twice and put the live control under a dead
+            copy of itself.
+          */}
+          {isSelf ? null : <HomeAddress priv={priv} />}
         </section>
       ) : null}
 
@@ -276,6 +306,7 @@ export function PersonalTab({
               // a field, so it is not rendered — the same gate as every other row.
               if (!bag || !(field in bag)) return null;
               const raw = (bag as Record<string, unknown>)[field];
+              const updater = updaterFor(source);
               return (
                 <SelfServiceField
                   key={field}
@@ -285,12 +316,41 @@ export function PersonalTab({
                     HR_SELF_SERVICE_DEFAULTS[field] ?? "read_only"
                   }
                   pending={pending.byField[field] ?? null}
-                  saving={selfUpdate.saving}
-                  onSave={(name, next) => selfUpdate.save(name, next)}
+                  saving={updater.saving}
+                  onSave={(name, next) => updater.save(name, next)}
                 />
               );
             })}
           </SensitiveGrid>
+
+          {/*
+            🚨 THE ADDRESS, WHICH IS THE WHOLE REASON §7.2 EXISTS. It was rendered
+            read-only behind a sentence explaining that changing it needs approval —
+            with no way to ask. A rule stated and not offered is not a rule, it is a
+            dead end: the person is told what would happen if they could act, and then
+            cannot act. `SelfServiceAddressField` is the control that sentence implied,
+            and the `address_change` flow it opens has been there the whole time.
+          */}
+          {priv && "home_address" in priv ? (
+            <SelfServiceAddressField
+              field="home_address"
+              label="Home address"
+              value={(priv as Record<string, unknown>).home_address}
+              pending={pending.byField.home_address ?? null}
+              saving={selfUpdatePrivate.saving}
+              onSave={(name, next) => selfUpdatePrivate.save(name, next)}
+            />
+          ) : null}
+          {priv && "mailing_address" in priv ? (
+            <SelfServiceAddressField
+              field="mailing_address"
+              label="Mailing address"
+              value={(priv as Record<string, unknown>).mailing_address}
+              pending={pending.byField.mailing_address ?? null}
+              saving={selfUpdatePrivate.saving}
+              onSave={(name, next) => selfUpdatePrivate.save(name, next)}
+            />
+          ) : null}
         </section>
       ) : null}
 
