@@ -237,7 +237,10 @@ const Slideshow = (
                   {pickedPreset && (
                     <>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setPickedPreset(null)} className="text-xs text-muted-foreground">
+                      <DropdownMenuItem
+                        onClick={() => setPickedPreset(null)}
+                        className="min-h-11 text-xs text-muted-foreground sm:min-h-0"
+                      >
                         Reset to deck&apos;s theme
                       </DropdownMenuItem>
                     </>
