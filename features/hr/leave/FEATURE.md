@@ -85,10 +85,10 @@ Envelopes verified live against `pg_get_functiondef` on `brsgrqvjdzwihsvnfqkf`, 
 | RPC | Returns | Notes |
 |---|---|---|
 | `hr_my_time_off(p_employment_id)` | `{granted, employment_id, viewer_rung, as_of, policies[], requests[], can_request}` | policies = `hr.leave_figures` ⊕ enrollment facts ⊕ `sentence` ⊕ `ledger_href` |
-| `hr_leave_request_preview(...)` | `{granted, span, breakdown_sentence, figures, projection, policy_name, increment_minutes, mandated_uses, documentation_required, documentation_required_after_days}` | `span.days[]` = `{date, hours, basis, excluded?, label?, partial?}` |
+| `hr_leave_request_preview(...)` | `{granted, span, breakdown_sentence, figures, projection, policy_name, increment_minutes, mandated_uses, documentation_required, documentation_required_after_days, submittable, blocker}` | `span.days[]` = `{date, hours, basis, excluded?, label?, partial?}`. `submittable:false` + a verbatim `blocker` sentence = the free-week refusal, in the submit door's own words |
 | `hr_leave_request_submit(...)` | `{granted, leave_request_id, workflow_instance_id, state, requested_hours, conflict_check, workflow, rejected_at_intake}` | `conflict_check` is inserted as `{}` and re-read after `hr.wf_submit` — an empty object is normal |
 | `hr_leave_request_cancel(...)` | `{granted, outcome, workflow[, workflow_instance_id]}` | `withdrawn` \| `cancellation_requested`; refuses `already_taken` / `not_cancellable` |
-| `hr_leave_ledger_view(...)` | `{granted, entries[], figures, sentence, running_balance_ok, divergence_at_entry_id, unexplained_entry_count, entry_count}` | `amount`/`rate` are excluded in the SQL by construction |
+| `hr_leave_ledger_view(...)` | `{granted, entries[], figures, sentence, running_balance_ok, divergence_at_entry_id, unexplained_entry_count, entry_count}` | `amount`/`rate` excluded in the SQL by construction. Entries also carry `request_state`, `request_starts_on`, `request_ends_on`, `counts_toward` — read the ⚠️ under Known gaps before treating `counts_toward` as the figure |
 
 🚨 **This lane's refusal dialect is `granted`, not `ok`.** None of the five doors returns an
 `ok` key or an `error` object. A transport testing `ok` reads every refusal as a success and
@@ -119,7 +119,9 @@ in place, and the key is NOT re-minted (the same intent is still being fixed).
 **4. Withdraw / cancel.** `LeaveRequestList` → `ConfirmDialog` → `cancelLeaveRequest`.
 `submitted` withdraws (no ledger entry ever existed); `approved` opens a cancellation workflow.
 
-**5. Reconcile.** Any figure → `/hr/me/time-off/[policyId]?show=…` → `fetchLeaveLedger` →
+**5. Reconcile.** Any figure → `/hr/me/time-off/[policyId]?show=…` (`added` /
+`used_taken` / `approved_upcoming`, filtered on the server's per-entry `counts_toward`, never
+re-derived client-side) → `fetchLeaveLedger` →
 `LeaveLedgerView`: one row per entry, the server's sentence, a source door, a rule door onto
 `snapshot_id` + `calc` (verbatim, unmapped), a red *Unexplained entry* chip, and the blocking
 divergence banner.
@@ -156,9 +158,14 @@ divergence banner.
   already applies both — a holiday and a rest day come back as excluded days with their label —
   so the *cost* is honest; the picker itself is still a plain range.
 - **Who's-out overlay** (§4.1 data) — `/hr/leave/calendar` (§10) is the other agent's surface.
-- **Taken vs approved-upcoming as separate ledger filters.** `hr_leave_ledger_view` does not
-  return the request state on an entry, so the split cannot be reproduced client-side. Both
-  figures open one filter and the chip states exactly what was filtered.
+- ⚠️ **`counts_toward` and the figures disagree on one branch** (measured 2026-08-27 against
+  both live bodies). `hr.leave_figures` puts an **approved request whose `ends_on` has passed
+  and which is not yet `taken`** into NEITHER figure; `hr.leave_ledger_view` marks that same
+  entry `counts_toward = 'used_taken'`. So the "Used (taken)" door can show a row the "Used
+  (taken)" NUMBER does not contain. Reported to the lane that owns the door. **Deliberately not
+  patched client-side** — a client that quietly hid the row would make the disagreement
+  invisible on the one screen built to expose disagreements. The filter chip says what was
+  actually filtered (the server's mark) and never claims to be the figure's exact working.
 - **`hrMeTimeOffPolicyHref` belongs in `features/hr/routes.ts`** and should be lifted there by
   whoever next owns that file.
 - **Mock fixtures.** The RPC lane ships none; `NEXT_PUBLIC_HR_MOCK=1` fails loudly rather than
@@ -172,3 +179,9 @@ divergence banner.
   `hr_leave_*` / `hr_my_time_off` RPCs (HRB-017). Replaced the `MePillarSurface` placeholder on
   `/hr/me/time-off` and removed the now-kept `hr.me.time-off` promise from
   `lib/coming-soon/registry.ts`.
+- **2026-08-27** — Wired the lane lead's two door additions. `counts_toward` / `request_state`
+  / `request_starts_on` / `request_ends_on` on ledger entries give "Used (taken)" and "Approved
+  upcoming" separate doors (they shared one before); `submittable` / `blocker` on the preview
+  stop a costless free-week span at the form instead of at submit. Both mapped from the live
+  bodies rather than from the description — which is how the `counts_toward` branch that
+  disagrees with `hr.leave_figures` was found (see Known gaps).
