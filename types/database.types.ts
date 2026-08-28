@@ -84279,6 +84279,7 @@ export type Database = {
           organization_id: string
           profile: Json
           settings: Json
+          slug: string | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -84302,6 +84303,7 @@ export type Database = {
           organization_id: string
           profile?: Json
           settings?: Json
+          slug?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -84325,6 +84327,7 @@ export type Database = {
           organization_id?: string
           profile?: Json
           settings?: Json
+          slug?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -86610,6 +86613,7 @@ export type Database = {
           plan_profile_id: string | null
           root_url: string
           settings: Json
+          slug: string | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -86639,6 +86643,7 @@ export type Database = {
           plan_profile_id?: string | null
           root_url: string
           settings?: Json
+          slug?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -86668,6 +86673,7 @@ export type Database = {
           plan_profile_id?: string | null
           root_url?: string
           settings?: Json
+          slug?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -87502,6 +87508,7 @@ export type Database = {
           plan_profile_id: string | null
           root_url: string
           settings: Json
+          slug: string | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -87556,6 +87563,7 @@ export type Database = {
           plan_profile_id: string | null
           root_url: string
           settings: Json
+          slug: string | null
           status: string
           updated_at: string
           updated_by: string | null
