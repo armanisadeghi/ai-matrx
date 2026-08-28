@@ -61,21 +61,41 @@ export interface MandateWorkspaceProps {
   principal?: WorkspacePrincipal;
 }
 
-/** The layer that decides the Holder for this caller, plus the winning ref. */
-function resolveForCaller(
+/**
+ * The layer that decides the Holder, plus the winning ref — FOR THE PRINCIPAL
+ * THIS SURFACE SPEAKS FOR.
+ *
+ * On the personal route that is the caller: their own binding wins, then any
+ * of their orgs', then the system default. On the ORG route it is the
+ * organization: the admin's personal binding is not part of the answer at all,
+ * and only the route's org may decide. This page used to compute the caller's
+ * own resolution either way, so an org admin with a personal override saw
+ * "Fulfilled by <their own agent> — yours" on a page that binds for everyone.
+ */
+function resolveForPrincipal(
   data: MandateWorkspaceData,
   userId: string | null,
   orgIds: ReadonlySet<string>,
+  principal: WorkspacePrincipal,
 ) {
   const swapping = (b: MandateBindingRowDb) =>
     b.is_enabled && (b.agent_id !== null || b.agent_version_id !== null);
   const userBinding =
-    data.bindings.find(
-      (b) =>
-        b.principal_type === "user" && b.subject_user_id === userId && swapping(b),
-    ) ?? null;
+    principal.kind === "org"
+      ? null
+      : (data.bindings.find(
+          (b) =>
+            b.principal_type === "user" &&
+            b.subject_user_id === userId &&
+            swapping(b),
+        ) ?? null);
   const orgBindings = data.bindings.filter(
-    (b) => b.principal_type === "org" && orgIds.has(b.organization_id) && swapping(b),
+    (b) =>
+      b.principal_type === "org" &&
+      swapping(b) &&
+      (principal.kind === "org"
+        ? b.organization_id === principal.orgId
+        : orgIds.has(b.organization_id)),
   );
 
   const winner = userBinding ?? orgBindings[0] ?? null;
@@ -134,7 +154,7 @@ export function MandateWorkspace({
     );
   }
 
-  const resolution = resolveForCaller(data, userId, orgIds);
+  const resolution = resolveForPrincipal(data, userId, orgIds, principal);
   const feature = splitMandateKey(data.mandate.mandate_key).feature;
 
   return (
@@ -361,7 +381,7 @@ function FulfillmentSection({
   onChanged,
 }: {
   data: MandateWorkspaceData;
-  resolution: ReturnType<typeof resolveForCaller>;
+  resolution: ReturnType<typeof resolveForPrincipal>;
   onChanged: () => void;
 }) {
   const { copying, copyAndOpen } = useCopyMandateAgent();
@@ -453,7 +473,7 @@ function OrgOverridesDisclosure({
   agentsById,
   orgNames,
 }: {
-  resolution: ReturnType<typeof resolveForCaller>;
+  resolution: ReturnType<typeof resolveForPrincipal>;
   agentsById: MandateWorkspaceData["agentsById"];
   orgNames: { id: string; name: string }[];
 }) {

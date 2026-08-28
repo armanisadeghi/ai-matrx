@@ -38,6 +38,8 @@ interface MndRpcMap {
   mnd_list_scoped: {
     args: {
       p_scope: string;
+      /** Required by `p_scope: "org"` — WHOSE resolution to compute. */
+      p_org_id?: string;
       p_search?: string;
       p_sort: string;
       p_dir: string;
@@ -73,12 +75,32 @@ async function mndRpc<K extends keyof MndRpcMap>(
   return data ?? [];
 }
 
+/**
+ * WHOSE resolution the list computes.
+ *
+ * `mine` — the caller's own funnel (their user binding, then any of their
+ * orgs', then the system default). The right answer on /agents/mandates.
+ *
+ * `org` — the named organization's funnel, personal bindings EXCLUDED. The
+ * only honest answer on an org-settings page: an org admin asking "who fulfils
+ * this job for my organization" was being shown their own personal override
+ * winning, because the page asked for `mine`. Membership is proved inside the
+ * RPC; passing an org id you are not in returns nothing.
+ */
+export type MandateListScope =
+  | { kind: "mine" }
+  | { kind: "org"; orgId: string };
+
+export const MINE_SCOPE: MandateListScope = { kind: "mine" };
+
 export async function fetchMandateListPage(
   query: EntityListQuery,
   sort: EntityListSort,
+  scope: MandateListScope = MINE_SCOPE,
 ): Promise<EntityListPage<MandateListRow>> {
   const rows = await mndRpc("mnd_list_scoped", {
-    p_scope: "mine",
+    p_scope: scope.kind,
+    ...(scope.kind === "org" ? { p_org_id: scope.orgId } : {}),
     p_search: query.search.trim() || undefined,
     p_sort: sort.sort,
     p_dir: sort.direction,
@@ -87,6 +109,16 @@ export async function fetchMandateListPage(
     p_offset: (query.page - 1) * sort.pageSize,
   });
   return { rows, total: rows.length > 0 ? Number(rows[0].total_count) : 0 };
+}
+
+/** The list-config service triple for one scope. */
+export function mandateListService(scope: MandateListScope) {
+  return {
+    fetchPage: (query: EntityListQuery, sort: EntityListSort) =>
+      fetchMandateListPage(query, sort, scope),
+    fetchCounts: fetchMandateScopeCounts,
+    fetchFacets: fetchMandateFacets,
+  };
 }
 
 export async function fetchMandateScopeCounts(

@@ -23,6 +23,7 @@ import type {
 } from "@/lib/entity-list/config";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { mandateListConfig } from "@/features/agents/mandates/browse/listConfig";
+import { mandateListService } from "@/features/agents/mandates/browse/service";
 import type { MandateListRow } from "@/features/agents/mandates/browse/types";
 
 function orgMandateRoute(orgId: string, row: Pick<MandateListRow, "mandate_key">) {
@@ -85,7 +86,7 @@ export default function OrgMandatesPage() {
   });
 
   if (loading || roleLoading) return null;
-  if (error || !organization || !(isOwner || isAdmin)) {
+  if (error || !organization || !organizationId || !(isOwner || isAdmin)) {
     return <OrganizationAccessGate orgSlugOrId={orgId} organizationId={organizationId} onRetry={refresh} />;
   }
 
@@ -104,6 +105,11 @@ export default function OrgMandatesPage() {
         config={{
           ...mandateListConfig,
           surfaceKey: "org-mandates",
+          // THE ORG'S resolution, not the admin's. "Fulfilled by" and
+          // "Decided by" on this page must answer for every member of this
+          // organization; asking for the caller's own scope showed the admin
+          // their personal override winning on an org-settings page.
+          service: mandateListService({ kind: "org", orgId: organizationId }),
           door: { hrefFor: (row) => orgMandateRoute(orgId, row) },
           useRowActions: useOrgRowActions,
         }}
