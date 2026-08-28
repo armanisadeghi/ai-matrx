@@ -71,6 +71,23 @@ export type HrInboxRow = {
     subject_withheld?: boolean;
     target_token?: string | null;
     target_id?: string | null;
+    /**
+     * 🚨 WHAT THE DECISION IS ACTUALLY ABOUT.
+     *
+     * A decider was approving a legal name change on a screen that showed a flow key,
+     * a table token and a bare uuid — never the name. `hr._wf_display` now answers what
+     * changes, from what, to what, for the flows whose proposal lives in the workflow
+     * instance rather than in the target row (a profile edit, an address change). Empty
+     * when the render is contentless or the reader is not entitled: a summary of a change
+     * IS content, so it is withheld wherever the subject's name would be.
+     */
+    change?: HrInboxChange[];
+    /**
+     * The flow's own one-line summary, for the kinds whose request already lives in the
+     * target row and have a digest function that words it — leave, timecard, overtime.
+     * Null for the payload-carrying flows, which answer through `change` instead.
+     */
+    digest?: string | null;
     allow_bulk_decide?: boolean;
     requires_reason_on_approve?: boolean;
     allows_withdraw?: boolean;
@@ -85,6 +102,17 @@ export type HrInboxRow = {
 
     /** SPEC-UI-IA §5.9 — delivery/read state lives with the task. */
     notices?: HrInboxNotice[];
+};
+
+/**
+ * One field a decision would change. `from` is null when the field is currently
+ * empty — which is a real answer ("nothing on file"), not a missing one.
+ */
+export type HrInboxChange = {
+    field: string;
+    label: string;
+    from: string | null;
+    to: string | null;
 };
 
 /** A row of `hr.workflow_notice`, the VIEW over `communication.notification`. */
