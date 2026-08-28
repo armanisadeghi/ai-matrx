@@ -1745,7 +1745,7 @@ async def main():
         rec("§4.2 the door", "no declared function contract anywhere in hr is currently broken",
             await conn.fetchval("select count(*)=0 from hr.function_contracts_broken()"),
             str(await conn.fetchval(
-                "select string_agg(schema_name||'.'||function_name, ', ') from hr.function_contracts_broken()")))
+                "select string_agg(b::text, ' | ') from hr.function_contracts_broken() b")))
 
         # ================== §2.2 RD5 — AN UNMAPPED SUBJECT REFUSES, IT DOES NOT RAISE
         # 🚨 THE CONTROL FOR RECORDED DECISION 5, kept alive deliberately. hr._approval_subject
