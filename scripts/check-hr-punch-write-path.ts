@@ -207,6 +207,15 @@ const EXPECTED_CHECKS = [
   // owed on the routing half. 🚨 Read `leave_requests_in_existence` beside the verdict — the table
   // is effectively empty, so a green here is not evidence that leave routing works.
   "every_leave_request_has_an_approver",
+  // hr_l3_77. SPEC-LEAVE §9.6 governs the existence disclosure with ONE switch. hr_l3_69 retired
+  // hr.leave.case_existence_visible_to_manager in the required order (seed the survivor, then drop)
+  // because the struck knob defaulted TRUE and was the switch turning the statement ON while the
+  // survivor was empty. That retirement was then REVERTED IN THE DATABASE while its file sat
+  // committed on main and its ledger row still claimed success — another lane re-created
+  // hr.leave_calendar from its own source and re-seeded the knob, and nothing said so. All four
+  // revert shapes are asserted, including the survivor being cleared, which would retire the switch
+  // and turn the disclosure OFF: the exact failure the ordered pair exists to prevent.
+  "existence_disclosure_has_one_switch",
 ] as const;
 
 interface ConformanceRow {
