@@ -2163,9 +2163,11 @@ async def main():
             " where i.flow_key='timecard_attestation' and st.step_key='employee_attestation' "
             " order by st.created_at")
         subj_only, chain_walked, mgr_hits, withlogin, nologin = True, True, [], 0, 0
+        envs = {}          # resolve ONCE per step; every assertion below reads this map
         for a in att:
             v = await j("select hr.wf_resolve_approvers($1)", a["step"])
             ev = (v or {}).get("evidence") or {}
+            envs[str(a["step"])] = (v, ev)
             cands = [str(x) for x in (v.get("candidates") or [])]
             if cands != [str(a["subj"])]:
                 subj_only = False
@@ -2189,17 +2191,14 @@ async def main():
             "🚨 and it walks exactly ONE rung, `fixed_user` — it never climbs the approver chain the "
             "definition happens to declare",
             bool(att) and chain_walked,
-            str([(await j("select hr.wf_resolve_approvers($1)", a["step"])).get("evidence", {}).get("rungs_walked") for a in att]))
+            str([ev.get("rungs_walked") for _, ev in envs.values()]))
         rec("§2.5 the self step",
             "and the DECLARED chain is still recorded beside it, so config and trace are both legible",
-            bool(att) and all(
-                ((await j("select hr.wf_resolve_approvers($1)", a["step"])).get("evidence") or {}).get("fallback_chain")
-                for a in att))
+            bool(att) and all(ev.get("fallback_chain") for _, ev in envs.values()))
         # 🚨 THE LOGIN-LESS SUBJECT IS KEPT, NOT STRUCK — hr_c4_11's rule, pinned against regression.
         nl = [a for a in att if a["uid"] is None]
         if nl:
-            v = await j("select hr.wf_resolve_approvers($1)", nl[0]["step"])
-            ev = (v or {}).get("evidence") or {}
+            v, ev = envs[str(nl[0]["step"])]
             rec("§2.5 the self step",
                 "🚨 a LOGIN-LESS subject is still resolved to their own step — kept and RECORDED as "
                 "unreachable, never struck off and never handed to somebody else",
