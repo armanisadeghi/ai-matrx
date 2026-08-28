@@ -441,6 +441,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/automation/scheduling"),
           destination("/administration/automation/scheduling/tasks"),
           destination("/administration/automation/scheduling/runs"),
+          destination("/administration/automation/scheduling/system-jobs"),
           destination("/administration/automation/scheduling/orphan-leases"),
           destination("/administration/automation/scheduling/cron-tester"),
           destination("/administration/automation/scheduling/scanner-health"),

@@ -214,6 +214,24 @@ Run: `pnpm exec jest features/scheduling/` and (inside aidream)
 
 ## Change log
 
+- **2026-08-28** — New **System jobs** tab in the Scheduling admin console
+  (`/administration/automation/scheduling/system-jobs`), per Arman's ruling
+  that recurring server jobs must be controllable from the admin UI. It lists
+  ALL of aidream's recurring system jobs (kind=tool) via the new admin-gated
+  `GET/PATCH /scheduling/admin/system-tasks` endpoints (`schedulerClient.ts` —
+  same base URL + Supabase-JWT Bearer auth as `/scheduler/*`; note the
+  `/scheduling/*` prefix is the aidream admin router, not the user scheduler
+  router). Row shows title, tool_name, Enabled/Disabled plus "handler missing"
+  / "gate pending" badges, human cadence (interval humanized; cron as
+  expression + cronstrue hint), next due, last run with error tooltip; row
+  actions are Enable/Disable (confirm dialog on enable — it starts real
+  recurring work; the server's refusal to enable a handler-less task surfaces
+  verbatim), Edit (dialog: interval/cron trigger + config + `variables_args`
+  JSON), and Run now (`POST /scheduling/run-now/{task_id}`). The
+  `matrx-admin/scheduling` manifest gained the tab (`system_job_count`,
+  `system_job_enabled_count`, `system_jobs_load_error`) and its prose now says
+  plainly that this tab writes — human-only, never an agent write target.
+
 - **2026-08-24** — Direct run claimers in matrx-frontend, matrx-extend, and
   `matrx-scheduler` now copy the persisted task's exact organization into every
   `sch_run` insert. The frontend personal-organization resolver was deleted;

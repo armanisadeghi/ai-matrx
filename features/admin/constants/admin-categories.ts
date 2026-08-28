@@ -176,6 +176,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/automation/scheduling/runs",
       },
       {
+        title: "System Jobs",
+        description:
+          "Recurring server jobs (kind=tool) — view, edit cadence and config, enable or disable, run now.",
+        iconName: "ServerCog",
+        link: "/administration/automation/scheduling/system-jobs",
+        isNew: true,
+      },
+      {
         title: "Orphan Leases",
         description:
           "Claims that lapsed mid-execution — watch for spikes that indicate scanner issues.",

@@ -124,6 +124,13 @@ export default function SchedulingAdminOverview() {
           description="Run history with status / surface / date filters."
         />
         <Tile
+          href="/administration/automation/scheduling/system-jobs"
+          icon={CalendarCheck}
+          title="System jobs"
+          description="Recurring server jobs (kind=tool) — flip the switch, edit cadence, run now."
+          badge="Python"
+        />
+        <Tile
           href="/administration/automation/scheduling/orphan-leases"
           icon={AlertTriangle}
           title="Orphan leases"

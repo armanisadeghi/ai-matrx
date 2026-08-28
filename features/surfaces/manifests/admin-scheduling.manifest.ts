@@ -8,7 +8,7 @@
  * from aidream, and curated starter templates. The `ui_surface` row exists
  * (verified 2026-08-12); its manifest mirrors are synchronized.
  *
- * Seven route-tabbed pages share one shell
+ * Eight route-tabbed pages share one shell
  * (`SchedulingAdminLayoutClient.tsx`):
  *
  *   - Overview        `page.tsx` — health-summary tiles (task/run/failure/
@@ -17,6 +17,13 @@
  *     `MatrxDataTable` (`fetchAllTasksAdmin`, server-capped at 200).
  *   - Runs            `runs/page.tsx` — run history with SERVER-side status +
  *     surface filters (`fetchAllRunsAdmin`, server-capped at 200).
+ *   - System jobs     `system-jobs/page.tsx` — the platform's recurring
+ *     SERVER jobs (kind=tool) read from aidream's admin-gated
+ *     `/scheduling/admin/system-tasks` endpoints. The one tab where the ADMIN
+ *     (a human, via row buttons + an edit dialog) changes what the platform
+ *     actually runs: enable/disable (confirm on enable), edit the trigger
+ *     (interval/cron + config + args), and Run now. Human-only — see the
+ *     writeTargets note below.
  *   - Orphan leases   `orphan-leases/page.tsx` — claimed/running runs whose
  *     lease expired (`fetchOrphanLeases`), with a "mark failed" admin action.
  *   - Cron tester     `cron-tester/page.tsx` — pure client-side cron
@@ -34,7 +41,7 @@
  * TWO runtime mounts, and the nesting is deliberate:
  *
  *   - The SHELL (`SchedulingAdminLayoutClient`) mounts the outer provider. It
- *     always knows `active_tab` from the pathname, and each of the other six
+ *     always knows `active_tab` from the pathname, and each of the other seven
  *     tabs publishes its own slice up to it through
  *     `features/scheduling/lib/admin-scheduling-scope.ts` — only the MOUNTED
  *     tab's slice is ever emitted, so no tab can report another's state.
@@ -48,7 +55,10 @@
  * state on any tab, and on the Cron tester read the expression/timezone/
  * validation result and propose or apply a better expression (see
  * `writeTargets` below). Nothing that changes what the platform actually RUNS
- * is writable from here at all.
+ * is AGENT-writable from here: the System jobs tab does write (a HUMAN
+ * enabling/disabling/re-cronning real recurring server work through its own
+ * buttons and dialog), but none of those actions are registered as agent
+ * write targets — deliberately, per the writeTargets note.
  *
  * NOT A FLEET VIEW (`FOUND_DEFECTS` D140). `scheduler.sch_task` / `sch_run`
  * carry only the canonical std_select policies — there is no live admin RLS
@@ -101,6 +111,13 @@ const groups: SurfaceValueGroup[] = [
     description: "The run list and its server-side status/surface filters.",
   },
   {
+    key: "system_jobs",
+    label: "System jobs",
+    sortOrder: 450,
+    description:
+      "Recurring server jobs (kind=tool) from aidream's admin system-tasks endpoint.",
+  },
+  {
     key: "orphan_leases",
     label: "Orphan leases",
     sortOrder: 500,
@@ -127,7 +144,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_tab",
     label: "Active tab",
     description:
-      'Which tab of the Scheduling admin console is showing: "overview", "tasks", "runs", "orphan_leases", "cron_tester", "scanner_health", or "templates". Derived from the pathname under /administration/automation/scheduling. Always present.',
+      'Which tab of the Scheduling admin console is showing: "overview", "tasks", "runs", "system_jobs", "orphan_leases", "cron_tester", "scanner_health", or "templates". Derived from the pathname under /administration/automation/scheduling. Always present.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 15,
@@ -261,6 +278,41 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 3,
     sortOrder: 420,
     group: "runs",
+  },
+
+  // ── System jobs ──────────────────────────────────────────────────────────
+  {
+    name: "system_job_count",
+    label: "System job count",
+    description:
+      "Number of recurring server jobs (kind=tool) returned by aidream's admin system-tasks endpoint. Absent outside the System jobs tab and until the list resolves.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 450,
+    group: "system_jobs",
+  },
+  {
+    name: "system_job_enabled_count",
+    label: "Enabled system job count",
+    description:
+      "How many of those system jobs are currently enabled (task-level enabled flag). Absent outside the System jobs tab and until the list resolves.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 460,
+    group: "system_jobs",
+  },
+  {
+    name: "system_jobs_load_error",
+    label: "System jobs load error",
+    description:
+      "Why the system-jobs list could not be loaded from aidream (backend down, endpoint not deployed, or the viewer failed the server's admin gate). Absent when the list loaded fine, and outside the System jobs tab.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 470,
+    group: "system_jobs",
   },
 
   // ── Orphan leases ────────────────────────────────────────────────────────
@@ -497,10 +549,16 @@ const surfaceSpecific: SurfaceValue[] = [
  * Deliberately NOT agent-writable anywhere in this console: enabling or
  * disabling a scheduled task, re-cronning one, and the orphan-lease "mark
  * failed" action all change what the platform actually runs for real users, so
- * they stay human. The Runs / Overview / Scanner health / Orphan leases tabs
- * are reports and register nothing. Templates is a hardcoded in-file SEEDS
- * array, not real page data. The tester's own "Show next N" preview count is a
- * mechanical view knob nobody would ask an agent to flip — it is not a target.
+ * they stay human. The System jobs tab (2026-08-28) is the loudest case: it
+ * DOES write — enable/disable, trigger edits, args, and Run now against
+ * aidream's `/scheduling/admin/system-tasks` — but every one of those writes
+ * is a HUMAN pressing a button behind a confirm, and none is registered here.
+ * An agent bound to this surface can read the system-jobs counts and report,
+ * never flip the switch. The Runs / Overview / Scanner health / Orphan leases
+ * tabs are reports and register nothing. Templates is a hardcoded in-file
+ * SEEDS array, not real page data. The tester's own "Show next N" preview
+ * count is a mechanical view knob nobody would ask an agent to flip — it is
+ * not a target.
  */
 const writeTargets: SurfaceWriteTarget[] = [
   {
@@ -533,17 +591,19 @@ export const adminSchedulingManifest: SurfaceManifest = {
   surfaceName: ADMIN_SCHEDULING_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "All seven emitters are wired, the manifest mirrors are synchronized, and every declared page value now has a data-surface-value Locate anchor. Browser verification is still incomplete: Overview opened Surface Context with `contract honored`; Tasks loaded real rows and emitted active_tab + task_row_count; Runs loaded its real empty result, but its Context window plus Orphan leases, Cron tester, Scanner health, and Templates still need to be observed before promotion. The Cron tester's two write targets were previously verified with real agent runs (apply, decline, undeclared-target refusal, and invalid-value throws). Templates remains deliberately undeclared page data because it is a hardcoded in-file SEEDS array pending a sch_template table + read RPC.",
+    "The System jobs tab (2026-08-28) emits system_job_count / system_job_enabled_count / system_jobs_load_error and awaits browser verification against the aidream endpoint being built in parallel. All seven original emitters are wired, the manifest mirrors are synchronized, and every declared page value now has a data-surface-value Locate anchor. Browser verification is still incomplete: Overview opened Surface Context with `contract honored`; Tasks loaded real rows and emitted active_tab + task_row_count; Runs loaded its real empty result, but its Context window plus Orphan leases, Cron tester, Scanner health, and Templates still need to be observed before promotion. The Cron tester's two write targets were previously verified with real agent runs (apply, decline, undeclared-target refusal, and invalid-value throws). Templates remains deliberately undeclared page data because it is a hardcoded in-file SEEDS array pending a sch_template table + read RPC.",
   label: "Scheduling",
   urlPattern: "/administration/automation/scheduling",
   intro: `<surface_intro>
 This is an ADMIN surface: the Scheduling console at /administration/automation/scheduling, a view over the sch_* spine (scheduled tasks, their runs, and the scanner that dispatches them).
 
-active_tab tells you which of the seven tabs the admin is on and is always present. Only the MOUNTED tab's values are emitted — every other tab's values are absent, not stale, because each tab owns its own state.
+active_tab tells you which of the eight tabs the admin is on and is always present. Only the MOUNTED tab's values are emitted — every other tab's values are absent, not stale, because each tab owns its own state.
 
 READ THE COUNTS CORRECTLY: despite the console's cross-user framing, scheduler.sch_task / sch_run have no live admin RLS clause (FOUND_DEFECTS D140), so every count and row here is the VIEWER'S OWN scheduled work, not the platform's. Do not report these as fleet-wide numbers.
 
 Overview carries the health counters. Tasks and Runs report how many rows the SERVER returned (each capped at 200); their tables also have their own search boxes and column filters, which narrow the screen without changing these counts and which the page cannot read — so never infer \"what the admin is looking at\" from them. Runs additionally exposes its two server-side filters. Orphan leases counts runs whose claim lease expired without completing — these should self-heal on the next scanner tick; a persistent nonzero count means something is wrong upstream. Scanner health mirrors aidream's live scanner process state.
+
+System jobs lists the platform's recurring SERVER jobs (kind=tool), read from aidream's admin-gated system-tasks endpoints — genuinely platform-wide, unlike the D140-scoped tabs. It is the one tab where a HUMAN changes what the platform runs (enable/disable behind a confirm, trigger edits, Run now); those controls are not agent write targets, so you can read its counts and report, never operate them.
 
 Templates has no backing data source yet (hardcoded starter examples pending a real table) and is deliberately undeclared.
 
@@ -561,11 +621,12 @@ Cron tester is a pure client-side scratch pad and the one place here you can WRI
  * Type-safe payload helper. Required keys (no `?`) mirror every value declared
  * `alwaysAvailable: true`; optional keys mirror `alwaysAvailable: false`.
  */
-/** The seven route-tabbed pages, as `active_tab` reports them. */
+/** The eight route-tabbed pages, as `active_tab` reports them. */
 export type AdminSchedulingTab =
   | "overview"
   | "tasks"
   | "runs"
+  | "system_jobs"
   | "orphan_leases"
   | "cron_tester"
   | "scanner_health"
@@ -598,6 +659,9 @@ export type AdminSchedulingScopeValues = {
   run_status_filter?: string;
   run_surface_filter?: string;
   run_row_count?: number;
+  system_job_count?: number;
+  system_job_enabled_count?: number;
+  system_jobs_load_error?: string;
   orphan_lease_row_count?: number;
   cron_expression?: string;
   cron_timezone?: string;
