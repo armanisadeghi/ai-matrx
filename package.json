@@ -58,6 +58,7 @@
     "check:picker-add:strict": "tsx scripts/check-picker-custom-entry.ts --strict",
     "check:surface-routes": "tsx scripts/check-surface-routes.ts",
     "check:surface-overlays": "tsx scripts/check-surface-overlays.ts",
+    "check:surface-interactive-roots": "tsx scripts/check-surface-interactive-roots.ts",
     "check:source-attribution": "tsx scripts/check-source-attribution.ts",
     "check:docs-guards": "tsx scripts/check-docs-guards.ts",
     "check:doctrine": "tsx scripts/check-doctrine.ts",

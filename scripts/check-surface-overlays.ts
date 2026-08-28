@@ -23,8 +23,15 @@ for (const manifest of ALL_MANIFESTS) {
   manifestsByOverlay.set(manifest.overlayId, names);
 }
 
+const overlayIdCounts = new Map<string, number>();
+for (const overlayId of OVERLAY_IDS) {
+  overlayIdCounts.set(overlayId, (overlayIdCounts.get(overlayId) ?? 0) + 1);
+}
+const duplicateRegistryIds = [...overlayIdCounts.entries()].filter(
+  ([, count]) => count > 1,
+);
 const overlayIds = new Set<string>(OVERLAY_IDS);
-const missing = OVERLAY_IDS.filter(
+const missing = [...overlayIds].filter(
   (overlayId) => !manifestsByOverlay.has(overlayId),
 );
 const unknown = [...manifestsByOverlay.entries()].filter(
@@ -35,8 +42,17 @@ const duplicates = [...manifestsByOverlay.entries()].filter(
 );
 
 console.log(
-  `Surface overlay coverage: ${OVERLAY_IDS.length} registered overlay ids, ${manifestsByOverlay.size} declared by manifests, ${missing.length} UNDECLARED.`,
+  `Surface overlay coverage: ${overlayIds.size} unique registered overlay ids, ${manifestsByOverlay.size} declared by manifests, ${missing.length} UNDECLARED.`,
 );
+
+if (duplicateRegistryIds.length > 0) {
+  console.error(
+    "\nDUPLICATE canonical overlay ids: OVERLAY_IDS must contain each identity exactly once:",
+  );
+  for (const [overlayId, count] of duplicateRegistryIds) {
+    console.error(`  - ${overlayId} (${count} entries)`);
+  }
+}
 
 if (missing.length > 0) {
   console.warn(
@@ -63,4 +79,8 @@ if (duplicates.length > 0) {
   }
 }
 
-process.exit(unknown.length > 0 || duplicates.length > 0 ? 1 : 0);
+process.exit(
+  duplicateRegistryIds.length > 0 || unknown.length > 0 || duplicates.length > 0
+    ? 1
+    : 0,
+);

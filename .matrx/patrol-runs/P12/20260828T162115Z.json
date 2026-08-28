@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P12",
+  "runId": "20260828T162115Z",
+  "baseSha": "c50b4cfbcb557c66dbc2d128caa574f3788b48b1",
+  "createdAt": "2026-08-28T16:21:26.041Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-28T16:21:26.041Z",
+      "actor": "codex-p12-worker",
+      "summary": "Structural-novelty scan found 95 unmapped core routes, 162 undeclared overlay ids, and no open P12 sightings; direct interactive roots still lacked a conservative classifier.",
+      "evidence": [
+        "baseline type-check PASS; output sha256 414f6f5ac4bb546e075d4c8298e3f99977a43fa48cf878c4b806144a2ad00702",
+        "surface-drift PASS: 194 manifests, 4751 values, 427 write targets, 6 client tools",
+        "surface-routes PASS with 703 routes: 581 resolved, 27 deliberately unmapped, 95 undeclared",
+        "surface-overlays PASS with 190 ids: 28 declared and 162 undeclared",
+        "148 structurally new core route leaves since the prior P12 artifact; no open P12 ledger sightings"
+      ],
+      "previousEventHash": null,
+      "eventHash": "75503f32c54b9dd0c5579aaf0ffe41799d56ebb3957682b5a880b33a1cd9d7f4"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-28T16:21:26.591Z",
+      "actor": "codex-p12-worker",
+      "summary": "Added a bounded identity-and-state-aware direct interactive-root detector with focused classification tests.",
+      "evidence": [
+        "Detector distinguishes independent audit candidates from subordinate or uncertain roots and never auto-clears findings."
+      ],
+      "previousEventHash": "75503f32c54b9dd0c5579aaf0ffe41799d56ebb3957682b5a880b33a1cd9d7f4",
+      "eventHash": "6ceaaa89db7ab5c336ef6614ff420ee1c7664b601c04b055caf57398f8ef5666"
+    }
+  ]
+}
