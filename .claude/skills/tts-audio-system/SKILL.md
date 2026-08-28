@@ -173,14 +173,25 @@ Uses `TapTargetButton` / `TapTargetButtonGroup` from `removed (ssr) route group 
 
 ---
 
-## Redux Voice Preferences
+## Voice / speed / language — the tiered listening config (2026-08-28)
+
+🚨 **Cartesia voice, speed, and language NO LONGER live in `userPreferences.voice` for playback.** They resolve through the tiered surface-config `listening` namespace (system → org → user, user wins) via `features/audio/service/listeningConfig.ts`:
+
+- React reads: `selectListeningVoice/Speed/Language` (+ `selectListeningVoiceId(state, purpose)`).
+- Imperative reads (`speak()`, playback adapters): `getListeningSettings()` — resolves at START time so replays honor current settings.
+- Writes: `useListeningSettings().update(patch)` — ONE row at the user's tier (never a whole-preferences write).
+- System default: platform-global row, admin-edited at `/administration/ui/surfaces/matrx-user/assistant-message` (Config namespaces). Org rows override; user rows win.
+
+`userPreferences.voice.{voice,speed,language}` remain ONLY as the pre-fetch boot fallback; `emotion`/`wakeWord`/`microphone`/`speaker` still live there.
+
+## Redux Voice Preferences (legacy fields — see above for voice/speed/language)
 
 ```typescript
 // state.userPreferences.voice (Cartesia)
 interface VoicePreferences {
-  voice: string;    // Cartesia voice UUID
-  language: string; // e.g. "en"
-  speed: number;    // 0 = normal
+  voice: string;    // LEGACY for playback — boot fallback only
+  language: string; // LEGACY for playback — boot fallback only
+  speed: number;    // LEGACY for playback — boot fallback only
   emotion: string;
   microphone: boolean;
   speaker: boolean;
