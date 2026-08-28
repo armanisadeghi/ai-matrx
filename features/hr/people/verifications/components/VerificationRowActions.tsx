@@ -19,7 +19,6 @@ import { useState } from "react";
 import { FileSignature, FileText, Loader2, ShieldX } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -69,9 +68,7 @@ export function VerificationRowActions({
   const [basis, setBasis] = useState<HrVerificationDenialBasis>(
     "no_employment_record",
   );
-  const [note, setNote] = useState("");
   const [method, setMethod] = useState<HrVerificationDeliveryMethod>("email");
-  const [recipient, setRecipient] = useState(row.requester_email ?? "");
   const [saving, setSaving] = useState(false);
 
   const state = toVerificationState(String(row.state));

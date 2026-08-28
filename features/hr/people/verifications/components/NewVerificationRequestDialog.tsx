@@ -98,9 +98,19 @@ export function NewVerificationRequestDialog({
     setSaving(false);
 
     if (result.ok) {
+      /*
+        🚨 THIS SAID "The employee has been asked for consent." NOTHING ASKS THEM.
+        `hr_verification_request_create` writes the row and touches no notification, no
+        workflow instance, and no task. There is also no read door for "requests awaiting
+        MY consent" and no surface on which the employee could answer, so the consent
+        step has no product path at all (reported to the coordinator as a build item —
+        it needs a self-scoped list door before it can be built).
+        Until that exists this states only what actually happened, and names the step
+        that is genuinely outstanding rather than claiming it was taken care of.
+      */
       toast.success(
         needsConsent
-          ? "Request raised. The employee has been asked for consent."
+          ? "Request raised. It states income, so it cannot be generated until the employee's consent is recorded."
           : "Request raised.",
       );
       onCreated();

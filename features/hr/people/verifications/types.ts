@@ -10,9 +10,18 @@
 //     date, forever.
 //   • A regenerate writes a NEW ROW, never an edit. A delivered letter has been
 //     relied on by a lender or an agency and cannot be quietly changed.
-//   • Income needs CONSENT, enforced three times: a table CHECK, the aidream
-//     endpoint, and the UI. Three, because any one of them alone has failed
-//     somewhere before.
+//   • Income needs CONSENT, enforced at GENERATION in three places: the door
+//     `public.hr_verification_generate_apply`, the aidream endpoint, and the UI.
+//     Three, because any one of them alone has failed somewhere before.
+//
+//     🚨 IT USED TO BE A TABLE CHECK AND THAT WAS THE WRONG MOMENT.
+//     `(NOT includes_compensation) OR (employee_consent_at IS NOT NULL)` sat on
+//     `hr.verification_letter_request`, so a compensation request could not EXIST
+//     until consent was already recorded — and the row is what ASKS for consent.
+//     `awaiting-consent` below was therefore unreachable for every third-party
+//     request. Moved to generation by `hr_l1_53`, which is the moment the rule is
+//     actually about: no letter EMITS compensation without consent. The door holds
+//     a `hr.function_contract` row so the guard cannot be dropped by a later edit.
 
 export const HR_VERIFICATION_STATES = [
   "received",
