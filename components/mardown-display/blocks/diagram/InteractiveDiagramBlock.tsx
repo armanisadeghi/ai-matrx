@@ -2664,6 +2664,16 @@ interface InteractiveDiagramBlockProps {
   diagram: DiagramData;
   taskId?: string;
   /**
+   * Chat source identity. Without it the canvas item this block opens has no
+   * persisted source, so "Sync to cloud" can never materialize a canvas_items
+   * row ("need a real persisted source id"). Supplied by DiagramArtifact, the
+   * same way MermaidBlock receives it.
+   */
+  messageId?: string;
+  conversationId?: string;
+  /** Real canvas_items UUID when this diagram is already materialized. */
+  artifactId?: string;
+  /**
    * `card` is the compact embeddable response block. `workspace` is the
    * dedicated, full-height authoring surface: no repeated title card, no
    * artificial width/height cap, and editing controls become an inspector rail.
@@ -2699,6 +2709,9 @@ interface InteractiveDiagramBlockProps {
 const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
   diagram,
   taskId,
+  messageId,
+  conversationId,
+  artifactId,
   presentation = "card",
   onNodeClick,
   defaultEditing = false,
@@ -2974,6 +2987,9 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                           metadata: {
                             title: diagram.title,
                             sourceTaskId: taskId,
+                            sourceMessageId: messageId,
+                            conversationId,
+                            canvasItemId: artifactId,
                           },
                         })
                       }

@@ -25,6 +25,8 @@ export default function DiagramArtifact({
   serverData,
   taskId,
   artifactId,
+  conversationId,
+  messageId,
   isStreamActive,
 }: ArtifactRendererProps) {
   const diagram = useMemo(
@@ -53,6 +55,9 @@ export default function DiagramArtifact({
       <InteractiveDiagramBlock
         diagram={diagram}
         taskId={artifactDedupKey(taskId, artifactId)}
+        messageId={messageId}
+        conversationId={conversationId}
+        artifactId={artifactId}
       />
     </Suspense>
   );
