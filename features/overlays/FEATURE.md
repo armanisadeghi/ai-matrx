@@ -173,7 +173,7 @@ handle.close();
 
 Internally, the opener creates a callback group via `callbackManager`, passes the `callbackGroupId` string through Redux, and the component subscribes. **Functions never travel through Redux.** Callback contracts live in [`features/window-panels/windows/<feature>/callbacks.ts`](../window-panels/windows/) (will move to `features/overlays/callbacks/` in a future cleanup pass).
 
-Current callback-aware openers: `imageUploaderWindow`, `smartCodeEditorWindow`, `multiFileSmartCodeEditorWindow`, `curatedIconPickerWindow`, `contentEditorWindow`, `contentEditorListWindow`, `contentEditorWorkspaceWindow`, `fullScreenEditor` and `htmlPreview` (both on the group contract in [`callbacks/fullScreenEditor.ts`](./callbacks/fullScreenEditor.ts)).
+Current callback-aware openers: `imageUploaderWindow`, `smartCodeEditorWindow`, `multiFileSmartCodeEditorWindow`, `curatedIconPickerWindow`, `contentEditorWindow`, `contentEditorListWindow`, `contentEditorWorkspaceWindow`, `googleConnectWindow`, `fullScreenEditor` and `htmlPreview` (both on the group contract in [`callbacks/fullScreenEditor.ts`](./callbacks/fullScreenEditor.ts)).
 
 ### The severed-callback bug class (`onSave={undefined} /* pass via callbackGroupId */`)
 
@@ -338,6 +338,10 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-08-28** — `googleConnectWindow` became callback-aware for selected-file Drive import. The
+  opener stores only `mode` and `callbackGroupId` in Redux; the window returns materialized
+  `File[]` plus per-file failures through the callback registry, so raw functions and Google access
+  tokens never enter overlay state.
 - **2026-08-27** — Added `agentTestCasesWindow`, the builder's non-blocking sample-input manager. The existing launcher now uses its typed opener; the lazy controller explicitly wires `agentId` and `conversationId`, and the old local Sheet state is gone.
 
 - **2026-08-23 — Removed unsupported deployment-cause claims from every lazy-overlay recovery surface.** A chunk error or timeout proves only that a module did not load; it does not prove a stale tab, cache fault, or deploy. User copy, timeout errors, human/agent diagnostic payloads, and the diagnostic field now state only observed facts. The separate banner appears only for an actual loaded-script `?dpl=` inconsistency and does not infer how it arose. Regression coverage scans route, global, toast, lazy-overlay, and diagnostic-copy surfaces.

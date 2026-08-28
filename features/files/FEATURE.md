@@ -16,7 +16,7 @@ in the same change.
 | Direct-Supabase writes                   | `api/direct.ts`; share links via `utils/permissions/shareLinks.ts`                                                                                                              |
 | Universal file handler                   | `handler/` (see `handler/FEATURE.md`)                                                                                                                                           |
 | Upload transport policy                  | `upload/cloudUpload.ts` (`resolveUploadTransport`), `upload/tusUpload.ts`                                                                                                       |
-| Core components                          | `components/core/` — FileTree, FileList, FileIcon, FileMeta, FilePreview, FileUploadDropzone, FileBreadcrumbs, FileActions, FileContextMenu, ShareLinkDialog, PermissionsDialog |
+| Core components                          | `components/core/` — FileTree, FileList, FileIcon, FileMeta, FilePreview, FileAcquisitionActions, FileUploadDropzone, FileBreadcrumbs, FileActions, FileContextMenu, ShareLinkDialog, PermissionsDialog |
 | Surfaces (6)                             | `components/surfaces/` — PageShell, WindowPanelShell, MobileStack, EmbeddedShell, DialogShell, DrawerShell                                                                      |
 | The one file picker                      | `features/resource-manager/resource-picker/FilesResourcePicker.tsx`, hosted by `components/pickers/CloudFilesPickerHost`                                                        |
 | Previewer dispatch                       | `components/core/FilePreview/PreviewerSwitch.tsx`                                                                                                                               |
@@ -74,6 +74,7 @@ in the same change.
 17. **No barrel.** `features/files/index.ts` is gone and ESLint bans `@/features/files` (exact);
     `cache/`, `virtual-sources/`, `upload/`, `providers/`, `services/`, `api/` stay ring-fenced.
 18. **Docs are updated in the same change as the code.** Stale docs cascade across parallel agents.
+19. **`FileAcquisitionActions` is the one source chooser.** Local file/folder inputs, existing-Matrx-Files selection, and Google Drive connect/import belong there; hosts select a presentation and disable sources with props. Drag/drop and paste remain host gestures, but their resulting `File[]` must enter the same upload callback. Never synthesize an input, query a page-wide file input, or fork a partial source menu.
 
 ## Local commands
 
@@ -85,6 +86,12 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-28 — Google Drive joins the canonical file-acquisition path.** `FileAcquisitionActions`
+  now owns local files, local folders, existing Matrx Files, and auth-aware Google Drive import in
+  menu, button, inline, and mobile-icon presentations. `/files`, onboarding, mobile, the shared
+  dropzone, and the attachment upload strip consume it; former synthetic inputs, the global input
+  query, and surface-local menus were removed. Selected Drive blobs and exportable Workspace files
+  become browser `File` objects, then pass through the unchanged canonical Matrx upload pipeline.
 - **2026-08-27 — ID-backed mobile media can opt into the authenticated blob cache.** Persisted
   thumbnails that must survive browsers blocking the cross-site file-session cookie use the
   existing `crossOrigin` lane; ordinary previews retain the canonical element transport, and

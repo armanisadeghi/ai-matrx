@@ -17,7 +17,7 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 
 ## Authorization contract
 
-- Docs and Sheets use `drive.file`, never an account-wide Drive scope. The user selects one Google Doc or Sheet through Google Picker before AI Matrx registers or operates on it.
+- Docs, Sheets, and Files import use `drive.file`, never an account-wide Drive scope. The user explicitly selects each item through Google Picker before AI Matrx can register, operate on, or import it.
 - The browser Picker token is short-lived, memory-only, restricted to the requested identity plus `drive.file` scopes, and tied to the connected account with `login_hint`.
 - The durable refresh token is encrypted in aidream's canonical user secrets vault and is never persisted in the browser.
 - Gmail is incremental and uses only `gmail.send`. The product cannot read, search, delete, or organize Gmail.
@@ -30,8 +30,9 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 1. The browser receives an authorization code from Google Identity Services.
 2. The browser sends that one-time code directly to aidream `/api/google-integrations/exchange` with the signed-in user's Supabase JWT.
 3. aidream stores the refresh token in the canonical vault and safe connection metadata in `users.integration_connections`.
-4. Google Picker returns one file id. aidream validates it through `drive.file` and stores only safe metadata in `users.integration_connection_resources` as `google_document` or `google_spreadsheet`.
-5. Typed aidream `/api/google-workspace/*` endpoints read or update that exact resource. Gmail sends only the exact reviewed payload.
+4. For Workspace operations, Google Picker returns one Doc/Sheet id. aidream validates it through `drive.file` and stores only safe metadata in `users.integration_connection_resources` as `google_document` or `google_spreadsheet`.
+5. For Files import, Picker can return multiple explicit selections. The short-lived browser token downloads ordinary file bytes or exports supported native Workspace files; each becomes a browser `File` and immediately enters the canonical Matrx upload pipeline. Picker tokens and Google bytes are not persisted as a second file source.
+6. Typed aidream `/api/google-workspace/*` endpoints read or update registered Docs/Sheets. Gmail sends only the exact reviewed payload.
 
 ## The agent half — `agent/`
 
@@ -115,6 +116,10 @@ attachment it cannot open. Server half:
 - No Drive list or search endpoint exists in the service, and no agent tool
   accepts a `connection_id` — reach always resolves from a registered
   Picker-selected resource.
+- Files import can copy ordinary Drive files plus Docs, Sheets, Slides,
+  Drawings, and Apps Script projects selected in Picker. Forms, Vids, folders,
+  shortcuts, owner-disabled downloads, and native exports over Google's 10 MB
+  export limit remain actionable refusals; no broad Drive listing is added.
 - No Gmail read scope or endpoint exists in this feature.
 - No file content or email body is stored by the Workspace service.
 - **A range without a tab name targets the spreadsheet's first tab.** The UI
@@ -129,6 +134,13 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- 2026-08-28: Added selected-file Google Drive import to the canonical Files
+  acquisition control. Connected users see **Import from Google Drive**;
+  unconnected users see **Connect Google Drive** in the same slot. Multi-select
+  Picker results materialize in-browser (`files.get?alt=media` for blobs,
+  `files.export` for supported Workspace types) and then use the existing Matrx
+  upload pipeline; the OAuth scope and durable server resource model did not
+  broaden.
 - 2026-08-22: `SendToGoogleResult` gained a `failed` variant — `sendToGoogle`
   now catches server refusals (typically an expired grant needing reconnect)
   and returns the server's user-facing message instead of leaking an exception;
