@@ -73,8 +73,3 @@ values ('public', 'hr_my_context', 'hr_l1_35_nav_needs_the_worker_class.sql',
         || 'destination the server refuses, disagreeing with the profile tab bar for the same '
         || 'person. employer_profile_id and capabilities are load-bearing for settings and gating.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_35_nav_needs_the_worker_class.sql',
-        md5('hr_l1_35_nav_needs_the_worker_class'), now(), 0)
-on conflict do nothing;

@@ -81,8 +81,3 @@ values ('hr', 'clock_state', 'hr_l1_34_no_painted_on_doors.sql',
         || 'engagement route, and per SPEC-EMPLOYEES 2.3.3 engagement and employment truth '
         || 'render on the Job & reporting tab. Re-pointing a door needs a route that exists.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_34_no_painted_on_doors.sql',
-        md5('hr_l1_34_no_painted_on_doors'), now(), 0)
-on conflict do nothing;
