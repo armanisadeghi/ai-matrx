@@ -42780,6 +42780,7 @@ export type Database = {
         Returns: string
       }
       _employment_expiry: { Args: { p_employment_id: string }; Returns: string }
+      _employments_of_identity: { Args: { p_user: string }; Returns: string[] }
       _enroll_pay_period_rows: {
         Args: { p_employment_id?: string; p_pay_period_id?: string }
         Returns: number

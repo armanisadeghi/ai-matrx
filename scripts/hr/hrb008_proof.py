@@ -861,9 +861,15 @@ async def main():
             "🚨 an hr_admin publishing a CLEAN draft is REFUSED — the only thing wrong is their standing",
             admin_pub.get("granted") is False and admin_pub.get("reason") == "no_publish_authority",
             json.dumps(admin_pub)[:200])
+        # 🚨 TIGHTENED (hr_c4_39). This asserted only that "HR administration standing" appeared —
+        # which the CORRECTED sentence also contains, so it would have stayed green through the very
+        # misdirection the ruling fixed. It now pins the actual bar being stated.
         rec("§1.4 owner power",
-            "and the refusal is a human sentence, not a raw SQL error",
-            "HR administration standing" in str(admin_pub.get("detail")), admin_pub.get("detail"))
+            "and the refusal STATES THE BAR — the old wording told an hr_admin they needed the exact "
+            "standing they hold, which reads as a bug to the only person who sees it",
+            "HR administration standing is not enough" in str(admin_pub.get("detail"))
+            and "rewrites who approves what" in str(admin_pub.get("detail")),
+            admin_pub.get("detail"))
         still_draft = await conn.fetchval("select status from hr.workflow_definition where id=$1", clean)
         rec("§1.4 owner power", "and nothing was published — the definition is still a draft",
             still_draft == "draft", f"status={still_draft}")
