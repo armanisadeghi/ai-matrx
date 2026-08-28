@@ -151,18 +151,23 @@ export const WORKFLOW_BROWSE_COLUMNS: EntityColumnSpec<WorkflowBrowseRow>[] = [
       filterOptions: COUNT_FILTER_OPTIONS,
       width: 80,
       align: "right",
-      // NOT a link, deliberately. THE DOOR LAW says a count is a door — but
-      // there is no per-workflow run-history surface to open yet, and pointing
-      // "4 runs" at the single most recent run would be a door that lands
-      // somewhere the number did not promise. The Last run cell beside it IS a
-      // real door to a real record. The missing history surface is tracked
-      // rather than faked (see ../FEATURE.md § Known limits).
+      // THE DOOR LAW, finally payable. This count sat inert because there was
+      // no per-workflow run-history surface to open, and pointing "4 runs" at
+      // the single most recent run would have been a door landing somewhere the
+      // number did not promise. `/workflows/[id]/runs` (census #39) is that
+      // surface, so the number now opens exactly what it counts.
       cell: (row) => {
         const n = Number(row.run_count ?? 0);
-        return n > 0 ? (
-          <span className="tabular-nums text-muted-foreground">{n}</span>
-        ) : (
-          <Muted>—</Muted>
+        if (n <= 0) return <Muted>—</Muted>;
+        return (
+          <Link
+            href={`/workflows/${row.id}/runs`}
+            onClick={(e) => e.stopPropagation()}
+            className="tabular-nums text-muted-foreground hover:text-foreground hover:underline"
+            title={`See all ${n} ${n === 1 ? "run" : "runs"} of this workflow`}
+          >
+            {n}
+          </Link>
         );
       },
     },

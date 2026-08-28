@@ -30,6 +30,11 @@ export const RUN_STATUS_PHASE: Record<string, string> = {
   pausing: "running",
   paused: "waiting",
   interrupted: "waiting",
+  // A start-time park for a missing required input (INPUT-SURFACE
+  // park-not-die). It has always been in the status union and was missing from
+  // both maps, so every surface that met one drew the idle circle and printed
+  // the raw enum. The runs lists and the waiting inbox list it by name.
+  awaiting_input: "waiting",
   errored: "failed",
   completed: "settled",
   failed: "failed",
@@ -43,6 +48,7 @@ export const RUN_STATUS_LABEL: Record<string, string> = {
   pausing: "Pausing",
   paused: "Paused",
   interrupted: "Waiting for input",
+  awaiting_input: "Needs your input",
   errored: "Needs attention",
   completed: "Done",
   failed: "Needs attention",
