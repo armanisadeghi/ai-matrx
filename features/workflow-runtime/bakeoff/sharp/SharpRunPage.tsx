@@ -24,7 +24,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, History, Loader2 } from "lucide-react";
+import { History } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -40,15 +40,8 @@ import {
   type RecentRunSummary,
 } from "../../surface/service";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
-import {
-  deriveRunForm,
-  missingRequiredFields,
-  seedRunFormValues,
-  type RunFormSection,
-} from "../../surface/run-form";
-import { RunFormFieldControl } from "../../components/RunFormFieldControl";
+import { ServedRunForm } from "../../served-form/ServedRunForm";
 import { useWorkflowRun } from "../../hooks/useWorkflowRun";
-import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
 import {
   selectNodeAggregatePhases,
   selectRunEmissions,
@@ -184,14 +177,6 @@ function SharpOffer({
 }) {
   const steps = describeWorkflowSteps(loaded.definition);
   const deliverables = keepableDeliverables(deliverableSteps(steps));
-  const sections = deriveRunForm(loaded.definition);
-  const { starting, startRun } = useWorkflowRunControls();
-
-  const [values, setValues] = useState<Record<string, Record<string, unknown>>>(
-    () => seedRunFormValues(deriveRunForm(loaded.definition)),
-  );
-  const [triedToStart, setTriedToStart] = useState(false);
-  const missing = missingRequiredFields(sections, values);
 
   // Recent runs — a small door back into past work; a failed read hides the
   // section honestly rather than showing an empty "no runs" lie.
@@ -211,17 +196,6 @@ function SharpOffer({
       live = false;
     };
   }, [loaded.id]);
-
-  const start = () => {
-    setTriedToStart(true);
-    if (missing.length > 0) return;
-    void startRun({
-      definitionId: loaded.id,
-      nodeInputs: sections.length > 0 ? values : undefined,
-    }).then((newRunId) => {
-      if (newRunId) onStarted(newRunId);
-    });
-  };
 
   return (
     <div
@@ -306,59 +280,21 @@ function SharpOffer({
           </ol>
         </section>
 
-        {/* What it needs from you. */}
-        {sections.length > 0 ? (
-          <section className="mt-6">
-            <h2 className="text-sm font-medium text-foreground">
-              What it needs from you
-            </h2>
-            <div className="mt-2 space-y-4">
-              {sections.map((section) => (
-                <OfferFormSection
-                  key={section.nodeId}
-                  section={section}
-                  values={values[section.nodeId] ?? {}}
-                  onChange={(key, v) =>
-                    setValues((prev) => ({
-                      ...prev,
-                      [section.nodeId]: {
-                        ...(prev[section.nodeId] ?? {}),
-                        [key]: v,
-                      },
-                    }))
-                  }
-                />
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {/* Start — the one unmistakable action. */}
-        <div className="mt-6">
-          <button
-            type="button"
-            onClick={start}
-            disabled={starting}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60 sm:w-auto sm:min-w-64"
-          >
-            {starting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Starting…
-              </>
-            ) : (
-              <>
-                Start
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-          {triedToStart && missing.length > 0 ? (
-            <p className="mt-2 text-xs text-destructive">
-              Still needed: {missing.join(", ")}.
-            </p>
-          ) : null}
-        </div>
+        {/* What it needs from you — and the one unmistakable Start.
+            R12 PROVING GROUND: this section is THE SERVED RUN FORM. The
+            surface comes from GET /workflows/{id}/run-form (kind-addressed,
+            sourcing-ruled, provenance-stamped per INPUT-SURFACE.md), every
+            field is resolved through the kind's registered variants, and the
+            start it fires carries `inputs` + `input_sources`. The legacy
+            client-side `deriveRunForm` / `node_inputs` path is GONE from this
+            bake-off — not kept beside it. */}
+        <section className="mt-6">
+          <ServedRunForm
+            definitionId={loaded.id}
+            onStarted={onStarted}
+            heading="What it needs from you"
+          />
+        </section>
 
         {/* Past runs — doors, never dead numbers. */}
         {recent === null ? (
@@ -393,42 +329,6 @@ function SharpOffer({
             </div>
           </section>
         ) : null}
-      </div>
-    </div>
-  );
-}
-
-function OfferFormSection({
-  section,
-  values,
-  onChange,
-}: {
-  section: RunFormSection;
-  values: Record<string, unknown>;
-  onChange: (key: string, v: unknown) => void;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-3">
-      <p className="text-xs font-medium text-foreground">{section.title}</p>
-      <div className="mt-2 space-y-3">
-        {section.fields.map((field) => (
-          <label key={field.key} className="block">
-            <span className="text-xs text-muted-foreground">
-              {field.label}
-              {field.required ? " *" : ""}
-            </span>
-            <RunFormFieldControl
-              field={field}
-              value={values[field.key]}
-              onChange={(v) => onChange(field.key, v)}
-            />
-            {field.help ? (
-              <span className="mt-0.5 block text-[11px] text-muted-foreground/80">
-                {field.help}
-              </span>
-            ) : null}
-          </label>
-        ))}
       </div>
     </div>
   );
