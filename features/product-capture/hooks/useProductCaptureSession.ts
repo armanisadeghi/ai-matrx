@@ -39,9 +39,11 @@ import type {
 } from "../types";
 import {
   appendToItemNotes,
+  closeItem,
   createItem,
   listItemFiles,
   loadItem,
+  reopenItem,
   setItemCode,
   setItemNotes,
 } from "../service";
@@ -196,6 +198,22 @@ export function useProductCaptureSession(
       notesDirtyRef.current = false;
       setNotesState(item.notes);
       setSessionSeq((n) => n + 1);
+      // An item back on the capture surface is mid-capture again: flip a
+      // closed/processed item to `capturing` so the close on leaving re-fires
+      // the workflow handoff transition (more photos = a reprocess). Freshly
+      // created items are born `capturing` — no write.
+      if (item.status !== "capturing") {
+        void reopenItem(item)
+          .then((saved) => {
+            if (currentItemRef.current?.id === saved.id) {
+              currentItemRef.current = { ...saved, notes: notesRef.current };
+              setCurrentItem(currentItemRef.current);
+            }
+          })
+          .catch((err: unknown) => {
+            console.error("[product-capture] item reopen failed", err);
+          });
+      }
     },
     [setCurrent],
   );
@@ -235,7 +253,23 @@ export function useProductCaptureSession(
   const finishCurrentItem = useCallback(() => {
     const item = currentItemRef.current;
     if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
-    void flushNotes(item);
+    // Notes flush FIRST, close write LAST: the `capturing → captured` DB
+    // transition is the workflow handoff (the table's event trigger fires on
+    // it), so it must be the final write of the item's capture session. A
+    // stale version after the flush is fine — closeItem rides the guarded
+    // CAS and retries once against the row that landed.
+    void (async () => {
+      await flushNotes(item);
+      if (!item) return;
+      try {
+        await closeItem(item);
+      } catch (err) {
+        console.error("[product-capture] item close failed", err);
+        toast.error(
+          "Item saved, but could not be marked ready for processing.",
+        );
+      }
+    })();
     if (item) clearResumeKey(item.organizationId);
     // Preview URLs belong to the finished item's filmstrip — release them.
     previewUrlsRef.current.forEach((url) => revokeTrackedObjectUrl(url));

@@ -32,7 +32,7 @@ export interface CaptureItem {
   notes: string;
   /** Cloud folder the item's files are filed under. Set once at creation. */
   folderPath: string;
-  status: "captured" | "processed";
+  status: "capturing" | "captured" | "processed";
   createdAt: string;
   version: number;
 }
