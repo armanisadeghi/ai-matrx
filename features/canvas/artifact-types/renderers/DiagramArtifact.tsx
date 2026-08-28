@@ -27,6 +27,7 @@ export default function DiagramArtifact({
   artifactId,
   conversationId,
   messageId,
+  blockIndex,
   isStreamActive,
 }: ArtifactRendererProps) {
   const diagram = useMemo(
@@ -58,6 +59,7 @@ export default function DiagramArtifact({
         messageId={messageId}
         conversationId={conversationId}
         artifactId={artifactId}
+        blockIndex={blockIndex}
       />
     </Suspense>
   );

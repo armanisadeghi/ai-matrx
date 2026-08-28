@@ -77,6 +77,9 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import IconResolver from "@/components/official/icons/IconResolver";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation.dynamic";
@@ -2673,6 +2676,7 @@ interface InteractiveDiagramBlockProps {
   conversationId?: string;
   /** Real canvas_items UUID when this diagram is already materialized. */
   artifactId?: string;
+  blockIndex?: number;
   /**
    * `card` is the compact embeddable response block. `workspace` is the
    * dedicated, full-height authoring surface: no repeated title card, no
@@ -2712,6 +2716,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
   messageId,
   conversationId,
   artifactId,
+  blockIndex,
   presentation = "card",
   onNodeClick,
   defaultEditing = false,
@@ -2732,6 +2737,36 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
     ? backgroundVariantFromDiagram(diagram)
     : cardBackgroundVariant;
   const { open: openCanvas } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
+
+  const handleOpenCanvas = () => {
+    const def = getArtifactDef("diagram");
+
+    if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+      void openArtifact({
+        canvasType: "diagram",
+        title: diagram.title,
+        content: JSON.stringify(diagram),
+        conversationId,
+        messageId,
+        artifactId,
+        artifactIndex: blockIndex && blockIndex > 0 ? blockIndex : 1,
+      });
+      return;
+    }
+
+    openCanvas({
+      type: "diagram",
+      data: diagram,
+      metadata: {
+        title: diagram.title,
+        sourceTaskId: taskId,
+        sourceMessageId: messageId,
+        conversationId,
+        canvasItemId: artifactId,
+      },
+    });
+  };
   const diagramContainerId = useId();
   const getDiagramElement = useCallback(
     () => document.getElementById(diagramContainerId),
@@ -2980,19 +3015,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
                       icon={ExternalLink}
                       tooltip="Open Canvas"
                       aria-label="Open in Canvas"
-                      onClick={() =>
-                        openCanvas({
-                          type: "diagram",
-                          data: diagram,
-                          metadata: {
-                            title: diagram.title,
-                            sourceTaskId: taskId,
-                            sourceMessageId: messageId,
-                            conversationId,
-                            canvasItemId: artifactId,
-                          },
-                        })
-                      }
+                      onClick={handleOpenCanvas}
                       size="sm"
                       className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
                     />
