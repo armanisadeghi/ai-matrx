@@ -2002,6 +2002,76 @@ async def main():
             "🚨 and hr.workflow_failure ACCEPTS a real row of that class — the CHECK moved in the same migration",
             cls_ok, cls_err)
 
+        # ======= §1.4 THE PAY-APPROVAL CARVE-OUT'S PRECONDITION (SPEC-ACCESS §1.4, ruled 2026-08-28)
+        # 🚨 `pay_change` is deliberately NOT armed by hr._wf_change_entitlement: it carries its
+        # proposal FLAT under hr_position_assignment, which is behind no door. That is correct BY
+        # RULE — §1.4's approval carve-out says holding the step's approval authority entitles the
+        # decider to THAT REQUEST'S change summary, both sides of the one number, only while
+        # assigned, and never comp.read (which would breach the derived manager row's "nothing
+        # else" and expose the whole compensation history to approve one raise).
+        #
+        # The carve-out is sound ONLY while the routing genuinely requires the authority — so that
+        # precondition is pinned here rather than assumed. pay_change's fallback chain is
+        # {authority, substitute, reporting_line, top_of_chart}, and the last two CAN produce
+        # somebody holding no authority row. Two gates in hr.can_approve stop them.
+        await as_owner()
+        pc_steps = await conn.fetch(
+            "select st.id, hr.wf_resolve_approvers(st.id)::text out from hr.workflow_step st "
+            "join hr.workflow_instance i on i.id = st.workflow_instance_id where i.flow_key='pay_change'")
+        pc_bad, pc_granted = [], 0
+        for _s in pc_steps:
+            _o = json.loads(_s["out"])
+            _ev = _o.get("evidence") or {}
+            if _o.get("granted"):
+                pc_granted += 1
+                if not (_ev.get("action_type") == "pay_change_approve" and _ev.get("authority_ids")):
+                    pc_bad.append((str(_s["id"]), "assigned without a named pay_change_approve authority"))
+                    continue
+                for _c in _o.get("candidates") or []:
+                    if not await conn.fetchval(
+                            "select exists(select 1 from hr.approval_authority a "
+                            " where a.action_type='pay_change_approve' and a.is_active "
+                            "   and hr._wf_holder_employments(a.holder_kind,a.holder_id,a.organization_id,"
+                            "                                 current_date) @> array[$1::uuid])", uuid.UUID(_c)):
+                        pc_bad.append((str(_s["id"]), f"candidate {_c} holds no authority row"))
+            elif _ev.get("fallback_chain") is None:
+                pc_bad.append((str(_s["id"]), "refused with no fallback chain recorded"))
+        rec("§1.4 pay carve-out",
+            "🚨 every live pay_change step is assigned ON pay_change_approve AUTHORITY — or refuses "
+            "with its fallback chain on record. The §1.4 carve-out entitles the HOLDER, so the "
+            "routing must require the holding",
+            bool(pc_steps) and not pc_bad,
+            f"{pc_granted} granted / {len(pc_steps)} steps; violations={pc_bad[:3]}")
+        # 🚨 GATE ONE, and the one that can actually drift. hr.can_approve RULE 2b is the ONLY rule
+        # that grants an action with NO authority row — the reporting-line rung the resolver walks.
+        # It is gated on `auto_record`, and pay_change_approve is require_second_actor, so a bare
+        # manager can never be handed a pay change. Drop that guard and the carve-out silently
+        # starts entitling bare managers to salaries.
+        rec("§1.4 pay carve-out",
+            "pay_change_approve is require_second_actor — so RULE 2b's auto_record guard excludes it",
+            await conn.fetchval("select hr._wf_two_actor_action('pay_change_approve')"))
+        rec("§1.4 pay carve-out",
+            "🚨 and RULE 2b STILL CARRIES that mode guard — the authority-free reporting-line grant "
+            "cannot reach a pay change",
+            await conn.fetchval(
+                "select prosrc ~ 'RULE 2b' and prosrc ~ "
+                "'coalesce\\(v_mode, ''require_second_actor''\\) = ''auto_record''' "
+                "from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='hr' and p.proname='can_approve'"))
+        rec("§1.4 pay carve-out",
+            "and RULE 3 (top of chart) is still reachable only for a subject with no manager at all",
+            await conn.fetchval(
+                "select prosrc ~ 'if not v_has_mgr then' from pg_proc p "
+                "join pg_namespace n on n.oid=p.pronamespace where n.nspname='hr' and p.proname='can_approve'"))
+        # RD 3 of hr_c4_34: the carve-out licenses a SUMMARY, so the digest must stay one.
+        rec("§1.4 pay carve-out",
+            "the digest's contract records WHY it renders — one number, both sides, never a history — "
+            "so the next reader does not re-file D282",
+            await conn.fetchval(
+                "select must_contain @> array['limit 1'] and must_not_contain @> array['array_agg'] "
+                "and reason like '%%carve-out%%' from hr.function_contract where schema_name='hr' "
+                "and function_name='_wf_pay_change_digest' and home_migration='hr_c4_34' and is_active"))
+
         rec("§4.2 the door",
             "the resolver's contract keeps BOTH halves — derive what the change needs, ask the audited door",
             await conn.fetchval(
