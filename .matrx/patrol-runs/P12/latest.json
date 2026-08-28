@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P12",
   "runId": "20260828T162115Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-28T16:21:26.591Z",
-  "summary": "Added a bounded identity-and-state-aware direct interactive-root detector with focused classification tests.",
+  "state": "certified",
+  "updatedAt": "2026-08-28T16:33:32.371Z",
+  "summary": "Independent adversarial review CERTIFIED the exact detector and duplicate-overlay candidate with no batch-caused defect.",
   "source": "20260828T162115Z.json",
-  "eventHash": "6ceaaa89db7ab5c336ef6614ff420ee1c7664b601c04b055caf57398f8ef5666"
+  "eventHash": "7edd0bae740bfebccd922dd2b50d9ceef49ea0b4bf6dcd5857579123f2f080e7"
 }

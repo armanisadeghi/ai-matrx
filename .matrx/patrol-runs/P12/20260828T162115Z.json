@@ -32,6 +32,43 @@
       ],
       "previousEventHash": "75503f32c54b9dd0c5579aaf0ffe41799d56ebb3957682b5a880b33a1cd9d7f4",
       "eventHash": "6ceaaa89db7ab5c336ef6614ff420ee1c7664b601c04b055caf57398f8ef5666"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-28T16:33:31.796Z",
+      "actor": "codex-p12-worker",
+      "summary": "Detector and duplicate-overlay repair batch passed worker gates and is ready for exact-SHA adversarial certification.",
+      "evidence": [
+        "type-check baseline and candidate output byte-identical and PASS",
+        "focused Jest 5/5 PASS; scoped ESLint, Prettier, diff-check, doctrine, surface-drift, routes, overlays, and interactive-root detector PASS",
+        "preview lease belongs to another checkout; no visual proof required because the batch changes no UI or runtime behavior"
+      ],
+      "previousEventHash": "6ceaaa89db7ab5c336ef6614ff420ee1c7664b601c04b055caf57398f8ef5666",
+      "eventHash": "51864c169558731ddaa04d06fb0f5a157dd95661e6c15f32aab6e8d389c0795e"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-28T16:33:32.371Z",
+      "actor": "codex-p12-certifier",
+      "summary": "Independent adversarial review CERTIFIED the exact detector and duplicate-overlay candidate with no batch-caused defect.",
+      "evidence": [
+        "overlay total 189, unique 189, duplicates 0; injected duplicate failed loudly and restoration was clean",
+        "classifier output remains an audit queue, never automatic Surface findings"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "2470f82af0a2726af49786c4a25a8451282e7a76",
+        "certifierTaskId": "/root/p12_certifier",
+        "checks": [
+          "type-check matched baseline PASS; focused Jest 5/5; scoped ESLint, Prettier, and diff-check passed",
+          "surface-drift, surface-routes, surface-overlays, and surface-interactive-roots passed on exact candidate",
+          "adversarial alias, fake primitive, explicit-state, action/subordinate exclusion, and provider evidence assertions passed"
+        ]
+      },
+      "previousEventHash": "51864c169558731ddaa04d06fb0f5a157dd95661e6c15f32aab6e8d389c0795e",
+      "eventHash": "7edd0bae740bfebccd922dd2b50d9ceef49ea0b4bf6dcd5857579123f2f080e7"
     }
   ]
 }
