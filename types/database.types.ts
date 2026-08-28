@@ -43785,6 +43785,15 @@ export type Database = {
         Args: { p_date: string; p_employment_id: string }
         Returns: Json
       }
+      leave_door_grant_audit: {
+        Args: never
+        Returns: {
+          checked_in: string
+          door: string
+          granted_to_authenticated: boolean
+          verdict: string
+        }[]
+      }
       leave_enroll: {
         Args: {
           p_effective_from?: string
