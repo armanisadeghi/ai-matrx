@@ -218,8 +218,20 @@ async def main() -> None:  # noqa: C901
             """
             with armed as (select hr.arm_write())
             insert into hr.leave_enrollment
-              (employment_id, leave_policy_id, effective_from, policy_year_start_on, organization_id)
-            select $1::uuid, $2::uuid, current_date - 200, date_trunc('year', current_date)::date, $3::uuid
+              (employment_id, leave_policy_id, effective_from, policy_year_start_on,
+               organization_id, metadata)
+            select $1::uuid, $2::uuid, current_date - 200, date_trunc('year', current_date)::date,
+                   $3::uuid,
+                   -- 🚨 THE §2.8 OVERRIDE, RECORDED. Round 31 found this fixture had enrolled a
+                   -- CONTRACTOR into a policy scoped to ['employee'] — through a raw INSERT that
+                   -- walked past `hr.leave_enroll`, the door that refuses exactly that. The gate
+                   -- now lives on the TABLE (hr_l5_25), so this insert is held to the same rule
+                   -- as any door: enrolling out of scope is allowed, deliberately and with a
+                   -- reason, and never by accident. The reason is why this row exists.
+                   jsonb_build_object('worker_class_override_reason',
+                     'ZZZ L5 PROOF fixture: this employment is a contractor and the policy covers '
+                     'employees. Enrolled deliberately so the lane proof can exercise the request, '
+                     'approval and ledger spine end to end.')
               from armed
              where not exists (
                      select 1 from hr.leave_enrollment e
@@ -786,6 +798,82 @@ async def main() -> None:  # noqa: C901
               and peerics.get("reason") == "not_subscribable", str(peerics)[:250])
         check("the control is meaningful — the same door granted the manager",
               isinstance(ics, dict) and ics.get("granted") is True, "the manager was refused too")
+
+
+        print("\n=== 17. Worker class is a GATE, not a preference (§2.8, §3.2 cond. 5, D8) ===")
+        # Round 31 found a CONTRACTOR enrolled in a policy scoped to ['employee'] — written by a
+        # raw INSERT in this very script, past the door that refuses exactly that. The rule now
+        # lives on the TABLE, so no writer can miss it.
+        refused = None
+        try:
+            await conn.execute(
+                "do $$ begin perform hr.arm_write(); "
+                "insert into hr.leave_enrollment (employment_id, leave_policy_id, effective_from, "
+                "  policy_year_start_on, organization_id) values "
+                f"($tok${EMPLOYEE}$tok$::uuid, $tok${PROOF_POLICY_ID}$tok$::uuid, current_date + 400, "
+                f" date_trunc('year', current_date)::date, $tok${ORG}$tok$::uuid); end $$;")
+        except asyncpg.PostgresError as exc:
+            refused = str(exc)
+        check("an ACCIDENTAL out-of-scope enrolment is refused BY NAME",
+              refused is not None and "LEAVE_ENROLLMENT_OUT_OF_WORKER_CLASS_SCOPE" in refused,
+              str(refused)[:200])
+        check("and the refusal names the class, the policy and the scope",
+              refused is not None and "contractor" in refused and "employee" in refused,
+              str(refused)[:200])
+
+        # A back-dated enrolment must not be able to outrun the gate (hr_l5_26).
+        wc = await conn.fetchval(
+            "select hr._leave_worker_class_ok($1::uuid, $2::uuid, $3::date)",
+            EMPLOYEE, policy_id, date(2026, 2, 9))
+        wc = json.loads(wc)
+        check("a date BEFORE the person's assignment still resolves their worker class",
+              wc.get("worker_class") == "contractor", str(wc))
+        check("and it says which rung answered, rather than answering silently",
+              wc.get("worker_class_basis") is not None, str(wc))
+
+        # The existing row is SURFACED, never deleted.
+        oos = await conn.fetch(
+            "select employment_id, worker_class, override_reason, created_by_a_door "
+            "  from hr.leave_enrollments_out_of_scope($1::uuid)", ORG)
+        check("the out-of-scope enrolment is SURFACED, not deleted",
+              any(str(r["employment_id"]) == EMPLOYEE for r in oos),
+              str([dict(r) for r in oos])[:300])
+        check("and its deliberate override is recorded against it",
+              all(r["override_reason"] for r in oos if str(r["employment_id"]) == EMPLOYEE),
+              str([dict(r) for r in oos])[:300])
+
+        # The FOURTH refusal, with the FOURTH name — asserted with the override removed inside a
+        # transaction that is rolled back, so the fixture is untouched.
+        tx = conn.transaction()
+        await tx.start()
+        try:
+            await conn.execute(
+                "select set_config('request.jwt.claims', $1, true)",
+                json.dumps({"sub": EMPLOYEE_USER, "role": "authenticated"}))
+            await conn.execute(
+                "do $$ begin perform hr.arm_write(); "
+                "update hr.leave_enrollment set metadata = metadata - 'worker_class_override_reason' "
+                f" where employment_id = $tok${EMPLOYEE}$tok$::uuid "
+                f"   and leave_policy_id = $tok${PROOF_POLICY_ID}$tok$::uuid; end $$;")
+            no_ovr = json.loads(await conn.fetchval(
+                "select hr.leave_request_submit($1::uuid, $2::uuid, current_date + 40, current_date + 40)",
+                EMPLOYEE, policy_id))
+            check("submit refuses an out-of-scope worker class with its OWN name",
+                  no_ovr.get("reason") == "worker_class_outside_policy_scope", str(no_ovr)[:250])
+            check("the refusal names the scope, the class and the sanctioned remedy",
+                  "contractor" in (no_ovr.get("detail") or "")
+                  and "reason recorded" in (no_ovr.get("detail") or ""),
+                  str(no_ovr.get("detail"))[:250])
+            # 🚨 A fourth fact got a FOURTH NAME. The earlier three must still be distinct.
+            body = await conn.fetchval(
+                "select pg_get_functiondef(p.oid) from pg_proc p join pg_namespace n "
+                "  on n.oid = p.pronamespace where n.nspname='hr' and p.proname='leave_request_submit'")
+            check("the three earlier refusals were not collapsed into the new one",
+                  all(k in body for k in ("policy_no_longer_exists", "policy_inactive",
+                                          "not_enrolled_on_these_dates")), "one of the three is gone")
+        finally:
+            # roll back: the override stays on the fixture, untouched by this probe
+            await tx.rollback()
 
     finally:
         if "--keep" not in sys.argv and policy_id:
