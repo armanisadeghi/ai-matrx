@@ -69,6 +69,22 @@
       },
       "previousEventHash": "51864c169558731ddaa04d06fb0f5a157dd95661e6c15f32aab6e8d389c0795e",
       "eventHash": "7edd0bae740bfebccd922dd2b50d9ceef49ea0b4bf6dcd5857579123f2f080e7"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-28T16:35:14.661Z",
+      "actor": "codex-p12-controller",
+      "summary": "Certified P12 candidate preserved and queued for fast integration",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P12/20260828T162115Z"
+      ],
+      "delivery": {
+        "candidateSha": "2470f82af0a2726af49786c4a25a8451282e7a76",
+        "preservedRef": "refs/heads/patrol-runs/P12/20260828T162115Z"
+      },
+      "previousEventHash": "7edd0bae740bfebccd922dd2b50d9ceef49ea0b4bf6dcd5857579123f2f080e7",
+      "eventHash": "a4b8223458455d1eb0b2a1f8f561e583af1197a88ffc3086c6ed4ef56df6eb0e"
     }
   ]
 }
