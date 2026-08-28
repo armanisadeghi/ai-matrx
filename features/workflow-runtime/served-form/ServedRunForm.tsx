@@ -133,7 +133,11 @@ export function ServedRunForm({
       {!state.form.surfaceServed && (
         <ServedFormScream
           title="This backend serves no input surface"
-          body="The run-form response carried no `inputs` array, so the reachable server predates the compiled input surface. Nothing below is a real declaration — point at a server that serves it."
+          body={
+            state.form.derivedFromSections
+              ? "The run-form response carried no `inputs` array, so the reachable server predates the compiled input surface. The fields below were reconstructed from the response's older `sections` schema: no input can be marked as one a person must answer EVERY run, no kind is declared (so a named presentation variant cannot resolve), and nothing can be shown as pinned. Point at a server that serves the surface."
+              : "The run-form response carried no `inputs` array and no readable `sections` schema either, so the reachable server predates the compiled input surface and told us nothing about what this workflow asks for. Nothing below is a real declaration — point at a server that serves it."
+          }
         />
       )}
       {kindError && (

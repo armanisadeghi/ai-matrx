@@ -78,6 +78,20 @@ export interface ServedRunFormSchema {
    * so rather than render an empty "needs nothing from you" lie.
    */
   surfaceServed: boolean;
+  /**
+   * The inputs above were reconstructed from the response's older `sections`
+   * shape because `inputs` was absent. THE DEGRADED PATH, and it is degraded
+   * in exactly two ways the reader must be told about: no sourcing rule was
+   * declared (everything reads as `require` or `optional` from the schema's
+   * `required` list, so nothing is known to need a human EVERY run), and no
+   * kind was declared (the kind is mapped from the JSON Schema type, so a
+   * named presentation variant cannot resolve).
+   *
+   * It is still SERVED — the schema comes from the same endpoint, not from a
+   * client-side reading of the graph — which is the whole reason the legacy
+   * `deriveRunForm` branch could be deleted rather than kept beside it.
+   */
+  derivedFromSections: boolean;
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -126,20 +140,103 @@ export function parseServedInput(raw: unknown): ServedInput | null {
   };
 }
 
+/** JSON Schema `type` → the registered primitive kind for the skew fallback. */
+function kindFromJsonType(jsonSchema: Record<string, unknown>): string {
+  switch (jsonSchema.type) {
+    case "number":
+    case "integer":
+      return "number";
+    case "boolean":
+      return "boolean";
+    case "object":
+    case "array":
+      return "json";
+    default:
+      return "text";
+  }
+}
+
+/**
+ * THE VERSION-SKEW FALLBACK — the older `sections[].json_schema` shape read as
+ * a served surface.
+ *
+ * A backend that predates the compiled input surface answers `/run-form` with
+ * `sections`, each carrying a JSON Schema for one `io.user_input` node. That
+ * schema is still the SERVER's answer to "what does this workflow ask for",
+ * which is why it replaced the client-side `deriveRunForm` derivation the
+ * moment that derivation was deleted: same question, same authority, older
+ * shape.
+ *
+ * What it cannot recover, and what the caller must therefore say out loud:
+ *  · SOURCING. The old shape has `required` and nothing else, so `ask` — "a
+ *    person answers this EVERY run" — cannot exist here. Required becomes
+ *    `require`, which a declared default satisfies. A workflow that genuinely
+ *    needs a fresh human answer every run will NOT be gated for one.
+ *  · KIND. Mapped from the JSON Schema type, so a named presentation variant
+ *    on the real kind cannot resolve and the field falls to the type default.
+ *  · PINNING. A mandate-pinned value is a surface-era concept; nothing here
+ *    is read-only, because the old shape cannot express it.
+ */
+export function servedInputsFromSections(raw: unknown): ServedInput[] {
+  if (!Array.isArray(raw)) return [];
+  const inputs: ServedInput[] = [];
+  const seen = new Set<string>();
+  for (const section of raw) {
+    if (!isRecord(section)) continue;
+    const schema = isRecord(section.json_schema) ? section.json_schema : {};
+    const properties = isRecord(schema.properties) ? schema.properties : {};
+    const required = new Set(
+      Array.isArray(schema.required)
+        ? schema.required.filter((r): r is string => typeof r === "string")
+        : [],
+    );
+    const nodeId = typeof section.node_id === "string" ? section.node_id : null;
+    for (const [name, rawProperty] of Object.entries(properties)) {
+      // Name-unique, like the surface it stands in for: two nodes declaring
+      // the same key would send one value to both, so the first wins and the
+      // second is dropped rather than silently overwriting it.
+      if (!name || seen.has(name)) continue;
+      seen.add(name);
+      const property = isRecord(rawProperty) ? rawProperty : {};
+      inputs.push({
+        name,
+        kind: kindFromJsonType(property),
+        sourcing: required.has(name) ? "require" : "optional",
+        variant: null,
+        default: property.default ?? null,
+        label: str(property.title) || name,
+        help: str(property.description),
+        placeholder: "",
+        options: Array.isArray(property.enum)
+          ? property.enum.filter((o): o is string => typeof o === "string")
+          : [],
+        origin: "field",
+        nodeId,
+        jsonSchema: property,
+        required: required.has(name),
+        pinned: false,
+        readOnly: false,
+        pinnedValue: null,
+      });
+    }
+  }
+  return inputs;
+}
+
 /** Parse the whole served run-form body. */
 export function parseServedRunForm(raw: unknown): ServedRunFormSchema {
   const body = isRecord(raw) ? raw : {};
   const rawInputs = body.inputs;
   const served = Array.isArray(rawInputs);
+  const inputs = served
+    ? rawInputs.map(parseServedInput).filter((i): i is ServedInput => i !== null)
+    : servedInputsFromSections(body.sections);
   return {
     definitionId: str(body.definition_id),
     version: typeof body.version === "number" ? body.version : 0,
-    inputs: served
-      ? rawInputs
-          .map(parseServedInput)
-          .filter((i): i is ServedInput => i !== null)
-      : [],
+    inputs,
     surfaceServed: served,
+    derivedFromSections: !served && inputs.length > 0,
   };
 }
 

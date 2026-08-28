@@ -16,6 +16,7 @@ import {
   partitionBySourcing,
   readInputsRequiredGaps,
   seedServedValues,
+  servedInputsFromSections,
   unsatisfiedServedInputs,
 } from "../served-input";
 import { valueTypeFromJsonSchema } from "../kind-source";
@@ -254,5 +255,118 @@ describe("value type for the resolver's last rung", () => {
     expect(valueTypeFromJsonSchema({ type: "boolean" })).toBe("boolean");
     expect(valueTypeFromJsonSchema({ type: "array" })).toBe("array");
     expect(valueTypeFromJsonSchema({})).toBe("string");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// THE VERSION-SKEW FALLBACK
+// ---------------------------------------------------------------------------
+
+/**
+ * A server that predates the compiled input surface, verbatim: the shape
+ * GET /workflows/{id}/run-form answered with for definition
+ * fd6cea24-… before `inputs` existed — `sections`, each a JSON Schema.
+ */
+const SKEW_BODY = {
+  definition_id: "fd6cea24-af30-451d-886a-34e56271ba50",
+  version: 3,
+  sections: [
+    {
+      node_id: "ask",
+      title: "The Elements of Style — the Strunk Canon",
+      json_schema: {
+        type: "object",
+        properties: {
+          document: {
+            title: "The text (verbatim)",
+            type: "string",
+            "ui:widget": "textarea",
+          },
+          notes: {
+            title: "Facts that must not change",
+            type: "string",
+            default: "",
+          },
+          passes: { title: "Passes", type: "integer", default: 2 },
+        },
+        required: ["document"],
+      },
+    },
+  ],
+};
+
+describe("the version-skew fallback reads the older `sections` schema", () => {
+  const form = parseServedRunForm(SKEW_BODY);
+
+  it("is honest that no surface was served, and says where the fields came from", () => {
+    expect(form.surfaceServed).toBe(false);
+    expect(form.derivedFromSections).toBe(true);
+    expect(form.inputs.map((i) => i.name)).toEqual([
+      "document",
+      "notes",
+      "passes",
+    ]);
+  });
+
+  it("keeps what the schema really declares — label, default, value contract", () => {
+    const [document, notes, passes] = form.inputs;
+    expect(document.label).toBe("The text (verbatim)");
+    expect(document.sourcing).toBe("require");
+    expect(notes.sourcing).toBe("optional");
+    expect(passes.default).toBe(2);
+    expect(passes.kind).toBe("number");
+    expect(document.kind).toBe("text");
+  });
+
+  it("never invents `ask`, a variant, or a pin — the old shape cannot express them", () => {
+    // This is the guarantee the banner has to state: an input a person must
+    // answer EVERY run is indistinguishable here from one a default satisfies.
+    for (const input of form.inputs) {
+      expect(input.sourcing).not.toBe("ask");
+      expect(input.variant).toBeNull();
+      expect(input.pinned).toBe(false);
+      expect(input.readOnly).toBe(false);
+    }
+  });
+
+  it("stays name-unique: a key two nodes both claim is kept once", () => {
+    const inputs = servedInputsFromSections([
+      ...SKEW_BODY.sections,
+      {
+        node_id: "ask2",
+        json_schema: {
+          type: "object",
+          properties: { document: { title: "Text again", type: "string" } },
+        },
+      },
+    ]);
+    expect(inputs.filter((i) => i.name === "document")).toHaveLength(1);
+    expect(inputs.find((i) => i.name === "document")?.label).toBe(
+      "The text (verbatim)",
+    );
+  });
+
+  it("degrades to nothing — never to a lie — when there is no schema either", () => {
+    const empty = parseServedRunForm({ definition_id: "x", version: 1 });
+    expect(empty.surfaceServed).toBe(false);
+    expect(empty.derivedFromSections).toBe(false);
+    expect(empty.inputs).toEqual([]);
+  });
+
+  it("still gates and submits by THE one law once derived", () => {
+    const values = seedServedValues(form.inputs);
+    expect(values.passes).toBe(2);
+    // `document` is required and has no default: it blocks until typed.
+    expect(
+      unsatisfiedServedInputs(form.inputs, values, new Set()).map((i) => i.name),
+    ).toEqual(["document"]);
+    const typed = { ...values, document: "Their being late was due to..." };
+    const touched = new Set(["document"]);
+    expect(unsatisfiedServedInputs(form.inputs, typed, touched)).toEqual([]);
+    // Only what the person typed travels, stamped `human`.
+    expect(buildSubmission(form.inputs, typed, touched)).toEqual({
+      inputs: { document: "Their being late was due to..." },
+      inputSources: { document: "human" },
+    });
   });
 });

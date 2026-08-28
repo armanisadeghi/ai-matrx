@@ -25,7 +25,6 @@ import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { toast } from "@/lib/toast";
 
-import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
 import {
   fetchRunDefinitionId,
   fetchWorkflowDefinition,
@@ -80,7 +79,6 @@ export function WorkflowRunPage({
   const [workflow, setWorkflow] = useState<LoadedWorkflow | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const { startRun, starting } = useWorkflowRunControls();
 
   // A run permalink knows its definition — that is how a `?run=` deep link and
   // a mid-run refresh restore the workflow they were started from.
@@ -158,22 +156,12 @@ export function WorkflowRunPage({
     [definitionId, router],
   );
 
-  const begin = useCallback(
-    async (nodeInputs: Record<string, Record<string, unknown>>) => {
-      if (!definitionId) return;
-      const started = await startRun({ definitionId, nodeInputs });
-      if (!started) return;
-      adopt(started);
-    },
-    [adopt, definitionId, startRun],
-  );
-
   /**
    * "Run it again" always returns to the start surface. What a workflow asks
-   * for is the SERVED surface's answer, not a client-side derivation of it —
-   * so the page no longer guesses with `deriveRunForm` in order to skip the
-   * form. A workflow that asks for nothing shows one button and one click,
-   * which the form itself renders.
+   * for is the SERVED surface's answer, and there is no client-side derivation
+   * of it left anywhere — so the page never guesses in order to skip the form.
+   * A workflow that asks for nothing shows one button and one click, which the
+   * form itself renders.
    */
   const runAgain = useCallback(() => {
     if (!definitionId) return;
@@ -299,10 +287,7 @@ export function WorkflowRunPage({
         <div className="mt-5">
           <RunStartForm
             definitionId={workflow.id}
-            definition={workflow.definition}
-            starting={starting}
             startLabel="Run it"
-            onStart={(nodeInputs) => void begin(nodeInputs)}
             onStarted={adopt}
             onCancel={() => {
               if (runId) setShowForm(false);

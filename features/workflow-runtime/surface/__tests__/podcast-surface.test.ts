@@ -4,19 +4,22 @@
  * f6d0e4b2-7a91-4c58-b3aa-51e9c2d7f804). Like the Study Pack fixture, this
  * IS the stored config, verbatim: it must parse warning-free, validate
  * clean, and every trigger id must exist in the definition's vocabulary.
- * The definition additionally proves the generated run-start form: its
- * io.user_input node is what deriveRunForm turns into the pre-run form.
+ *
+ * It no longer proves a run form: the pre-run form is the SERVED input surface
+ * (`GET /workflows/{id}/run-form`), so nothing client-side turns this
+ * definition's `io.user_input` node into fields any more. What that node
+ * declares is now the SERVER's business, and the surface's own tests are in
+ * `served-form/__tests__/served-input.test.ts`.
  */
 
 import { parseSurfaceConfig, validateSurfaceConfig } from "../config";
-import { deriveRunForm, seedRunFormValues } from "../run-form";
 import {
   deriveTriggerPoints,
   type WorkflowDefinitionLike,
 } from "../../trigger-points";
 
 /** Node/edge skeleton of "Podcast Episode v1", including the io.user_input
- * node's stored config verbatim (the run form derives from it). */
+ * node's stored config verbatim. */
 const PODCAST_DEF: WorkflowDefinitionLike = {
   nodes: [
     {
@@ -145,28 +148,5 @@ describe("Podcast authored surface", () => {
         for (const id of source.nodeIds) expect(nodeIds.has(id)).toBe(true);
       }
     }
-  });
-
-  it("generates the run-start form from the Collect Inputs node", () => {
-    const sections = deriveRunForm(PODCAST_DEF);
-    expect(sections).toHaveLength(1);
-    const section = sections[0];
-    expect(section.nodeId).toBe("inputs");
-    expect(section.fields.map((f) => f.key)).toEqual([
-      "topic",
-      "host_count",
-      "format",
-      "theme",
-      "test_run",
-    ]);
-    const topic = section.fields[0];
-    expect(topic.required).toBe(true);
-    expect(topic.type).toBe("long_text");
-    // Seeded defaults: the quick-test toggle starts ON so a first run is
-    // cheap, and the format choice starts on its stored default.
-    const values = seedRunFormValues(sections);
-    expect(values.inputs.test_run).toBe(true);
-    expect(values.inputs.format).toBe("educational");
-    expect(values.inputs.host_count).toBe(2);
   });
 });
