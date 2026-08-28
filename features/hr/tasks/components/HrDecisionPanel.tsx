@@ -22,6 +22,7 @@ import {
 } from "@/features/hr/tasks/service";
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
 import { relativeDue } from "@/features/hr/tasks/urgency";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 import type {
     HrDecisionIntent,
     HrInboxChange,
@@ -125,6 +126,9 @@ export function HrDecisionPanel({
     }, [loading, detail]);
 
     const instance: Row = detail?.instance ?? {};
+    // The viewer's own employment, which is how "is this my request?" is answered.
+    const { active } = useHrContext();
+    const employmentId = active?.employment_id ?? null;
     const steps: Row[] = detail?.steps ?? [];
     const step = stepId ? steps.find((s) => s.id === stepId) : steps.find((s) => s.state === "active");
     const restricted = str(instance, "sensitivity_tier") === "restricted";
@@ -160,6 +164,31 @@ export function HrDecisionPanel({
           })
         : [];
     const stepDigest = str(shownStep, "digest");
+
+    /*
+      🚨 ONE LABEL PATH FOR OPEN AND CLOSED. `flow_label` is decorated onto STEPS,
+      and `shownStep` is the ACTIVE one — which a closed instance does not have. So
+      the heading fell back to the raw `flow_key` the moment a request finished, and
+      the closed record is exactly what somebody reads months later. Any decorated
+      step carries the same label, so the label is taken from whichever one has it.
+    */
+    const flowLabel =
+        str(shownStep, "flow_label") ||
+        str(steps.find((s) => str(s, "flow_label")), "flow_label") ||
+        str(instance, "flow_key");
+
+    /*
+      🚨 NEVER-APPROVE-YOURSELF IS THE ONE DECISION THIS RULE EXISTS FOR.
+      The door is right — it refuses the subject with WF_NOT_APPROVER and an audit
+      id — but four controls whose ONLY possible outcome is that refusal sat on the
+      subject's own request. SPEC-UI-IA §4.2: an action the surface's law says can
+      NEVER be performed is ABSENT, with its reason worded where it would have been.
+      "Never" is exact here: separation of duties does not soften with time, another
+      approver, or a different date, so a disabled button would imply a state that
+      cannot arrive.
+    */
+    const viewerIsSubject =
+        !!employmentId && employmentId === str(instance, "subject_employment_id");
     const openFailures = (detail?.failures ?? []).filter(
         (f) => f.state === "open" || f.state === "retrying",
     );
@@ -247,7 +276,7 @@ export function HrDecisionPanel({
                                     and was being shown as the heading of the whole screen. */}
                                 {(() => {
                                     const kind =
-                                        str(shownStep, "flow_label") || str(instance, "flow_key");
+                                        flowLabel;
                                     return detail.subject_label
                                         ? `${kind} — ${detail.subject_label}`
                                         : kind;
@@ -347,6 +376,14 @@ export function HrDecisionPanel({
                                         </span>
                                     ) : null}
                                 </div>
+                                {viewerIsSubject ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        This is your own request, so it is not yours to
+                                        decide — somebody else approves it. You can see
+                                        where it has got to above.
+                                    </p>
+                                ) : (
+                                  <>
                                 <Textarea
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
@@ -392,6 +429,8 @@ export function HrDecisionPanel({
                                         Escalate
                                     </Button>
                                 </div>
+                                  </>
+                                )}
                             </section>
                         ) : (
                             <section className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
