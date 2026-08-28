@@ -163,6 +163,7 @@ export function GoogleBackgroundAgentCard({ topicId }: { topicId: string }) {
 
       {!view || TERMINAL.has(view.status) ? (
         <div className="grid gap-3 sm:grid-cols-[18rem_minmax(0,1fr)]">
+          {/* canonical-model-picker-exempt: Google background-agent wire enum, not an ai.model_definition id */}
           <label className="space-y-1 text-xs font-medium">
             Agent
             <select

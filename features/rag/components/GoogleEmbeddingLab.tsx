@@ -90,6 +90,7 @@ export function GoogleEmbeddingLab() {
           </header>
 
           <section className="grid gap-4 rounded-xl border border-border/60 bg-card p-4 sm:grid-cols-3">
+            {/* canonical-model-picker-exempt: Google embedding request enum, not an ai.model_definition id */}
             <label className="space-y-1 text-xs font-medium">
               Model
               <select

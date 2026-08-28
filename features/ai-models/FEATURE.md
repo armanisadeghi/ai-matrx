@@ -15,6 +15,15 @@ must obey.
 
 ## 🚨 Rules
 
+- **There is ONE platform model picker: `components/lab/ModelListDropdown.tsx`.** Every UI that
+  chooses an `ai.model_definition` row renders that component, directly or through a thin settings/
+  run-control adapter. Constrain it with `allowedModelIds`, `catalogVariant`, `inputModalities`,
+  `outputModalities`, `emptyOptionLabel`/`onClear`, `priorityModelIds`, and trigger styling — never
+  fork its roster. Search, filters, sort, favorites, details, mobile drawer, and the admin catalog
+  are inseparable parts of model choice. Provider wire-model enums (Cartesia/Google/test harnesses)
+  are a different identity domain and require a nearby reasoned `canonical-model-picker-exempt:`
+  comment. Guard (also protects the ONE agent picker): `pnpm check:canonical-pickers`, blocking in
+  release gates.
 - **Read the VIEWS, never the dropped columns.** `ai.model_public` (picker/options), `ai.model_config`
   (resolved controls/constraints, `'full'` records), `admin_model_catalog()` / `admin_model_offerings()`
   RPCs for anything admin. `ai.model_admin` and `ai.model_offering_admin` have postgres-only grants —
@@ -65,6 +74,10 @@ must obey.
 
 ## Change log
 
+- `2026-08-28` — Consolidated every platform model-selection surface onto `ModelListDropdown`,
+  including Model Settings, chat overrides, comparisons, imports, user defaults, observational
+  memory, and admin relationship editors; deleted `SmartModelSelect` and added the blocking
+  `check:canonical-pickers` guard for both model and agent picker forks.
 - `2026-08-26` — Restored directly comparable input, cached-input, and output provider pricing on
   both admin catalog tables, with each value labeled by its real billing unit.
 - `2026-08-25` — Restored the admin registry's single mobile scrollport so sticky identity and

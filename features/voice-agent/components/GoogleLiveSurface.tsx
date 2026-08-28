@@ -47,6 +47,7 @@ export function GoogleLiveSurface() {
           Voice playground
         </Link>
         <div className="flex min-w-0 items-center gap-2">
+          {/* canonical-model-picker-exempt: Google Live wire model, not an ai.model_definition id */}
           <select
             aria-label="Google Live model"
             value={model}

@@ -208,6 +208,7 @@ export function TtsTesterPanel({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
+        {/* canonical-model-picker-exempt: TTS provider test wire model, not an ai.model_definition id */}
         <Field label="Model">
           <select
             className={selectCls}
