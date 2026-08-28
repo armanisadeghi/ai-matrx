@@ -239,6 +239,14 @@ const EXPECTED_CHECKS = [
   // expected=true is a FALSE NEGATIVE: an over-firing detector gets investigated, a blind one lets
   // a STABLE door write in silence.
   "edge_matcher_sees_every_call_shape",
+  // hr_l3_87. CREATE OR REPLACE FUNCTION with a CHANGED SIGNATURE does not replace — it creates an
+  // OVERLOAD, and PostgREST then answers PGRST203 "could not choose the best candidate", a SILENT
+  // KILL of the whole door. Measured on hr_leave_enroll before this shipped: the 3-arg call returned
+  // HTTP 300 while the 4-arg returned 200, so the door was dead for exactly the callers using the
+  // older shape — which is why it is easy to miss, since whoever adds the parameter tests WITH the
+  // parameter. Inner hr.* overloads are legitimate and out of scope. A door that genuinely needs two
+  // signatures declares overloads_intended on its contract row (D13), never an exemption list.
+  "doors_resolve_to_one_signature",
   // hr_l3_81. A SECURITY DEFINER function created without an explicit revoke carries the implicit
   // PUBLIC execute grant, so it runs AS ITS OWNER for anyone who can reach it. L1 found four of its
   // own returning a home address, a salary and a leave request with no permission check of their
