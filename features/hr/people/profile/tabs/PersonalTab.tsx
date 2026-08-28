@@ -21,12 +21,14 @@
 // audited DOOR with a required justification, returned once, never cached —
 // never a toggle, never a reveal-on-hover, never in component state.
 
+import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { announceComingSoon } from "@/lib/coming-soon/announce";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
+import { updateHrEmployee } from "@/features/hr/service";
 
 import {
   SensitiveFieldList,
@@ -211,7 +213,11 @@ export function PersonalTab({
 
       {/* ── The Confidential half ─────────────────────────────────────────── */}
       {personal.private_state === "not_collected" ? (
-        <NotCollected />
+        <NotCollected
+          employeeId={profile.header.employee_id}
+          canCreate={profile.capabilities.includes("identity.write")}
+          onCreated={() => onChanged?.()}
+        />
       ) : priv && hasAnyVisibleField(priv, PRIVATE_FIELDS.map((f) => f.name)) ? (
         <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -502,8 +508,33 @@ function HomeAddress({ priv }: { priv: HrProfilePrivate }) {
  * 🚨 NOT BLANK FIELDS. There is no `hr.employee_private` row for this person at
  * all. A grid of empty inputs would read as "we asked and they left it blank",
  * which is a different and wrong fact.
+ *
+ * 🚨 AND THE BUTTON NOW DOES THE THING IT NAMES. It used to call
+ * `announceComingSoon("hr.people.custom-fields")` — the wrong key AND the wrong
+ * idea: it popped a notice about custom fields, a different feature, at somebody
+ * who had asked to record a home address. Underneath that was a real gap: no
+ * surface anywhere created an `hr.employee_private` row, so a person who lacked
+ * one could never acquire personal details, an address, or the self-service
+ * controls that hang off them — the whole Confidential half was unreachable for
+ * them, permanently and silently.
+ *
+ * SPEC-UI-IA: the surface that owns confidential fields owns their creation. That
+ * is this panel, so creation lives here rather than in a new wizard. The door is
+ * the SAME one that edits them (`hr_employee_update` inserts the row when the
+ * patch carries `private` and none exists) — no new write path, no new pattern.
  */
-function NotCollected() {
+function NotCollected({
+  employeeId,
+  canCreate,
+  onCreated,
+}: {
+  employeeId: string;
+  /** `identity.write` — the capability that governs the Confidential half. */
+  canCreate: boolean;
+  onCreated?: () => void;
+}) {
+  const [creating, setCreating] = useState(false);
+
   return (
     <section className="space-y-2 rounded-lg border border-dashed border-border p-3">
       <h3 className="text-sm font-semibold text-foreground">Personal details</h3>
@@ -511,15 +542,46 @@ function NotCollected() {
         Not collected. Nobody has recorded personal details for this person —
         which is normal for a contractor who supplied only a W-9.
       </p>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        className="min-h-11 sm:min-h-9"
-        onClick={() => void announceComingSoon("hr.people.custom-fields")}
-      >
-        Collect personal details
-      </Button>
+      {canCreate ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="min-h-11 sm:min-h-9"
+          disabled={creating}
+          onClick={async () => {
+            setCreating(true);
+            // An EMPTY private patch: this starts the record, it does not invent
+            // a value. The fields then render as "Not provided", which is true,
+            // where before there was no field to provide anything to.
+            const result = await updateHrEmployee({
+              employeeId,
+              patch: { private: {} },
+            });
+            setCreating(false);
+            if (!result.ok) {
+              toast.error(
+                result.kind === "denied"
+                  ? result.detail?.trim() ||
+                      "Personal details cannot be started for this person."
+                  : result.message,
+              );
+              return;
+            }
+            toast.success(
+              "Personal details started. The fields are ready to fill in.",
+            );
+            onCreated?.();
+          }}
+        >
+          {creating ? "Starting…" : "Collect personal details"}
+        </Button>
+      ) : (
+        // §4.2: no dead control. Someone who cannot do it is told who can.
+        <p className="text-[0.6875rem] text-muted-foreground">
+          HR starts this record — it holds confidential fields.
+        </p>
+      )}
     </section>
   );
 }
