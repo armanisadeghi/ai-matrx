@@ -133157,6 +133157,23 @@
             "title": "Client Secret",
             "description": "Dynamic-registration client secret that must outlive the callback — stored sealed in the same vault item."
           },
+          "token_endpoint_auth_method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "client_secret_basic",
+                  "client_secret_post",
+                  "none"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token Endpoint Auth Method",
+            "description": "OAuth client authentication method selected from provider metadata. Omitted legacy requests infer basic when a client secret is present and none otherwise."
+          },
           "transport": {
             "type": "string",
             "title": "Transport",

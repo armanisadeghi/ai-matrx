@@ -51445,6 +51445,11 @@ export interface components {
              */
             client_secret?: string | null;
             /**
+             * Token Endpoint Auth Method
+             * @description OAuth client authentication method selected from provider metadata. Omitted legacy requests infer basic when a client secret is present and none otherwise.
+             */
+            token_endpoint_auth_method?: ("client_secret_basic" | "client_secret_post" | "none") | null;
+            /**
              * Transport
              * @default http
              */
