@@ -320,27 +320,48 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
 
   // ── Save / remove ─────────────────────────────────────────────────────────
   const [busy, setBusy] = useState(false);
-  const holderChosen = Boolean(effectiveAgentId);
+  // The bind gate's refusal, kept ON THE PAGE. Its messages name the exact
+  // missing deliverable kind or the exact input the workflow does not accept —
+  // far too useful to live only in a toast that disappears in four seconds.
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const holderChosen =
+    holderKind === "workflow" ? Boolean(workflowId) : Boolean(effectiveAgentId);
   const mapProblems =
-    data.offer && holderChosen
+    data.offer && holderKind === "agent" && holderChosen
       ? consumptionMapProblems(data.offer, draftMap)
       : [];
-  const canSave = holderChosen && verdict.passed && mapProblems.length === 0 && !busy;
+  const canSave =
+    holderChosen &&
+    !busy &&
+    (holderKind === "workflow"
+      ? // No client pre-flight exists for a workflow Holder — the server's
+        // gate is the judge, and it is allowed to say no.
+        true
+      : verdict.passed && mapProblems.length === 0);
 
   async function save() {
     setBusy(true);
+    setSaveError(null);
     try {
       const captured = overridesReady
         ? selectSettingsOverridesForApi(overridesId)(store.getState())
         : undefined;
       const payload = buildBindingSavePayload({
-        holder: {
-          agentId: useLatest ? effectiveAgentId : null,
-          agentVersionId: useLatest ? null : agentVersionId,
-          useLatest,
-        },
+        holder:
+          holderKind === "workflow"
+            ? { kind: "workflow", workflowId: workflowId as string }
+            : {
+                agentId: useLatest ? effectiveAgentId : null,
+                agentVersionId: useLatest ? null : agentVersionId,
+                useLatest,
+              },
         hasProvision: Boolean(data.provisionKey),
-        consumptionMap: draftMap,
+        // A workflow Holder is delivered its inputs by NAME onto the compiled
+        // input surface; there is no per-target mapping editor for it yet, so
+        // the map is left empty and the server applies its default rule (every
+        // guaranteed offered value must land on the surface) — and says so
+        // verbatim when it cannot.
+        consumptionMap: holderKind === "workflow" ? {} : draftMap,
         capturedOverrides:
           captured === undefined
             ? undefined
@@ -351,14 +372,20 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
       });
       await putMandateBinding(dispatch, data.mandate.mandate_key, wirePrincipal, payload);
       toast.success(
-        principal.kind === "org"
-          ? "Your organization's agent now fulfils this job."
-          : "Your agent now fulfils this job.",
+        holderKind === "workflow"
+          ? principal.kind === "org"
+            ? "Your organization's workflow now fulfils this job."
+            : "Your workflow now fulfils this job."
+          : principal.kind === "org"
+            ? "Your organization's agent now fulfils this job."
+            : "Your agent now fulfils this job.",
       );
       onChanged();
     } catch (err) {
-      // The server's 422 detail VERBATIM — never flattened.
-      toast.error(err instanceof Error ? err.message : "Save failed.");
+      // The server's 422 detail VERBATIM — never flattened, and it STAYS.
+      const message = err instanceof Error ? err.message : "Save failed.";
+      setSaveError(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -391,7 +418,7 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
       <div className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card px-4 py-3">
         <p className="text-[13px] text-muted-foreground">
           The {data.bindings.some((b) => b.principal_type === "org") ? "current" : "system"}{" "}
-          agent fulfils this job for you.
+          Holder fulfils this job for you.
         </p>
         <Button size="sm" onClick={() => setFlow("editing")}>
           Override
@@ -406,22 +433,33 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
       <StepBlock index={1} title="Choose who fulfils it">
         <div className="flex flex-wrap items-center gap-2">
           <AgentListDropdown
-            label={effectiveAgentId ? "Change agent" : "Choose your agent"}
+            label={
+              holderKind === "agent" && effectiveAgentId
+                ? "Change agent"
+                : "Choose your agent"
+            }
             onSelect={(id) => {
+              setHolderKind("agent");
+              setWorkflowId(null);
               setAgentId(id);
               setAgentVersionId(null);
               setUseLatest(true);
             }}
           />
           <Button
-            variant="outline"
+            variant={holderKind === "workflow" ? "secondary" : "outline"}
             size="sm"
             className="gap-1.5"
-            onClick={() => void announceComingSoon("mandates.workflow-holder")}
+            onClick={() => {
+              setHolderKind("workflow");
+              setAgentId(null);
+              setAgentVersionId(null);
+            }}
           >
             <WorkflowIcon className="h-3.5 w-3.5" />
-            Use a Workflow
-            <Badge variant="outline" className="py-0 text-[9px]">Soon</Badge>
+            {holderKind === "workflow" && workflowId
+              ? "Change workflow"
+              : "Use a Workflow"}
           </Button>
           {myBinding ? (
             <Button
@@ -445,6 +483,14 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
             </Button>
           )}
         </div>
+        {holderKind === "workflow" ? (
+          <WorkflowHolderPicker
+            mandateOutputKind={data.mandate.output_kind}
+            value={workflowId}
+            onChange={setWorkflowId}
+            disabled={busy}
+          />
+        ) : null}
         {effectiveAgentId ? (
           <div className="mt-2 space-y-2">
             <EntityRef
@@ -473,7 +519,29 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
         ) : null}
       </StepBlock>
 
-      {/* Step 2 — Validation */}
+      {/* Step 2 — Validation. A WORKFLOW Holder is judged by the server's bind
+          gate alone: it compiles the graph, checks the deliverable kinds and
+          the compiled input surface. Guessing at that here would only produce
+          a second, weaker verdict. */}
+      {holderKind === "workflow" && workflowId ? (
+        <StepBlock index={2} title="Does it meet the mandate?">
+          <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+            Checked when you save. The server compiles this workflow and
+            confirms it can produce{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-[11px]">
+              {data.mandate.output_kind ?? "this mandate's output"}
+            </code>{" "}
+            and accept the values this job offers. If it can&apos;t, it says
+            exactly what is missing.
+          </p>
+          {saveError ? (
+            <p className="mt-2 flex items-start gap-1.5 text-[12.5px] leading-relaxed text-destructive">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              {saveError}
+            </p>
+          ) : null}
+        </StepBlock>
+      ) : null}
       {effectiveAgentId ? (
         <StepBlock index={2} title="Does it meet the mandate?">
           {verdict.checking ? (
@@ -558,28 +626,219 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
       ) : null}
 
       {/* Sticky-footer anatomy (BindingFormLayout shape, inline here). */}
-      {effectiveAgentId ? (
+      {effectiveAgentId || (holderKind === "workflow" && workflowId) ? (
         <div className="flex items-center justify-end gap-2 border-t border-border/40 pt-3">
           <Button
             variant="ghost"
             size="sm"
             disabled={busy}
             onClick={() => {
+              const stored = parseBindingWave1(myBinding);
+              setHolderKind(
+                stored.holderType === "workflow" ? "workflow" : "agent",
+              );
+              setWorkflowId(stored.holderId ?? null);
               setAgentId(myBinding?.agent_id ?? null);
               setAgentVersionId(myBinding?.agent_version_id ?? null);
               setUseLatest(myBinding ? myBinding.use_latest === true : true);
               setDraftMap(storedMap);
+              setSaveError(null);
               if (!myBinding) setFlow("collapsed");
             }}
           >
             Cancel
           </Button>
           <Button size="sm" disabled={!canSave} className="min-w-[110px]" onClick={() => void save()}>
-            {busy ? "Saving…" : myBinding ? "Save" : "Use my agent"}
+            {busy
+              ? "Saving…"
+              : myBinding
+                ? "Save"
+                : holderKind === "workflow"
+                  ? "Use this workflow"
+                  : "Use my agent"}
           </Button>
         </div>
       ) : null}
     </div>
+  );
+}
+
+// ── The workflow Holder picker ───────────────────────────────────────────────
+//
+// Workflows that DECLARE this mandate's output kind come first — those are the
+// ones the bind gate can accept on the declaration alone. The rest are listed,
+// not hidden: the gate also accepts a workflow whose computed DELIVERABLES
+// produce the kind, and deliverables are compiled from the graph, so no column
+// here can know. The gate decides; its refusals are shown verbatim.
+
+function WorkflowHolderPicker({
+  mandateOutputKind,
+  value,
+  onChange,
+  disabled,
+}: {
+  mandateOutputKind: string | null;
+  value: string | null;
+  onChange: (id: string | null) => void;
+  disabled: boolean;
+}) {
+  const [candidates, setCandidates] = useState<WorkflowHolderCandidates | null>(
+    null,
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchWorkflowHolderCandidates(mandateOutputKind)
+      .then((result) => {
+        if (!cancelled) {
+          setCandidates(result);
+          setError(null);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : String(err));
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mandateOutputKind]);
+
+  if (error) {
+    return (
+      <p className="mt-2 flex items-start gap-1.5 text-[12.5px] text-destructive">
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        Workflows could not be read: {error}
+      </p>
+    );
+  }
+  if (!candidates) {
+    return (
+      <p className="mt-2 text-[12px] text-muted-foreground">
+        Loading workflows…
+      </p>
+    );
+  }
+
+  const { matching, others } = candidates;
+  const shown = showAll ? [...matching, ...others] : matching;
+
+  return (
+    <div className="mt-2 space-y-2">
+      <p className="text-[11.5px] leading-relaxed text-muted-foreground">
+        {mandateOutputKind ? (
+          <>
+            This job answers in{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-[11px]">
+              {mandateOutputKind}
+            </code>
+            . {matching.length} workflow{matching.length === 1 ? "" : "s"}{" "}
+            declare{matching.length === 1 ? "s" : ""} it.
+          </>
+        ) : (
+          "This job declares no output kind, so no workflow can match on its declaration alone — the server decides when you save."
+        )}
+      </p>
+
+      {shown.length === 0 ? (
+        <p className="text-[12px] text-muted-foreground">
+          No workflow declares this kind.{" "}
+          {others.length > 0
+            ? "One of the others may still qualify through its deliverables."
+            : "Nothing to choose from."}
+        </p>
+      ) : (
+        <ul className="max-h-64 divide-y divide-border/40 overflow-y-auto rounded-lg border border-border/50">
+          {shown.map((workflow) => (
+            <WorkflowRow
+              key={workflow.id}
+              workflow={workflow}
+              selected={workflow.id === value}
+              disabled={disabled}
+              onSelect={() => onChange(workflow.id)}
+            />
+          ))}
+        </ul>
+      )}
+
+      {others.length > 0 ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-[11.5px] text-muted-foreground"
+          onClick={() => setShowAll((v) => !v)}
+        >
+          {showAll
+            ? `Show only the ${matching.length} that declare it`
+            : `Show all ${matching.length + others.length} workflows — the rest may still qualify through their deliverables`}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
+function WorkflowRow({
+  workflow,
+  selected,
+  disabled,
+  onSelect,
+}: {
+  workflow: WorkflowHolderCandidate;
+  selected: boolean;
+  disabled: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onSelect}
+        aria-pressed={selected}
+        className={cn(
+          "flex w-full items-start gap-2 px-3 py-2 text-left transition-colors",
+          selected ? "bg-muted/60" : "hover:bg-muted/30",
+        )}
+      >
+        <WorkflowIcon
+          className={cn(
+            "mt-0.5 h-3.5 w-3.5 shrink-0",
+            selected ? "text-primary" : "text-muted-foreground",
+          )}
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[12.5px] font-medium text-foreground">
+            {workflow.name}
+          </span>
+          {workflow.description ? (
+            <span className="block truncate text-[11px] text-muted-foreground">
+              {workflow.description}
+            </span>
+          ) : null}
+        </span>
+        {workflow.declaresMandateKind ? (
+          <Badge
+            variant="outline"
+            className="shrink-0 border-emerald-500/30 py-0 text-[9.5px] text-emerald-700 dark:text-emerald-400"
+          >
+            {workflow.outputKind}
+          </Badge>
+        ) : (
+          <Badge
+            variant="outline"
+            className="shrink-0 py-0 text-[9.5px] text-muted-foreground"
+          >
+            {workflow.outputKind ?? "undeclared"}
+          </Badge>
+        )}
+        {selected ? (
+          <CircleCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+        ) : null}
+      </button>
+    </li>
   );
 }
 

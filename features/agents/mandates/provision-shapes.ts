@@ -235,18 +235,19 @@ export function parseMandateWave1(row: object): MandateWave1Fields {
   };
 }
 
-// ── THE HOLDER LAW — only an 'agent' Holder EXECUTES in this wave ───────────
+// ── THE HOLDER LAW — what THIS repo's client resolver can run ───────────────
 
 /**
- * Holder types a RESOLVER may run. Mirror of aidream
- * `EXECUTABLE_HOLDER_TYPES` (`aidream/services/mandates/service.py`).
+ * Holder types the BROWSER-SIDE resolver may run.
  *
- * A `workflow` Holder is representable — the bind path accepts it, and such a
- * binding carries NO `agent_id` by construction — but it is deliberately NOT
- * executable yet. The server REFUSES it loudly rather than dropping a
- * deliberate binding on the floor; every client resolver must match that
- * posture (`holderNotExecutableMessage` below), because the alternative is the
- * binding silently evaporating into the system default.
+ * 🚨 This is a limit of the CLIENT path, not of the platform. Workflow Holders
+ * execute end to end on the server (`aidream/services/mandates/
+ * workflow_holder.py`): the workflow runs as a child run and answers with the
+ * deliverable whose kind is the mandate's output kind. But the client resolver
+ * exists to hand `POST /agents/{id}` an agent id — it has no channel to start
+ * a workflow run — so a workflow-bound mandate resolved HERE must refuse
+ * loudly and name the real reason. Silently falling back to the system default
+ * would run the wrong intelligence behind the user's back.
  */
 export const EXECUTABLE_HOLDER_TYPES: ReadonlySet<string> = new Set(["agent"]);
 
@@ -270,8 +271,9 @@ export function holderNotExecutableMessage(
   const which = bindingId ? ` (${bindingId})` : "";
   return (
     `mandate "${mandateKey}": ${where}${which} names a '${holderType}' Holder — ` +
-    "NOT IMPLEMENTED: only 'agent' Holders are executable in this wave. " +
-    "Rebind to an agent, or wait for workflow-holder execution."
+    "this browser path can only launch an agent Holder directly. " +
+    "Workflow Holders run on the server; call this mandate through the " +
+    "server run path, or bind an agent for surfaces that resolve in the browser."
   );
 }
 
@@ -284,18 +286,33 @@ export interface BindingWave1Fields {
    * agent Holder — check it against `EXECUTABLE_HOLDER_TYPES`.
    */
   holderType: string;
+  /** A workflow Holder's `workflow.definition` id (never a version id). */
+  holderId: string | null;
+  /** An optional pin to one `workflow.definition_version`. */
+  holderVersionId: string | null;
   consumptionMap: ConsumptionMap;
 }
 
 /** Narrow the wave-1 binding columns off a full `select("*")` row. */
 export function parseBindingWave1(row: object | null): BindingWave1Fields {
-  if (row == null) return { holderType: "agent", consumptionMap: {} };
+  if (row == null) {
+    return {
+      holderType: "agent",
+      holderId: null,
+      holderVersionId: null,
+      consumptionMap: {},
+    };
+  }
   const raw: Record<string, unknown> = { ...row };
+  const uuidish = (value: unknown): string | null =>
+    typeof value === "string" && value.length > 0 ? value : null;
   return {
     holderType:
       typeof raw.holder_type === "string" && raw.holder_type.length > 0
         ? raw.holder_type
         : "agent",
+    holderId: uuidish(raw.holder_id),
+    holderVersionId: uuidish(raw.holder_version_id),
     consumptionMap: parseConsumptionMap(raw.consumption_map),
   };
 }
