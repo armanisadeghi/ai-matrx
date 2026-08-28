@@ -1,6 +1,6 @@
 # FEATURE.md — HR People (routes 10–14)
 
-**Status:** `active` · **Tier:** 1 · **Last updated:** `2026-08-27`
+**Status:** `active` · **Tier:** 1 · **Last updated:** `2026-08-28`
 **Spec:** [SPEC-EMPLOYEES](../../../../common-docs/projects/hr-domain/specs/SPEC-EMPLOYEES.md) §2.2,
 §2.3, §4.1–§4.3, §5, §6, §7.4 ·
 [SPEC-UI-IA](../../../../common-docs/projects/hr-domain/specs/SPEC-UI-IA.md) §3.2, §4, §5.1, §5.2.
@@ -59,6 +59,9 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
 - `doors/HrPersonDoor.tsx` — the four openers for a person. A hand-roll only because `hr_employee`
   has no entity-registry token and no peek kind (**D274**); collapse it to `EntityRef` when they
   land.
+- Verification consent is an **identity fact**, resolved by employment-to-login linkage rather
+  than current-date employment. `hr_my_verification_consents` is the subject-only read door;
+  `hr_verification_consent` is the only decision door, and no HR override may grant consent.
 
 ## Known gaps (each a registered promise in `lib/coming-soon/registry.ts`)
 
@@ -75,6 +78,9 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
 
 ## Change Log
 
+- `2026-08-28` — Verification consent now fails closed to everyone except the linked subject,
+  including pre-start hires; compensation requests notify that subject and expose a self-scoped
+  consent inbox door.
 - `2026-08-27` — Hire and effective-dated position-change forms now capture the authored
   standard workweek used to price leave, without inventing a 40-hour default.
 - `2026-08-27` — A person's own profile exposes the server-governed directory privacy switch and
