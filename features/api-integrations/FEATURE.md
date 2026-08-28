@@ -55,6 +55,12 @@ review dossier, or approval monitor.
   non-HTTPS targets again before persistence and invocation.
 - **DCR credentials are attempt-scoped.** Never cache a returned client ID without its
   matching secret; a downstream failure must not poison the next authorization attempt.
+- **DCR follows provider token-auth metadata.** `selectDcrTokenEndpointAuthMethod` prefers
+  `client_secret_basic`, then supports `client_secret_post` and public-client `none`; missing
+  metadata preserves the provider's prior secret-or-public response behavior, and unsupported
+  methods fail before registration. The catalog's `oauth_scopes` allowlist drives both
+  registration metadata and the authorization request. The callback forwards the selected
+  method to aidream's persistence boundary; refresh must reuse that same contract.
 - **OAuth callback state is fail-closed.** The external provider must return the exact,
   non-empty state saved for the authorization attempt; a missing state is never accepted.
 - **Classify the Next.js → aidream boundary before naming a service.** Cloudflare challenge
@@ -99,6 +105,11 @@ OAuth popups share `utils/oauth-popup.ts`; the MCP adapter remains
 listener cleanup, popup-blocker errors, and cancellation settlement.
 
 ## Change log
+
+- `2026-08-28` — Made dynamic client registration honor provider-advertised token endpoint
+  authentication (`client_secret_basic`, `client_secret_post`, or public-client `none`) while
+  preserving metadata-free providers; catalog scope overrides now govern both DCR metadata and
+  authorization.
 
 - `2026-08-26` — Completed scoped Supabase MCP OAuth: one non-production project reference, read-only mode, limited Docs/Database/Debugging tools, end-to-end endpoint persistence, runtime routing, and SSRF validation.
 

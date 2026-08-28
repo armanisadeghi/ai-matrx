@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import {
   discoverOAuthEndpoints,
   registerDynamicClient,
+  selectDcrTokenEndpointAuthMethod,
 } from "@/features/agents/services/mcp-oauth/discovery";
 import {
   generateCodeVerifier,
@@ -74,7 +75,11 @@ export async function GET(req: NextRequest) {
       );
     }
     if (!server.endpoint_url) {
-      return errorRedirect(req, returnUrl, `${server.name} has no catalog endpoint`);
+      return errorRedirect(
+        req,
+        returnUrl,
+        `${server.name} has no catalog endpoint`,
+      );
     }
     try {
       endpointOverride = validateSupabaseScopedMcpEndpointOverride(
@@ -85,7 +90,9 @@ export async function GET(req: NextRequest) {
       return errorRedirect(
         req,
         returnUrl,
-        error instanceof Error ? error.message : "Invalid MCP endpoint override",
+        error instanceof Error
+          ? error.message
+          : "Invalid MCP endpoint override",
       );
     }
   }
@@ -166,6 +173,14 @@ export async function GET(req: NextRequest) {
     );
     console.log(`[MCP OAuth] Token endpoint: ${authServer.token_endpoint}`);
 
+    // Resolve scopes once so DCR metadata and the authorization request cannot
+    // drift. Catalog scopes are the least-privilege override when configured.
+    const requestedScopes =
+      server.oauth_scopes ??
+      protectedResource?.scopes_supported ??
+      authServer.scopes_supported;
+    let tokenEndpointAuthMethod = selectDcrTokenEndpointAuthMethod(authServer);
+
     let clientId: string | undefined;
     let clientSecret: string | undefined;
 
@@ -178,6 +193,12 @@ export async function GET(req: NextRequest) {
         process.env[`MCP_SECRET_${slugUpper}`] ??
         process.env[`${slugUpper}_CLIENT_SECRET`] ??
         undefined;
+      if (
+        !authServer.token_endpoint_auth_methods_supported?.length &&
+        !clientSecret
+      ) {
+        tokenEndpointAuthMethod = "none";
+      }
       console.log(
         `[MCP OAuth] Using pre-registered client_id: ${clientId}` +
           (clientSecret ? " (secret found)" : " (no secret)"),
@@ -198,11 +219,20 @@ export async function GET(req: NextRequest) {
           {
             redirectUri,
             clientName: "AI Matrx",
-            scope: protectedResource?.scopes_supported?.join(" "),
+            scope: requestedScopes?.join(" "),
+            tokenEndpointAuthMethod,
           },
         );
         clientId = reg.client_id;
         clientSecret = reg.client_secret;
+        if (
+          !authServer.token_endpoint_auth_methods_supported?.length &&
+          !clientSecret
+        ) {
+          // Metadata-free providers historically returned a public client even
+          // though AI Matrx proposed client_secret_basic during registration.
+          tokenEndpointAuthMethod = "none";
+        }
         console.log(`[MCP OAuth] DCR succeeded, got client_id: ${clientId}`);
       } catch (dcrErr) {
         console.warn(
@@ -218,6 +248,9 @@ export async function GET(req: NextRequest) {
     // DCR didn't work.
     if (!clientId) {
       clientId = clientMetadataUrl;
+      if (!authServer.token_endpoint_auth_methods_supported?.length) {
+        tokenEndpointAuthMethod = "none";
+      }
       console.log(`[MCP OAuth] Using CIMD client_id: ${clientId}`);
     }
 
@@ -232,6 +265,7 @@ export async function GET(req: NextRequest) {
       clientId,
       clientSecret: clientSecret ?? null,
       tokenEndpoint: authServer.token_endpoint,
+      tokenEndpointAuthMethod,
       redirectUri,
       returnUrl: returnUrl ?? "/",
       endpointOverride,
@@ -260,12 +294,8 @@ export async function GET(req: NextRequest) {
     // 1. Pre-configured scopes from catalog DB (admin can control exactly what we ask for)
     // 2. Protected resource metadata scopes (RFC 9728 discovery)
     // 3. Auth server metadata scopes
-    const scopes =
-      server.oauth_scopes ??
-      protectedResource?.scopes_supported ??
-      authServer.scopes_supported;
-    if (scopes?.length) {
-      params.set("scope", scopes.join(" "));
+    if (requestedScopes?.length) {
+      params.set("scope", requestedScopes.join(" "));
     }
 
     const authUrl = `${authServer.authorization_endpoint}?${params.toString()}`;

@@ -82,7 +82,9 @@ describe("persistMcpOAuthTokens", () => {
       .fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>()
       .mockResolvedValueOnce(response("bad gateway", 502, {}))
       .mockResolvedValueOnce(response("unavailable", 503, {}))
-      .mockResolvedValueOnce(response("{}", 200, { "content-type": "application/json" }));
+      .mockResolvedValueOnce(
+        response("{}", 200, { "content-type": "application/json" }),
+      );
 
     const result = await persistMcpOAuthTokens(
       "https://server.example/api/mcp-connections/server/oauth-tokens",
@@ -97,9 +99,11 @@ describe("persistMcpOAuthTokens", () => {
   it("does not retry an actionable application response", async () => {
     const fetcher = jest
       .fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>()
-      .mockResolvedValue(response('{"detail":"denied"}', 403, {
-        "content-type": "application/json",
-      }));
+      .mockResolvedValue(
+        response('{"detail":"denied"}', 403, {
+          "content-type": "application/json",
+        }),
+      );
 
     const result = await persistMcpOAuthTokens(
       "https://server.example/api/mcp-connections/server/oauth-tokens",
@@ -123,5 +127,24 @@ describe("MCP DCR persistence boundary", () => {
     expect(startRoute).not.toMatch(
       /\.update\(\{\s*oauth_client_id:\s*clientId/s,
     );
+  });
+
+  it("carries the discovered token authentication method through the callback", () => {
+    const startRoute = readFileSync(
+      join(process.cwd(), "app/api/mcp/oauth/start/route.ts"),
+      "utf8",
+    );
+    const callbackRoute = readFileSync(
+      join(process.cwd(), "app/api/mcp/oauth/callback/route.ts"),
+      "utf8",
+    );
+
+    expect(startRoute).toContain("tokenEndpointAuthMethod,");
+    expect(callbackRoute).toContain("session.tokenEndpointAuthMethod");
+    expect(callbackRoute).toContain("buildTokenEndpointClientAuthentication");
+    expect(callbackRoute).toContain(
+      "token_endpoint_auth_method: session.tokenEndpointAuthMethod",
+    );
+    expect(callbackRoute).not.toContain("if (session.clientSecret)");
   });
 });

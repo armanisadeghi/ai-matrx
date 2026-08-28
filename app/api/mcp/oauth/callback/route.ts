@@ -5,6 +5,10 @@ import {
   classifyMcpBackendFailure,
   persistMcpOAuthTokens,
 } from "@/features/agents/services/mcp-oauth/backend-failure";
+import {
+  buildTokenEndpointClientAuthentication,
+  type DcrTokenEndpointAuthMethod,
+} from "@/features/agents/services/mcp-oauth/discovery";
 import { isValidOAuthState } from "@/features/agents/services/mcp-oauth/state";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 
@@ -15,6 +19,7 @@ interface OAuthSession {
   clientId: string;
   clientSecret: string | null;
   tokenEndpoint: string;
+  tokenEndpointAuthMethod: DcrTokenEndpointAuthMethod;
   redirectUri: string;
   returnUrl: string;
   endpointOverride: string | null;
@@ -119,19 +124,20 @@ export async function GET(req: NextRequest) {
       code_verifier: session.codeVerifier,
     });
 
-    // Use Basic Auth when we have a client_secret (required by Canva, etc.),
-    // otherwise send client_id in the body (for public/CIMD clients).
     const tokenHeaders: Record<string, string> = {
       "Content-Type": "application/x-www-form-urlencoded",
     };
 
-    if (session.clientSecret) {
-      const credentials = Buffer.from(
-        `${session.clientId}:${session.clientSecret}`,
-      ).toString("base64");
-      tokenHeaders["Authorization"] = `Basic ${credentials}`;
-    } else {
-      tokenBody.set("client_id", session.clientId);
+    const clientAuthentication = buildTokenEndpointClientAuthentication(
+      session.tokenEndpointAuthMethod,
+      session.clientId,
+      session.clientSecret,
+    );
+    Object.assign(tokenHeaders, clientAuthentication.headers);
+    for (const [key, value] of Object.entries(
+      clientAuthentication.formFields,
+    )) {
+      tokenBody.set(key, value);
     }
 
     const tokenRes = await fetch(session.tokenEndpoint, {
@@ -180,6 +186,7 @@ export async function GET(req: NextRequest) {
         body: JSON.stringify({
           tokens,
           token_endpoint: session.tokenEndpoint,
+          token_endpoint_auth_method: session.tokenEndpointAuthMethod,
           client_id: session.clientId,
           client_secret: session.clientSecret ?? undefined,
           transport: "http",

@@ -10,10 +10,83 @@ export interface AuthServerMetadata {
   authorization_endpoint: string;
   token_endpoint: string;
   registration_endpoint?: string;
+  token_endpoint_auth_methods_supported?: string[];
   scopes_supported?: string[];
   response_types_supported?: string[];
   code_challenge_methods_supported?: string[];
   grant_types_supported?: string[];
+}
+
+export type DcrTokenEndpointAuthMethod =
+  "client_secret_basic" | "client_secret_post" | "none";
+
+/**
+ * Pick a token endpoint authentication method that both AI Matrx and the
+ * provider support. Prefer HTTP Basic credentials, then form-encoded client
+ * credentials, then a public PKCE client. Preserve the historical confidential-
+ * client default when metadata is absent.
+ */
+export function selectDcrTokenEndpointAuthMethod(
+  authServer: Pick<AuthServerMetadata, "token_endpoint_auth_methods_supported">,
+): DcrTokenEndpointAuthMethod {
+  const supported = authServer.token_endpoint_auth_methods_supported;
+
+  if (!supported?.length || supported.includes("client_secret_basic")) {
+    return "client_secret_basic";
+  }
+
+  if (supported.includes("client_secret_post")) {
+    return "client_secret_post";
+  }
+
+  if (supported.includes("none")) {
+    return "none";
+  }
+
+  throw new Error(
+    `OAuth server does not advertise a supported token endpoint authentication method. ` +
+      `Supported by AI Matrx: client_secret_basic, client_secret_post, none. ` +
+      `Advertised by provider: ${supported.join(", ")}.`,
+  );
+}
+
+export function buildTokenEndpointClientAuthentication(
+  method: DcrTokenEndpointAuthMethod,
+  clientId: string,
+  clientSecret?: string | null,
+): {
+  headers: Record<string, string>;
+  formFields: Record<string, string>;
+} {
+  if (method === "none") {
+    return {
+      headers: {},
+      formFields: { client_id: clientId },
+    };
+  }
+
+  if (!clientSecret) {
+    throw new Error(
+      `OAuth provider requires ${method}, but dynamic client registration returned no client secret.`,
+    );
+  }
+
+  if (method === "client_secret_post") {
+    return {
+      headers: {},
+      formFields: {
+        client_id: clientId,
+        client_secret: clientSecret,
+      },
+    };
+  }
+
+  return {
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+    },
+    formFields: {},
+  };
 }
 
 /**
@@ -200,8 +273,9 @@ export async function registerDynamicClient(
     grantTypes?: string[];
     responseTypes?: string[];
     scope?: string;
-    tokenEndpointAuthMethod?: string;
+    tokenEndpointAuthMethod?: DcrTokenEndpointAuthMethod;
   },
+  fetcher: typeof fetch = fetch,
 ): Promise<DynamicClientRegistrationResult> {
   const body: Record<string, unknown> = {
     redirect_uris: [params.redirectUri],
@@ -216,7 +290,7 @@ export async function registerDynamicClient(
     body.scope = params.scope;
   }
 
-  const res = await fetch(registrationEndpoint, {
+  const res = await fetcher(registrationEndpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
