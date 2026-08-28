@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { VoiceTextarea } from "@/components/official/VoiceTextarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 
 interface TextareaInputProps {
@@ -43,7 +43,7 @@ export function TextareaInput({
   };
 
   return (
-    <VoiceTextarea
+    <ProTextarea
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onFocus={handleFocus}

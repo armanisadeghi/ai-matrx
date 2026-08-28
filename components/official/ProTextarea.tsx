@@ -15,10 +15,11 @@
  *   indicators when the host owns recording itself (e.g. a pad whose own
  *   toolbar mic streams into this same controlled value).
  * - **"…" actions menu** — a hover-revealed top-right menu hosting Copy and
- *   agent actions (Clean up, Help with this…, Custom Agent). It floats over the
- *   text (no reserved right gutter). Pointer users reveal it on hover; keyboard
- *   users reveal it with focus-within so its mic/menu buttons are never
- *   invisible tab stops.
+ *   agent actions (Clean up, Help with this…, Custom Agent). Fine pointers float
+ *   it over the text with no reserved gutter. Touch devices keep the controls
+ *   visible in a shallow reserved top row so every text line retains the full
+ *   editor width. Keyboard users reveal it with focus-within so its mic/menu
+ *   buttons are never invisible tab stops.
  * - **Agent actions** — each runs an agent over the current text, streams the
  *   result into a popover, and replaces the field on Apply (never auto-mutates):
  *   - **Clean up** — ON by default (`enableCleanup={false}` to hide). Default
@@ -361,9 +362,7 @@ export const ProTextarea = React.forwardRef<
     const openDiff = useOpenDiffViewerWindow();
     const boundAgentsEnabled = Boolean(surfaceName) && enableBoundAgents;
     const resolvedSourceFeature: SourceFeature =
-      sourceFeatureProp ??
-      sourceFeatureFromSurfaceName(surfaceName) ??
-      "notes";
+      sourceFeatureProp ?? sourceFeatureFromSurfaceName(surfaceName) ?? "notes";
     const {
       sections: boundAgentSections,
       loading: boundAgentsLoading,
@@ -845,13 +844,12 @@ export const ProTextarea = React.forwardRef<
         enabledAgentActionIds.length > 0 ||
         showBoundAgentsMenu);
     // Touch devices have no hover, so the top-right cluster is ALWAYS visible
-    // there (pointer-coarse) — which means the textarea must reserve a right
-    // gutter for it, or the buttons sit on the placeholder/text (Arman's
-    // mobile screenshots, 2026-08-16). Fine pointers keep the hover-reveal +
-    // zero-gutter float.
-    const coarseControlCount =
-      (enableVoice && isAudioAvailable && !disabled ? 1 : 0) +
-      (showMenu ? 1 : 0);
+    // there (pointer-coarse). Reserve one shallow toolbar row above the text,
+    // not a right gutter on every line: the old pr-24 workaround fixed control
+    // overlap but made long mobile values wrap at roughly 70% of the editor.
+    // Fine pointers keep the hover-reveal + zero-gutter float.
+    const hasCoarseControls =
+      (enableVoice && isAudioAvailable && !disabled) || showMenu;
     const showTextStats = enableTextStats && showMenu;
     const showPinnedTextStatsBar = showTextStats && showTextStatsBar;
     const fillHeight = wantsFillHeight(className, wrapperClassName);
@@ -912,12 +910,12 @@ export const ProTextarea = React.forwardRef<
                 // the user can never reach. While growing (height === scrollHeight)
                 // no scrollbar shows; it only appears once capped at maxHeight.
                 autoGrow && "resize-none overflow-y-auto",
-                // The top-right controls float OVER the text — no reserved right
-                // gutter on fine pointers (hidden while typing, hover-only). On
-                // coarse pointers they are always visible, so reserve the gutter.
+                // Fine pointers float the controls over the text with no
+                // reserved space (they hide while typing). Coarse pointers keep
+                // them visible in a dedicated 44px top row, preserving the full
+                // width for every line below it.
                 "pr-3",
-                coarseControlCount === 2 && "pointer-coarse:pr-24",
-                coarseControlCount === 1 && "pointer-coarse:pr-14",
+                hasCoarseControls && "pointer-coarse:pt-12",
                 // Bottom padding for the submit button — TapTargetButtonSolid is
                 // 44px tall (h-11), so reserve enough vertical clearance.
                 onSubmit && "pb-14",
@@ -964,8 +962,8 @@ export const ProTextarea = React.forwardRef<
             <div
               className={cn(
                 "absolute right-0 top-0 flex items-center transition-opacity duration-200 z-10 focus-within:opacity-100 focus-within:pointer-events-auto",
-                // Coarse pointers can't hover — the cluster stays visible (the
-                // textarea reserves a matching right gutter above).
+                // Coarse pointers can't hover — the cluster stays visible in
+                // the textarea's reserved top row.
                 "pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto",
                 showControls || menuOpen
                   ? "opacity-100"
