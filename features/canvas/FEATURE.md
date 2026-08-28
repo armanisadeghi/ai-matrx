@@ -73,16 +73,19 @@ the rules an agent editing THIS directory must obey.
 - **Verifying the canvas surface:** `/canvas` is not a route, and on a MAPPED route the route
   surface wins — verify on `/artifacts` (no route→surface mapping), reached by CLIENT-SIDE
   navigation with the pane open, since a reload empties the slice.
-- **A public shared canvas owns the viewport.** `/canvas/shared/[token]` suppresses the generic
-  public header/footer through `data-public-immersive-surface`, renders one identity/action
-  header, and keeps renderer-specific choices in floating controls — never stack route, artifact,
-  and workbench bars above the content.
+- **A public shared canvas owns the viewport.** Both `/canvas/shared/[token]` and the canonical
+  `/s/[token]` lens suppress the generic public header/footer through
+  `data-public-immersive-surface`, render the same identity/action header, and keep
+  renderer-specific choices in floating controls — never stack route, artifact, and workbench
+  bars above the content.
 
 **Keep-docs-live:** a change to the wire format, the identity keys, the type registry, or the write
 path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-08-27` — Canonical `/s/[token]` shared-canvas links now reuse the immersive canvas viewer;
+  other share lenses keep the normal public shell.
 - `2026-08-27` — Shared canvases became immersive one-header viewers; public Mermaid snapshots
   now use read-only floating view/style/export controls and a mobile view menu.
 - `2026-08-27` — Saved-item and artifact-library opens now share `useOpenCanvasItem`, which validates

@@ -17,10 +17,10 @@ import remarkGfm from "remark-gfm";
 import {
   ExternalLink,
   FolderClosed,
-  Loader2,
   ScanSearch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MediumComponentLoading } from "@/components/matrx/LoadingComponents";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
 import {
@@ -231,6 +231,15 @@ const PublicCanvasRenderer = React.lazy(() =>
   })),
 );
 
+// The published-snapshot lane already owns the complete compact public viewer.
+// Keep it behind the same canvas-only lazy edge so notes, files, and every other
+// `/s` lens do not inherit the artifact engine or social canvas graph.
+const SharedCanvasView = React.lazy(() =>
+  import("@/features/canvas/shared/SharedCanvasView").then((m) => ({
+    default: m.SharedCanvasView,
+  })),
+);
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
@@ -239,29 +248,39 @@ function isRecord(v: unknown): v is Record<string, unknown> {
  * Canvas lens — a published canvas snapshot (`shared_canvas_item`) or a saved
  * canvas item (`canvas_item`, whose `content` is `{type, data, metadata}`).
  */
-export function CanvasRenderer({ result }: { result: ResolvedShareToken }) {
+export function CanvasRenderer({
+  result,
+  token,
+}: {
+  result: ResolvedShareToken;
+  token: string;
+}) {
+  if (result.resourceType === "shared_canvas_item") {
+    return (
+      <React.Suspense
+        fallback={
+          <div className="h-full bg-textured">
+            <MediumComponentLoading />
+          </div>
+        }
+      >
+        <SharedCanvasView shareToken={token} className="h-full min-h-0" />
+      </React.Suspense>
+    );
+  }
+
   const r = result.resource ?? {};
   const rawContent = r["content"];
-  const content =
-    result.resourceType === "shared_canvas_item"
-      ? {
-          type: str(r, "canvas_type") || "html",
-          data: r["canvas_data"],
-          metadata: {
-            title: str(r, "title"),
-            description: str(r, "description"),
-          },
-        }
-      : isRecord(rawContent)
-        ? rawContent
-        : { type: "html", data: rawContent };
+  const content = isRecord(rawContent)
+    ? rawContent
+    : { type: "html", data: rawContent };
 
   return (
     <div className="h-[70dvh] min-h-[420px] w-full overflow-hidden rounded-xl border border-border bg-card">
       <React.Suspense
         fallback={
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <div className="h-full bg-textured">
+            <MediumComponentLoading />
           </div>
         }
       >

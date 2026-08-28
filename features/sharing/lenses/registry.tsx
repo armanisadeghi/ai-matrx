@@ -41,6 +41,10 @@ export interface ShareLensProps {
 
 export type ShareLensRender = (props: ShareLensProps) => ReactNode;
 
+function GenericShareLens({ result }: ShareLensProps) {
+  return <GenericRenderer result={result} />;
+}
+
 /**
  * Token → lens. Grouped by lens, mirroring the type unions the old
  * `renderBody` switch expressed.
@@ -50,8 +54,10 @@ const SHARE_LENS_REGISTRY: Record<string, ShareLensRender> = {
   message_template: (p) => <MarkdownRenderer result={p.result} />,
   working_document: (p) => <MarkdownRenderer result={p.result} />,
   code_file: (p) => <CodeRenderer result={p.result} />,
-  canvas_item: (p) => <CanvasRenderer result={p.result} />,
-  shared_canvas_item: (p) => <CanvasRenderer result={p.result} />,
+  canvas_item: (p) => <CanvasRenderer result={p.result} token={p.token} />,
+  shared_canvas_item: (p) => (
+    <CanvasRenderer result={p.result} token={p.token} />
+  ),
   fc_card: (p) => <FlashcardRenderer result={p.result} />,
   file: (p) => <SharedFileLens result={p.result} token={p.token} />,
   folder: (p) => <FolderRenderer result={p.result} />,
@@ -73,10 +79,23 @@ const SHARE_LENS_REGISTRY: Record<string, ShareLensRender> = {
  */
 const FULL_BLEED_LENSES = new Set<string>(["file"]);
 
+/**
+ * Lenses that replace the public marketing shell with their own compact,
+ * purpose-built chrome. Keep this registry-driven: `/s/[token]` must not grow
+ * a resource-type switch beside the lens registry.
+ */
+const IMMERSIVE_LENSES = new Set<string>(["shared_canvas_item"]);
+
 export function shareLensIsFullBleed(
   resourceType: string | null | undefined,
 ): boolean {
   return !!resourceType && FULL_BLEED_LENSES.has(resourceType);
+}
+
+export function shareLensIsImmersive(
+  resourceType: string | null | undefined,
+): boolean {
+  return !!resourceType && IMMERSIVE_LENSES.has(resourceType);
 }
 
 /**
@@ -89,5 +108,5 @@ export function resolveShareLens(
   if (resourceType && SHARE_LENS_REGISTRY[resourceType]) {
     return SHARE_LENS_REGISTRY[resourceType];
   }
-  return (p) => <GenericRenderer result={p.result} />;
+  return GenericShareLens;
 }

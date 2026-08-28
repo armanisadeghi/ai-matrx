@@ -20,6 +20,7 @@ import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateTo
 import {
   resolveShareLens,
   shareLensIsFullBleed,
+  shareLensIsImmersive,
 } from "@/features/sharing/lenses/registry";
 import { resolveShareSourceSurface } from "@/features/sharing/lenses/source-surface";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
@@ -37,6 +38,19 @@ export function SharedResourceView({
   const lens = resolveShareLens(result.resourceType);
   const source = resolveShareSourceSurface(result);
   const fullBleed = shareLensIsFullBleed(result.resourceType);
+  const immersive = shareLensIsImmersive(result.resourceType);
+
+  if (immersive) {
+    return (
+      <div
+        ref={contentRef}
+        data-public-immersive-surface
+        className="h-full min-h-0 bg-textured"
+      >
+        {lens({ result, token })}
+      </div>
+    );
+  }
 
   return (
     <>
