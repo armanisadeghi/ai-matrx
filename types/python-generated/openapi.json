@@ -41806,7 +41806,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MandateCatalogResponse"
+                  "$ref": "#/components/schemas/aidream__api__routers__proof_runs__MandateCatalogResponse"
                 }
               }
             }
@@ -42540,6 +42540,28 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates": {
+      "get": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "List Mandates",
+        "description": "Every declared Mandate — the catalogue an authoring surface picks from.\n\nTHE JOB, NOT THE AGENT. A workflow step that names a `mandate_key` lets the\ndatabase choose the Holder on every run; a step that names an `agent_id`\nfreezes one agent into the definition forever (the hardcoded-agent defect\nthe Mandate exists to prevent). The studio's `mandate_agent_picker` widget\nreads this list, so the sanctioned form is the one that is easy to author.\n\nRead from the in-process declaration registry, which the boot sync has\nalready populated — no table scan, no filesystem walk, no admin gate. The\nsuper-admin `/mandates/code-truth` report answers a different question\n(code vs. live-row drift) and is far too expensive for a picker.",
+        "operationId": "list_mandates_mandates_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__api__routers__mandate_bindings__MandateCatalogResponse"
                 }
               }
             }
@@ -127137,30 +127159,6 @@
         "title": "MandateCandidate",
         "description": "One labelled comparison column.\n\n``config_overrides=None`` means use the selection's normal configuration\nbehavior. An explicitly supplied ``{}`` means apply no run-scope\noverrides, including when the current principal has binding overrides."
       },
-      "MandateCatalogResponse": {
-        "properties": {
-          "mandates": {
-            "items": {
-              "$ref": "#/components/schemas/MandateOption"
-            },
-            "type": "array",
-            "title": "Mandates"
-          },
-          "rules": {
-            "items": {
-              "additionalProperties": {
-                "$ref": "#/components/schemas/JsonValue"
-              },
-              "type": "object"
-            },
-            "type": "array",
-            "title": "Rules"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "title": "MandateCatalogResponse"
-      },
       "MandateCodeTruth": {
         "properties": {
           "mandate_key": {
@@ -127857,6 +127855,70 @@
         ],
         "title": "MandateResultPromotion",
         "description": "Receipt for promoting a persisted bench result into the exemplar's\nreference."
+      },
+      "MandateSummaryResponse": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "goal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Goal"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "provision_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provision Key"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "label"
+        ],
+        "title": "MandateSummaryResponse",
+        "description": "One declared Mandate, as an authoring surface needs to show it."
       },
       "MandateTestBatchRequest": {
         "properties": {
@@ -187738,6 +187800,52 @@
           "presets"
         ],
         "title": "PresetsResponse"
+      },
+      "aidream__api__routers__mandate_bindings__MandateCatalogResponse": {
+        "properties": {
+          "mandates": {
+            "items": {
+              "$ref": "#/components/schemas/MandateSummaryResponse"
+            },
+            "type": "array",
+            "title": "Mandates"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandates",
+          "count"
+        ],
+        "title": "MandateCatalogResponse"
+      },
+      "aidream__api__routers__proof_runs__MandateCatalogResponse": {
+        "properties": {
+          "mandates": {
+            "items": {
+              "$ref": "#/components/schemas/MandateOption"
+            },
+            "type": "array",
+            "title": "Mandates"
+          },
+          "rules": {
+            "items": {
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Rules"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MandateCatalogResponse"
       },
       "aidream__api__routers__rag__SearchRequest": {
         "properties": {

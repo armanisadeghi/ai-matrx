@@ -151,7 +151,7 @@ export interface ExpectationRuleHelp {
 }
 
 export type MandateCatalogResponse =
-  components["schemas"]["MandateCatalogResponse"];
+  components["schemas"]["aidream__api__routers__proof_runs__MandateCatalogResponse"];
 
 export interface ProofMandateCatalogResponse {
   mandates: ProofMandateOption[];

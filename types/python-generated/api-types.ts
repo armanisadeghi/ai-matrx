@@ -16363,6 +16363,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mandates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Mandates
+         * @description Every declared Mandate — the catalogue an authoring surface picks from.
+         *
+         *     THE JOB, NOT THE AGENT. A workflow step that names a `mandate_key` lets the
+         *     database choose the Holder on every run; a step that names an `agent_id`
+         *     freezes one agent into the definition forever (the hardcoded-agent defect
+         *     the Mandate exists to prevent). The studio's `mandate_agent_picker` widget
+         *     reads this list, so the sanctioned form is the one that is easy to author.
+         *
+         *     Read from the in-process declaration registry, which the boot sync has
+         *     already populated — no table scan, no filesystem walk, no admin gate. The
+         *     super-admin `/mandates/code-truth` report answers a different question
+         *     (code vs. live-row drift) and is far too expensive for a picker.
+         */
+        get: operations["list_mandates_mandates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent-usage/sync": {
         parameters: {
             query?: never;
@@ -48865,15 +48896,6 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
-        /** MandateCatalogResponse */
-        MandateCatalogResponse: {
-            /** Mandates */
-            mandates?: components["schemas"]["MandateOption"][];
-            /** Rules */
-            rules?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            }[];
-        };
         /** MandateCodeTruth */
         MandateCodeTruth: {
             /** Mandate Key */
@@ -49125,6 +49147,24 @@ export interface components {
             reference_output: string;
             /** Has Reference Artifact */
             has_reference_artifact: boolean;
+        };
+        /**
+         * MandateSummaryResponse
+         * @description One declared Mandate, as an authoring surface needs to show it.
+         */
+        MandateSummaryResponse: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description?: string | null;
+            /** Goal */
+            goal?: string | null;
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Provision Key */
+            provision_key?: string | null;
         };
         /** MandateTestBatchRequest */
         MandateTestBatchRequest: {
@@ -73418,6 +73458,22 @@ export interface components {
         aidream__api__routers__legal_admin__PresetsResponse: {
             /** Presets */
             presets: components["schemas"]["CourtPresetResponse"][];
+        };
+        /** MandateCatalogResponse */
+        aidream__api__routers__mandate_bindings__MandateCatalogResponse: {
+            /** Mandates */
+            mandates: components["schemas"]["MandateSummaryResponse"][];
+            /** Count */
+            count: number;
+        };
+        /** MandateCatalogResponse */
+        aidream__api__routers__proof_runs__MandateCatalogResponse: {
+            /** Mandates */
+            mandates?: components["schemas"]["MandateOption"][];
+            /** Rules */
+            rules?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
         };
         /** SearchRequest */
         aidream__api__routers__rag__SearchRequest: {
@@ -102143,7 +102199,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MandateCatalogResponse"];
+                    "application/json": components["schemas"]["aidream__api__routers__proof_runs__MandateCatalogResponse"];
                 };
             };
         };
@@ -102575,6 +102631,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_mandates_mandates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__api__routers__mandate_bindings__MandateCatalogResponse"];
                 };
             };
         };
