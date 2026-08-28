@@ -98,7 +98,8 @@ export function StampCell({
           }}
           lockedDimensionSlug={dimension.slug}
           variant="cell"
-          onClear={onClear}
+          selectedHint={hint && hint !== "you" ? hint : null}
+          onClear={source === "human" ? onClear : undefined}
           onAssignWithReason={onAssignWithReason}
         />
       </span>
@@ -186,7 +187,7 @@ export function ClassCell({
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        {current && onClear ? (
+        {current && source === "human" && onClear ? (
           <DropdownMenuItem className="text-xs" onSelect={onClear}>
             <Eraser className="mr-2 h-3.5 w-3.5" />
             Clear this class

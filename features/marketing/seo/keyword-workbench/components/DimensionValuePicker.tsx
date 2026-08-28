@@ -49,6 +49,7 @@ export function DimensionValuePicker({
   /** Fix the dimension when the gesture already chose one (a column, a cell). */
   lockedDimensionSlug,
   variant = "form",
+  selectedHint,
   onClear,
   onAssignWithReason,
 }: {
@@ -60,6 +61,8 @@ export function DimensionValuePicker({
   lockedDimensionSlug?: string;
   /** `cell` keeps the same picker visible in assigned and empty table cells. */
   variant?: "form" | "cell";
+  /** Compact provenance shown beside a selected table-cell value. */
+  selectedHint?: string | null;
   onClear?: () => void;
   onAssignWithReason?: () => void;
 }) {
@@ -230,8 +233,15 @@ export function DimensionValuePicker({
         }
         renderSelected={
           cell && picked ? (
-            <span className="block min-w-0 truncate text-[11px] text-foreground">
-              {picked.valueLabel}
+            <span className="flex min-w-0 items-baseline gap-1">
+              <span className="min-w-0 truncate text-[11px] text-foreground">
+                {picked.valueLabel}
+              </span>
+              {selectedHint ? (
+                <span className="shrink-0 text-[10px] text-muted-foreground">
+                  {selectedHint}
+                </span>
+              ) : null}
             </span>
           ) : undefined
         }

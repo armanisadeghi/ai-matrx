@@ -151,9 +151,13 @@ import {
   type AssignTarget,
 } from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
 import {
+  getKeywordServices,
   getKeywordStamps,
+  setKeywordService,
   setKeywordStamps,
 } from "@/features/marketing/seo/keyword-workbench/data";
+import { ServiceCell } from "@/features/marketing/seo/keyword-workbench/components/ServiceCell";
+import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { KEYWORD_VALUE_WORKBENCH_SURFACE_NAME } from "@/features/surfaces/manifests/keyword-value-workbench.manifest";
@@ -442,6 +446,7 @@ export function ValueWorkbench() {
   const dimensions = catalog.data ?? [];
   const classDimension = dimensions.find((d) => d.slug === "traffic_class");
   const classOptions = (classDimension?.values ?? []).filter((v) => !v.abstain);
+  const services = useSiteServices(siteId, window.start, window.end);
 
   /**
    * 🚨 THE MISSING MENU, closed 2026-08-24. Arman: *"I talked at length about
@@ -524,9 +529,19 @@ export function ValueWorkbench() {
         valueId,
         clear: true,
       });
+      if (result.cleared === 0) {
+        toast.error(`No ${dimensionLabel} assignment was removed`, {
+          description:
+            "Only your own assignment can be cleared. Computed and AI answers remain visible.",
+        });
+        return;
+      }
       await refreshAfterStamp();
       toast.success(
-        `${dimensionLabel} cleared on ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`,
+        `Removed your ${dimensionLabel} assignment from ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`,
+        {
+          description: "The computed or AI answer is shown now.",
+        },
       );
     } catch (error) {
       toast.error(extractErrorMessage(error));
@@ -690,6 +705,59 @@ export function ValueWorkbench() {
     enabled: visibleKeywordIds.length > 0 && dimensionColumns.length > 0,
     staleTime: 60_000,
   });
+  const placements = useQuery({
+    queryKey: [
+      "marketing",
+      "seo",
+      "keyword-services",
+      siteId,
+      visibleKeywordIds,
+    ],
+    queryFn: ({ signal }) =>
+      getKeywordServices(siteId, visibleKeywordIds, signal),
+    enabled: visibleKeywordIds.length > 0,
+    staleTime: 60_000,
+  });
+
+  const quickPlaceService = async (
+    row: ValueReviewRow,
+    topicId: string | null,
+  ) => {
+    try {
+      await setKeywordService({
+        siteId,
+        keywordIds: [row.keyword_id],
+        topicId,
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["marketing", "seo", "keyword-services", siteId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["marketing", "gsc", "keyword-value-for", siteId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["marketing", "value", "review", siteId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["marketing", "value", "summary", siteId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["seo", "topics", "stats", siteId],
+        }),
+      ]);
+      const offeringName = topicId
+        ? (services.byId.get(topicId)?.name ?? "that offering")
+        : null;
+      toast.success(
+        offeringName
+          ? `“${row.keyword}” maps to ${offeringName}.`
+          : `“${row.keyword}” is off the offering tree.`,
+      );
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    }
+  };
 
   const ruling = useMutation({
     mutationFn: (input: {
@@ -753,8 +821,26 @@ export function ValueWorkbench() {
       ),
     },
     {
-      // Keyword stays the frozen identity column; Class is the first editable
-      // meaning column, followed by the site's own dimensions.
+      id: "offering",
+      header: "Offering",
+      sortable: false,
+      filter: false,
+      width: 170,
+      accessorFn: (row) =>
+        placements.data?.get(row.keyword_id)?.topicName ?? "",
+      cell: (row) => (
+        <ServiceCell
+          siteId={siteId}
+          services={services}
+          placement={placements.data?.get(row.keyword_id)}
+          disabled={services.loading || placements.isLoading}
+          onPlace={(topicId) => void quickPlaceService(row, topicId)}
+        />
+      ),
+    },
+    {
+      // Keyword stays the frozen identity column; Offering and Class lead the
+      // editable meaning columns, followed by the site's own dimensions.
       id: "traffic_class",
       accessorKey: "traffic_class",
       header: "Class",
@@ -884,6 +970,7 @@ export function ValueWorkbench() {
         value: key,
         label: SOURCE_META[key].label,
       })),
+      width: 150,
       mobileHidden: true,
       cell: (row) => <SourceChip source={row.value_source} />,
     },

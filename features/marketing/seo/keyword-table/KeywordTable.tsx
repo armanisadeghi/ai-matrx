@@ -451,9 +451,19 @@ export function KeywordTable({
         valueId,
         clear: true,
       });
+      if (result.cleared === 0) {
+        toast.error(`No ${dimensionLabel} assignment was removed`, {
+          description:
+            "Only your own assignment can be cleared. Computed and AI answers remain visible.",
+        });
+        return;
+      }
       await afterWrite();
       toast.success(
-        `${dimensionLabel} cleared on ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`,
+        `Removed your ${dimensionLabel} assignment from ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`,
+        {
+          description: "The computed or AI answer is shown now.",
+        },
       );
     } catch (error) {
       toast.error(

@@ -114,15 +114,21 @@ export function AssignPanel({
   }
 
   const write = useMutation({
-    mutationFn: (input: { clear: boolean }) => {
+    mutationFn: async (input: { clear: boolean }) => {
       if (!picked) throw new Error("Pick a value first.");
-      return setKeywordStamps({
+      const result = await setKeywordStamps({
         siteId,
         keywordIds: target.keywordIds,
         valueId: picked.valueId,
         notes: notes.trim() || null,
         clear: input.clear,
       });
+      if (input.clear && result.cleared === 0) {
+        throw new Error(
+          "Nothing was removed. Only your own assignment can be cleared; computed and AI answers remain visible.",
+        );
+      }
+      return result;
     },
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({
