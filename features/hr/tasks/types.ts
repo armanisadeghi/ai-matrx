@@ -105,6 +105,37 @@ export type HrInboxRow = {
 };
 
 /**
+ * The ONE line that names a queue row: what it is, and who it is about.
+ *
+ * 🚨 IT EXISTS SO A SECOND NAMING RULE CANNOT BE INVENTED. The bulk-decide result panel
+ * listed each outcome by BARE UUID — "decided 85217879-…" — for names that were on the rows
+ * the decider had ticked a second earlier. The same class as the attestation panel's raw ids.
+ * The precedence here is the table's, unchanged: `title` → `flow_label` → `flow_key`.
+ *
+ * 🚨 A WITHHELD SUBJECT STAYS WITHHELD. `subject_withheld` means this viewer is not entitled
+ * to the name, so the line says so rather than omitting the clause silently — anywhere the
+ * name would appear, its absence must be visible and explained (§1.3).
+ *
+ * The `digest` clause is what makes the outcome readable — "Timecard · Zzz Punchemployee ·
+ * Aug 21-27" rather than a kind and a person with no period. It is the flow's own worded
+ * summary, already entitlement-gated by `hr._wf_display`.
+ */
+export function inboxRowLine(row: HrInboxRow): string {
+    const head = row.title ?? row.flow_label ?? row.flow_key;
+    const parts = [head];
+    /*
+        🚨 THE TITLE OFTEN ALREADY CARRIES THE NAME — measured, not assumed. Live rows read
+        "Address change — Tomo Iversen-G32" with `subject_label` = "Tomo Iversen-G32", so
+        appending it unconditionally produced "… — Tomo Iversen-G32 · Tomo Iversen-G32".
+        Say the name once; add it only when the head has not already said it.
+    */
+    if (row.subject_withheld) parts.push("subject withheld");
+    else if (row.subject_label && !head.includes(row.subject_label)) parts.push(row.subject_label);
+    if (row.digest) parts.push(row.digest);
+    return parts.join(" · ");
+}
+
+/**
  * One field a decision would change. `from` is null when the field is currently
  * empty — which is a real answer ("nothing on file"), not a missing one.
  */

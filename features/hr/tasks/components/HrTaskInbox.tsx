@@ -22,7 +22,7 @@ import type {
     HrInboxScope,
     HrRefusal,
 } from "@/features/hr/tasks/types";
-import { HR_DECISION_VERB, isRefusal } from "@/features/hr/tasks/types";
+import { HR_DECISION_VERB, inboxRowLine, isRefusal } from "@/features/hr/tasks/types";
 
 const SCOPES: { key: HrInboxScope; label: string; hint: string }[] = [
     { key: "mine", label: "Mine", hint: "Waiting on you" },
@@ -84,6 +84,9 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
     const [rejectOpen, setRejectOpen] = useState(false);
     const [busy, setBusy] = useState(false);
     const [bulkOutcomes, setBulkOutcomes] = useState<HrBulkOutcome[] | null>(null);
+    /** step_id → the line the decider was looking at when they ticked it. See `runBulk`. */
+    const [bulkLines, setBulkLines] = useState<Record<string, string>>({});
+    const [bulkVerb, setBulkVerb] = useState<"Approved" | "Rejected">("Approved");
     const [bulkRefusal, setBulkRefusal] = useState<HrRefusal | null>(null);
     const [failure, setFailure] = useState<{ id: string; failureClass: string } | null>(null);
     const [pending, startTransition] = useTransition();
@@ -102,6 +105,25 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
         setBusy(true);
         setBulkRefusal(null);
         setBulkOutcomes(null);
+        /*
+            🚨 SNAPSHOT THE NAMES *BEFORE* THE CALL, NOT AFTER.
+            The outcome panel used to print each step's bare uuid. The names were right
+            there — on the rows the decider had just ticked — but they cannot be looked up
+            afterwards: `reload()` drops the decided rows out of the queue, which is exactly
+            what makes a later join return nothing and a uuid the only thing left to print.
+
+            This is the client rendering ITS OWN SELECTION back — the same lines the decider
+            was looking at when they ticked the boxes — so it discloses nothing new and needs
+            no door change. Entitlement already rode in with the rows (`hr._wf_display`
+            withheld what this viewer may not see), and `inboxRowLine` carries that through.
+        */
+        const picked = new Set(selectedIds);
+        const lines: Record<string, string> = {};
+        for (const row of inbox?.needs_my_decision ?? []) {
+            if (picked.has(row.step_id)) lines[row.step_id] = inboxRowLine(row);
+        }
+        setBulkLines(lines);
+        setBulkVerb(intent === "approve" ? "Approved" : "Rejected");
         try {
             const envelope = await bulkDecide(selectedIds, decision, reason ?? null);
             if (isRefusal(envelope)) {
@@ -185,23 +207,63 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                 {bulkOutcomes ? (
                     <div className="rounded-lg border border-border bg-card p-4">
                         <p className="text-sm font-medium">Per-step outcomes</p>
-                        <ul className="mt-2 space-y-1 text-sm">
-                            {bulkOutcomes.map((outcome) => (
-                                <li key={outcome.step_id} className="flex gap-2">
-                                    <span
-                                        className={
-                                            outcome.granted
-                                                ? "text-foreground"
-                                                : "text-destructive"
-                                        }
-                                    >
-                                        {outcome.granted ? "decided" : "skipped"}
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                        {outcome.detail ?? outcome.reason ?? outcome.step_id}
-                                    </span>
-                                </li>
-                            ))}
+                        {/*
+                            🚨 THE OUTCOME NAMES THE THING DECIDED, NOT ITS UUID.
+                            This read `{outcome.detail ?? outcome.reason ?? outcome.step_id}`,
+                            so with no detail and no reason — the ordinary success case — every
+                            approved row printed as "decided 85217879-…". A decider who has just
+                            approved eight timecards is told eight uuids were decided, and has no
+                            way to tell which person each one was.
+
+                            The line comes from `bulkLines`, snapshotted from the ticked rows
+                            before the call (see `runBulk`), so this renders what the decider was
+                            already looking at. The uuid is not deleted — it moves behind the
+                            "Step reference" disclosure, where a machine token belongs.
+                        */}
+                        <ul className="mt-2 space-y-2 text-sm">
+                            {bulkOutcomes.map((outcome) => {
+                                const line = bulkLines[outcome.step_id];
+                                return (
+                                    <li key={outcome.step_id}>
+                                        <div className="flex flex-wrap items-baseline gap-x-2">
+                                            <span
+                                                className={
+                                                    outcome.granted
+                                                        ? "font-medium text-foreground"
+                                                        : "font-medium text-destructive"
+                                                }
+                                            >
+                                                {outcome.granted ? bulkVerb : "Skipped"}
+                                            </span>
+                                            <span className="text-muted-foreground">
+                                                {/* A skip's REASON is the point of the row and
+                                                    outranks the name; a success is named. */}
+                                                {outcome.granted
+                                                    ? (line ??
+                                                      outcome.detail ??
+                                                      "this item is no longer in your queue")
+                                                    : (outcome.detail ??
+                                                      outcome.reason ??
+                                                      "no reason given")}
+                                            </span>
+                                        </div>
+                                        {!outcome.granted && line ? (
+                                            <div className="text-xs text-muted-foreground">
+                                                {line}
+                                            </div>
+                                        ) : null}
+                                        <details className="mt-0.5">
+                                            <summary className="cursor-pointer text-xs text-muted-foreground">
+                                                Step reference
+                                            </summary>
+                                            <p className="mt-1 break-words font-mono text-xs text-muted-foreground">
+                                                {outcome.step_id}
+                                                {outcome.reason ? ` · ${outcome.reason}` : ""}
+                                            </p>
+                                        </details>
+                                    </li>
+                                );
+                            })}
                         </ul>
                         <Button
                             className="mt-3"
