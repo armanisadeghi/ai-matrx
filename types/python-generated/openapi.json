@@ -126991,6 +126991,28 @@
             ],
             "title": "Agent Version Id"
           },
+          "holder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Id"
+          },
+          "holder_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Version Id"
+          },
           "use_latest": {
             "anyOf": [
               {
@@ -127585,17 +127607,74 @@
             "type": "string",
             "title": "Mandate Key"
           },
-          "agent_id": {
+          "holder_type": {
             "type": "string",
+            "enum": [
+              "agent",
+              "workflow"
+            ],
+            "title": "Holder Type",
+            "default": "agent"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Agent Id"
           },
           "is_version": {
             "type": "boolean",
-            "title": "Is Version"
+            "title": "Is Version",
+            "default": false
           },
           "definition_agent_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Definition Agent Id"
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Id"
+          },
+          "workflow_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Version Id"
+          },
+          "version_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version Number"
           },
           "config_overrides": {
             "anyOf": [
@@ -127683,9 +127762,6 @@
         "type": "object",
         "required": [
           "mandate_key",
-          "agent_id",
-          "is_version",
-          "definition_agent_id",
           "provenance"
         ],
         "title": "MandateResolutionResponse",

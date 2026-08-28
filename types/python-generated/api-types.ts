@@ -48812,6 +48812,10 @@ export interface components {
             agent_id?: string | null;
             /** Agent Version Id */
             agent_version_id?: string | null;
+            /** Holder Id */
+            holder_id?: string | null;
+            /** Holder Version Id */
+            holder_version_id?: string | null;
             /** Use Latest */
             use_latest?: boolean | null;
             /** Config Overrides */
@@ -49030,12 +49034,27 @@ export interface components {
         MandateResolutionResponse: {
             /** Mandate Key */
             mandate_key: string;
+            /**
+             * Holder Type
+             * @default agent
+             * @enum {string}
+             */
+            holder_type?: "agent" | "workflow";
             /** Agent Id */
-            agent_id: string;
-            /** Is Version */
-            is_version: boolean;
+            agent_id?: string | null;
+            /**
+             * Is Version
+             * @default false
+             */
+            is_version?: boolean;
             /** Definition Agent Id */
-            definition_agent_id: string;
+            definition_agent_id?: string | null;
+            /** Workflow Id */
+            workflow_id?: string | null;
+            /** Workflow Version Id */
+            workflow_version_id?: string | null;
+            /** Version Number */
+            version_number?: number | null;
             /** Config Overrides */
             config_overrides?: {
                 [key: string]: components["schemas"]["JsonValue"];
