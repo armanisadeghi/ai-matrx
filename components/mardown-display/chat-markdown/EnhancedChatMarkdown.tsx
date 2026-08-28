@@ -1271,11 +1271,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                   ),
                 )
               : processedBlocks.map((block, index) =>
-                  renderBlock(
-                    block,
-                    index,
-                    index === lastReasoningBlockIndex,
-                  ),
+                  renderBlock(block, index, index === lastReasoningBlockIndex),
                 )}
         </div>
 
