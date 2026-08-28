@@ -4,7 +4,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-08-27`
+**Last updated:** `2026-08-28`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -36,6 +36,9 @@ category filter · tag filter · reset · current-agent pinned on top · per-row
 - **Never hand a picker a pre-built `agents` array.** It reads the canonical Redux
   agent-definition slice itself. A caller-supplied list is how a surface silently ends up
   showing a partial set.
+- **Constrain the canonical picker instead of forking it.** Use `visibleTabs` for an
+  ownership/type boundary and `excludeAgentIds` for records that are invalid in the current
+  operation; the shared core still owns loading, filtering, sorting, counts, and row actions.
 
 Files: `features/agents/components/agent-listings/` — `AgentListDropdown.tsx`,
 `AgentListInlinePicker.tsx`, `useAgentListCore.ts`, `core/AgentList{Content,Tabs}.tsx`,
@@ -765,6 +768,8 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 ---
 
 ## Change log
+
+- `2026-08-28` — **The canonical agent picker sweep now covers every generic selection surface.** The output-schema apply dialog, Agent App binding, Code workspace chat, CX chat sheet, Advanced Agent Editor fallback, Orchestra conductor selection, and both Research admin wiring editors now render `AgentListDropdown` or `AgentListInlinePicker` instead of partial local rosters. Operation-specific boundaries are expressed through the canonical core (`visibleTabs`, `includeSystemInAll`, and the new `excludeAgentIds`) rather than by pre-filtering an agent array, so search, tabs, sort, favorites, category/tag filters, reset, origin badges, detail peek, and complete Redux-backed inventory remain identical to the Chat header.
 
 - `2026-08-24` — **Successful pre-init draft capture stays local.** `setUserInputText` still creates a missing input entry, preserves every early keystroke, warns in the console, and appears in the Error Inspector. The capture now sets `durable:false`, so this expected recovery never files an unresolved `system_error`; genuine blocked-clear violations remain durable alarms. `errorCaptureStore` defaults every capture to durable, and `persistCapturedErrors` honors the explicit local-only flag for established, new, and guest users.
 - `2026-08-24` — **Working-document materialization no longer bypasses the committed-conversation edge queue.** Live evidence showed the document row committing 15.33 seconds before its conversation; user-first materialization called `assoc_add` directly during that gap, so the correct access-conveying ACL returned `42501`, two concurrent bridge mounts duplicated the generic catch, and the row survived without its chat edge. `materializeWorkingDocument` now creates only the row; both user-first and agent-first reflection send the edge through `persistOrQueueLink`, latch row durability independently, and let `flushPendingDocumentEdgesThunk` write exactly one edge after `waitForConversationPersisted`. Association failures already captured by the Supabase adapter no longer emit a second generic console symptom. Focused tests hold persistence unresolved and prove both paths defer the RPC until release.

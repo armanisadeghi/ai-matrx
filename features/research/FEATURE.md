@@ -102,6 +102,9 @@ endpoint map). **State** — feature-local Zustand (`state/topicStore.ts` via
 
 ## Change log
 
+- 2026-08-28 — Research template bindings and pipeline agent wiring now use the canonical
+  system-agent picker, retaining their system-only boundary while inheriting the complete shared
+  search, sort, filter, favorite, reset, origin, and detail behavior.
 - 2026-08-28 — Replaced the new-topic wizard's hidden active-org project filter with the canonical
   hierarchy picker and Surface-A bridge, making organization choice visible and globally active.
 - 2026-08-26 — Added the safe reviewed-intake return contract for cross-feature research starts;

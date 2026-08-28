@@ -2,7 +2,7 @@
 
 **Status:** `active` — incremental enhancement (resource pills + error inspection + unified context menu in flight)
 **Tier:** `1`
-**Last updated:** `2026-08-23`
+**Last updated:** `2026-08-28`
 
 > The standalone, VSCode-style code workspace mounted at [`/code`](<../../app/(a)/code/page.tsx>). Distinct from [`features/code-editor/`](../code-editor/FEATURE.md), which is the **embedded** editor surface used by the agent builder, prompt-app editor, notes, and friends. The two share the `vsc_*` UI-context contract; everything else is independent.
 
@@ -146,6 +146,8 @@ container.
 ---
 
 ## Change log
+
+- `2026-08-28` — **Code chat agent selection now delegates to the canonical Chat picker.** Both the empty state and active-agent trigger use the shared Redux-backed picker, so Code inherits the full agent inventory and standard tabs, search, sort, favorites, category/tag filters, reset, origin badges, and detail actions. Starting a new selection still clears Code's conversation focus and URL through `beginFreshCodeChat`.
 
 - `2026-08-27` — **Persisted Library rows now expose the complete existing file/folder action pipeline.** Root and nested files share one canonical row implementation with Open, Properties, Rename, Delete, Copy path, and Refresh; folders expose New file, New folder, Properties, Rename, Delete, Copy path, and Refresh. All mutations still use the existing `code-files` thunks and dialogs, read-only files disable mutation actions, and tablet panel sizing uses a direct `12.0625rem` constraint—the `12rem` floor plus a one-pixel guard—because `react-resizable-panels` does not accept CSS `calc(...)` sizes.
 - `2026-08-27` — **The responsive/menu contract now covers the live Code Library tree, not only sandbox and expanded source-entry rows.** `My Files`, persisted file/folder rows, and registered source roots use the canonical v3 wrapper and `openContextMenuForElement`; every one exposes a 44px tablet/mobile Actions control, and source roots carry their real Refresh action.
