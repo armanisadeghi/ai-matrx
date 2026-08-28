@@ -192,7 +192,16 @@ function TimeOffBody({ employmentId }: { employmentId: string }) {
                 setDetachedRefusal(null);
                 void load();
               }}
-              onDetachedRefusal={setDetachedRefusal}
+              /*
+                Setting the message and refetching are ONE act: the picker must stop offering
+                what the door just refused, and the person must still be told why. Keeping them
+                in one callback is what stops a later edit from re-introducing the ordering bug
+                where the reload cleared the reason.
+              */
+              onDetachedRefusal={(message) => {
+                setDetachedRefusal(message);
+                void load();
+              }}
             />
             </>
           ) : null}

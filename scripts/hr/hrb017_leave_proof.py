@@ -108,8 +108,36 @@ async def main() -> None:  # noqa: C901
         up is to disable that trigger for the delete and put it straight back. That is lawful for
         a proof fixture in a sandbox org and would be a defect anywhere else.
         """
-        # The STABLE policy is deliberately exempt: purging it is what broke a verifier's session.
-        # Only strays from older runs are removed.
+        # 🚨 TWO DIFFERENT LIFETIMES, and conflating them broke this script once each way.
+        #
+        # The POLICY is stable and is never purged — deleting it under an open page is what
+        # produced round 30's `policy_not_available` on a leave type the form had just offered.
+        #
+        # The TEST EMPLOYEE'S OWN ROWS are purged every run, because these assertions state
+        # fresh-slate preconditions ("available is 40 before anything is booked", "no overlapping
+        # request"). Leaving them to accumulate made the run fail against its own leftovers.
+        # Scoped to EMPLOYEE and to this policy: no other person's leave is touched, so the
+        # PENDING request left standing for the verifier — which belongs to somebody else —
+        # survives every run of this script.
+        # Ledger BEFORE requests: hr.leave_ledger.leave_request_id is a real FK, so the usage
+        # entries have to go first or the request delete is refused. (It was, once.)
+        await conn.execute("alter table hr.leave_ledger disable trigger _zz_leave_ledger_no_delete")
+        await conn.execute(
+            "do $$ begin perform hr.arm_write(); "
+            f"delete from hr.leave_ledger where employment_id = $tok${EMPLOYEE}$tok$::uuid "
+            f"  and leave_policy_id = $tok${PROOF_POLICY_ID}$tok$::uuid; end $$;")
+        await conn.execute("alter table hr.leave_ledger enable trigger _zz_leave_ledger_no_delete")
+        await conn.execute(
+            "do $$ begin perform hr.arm_write(); "
+            f"delete from hr.workflow_instance where target_token='hr_leave_request' and target_id in "
+            f"  (select id from hr.leave_request where employment_id = $tok${EMPLOYEE}$tok$::uuid "
+            f"     and leave_policy_id = $tok${PROOF_POLICY_ID}$tok$::uuid); end $$;")
+        await conn.execute(
+            "do $$ begin perform hr.arm_write(); "
+            f"delete from hr.leave_request where employment_id = $tok${EMPLOYEE}$tok$::uuid "
+            f"  and leave_policy_id = $tok${PROOF_POLICY_ID}$tok$::uuid; end $$;")
+
+        # Only strays from older runs (policies at other ids) are removed.
         ids = await conn.fetch(
             "select id from hr.leave_policy where organization_id=$1::uuid "
             "  and name like 'ZZZ L5 PROOF%' and id <> $2::uuid",
@@ -193,10 +221,22 @@ async def main() -> None:  # noqa: C901
               (employment_id, leave_policy_id, effective_from, policy_year_start_on, organization_id)
             select $1::uuid, $2::uuid, current_date - 200, date_trunc('year', current_date)::date, $3::uuid
               from armed
+             where not exists (
+                     select 1 from hr.leave_enrollment e
+                      where e.employment_id = $1::uuid and e.leave_policy_id = $2::uuid
+                        and e.deleted_at is null)
             returning id
             """,
             EMPLOYEE, policy_id, ORG,
         )
+        if enroll_id is None:
+            # The enrollment survived from an earlier run, because the policy is now STABLE and
+            # is deliberately not purged (see the note at the policy insert). Reuse it.
+            enroll_id = await conn.fetchval(
+                "select id from hr.leave_enrollment where employment_id=$1::uuid "
+                "  and leave_policy_id=$2::uuid and deleted_at is null limit 1",
+                EMPLOYEE, policy_id,
+            )
         opening = await conn.fetchval(
             "select hr.leave_ledger_post($1::uuid, $2::uuid, 'opening_balance', 40, "
             "current_date - 30, 'ZZZ L5 PROOF opening balance')",

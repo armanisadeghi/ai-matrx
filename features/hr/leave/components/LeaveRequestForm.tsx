@@ -293,12 +293,24 @@ export function LeaveRequestForm({
         renders, because they are owed the reason for the outcome they just got.
       */
       if (isHrDenied(res) && res.payload?.staleSelection === true) {
-        // Hand the sentence to the host FIRST — refetching may unmount this component.
+        /*
+          Hand the sentence UP and let the host refetch. This deliberately does NOT call
+          `onSubmitted` — that is the SUCCESS path, and it clears the very message being set
+          here. The first version of this fix called both, in that order, and the clear won: the
+          employee clicked Send, the form vanished, and no reason appeared. Exactly the swallow
+          round 30 reported, recreated by its own fix.
+        */
+        /*
+          The DOOR states the fact; THIS surface states what it did about it. A door cannot know
+          whether its caller refetches — a phone app, an export script and this page all get the
+          same envelope — so it stopped prescribing "reload the page" (hr_l5_24) and we append the
+          remedy that is actually true here, because we do refetch.
+        */
         onDetachedRefusal(
-          res.detail ??
-            "That leave type changed while this page was open. The list has been refreshed.",
+          `${
+            res.detail ?? "That leave type changed while this page was open."
+          } The list has been updated.`,
         );
-        onSubmitted();
       }
       return;
     }
