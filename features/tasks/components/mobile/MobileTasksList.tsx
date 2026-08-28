@@ -282,7 +282,8 @@ export default function MobileTasksList({
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <h3
-                      className={`text-base font-medium mb-1 ${
+                      title={task.title}
+                      className={`mb-1 min-w-0 truncate text-base font-medium ${
                         task.completed
                           ? "line-through text-muted-foreground"
                           : "text-foreground"
@@ -290,17 +291,20 @@ export default function MobileTasksList({
                     >
                       {task.title}
                     </h3>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-muted-foreground">
                       {task.projectName && showAllProjects && (
-                        <span className="text-primary">
+                        <span
+                          className="min-w-0 flex-1 truncate text-primary"
+                          title={task.projectName}
+                        >
                           ● {task.projectName}
                         </span>
                       )}
                       {task.dueDate && (
                         <span
-                          className={
+                          className={`shrink-0 ${
                             isPastDue ? "text-destructive font-medium" : ""
-                          }
+                          }`}
                         >
                           {formatDateOnly(task.dueDate, {
                             month: "short",
@@ -309,7 +313,9 @@ export default function MobileTasksList({
                         </span>
                       )}
                       {task.priority && (
-                        <span className="capitalize">{task.priority}</span>
+                        <span className="shrink-0 capitalize">
+                          {task.priority}
+                        </span>
                       )}
                     </div>
                     <ScopeTagsDisplay

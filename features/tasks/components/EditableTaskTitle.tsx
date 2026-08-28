@@ -112,9 +112,10 @@ export default function EditableTaskTitle({
   }
 
   return (
-    <div className="flex items-center gap-2 flex-1 group">
+    <div className="group flex min-w-0 flex-1 items-center gap-2">
       <span
-        className={`flex-1 ${
+        title={title}
+        className={`min-w-0 flex-1 truncate ${
           completed ? "line-through text-muted-foreground" : "text-foreground"
         }`}
       >
@@ -125,7 +126,7 @@ export default function EditableTaskTitle({
           e.stopPropagation();
           setIsEditing(true);
         }}
-        className="p-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary rounded hover:bg-accent"
+        className="shrink-0 p-1 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary rounded hover:bg-accent"
         title="Edit title"
       >
         <Edit2 size={14} />

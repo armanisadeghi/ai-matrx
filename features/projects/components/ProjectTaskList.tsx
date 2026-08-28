@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/official/SearchInput";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
@@ -73,6 +74,7 @@ export function ProjectTaskList({
 }) {
   const openTaskEditor = useOpenTaskEditorWindow();
   const [tasks, setTasks] = React.useState<DatabaseTask[]>([]);
+  const [searchQuery, setSearchQuery] = React.useState("");
   const [loading, setLoading] = React.useState(true);
   const [reloadTick, setReloadTick] = React.useState(0);
   const [busyId, setBusyId] = React.useState<string | null>(null);
@@ -122,11 +124,25 @@ export function ProjectTaskList({
 
   const reload = () => setReloadTick((t) => t + 1);
 
+  const normalizedSearch = searchQuery.trim().toLocaleLowerCase();
+  const matchesSearch = (task: DatabaseTask) => {
+    if (!normalizedSearch) return true;
+    return [task.title, task.description, task.priority, task.due_date].some(
+      (value) => value?.toLocaleLowerCase().includes(normalizedSearch),
+    );
+  };
   const topLevel = tasks.filter((t) => !t.parent_task_id);
   const childrenOf = (id: string) =>
     tasks.filter((t) => t.parent_task_id === id);
-  const open = topLevel.filter((t) => !isDone(t));
-  const done = topLevel.filter((t) => isDone(t));
+  const visibleChildrenOf = (id: string) =>
+    childrenOf(id).filter(matchesSearch);
+  const matchesTaskTree = (task: DatabaseTask) =>
+    matchesSearch(task) || visibleChildrenOf(task.id).length > 0;
+  const open = topLevel.filter((t) => !isDone(t) && matchesTaskTree(t));
+  const done = topLevel.filter((t) => isDone(t) && matchesTaskTree(t));
+  const matchingTaskCount = normalizedSearch
+    ? tasks.filter(matchesSearch).length
+    : tasks.length;
 
   React.useEffect(() => {
     onCountsChange?.({
@@ -215,7 +231,9 @@ export function ProjectTaskList({
 
   const renderRows = (list: DatabaseTask[]) =>
     list.flatMap((t) => {
-      const subs = childrenOf(t.id);
+      const subs = normalizedSearch
+        ? visibleChildrenOf(t.id)
+        : childrenOf(t.id);
       const rows: React.ReactNode[] = [
         <TaskTableRow
           key={t.id}
@@ -289,14 +307,41 @@ export function ProjectTaskList({
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <SearchInput
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+          placeholder="Search tasks…"
+          aria-label="Search project tasks"
+          showClearButton={false}
+          className="w-full sm:max-w-sm"
+          inputClassName="h-9 text-base sm:text-sm"
+        />
+        {normalizedSearch && (
+          <span className="self-end shrink-0 text-xs tabular-nums text-muted-foreground sm:self-auto">
+            {matchingTaskCount} found
+          </span>
+        )}
+      </div>
       <div className="rounded-lg border border-border overflow-hidden">
-        <Table>
+        <Table className="table-fixed">
+          <colgroup>
+            <col />
+            <col className="w-16 sm:w-32" />
+            <col className="w-20 sm:w-28" />
+            <col className="w-16" />
+          </colgroup>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="h-9">Task</TableHead>
-              <TableHead className="h-9 w-32">Priority</TableHead>
-              <TableHead className="h-9 w-28">Due</TableHead>
-              <TableHead className="h-9 w-12" />
+              <TableHead className="h-9 max-w-0 overflow-hidden">
+                Task
+              </TableHead>
+              <TableHead className="h-9 w-16 sm:w-32">
+                <span className="sm:hidden">Pri.</span>
+                <span className="hidden sm:inline">Priority</span>
+              </TableHead>
+              <TableHead className="h-9 w-20 sm:w-28">Due</TableHead>
+              <TableHead className="h-9 w-16" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -306,7 +351,9 @@ export function ProjectTaskList({
                   colSpan={4}
                   className="text-sm text-muted-foreground italic py-3"
                 >
-                  No open tasks.
+                  {normalizedSearch
+                    ? "No matching open tasks."
+                    : "No open tasks."}
                 </TableCell>
               </TableRow>
             ) : (
@@ -340,9 +387,15 @@ export function ProjectTaskList({
             />
             Done · {done.length}
           </button>
-          {showDone && (
+          {(showDone || Boolean(normalizedSearch)) && (
             <div className="rounded-lg border border-border overflow-hidden">
-              <Table>
+              <Table className="table-fixed">
+                <colgroup>
+                  <col />
+                  <col className="w-16 sm:w-32" />
+                  <col className="w-20 sm:w-28" />
+                  <col className="w-16" />
+                </colgroup>
                 <TableBody>{renderRows(done)}</TableBody>
               </Table>
             </div>
@@ -379,8 +432,13 @@ function TaskTableRow({
   const done = task.status === "completed";
   return (
     <TableRow className="group">
-      <TableCell className="py-1.5">
-        <div className={cn("flex items-center gap-2", isSub && "pl-7")}>
+      <TableCell className="max-w-0 overflow-hidden py-1.5">
+        <div
+          className={cn(
+            "flex min-w-0 items-center gap-2 overflow-hidden",
+            isSub && "pl-7",
+          )}
+        >
           {isSub && (
             <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />
           )}
@@ -419,7 +477,7 @@ function TaskTableRow({
           {!isSub && onAddSubtask && (
             <button
               onClick={onAddSubtask}
-              className="shrink-0 h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all"
+              className="hidden shrink-0 h-6 w-6 rounded-md items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent hover:text-foreground transition-all sm:flex"
               title="Add subtask"
             >
               <CornerDownRight className="h-3.5 w-3.5" />
@@ -427,20 +485,20 @@ function TaskTableRow({
           )}
         </div>
       </TableCell>
-      <TableCell className="py-1.5">
+      <TableCell className="w-16 shrink-0 py-1.5 sm:w-32">
         <TaskPriorityPicker
-          value={(task.priority ?? null) as TaskPriority}
+          value={task.priority}
           onChange={(p) => onPriority(task, p)}
         />
       </TableCell>
-      <TableCell className="py-1.5">
+      <TableCell className="w-20 shrink-0 py-1.5 sm:w-28">
         <TaskDueDatePicker
           value={task.due_date}
           overdue={isOverdue(task)}
           onChange={(due) => onDueDate(task, due)}
         />
       </TableCell>
-      <TableCell className="py-1.5">
+      <TableCell className="w-16 shrink-0 py-1.5">
         <div className="flex items-center justify-end gap-0.5">
           <TaskCopyForAiButton
             taskId={task.id}

@@ -304,11 +304,12 @@ function CompactTaskItemCard({
       <div className="flex-1 min-w-0">
         <h3
           className={cn(
-            "text-xs font-medium mb-1",
+            "mb-1 min-w-0 truncate text-xs font-medium",
             task.completed
               ? "line-through text-muted-foreground"
               : "text-foreground",
           )}
+          title={task.title}
         >
           {task.title}
         </h3>
@@ -354,11 +355,12 @@ function CompactTaskItemStacked({
         />
         <h3
           className={cn(
-            "flex-1 min-w-0 text-[13px] font-medium leading-snug line-clamp-2",
+            "flex-1 min-w-0 truncate text-[13px] font-medium leading-snug",
             task.completed
               ? "line-through text-muted-foreground"
               : "text-foreground",
           )}
+          title={task.title}
         >
           {task.title}
         </h3>

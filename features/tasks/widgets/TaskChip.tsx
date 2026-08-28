@@ -93,12 +93,12 @@ export default function TaskChip({
       ) : (
         <CircleDashed className="w-3 h-3 shrink-0 text-muted-foreground" />
       )}
-      {priority && <span className={cn("w-1.5 h-1.5 rounded-full", dotColor)} />}
+      {priority && (
+        <span className={cn("w-1.5 h-1.5 rounded-full", dotColor)} />
+      )}
       <span
-        className={cn(
-          "truncate max-w-[160px]",
-          completed && "line-through",
-        )}
+        title={task.title}
+        className={cn("truncate max-w-[160px]", completed && "line-through")}
       >
         {task.title}
       </span>

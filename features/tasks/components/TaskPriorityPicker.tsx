@@ -157,7 +157,7 @@ function PriorityPillPicker({
           type="button"
           onKeyDown={onTriggerKeyDown}
           className={cn(
-            "inline-flex items-center gap-1 h-6 px-1.5 rounded-md border text-[10px] font-medium transition-colors hover:bg-accent",
+            "inline-flex items-center gap-1 h-6 max-lg:h-11 px-1.5 rounded-md border text-[10px] font-medium whitespace-nowrap transition-colors hover:bg-accent",
             meta
               ? meta.pill
               : "border-transparent text-muted-foreground/50 hover:text-foreground",
@@ -165,8 +165,15 @@ function PriorityPillPicker({
           )}
           title="Set priority"
         >
-          <Flag className="h-2.5 w-2.5" />
-          {meta ? meta.label : "—"}
+          <Flag className="hidden h-2.5 w-2.5 sm:block" />
+          {meta ? (
+            <>
+              <span className="sm:hidden">{meta.shortLabel}</span>
+              <span className="hidden sm:inline">{meta.label}</span>
+            </>
+          ) : (
+            "—"
+          )}
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-32 p-1">
