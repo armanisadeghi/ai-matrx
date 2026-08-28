@@ -26,17 +26,17 @@ import {
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
 import { DictionarySection } from "@/features/dictionary/components/DictionarySection";
 import { ScopeNotFound } from "./ScopeNotFound";
-import { ScopeGlyph } from "./ScopeGlyph";
+import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
-} from "@/features/scope-system/constants/scope-colors";
+} from "@/features/scopes/constants/scope-colors";
 import {
   orgScopesHref,
   scopeHref,
   scopeTypeHref,
   scopeContextItemsHref,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 
 interface ScopeEditViewProps {
   orgId: string;

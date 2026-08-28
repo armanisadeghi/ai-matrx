@@ -14,7 +14,7 @@
 import { cn } from "@/utils/cn";
 import { ContextValueDisplay } from "@/features/scopes/components/reference/ContextValueDisplay";
 import type { ContextItemValue } from "@/features/scopes/types";
-import type { ContextValueType } from "@/features/agent-context/types";
+import type { ContextValueType } from "@/features/scopes/types";
 
 export interface ContextValueRowProps {
   value: ContextItemValue;

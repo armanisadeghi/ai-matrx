@@ -2,8 +2,8 @@
 
 import { ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import type { ScopeType } from "@/features/agent-context/redux/scope/types";
 
 interface ScopeTypeCardProps {

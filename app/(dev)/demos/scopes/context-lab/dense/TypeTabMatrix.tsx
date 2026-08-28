@@ -15,8 +15,8 @@
 import React, { useMemo, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import {
   buildAncestryMap,
   isSelected,

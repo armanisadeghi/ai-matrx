@@ -63,16 +63,16 @@ import { EditContextItemSheet } from "./EditContextItemSheet";
 import { useOpenContextItemsWindow } from "@/features/overlays/openers/contextItemsWindow";
 import { ReorderDialog } from "./ReorderDialog";
 import { ScopeNotFound } from "./ScopeNotFound";
-import { ScopeGlyph } from "./ScopeGlyph";
+import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
-} from "@/features/scope-system/constants/scope-colors";
+} from "@/features/scopes/constants/scope-colors";
 import {
   contextItemHref,
   contextItemsHref,
   orgScopesHref,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
 import type { ScopeType } from "@/features/agent-context/redux/scope/types";
 

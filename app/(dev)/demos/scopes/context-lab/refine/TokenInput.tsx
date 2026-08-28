@@ -12,8 +12,8 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Building2, ListFilter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import type {
   AssignableProject,
   AssignableTask,

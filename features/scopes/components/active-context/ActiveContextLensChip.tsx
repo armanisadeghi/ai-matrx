@@ -23,7 +23,7 @@ import {
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import { ActiveContextTree } from "./ActiveContextTree";
 import { LensChip, type LensChipNode } from "./LensChip";
 

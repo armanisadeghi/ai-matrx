@@ -37,7 +37,7 @@ import {
 import {
   resolveColor,
   type ScopeColor,
-} from "@/features/scope-system/constants/scope-colors";
+} from "@/features/scopes/constants/scope-colors";
 import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
 
 /* ── node model ──────────────────────────────────────────────────────────── */

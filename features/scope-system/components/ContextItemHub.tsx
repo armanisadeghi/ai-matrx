@@ -26,18 +26,18 @@ import {
 } from "@/features/scope-system/redux/scopeValuesSlice";
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { EditContextItemSheet } from "./EditContextItemSheet";
-import { ScopeGlyph } from "./ScopeGlyph";
+import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
-} from "@/features/scope-system/constants/scope-colors";
+} from "@/features/scopes/constants/scope-colors";
 import {
   contextItemsHref,
   orgScopesHref,
   scopeHref,
   scopeItemHref,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
 import type { Scope } from "@/features/agent-context/redux/scope/types";
 

@@ -74,8 +74,8 @@ import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import {
   fetchAssignableProjects,
   fetchAssignableTasks,

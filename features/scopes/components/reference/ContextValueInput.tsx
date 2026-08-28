@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/select";
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
-import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
+import type { ContextValueType } from "@/features/scopes/types";
 import { ReferenceValuePicker } from "@/features/scopes/components/reference/ReferenceValuePicker";
 import type { ReferenceItemConfig } from "@/features/scopes/utils/referenceCell";
 

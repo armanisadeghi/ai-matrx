@@ -20,8 +20,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Briefcase, ChevronRight, FolderKanban, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import {
   buildAncestryMap,
   isEmptySelection,

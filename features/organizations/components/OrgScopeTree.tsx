@@ -22,11 +22,11 @@ import {
   fetchScopes,
   selectScopesByType,
 } from "@/features/agent-context/redux/scope/scopesSlice";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
-} from "@/features/scope-system/constants/scope-colors";
+} from "@/features/scopes/constants/scope-colors";
 import type { ScopeType } from "@/features/agent-context/redux/scope/types";
 
 export function OrgScopeTree({ orgId, slug }: { orgId: string; slug: string }) {

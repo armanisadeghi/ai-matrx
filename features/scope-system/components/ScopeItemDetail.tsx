@@ -35,18 +35,18 @@ import {
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { ScopeItemSuggestionsPanel } from "@/features/kg-suggestions/components/ScopeItemSuggestionsPanel";
 import { EditContextItemSheet } from "./EditContextItemSheet";
-import { ScopeGlyph } from "./ScopeGlyph";
+import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
-} from "@/features/scope-system/constants/scope-colors";
+} from "@/features/scopes/constants/scope-colors";
 import {
   orgScopesHref,
   scopeHref,
   scopeItemHref,
   scopeTypeHref,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 import { VALUE_TYPE_CONFIG } from "@/features/agent-context/constants";
 
 interface ScopeItemDetailProps {

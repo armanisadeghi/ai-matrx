@@ -20,8 +20,8 @@ import {
   Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
 import type {
   AssignableProject,

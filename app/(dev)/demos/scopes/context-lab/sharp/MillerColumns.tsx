@@ -10,8 +10,8 @@
 import React, { useState } from "react";
 import { Building2, Check, ChevronRight, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import type { OrgNode, ScopeNode, ScopeTypeNode } from "@/features/scopes/types";
 import { useTypeItems, type PickerData, type SelectionApi } from "./engine";
 

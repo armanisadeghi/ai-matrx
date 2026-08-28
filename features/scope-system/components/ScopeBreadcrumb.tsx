@@ -32,7 +32,7 @@ import { cn } from "@/styles/themes/utils";
 import {
   orgScopesHref,
   orgHref,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 
 /** One selectable sibling inside a breadcrumb crumb's dropdown. */
 export interface ScopeCrumbOption {

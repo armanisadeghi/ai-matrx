@@ -20,7 +20,7 @@ import React from "react";
 import { Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
 
 export interface ContextSummaryInput {

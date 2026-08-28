@@ -20,8 +20,8 @@ import {
   SquareCheckBig,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import { fetchTypeItems } from "@/features/scopes/components/context-assignment/data";
 import type { ContextItemRow } from "@/features/scopes/types";
 import { previewWrite, type PickerData, type SelectionApi } from "./engine";

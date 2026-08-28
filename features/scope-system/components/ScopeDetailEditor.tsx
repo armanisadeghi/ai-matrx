@@ -27,12 +27,12 @@ import {
 import { ScopeFieldInput } from "./ScopeFieldInput";
 import { AddContextItemInline } from "./AddContextItemInline";
 import { ScopeAdvancedSection } from "./ScopeAdvancedSection";
-import { ScopeGlyph } from "./ScopeGlyph";
+import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
-} from "@/features/scope-system/constants/scope-colors";
+} from "@/features/scopes/constants/scope-colors";
 import { KgGraphCard } from "@/features/kg-graph/components/KgGraphCard";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
@@ -41,7 +41,7 @@ import {
   scopeTypeHref,
   scopeItemHref,
   scopeContextItemsHref,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";
 import { PrimaryEntityProvider } from "@/features/scopes/components/associations/PrimaryEntityContext";
 

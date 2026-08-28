@@ -27,7 +27,7 @@ import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { useContextValues } from "@/features/scopes/hooks/useContextValues";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
-import type { ContextValueType } from "@/features/agent-context/types";
+import type { ContextValueType } from "@/features/scopes/types";
 import type { OrgNode, ScopeNode, ScopeTypeNode } from "@/features/scopes/types";
 import { DynamicIcon } from "@/components/official/icons/IconResolver";
 import { Badge } from "@/components/ui/badge";

@@ -52,12 +52,12 @@ import { cn } from "@/utils/cn";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKgRowMutation } from "@/lib/redux/slices/kgSuggestionsSlice";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { ScopeGlyph } from "@/features/scope-system/components/ScopeGlyph";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import {
   scopeHref,
   scopeItemHref,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 import { useOpenNoteInWindow } from "@/features/notes/actions/useOpenNoteInWindow";
 import { useKgSuggestionEnrichment } from "@/features/kg-suggestions/hooks/useKgSuggestionEnrichment";
 import { useSourcePreviewDoc } from "@/features/kg-suggestions/hooks/useSourcePreviewDoc";

@@ -24,7 +24,7 @@ import {
 import { cn } from "@/utils/cn";
 import { parseReferenceCellValue } from "@/features/scopes/utils/referenceCell";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
-import type { ContextValueType } from "@/features/agent-context/types";
+import type { ContextValueType } from "@/features/scopes/types";
 import type { Json } from "@/types/database.types";
 
 export interface ContextValueDisplayCell {
