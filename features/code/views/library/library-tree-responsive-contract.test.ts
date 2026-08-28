@@ -54,6 +54,7 @@ describe("Code library tree responsive context-menu contract", () => {
       path.join(__dirname, "../../layout/WorkspaceLayout.tsx"),
       "utf8",
     );
-    expect(layout).toContain('minSize="calc(12rem + 1px)"');
+    expect(layout).toContain('minSize="12.0625rem"');
+    expect(layout).not.toContain('minSize="calc(');
   });
 });

@@ -235,7 +235,9 @@ export const WorkspaceLayout: React.FC<WorkspaceLayoutProps> = ({
           <ResizablePanel
             id={PANEL_IDS.SIDE}
             defaultSize={`${sideDefault}%`}
-            minSize="calc(12rem + 1px)"
+            // react-resizable-panels accepts direct size units, not CSS calc().
+            // 12.0625rem is the 12rem floor plus the one-pixel rounding guard.
+            minSize="12.0625rem"
             collapsible
             collapsedSize="0%"
             onResize={(size) => {
