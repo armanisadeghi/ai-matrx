@@ -39,6 +39,7 @@ features/product-capture/
   components/VoiceNoteButton.tsx      useSimpleRecorder wrapper
   components/ItemsSheet.tsx           review drawer (Drawer, CaptureThumb, ConfirmDialog)
 app/(core)/tools/product-capture/     page (SSR auth gate) + layout (metadata "PC") + ssr:false client boundary
+app/(core)/tools/product-capture/admin/  FeatureAdminPage map — add every new route/component here
 ```
 
 Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPreview` / `capturePhotoFromVideo` canvas path / `startVideoRecording`), `lib/qr/decode.ts` (THE decoder), `useSimpleRecorder` + `toAudioFile` + `transcribeCloudFile` (the audio invariants: captureLock, shared mic, one controller), `fileHandler`, `CaptureThumb`/`InlineMediaRef`, `guardedUpdate`, `ConfirmDialog`, Drawer, `@/lib/toast`. ONE `ssr:false` boundary at the route client (Fragmentation Law); everything beneath is static.
