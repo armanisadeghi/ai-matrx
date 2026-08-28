@@ -42823,7 +42823,73 @@ export type Database = {
         }
         Returns: Json
       }
+      _leave_blackout_hits: {
+        Args: { p_ends: string; p_rule: Json; p_starts: string }
+        Returns: boolean
+      }
+      _leave_lead_days: {
+        Args: { p_key: string; p_organization_id?: string }
+        Returns: number[]
+      }
+      _leave_policy_at: {
+        Args: { p_leave_policy_id: string }
+        Returns: {
+          accrual_method: string
+          accrual_per_units: number | null
+          accrual_rate: number | null
+          accrual_starts: string
+          accrual_unit: string | null
+          annual_accrual_cap: number | null
+          balance_cap: number | null
+          blackout_rules: Json
+          carryover_allowed: boolean
+          carryover_cap: number | null
+          carryover_expires_after_days: number | null
+          category_id: string | null
+          created_at: string
+          created_by: string | null
+          custom: Json
+          deleted_at: string | null
+          documentation_required_after_days: number | null
+          earning_code_id: string | null
+          id: string
+          increment_minutes: number
+          is_active: boolean
+          leave_kind: string
+          mandated_uses: Json
+          metadata: Json
+          name: string
+          negative_balance_allowed: boolean
+          negative_balance_floor: number | null
+          organization_id: string
+          payout_on_termination: string
+          reinstate_on_rehire_within_days: number | null
+          requires_approval: boolean
+          schedule_class_scope: string[]
+          statutory_basis_rule_class: string | null
+          statutory_jurisdiction_id: string | null
+          updated_at: string
+          updated_by: string | null
+          usable_after_days: number
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          waiting_period_days: number
+          worker_class_scope: string[]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "leave_policy"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       _leave_policy_probe: { Args: { p_case: string }; Returns: Json }
+      _leave_reason_is_mandated: {
+        Args: { p_mandated: Json; p_reason_category_id: string }
+        Returns: boolean
+      }
+      _leave_sentence: { Args: { p_fig: Json }; Returns: string }
+      _leave_viewer: { Args: { p_employment_id: string }; Returns: Json }
       _legality_envelope: {
         Args: { p_class: string; p_rules: Json }
         Returns: Json
@@ -43655,6 +43721,109 @@ export type Database = {
         }
         Returns: Json
       }
+      leave_day_hours: {
+        Args: { p_date: string; p_employment_id: string }
+        Returns: Json
+      }
+      leave_enrollment_refresh: {
+        Args: { p_employment_id: string; p_leave_policy_id: string }
+        Returns: undefined
+      }
+      leave_figures: {
+        Args: {
+          p_as_of?: string
+          p_employment_id: string
+          p_leave_policy_id: string
+        }
+        Returns: Json
+      }
+      leave_ledger_post: {
+        Args: {
+          p_actor_employment_id?: string
+          p_actor_type?: string
+          p_actor_user_id?: string
+          p_amount?: number
+          p_calc?: Json
+          p_clamps?: Json
+          p_employment_id: string
+          p_engine_key?: string
+          p_engine_version?: string
+          p_entry_kind: string
+          p_hours_delta: number
+          p_leave_policy_id: string
+          p_leave_request_id?: string
+          p_note?: string
+          p_occurred_on?: string
+          p_period_key?: string
+          p_rate?: number
+          p_reverses_entry_id?: string
+          p_rule_version_ids?: string[]
+          p_snapshot_inputs?: Json
+          p_source_work_interval_id?: string
+          p_source_workweek_id?: string
+        }
+        Returns: Json
+      }
+      leave_ledger_view: {
+        Args: {
+          p_as_of?: string
+          p_employment_id: string
+          p_leave_policy_id: string
+        }
+        Returns: Json
+      }
+      leave_project_balance: {
+        Args: {
+          p_as_of: string
+          p_employment_id: string
+          p_leave_policy_id: string
+        }
+        Returns: Json
+      }
+      leave_request_cancel: {
+        Args: { p_hours?: number; p_reason?: string; p_request_id: string }
+        Returns: Json
+      }
+      leave_request_preview: {
+        Args: {
+          p_day_parts?: Json
+          p_employment_id: string
+          p_ends_on: string
+          p_leave_policy_id: string
+          p_starts_on: string
+        }
+        Returns: Json
+      }
+      leave_request_submit: {
+        Args: {
+          p_day_parts?: Json
+          p_employment_id: string
+          p_ends_on: string
+          p_idempotency_key?: string
+          p_leave_case_id?: string
+          p_leave_policy_id: string
+          p_reason_category_id?: string
+          p_reason_note?: string
+          p_starts_on: string
+        }
+        Returns: Json
+      }
+      leave_span_hours: {
+        Args: {
+          p_day_parts?: Json
+          p_employment_id: string
+          p_ends_on: string
+          p_starts_on: string
+        }
+        Returns: Json
+      }
+      leave_wf_apply: { Args: { p_instance: string }; Returns: Json }
+      leave_wf_conflict: { Args: { p_instance: string }; Returns: Json }
+      leave_wf_digest: {
+        Args: { p_target_id: string; p_target_token: string }
+        Returns: string
+      }
+      leave_wf_validate: { Args: { p_instance: string }; Returns: Json }
       manager_as_of: {
         Args: { p_employment_id: string; p_on: string }
         Returns: string
@@ -43674,6 +43843,7 @@ export type Database = {
         Args: { p_as_of?: string; p_employment_id: string }
         Returns: Json
       }
+      my_time_off: { Args: { p_employment_id?: string }; Returns: Json }
       name_rule_violations: {
         Args: never
         Returns: {
@@ -61102,6 +61272,42 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_leave_ledger_view: {
+        Args: {
+          p_as_of?: string
+          p_employment_id: string
+          p_leave_policy_id: string
+        }
+        Returns: Json
+      }
+      hr_leave_request_cancel: {
+        Args: { p_hours?: number; p_reason?: string; p_request_id: string }
+        Returns: Json
+      }
+      hr_leave_request_preview: {
+        Args: {
+          p_day_parts?: Json
+          p_employment_id: string
+          p_ends_on: string
+          p_leave_policy_id: string
+          p_starts_on: string
+        }
+        Returns: Json
+      }
+      hr_leave_request_submit: {
+        Args: {
+          p_day_parts?: Json
+          p_employment_id: string
+          p_ends_on: string
+          p_idempotency_key?: string
+          p_leave_case_id?: string
+          p_leave_policy_id: string
+          p_reason_category_id?: string
+          p_reason_note?: string
+          p_starts_on: string
+        }
+        Returns: Json
+      }
       hr_member_employee_links: {
         Args: { p_organization_id: string; p_user_ids: string[] }
         Returns: Json
@@ -61133,6 +61339,7 @@ export type Database = {
         Returns: Json
       }
       hr_my_context: { Args: { p_organization_id?: string }; Returns: Json }
+      hr_my_time_off: { Args: { p_employment_id?: string }; Returns: Json }
       hr_org_chart: {
         Args: { p_on?: string; p_organization_id: string }
         Returns: Json
