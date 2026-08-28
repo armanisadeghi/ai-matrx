@@ -92,6 +92,7 @@ import {
   PanelRightOpen,
   Plus,
   StickyNote,
+  Tag,
   Undo2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -144,6 +145,10 @@ import {
 } from "@/features/marketing/seo/keyword-workbench/components/cells";
 import { ColumnChooser } from "@/features/marketing/seo/keyword-table/ColumnChooser";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
+import {
+  AssignPanel,
+  type AssignTarget,
+} from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
 import {
   getKeywordStamps,
   setKeywordStamps,
@@ -332,6 +337,9 @@ export function ValueWorkbench() {
     defaultPageSize: 50,
   });
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkAssignTarget, setBulkAssignTarget] = useState<AssignTarget | null>(
+    null,
+  );
   const [meaningOpen, setMeaningOpen] = useState(false);
   const [draft, setDraft] = useState<RulingDraft | null>(null);
   /** P23 — "+ Add a level" from the tier chip; the string is what was typed. */
@@ -1256,6 +1264,40 @@ export function ValueWorkbench() {
               <div className="shrink-0">{surfaces.node}</div>
             ) : null}
 
+            {/* The row cells and bulk mode share ONE dimension-value editor and
+          ONE stamp RPC. Keep this inline: the picker's portalled menu and a
+          modal overlay fight over outside-click ownership. Selection stays in
+          place after a write so the same batch can receive another dimension. */}
+            {bulkAssignTarget ? (
+              <div className="shrink-0 rounded-lg border border-border bg-card p-3 shadow-sm">
+                <AssignPanel
+                  siteId={siteId}
+                  dimensions={dimensions}
+                  dimensionsLoading={catalog.isLoading}
+                  target={bulkAssignTarget}
+                  onCancel={() => setBulkAssignTarget(null)}
+                  onDone={(result, picked) => {
+                    setBulkAssignTarget(null);
+                    void refreshAfterStamp();
+                    if (
+                      result.written > 0 &&
+                      !dimensionColumns.includes(picked.dimensionSlug)
+                    ) {
+                      setDimensionColumns([
+                        ...dimensionColumns,
+                        picked.dimensionSlug,
+                      ]);
+                    }
+                    toast.success(
+                      result.cleared > 0
+                        ? `Removed ${picked.valueLabel} from ${result.cleared.toLocaleString()} keyword${result.cleared === 1 ? "" : "s"}.`
+                        : `${picked.dimensionLabel}: ${picked.valueLabel} on ${result.written.toLocaleString()} keyword${result.written === 1 ? "" : "s"}${result.notesSaved ? " — your reason is saved with them." : "."}`,
+                    );
+                  }}
+                />
+              </div>
+            ) : null}
+
             {/* Review table — ONE v3 menu around the whole pane. */}
             <NonEditableContextMenu
               sourceFeature="marketing"
@@ -1342,6 +1384,21 @@ export function ValueWorkbench() {
                           type="button"
                           size="sm"
                           className="h-7 gap-1 px-2 text-xs"
+                          disabled={ids.length === 0 || catalog.isLoading}
+                          onClick={() =>
+                            setBulkAssignTarget({
+                              keywordIds: ids,
+                              label: `${ids.length.toLocaleString()} keyword${ids.length === 1 ? "" : "s"}`,
+                            })
+                          }
+                        >
+                          <Tag className="h-3 w-3" /> Set dimensions…
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-7 gap-1 px-2 text-xs"
                           disabled={ruling.isPending}
                           onClick={() =>
                             setDraft({
@@ -1352,7 +1409,7 @@ export function ValueWorkbench() {
                             })
                           }
                         >
-                          <Gavel className="h-3 w-3" /> Set value…
+                          <Gavel className="h-3 w-3" /> Set level…
                         </Button>
                         <Button
                           type="button"
