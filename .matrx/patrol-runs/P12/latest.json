@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P12",
   "runId": "20260828T162115Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-28T16:21:26.591Z",
-  "summary": "Added a bounded identity-and-state-aware direct interactive-root detector with focused classification tests.",
+  "state": "certifying",
+  "updatedAt": "2026-08-28T16:26:32.431Z",
+  "summary": "Detector and duplicate-overlay repair batch passed worker gates and is ready for exact-SHA adversarial certification.",
   "source": "20260828T162115Z.json",
-  "eventHash": "6ceaaa89db7ab5c336ef6614ff420ee1c7664b601c04b055caf57398f8ef5666"
+  "eventHash": "4cf7e5753cbfa453f140c47049227a1f4bf8541948d68abbebed6469dfe1732c"
 }
