@@ -198,6 +198,23 @@ async def main() -> None:  # noqa: C901
             )
         print(f"  leave_approve grant → {str(grant)[:160]}")
 
+        # 🚨 hr.reporting_line is EMPTY PLATFORM-WIDE (0 rows in the whole database), so nothing
+        # in HR can derive a manager from it — SPEC-LEAVE §11's team scope, the workflow
+        # resolver's reporting_line fallback rung, and hr.manager_visibility_depth all walk an
+        # empty table. Reported as a finding; seeded here as a FIXTURE so §14's team-scope
+        # assertions test the derivation instead of testing an empty table.
+        # 🚨 `hr.reporting_line.line_kind` is CHECKed to dotted|functional|project|interim — there
+        # is NO 'primary'. The primary manager lives on
+        # `hr.position_assignment.manager_employment_id`, which is why reporting_line is empty
+        # platform-wide and why that emptiness is NOT a seeding defect. The fixture sets the
+        # primary line, which is the one an ordinary manager actually has.
+        await conn.execute(
+            "do $$ begin perform hr.arm_write(); "
+            "update hr.position_assignment set manager_employment_id = "
+            f"  $tok${APPROVER}$tok$::uuid "
+            f" where employment_id = $tok${EMPLOYEE}$tok$::uuid and is_primary "
+            "   and manager_employment_id is null; end $$;")
+
         print("\n=== 1. THE BACK-DATE REFUSAL is real, not documented ===")
         try:
             await conn.fetchval(
@@ -484,6 +501,87 @@ async def main() -> None:  # noqa: C901
                       "and a door",
                       bool(own) and all(x.get("href") for x in own), str(own)[:300])
 
+
+        print("\n=== 14. The declared filter axes actually filter (§5.1, §10) ===")
+        # 🚨 Run as a REAL TOKEN. The same assertions executed as privileged SQL return zero rows
+        # for every filter — because `auth.uid()` is null, the scope collapses to `mine`, and an
+        # empty result looks identical to a working filter. That probe proved nothing and this
+        # one replaces it.
+        if mgr_token:
+            bad = await rpc("hr_leave_balances", {"p_organization_id": ORG, "p_scope": "organization",
+                                                  "p_filters": {"policy_id": "x", "teem": 1}}, mgr_token)
+            check("a misspelled balances axis is REFUSED BY NAME",
+                  isinstance(bad, dict) and bad.get("reason") == "hr_unknown_filter_axis",
+                  str(bad)[:200])
+            check("the refusal names every offending key",
+                  isinstance(bad, dict) and bad.get("unknown_axes") == ["policy_id", "teem"],
+                  str(bad.get("unknown_axes") if isinstance(bad, dict) else bad))
+
+            allrows = await rpc("hr_leave_balances", {"p_organization_id": ORG,
+                                                      "p_scope": "organization", "p_filters": {}}, mgr_token)
+            n_all = len(allrows.get("rows", [])) if isinstance(allrows, dict) else 0
+            # the control: the unfiltered list must be NON-EMPTY, or every filter assertion below
+            # passes vacuously.
+            check("the unfiltered balances list returns rows (the control for every filter below)",
+                  n_all > 0, str(allrows)[:300])
+
+            if n_all > 0:
+                nowhere = await rpc("hr_leave_balances",
+                                    {"p_organization_id": ORG, "p_scope": "organization",
+                                     "p_filters": {"location_id": "00000000-0000-0000-0000-000000000001"}},
+                                    mgr_token)
+                check("a location nobody is in filters the list to nothing",
+                      len(nowhere.get("rows", [])) == 0, str(nowhere)[:200])
+                mine_pol = await rpc("hr_leave_balances",
+                                     {"p_organization_id": ORG, "p_scope": "organization",
+                                      "p_filters": {"leave_policy_id": policy_id}}, mgr_token)
+                check("filtering to the proof policy keeps its rows",
+                      0 < len(mine_pol.get("rows", [])) <= n_all, str(mine_pol)[:200])
+                neg = await rpc("hr_leave_balances",
+                                {"p_organization_id": ORG, "p_scope": "organization",
+                                 "p_filters": {"negative_only": True}}, mgr_token)
+                check("negative-only narrows a list where nobody is negative",
+                      len(neg.get("rows", [])) < n_all, str(neg)[:200])
+
+            calbad = await rpc("hr_leave_calendar",
+                               {"p_organization_id": ORG, "p_from": (date.today()-timedelta(days=30)).isoformat(),
+                                "p_to": (date.today()+timedelta(days=90)).isoformat(),
+                                "p_filters": {"typo": 1}}, mgr_token)
+            check("a misspelled calendar axis is REFUSED BY NAME",
+                  isinstance(calbad, dict) and calbad.get("reason") == "hr_unknown_filter_axis",
+                  str(calbad)[:200])
+            calgrp = await rpc("hr_leave_calendar",
+                               {"p_organization_id": ORG, "p_from": (date.today()-timedelta(days=30)).isoformat(),
+                                "p_to": (date.today()+timedelta(days=90)).isoformat(),
+                                "p_filters": {"group_by": "week"}}, mgr_token)
+            check("the calendar groups by person or day and refuses anything else",
+                  isinstance(calgrp, dict) and calgrp.get("reason") == "hr_unknown_grouping",
+                  str(calgrp)[:200])
+
+            calall = await rpc("hr_leave_calendar",
+                               {"p_organization_id": ORG, "p_from": (date.today()-timedelta(days=30)).isoformat(),
+                                "p_to": (date.today()+timedelta(days=90)).isoformat(),
+                                "p_filters": {}}, mgr_token)
+            n_cal = len(calall.get("entries", [])) if isinstance(calall, dict) else 0
+            check("the unfiltered calendar has entries (the control for the type filter)",
+                  n_cal > 0, str(calall)[:300])
+            if n_cal > 0:
+                pto = await rpc("hr_leave_calendar",
+                                {"p_organization_id": ORG, "p_from": (date.today()-timedelta(days=30)).isoformat(),
+                                 "p_to": (date.today()+timedelta(days=90)).isoformat(),
+                                 "p_filters": {"leave_type": "pto"}}, mgr_token)
+                sick = await rpc("hr_leave_calendar",
+                                 {"p_organization_id": ORG, "p_from": (date.today()-timedelta(days=30)).isoformat(),
+                                  "p_to": (date.today()+timedelta(days=90)).isoformat(),
+                                  "p_filters": {"leave_type": "sick"}}, mgr_token)
+                check("leave_type=pto keeps the PTO absence", len(pto.get("entries", [])) > 0,
+                      str(pto)[:200])
+                check("leave_type=sick removes it", len(sick.get("entries", [])) == 0,
+                      str(sick)[:200])
+                check("a filtered-empty calendar says WHY it is empty, not just that it is",
+                      (sick.get("empty_statement") or "").startswith("Nobody matching this filter"),
+                      str(sick.get("empty_statement")))
+
     finally:
         if "--keep" not in sys.argv and policy_id:
             print("\n=== cleanup ===")
@@ -495,6 +593,7 @@ async def main() -> None:  # noqa: C901
                 "end $$;")
             await conn.execute(
                 "alter table hr.leave_ledger enable trigger _zz_leave_ledger_no_delete")
+
             for tbl in ("leave_request", "leave_enrollment", "leave_policy"):
                 col = "id" if tbl == "leave_policy" else "leave_policy_id"
                 await conn.execute(
