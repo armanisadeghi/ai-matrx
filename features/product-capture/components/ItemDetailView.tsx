@@ -25,7 +25,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
-import PageHeader from "@/features/shell/components/header/PageHeader";
 import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { toast } from "@/lib/toast";
@@ -40,6 +39,8 @@ import {
 } from "../service";
 import { removeItemFile, uploadItemFile } from "../uploads";
 import { ProductCaptureHeader } from "./ProductCaptureHeader";
+import { MediaPager } from "./MediaPager";
+import { useLongPress } from "../hooks/useLongPress";
 
 const NOTES_AUTOSAVE_MS = 800;
 
@@ -59,7 +60,7 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
   const [notes, setNotes] = useState("");
   const [notesSaving, setNotesSaving] = useState(false);
   const [statusBusy, setStatusBusy] = useState(false);
-  const [previewFile, setPreviewFile] = useState<CaptureFile | null>(null);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [confirmDeleteFile, setConfirmDeleteFile] =
     useState<CaptureFile | null>(null);
 
@@ -229,12 +230,12 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
   if (notFound) {
     return (
       <>
-        <PageHeader>
-          <ProductCaptureHeader
-            backHref="/tools/product-capture/all"
-            title="Product Capture"
-          />
-        </PageHeader>
+        {/* ProductCaptureHeader injects itself (RouteHeader owns the
+            PageHeader portal — wrapping it again splits the center zone). */}
+        <ProductCaptureHeader
+          backHref="/tools/product-capture/all"
+          title="Product Capture"
+        />
         <div className="flex h-full items-center justify-center pt-[var(--shell-header-h)]">
           <p className="text-sm text-muted-foreground">
             This item no longer exists.
@@ -246,22 +247,18 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
 
   return (
     <>
-      <PageHeader>
-        <ProductCaptureHeader
-          backHref="/tools/product-capture/all"
-          title={title}
-          right={
-            <TapTargetButtonSolid
-              icon={<Camera className="h-4 w-4" />}
-              label="Capture"
-              ariaLabel="Continue capturing this item"
-              onClick={() =>
-                router.push(`/tools/product-capture?item=${itemId}`)
-              }
-            />
-          }
-        />
-      </PageHeader>
+      <ProductCaptureHeader
+        backHref="/tools/product-capture/all"
+        title={title}
+        right={
+          <TapTargetButtonSolid
+            icon={<Camera className="h-4 w-4" />}
+            label="Capture"
+            ariaLabel="Continue capturing this item"
+            onClick={() => router.push(`/tools/product-capture?item=${itemId}`)}
+          />
+        }
+      />
 
       <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
         {item === null ? (
@@ -360,24 +357,15 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
-                  {media.map((file) => (
-                    <button
+                  {media.map((file, i) => (
+                    <MediaTile
                       key={file.id}
-                      type="button"
-                      onClick={() => setPreviewFile(file)}
-                      aria-label="View file"
-                      className="relative aspect-square overflow-hidden rounded-lg bg-muted"
-                    >
-                      <CaptureThumb
-                        fileId={file.fileId}
-                        alt={item.code ?? "Captured file"}
-                      />
-                      {file.kind === "video" && (
-                        <span className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <Play className="h-6 w-6 text-white drop-shadow" />
-                        </span>
-                      )}
-                    </button>
+                      fileId={file.fileId}
+                      kind={file.kind}
+                      alt={item.code ?? "Captured file"}
+                      onOpen={() => setPreviewIndex(i)}
+                      onLongPress={() => setConfirmDeleteFile(file)}
+                    />
                   ))}
                   {pending.map((p) => (
                     <div
@@ -461,39 +449,21 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
         }}
       />
 
-      {/* Full-screen file preview */}
-      {previewFile && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black">
-          <div className="relative min-h-0 flex-1">
-            <div className="absolute inset-0">
-              <CaptureThumb
-                fileId={previewFile.fileId}
-                alt={item?.code ?? "Captured file"}
-              />
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center justify-center gap-3 bg-black px-4 py-3 pb-safe">
-            <Button
-              variant="destructive"
-              className="h-11 px-5"
-              onClick={() => {
-                setConfirmDeleteFile(previewFile);
-                setPreviewFile(null);
-              }}
-            >
-              <Trash2 className="mr-1.5 h-4 w-4" />
-              Delete
-            </Button>
-            <Button
-              variant="secondary"
-              className="h-11 px-5"
-              onClick={() => setPreviewFile(null)}
-            >
-              <X className="mr-1.5 h-4 w-4" />
-              Close
-            </Button>
-          </div>
-        </div>
+      {/* Full-screen swipeable viewer (swipe ← → between files, ↓ to close) */}
+      {previewIndex !== null && (
+        <MediaPager
+          media={media.map((f) => ({
+            key: f.id,
+            kind: f.kind === "video" ? ("video" as const) : ("photo" as const),
+            fileId: f.fileId,
+          }))}
+          initialIndex={previewIndex}
+          onClose={() => setPreviewIndex(null)}
+          onDelete={(pagerItem) => {
+            const file = media.find((f) => f.id === pagerItem.key);
+            if (file) setConfirmDeleteFile(file);
+          }}
+        />
       )}
 
       <ConfirmDialog
@@ -511,6 +481,41 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
         }}
       />
     </>
+  );
+}
+
+/** Grid tile — tap opens the pager, long-press asks to delete (iOS Photos).
+ *  Own component so the long-press hook isn't created inside a loop. */
+function MediaTile({
+  fileId,
+  kind,
+  alt,
+  onOpen,
+  onLongPress,
+}: {
+  fileId: string;
+  kind: "photo" | "video" | "audio";
+  alt: string;
+  onOpen: () => void;
+  onLongPress: () => void;
+}) {
+  const longPress = useLongPress(onLongPress);
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      {...longPress}
+      aria-label="View file"
+      className="relative aspect-square select-none overflow-hidden rounded-lg bg-muted"
+      style={{ WebkitTouchCallout: "none" }}
+    >
+      <CaptureThumb fileId={fileId} alt={alt} />
+      {kind === "video" && (
+        <span className="absolute inset-0 flex items-center justify-center bg-black/20">
+          <Play className="h-6 w-6 text-white drop-shadow" />
+        </span>
+      )}
+    </button>
   );
 }
 

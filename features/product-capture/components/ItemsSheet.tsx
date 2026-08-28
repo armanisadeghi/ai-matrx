@@ -2,22 +2,17 @@
 
 /**
  * ItemsSheet — the review drawer over the capture screen: the org's recent
- * capture items (newest first) with code, counts, notes preview and a first
- * thumbnail. Tapping an item reopens it as the current item (its notes and
- * files load back in); deleting soft-deletes the row (uploaded files stay in
- * the org's tree — this is staging, not the file manager).
+ * capture items (newest first) on the shared gesture row (`ItemSwipeRow`).
+ * Tap reopens an item as current; swipe RIGHT opens its detail page; swipe
+ * LEFT deletes (confirm); long-press opens the shared `ItemActionsDrawer`.
+ * Deleting soft-deletes the row (uploaded files stay in the org's tree —
+ * this is staging, not the file manager).
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  Camera,
-  FileAudio,
-  Loader2,
-  TableProperties,
-  Trash2,
-  Video,
-} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Eye, TableProperties } from "lucide-react";
 
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 
@@ -30,11 +25,13 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
+import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import type { CaptureFile, CaptureItem } from "../types";
-import { deleteItem, listFilesForItems, listRecentItems } from "../service";
+import { closeItem, deleteItem, listFilesForItems, listRecentItems } from "../service";
+import { ItemSwipeRow } from "./ItemSwipeRow";
+import { ItemActionsDrawer, type ItemActionsTarget } from "./ItemActionsDrawer";
 
 interface ItemsSheetProps {
   open: boolean;
@@ -51,11 +48,13 @@ export function ItemsSheet({
   currentItemId,
   onResumeItem,
 }: ItemsSheetProps) {
+  const router = useRouter();
   const [items, setItems] = useState<CaptureItem[] | null>(null);
   const [filesByItem, setFilesByItem] = useState<Map<string, CaptureFile[]>>(
     new Map(),
   );
   const [confirmDelete, setConfirmDelete] = useState<CaptureItem | null>(null);
+  const [actionsTarget, setActionsTarget] = useState<CaptureItem | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -106,6 +105,29 @@ export function ItemsSheet({
     }
   };
 
+  const markReady = async (item: CaptureItem) => {
+    try {
+      const wasProcessed = item.status === "processed";
+      // Flipping into `captured` IS the workflow handoff.
+      const saved = await closeItem(item);
+      setItems((prev) => prev?.map((i) => (i.id === saved.id ? saved : i)) ?? prev);
+      toast.success(
+        wasProcessed ? "Queued for reprocessing." : "Marked ready for processing.",
+      );
+    } catch (err) {
+      console.error("[product-capture] status change failed", err);
+      toast.error("Could not update the item's status.");
+    }
+  };
+
+  const openDetail = (itemId: string) => {
+    onOpenChange(false);
+    router.push(`/tools/product-capture/item/${itemId}`);
+  };
+
+  const findItem = (target: ItemActionsTarget) =>
+    items?.find((i) => i.id === target.id) ?? null;
+
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
@@ -121,7 +143,7 @@ export function ItemsSheet({
               </Button>
             </div>
             <DrawerDescription>
-              Tap an item to keep adding to it.
+              Tap to keep adding · swipe for actions · hold for more.
             </DrawerDescription>
           </DrawerHeader>
           <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4">
@@ -137,93 +159,37 @@ export function ItemsSheet({
               <ul className="space-y-2 pb-4">
                 {items.map((item) => {
                   const files = filesByItem.get(item.id) ?? [];
-                  const firstPhoto = files.find((f) => f.kind === "photo");
-                  const photoCount = files.filter(
-                    (f) => f.kind === "photo",
-                  ).length;
-                  const videoCount = files.filter(
-                    (f) => f.kind === "video",
-                  ).length;
-                  const audioCount = files.filter(
-                    (f) => f.kind === "audio",
-                  ).length;
-                  const isCurrent = item.id === currentItemId;
                   return (
                     <li key={item.id}>
-                      <div
-                        className={
-                          "flex items-center gap-3 rounded-lg border border-border bg-card p-2 " +
-                          (isCurrent ? "ring-2 ring-primary" : "")
-                        }
-                      >
-                        <button
-                          type="button"
-                          onClick={() => void resume(item)}
-                          disabled={busyId !== null}
-                          className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                        >
-                          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
-                            {firstPhoto ? (
-                              <CaptureThumb
-                                fileId={firstPhoto.fileId}
-                                alt={item.code ?? "Captured item"}
-                              />
-                            ) : (
-                              <div className="flex h-full items-center justify-center">
-                                <Camera className="h-5 w-5 text-muted-foreground" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">
-                              {item.code ?? "No product number"}
-                              {isCurrent && (
-                                <span className="ml-2 text-xs font-normal text-primary">
-                                  current
-                                </span>
-                              )}
-                            </p>
-                            <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span className="flex items-center gap-0.5">
-                                <Camera className="h-3 w-3" /> {photoCount}
-                              </span>
-                              {videoCount > 0 && (
-                                <span className="flex items-center gap-0.5">
-                                  <Video className="h-3 w-3" /> {videoCount}
-                                </span>
-                              )}
-                              {audioCount > 0 && (
-                                <span className="flex items-center gap-0.5">
-                                  <FileAudio className="h-3 w-3" /> {audioCount}
-                                </span>
-                              )}
-                              <span>
-                                {new Date(item.createdAt).toLocaleTimeString(
-                                  [],
-                                  { hour: "numeric", minute: "2-digit" },
-                                )}
-                              </span>
-                            </p>
-                            {item.notes && (
-                              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                                {item.notes}
-                              </p>
-                            )}
-                          </div>
-                          {busyId === item.id && (
-                            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-                          )}
-                        </button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 shrink-0 text-muted-foreground"
-                          aria-label="Delete item"
-                          onClick={() => setConfirmDelete(item)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <ItemSwipeRow
+                        row={{
+                          id: item.id,
+                          code: item.code,
+                          notes: item.notes,
+                          createdAt: item.createdAt,
+                          photoCount: files.filter((f) => f.kind === "photo")
+                            .length,
+                          videoCount: files.filter((f) => f.kind === "video")
+                            .length,
+                          audioCount: files.filter((f) => f.kind === "audio")
+                            .length,
+                          firstPhotoFileId:
+                            files.find((f) => f.kind === "photo")?.fileId ??
+                            null,
+                        }}
+                        isCurrent={item.id === currentItemId}
+                        busy={busyId === item.id}
+                        disabled={busyId !== null}
+                        onTap={() => void resume(item)}
+                        leading={{
+                          icon: <Eye className="h-4 w-4" />,
+                          label: "Details",
+                          className: "bg-primary text-primary-foreground",
+                          onTrigger: () => openDetail(item.id),
+                        }}
+                        onDelete={() => setConfirmDelete(item)}
+                        onLongPress={() => setActionsTarget(item)}
+                      />
                     </li>
                   );
                 })}
@@ -232,6 +198,26 @@ export function ItemsSheet({
           </div>
         </DrawerContent>
       </Drawer>
+
+      <ItemActionsDrawer
+        target={actionsTarget}
+        onOpenChange={(o) => {
+          if (!o) setActionsTarget(null);
+        }}
+        onView={(t) => openDetail(t.id)}
+        onCapture={(t) => {
+          const item = findItem(t);
+          if (item) void resume(item);
+        }}
+        onMarkReady={(t) => {
+          const item = findItem(t);
+          if (item) void markReady(item);
+        }}
+        onDelete={(t) => {
+          const item = findItem(t);
+          if (item) setConfirmDelete(item);
+        }}
+      />
 
       <ConfirmDialog
         open={confirmDelete !== null}

@@ -76,6 +76,7 @@ import { useQrAutoScan } from "../hooks/useQrAutoScan";
 import { NotesPanel } from "./NotesPanel";
 import { VoiceNoteButton } from "./VoiceNoteButton";
 import { ItemsSheet } from "./ItemsSheet";
+import { MediaPager } from "./MediaPager";
 
 const PHOTO_JPEG_QUALITY = 0.92;
 const QR_MODE_STORAGE_KEY = "product-capture:qr-auto";
@@ -345,6 +346,15 @@ export function CaptureScreen({ initialItemId = null }: CaptureScreenProps) {
 
   const { currentItem, artifacts } = session;
   const photoCount = artifacts.filter((a) => a.kind === "photo").length;
+  // The current item's photo/video strip, in capture order, for the pager.
+  const pagerMedia = artifacts
+    .filter((a) => a.kind !== "audio")
+    .map((a) => ({
+      key: a.localId,
+      kind: a.kind === "video" ? ("video" as const) : ("photo" as const),
+      fileId: a.fileId,
+      previewUrl: a.previewUrl,
+    }));
   const itemLabel = currentItem
     ? (currentItem.code ?? `Item ${session.currentItemSeq}`)
     : "New item";
@@ -672,7 +682,22 @@ export function CaptureScreen({ initialItemId = null }: CaptureScreenProps) {
         onClose={() => setNotesOpen(false)}
       />
 
-      {previewArtifact && (
+      {/* Photo/video artifacts open the swipeable pager (swipe ← → between
+          shots, ↓ to close); an audio artifact keeps its simple overlay. */}
+      {previewArtifact && previewArtifact.kind !== "audio" && (
+        <MediaPager
+          media={pagerMedia}
+          initialIndex={Math.max(
+            pagerMedia.findIndex((m) => m.key === previewArtifact.localId),
+            0,
+          )}
+          onClose={() => setPreviewArtifact(null)}
+          onDelete={(pagerItem) => {
+            session.removeArtifact(pagerItem.key);
+          }}
+        />
+      )}
+      {previewArtifact && previewArtifact.kind === "audio" && (
         <div className="absolute inset-0 z-40 flex flex-col bg-black">
           <div className="relative min-h-0 flex-1">
             <ArtifactPreview artifact={previewArtifact} />

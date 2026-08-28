@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
-import PageHeader from "@/features/shell/components/header/PageHeader";
 
 import { AllItemsBody, AllItemsHeader } from "./AllItemsRouteClient";
 
@@ -18,9 +17,10 @@ export default async function ProductCaptureAllPage() {
   if (!isAuthenticated) redirect("/login?next=/tools/product-capture/all");
   return (
     <>
-      <PageHeader>
-        <AllItemsHeader />
-      </PageHeader>
+      {/* AllItemsHeader injects itself into the shell header (RouteHeader
+          owns the PageHeader portal — wrapping it again splits the center
+          zone in half). */}
+      <AllItemsHeader />
       <div className="flex h-full min-h-0 flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
         <div className="flex min-h-0 flex-1 flex-col px-3 pb-safe pt-3">
           <AllItemsBody />
