@@ -27,6 +27,10 @@ const CONSUMERS = [
   "features/workflow-runtime/components/run/RunEmissions.tsx",
   "features/workflow-runtime/components/run/RunStage.tsx",
   "features/workflow-runtime/components/WorkflowRunBoard.tsx",
+  // The shipped run stage now reaches an emission's renderer through the
+  // emission contract's router rather than importing one itself — so THIS is
+  // the file the boundary has to hold, and it carries the same warning.
+  "features/workflow-runtime/kind-emissions/EmissionRender.tsx",
 ];
 
 function importedEmitModules(source: string): string[] {
