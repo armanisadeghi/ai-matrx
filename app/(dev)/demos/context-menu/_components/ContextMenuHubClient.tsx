@@ -1,9 +1,5 @@
-"use client";
-
 import Link from "next/link";
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowRight, Loader2, Zap } from "lucide-react";
+import { ArrowRight, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CONTEXT_MENU_BASE, type ContextMenuPage } from "../_registry";
 import { getContextMenuIcon } from "../_registry.icons";
@@ -12,19 +8,12 @@ interface ContextMenuHubClientProps {
   pages: ContextMenuPage[];
 }
 
+/**
+ * Keep the hub server-rendered. It is static registry documentation, and making
+ * the whole page a client boundary caused its large text tree to be hydrated
+ * again for no client-side behavior. Navigation is native Next Link behavior.
+ */
 export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
-
-  const handleNavigate = (href: string, disabled: boolean) => {
-    if (disabled || isPending) return;
-    setPendingHref(href);
-    startTransition(() => {
-      router.push(href);
-    });
-  };
-
   return (
     <div className="h-full overflow-auto">
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
@@ -119,8 +108,6 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
             const Icon = getContextMenuIcon(page.icon);
             const isPlanned = page.status === "planned";
             const isWip = page.status === "wip";
-            const isNavigating = isPending && pendingHref === href;
-
             const card = (
               <div
                 className={cn(
@@ -155,12 +142,9 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
                         planned
                       </span>
                     )}
-                    {!isPlanned &&
-                      (isNavigating ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                      ) : (
-                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                      ))}
+                    {!isPlanned && (
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    )}
                   </div>
                 </div>
                 <p className="text-[12px] text-muted-foreground font-medium">
@@ -188,15 +172,13 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
             }
 
             return (
-              <button
+              <Link
                 key={page.slug}
-                type="button"
-                onClick={() => handleNavigate(href, false)}
-                disabled={isPending}
-                className="text-left disabled:cursor-progress"
+                href={href}
+                className="text-left"
               >
                 {card}
-              </button>
+              </Link>
             );
           })}
         </div>
