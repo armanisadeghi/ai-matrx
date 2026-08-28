@@ -54,6 +54,10 @@ What the generated types cannot promise is the shape inside a `jsonb` return (`R
 the honest answer), so the narrowing is a **real runtime check** in
 [`envelope.ts`](./envelope.ts) and never `data as HrInbox`.
 
+Decision controls carry present-tense intent, but the engine records past-tense outcomes. The ONE
+translation is `HR_DECISION_VERB` in [`types.ts`](./types.ts); both the panel and bulk action use it,
+and `hrb022_proof.py` compares its values with the live `hr.wf_decide` vocabulary.
+
 **Why that matters, concretely:** a cast makes the compiler believe a shape nobody verified, so a
 key renamed in SQL arrives as `undefined` in a component three layers away — no error, no red
 type-check, usually a blank cell where a number should be. Every field list in `envelope.ts` was
@@ -191,6 +195,8 @@ the fix is in that pillar's flow declaration — never a second list on this pag
 
 # Change Log
 
+- 2026-08-27 — Decision controls now translate through the one server-verified past-tense verb map,
+  preventing `unknown_decision` refusals from present-tense UI intents.
 - 2026-08-27 — Round-5 T2: **Escalate did nothing.** Root cause was the global `confirm()`'s
   dynamic host swallowing the first click after load — not the door, which works and refuses
   correctly. Replaced with locally-mounted `HrActionDialog` for Escalate, Withdraw and Cancel, each

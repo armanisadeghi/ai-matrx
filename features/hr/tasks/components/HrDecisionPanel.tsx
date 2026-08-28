@@ -22,11 +22,16 @@ import {
 } from "@/features/hr/tasks/service";
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import type {
+    HrDecisionIntent,
     HrInboxNotice,
     HrInstanceDetail,
     HrRefusal,
 } from "@/features/hr/tasks/types";
-import { isRefusal } from "@/features/hr/tasks/types";
+import {
+    HR_DECISION_REQUIRES_REASON,
+    HR_DECISION_VERB,
+    isRefusal,
+} from "@/features/hr/tasks/types";
 
 type Row = Record<string, unknown>;
 
@@ -122,9 +127,11 @@ export function HrDecisionPanel({
         (f) => f.state === "open" || f.state === "retrying",
     );
 
-    async function act(decision: "approve" | "reject" | "return") {
+    async function act(intent: HrDecisionIntent) {
         if (!activeStep) return;
-        if (decision !== "approve" && reason.trim().length < 3) {
+        // ONE translation, from the ONE map. Nothing below this line knows the intent word.
+        const decision = HR_DECISION_VERB[intent];
+        if (HR_DECISION_REQUIRES_REASON.includes(decision) && reason.trim().length < 3) {
             toast.error("A rejection or return needs a reason — it is kept in the ledger.");
             return;
         }

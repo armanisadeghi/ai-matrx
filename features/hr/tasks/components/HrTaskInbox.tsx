@@ -22,7 +22,7 @@ import type {
     HrInboxScope,
     HrRefusal,
 } from "@/features/hr/tasks/types";
-import { isRefusal } from "@/features/hr/tasks/types";
+import { HR_DECISION_VERB, isRefusal } from "@/features/hr/tasks/types";
 
 const SCOPES: { key: HrInboxScope; label: string; hint: string }[] = [
     { key: "mine", label: "Mine", hint: "Waiting on you" },
@@ -95,7 +95,10 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
         startTransition(() => router.replace(`/hr/tasks?${query.toString()}`));
     }
 
-    async function runBulk(decision: "approve" | "reject", reason?: string) {
+    async function runBulk(intent: "approve" | "reject", reason?: string) {
+        // The SAME map the panel uses. A second translation here is how the two
+        // surfaces would come to send different verbs for the same button.
+        const decision = HR_DECISION_VERB[intent];
         setBusy(true);
         setBulkRefusal(null);
         setBulkOutcomes(null);

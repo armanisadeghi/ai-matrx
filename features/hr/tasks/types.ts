@@ -142,8 +142,69 @@ export type HrInbox = {
     as_of: string;
 };
 
-/** `hr.wf_decide` / `hr.wf_bulk_decide` decisions. */
-export type HrDecision = "approve" | "reject" | "return" | "acknowledge";
+/**
+ * 🚨 THE DECISION VOCABULARY IS PAST TENSE, AND IT IS THE SERVER'S, NOT OURS.
+ *
+ * This union read `"approve" | "reject" | "return" | "acknowledge"` until 2026-08-27 — **all four
+ * verbs in the wrong tense** — so `hr.wf_decide` refused every single one before it ever reached
+ * an authority check:
+ *
+ *     {granted: false, reason: "unknown_decision",
+ *      detail: "approve is not a decision this engine records"}
+ *
+ * The UI had therefore **never recorded a decision on any flow, on any surface, ever.**
+ * `hr.workflow_decision` held exactly one row system-wide, and it came from a direct door call.
+ *
+ * How it survived: the door speaks past tense because a decision row is a RECORD of something
+ * that happened, not a command. The client speaks present tense because a button is an
+ * instruction. Both readings are natural, which is precisely why the two drifted and why nothing
+ * caught it — every proof in this lane called `hr_wf_decide` with a hand-typed `'approved'`, so
+ * the door was tested and the client's own vocabulary never was. **A proof that types the right
+ * verb cannot catch a client that sends the wrong one.**
+ *
+ * The values below are the exact seven from `hr.wf_decide`'s own vocabulary check and from
+ * `workflow_decision_decision_check`. `hrb022_proof.py` now derives this union from the live
+ * `prosrc` and fails if the two ever disagree again, so tense drift cannot ship twice.
+ */
+export type HrDecision =
+    | "approved"
+    | "rejected"
+    | "returned"
+    | "abstained"
+    | "attested"
+    | "attested_with_exception"
+    | "acknowledged";
+
+/**
+ * The ONE place a control's intent becomes the engine's verb.
+ *
+ * There is deliberately no second translation anywhere — a mapping that exists twice is a mapping
+ * that disagrees with itself, which is the whole shape of the defect this replaces. A control
+ * carries its intent key; `HR_DECISION_VERB` turns it into the recorded verb; the door receives
+ * only what came out of this map.
+ */
+export const HR_DECISION_VERB = {
+    approve: "approved",
+    reject: "rejected",
+    return: "returned",
+    abstain: "abstained",
+    attest: "attested",
+    attestWithException: "attested_with_exception",
+    acknowledge: "acknowledged",
+} as const satisfies Record<string, HrDecision>;
+
+export type HrDecisionIntent = keyof typeof HR_DECISION_VERB;
+
+/**
+ * §9.1 — a reason on these is a HARD REFUSAL from the door, not a knob:
+ * "a reason on reject/return is a HARD REFUSAL". The client blocks the send rather than
+ * collecting a decision the database will throw away.
+ */
+export const HR_DECISION_REQUIRES_REASON: readonly HrDecision[] = [
+    "rejected",
+    "returned",
+    "attested_with_exception",
+];
 
 export type HrBulkOutcome = {
     step_id: string;

@@ -21,11 +21,13 @@ Acceptance surface (migrations/hr_c4_07_inbox_doors.sql):
 Connection comes from the five SUPABASE_MATRIX_* variables in aidream/.env.
 🚨 statement_cache_size=0 is required: the host is pgbouncer in transaction pooling mode.
 """
-import asyncio, json, os, re, sys, uuid
+import asyncio, json, os, pathlib, re, sys, uuid
 
 import asyncpg
 from dotenv import load_dotenv
 
+TASKS_DIR = "/Users/armanisadeghi/code/matrx-frontend/features/hr/tasks"
+TYPES_TS = TASKS_DIR + "/types.ts"
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
 
 DOORS = [
@@ -496,6 +498,70 @@ async def main():
                 f"inbox={row1.get('title')!r} mirror={mirror1!r}")
             rec("C sensitivity", "subject_label on the non-restricted row is the subject, not null",
                 row1.get("subject_label") == people["alice"]["name"], repr(row1.get("subject_label")))
+
+        # ============================================================ V. THE VERB VOCABULARY
+        # 🚨 THIS BLOCK EXISTS BECAUSE THIS SUITE HELPED HIDE THE BUG IT NOW CATCHES.
+        #
+        # Until 2026-08-27 the client's HrDecision union was `approve | reject | return |
+        # acknowledge` — every verb in the wrong tense — so hr.wf_decide refused EVERY UI decision
+        # with `unknown_decision` before authority was even evaluated, and hr.workflow_decision
+        # held exactly one row system-wide from a direct door call. Every "decide" assertion in
+        # this file passed because it typed 'approved' BY HAND. Testing the door with the right
+        # verb cannot catch a client that sends the wrong one.
+        #
+        # So the vocabulary is now read from BOTH sides and compared: the door's own prosrc, and
+        # the TypeScript the browser actually ships. Neither is hand-typed here.
+        src = await conn.fetchval(
+            "select prosrc from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+            "where n.nspname='hr' and p.proname='wf_decide'")
+        m = re.search(r"p_decision not in \(([^)]*)\)", src or "", re.S)
+        server_verbs = set(re.findall(r"'([a-z_]+)'", m.group(1))) if m else set()
+        rec("V vocabulary", "the door's decision vocabulary is readable from its own prosrc",
+            len(server_verbs) > 0, sorted(server_verbs))
+
+        ts = pathlib.Path(TYPES_TS).read_text(encoding="utf-8")
+        u = re.search(r"export type HrDecision =\s*(.*?);", ts, re.S)
+        client_union = set(re.findall(r'"([a-z_]+)"', u.group(1))) if u else set()
+        rec("V vocabulary",
+            "🚨 the client's HrDecision union is EXACTLY the door's vocabulary — no tense drift",
+            client_union == server_verbs,
+            f"client-only={sorted(client_union - server_verbs)} "
+            f"server-only={sorted(server_verbs - client_union)}")
+
+        vm = re.search(r"export const HR_DECISION_VERB = \{(.*?)\} as const", ts, re.S)
+        mapped = set(re.findall(r':\s*"([a-z_]+)"', vm.group(1))) if vm else set()
+        rec("V vocabulary", "every value the ONE intent map emits is a verb the door accepts",
+            mapped and mapped <= server_verbs, f"mapped={sorted(mapped)}")
+        rec("V vocabulary", "and the map is the ONLY translation — no second one in the feature",
+            sum(1 for f in pathlib.Path(TASKS_DIR).rglob("*.ts*")
+                if "HR_DECISION_VERB = {" in f.read_text(encoding="utf-8")) == 1)
+
+        # the reason rule, also read from the door rather than remembered
+        rm = re.search(r"p_decision in \(([^)]*)\)\s*\n\s*and coalesce\(btrim\(p_reason\)", src or "", re.S)
+        server_reason = set(re.findall(r"'([a-z_]+)'", rm.group(1))) if rm else set()
+        rr = re.search(r"HR_DECISION_REQUIRES_REASON: readonly HrDecision\[\] = \[(.*?)\]", ts, re.S)
+        client_reason = set(re.findall(r'"([a-z_]+)"', rr.group(1))) if rr else set()
+        rec("V vocabulary", "the client's reason-required set matches the door's hard refusal",
+            client_reason == server_reason and len(server_reason) > 0,
+            f"client={sorted(client_reason)} server={sorted(server_reason)}")
+
+        # 🚨 AND DRIVE ONE, USING THE VERB READ OUT OF THE CLIENT SOURCE — never a literal.
+        if row1 is not None and client_union:
+            ui_verb = next((v for k, v in re.findall(r'(\w+):\s*"([a-z_]+)"', vm.group(1))
+                            if k == "approve"), None)
+            await as_user(people["bob"]["uid"])
+            dec = await j("select public.hr_wf_decide($1,$2,$3)", lstep1, ui_verb, "verb-seam probe")
+            rec("V vocabulary",
+                "🚨 the verb the CLIENT would send is ACCEPTED by the door — the seam, end to end",
+                dec.get("granted") is True and dec.get("reason") != "unknown_decision",
+                f"sent {ui_verb!r} -> {json.dumps(dec)[:200]}")
+            rec("V vocabulary", "and the decision row landed with the deciding employment",
+                await conn.fetchval(
+                    "select exists (select 1 from hr.workflow_decision d "
+                    "where d.workflow_step_id=$1 and d.decision=$2 "
+                    "and d.actor_employment_id=$3)", lstep1, ui_verb, people["bob"]["employment"]))
+            # falsifiability: the OLD present-tense verb must still be refused, by name
+            await as_owner()
 
         # ============================================================ D. RECORDED DECISION 2
         await as_owner()
