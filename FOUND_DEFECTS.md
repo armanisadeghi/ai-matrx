@@ -15,6 +15,36 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D280 — `scripts/hr/hrb022_proof.py` never enrols anybody, so every leave request now dies `not_enrolled` (2026-08-28)
+
+The leave lane made enrolment structural: `hr.leave_wf_validate` returns the hard finding
+`not_enrolled` ("You are not enrolled in PTO."), so `hr.wf_request` closes the instance
+`rejected_at_intake` before it ever routes. `hrb022_proof.py` creates a `hr.leave_policy` and a
+`hr.leave_request` but no `hr.leave_enrollment` row, so its whole inbox chain collapses:
+
+```
+[FAIL] hr.wf_submit routed the draft to an ACTIVE step  << rejected_at_intake / not_enrolled
+[FAIL] the active step resolved to the manager who holds leave_approve
+[FAIL] needs_my_decision carries the step that is actually waiting on this approver
+[FAIL] the door's needs_my_decision step ids are EXACTLY hr.wf_pending's
+[FAIL] the `queue` scope WITH the capability returns rows
+... 10 RED in total, and the suite ends at 59 assertions instead of 69
+```
+
+Not caused by the C4 engine work: the finding appeared in `hrb008_proof.py` before `hr_c4_24`
+landed, and `hr.leave_wf_validate` is the L2 lane's. `hrb008_proof.py` was fixed by enrolling its
+fixture people; `hrb022` needs the same one block, after its `leave_policy` insert:
+
+```sql
+insert into hr.leave_enrollment (organization_id, employment_id, leave_policy_id,
+                                 balance_hours, effective_from)
+values (<org>, <employment>, <policy>, 400, current_date - 365);
+```
+
+Same class as `period_not_submitted` (§8.2) and `pillar_lane_not_built` (§4.3): a proof fixture
+going stale the moment a pillar lane builds the hook the engine was always going to call. Owner:
+the HRB-022 inbox lane.
+
 ### D279 — Shape Studio reports an inactive DB override as the live renderer even when the compiled kind bridge actually renders (2026-08-27)
 
 **P1 · status: open.** Analyzed 2026-08-27 — verified in code and against the live
