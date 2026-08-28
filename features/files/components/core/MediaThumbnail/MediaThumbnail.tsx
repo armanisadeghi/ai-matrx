@@ -34,9 +34,11 @@ import { cn } from "@/lib/utils";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
+import { useFileBlob } from "@/features/files/hooks/useFileBlob";
+import { getCached } from "@/features/files/hooks/blob-cache";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
-import type { CloudFile } from "@/features/files/types";
+import type { AssetVariant, CloudFile } from "@/features/files/types";
 
 export interface MediaThumbnailProps {
   file: Pick<
@@ -48,6 +50,7 @@ export interface MediaThumbnailProps {
     | "metadata"
     | "publicUrl"
     | "thumbnailUrl"
+    | "visibility"
   >;
   /** Pixel size for the icon fallback. Image/video fill their container. */
   iconSize?: number;
@@ -79,18 +82,18 @@ export interface MediaThumbnailProps {
  * would cause an `<img>` request to fail. Returns null when no rendered
  * thumbnail exists so the caller can use its proper fallback.
  */
-function pickThumbnailUrl(
+function pickThumbnailVariant(
   asset: import("@/features/files/types").Asset | null,
-): string | null {
+): AssetVariant | null {
   if (!asset) return null;
   const v = asset.variants;
   return (
-    v.thumbnail_url?.url ??
-    v.tiny_url?.url ??
-    v.thumbnail?.url ??
-    v.tiny?.url ??
-    v.card_url?.url ??
-    v.card?.url ??
+    v.thumbnail_url ??
+    v.tiny_url ??
+    v.thumbnail ??
+    v.tiny ??
+    v.card_url ??
+    v.card ??
     null
   );
 }
@@ -124,10 +127,15 @@ export function MediaThumbnail({
   // partials; very fresh uploads where the variant pipeline is still
   // rendering). Gated by `preferAssetThumbnail` to allow surfaces to
   // skip the round-trip.
-  const useAssetThumb = preferAssetThumbnail && !backendThumb;
-  const { asset } = useFileAsset(useAssetThumb ? file.id : null, {
-  });
-  const assetUrl = useAssetThumb ? pickThumbnailUrl(asset) : null;
+  const isPublic = file.visibility === "public";
+  const useAssetThumb = preferAssetThumbnail && (!backendThumb || !isPublic);
+  const { asset, error: assetError } = useFileAsset(
+    useAssetThumb ? file.id : null,
+  );
+  const assetVariant = useAssetThumb ? pickThumbnailVariant(asset) : null;
+  const assetUrl = assetVariant
+    ? (assetVariant.cdn_url ?? assetVariant.url)
+    : null;
 
   // ── Source 3 — Strategy-specific live render. ───────────────────────
   // When we still don't have a usable thumbnail (sources 1 + 2 both
@@ -140,13 +148,36 @@ export function MediaThumbnail({
     allowSourceFallback &&
     (strategy === "image" || strategy === "video-poster");
   const cdnUrl = needsBytes ? (file.publicUrl ?? null) : null;
-  const durableUrlEnabled = needsBytes && !backendThumb && !assetUrl && !cdnUrl;
+  const cachedOriginalUrl =
+    !isPublic && needsBytes ? (getCached(file.id)?.url ?? null) : null;
+  const assetRequestPending = useAssetThumb && !asset && !assetError;
+  const authenticatedFileId = !isPublic
+    ? (assetVariant?.file_id ??
+      (!assetRequestPending && needsBytes ? file.id : null))
+    : null;
+  const authenticatedBlob = useFileBlob(authenticatedFileId);
+  const authenticatedPending =
+    Boolean(authenticatedFileId) && authenticatedBlob.loading;
+  const durableUrlEnabled =
+    needsBytes && !backendThumb && !assetUrl && !cdnUrl && !authenticatedFileId;
   const durableUrl = useFileSrc(
     durableUrlEnabled ? { kind: "file_id", fileId: file.id } : null,
   );
 
   // Best available URL for this file, in priority order.
-  const url = backendThumb ?? assetUrl ?? cdnUrl ?? durableUrl;
+  // Private/internal/link media prefers the bearer-authenticated blob for the
+  // rendered variant (or the original while a fresh variant is pending). The
+  // durable URL remains an error fallback, never the identity or primary
+  // transport for pixels the user owns.
+  const url = isPublic
+    ? (backendThumb ?? assetUrl ?? cdnUrl ?? durableUrl)
+    : (authenticatedBlob.url ??
+      cachedOriginalUrl ??
+      (authenticatedPending || assetRequestPending
+        ? null
+        : (assetUrl ?? backendThumb ?? cdnUrl ?? durableUrl)));
+  const isLoadingPixels =
+    !cachedOriginalUrl && (assetRequestPending || authenticatedPending);
 
   // ── Source 4 — Icon fallback. ────────────────────────────────────────
   const fallback = (
@@ -155,10 +186,21 @@ export function MediaThumbnail({
     </div>
   );
 
-  let body: React.ReactNode = fallback;
+  let body: React.ReactNode = isLoadingPixels ? (
+    <div className="h-full w-full animate-pulse bg-muted" />
+  ) : (
+    fallback
+  );
 
   if (url) {
-    if (strategy === "video-poster" && !backendThumb && !assetUrl) {
+    const usesOriginalBytes =
+      authenticatedFileId === file.id && url === authenticatedBlob.url;
+    if (
+      strategy === "video-poster" &&
+      !backendThumb &&
+      !assetVariant &&
+      (usesOriginalBytes || !assetUrl)
+    ) {
       // Live render path (source 3): when the only URL we have is the
       // master video URL, render via <video> so we get a real frame.
       // Backend-rendered video thumbnails (source 1/2) are JPEG frames

@@ -3,10 +3,12 @@ import { createRoot, type Root } from "react-dom/client";
 import type { ContextDrawerItem } from "../types";
 import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
 
-(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
-  .IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 const openAt = jest.fn();
+const fileResourceChipProps = jest.fn();
 
 jest.mock("@/features/agents/components/context-items/registry", () => ({
   resolveContextItemDef: (blockType: string) => ({
@@ -24,8 +26,12 @@ jest.mock("@/features/scraper/parts/ScrapedContentPretty", () => ({
 }));
 
 jest.mock("@/components/ui/hover-card", () => ({
-  HoverCard: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  HoverCardTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  HoverCard: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  HoverCardTrigger: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
   HoverCardContent: ({ children }: { children: React.ReactNode }) => (
     <aside data-testid="hover-content">{children}</aside>
   ),
@@ -61,26 +67,35 @@ jest.mock("@/features/agents/components/previews/WebpageHoverPreview", () => ({
   ),
 }));
 
-jest.mock("@/features/agents/components/context-items/useContextItemDrawer", () => ({
-  useContextItemDrawer: () => ({
-    open: false,
-    items: [],
-    index: 0,
-    activeItem: null,
-    openAt,
-    setOpen: jest.fn(),
-    next: jest.fn(),
-    prev: jest.fn(),
-    goTo: jest.fn(),
+jest.mock(
+  "@/features/agents/components/context-items/useContextItemDrawer",
+  () => ({
+    useContextItemDrawer: () => ({
+      open: false,
+      items: [],
+      index: 0,
+      activeItem: null,
+      openAt,
+      setOpen: jest.fn(),
+      next: jest.fn(),
+      prev: jest.fn(),
+      goTo: jest.fn(),
+    }),
   }),
-}));
+);
 
-jest.mock("@/features/agents/components/context-items/ContextItemDrawer", () => ({
-  ContextItemDrawer: () => null,
-}));
+jest.mock(
+  "@/features/agents/components/context-items/ContextItemDrawer",
+  () => ({
+    ContextItemDrawer: () => null,
+  }),
+);
 
 jest.mock("@/features/files/components/preview/FileResourceChip", () => ({
-  FileResourceChip: ({ fileId }: { fileId: string }) => <span>{fileId}</span>,
+  FileResourceChip: (props: { fileId: string; nameOverride?: string }) => {
+    fileResourceChipProps(props);
+    return <span>{props.fileId}</span>;
+  },
 }));
 
 jest.mock("../../messages-display/user/ResourceAttachmentTile", () => ({
@@ -136,6 +151,7 @@ beforeEach(() => {
   document.body.appendChild(container);
   root = createRoot(container);
   openAt.mockClear();
+  fileResourceChipProps.mockClear();
 });
 
 afterEach(() => {
@@ -144,6 +160,34 @@ afterEach(() => {
 });
 
 describe("submitted webpage rendering", () => {
+  it("keeps the persisted image title on its durable file chip", () => {
+    const fileId = "118b67d2-2f79-48a3-9216-f57b8e611bd8";
+
+    act(() => {
+      root.render(
+        <MessageAttachmentStrip
+          conversationId="conversation-1"
+          parts={[
+            {
+              type: "media",
+              kind: "image",
+              file_id: fileId,
+              mime_type: "image/jpeg",
+              metadata: { display_title: "Product 15A.jpeg" },
+            },
+          ]}
+        />,
+      );
+    });
+
+    expect(fileResourceChipProps).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fileId,
+        nameOverride: "Product 15A.jpeg",
+      }),
+    );
+  });
+
   it("displays the exact stored text and never embeds a mutable live webpage", () => {
     act(() => {
       root.render(<WebpageBody item={webpageItem("block")} />);
@@ -163,7 +207,9 @@ describe("submitted webpage rendering", () => {
     });
 
     expect(container.textContent).toContain("Snapshot attached to this draft");
-    expect(container.textContent).not.toContain("Snapshot sent with this message");
+    expect(container.textContent).not.toContain(
+      "Snapshot sent with this message",
+    );
     expect(container.textContent).toContain(snapshot.textContent);
   });
 
@@ -175,7 +221,9 @@ describe("submitted webpage rendering", () => {
       root.render(<WebpageBody item={item} />);
     });
 
-    expect(container.textContent).toContain("No saved text for this older attachment");
+    expect(container.textContent).toContain(
+      "No saved text for this older attachment",
+    );
     expect(container.querySelector("iframe")).toBeNull();
   });
 
@@ -190,7 +238,9 @@ describe("submitted webpage rendering", () => {
       });
     }).not.toThrow();
 
-    const preview = container.querySelector("[data-testid='webpage-hover-preview']");
+    const preview = container.querySelector(
+      "[data-testid='webpage-hover-preview']",
+    );
     expect(preview?.textContent).toContain(snapshot.title);
     expect(preview?.textContent).toContain(snapshot.url);
     expect(preview?.textContent).toContain(snapshot.textContent);
@@ -214,8 +264,8 @@ describe("submitted webpage rendering", () => {
     expect(container.textContent).toContain(snapshot.textContent);
     expect(container.textContent).not.toContain("[object Object]");
 
-    const tile = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes(snapshot.title ?? ""),
+    const tile = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes(snapshot.title ?? ""),
     );
     expect(tile).toBeDefined();
     act(() => tile?.click());

@@ -5,6 +5,15 @@ import { AlertCircle, Image as ImageIcon, Loader2, X } from "lucide-react";
 import { InlineMediaRef } from "./InlineMediaRef";
 import type { MediaRef } from "@/features/files/types";
 
+const FILE_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isOwnedFileReference(ref: MediaRef | string | null | undefined) {
+  if (!ref) return false;
+  if (typeof ref === "string") return FILE_ID_PATTERN.test(ref);
+  return typeof ref.file_id === "string" && ref.file_id.length > 0;
+}
+
 export type MediaAttachmentStatus = "pending" | "ready" | "error";
 
 export interface MediaAttachmentThumbnailProps {
@@ -36,6 +45,7 @@ export function MediaAttachmentThumbnail({
 }: MediaAttachmentThumbnailProps) {
   const isPending = status === "pending";
   const isError = status === "error";
+  const useAuthenticatedBytes = isOwnedFileReference(mediaRef);
 
   return (
     <motion.div
@@ -61,6 +71,10 @@ export function MediaAttachmentThumbnail({
               fallback="skeleton"
               errorFallback="icon"
               alt={title}
+              // An owned file ID must render from the bearer-authenticated
+              // blob cache. Depending on the file-session cookie here made
+              // the local upload preview disappear at the ready handoff.
+              crossOrigin={useAuthenticatedBytes ? "anonymous" : undefined}
               className="transition-[filter] group-hover:brightness-90"
             />
             {isPending ? (

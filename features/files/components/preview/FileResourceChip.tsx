@@ -22,10 +22,9 @@
  *     `<FilePreview>` UX users see in cloud-files itself, no matter
  *     which surface the chip lives on.
  *
- * If the file isn't in the Redux `cloudFiles` slice (e.g. an old message
- * referencing a file that has since been deleted, or a paste before the
- * tree fetch settled), the chip gracefully falls back to a generic
- * "Unknown file" pill — never throws or renders a broken state.
+ * If the file isn't in the Redux `cloudFiles` slice (e.g. an old message or a
+ * paste before the tree fetch settled), the durable file ID still drives the
+ * thumbnail and preview. Message metadata supplies the label when available.
  */
 
 "use client";
@@ -36,7 +35,6 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { formatFileSize } from "@/features/files/utils/format";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
-import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 import {
@@ -87,25 +85,28 @@ export function FileResourceChip({
 
   const handleOpen = onOpen ?? (() => openFilePreview(fileId));
 
-  const thumbSizePx = size === "xs" ? 14 : 18;
+  const thumbSizePx = size === "xs" ? 20 : 18;
+  const thumbnailFile = file ?? {
+    id: fileId,
+    fileName,
+    mimeType,
+    fileSize,
+    metadata: {},
+    publicUrl: null,
+    thumbnailUrl: null,
+    visibility: "personal" as const,
+  };
 
   const chipContent = (
     <>
       {/* Thumb: real image for image/video, category icon otherwise.
           Container forces a square so MediaThumbnail's aspect math is happy. */}
-      {file ? (
-        <MediaThumbnail
-          file={file}
-          iconSize={thumbSizePx}
-          className={cn(
-            size === "xs" ? "h-4 w-4" : "h-5 w-5",
-            "shrink-0 rounded-sm",
-          )}
-          rounded="rounded-sm"
-        />
-      ) : (
-        <FileIcon fileName={fileName} size={thumbSizePx} />
-      )}
+      <MediaThumbnail
+        file={thumbnailFile}
+        iconSize={thumbSizePx}
+        className={cn("h-5 w-5", "shrink-0 rounded-sm")}
+        rounded="rounded-sm"
+      />
 
       <span
         className={cn(
@@ -128,7 +129,7 @@ export function FileResourceChip({
         "transition-colors hover:bg-accent hover:border-accent-foreground/20",
         onRemove ? "rounded-l-md" : "rounded-md",
         size === "xs"
-          ? "h-6 pl-1 pr-1.5 text-[11px] leading-none"
+          ? "h-7 pl-1 pr-1.5 text-[11px] leading-none"
           : "h-7 pl-1 pr-2 text-xs",
         className,
       )}
@@ -149,7 +150,7 @@ export function FileResourceChip({
         className={cn(
           "inline-flex shrink-0 items-center justify-center rounded-r-md border border-l-0 border-border bg-card",
           "text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground",
-          size === "xs" ? "h-6 w-5" : "h-7 w-6",
+          "h-7 w-6",
         )}
       >
         <X className={size === "xs" ? "h-2.5 w-2.5" : "h-3 w-3"} />
@@ -175,18 +176,12 @@ export function FileResourceChip({
             mimeType={mimeType}
             displayName={details.displayName}
             thumb={
-              file ? (
-                <MediaThumbnail
-                  file={file}
-                  iconSize={56}
-                  className="aspect-[4/3] w-full"
-                  rounded="rounded-md"
-                />
-              ) : (
-                <div className="flex aspect-[4/3] w-full items-center justify-center rounded-md bg-muted/50">
-                  <FileIcon fileName={fileName} size={48} />
-                </div>
-              )
+              <MediaThumbnail
+                file={thumbnailFile}
+                iconSize={56}
+                className="aspect-[4/3] w-full"
+                rounded="rounded-md"
+              />
             }
           />
         </HoverCardContent>

@@ -405,24 +405,28 @@ export function InlineUploadArea({
             },
           );
           const url = normalized.url ?? "";
+          const resolvedDetails = getFileDetailsByUrl(
+            url,
+            {
+              eTag: "",
+              size: file.size,
+              mimetype: file.type,
+              cacheControl: "max-age=3600",
+              lastModified: new Date(file.lastModified).toISOString(),
+              contentLength: file.size,
+            } as never,
+            normalized.fileId,
+          );
           results.push({
             name: file.name,
             fileId: normalized.fileId,
             url,
             type: classifyUploadType(file.type),
             mime_type: normalized.meta.mime ?? file.type,
-            details: getFileDetailsByUrl(
-              url,
-              {
-                eTag: "",
-                size: file.size,
-                mimetype: file.type,
-                cacheControl: "max-age=3600",
-                lastModified: new Date(file.lastModified).toISOString(),
-                contentLength: file.size,
-              } as never,
-              normalized.fileId,
-            ),
+            // Opaque durable URLs often end in a checksum/storage key. The
+            // user-selected File name is the display identity and must survive
+            // into the composer and submitted message metadata.
+            details: { ...resolvedDetails, filename: file.name },
           });
           if (statusIdx >= 0) {
             updatedStatuses[statusIdx] = {

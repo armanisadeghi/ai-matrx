@@ -32,6 +32,7 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import { FileUploadError } from "./errors";
 import { fromCloudFile } from "./input/normalize";
+import { setCached } from "@/features/files/hooks/blob-cache";
 import type {
   FileSource,
   NormalizedFile,
@@ -115,6 +116,13 @@ export async function uploadInternal(
           opts.onProgress!(event.loaded, event.total),
         )
       : await uploadAsset(params);
+    // The bytes that just crossed the upload boundary are already the
+    // authoritative contents for this durable file ID. Seed the shared
+    // authenticated blob cache before callers replace their local object URL
+    // with that ID, so every thumbnail keeps its pixels through the handoff.
+    setCached(asset.file_id, file, URL.createObjectURL(file), {
+      mimeType: file.type,
+    });
     // Hydrate the cloud-files row so the cloudFiles slice sees the new
     // master record and downstream readers (selectors, realtime) get it.
     const { data: full } = await Files.getFile(asset.file_id);
@@ -160,6 +168,12 @@ export async function uploadInternal(
   if (isCloudUploadFailure(result)) {
     throw new FileUploadError(result.error);
   }
+
+  // Preserve the already-loaded bytes under their new durable identity.
+  // setCached owns (and eventually revokes) this object URL.
+  setCached(result.fileId, file, URL.createObjectURL(file), {
+    mimeType: file.type,
+  });
 
   // cloudUpload returns slim metadata. Fetch the full row so the
   // returned NormalizedFile reflects every column the cloudFiles slice

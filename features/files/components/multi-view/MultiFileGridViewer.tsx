@@ -36,6 +36,7 @@ export interface ViewerFile {
   thumbnailUrl: string | null;
   publicUrl: string | null;
   metadata: Record<string, unknown> | null;
+  visibility: CloudFile["visibility"];
 }
 
 function toMediaThumbnailFile(
@@ -49,15 +50,17 @@ function toMediaThumbnailFile(
   | "metadata"
   | "publicUrl"
   | "thumbnailUrl"
+  | "visibility"
 > {
   return {
     id: file.id,
     fileName: file.fileName,
     mimeType: file.mimeType,
     fileSize: file.fileSize,
-    metadata: file.metadata ?? {},
+    metadata: file.metadata === null ? {} : file.metadata,
     publicUrl: file.publicUrl,
     thumbnailUrl: file.thumbnailUrl,
+    visibility: file.visibility,
   };
 }
 
@@ -151,11 +154,7 @@ export function MultiFileGridViewer({ files }: Props) {
           }}
         >
           {files.map((f, i) => (
-            <GridTile
-              key={f.id}
-              file={f}
-              onClick={() => setFocusIndex(i)}
-            />
+            <GridTile key={f.id} file={f} onClick={() => setFocusIndex(i)} />
           ))}
         </div>
       )}
@@ -179,7 +178,9 @@ function CornerControls({
   return (
     <div className="absolute top-2 right-2 z-20 flex items-center gap-1.5">
       <span className="text-[11px] tabular-nums text-muted-foreground bg-card/80 backdrop-blur border border-border px-2 py-1 rounded-full">
-        {focusIndex !== null ? `${focusIndex + 1} / ${count}` : `${count} items`}
+        {focusIndex !== null
+          ? `${focusIndex + 1} / ${count}`
+          : `${count} items`}
       </span>
       {focusIndex !== null ? (
         <button
@@ -213,9 +214,6 @@ function GridTile({
   file: ViewerFile;
   onClick: () => void;
 }) {
-  const isImage = file.mimeType.startsWith("image/");
-  const url = useFileSrc(isImage ? { kind: "file_id", fileId: file.id } : null);
-
   return (
     <button
       type="button"
@@ -226,24 +224,10 @@ function GridTile({
         "transition-shadow hover:ring-2 hover:ring-primary/60 focus-visible:ring-2 focus-visible:ring-primary outline-none",
       )}
     >
-      {isImage ? (
-        url ? (
-          <img
-            src={url}
-            alt={file.fileName}
-            className="absolute inset-0 h-full w-full object-cover"
-            loading="lazy"
-            draggable={false}
-          />
-        ) : (
-          <div className="absolute inset-0 animate-pulse bg-muted" />
-        )
-      ) : (
-        <MediaThumbnail
-          file={toMediaThumbnailFile(file)}
-          className="absolute inset-0 h-full w-full"
-        />
-      )}
+      <MediaThumbnail
+        file={toMediaThumbnailFile(file)}
+        className="absolute inset-0 h-full w-full"
+      />
     </button>
   );
 }

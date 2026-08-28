@@ -142,13 +142,16 @@ export function useUploadAgentResources(
           type: "file",
           data: {
             id: normalized.fileId,
-            filename: normalized.meta.fileName ?? file.name,
+            // The local File name is the user's display identity. The storage
+            // record may deliberately use a checksum/key as its physical
+            // filename; never let that overwrite the chip/message label.
+            filename: file.name,
             url: normalized.url,
             type: normalized.meta.mime ?? file.type,
             mime_type: normalized.meta.mime ?? file.type,
             size: file.size,
             details: {
-              filename: normalized.meta.fileName ?? file.name,
+              filename: file.name,
             },
           },
         });

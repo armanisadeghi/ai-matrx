@@ -460,6 +460,7 @@ export default function ScannerDesktop() {
                                     metadata: {},
                                     publicUrl: null,
                                     thumbnailUrl: null,
+                                    visibility: "personal",
                                   }}
                                   className="h-full w-full"
                                   rounded="rounded-none"

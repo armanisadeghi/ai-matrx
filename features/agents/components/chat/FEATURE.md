@@ -5,7 +5,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-27`
+**Last updated:** `2026-08-28`
 
 > **This is the authoritative doc for the LIVE chat route.** The chat route lives at `app/(a)/chat/**` and is built on the `features/agents/` execution-system — **not** on the unbuilt `ConversationShell` in `features/conversation/`. If you were sent here by `features/conversation/FEATURE.md` or `phase-07-chat-route.md`, this file supersedes their description of how the route behaves.
 
@@ -273,6 +273,7 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 
 ## Change log
 
+- `2026-08-28` — codex: **image attachments keep real pixels and names across the complete chat lifecycle.** The upload boundary seeds the shared authenticated blob cache before a pending image swaps its local object URL for a durable `file_id`; the shared 56×56 Smart Agent attachment tile explicitly uses that ID-backed transport. Both direct composer uploads and the canonical Files upload strip preserve the user-selected filename instead of replacing it with an opaque URL/storage checksum. Submitted user turns pass that persisted display title into the canonical `FileResourceChip`, which can now resolve thumbnails from the durable ID even when the cloud-files Redux row is not hydrated. The same `MediaThumbnail` repair makes the Files picker render private thumbnail variants by their own authenticated `file_id` instead of generic icons, while its existing 12-mounted-item window keeps the work bounded. Upload → ready → send → reload is one identity-preserving path; no message-only or picker-only renderer was added.
 - `2026-08-27` — codex: **successful duplicate-submit prevention no longer creates false production incidents.** The synchronous pre-send claim and unchanged-live-draft guards still reject double clicks/keypresses before transport, but expected rejections now use debug diagnostics instead of `console.error`; forcing coverage proves a rejected admission does not reach state or the error console.
 - `2026-08-26` — codex: **live Stop and Send/Queue controls now keep 44px targets through tablet widths.** The shared stacked Smart Agent Input uses `h-11 w-11` below `lg` and preserves the compact 36px desktop controls; this covers the post-first-turn `/chat` composer and every surface that reuses it. A focused source contract prevents the responsive classes from regressing.
 - `2026-08-26` — codex: **streaming assistant text keeps the native browser menu.** `AgentConversationDisplay` now suppresses its transcript-wide v3 wrapper for every active stream phase and restores it when the run settles; the focused component contract covers all active phases plus completion.

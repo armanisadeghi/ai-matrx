@@ -7,25 +7,25 @@ in the same change.
 
 ## Where things are
 
-| Concern                                  | Location                                                                                                                                                                        |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Types (the ONE source)                   | `types.ts`                                                                                                                                                                      |
-| Table column allowlist + client          | `filesDb.ts` (`FILES_TABLE_COLUMNS`)                                                                                                                                            |
-| Redux                                    | `redux/` — slice `cloudFiles`, `thunks.ts`, `virtual-thunks.ts`, `request-ledger.ts`, `realtime-middleware.ts`                                                                  |
-| Realtime attach/detach                   | `providers/CloudFilesRealtimeProvider.tsx`                                                                                                                                      |
-| Direct-Supabase writes                   | `api/direct.ts`; share links via `utils/permissions/shareLinks.ts`                                                                                                              |
-| Universal file handler                   | `handler/` (see `handler/FEATURE.md`)                                                                                                                                           |
-| Upload transport policy                  | `upload/cloudUpload.ts` (`resolveUploadTransport`), `upload/tusUpload.ts`                                                                                                       |
+| Concern                                  | Location                                                                                                                                                                                                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Types (the ONE source)                   | `types.ts`                                                                                                                                                                                              |
+| Table column allowlist + client          | `filesDb.ts` (`FILES_TABLE_COLUMNS`)                                                                                                                                                                    |
+| Redux                                    | `redux/` — slice `cloudFiles`, `thunks.ts`, `virtual-thunks.ts`, `request-ledger.ts`, `realtime-middleware.ts`                                                                                          |
+| Realtime attach/detach                   | `providers/CloudFilesRealtimeProvider.tsx`                                                                                                                                                              |
+| Direct-Supabase writes                   | `api/direct.ts`; share links via `utils/permissions/shareLinks.ts`                                                                                                                                      |
+| Universal file handler                   | `handler/` (see `handler/FEATURE.md`)                                                                                                                                                                   |
+| Upload transport policy                  | `upload/cloudUpload.ts` (`resolveUploadTransport`), `upload/tusUpload.ts`                                                                                                                               |
 | Core components                          | `components/core/` — FileTree, FileList, FileIcon, FileMeta, FilePreview, FileAcquisitionActions, FileUploadDropzone, FileBreadcrumbs, FileActions, FileContextMenu, ShareLinkDialog, PermissionsDialog |
-| Surfaces (6)                             | `components/surfaces/` — PageShell, WindowPanelShell, MobileStack, EmbeddedShell, DialogShell, DrawerShell                                                                      |
-| The one file picker                      | `features/resource-manager/resource-picker/FilesResourcePicker.tsx`, hosted by `components/pickers/CloudFilesPickerHost`                                                        |
-| Previewer dispatch                       | `components/core/FilePreview/PreviewerSwitch.tsx`                                                                                                                               |
-| File-type registry                       | `utils/file-types.ts` (`FILE_TYPES`, `getFilePreviewProfile`, `listSupportedTypes`)                                                                                             |
-| Route ownership (which host answers)     | `lib/api/service-routing.ts` (`STANDALONE_FILE_ROUTE_RULES`, `resolveFilesBaseUrl`)                                                                                             |
-| URL state                                | `utils/url-state.ts`, `utils/server-search-params.ts`                                                                                                                           |
-| Routes                                   | `app/(a)/files/` (`/files`; `/cloud-files/*` 308s here). Public shares: `app/(public)/s/[token]/`                                                                               |
-| Blocks (media rendering — NOT this node) | `blocks/`, `blocks/image/UNIFIED_IMAGE_BLOCK.md`                                                                                                                                |
-| Webhooks / event spine (NOT this node)   | `webhooks/FEATURE.md`                                                                                                                                                           |
+| Surfaces (6)                             | `components/surfaces/` — PageShell, WindowPanelShell, MobileStack, EmbeddedShell, DialogShell, DrawerShell                                                                                              |
+| The one file picker                      | `features/resource-manager/resource-picker/FilesResourcePicker.tsx`, hosted by `components/pickers/CloudFilesPickerHost`                                                                                |
+| Previewer dispatch                       | `components/core/FilePreview/PreviewerSwitch.tsx`                                                                                                                                                       |
+| File-type registry                       | `utils/file-types.ts` (`FILE_TYPES`, `getFilePreviewProfile`, `listSupportedTypes`)                                                                                                                     |
+| Route ownership (which host answers)     | `lib/api/service-routing.ts` (`STANDALONE_FILE_ROUTE_RULES`, `resolveFilesBaseUrl`)                                                                                                                     |
+| URL state                                | `utils/url-state.ts`, `utils/server-search-params.ts`                                                                                                                                                   |
+| Routes                                   | `app/(a)/files/` (`/files`; `/cloud-files/*` 308s here). Public shares: `app/(public)/s/[token]/`                                                                                                       |
+| Blocks (media rendering — NOT this node) | `blocks/`, `blocks/image/UNIFIED_IMAGE_BLOCK.md`                                                                                                                                                        |
+| Webhooks / event spine (NOT this node)   | `webhooks/FEATURE.md`                                                                                                                                                                                   |
 
 ## Invariants — do not violate
 
@@ -48,9 +48,11 @@ in the same change.
    echoes of our own writes.
 8. **Reads hit Supabase directly, never Python.** Adding a `getJson('/files/...')` for plain table
    data is a regression.
-9. **Renderable image/file URLs are centrally cached** — use `useFileSrc` (or
-   `fileHandler.use(...).as({kind:"html_src"})` outside React). Never call `/files/{id}/url` directly
-   from image or thumbnail UI.
+9. **Renderable media identity and bytes are centrally cached.** Keep `fileId` as identity; use
+   `useFileSrc` for the durable element URL and the shared `useFileBlob` cache when private
+   thumbnail pixels must not depend on the file-session cookie. A successful upload seeds those
+   same bytes under its new file ID before the local preview is retired. Never call a file URL
+   endpoint directly from image or thumbnail UI.
 10. **Dialog on desktop, Drawer on mobile**, branched in the surface. `dvh` not `vh` under
     `app/(a)/files/`; `pb-safe` on fixed bottoms; 16px inputs. Tablet list rows reserve space for
     a visible 44px **More** control; mobile rows expose a 44px **Actions** control plus the canonical
@@ -86,6 +88,15 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-28 — Attachment thumbnails retain their pixels through upload, send, and reload.** The
+  canonical upload path now seeds the authenticated byte cache under the committed `fileId` before
+  callers retire their local object URL. `MediaThumbnail` preserves thumbnail-variant `file_id`
+  identity and uses bearer-authenticated blob bytes for non-public media, while public files retain
+  their permanent CDN path. Inline uploads also preserve the user-selected filename instead of
+  deriving a display label from an opaque durable URL. The bounded 12-item `FilesResourcePicker`
+  window again resolves actual image thumbnails, and `FileResourceChip` resolves by durable ID even
+  before its Redux row is present, covering composer attachments, submitted message chips, hover
+  previews, file grids, and every picker consumer without a parallel renderer.
 - **2026-08-28 — Google Drive joins the canonical file-acquisition path.** `FileAcquisitionActions`
   now owns local files, local folders, existing Matrx Files, and auth-aware Google Drive import in
   menu, button, inline, and mobile-icon presentations. `/files`, onboarding, mobile, the shared
