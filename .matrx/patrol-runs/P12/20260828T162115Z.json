@@ -85,6 +85,25 @@
       },
       "previousEventHash": "7edd0bae740bfebccd922dd2b50d9ceef49ea0b4bf6dcd5857579123f2f080e7",
       "eventHash": "a4b8223458455d1eb0b2a1f8f561e583af1197a88ffc3086c6ed4ef56df6eb0e"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-28T16:52:53.049Z",
+      "actor": "integration-maintainer",
+      "summary": "Certified P12 candidate is integrated and contained in release v0.4.1392.",
+      "evidence": [
+        "candidate 2470f82af0a2726af49786c4a25a8451282e7a76 is an ancestor of release commit e1968d0a6e",
+        "release v0.4.1392 was pushed to origin/main"
+      ],
+      "delivery": {
+        "candidateSha": "2470f82af0a2726af49786c4a25a8451282e7a76",
+        "preservedRef": "refs/heads/patrol-runs/P12/20260828T162115Z",
+        "integratedSha": "e1968d0a6e",
+        "release": "v0.4.1392"
+      },
+      "previousEventHash": "a4b8223458455d1eb0b2a1f8f561e583af1197a88ffc3086c6ed4ef56df6eb0e",
+      "eventHash": "194aabcbf7f186e5cbf252038c231c56952047ebb4005e11913cc4fa95a03299"
     }
   ]
 }
