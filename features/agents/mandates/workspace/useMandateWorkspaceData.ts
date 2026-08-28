@@ -28,6 +28,7 @@ import {
   parseMandateWave1,
 } from "../provision-shapes";
 import { parseMandateContract, type MandateContract } from "../contract";
+import { mandateBindings, mandateDefinitions } from "@/lib/supabase/mandateStorage";
 
 export type MandateRowDb = Database["agent"]["Tables"]["mandate"]["Row"];
 export type MandateBindingRowDb =
@@ -92,9 +93,7 @@ export function useMandateWorkspaceData(
       const supabase = createClient();
 
       // 1. The mandate — by uuid (EntityRef doors) or by key (humans, doors).
-      const mandateQuery = supabase
-        .schema("agent")
-        .from("mandate")
+      const mandateQuery = mandateDefinitions(supabase)
         .select("*")
         .is("deleted_at", null);
       const { data: mandateRows, error: mandateError } = isUuidValue(
@@ -115,9 +114,7 @@ export function useMandateWorkspaceData(
       // 2. Provision + bindings in parallel.
       const [offer, bindingsResult] = await Promise.all([
         wave1.provisionKey ? fetchProvision(wave1.provisionKey) : Promise.resolve(null),
-        supabase
-          .schema("agent")
-          .from("mandate_binding")
+        mandateBindings(supabase)
           .select("*")
           .eq("mandate_id", mandate.id)
           .is("deleted_at", null)

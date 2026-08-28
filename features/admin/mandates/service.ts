@@ -28,6 +28,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
 /** Mandate/exemplar rows are platform rows owned by the system org. */
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import { mandateBindings, mandateDefinitions } from "@/lib/supabase/mandateStorage";
 
 
 const MANDATE_CODE_TRUTH_CONNECT_TIMEOUT_MS = 60_000;
@@ -88,18 +89,14 @@ export async function fetchMandateConsoleData(
       ? [...new Set(options.mandateKeys)]
       : null;
 
-  let mandateQuery = supabase
-    .schema("agent")
-    .from("mandate")
+  let mandateQuery = mandateDefinitions(supabase)
     .select("*")
     .is("deleted_at", null);
   if (scopedKeys) mandateQuery = mandateQuery.in("mandate_key", scopedKeys);
 
   const [mandatesRes, bindingsRes] = await Promise.all([
     mandateQuery.order("mandate_key"),
-    supabase
-      .schema("agent")
-      .from("mandate_binding")
+    mandateBindings(supabase)
       .select("*")
       .is("deleted_at", null)
       .order("created_at"),
@@ -190,9 +187,7 @@ export async function updateMandateDefinition(
   >,
 ): Promise<MandateDefinitionRow> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("mandate")
+  const { data, error } = await mandateDefinitions(supabase)
     .update(patch)
     .eq("id", mandateId)
     .select("*")

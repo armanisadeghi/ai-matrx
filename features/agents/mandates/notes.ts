@@ -26,6 +26,7 @@ import { createClient } from "@/utils/supabase/client";
 import { readAllRows } from "@/lib/supabase/readAllRows";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
+import { mandateNotes } from "@/lib/supabase/mandateStorage";
 
 type MandateNoteRow = Database["agent"]["Tables"]["mandate_note"]["Row"];
 
@@ -136,9 +137,7 @@ export async function fetchMandateNotes(
   const supabase = createClient();
   const rows = await readAllRows<MandateNoteRow>(
     ({ from, to }) =>
-      supabase
-        .schema("agent")
-        .from("mandate_note")
+      mandateNotes(supabase)
         .select("*", { count: "exact" })
         .eq("mandate_id", mandateId)
         .is("deleted_at", null)
@@ -171,9 +170,7 @@ export async function fetchMandateNotesFor(
   const supabase = createClient();
   const rows = await readAllRows<MandateNoteRow>(
     ({ from, to }) =>
-      supabase
-        .schema("agent")
-        .from("mandate_note")
+      mandateNotes(supabase)
         .select("*", { count: "exact" })
         .in("mandate_id", unique)
         .is("deleted_at", null)
@@ -218,9 +215,7 @@ export async function createMandateNote(
     );
   }
 
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("mandate_note")
+  const { data, error } = await mandateNotes(supabase)
     .insert({
       mandate_id: input.mandateId,
       body,
@@ -244,9 +239,7 @@ export async function createMandateNote(
 
 /** Soft-delete a note (author or an admin, per RLS). */
 export async function deleteMandateNote(noteId: string): Promise<void> {
-  const { error } = await createClient()
-    .schema("agent")
-    .from("mandate_note")
+  const { error } = await mandateNotes(createClient())
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", noteId);
   if (error) throw new Error(error.message || "Could not delete the note.");

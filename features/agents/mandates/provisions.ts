@@ -14,6 +14,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { parseOfferedValues, type OfferedValue } from "./provision-shapes";
+import { mandateProvisions } from "@/lib/supabase/mandateStorage";
 
 export type {
   BindingWave1Fields,
@@ -62,9 +63,7 @@ export async function fetchProvision(
   const cached = provisionCache.get(provisionKey);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.value;
 
-  const { data, error } = await createClient()
-    .schema("agent")
-    .from("provision")
+  const { data, error } = await mandateProvisions(createClient())
     .select("*")
     .eq("provision_key", provisionKey)
     .is("deleted_at", null)
@@ -121,9 +120,7 @@ export async function fetchProvisions(
   }
   const results = await Promise.all(
     chunks.map((chunk) =>
-      client
-        .schema("agent")
-        .from("provision")
+      mandateProvisions(client)
         .select("*")
         .in("provision_key", chunk)
         .is("deleted_at", null),

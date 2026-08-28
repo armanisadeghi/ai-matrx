@@ -47673,6 +47673,335 @@ export type Database = {
       [_ in never]: never
     }
   }
+  mandate: {
+    Tables: {
+      binding: {
+        Row: {
+          config_overrides: Json | null
+          consumption_map: Json | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          holder_id: string
+          holder_type: string
+          holder_version_id: string | null
+          id: string
+          is_enabled: boolean
+          mandate_id: string
+          metadata: Json
+          organization_id: string
+          principal_type: string
+          subject_user_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          config_overrides?: Json | null
+          consumption_map?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          holder_id: string
+          holder_type: string
+          holder_version_id?: string | null
+          id?: string
+          is_enabled?: boolean
+          mandate_id: string
+          metadata?: Json
+          organization_id: string
+          principal_type: string
+          subject_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          config_overrides?: Json | null
+          consumption_map?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          holder_id?: string
+          holder_type?: string
+          holder_version_id?: string | null
+          id?: string
+          is_enabled?: boolean
+          mandate_id?: string
+          metadata?: Json
+          organization_id?: string
+          principal_type?: string
+          subject_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "binding_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      definition: {
+        Row: {
+          accepts_user_input: boolean
+          auto_context_disabled: boolean
+          code_path: string | null
+          created_at: string
+          created_by: string | null
+          default_holder_id: string | null
+          default_holder_type: string
+          default_holder_version_id: string | null
+          deleted_at: string | null
+          description: string | null
+          fallback_mandate_key: string | null
+          goal: string
+          goal_grounding: string
+          id: string
+          input_source: string | null
+          input_waiver: string | null
+          is_enabled: boolean
+          label: string
+          mandate_key: string
+          metadata: Json
+          organization_id: string
+          origin: string
+          output_kind: string | null
+          output_waiver: string | null
+          pinned_context: Json
+          pins: Json
+          provision_key: string | null
+          required_context_policies: string[]
+          required_output_keys: string[]
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          accepts_user_input?: boolean
+          auto_context_disabled?: boolean
+          code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_holder_id?: string | null
+          default_holder_type: string
+          default_holder_version_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          fallback_mandate_key?: string | null
+          goal: string
+          goal_grounding?: string
+          id?: string
+          input_source?: string | null
+          input_waiver?: string | null
+          is_enabled?: boolean
+          label: string
+          mandate_key: string
+          metadata?: Json
+          organization_id: string
+          origin?: string
+          output_kind?: string | null
+          output_waiver?: string | null
+          pinned_context?: Json
+          pins?: Json
+          provision_key?: string | null
+          required_context_policies?: string[]
+          required_output_keys?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          accepts_user_input?: boolean
+          auto_context_disabled?: boolean
+          code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_holder_id?: string | null
+          default_holder_type?: string
+          default_holder_version_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          fallback_mandate_key?: string | null
+          goal?: string
+          goal_grounding?: string
+          id?: string
+          input_source?: string | null
+          input_waiver?: string | null
+          is_enabled?: boolean
+          label?: string
+          mandate_key?: string
+          metadata?: Json
+          organization_id?: string
+          origin?: string
+          output_kind?: string | null
+          output_waiver?: string | null
+          pinned_context?: Json
+          pins?: Json
+          provision_key?: string | null
+          required_context_policies?: string[]
+          required_output_keys?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      provision: {
+        Row: {
+          code_path: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          derived_input_kind: string | null
+          description: string | null
+          id: string
+          is_enabled: boolean
+          label: string
+          metadata: Json
+          offered_values: Json
+          organization_id: string
+          provision_key: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          derived_input_kind?: string | null
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          label: string
+          metadata?: Json
+          offered_values?: Json
+          organization_id: string
+          provision_key: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          code_path?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          derived_input_kind?: string | null
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          label?: string
+          metadata?: Json
+          offered_values?: Json
+          organization_id?: string
+          provision_key?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      treatment: {
+        Row: {
+          audience: string | null
+          config: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          holder_version_id: string | null
+          id: string
+          is_default: boolean
+          is_enabled: boolean
+          mandate_id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          tier: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          audience?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          holder_version_id?: string | null
+          id?: string
+          is_default?: boolean
+          is_enabled?: boolean
+          mandate_id: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          tier: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          audience?: string | null
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          holder_version_id?: string | null
+          id?: string
+          is_default?: boolean
+          is_enabled?: boolean
+          mandate_id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          tier?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   marketing: {
     Tables: {
       initiative: {
@@ -91700,6 +92029,9 @@ export const Constants = {
       wc_finger_type: ["index", "middle", "ring", "little", "thumb"],
       wc_side: ["right", "left", "default"],
     },
+  },
+  mandate: {
+    Enums: {},
   },
   marketing: {
     Enums: {},

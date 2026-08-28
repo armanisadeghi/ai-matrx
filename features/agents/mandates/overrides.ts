@@ -29,6 +29,7 @@ import type { Database } from "@/types/database.types";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { invalidateMandateCache } from "./service";
 import type { ConsumptionMap } from "./provision-shapes";
+import { mandateBindings, mandateDefinitions } from "@/lib/supabase/mandateStorage";
 
 export type MandateDefinitionRow = Database["agent"]["Tables"]["mandate"]["Row"];
 export type MandateBindingRow = Database["agent"]["Tables"]["mandate_binding"]["Row"];
@@ -77,15 +78,11 @@ export async function fetchMandateOverridesData(): Promise<MandateOverridesData>
   const supabase = createClient();
 
   const [mandatesRes, bindingsRes] = await Promise.all([
-    supabase
-      .schema("agent")
-      .from("mandate")
+    mandateDefinitions(supabase)
       .select("*")
       .is("deleted_at", null)
       .order("mandate_key"),
-    supabase
-      .schema("agent")
-      .from("mandate_binding")
+    mandateBindings(supabase)
       .select("*")
       .is("deleted_at", null)
       .order("created_at"),
@@ -158,9 +155,7 @@ export async function fetchMandatePickerData(
   userId: string,
 ): Promise<MandatePickerData> {
   const supabase = createClient();
-  const { data: mandate, error } = await supabase
-    .schema("agent")
-    .from("mandate")
+  const { data: mandate, error } = await mandateDefinitions(supabase)
     .select("*")
     .eq("mandate_key", mandateKey)
     .is("deleted_at", null)
@@ -200,9 +195,7 @@ export async function fetchMandatePickerData(
     defaultAgentName = agent?.name ?? "(unknown agent)";
   }
 
-  const { data: binding, error: bindingError } = await supabase
-    .schema("agent")
-    .from("mandate_binding")
+  const { data: binding, error: bindingError } = await mandateBindings(supabase)
     .select("*")
     .eq("mandate_id", mandate.id)
     .eq("principal_type", "user")

@@ -46,6 +46,7 @@ import {
   type MandateWave1Fields,
 } from "./provision-shapes";
 import type { JsonObject } from "@/types/json";
+import { mandateBindings, mandateDefinitions } from "@/lib/supabase/mandateStorage";
 
 export interface ResolvedMandate {
   mandateKey: string;
@@ -163,9 +164,7 @@ export async function resolveMandate(
   // `select("*")` on purpose: the wave-1 columns (provision_key, pins,
   // pinned_context) are live but ahead of the generated Row type — they ride
   // the full row and are narrowed at ingress by `parseMandateWave1`.
-  const { data: mandate, error } = await supabase
-    .schema("agent")
-    .from("mandate")
+  const { data: mandate, error } = await mandateDefinitions(supabase)
     .select("*")
     .eq("mandate_key", mandateKey)
     .is("deleted_at", null)
@@ -202,9 +201,7 @@ export async function resolveMandate(
   // to you" display over this path lied. RLS already scopes the read to org
   // bindings of orgs the caller belongs to. Deterministic winner: newest.
   if (userId) {
-    const { data: orgBindings, error: orgError } = await supabase
-      .schema("agent")
-      .from("mandate_binding")
+    const { data: orgBindings, error: orgError } = await mandateBindings(supabase)
       .select(
         "id, holder_type, agent_id, agent_version_id, use_latest, config_overrides, is_enabled, updated_at",
       )
@@ -238,9 +235,7 @@ export async function resolveMandate(
   // invisible so no explicit user filter is needed beyond principal_type).
   // User wins over org — the same precedence the server walks.
   if (userId) {
-    const { data: binding, error: bindingError } = await supabase
-      .schema("agent")
-      .from("mandate_binding")
+    const { data: binding, error: bindingError } = await mandateBindings(supabase)
       .select(
         "id, holder_type, agent_id, agent_version_id, use_latest, config_overrides, is_enabled",
       )
@@ -335,9 +330,7 @@ export async function fetchMandatePins(
   if (missing.length === 0) return out;
 
   const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("mandate")
+  const { data, error } = await mandateDefinitions(supabase)
     .select(
       "mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled",
     )
@@ -407,9 +400,7 @@ export async function fetchMandateIdentities(
   const out: Record<string, MandateIdentity> = {};
   if (keys.length === 0) return out;
 
-  const { data, error } = await createClient()
-    .schema("agent")
-    .from("mandate")
+  const { data, error } = await mandateDefinitions(createClient())
     .select("id, mandate_key, label, description, default_agent_id, is_enabled")
     .in("mandate_key", keys)
     .is("deleted_at", null);

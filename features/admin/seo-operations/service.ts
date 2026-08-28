@@ -7,6 +7,7 @@
  */
 import { createClient } from "@/utils/supabase/client";
 import { parseOfferedValues } from "@/features/agents/mandates/provision-shapes";
+import { mandateDefinitions, mandateProvisions } from "@/lib/supabase/mandateStorage";
 
 export interface SeoMandateRow {
   id: string;
@@ -57,9 +58,7 @@ export interface EvidenceValueSpec {
 
 export async function fetchSeoMandates(): Promise<SeoMandateRow[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("mandate")
+  const { data, error } = await mandateDefinitions(supabase)
     .select(
       "id, mandate_key, label, description, provision_key, output_kind, default_agent_id, default_agent_version_id, contract",
     )
@@ -76,9 +75,7 @@ export async function fetchSeoMandates(): Promise<SeoMandateRow[]> {
 
 export async function fetchSeoProvisions(): Promise<SeoProvisionRow[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("provision")
+  const { data, error } = await mandateProvisions(supabase)
     .select(
       "provision_key, label, description, offered_values, code_path",
     )
@@ -136,9 +133,7 @@ export async function fetchSeoSites(): Promise<SeoSiteOption[]> {
 
 export async function fetchEvidenceValues(): Promise<EvidenceValueSpec[]> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("agent")
-    .from("provision")
+  const { data, error } = await mandateProvisions(supabase)
     .select("offered_values")
     .eq("provision_key", "seo.site_evidence")
     .is("deleted_at", null)
