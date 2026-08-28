@@ -9,7 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrganizationName,
+} from "@/lib/redux/slices/appContextSlice";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   CRM_CREATE_PARTY_SURFACE_NAME,
@@ -71,8 +74,27 @@ export function PartyCreateForm({
   onCancel,
   onCreated,
 }: PartyCreateFormProps) {
-  const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
-  const orgId = initialOrgId ?? effectiveOrgId;
+  /*
+    🚨 THE EXPLICIT ACTIVE ORG, NEVER THE "EFFECTIVE" ONE.
+
+    This read `selectEffectiveOrganizationId`, which is `organization_id ??
+    personal_organization_id` — so whenever no org was actively selected, a record
+    the user believed they were filing into their working organization was silently
+    stamped with their PERSONAL workspace instead. Nothing said so: the form shows
+    no org, the body was the only place the value appeared, and no header carried a
+    second opinion that could disagree.
+
+    `features/organizations/FEATURE.md` already rules on this: compute requests
+    "fail closed without an organization", the transport "requires
+    `selectOrganizationId` or an entity-local `scopeOverrides.organization_id`",
+    and `selectEffectiveOrganizationId` "remains only for direct data surfaces
+    awaiting explicit-input migration; NEW CONSUMERS ARE FORBIDDEN". A create that
+    posts to aidream is a compute request, so this was a consumer that should never
+    have existed. Now it fails closed and says why.
+  */
+  const activeOrgId = useAppSelector(selectOrganizationId);
+  const activeOrgName = useAppSelector(selectOrganizationName);
+  const orgId = initialOrgId ?? activeOrgId;
   const seedName = initialName?.trim() ?? "";
   const seedPerson = splitPersonName(seedName);
   const [kind, setKind] = useState<PartyKind>(initialKind);
@@ -110,7 +132,11 @@ export function PartyCreateForm({
 
   const submit = async () => {
     if (!orgId) {
-      toast.error("No organization resolved yet — try again in a moment");
+      // Fail closed and NAME the remedy — "try again in a moment" told somebody to
+      // retry an action that would never start working on its own.
+      toast.error(
+        "Choose an organization first — this record has to be filed in one. Pick it from the menu under your avatar.",
+      );
       return;
     }
     if (!displayName) {
@@ -294,6 +320,36 @@ export function PartyCreateForm({
     >
       <div className="flex h-full min-h-0 flex-col">
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+          {/*
+            🚨 THE FORM SAYS WHERE THE RECORD WILL LAND, ALWAYS.
+
+            A create that files into an organization while showing none is how two
+            test parties ended up in a real customer's CRM: the org lived only in a
+            request body, so being in the wrong one looked exactly like being in the
+            right one. This line is cheap and it is the whole difference between a
+            mistake somebody can see and a mistake they cannot.
+
+            When no org is active it says so instead of naming a fallback, because
+            the submit now fails closed rather than quietly choosing the personal
+            workspace.
+          */}
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {orgId ? (
+              <span>
+                Filing into{" "}
+                <span className="font-medium text-foreground">
+                  {activeOrgName ?? "the selected organization"}
+                </span>
+              </span>
+            ) : (
+              <span className="text-destructive">
+                No organization selected — choose one from the menu under your
+                avatar before creating a record.
+              </span>
+            )}
+          </p>
+
           <div className="flex gap-2">
             {kindButton("person", "Person", User)}
             {kindButton("organization", "Company", Building2)}

@@ -430,7 +430,15 @@ function toResolvedParty(row: {
 export async function resolveParty(
   input: ResolvePartyInput,
 ): Promise<ResolvedParty> {
-  const { data } = await apiPost(RESOLVE_PARTY, resolveRequestBody(input));
+  const { data } = await apiPost(RESOLVE_PARTY, resolveRequestBody(input), {
+    // 🚨 THE ORG RIDES THE HEADER AS WELL AS THE BODY, AND THAT IS THE POINT.
+    // This create used to send the org ONLY in the body, so nothing could
+    // disagree with it and nothing did: whatever the form resolved was accepted
+    // in silence. `applyOrganizationContextHeader` is the same fail-closed kernel
+    // `callApi` uses — a missing or malformed value throws BEFORE any networking,
+    // and the two values are now the same value from the same place.
+    organizationId: input.orgId,
+  });
   return toResolvedParty(data);
 }
 
@@ -449,9 +457,13 @@ export async function resolvePartiesBatch(
   inputs: ResolvePartyInput[],
 ): Promise<ResolvePartyBatchItem[]> {
   if (inputs.length === 0) return [];
-  const { data } = await apiPost(RESOLVE_PARTY_BATCH, {
-    parties: inputs.map(resolveRequestBody),
-  });
+  // Every row in a batch is stamped with the same org — the caller resolved it
+  // once — so the header binds that one value for the whole request.
+  const { data } = await apiPost(
+    RESOLVE_PARTY_BATCH,
+    { parties: inputs.map(resolveRequestBody) },
+    { organizationId: inputs[0].orgId },
+  );
   return data.map((row) => ({
     index: row.index,
     resolved: row.resolved ? toResolvedParty(row.resolved) : undefined,
