@@ -138,6 +138,31 @@ export function ChangePositionForm({
       standardHoursNumber <= 0 ||
       standardHoursNumber > 168);
 
+  /*
+    🚨 THE SAME CONDITION THE DOOR ENFORCES, IN THE SAME WORDS.
+    `hr._l1_apply_position` refuses a change to a wage-bearing field — the four
+    classification axes, FTE, standard hours a week — without a stated reason,
+    because those decide overtime eligibility, proration and what a day of leave
+    costs. Mirrored here so the person learns it while typing rather than after
+    committing; the door remains the boundary and this remains UX.
+  */
+  // Only the wage-bearing axes THIS form can move. Worker class, pay basis and
+  // schedule class are wage-bearing too and the door gates them — they are simply
+  // not edited here, so listing them would warn about fields nobody touched.
+  const wageBearingChanged: string[] = [];
+  if (flsaStatus !== currentAssignment?.flsa_status) wageBearingChanged.push("FLSA status");
+  if (Number(fte) !== Number(currentAssignment?.fte ?? 1)) wageBearingChanged.push("FTE");
+  if (
+    standardHours.trim() !==
+    (currentAssignment?.standard_hours_per_week != null
+      ? String(currentAssignment.standard_hours_per_week)
+      : "")
+  ) {
+    wageBearingChanged.push("standard hours a week");
+  }
+  const reasonMissing =
+    wageBearingChanged.length > 0 && !changeReason.trim();
+
   const fteNumber = Number(fte);
   const fteInvalid = !Number.isFinite(fteNumber) || fteNumber <= 0 || fteNumber > 2;
   const exemptWithoutBasis =
@@ -148,6 +173,7 @@ export function ChangePositionForm({
   const blocked =
     fteInvalid ||
     standardHoursInvalid ||
+    reasonMissing ||
     exemptWithoutBasis ||
     locationWithoutJurisdiction ||
     !jobTitleId;
