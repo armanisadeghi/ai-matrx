@@ -199,6 +199,14 @@ const EXPECTED_CHECKS = [
   // enumerates what activation creates and no authority row is in it. Two known pairs ride a dated
   // allowlist; whether a fresh org should be seeded is an approval-engine policy call, not this lane's.
   "every_pay_change_has_an_approver",
+  // hr_l3_68, the third sibling of checks 26 and 28, filed by the Leave lane as L5-A1
+  // ("leave_approve held by NO role and NO org"). Measured: leave_approve is in the auto_record
+  // split, so a managed subject resolves at RULE 2b and a top-of-chart subject at RULE 3, and the
+  // sole proprietor's own leave auto-records (T-22). Probed against real manager edges with the
+  // org's leave authority rows REMOVED: all three populations resolved an approver, so nothing was
+  // owed on the routing half. 🚨 Read `leave_requests_in_existence` beside the verdict — the table
+  // is effectively empty, so a green here is not evidence that leave routing works.
+  "every_leave_request_has_an_approver",
 ] as const;
 
 interface ConformanceRow {
