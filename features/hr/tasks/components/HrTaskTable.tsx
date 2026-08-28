@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { HrDeliveryState } from "@/features/hr/tasks/components/HrDeliveryState";
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import type { HrInboxRow } from "@/features/hr/tasks/types";
+import { HR_NOT_PROVIDED } from "@/features/hr/constants";
 
 /**
  * One actionable HR item, rendered once. Every row's title is a DOOR to the
@@ -79,8 +80,15 @@ export function HrTaskTable({
                     */}
                     {row.change && row.change.length > 0 ? (
                         <div className="truncate text-xs text-muted-foreground">
+                            {/* The SAME phrase the decision panel uses. These two
+                                render the same change and said different words for
+                                the same absence — and on a pay row the dash could
+                                not be told apart from a withheld amount. */}
                             {row.change
-                                .map((c) => `${c.label}: ${c.from ?? "—"} → ${c.to ?? "—"}`)
+                                .map(
+                                    (c) =>
+                                        `${c.label}: ${c.from ?? HR_NOT_PROVIDED} → ${c.to ?? HR_NOT_PROVIDED}`,
+                                )
                                 .join(" · ")}
                         </div>
                     ) : row.digest ? (

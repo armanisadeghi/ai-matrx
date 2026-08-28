@@ -20,6 +20,7 @@ import {
     markNoticeRead,
     withdrawInstance,
 } from "@/features/hr/tasks/service";
+import { HR_NOT_PROVIDED } from "@/features/hr/constants";
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import type {
     HrDecisionIntent,
@@ -289,13 +290,13 @@ export function HrDecisionPanel({
                                             </dt>
                                             <dd className="flex flex-wrap items-baseline gap-x-2">
                                                 <span className="text-muted-foreground line-through">
-                                                    {entry.from ?? "Not provided"}
+                                                    {entry.from ?? HR_NOT_PROVIDED}
                                                 </span>
                                                 <span aria-hidden className="text-muted-foreground">
                                                     →
                                                 </span>
                                                 <span className="font-medium text-foreground">
-                                                    {entry.to ?? "Not provided"}
+                                                    {entry.to ?? HR_NOT_PROVIDED}
                                                 </span>
                                             </dd>
                                         </div>

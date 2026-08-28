@@ -38,6 +38,7 @@ export {
 } from "../clock/stampedTime";
 
 import { viewerTimeZone } from "../clock/stampedTime";
+import { HR_NOT_PROVIDED } from "@/features/hr/constants";
 
 /** True when the record's stamped zone is not the zone the reader is sitting in. */
 export function zoneDiffersFromViewer(tz: string): boolean {
@@ -170,7 +171,11 @@ export function formatMoney(amount: number): string {
 }
 
 export function formatRate(rate: number | null): string {
-  if (rate === null) return "—";
+  // 🚨 A DASH IN A MONEY SLOT IS THE ONE PLACE THIS IS NOT ALLOWED.
+  // "—" cannot be told apart from a withheld amount or a zero, and panels were
+  // already saying "Not provided" for the same absence. `formatVariance` below
+  // has always followed this rule; this one did not.
+  if (rate === null) return HR_NOT_PROVIDED;
   return `${formatMoney(rate)}/hr`;
 }
 

@@ -162,3 +162,19 @@ export type HrChangeIntent = (typeof HR_CHANGE_INTENTS)[number]["value"];
 
 /** The `?org=` query key every HR door carries. Accepts a slug OR a uuid (SPEC-UI-IA §1). */
 export const HR_ORG_PARAM = "org";
+
+/**
+ * 🚨 ONE PHRASE FOR "NOTHING ON FILE", ACROSS ROWS AND PANELS.
+ *
+ * A panel said "Not provided" while the row beside it said "—" about the same
+ * absent value, so the two surfaces disagreed about what the reader was looking
+ * at. On MONEY that is not just inconsistent: a dash in a money slot cannot be
+ * told apart from a withheld amount or a zero, which is exactly what the
+ * three-state doctrine forbids (`formatVariance` in the time lane already gets
+ * this right — `null` is "Not scheduled", never a bare number).
+ *
+ * Absent means: there is nothing on file. It does NOT mean withheld — a value
+ * this viewer may not see is ABSENT FROM THE PAYLOAD entirely (§1.3), so it
+ * never reaches a formatter.
+ */
+export const HR_NOT_PROVIDED = "Not provided";
