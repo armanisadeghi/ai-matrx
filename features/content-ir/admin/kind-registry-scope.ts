@@ -32,7 +32,8 @@ export type KindRegistryDetailTab =
   | "try-input"
   | "gate"
   | "schema"
-  | "inputs";
+  | "inputs"
+  | "variants";
 
 export interface KindComponentEditorScopeState {
   rows: KindComponentCodeRecord[];
