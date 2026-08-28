@@ -31,7 +31,7 @@ const PREVIEWS = [
     title: "The Places View",
     blurb:
       "The same corpus from the other side: what runs HERE. Referenced slots, discovered mandates that would appear, and the per-place exclusion valve.",
-    ready: false,
+    ready: true,
   },
   {
     slug: "batch",
@@ -39,7 +39,7 @@ const PREVIEWS = [
     title: "The Batch Grid",
     blurb:
       "The three-level cascade, fill-down, copy-a-row-paste-to-many, the attention worklist and a minimal-patch bulk write — lifted out of the shortcut editor and pointed at everything.",
-    ready: false,
+    ready: true,
   },
 ] as const;
 
