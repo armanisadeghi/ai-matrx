@@ -184,10 +184,16 @@ export function NewVerificationRequestDialog({
             {needsConsent ? (
               <p className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                {/*
+                  🚨 THE SENTENCE STAYS; THE CLAUSE "Raising this asks them for it" DID NOT.
+                  Raising notifies nobody — `hr_verification_request_create` writes the row
+                  and touches no notification, workflow, or task — and there is no surface
+                  where the employee could answer. The consent REQUIREMENT is real and must
+                  keep being stated here; the claim that raising performs the ask was not.
+                */}
                 <span>
-                  Stating income needs the employee&apos;s consent. Raising this
-                  asks them for it; the letter cannot be generated until they
-                  answer.
+                  Stating income needs the employee&apos;s consent. The letter
+                  cannot be generated until that consent is recorded.
                 </span>
               </p>
             ) : null}
