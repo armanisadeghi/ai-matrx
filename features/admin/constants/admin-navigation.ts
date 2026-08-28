@@ -506,6 +506,25 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
     ],
   },
   {
+    name: "HR",
+    slug: "hr",
+    iconName: "Scale",
+    iconColor: "text-emerald-600",
+    sections: [
+      {
+        name: "Employment Law",
+        iconName: "Scale",
+        destinations: [
+          destination("/administration/hr"),
+          destination("/administration/hr/jurisdiction-rules", [
+            "/administration/hr/jurisdiction-rules/[ruleId]",
+          ]),
+          destination("/administration/hr/jurisdiction-rules/verification"),
+        ],
+      },
+    ],
+  },
+  {
     name: "Compute",
     slug: "compute",
     iconName: "Server",

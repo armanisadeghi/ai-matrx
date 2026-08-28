@@ -939,6 +939,38 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
+    name: "HR & Employment Law",
+    landingPath: "/administration/hr",
+    iconName: "Scale",
+    iconColor: "text-emerald-600",
+    features: [
+      {
+        title: "HR Overview",
+        description:
+          "Rule counts by status, the overdue verification board's size, and the pending-verification population of the platform employment-law library.",
+        iconName: "Landmark",
+        link: "/administration/hr",
+        isNew: true,
+      },
+      {
+        title: "Jurisdiction Rules",
+        description:
+          "The platform employment-law rule library: every class and jurisdiction with its citation, effective range, fixtures, and the superadmin-only promote/demote control (D25).",
+        iconName: "Scale",
+        link: "/administration/hr/jurisdiction-rules",
+        isNew: true,
+      },
+      {
+        title: "Rule Verification",
+        description:
+          "The JUR-SEED board — per-task seeding progress, unverified parameter keys, and every rule past its verification date.",
+        iconName: "ClipboardCheck",
+        link: "/administration/hr/jurisdiction-rules/verification",
+        isNew: true,
+      },
+    ],
+  },
+  {
     name: "Feedback",
     landingPath: "/administration/users/feedback",
     iconName: "MessageSquare",
