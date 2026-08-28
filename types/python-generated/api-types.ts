@@ -11983,30 +11983,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -17545,6 +17521,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/runs/waiting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Waiting Runs Endpoint
+         * @description THE "waiting on you" inbox (SPEC-workflow-ui-contract §4.3 leg 3).
+         *
+         *     Every run of the caller's that is holding for a person — ``interrupted``
+         *     (a question mid-run) and ``awaiting_input`` (a start-time park for a
+         *     missing require/ask input) — with the snapshot of WHAT it is waiting for
+         *     on each row. One bounded read: no event replay, no per-run checkpoint
+         *     fetch (except the documented fallback for runs interrupted before the
+         *     snapshot contract existed).
+         *
+         *     Same auth posture as ``GET /runs/stream``: authenticated caller required,
+         *     scoped to their own runs unioned with their access kernel's discoverable
+         *     ids, RLS underneath. Declared BEFORE ``/runs/{run_id}`` so the literal
+         *     path wins route matching.
+         */
+        get: operations["list_waiting_runs_endpoint_runs_waiting_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/runs/{run_id}": {
         parameters: {
             query?: never;
@@ -18166,6 +18174,28 @@ export interface paths {
          *     blew up before the enqueue completed.
          */
         get: operations["list_trigger_fires_triggers__trigger_id__fires_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/triggers/{trigger_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Trigger Events
+         * @description Owner-gated view of the durable event queue behind a kind='event'
+         *     trigger. Most-recent first. A 'dead' row here is the retry handle: fix
+         *     the cause, then fire the trigger manually with the entity's inputs.
+         */
+        get: operations["list_trigger_events_triggers__trigger_id__events_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -36208,7 +36238,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cron" | "webhook" | "manual";
+            kind: "cron" | "webhook" | "manual" | "event";
             /**
              * Cron Expression
              * @description Required when kind='cron'. Standard 5-field syntax.
@@ -36225,6 +36255,8 @@ export interface components {
              * @description Optional secret required as X-Matrx-Trigger-Secret on webhook fires.
              */
             webhook_secret?: string | null;
+            /** @description Required when kind='event': which data change fires this trigger (watched table + operation + optional when-transition + input_map). The table must be instrumented via workflow.watch_table to produce events, and only rows of the trigger's organization ever fire it. */
+            event_source?: components["schemas"]["EventSourceSpec"] | null;
             /** Default Inputs */
             default_inputs?: {
                 [key: string]: unknown;
@@ -38059,33 +38091,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -40176,6 +40181,59 @@ export interface components {
             error_type?: string | null;
             /** Value */
             value?: unknown;
+        };
+        /**
+         * EventSourceSpec
+         * @description kind='event' config — what data change fires this trigger.
+         *
+         *     Matching happens in the DB capture function (workflow.emit_trigger_events,
+         *     migration 0111): a write on the watched ``table`` with the matching
+         *     ``operation`` — and, when ``when_column`` is set, a TRANSITION into
+         *     ``when_value`` — enqueues a durable workflow.trigger_event row. A table
+         *     only produces events after ``workflow.watch_table(...)`` attached the
+         *     capture trigger; the trigger's organization_id must equal the row's.
+         *
+         *     ``input_map`` maps run input names to columns of the watched row; the
+         *     full event also rides the run inputs under the reserved key ``event``.
+         *     ``debounce_seconds`` is the settle window: while an event for the same
+         *     entity is still pending, a newer change replaces it and pushes the fire
+         *     time forward instead of firing once per write.
+         */
+        EventSourceSpec: {
+            /**
+             * Table
+             * @description Schema-qualified watched table.
+             */
+            table: string;
+            /**
+             * Operation
+             * @default insert
+             * @enum {string}
+             */
+            operation?: "insert" | "update";
+            /** When Column */
+            when_column?: string | null;
+            /** When Value */
+            when_value?: string | null;
+            /**
+             * Entity Key Column
+             * @default id
+             */
+            entity_key_column?: string;
+            /**
+             * Debounce Seconds
+             * @default 0
+             */
+            debounce_seconds?: number;
+            /** Input Map */
+            input_map?: {
+                [key: string]: string;
+            };
+            /**
+             * Include Event
+             * @default false
+             */
+            include_event?: boolean;
         };
         /** EvidenceReference */
         EvidenceReference: {
@@ -68848,6 +68906,46 @@ export interface components {
             enabled?: boolean;
         };
         /**
+         * TriggerEventRecord
+         * @description Queue row behind a kind='event' trigger — wire shape of
+         *     GET /triggers/{id}/events. The durable event ledger: pending (waiting
+         *     out its settle window), claimed (a watcher is firing it), fired
+         *     (run_id points at the run), or dead (exhausted retries / orphaned).
+         */
+        TriggerEventRecord: {
+            /** Id */
+            id: string;
+            /** Trigger Id */
+            trigger_id: string;
+            /** Entity Key */
+            entity_key: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "claimed" | "fired" | "dead";
+            /** Claim At */
+            claim_at?: string | null;
+            /**
+             * Attempts
+             * @default 0
+             */
+            attempts?: number;
+            /**
+             * Max Attempts
+             * @default 5
+             */
+            max_attempts?: number;
+            /** Run Id */
+            run_id?: string | null;
+            /** Last Error */
+            last_error?: string | null;
+            /** Created At */
+            created_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * TriggerFireRecord
          * @description Audit row for one trigger fire attempt — wire shape of
          *     GET /triggers/{id}/fires.
@@ -68922,6 +69020,10 @@ export interface components {
             kind?: string | null;
             /** Cron Expression */
             cron_expression?: string | null;
+            /** Event Source */
+            event_source?: {
+                [key: string]: unknown;
+            } | null;
             /** Timezone */
             timezone?: string | null;
             /** Description */
@@ -71699,6 +71801,105 @@ export interface components {
             waited_for?: string | null;
             /** Url */
             url?: string | null;
+        };
+        /**
+         * WaitingGap
+         * @description One missing input on an ``awaiting_input`` park — the compiled input
+         *     surface's own declaration, so the form renders from this row alone.
+         */
+        WaitingGap: {
+            /** Name */
+            name: string;
+            /** Kind */
+            kind?: string | null;
+            /** Sourcing */
+            sourcing?: string | null;
+            /** Variant */
+            variant?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Help */
+            help?: string | null;
+            /** Placeholder */
+            placeholder?: string | null;
+            /** Options */
+            options?: unknown[];
+            /** Json Schema */
+            json_schema?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * WaitingRun
+         * @description One row of the inbox. Every field a "Waiting on you" list needs, and
+         *     per ``no-dead-ends.md`` the ids to open the run itself.
+         */
+        WaitingRun: {
+            /** Run Id */
+            run_id: string;
+            /** Definition Id */
+            definition_id?: string | null;
+            /** Workflow Name */
+            workflow_name?: string | null;
+            /** Status */
+            status: string;
+            snapshot: components["schemas"]["WaitingSnapshot"];
+            /** Asked At */
+            asked_at?: string | null;
+            /** Deadline */
+            deadline?: string | null;
+            /** Parent Run Id */
+            parent_run_id?: string | null;
+        };
+        /** WaitingRunsResponse */
+        WaitingRunsResponse: {
+            /** Runs */
+            runs: components["schemas"]["WaitingRun"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * WaitingSnapshot
+         * @description WHAT the run is waiting for — the two park shapes under one roof.
+         *
+         *     ``kind='interrupt'`` fills the question block (``node_id`` /
+         *     ``checkpoint_id`` / ``prompt`` / ``title`` / ``schema_hint`` / ``preset``);
+         *     ``kind='awaiting_input'`` fills ``missing``. ``presentation`` and ``preset``
+         *     are always present because both defaults ARE today's behavior — a client
+         *     never has to reason about absence.
+         */
+        WaitingSnapshot: {
+            /** Kind */
+            kind: string;
+            /** Node Id */
+            node_id?: string | null;
+            /** Checkpoint Id */
+            checkpoint_id?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Prompt */
+            prompt?: string | null;
+            /**
+             * Presentation
+             * @default panel
+             */
+            presentation?: string;
+            /**
+             * Preset
+             * @default free_text
+             */
+            preset?: string;
+            /** Schema Hint */
+            schema_hint?: {
+                [key: string]: unknown;
+            } | null;
+            /** Missing */
+            missing?: components["schemas"]["WaitingGap"][];
+            /**
+             * Stale
+             * @default false
+             */
+            stale?: boolean;
         };
         /**
          * WalkHop
@@ -93971,41 +94172,6 @@ export interface operations {
             };
         };
     };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_tools_tools_test_list_get: {
         parameters: {
             query?: {
@@ -104048,6 +104214,38 @@ export interface operations {
             };
         };
     };
+    list_waiting_runs_endpoint_runs_waiting_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaitingRunsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_run_runs__run_id__get: {
         parameters: {
             query?: never;
@@ -104713,7 +104911,7 @@ export interface operations {
         parameters: {
             query?: {
                 definition_id?: string | null;
-                kind?: ("cron" | "webhook" | "manual") | null;
+                kind?: ("cron" | "webhook" | "manual" | "event") | null;
                 limit?: number;
                 offset?: number;
             };
@@ -104932,6 +105130,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TriggerFireRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_trigger_events_triggers__trigger_id__events_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                trigger_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriggerEventRecord"][];
                 };
             };
             /** @description Validation Error */
