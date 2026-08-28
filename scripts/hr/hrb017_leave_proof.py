@@ -466,9 +466,23 @@ async def main() -> None:  # noqa: C901
             check("the employee's own approved leave appears on it", len(mine) >= 1,
                   str(cal.get("entries"))[:300])
             peers = [x for x in cal.get("entries", []) if x.get("viewer_rung") == "peer"]
-            check("a peer entry carries no hours and is not a door",
-                  all(x.get("hours") is None and x.get("href") is None for x in peers),
-                  str(peers)[:300])
+            # 🚨 `all()` over an empty list is True, so this assertion passed VACUOUSLY the first
+            # time it ran — there were no peer entries on the calendar at all. A control that
+            # cannot fail is not a control. It now states which case it is testing, and a run
+            # with no peers reports NO PEER ENTRY rather than a green tick that means nothing.
+            if not peers:
+                print("  \033[33mNOTE\033[0m no peer entry on the calendar in this window — "
+                      "the peer-disclosure assertion did not run. It is NOT green.")
+            else:
+                check("a peer entry carries no hours and is not a door",
+                      all(x.get("hours") is None and x.get("href") is None for x in peers),
+                      str(peers)[:300])
+                # …and the control can fail: the SAME calendar hands the employee their own entry
+                # WITH hours and WITH a door, so the peer rung is doing real work.
+                own = [x for x in cal.get("entries", []) if x.get("viewer_rung") == "self"]
+                check("the control is meaningful — a self entry on the same calendar has hours "
+                      "and a door",
+                      bool(own) and all(x.get("href") for x in own), str(own)[:300])
 
     finally:
         if "--keep" not in sys.argv and policy_id:
