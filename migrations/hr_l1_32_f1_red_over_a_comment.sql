@@ -79,8 +79,3 @@ begin
       (select string_agg(door || ' -> ' || reaches, '; ') from hr.stable_doors_that_write());
   end if;
 end $verify$;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_32_f1_red_over_a_comment.sql',
-        md5('hr_l1_32_f1_red_over_a_comment'), now(), 0)
-on conflict do nothing;

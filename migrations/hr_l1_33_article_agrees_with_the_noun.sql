@@ -49,8 +49,3 @@ begin
   if v_src ~ 'can approve a %s' then
     raise exception 'hr_l1_33: hard-coded article survived'; end if;
 end $verify$;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_33_article_agrees_with_the_noun.sql',
-        md5('hr_l1_33_article_agrees_with_the_noun'), now(), 0)
-on conflict do nothing;
