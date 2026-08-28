@@ -21,11 +21,9 @@ import IconInputWithValidation from "@/components/official/icons/IconInputWithVa
 import { ScopeColorPicker } from "./ScopeColorPicker";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import {
   updateScopeType,
   deleteScopeType,
-  setScopeTypeSystem,
   selectScopeTypeById,
   fetchScopeTypes,
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
@@ -98,32 +96,7 @@ export function EditScopeTypeSheet({
     slug: `${uid}-slug`,
     sortOrder: `${uid}-sort-order`,
     maxAssignments: `${uid}-max-assignments`,
-    system: `${uid}-system`,
   };
-
-  // System Context (platform-global) — super-admin only; the RPC enforces it server-side.
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
-  const isSystem = !!scopeType?.is_system;
-
-  async function handleToggleSystem(next: boolean) {
-    if (!scopeType) return;
-    try {
-      await dispatch(
-        setScopeTypeSystem({ type_id: scopeType.id, is_system: next }),
-      ).unwrap();
-      toast.success(
-        next
-          ? "Marked as System context — items now resolve for everyone"
-          : "Removed System flag",
-      );
-    } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Only super admins can change this",
-      );
-    }
-  }
 
   // Full-edit sheet
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -596,29 +569,6 @@ export function EditScopeTypeSheet({
                 </div>
               </div>
 
-              {/* System Context — platform-global, super-admin only */}
-              {isSuperAdmin && (
-                <div className="flex items-start justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-                  <div>
-                    <Label htmlFor={ids.system} className="text-xs font-medium">
-                      System context
-                    </Label>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      Platform-global. Items in this scope type resolve for{" "}
-                      <span className="font-medium">
-                        every user with no scope selection
-                      </span>{" "}
-                      (date, headlines, datasets). Super-admin only.
-                    </p>
-                  </div>
-                  <Switch
-                    id={ids.system}
-                    checked={isSystem}
-                    onCheckedChange={handleToggleSystem}
-                    disabled={busy}
-                  />
-                </div>
-              )}
             </div>
           )}
 
