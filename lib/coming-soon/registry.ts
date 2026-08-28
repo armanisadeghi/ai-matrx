@@ -859,15 +859,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["/hr/me/schedule", "HR nav — My Schedule"],
   },
-  "hr.me.time-off": {
-    id: "hr.me.time-off",
-    label: "My time off",
-    owner: "hr",
-    promise:
-      "Your balance for each kind of leave, a request form that tells you about a conflict before you submit it, and every request you have made.",
-    stage: "planned",
-    surfaces: ["/hr/me/time-off", "HR nav — My Time Off"],
-  },
   "hr.me.training": {
     id: "hr.me.training",
     label: "My training",
