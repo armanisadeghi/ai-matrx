@@ -24,6 +24,8 @@ import { IdCard } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
+import { HrEmployeePhoto } from "../../shared/HrEmployeePhoto";
+
 import { SensitiveField } from "../../shared/SensitiveField";
 import { PendingChip } from "../../shared/PendingChangesPanel";
 import {
@@ -66,12 +68,13 @@ export function ProfileHeader({
         className,
       )}
     >
-      <div
-        aria-hidden
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-muted text-base font-medium text-muted-foreground"
-      >
-        {initials(header.display_name)}
-      </div>
+      {/* §2.3.0: the header carries the photo, on every tab. */}
+      <HrEmployeePhoto
+        photoFileId={header.photo_file_id}
+        name={header.display_name}
+        className="h-14 w-14"
+        textClassName="text-base"
+      />
 
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex min-w-0 flex-wrap items-center gap-2">

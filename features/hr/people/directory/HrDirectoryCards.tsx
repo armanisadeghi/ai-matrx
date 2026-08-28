@@ -18,6 +18,8 @@ import { Mail, Phone } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+import { HrEmployeePhoto } from "../../shared/HrEmployeePhoto";
 import { MoreHorizontal } from "lucide-react";
 
 import { hrEmployeeHref, type HrOrgRef } from "../../routes";
@@ -51,15 +53,16 @@ export function HrDirectoryCard({
       )}
     >
       <div className="flex items-start gap-3">
-        {/* The photo is a `photo_file_id`, and a signed URL is a handoff, never
-            an identity — until the profile's file lane is wired here, initials
-            are the honest placeholder rather than a broken <img>. */}
-        <div
-          aria-hidden
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground"
-        >
-          {initials(row.display_name)}
-        </div>
+        {/* SPEC-ACCESS §3.1: the Directory tier's contract includes the photo.
+            The signed-URL warning that used to stand here still holds — it is
+            why this renders from the file id through the durable lane and never
+            stores a URL. Initials remain the no-photo state. */}
+        <HrEmployeePhoto
+          photoFileId={row.photo_file_id}
+          name={row.display_name}
+          className="h-10 w-10"
+          textClassName="text-sm"
+        />
 
         <div className="min-w-0 flex-1 space-y-0.5">
           <div className="flex min-w-0 items-center gap-1">

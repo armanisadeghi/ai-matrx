@@ -59,6 +59,7 @@ import { SelfServiceToggle } from "@/features/hr/me/SelfServiceToggle";
 import { useSelfUpdate } from "@/features/hr/me/useSelfUpdate";
 import { SelfServiceField } from "@/features/hr/me/SelfServiceField";
 import { SelfServiceAddressField } from "@/features/hr/me/SelfServiceAddressField";
+import { SelfServicePhotoField } from "@/features/hr/me/SelfServicePhotoField";
 import { usePendingFieldRequests } from "@/features/hr/me/usePendingFieldRequests";
 import { HR_SELF_SERVICE_DEFAULTS } from "@/features/hr/me/selfServicePolicy";
 import { MoreSection } from "../MoreSection";
@@ -359,6 +360,22 @@ export function PersonalTab({
               </div>
             );
           })()}
+          {/*
+            🚨 THE PHOTO CLAUSE (T-L1-9), and the reason it is NOT in the grid
+            below: §7.1 puts "directory photo" in the same self_free row as
+            preferred name and pronouns, but a file id is not a text box — it
+            needs an uploader and a preview of the very thing the directory will
+            render. It is `self_free`, so it saves immediately and has no pending
+            state; a photo that claimed to need approval would contradict the
+            spec at the one place a person can see it.
+          */}
+          <SelfServicePhotoField
+            photoFileId={profile.header.photo_file_id}
+            name={profile.header.display_name}
+            saving={selfUpdate.saving}
+            onSave={(name, next) => selfUpdate.save(name, next)}
+          />
+
           <SensitiveGrid>
             {SELF_SERVICE_FIELDS.map(({ field, source }) => {
               const bag = source === "confidential" ? priv : personal;
