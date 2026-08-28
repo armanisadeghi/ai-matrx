@@ -505,6 +505,25 @@ async function main(): Promise<void> {
   ok("with every timecard approved, approval IS offered",
      offerFor(allApproved, "approved")?.unavailableBecause === null);
 
+  // ── §4.1: an approval is FOR A NUMBER, so a recompute demands a re-approval. ─────────────────
+  const approvedPeriod = {
+    ...basePeriod,
+    state: "approved" as const,
+    counts: { employments: 1, approved: 1, open: 0, attested: 0, disputed: 0 },
+  };
+  const offerWith = (stale: boolean) =>
+    offeredTransitions({ period: approvedPeriod as never, ...attestedCtx, recomputedSinceApproval: stale })
+      .find((o) => o.to === "approved");
+  // 🚨 An approved, UNCHANGED period must not offer a re-approval — a button with no meaning, which
+  // a payroll admin would reasonably read as "the first approval did not take".
+  ok("an untouched approved period offers NO re-approval", offerWith(false) === undefined);
+  ok("a recomputed one DOES", offerWith(true) !== undefined);
+  ok("…and it is labelled as a RE-approval, not a first one",
+     offerWith(true)?.label === "Re-approve period");
+  ok("…and it is not blocked", offerWith(true)?.unavailableBecause === null);
+  ok("…and it says what re-approving does",
+     /restamped for the hours as they stand now/i.test(offerWith(true)?.consequence ?? ""));
+
   const getEdge = HR_TIME_RPC_FIXTURES.hr_pay_period_get?.edge?.data as {
     workflow: { stuck: number; awaiting: number; noFlow: number; rows: Array<Record<string, unknown>> };
   };

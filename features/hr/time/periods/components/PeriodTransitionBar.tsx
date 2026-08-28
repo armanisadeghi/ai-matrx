@@ -46,6 +46,8 @@ export interface PeriodTransitionBarProps {
   /** The server's reopen wording. Rendered verbatim when present; ours is the fallback. */
   reopenNotice?: string | null;
   todayLocalDate: string;
+  /** §4.1's recomputed-since-approval; only the detail read knows it. */
+  recomputedSinceApproval?: boolean;
   mockCase?: HrFixtureCase;
   onTransitioned: () => void;
 }
@@ -56,6 +58,7 @@ export function PeriodTransitionBar({
   allowPeriodReopen,
   reopenNotice,
   todayLocalDate,
+  recomputedSinceApproval,
   mockCase,
   onTransitioned,
 }: PeriodTransitionBarProps) {
@@ -70,7 +73,9 @@ export function PeriodTransitionBar({
    */
   const [envelopeLines, setEnvelopeLines] = useState<string[]>([]);
 
-  const offers = offeredTransitions({ period, role, allowPeriodReopen, todayLocalDate });
+  const offers = offeredTransitions({
+    period, role, allowPeriodReopen, todayLocalDate, recomputedSinceApproval,
+  });
 
   const run = async (offer: PeriodActionOffer, reason: string | null) => {
     setBusyTo(offer.to);

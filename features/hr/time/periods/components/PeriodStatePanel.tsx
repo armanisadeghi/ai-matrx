@@ -169,6 +169,32 @@ export function PeriodStatePanel({
         ) : null}
       </div>
 
+      {/*
+        🚨 §4.1's `recomputed-since-approval` banner. The approval on file was given FOR A NUMBER;
+        when a correction moved that number, nobody has approved what an export would carry. Both
+        figures are shown because "this changed" is not actionable and "approved for 8.50, now 8.00"
+        is. The export door refuses independently — this is the surface saying so, not the guard.
+      */}
+      {period.recomputedSinceApproval ? (
+        <div className="border-b border-border px-4 py-3">
+          <p className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-relaxed text-amber-800 dark:text-amber-300">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span>
+              These hours were recomputed after this period was approved
+              {period.hoursAtApproval !== null && period.hoursNow !== null ? (
+                <>
+                  {" "}— it was approved for{" "}
+                  <span className="font-medium">{period.hoursAtApproval}</span> hours and now stands
+                  at <span className="font-medium">{period.hoursNow}</span>
+                </>
+              ) : null}
+              . The approval on file is not for these numbers, so the period has to be approved again
+              before it can go to payroll.
+            </span>
+          </p>
+        </div>
+      ) : null}
+
       <div className="p-4">
         <PeriodTransitionBar
           period={period}
@@ -176,6 +202,7 @@ export function PeriodStatePanel({
           allowPeriodReopen={allowPeriodReopen}
           reopenNotice={reopenNotice}
           todayLocalDate={todayLocalDate}
+          recomputedSinceApproval={period.recomputedSinceApproval}
           mockCase={mockCase}
           onTransitioned={onTransitioned}
         />
