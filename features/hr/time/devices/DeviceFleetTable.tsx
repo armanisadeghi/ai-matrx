@@ -232,12 +232,17 @@ export function DeviceFleetTable({
             </Button>
           )}
           {/*
-            🚨 The recovery lane for an ORPHANED tablet. A device that never claimed its code — or
-            whose secret was destroyed by the old kiosk client — can never authenticate again, and
-            without this its row is dead weight an administrator can only revoke. Re-issuing works
-            against the SAME row, so the tablet keeps its name, location and history.
+            🚨 The recovery lane for a tablet that cannot authenticate. Re-issuing works against the
+            SAME row, so the device keeps its name, location, trust state and history.
+            
+            This used to be offered only for a device that had NEVER claimed a code, and that was
+            too narrow — found by hitting it. The common case is the opposite: a tablet that paired
+            fine and then lost its stored secret (browser data cleared, tablet reset or replaced).
+            That device is claimed, so it was excluded, and an administrator's only route back was
+            to REVOKE a working clock and start over. The server always supported re-issuing in
+            place for an existing device id; only this gate disagreed.
           */}
-          {row.pairingClaimedAt === null && row.trustState !== "revoked" && (
+          {row.trustState !== "revoked" && (
             <Button
               type="button"
               size="sm"
