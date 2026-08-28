@@ -58,6 +58,15 @@ import {
   FAMILY_STYLE,
   type RunStepPresentation,
 } from "../../components/run/node-presentation";
+import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
+import {
+  panelDeliverables,
+  resultSchemaOrNull,
+  showcaseDeliverables,
+  splitByPresentation,
+  useResultSchema,
+  ShowcaseSlot,
+} from "../../kind-emissions";
 import { keepableDeliverables, liveNodeId } from "./sharp-model";
 import { SharpStatusBand } from "./SharpStatusBand";
 import { SharpPlanSpine } from "./SharpPlanSpine";
@@ -178,6 +187,14 @@ function SharpOffer({
   const steps = describeWorkflowSteps(loaded.definition);
   const deliverables = keepableDeliverables(deliverableSteps(steps));
 
+  // R12 PROVING GROUND — THE DECLARED RESULT CONTRACT (SPEC §2.4).
+  // `GET /workflows/{id}/result-schema` says what this workflow PROMISES,
+  // read here with NO RUN IN EXISTENCE, so the slots below are reserved from
+  // the promise itself rather than from a live run's step list (which is all
+  // a result surface could reserve from before this endpoint). A failed read
+  // degrades to the definition-derived list — the offer is never a dead page.
+  const declared = resultSchemaOrNull(useResultSchema(loaded.id));
+
   // Recent runs — a small door back into past work; a failed read hides the
   // section honestly rather than showing an empty "no runs" lie.
   const [recent, setRecent] = useState<RecentRunSummary[] | null | undefined>(
@@ -208,7 +225,50 @@ function SharpOffer({
           <h2 className="text-sm font-medium text-foreground">
             What you&apos;ll get
           </h2>
-          {deliverables.length > 0 ? (
+          {declared && declared.deliverables.length > 0 ? (
+            <div
+              className="mt-2 space-y-2"
+              data-declared-deliverables={declared.deliverables.length}
+            >
+              {declared.declarationError ? (
+                <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                  This workflow&apos;s declared result no longer matches its
+                  steps — showing what the steps actually make.
+                </p>
+              ) : null}
+              {declared.deliverables.map((promise) => (
+                <div
+                  key={promise.nodeId}
+                  data-promise-node={promise.nodeId}
+                  data-promise-presentation={promise.presentation}
+                  className="overflow-hidden rounded-xl border border-dashed border-border/70 bg-card/40"
+                >
+                  <div className="flex items-center gap-2 border-b border-border/50 px-3 py-2">
+                    <span className="min-w-0 flex-1 truncate text-xs font-medium text-muted-foreground">
+                      {promise.title}
+                    </span>
+                    {promise.presentation === "showcase" ? (
+                      <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
+                        centre stage
+                      </span>
+                    ) : null}
+                  </div>
+                  {/* THE RESERVED SLOT, before any run exists. `phase` is
+                      "reserved" and stays reserved: nothing has started, and
+                      the silhouette holds the footprint the real thing will
+                      grow into. */}
+                  <div className="p-3">
+                    <KindSlot
+                      slotKey={`offer:${loaded.id}:${promise.nodeId}`}
+                      kind={promise.outputKind}
+                      phase="reserved"
+                      chrome="bare"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : deliverables.length > 0 ? (
             <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {deliverables.map((step) => {
                 const style = FAMILY_STYLE[step.family];
@@ -356,6 +416,17 @@ function SharpLiveSurface({
   const emissions = useAppSelector(selectRunEmissions(runId));
   const runOver = status !== null && TERMINAL_RUN_STATUSES.has(status);
 
+  // ── THE EMISSION CONTRACT (SPEC §3), on the proving ground ──────────────
+  // The declared promise reserves the slots; the live emissions settle them.
+  // The split is the contract's, not this surface's: `showcase` is the ONE
+  // staged reveal (newer replaces), `panel` is the stream in arrival order,
+  // and the deliverable dedupe happens inside `DeliveredStream` so the same
+  // node can never appear in both halves.
+  const declared = resultSchemaOrNull(useResultSchema(loaded.id));
+  const declaredShowcase = showcaseDeliverables(declared);
+  const declaredPanel = panelDeliverables(declared);
+  const { showcase, panel } = splitByPresentation(emissions);
+
   // Viewport focus: null = follow the live step.
   const [pinned, setPinned] = useState<string | null>(null);
   const [tab, setTab] = useState<SharpTab>("watching");
@@ -390,6 +461,16 @@ function SharpLiveSurface({
           setPinned(nodeId);
         }}
       />
+      {/* THE SHOWCASE SLOT — page-centered, reserved from the declared
+          contract at first paint, and never also in the stream. Renders
+          nothing at all when this workflow stages nothing. */}
+      <ShowcaseSlot
+        runId={runId}
+        emission={showcase}
+        declared={declaredShowcase}
+        started={status !== null}
+        className="shrink-0 max-h-[50dvh] overflow-y-auto scrollbar-thin"
+      />
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 lg:grid-cols-[270px_minmax(0,1fr)_290px]">
         {/* Mobile order: the screen first (what's happening), then the plan,
             then the ticker — each with its own bounded height so a phone
@@ -419,6 +500,8 @@ function SharpLiveSurface({
             ensureLane={ensureLane}
             tab={tab}
             onTabChange={setTab}
+            declaredPanel={declaredPanel}
+            panelEmissions={panel}
           />
         </div>
         <div className="order-3 h-[40dvh] lg:h-auto lg:min-h-0">

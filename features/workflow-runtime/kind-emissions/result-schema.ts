@@ -68,6 +68,7 @@ function asPresentation(value: unknown): "panel" | "showcase" {
 /** Wire → the client shape. Total: a malformed body yields an empty promise. */
 export function parseResultSchema(raw: unknown): DeclaredResultSchema {
   const body = asRecord(raw);
+  const definitionId = asString(body.definition_id);
   const rows = Array.isArray(body.deliverables) ? body.deliverables : [];
   const deliverables: DeclaredDeliverable[] = [];
   for (const row of rows) {
@@ -84,7 +85,7 @@ export function parseResultSchema(raw: unknown): DeclaredResultSchema {
     });
   }
   return {
-    definitionId: asString(body.definition_id) ?? "",
+    definitionId: definitionId === null ? "" : definitionId,
     version: typeof body.version === "number" ? body.version : 0,
     inputKind: asString(body.input_kind),
     outputKind: asString(body.output_kind),

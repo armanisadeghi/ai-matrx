@@ -114,9 +114,10 @@ export function emissionKey(
   emission: Pick<RoutableEmission, "nodeId" | "seq"> & { ts?: string },
   index = 0,
 ): string {
+  const timestamp = emission.ts === undefined ? "" : emission.ts;
   return emission.seq !== null
     ? `seq:${emission.seq}`
-    : `${emission.nodeId}:${emission.ts ?? ""}:${index}`;
+    : `${emission.nodeId}:${timestamp}:${index}`;
 }
 
 export default EmissionRender;

@@ -26,9 +26,13 @@ import { PackageOpen, RotateCcw, SkipForward, Tv } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import IconResolver from "@/components/official/icons/IconResolver";
-import { DbEmitRenderer } from "@/features/workflow-emit/DbEmitRenderer";
-import type { EmitMode } from "@/features/workflow-emit/types";
 import { cn } from "@/lib/utils";
+
+import {
+  DeliveredStream,
+  type DeclaredDeliverable,
+  type RenderableEmission,
+} from "../../kind-emissions";
 
 import {
   InterruptCard,
@@ -69,6 +73,8 @@ export function SharpScreen({
   ensureLane,
   tab,
   onTabChange,
+  declaredPanel,
+  panelEmissions,
 }: {
   runId: string;
   steps: RunStepPresentation[];
@@ -81,6 +87,10 @@ export function SharpScreen({
   ensureLane: UseWorkflowRunResult["ensureLane"];
   tab: SharpTab;
   onTabChange: (tab: SharpTab) => void;
+  /** The DECLARED panel deliverables (SPEC §2.4), reserved before the run. */
+  declaredPanel: readonly DeclaredDeliverable[];
+  /** Panel emissions only — the showcase is staged elsewhere (SPEC §3.3). */
+  panelEmissions: readonly RenderableEmission[];
 }) {
   const status = useAppSelector(selectRunStatus(runId));
   const interrupt = useAppSelector(selectRunInterrupt(runId));
@@ -152,7 +162,8 @@ export function SharpScreen({
           <DeliveredShelf
             runId={runId}
             deliverables={deliverables}
-            stepsById={stepsById}
+            declaredPanel={declaredPanel}
+            panelEmissions={panelEmissions}
           />
         )}
       </div>
@@ -343,137 +354,50 @@ function WatchedStep({
 
 // ─── The delivered shelf ────────────────────────────────────────────────────
 
-const EMIT_MODES: readonly EmitMode[] = [
-  "confirmation",
-  "summary",
-  "full",
-  "restructured",
-];
-
-/** The wire's mode string, narrowed; unknown modes render as "full". */
-function asEmitMode(mode: string): EmitMode {
-  return (EMIT_MODES as readonly string[]).includes(mode)
-    ? (mode as EmitMode)
-    : "full";
-}
-
+/**
+ * The Delivered tab, now driven by THE DECLARED CONTRACT rather than by the
+ * definition walk this bake-off used to do.
+ *
+ * What changed and why: `keepableDeliverables` had to EXCLUDE every
+ * `output.to_frontend` node ("those are emissions") because listing them
+ * beside their own emissions promised the same thing twice. That exclusion was
+ * a workaround for a missing rule. SPEC §3's dedupe is the rule — key
+ * `(node_id, kind)`, the deliverable slot wins — so a "Show on Screen" node is
+ * now a first-class declared deliverable with a reserved slot that its own
+ * emission settles, and it appears exactly ONCE. `DeliveredStream` owns both
+ * halves so the two can never disagree.
+ *
+ * `deliverables` (the definition-derived producer steps) survives only as the
+ * fallback shelf for a run whose result schema could not be read.
+ */
 function DeliveredShelf({
   runId,
   deliverables,
-  stepsById,
+  declaredPanel,
+  panelEmissions,
 }: {
   runId: string;
   deliverables: RunStepPresentation[];
-  stepsById: Record<string, RunStepPresentation>;
+  declaredPanel: readonly DeclaredDeliverable[];
+  panelEmissions: readonly RenderableEmission[];
 }) {
-  const emissions = useAppSelector(selectRunEmissions(runId));
-
   const status = useAppSelector(selectRunStatus(runId));
   const over = status !== null && TERMINAL_RUN_STATUSES.has(status);
-  if (deliverables.length === 0 && emissions.length === 0) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        {over
-          ? "This run kept nothing separate to hand over — each step's work is under “The work”."
-          : "This workflow shows its results as it works — watch the steps on the left."}
-      </p>
-    );
-  }
 
   return (
-    <div className="space-y-3">
-      {/* What the run put on screen deliberately, in arrival order. */}
-      {emissions.map((emission) => (
-        <div
-          key={emission.seq ?? `${emission.nodeId}:${emission.ts}`}
-          className="rounded-lg border border-border bg-background p-3"
-        >
-          <p className="mb-2 text-[11px] font-medium text-muted-foreground">
-            {emission.title ??
-              stepsById[emission.nodeId]?.label ??
-              "Shared with you"}
-          </p>
-          <DbEmitRenderer
-            mode={asEmitMode(emission.mode)}
-            payload={emission.payload}
-            title={emission.title}
-            nodeId={emission.nodeId}
-            runId={runId}
-            seq={emission.seq ?? 0}
-            isPersisted={emission.persisted}
-            componentRef={emission.componentRef}
-          />
-        </div>
-      ))}
-
-      {/* The declared deliverables — ghosted until each one lands. */}
-      {deliverables.map((step) => (
-        <DeliverableCard key={step.nodeId} runId={runId} step={step} />
-      ))}
-    </div>
-  );
-}
-
-function DeliverableCard({
-  runId,
-  step,
-}: {
-  runId: string;
-  step: RunStepPresentation;
-}) {
-  const aggregate = useAppSelector(selectNodeAggregate(runId, step.nodeId));
-  const style = FAMILY_STYLE[step.family];
-  const title = humanizeKind(step.outputKind ?? step.label);
-  const settled = aggregate.invocations.filter(
-    (inv) => inv.phase === "settled" && inv.output !== null,
-  );
-
-  if (settled.length === 0) {
-    const failed = aggregate.phase === "failed";
-    return (
-      <div
-        className={cn(
-          "rounded-lg border border-dashed p-3",
-          failed ? "border-destructive/40" : "border-border",
-        )}
-      >
-        <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <IconResolver
-            iconName={step.iconName ?? FAMILY_ICON[step.family]}
-            className="h-3.5 w-3.5"
-          />
-          {title}
-          <span className="font-normal">
-            {failed
-              ? "— this one hit a problem (see the step for what to do)"
-              : aggregate.phase === "running" || aggregate.phase === "retrying"
-                ? "— being made now"
-                : `— coming up, from “${step.label}”`}
-          </span>
+    <DeliveredStream
+      runId={runId}
+      declared={declaredPanel}
+      emissions={panelEmissions}
+      emptyMessage={
+        <p className="text-xs text-muted-foreground">
+          {over
+            ? deliverables.length > 0
+              ? "This run kept nothing separate to hand over — each step\u2019s work is under \u201cThe work\u201d."
+              : "This run kept nothing separate to hand over."
+            : "This workflow shows its results as it works — watch the steps on the left."}
         </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-lg border border-border bg-background p-3">
-      <p className="mb-2 flex items-center gap-2 text-xs font-medium text-foreground">
-        <IconResolver
-          iconName={step.iconName ?? FAMILY_ICON[step.family]}
-          className={cn("h-3.5 w-3.5", style.text)}
-        />
-        {title}
-      </p>
-      <div className="space-y-3">
-        {settled.map((invocation) => (
-          <InvocationBody
-            key={invocation.invocationKey}
-            runId={runId}
-            invocation={invocation}
-            prefer="persisted"
-          />
-        ))}
-      </div>
-    </div>
+      }
+    />
   );
 }
