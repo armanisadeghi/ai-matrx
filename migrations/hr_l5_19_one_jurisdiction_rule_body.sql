@@ -148,11 +148,23 @@ end $$;
 do $$
 declare v_bad text; v_res jsonb;
 begin
-  -- Nothing in the leave lane may join position_assignment to jurisdiction itself any more.
+  -- No leave function may resolve A LEDGER ENTRY'S jurisdiction by walking the chain itself.
+  --
+  -- 🚨 Scoped by QUESTION, not by table names. A first draft forbade the
+  -- position_assignment→jurisdiction join outright, and then a full in-order replay failed on
+  -- `hr.leave_operating_jurisdictions` and `hr.leave_policy_floors` — functions written LATER
+  -- (hr_l5_20/22) that legitimately walk the same tables to answer a DIFFERENT question: which
+  -- jurisdictions does this organization operate in. Same join, different fact. A guard that
+  -- cannot tell those apart fails on correct code, and a guard that fails on correct code gets
+  -- deleted by whoever is unblocking themselves at 2am.
+  --
+  -- The sanctioned owners are named, and naming them is the point: adding a third requires
+  -- editing this list, which is a deliberate act rather than an accident.
   select string_agg(n.nspname || '.' || p.proname, ', ') into v_bad
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'hr' and (p.proname like 'leave%' or p.proname like '_leave%')
-     and p.proname <> '_leave_manages' and p.proname <> '_leave_has_reports'
+     and p.proname not in ('_leave_manages','_leave_has_reports',
+                           'leave_operating_jurisdictions','leave_policy_floors')
      and pg_get_functiondef(p.oid) like '%join hr.jurisdiction j on j.id = loc.jurisdiction_id%';
   if v_bad is not null then
     raise exception 'hr_l5_19: a second jurisdiction walk still lives in: %', v_bad;

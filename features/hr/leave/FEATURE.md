@@ -70,6 +70,34 @@ and every change ever made to a balance (§12). Manager and HR surfaces (`/hr/le
 
 ---
 
+### 🚨 THE DOOR CHECKLIST — every new `public.hr_leave*` function, no exceptions
+
+Two exposures shipped in one session because each of these looked done when it was not. Any
+migration that creates a leave door ends with all four:
+
+1. **`select hr.leave_seal_door('<name>');`** — `'client'` (the default) or `'engine'`.
+   **`grant execute … to authenticated` is NOT enough and it reports success.** Supabase's default
+   privileges hand `anon` EXECUTE on every newly created function in `public`, and neither the
+   grant nor `revoke … from public` removes it — `anon` holds its own explicit grant. **Both
+   revokes must be explicit and name `anon`.** The sealer does that; do not hand-write grants.
+2. **The body checks its caller first** — `hr._leave_viewer`, `hr._leave_admin_rung` or
+   `hr._leave_case_rung` — and returns `{granted:false, reason, detail}`. A door with no check is
+   an engine path, and an engine path must be sealed `'engine'` so no session can reach it.
+3. **Fix at the source.** A caller check added in a *later* migration is undone the moment the
+   file that creates the function is replayed. Two doors regressed exactly that way
+   (`hr_leave_case_entitlement`, `hr_leave_reinstate_on_rehire`): the checks now live in
+   `hr_l5_06`, the file that creates them.
+4. **`select * from hr.leave_door_grant_audit();` must return zero `DEFECT` rows.** It flags
+   anon-executable doors first, and it carries a positive control that grants `anon` on one door,
+   proves the audit catches it, and revokes it again — because this check reported green through
+   five anon-executable doors while it only ever asked about `authenticated`.
+
+**On the ICS feed specifically:** `hr_leave_calendar_ics` has **no feed token** and relies entirely
+on caller identity, so `anon` was never a designed subscription path — it was the default-privileges
+trap, not a feature. If an unauthenticated subscription URL is ever wanted, that is a
+**credential-carrying design** (the kiosk-door property: anon reaches only doors that carry their
+own credential), never a grant.
+
 ## Entry points
 
 **Routes**
