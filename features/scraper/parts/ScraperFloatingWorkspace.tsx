@@ -46,7 +46,7 @@ import { useScraperKeywordSearchForm } from "@/features/scraper/hooks/useScraper
 import {
   ScraperKeywordSearchCompactControls,
   ScraperKeywordHitListCompact,
-  ScraperKeywordHitDetailCompact,
+  ScraperKeywordSearchResults,
 } from "@/features/scraper/parts/ScraperKeywordSearchPanel";
 import {
   ScrapedResultDetailTabs,
@@ -171,7 +171,9 @@ export function ScraperFloatingWorkspace({
     targetUrl: mode === "url" ? url : undefined,
     searchKeyword: mode === "web" ? keywordForm.keywords : keyword,
     maxPages:
-      mode === "batch" ? parseInt(maxPages, 10) || PAGE_LIMIT_DEFAULT : undefined,
+      mode === "batch"
+        ? parseInt(maxPages, 10) || PAGE_LIMIT_DEFAULT
+        : undefined,
     maxResults:
       mode === "web"
         ? parseInt(keywordForm.maxResults, 10) || RESULT_LIMIT_DEFAULT
@@ -405,6 +407,23 @@ export function ScraperFloatingWorkspace({
 
   const leftActions = (
     <>
+      {showWebMain && selectedHit?.url && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => void handleScrapeFromWebHit()}
+          disabled={isAnyLoading}
+          title="Scrape selected result"
+          className={iconBtn}
+        >
+          {quickApi.isLoading ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Zap className="h-3 w-3" />
+          )}
+        </Button>
+      )}
       {showWebMain && selectedHit?.url && (
         <Button
           type="button"
@@ -716,12 +735,14 @@ export function ScraperFloatingWorkspace({
   const mainContent = (
     <>
       {showWebMain && (
-        <ScraperKeywordHitDetailCompact
-          hit={selectedHit}
-          onScrapeUrl={() => void handleScrapeFromWebHit()}
-          isScraping={quickApi.isLoading}
-          scrapeDisabled={!selectedHit?.url || isAnyLoading}
-        />
+        <NonEditableContextMenu
+          {...SCRAPER_CONTEXT_MENU_PROPS}
+          contextData={contextData}
+        >
+          <div className="h-full min-h-0 overflow-y-auto p-3">
+            <ScraperKeywordSearchResults form={keywordForm} />
+          </div>
+        </NonEditableContextMenu>
       )}
       {showScrapeMain && (
         <NonEditableContextMenu

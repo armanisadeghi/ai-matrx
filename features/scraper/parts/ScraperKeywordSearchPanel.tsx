@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Loader2, ExternalLink, Globe, X } from "lucide-react";
+import { Search, Loader2, Globe, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProInput } from "@/components/official/ProInput";
@@ -15,10 +15,9 @@ import {
 } from "@/features/scraper/scrape-command";
 import { cn } from "@/lib/utils";
 import { getDomain } from "@/features/scraper/utils/scraper-floating-helpers";
-
-function hitSnippet(h: SearchResultItem): string | undefined {
-  return h.snippet ?? h.description;
-}
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { SearchResultsSkeleton } from "@/features/search/components/SearchResultsSkeleton";
+import { scraperSearchItemsToKindValue } from "@/features/scraper/utils/search-kind-adapter";
 
 export function ScraperKeywordSearchPageBody({
   form,
@@ -120,86 +119,40 @@ export function ScraperKeywordSearchPageBody({
       </div>
 
       <div className="flex-1 overflow-auto p-4">
-        <div className="max-w-5xl mx-auto space-y-3">
-          {isLoading && flatResults.length === 0 && (
-            <div className="flex items-center justify-center py-20">
-              <div className="text-center">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
-                <p className="text-sm text-muted-foreground">
-                  {statusMessage ?? "Searching..."}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {flatResults.length > 0 && (
-            <>
-              <p className="text-xs text-muted-foreground">
-                {flatResults.length} results for "{keywords}"
-              </p>
-              {flatResults.map((result, i) => (
-                <ScraperKeywordHitCard key={i} result={result} index={i} />
-              ))}
-            </>
-          )}
-
-          {!isLoading && flatResults.length === 0 && !hasError && (
-            <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
-              <Search className="w-10 h-10 mb-3 opacity-40" />
-              <p className="text-sm">Enter keywords above to search the web</p>
-            </div>
-          )}
+        <div className="max-w-5xl mx-auto">
+          <ScraperKeywordSearchResults form={form} />
         </div>
       </div>
     </>
   );
 }
 
-function ScraperKeywordHitCard({
-  result,
-  index,
+export function ScraperKeywordSearchResults({
+  form,
 }: {
-  result: SearchResultItem;
-  index: number;
+  form: UseScraperKeywordSearchFormReturn;
 }) {
-  const snippet = hitSnippet(result);
+  const { keywords, flatResults, isLoading, hasError } = form;
+
+  if (isLoading && flatResults.length === 0) {
+    return <SearchResultsSkeleton query={keywords.trim()} />;
+  }
+
+  if (flatResults.length > 0) {
+    return (
+      <KindInstanceRender
+        kind="web_search_results"
+        value={scraperSearchItemsToKindValue(keywords, flatResults)}
+      />
+    );
+  }
+
+  if (hasError) return null;
+
   return (
-    <div className="p-4 bg-card border border-border rounded-lg hover:border-primary/50 transition-colors">
-      <div className="flex items-start gap-3">
-        <div className="p-2 bg-muted rounded shrink-0">
-          <Globe className="w-4 h-4 text-muted-foreground" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <a
-            href={result.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-primary hover:underline line-clamp-1"
-          >
-            {result.title || result.url || `Result ${index + 1}`}
-          </a>
-          {result.url && (
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {result.url}
-            </p>
-          )}
-          {snippet && (
-            <p className="text-sm text-muted-foreground mt-2 line-clamp-3">
-              {snippet}
-            </p>
-          )}
-        </div>
-        {result.url && (
-          <a
-            href={result.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1.5 hover:bg-muted rounded shrink-0"
-          >
-            <ExternalLink className="w-4 h-4 text-muted-foreground" />
-          </a>
-        )}
-      </div>
+    <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
+      <Search className="w-10 h-10 mb-3 opacity-40" />
+      <p className="text-sm">Enter keywords above to search the web</p>
     </div>
   );
 }
@@ -356,82 +309,6 @@ export function ScraperKeywordHitListCompact({
             </button>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-export function ScraperKeywordHitDetailCompact({
-  hit,
-  onScrapeUrl,
-  isScraping,
-  scrapeDisabled,
-}: {
-  hit: SearchResultItem | null;
-  onScrapeUrl: () => void;
-  isScraping: boolean;
-  scrapeDisabled: boolean;
-}) {
-  if (!hit) {
-    return (
-      <div className="flex flex-col h-full items-center justify-center text-muted-foreground/35 p-4 text-center">
-        <Search className="w-8 h-8 mb-2 opacity-25" />
-        <p className="text-[11px]">Select a result</p>
-      </div>
-    );
-  }
-
-  const snippet = hitSnippet(hit);
-
-  return (
-    <div className="flex flex-col h-full min-h-0 overflow-hidden">
-      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
-        <a
-          href={hit.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm font-semibold text-primary hover:underline line-clamp-3 leading-snug block"
-        >
-          {hit.title || hit.url || "Untitled"}
-        </a>
-        {hit.url && (
-          <p className="text-[10px] text-muted-foreground break-all">
-            {hit.url}
-          </p>
-        )}
-        {snippet && (
-          <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-6">
-            {snippet}
-          </p>
-        )}
-      </div>
-      <div className="shrink-0 p-2 border-t border-border flex gap-1">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="h-7 flex-1 text-xs gap-1"
-          disabled={!hit.url}
-          onClick={() => {
-            if (hit.url) window.open(hit.url, "_blank", "noopener,noreferrer");
-          }}
-        >
-          <ExternalLink className="w-3 h-3" />
-          Open
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          className="h-7 flex-1 text-xs"
-          onClick={onScrapeUrl}
-          disabled={!hit.url || scrapeDisabled}
-        >
-          {isScraping ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <>Scrape</>
-          )}
-        </Button>
       </div>
     </div>
   );

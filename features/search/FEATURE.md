@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-23`
+**Last updated:** `2026-08-27`
 
 ---
 
@@ -11,20 +11,23 @@
 The platform's public search engine at `/search`: one box, and the web comes
 back as the `web_search_results` kind family rendered through its registered
 kind components. It exists because Arman (2026-08-21), on seeing the Stage B
-search-kinds demo, ruled *"I want to make this our official public search
-engine that we can make available for now."*
+search-kinds demo, ruled _"I want to make this our official public search
+engine that we can make available for now."_
 
 **The rendering is not ours.** This feature owns the box, the URL contract, and
 the waiting/empty/error states. Every result on screen is drawn by the
 canonical kind components — the same ones a chat turn, a workflow node, or a
-document uses. Re-implementing any of it here would be the defect this whole
-program exists to prevent.
+document uses. The Web Scraper's keyword-search result pane also delegates to
+this exact renderer after adapting its flat transport rows into the registered
+kind shape. Re-implementing any of it in either feature would be the defect
+this whole program exists to prevent.
 
 ---
 
 ## Entry points
 
 **Routes**
+
 - `app/(core)/search/layout.tsx` — the auth branch. Guests get
   `SearchLanding` (marketing); signed-in visitors fall through to the engine.
   Also carries the route metadata.
@@ -32,6 +35,7 @@ program exists to prevent.
   search box into the shell header, renders `SearchWorkspace`.
 
 **Components**
+
 - `components/SearchWorkspace.tsx` — the surface: hero empty state, results,
   waiting, error. Mounts the `matrx-user/search` `SurfaceRuntimeProvider`.
 - `components/SearchBox.tsx` — the ONE input, in `hero` and `compact` sizes.
@@ -39,19 +43,23 @@ program exists to prevent.
   answer.
 
 **Hooks**
+
 - `useKindSearch(query, provider, count)` (`hooks/useKindSearch.ts`) — runs the
   query that is in the URL; aborts the in-flight request when it changes.
 
 **Services**
+
 - `service.ts` → `runKindSearch(...)` — the ONE client path to a search:
   `POST /search-kinds/search` on aidream via `useBackendApi`.
 
 **Backend endpoint**
+
 - `POST /search-kinds/search` (aidream) — `aidream/services/search_kinds/`.
   Auth-required, provider allow-listed, per-user rate limited (see that
   feature's `FEATURE.md` § The public door).
 
 **Redux slice(s)**
+
 - None. The URL is the state.
 
 ---
@@ -63,11 +71,13 @@ history product decision has been made; adding one is Arman's call, not a
 side effect of building the box).
 
 **Key types**
+
 - `SearchProvider`, `SearchOutcome`, `SearchPhase`, `SearchTranslationReport`
   (`types.ts`) — none of them re-declare the kind, which is owned by the
   registry.
 
 **Surface**
+
 - `matrx-user/search` (`features/surfaces/manifests/search.manifest.ts`),
   registered live with 19 values; emitter is `SearchWorkspace`.
 
@@ -104,7 +114,9 @@ same query through the `attempt` nonce.
   the link a user shares stops matching what they saw.
 - **Never render a result by hand.** A section that looks wrong is fixed in its
   kind component (`components/mardown-display/blocks/search-kinds/`), where
-  every other surface gets the fix too.
+  every other surface gets the fix too. Alternate search transports adapt
+  their response once, then enter through `KindInstanceRender`; they do not
+  own result cards.
 - **Provenance rides the kind.** The collection component prints the service
   that answered. Do not add a second provider badge here.
 - **Provider choice is a SERVER decision.** The client asks for `brave`; the
@@ -132,6 +144,7 @@ same query through the `attempt` nonce.
 ## Doctrine compliance
 
 **Primitives reused**
+
 - Components: `KindInstanceRender`, `WebSearchResultsBlock` and the whole
   search-kind family, `Button`, `Input`, `Skeleton`, `PageHeader`,
   `MarketingPageShell`, `ModuleLanding`.
@@ -140,6 +153,7 @@ same query through the `attempt` nonce.
   `createRouteMetadata`, `SurfaceRuntimeProvider`.
 
 **Primitives introduced**
+
 - `useKindSearch` (`hooks/useKindSearch.ts`) — Why a new hook: nothing existing
   runs a URL-driven, abortable search stream. Considered extending: the demo's
   inline `run()`. Rejected because: it was component-local state with no URL
@@ -153,6 +167,10 @@ same query through the `attempt` nonce.
 
 ## Change log
 
+- `2026-08-27` — The Web Scraper keyword-search result pane now adapts its
+  standalone transport rows into `web_search_results` and delegates to this
+  feature's canonical kind renderer. No second result-card or selected-result
+  renderer remains in the scraper feature.
 - `2026-08-23` — Claude Opus 5: Built the feature. Promoted the Stage B demo
   (`/demos/search-kinds`, left in place as the proof artifact) to the public
   `/search` surface: guest landing, `?q=` URL contract, shell-header box,
