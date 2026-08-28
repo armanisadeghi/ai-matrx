@@ -22,6 +22,8 @@
 // routes to `hr_admin`, NOT the manager: home address is Confidential tier and
 // a manager holds no `identity.read`.
 
+import { HR_SELF_SERVICE_POLICY } from "./selfServicePolicy.generated";
+
 /** The four policies. `read_only` is a computed value, not a permission. */
 export type HrSelfServicePolicy =
   | "free"
@@ -30,70 +32,43 @@ export type HrSelfServicePolicy =
   | "read_only";
 
 /**
- * The platform defaults from §7.1's table. The EFFECTIVE policy is the org's
- * `hr.identity.self_service_field_policy` knob, which arrives with the profile
- * payload once the server carries it; until then this table is the hint and the
- * server is the boundary.
+ * 🚨 THE HINT NO LONGER HAS ITS OWN OPINION.
+ *
+ * This used to be a hand-kept table, and it disagreed with the doors FOUR times:
+ * legal names said `hr_only` where the door accepted a request; `work_phone` said
+ * `hr_only` where the door applied it freely; `work_permit_type` was not a column
+ * name at all (`work_authorization_kind` is); and `worker_class` claimed HR holds
+ * a field that is not on the employee record — it lives on the position
+ * assignment. Each was the same defect: a second copy of a rule the database
+ * already states, and each failed SILENTLY, because a hint stricter than the
+ * boundary renders a padlock over a capability nobody can reach and the server is
+ * never asked.
+ *
+ * `HR_SELF_SERVICE_POLICY` is now GENERATED from the two sources the door itself
+ * reads — the catalog for existence, `hr.field_policy` for policy — by
+ * `scripts/hr/generate_self_service_policy.py`. It is still a RENDERING HINT and
+ * still never the boundary; it simply can no longer hold a different opinion.
  */
-export const HR_SELF_SERVICE_DEFAULTS: Record<string, HrSelfServicePolicy> = {
-  // free
-  preferred_first_name: "free",
-  preferred_last_name: "free",
-  pronouns: "free",
-  personal_email: "free",
-  personal_phone: "free",
-  photo_file_id: "free",
-  directory_opt_out: "free",
 
-  // request_approval — and address is the one that cannot be loosened
-  home_address: "request_approval",
-  mailing_address: "request_approval",
-
-  /*
-    🚨 THESE ARE `request_approval`, NOT `hr_only` — CORRECTED 2026-08-27 AGAINST THE
-    SEEDED `hr.field_policy` ROWS. The platform rows say `self_request_approval` with
-    `approver_action_type = 'profile_change_approve'`, and `hr_self_update` routes them
-    accordingly. This table said `hr_only`, which is the WRONG DIRECTION of wrong: it
-    rendered "contact HR" over a field the server would have accepted as a request, so
-    a person correcting a misspelled legal name was told to go and ask somebody instead
-    of asking through the form that exists for it.
-
-    A hint that is stricter than the boundary is not "safe" — it is a capability nobody
-    can reach, and it fails silently because the server is never asked.
-  */
-  legal_first_name: "request_approval",
-  legal_middle_name: "request_approval",
-  legal_last_name: "request_approval",
-  legal_name_suffix: "hr_only",
-  // Seeded `self_request_approval` (profile_change_approve) — see the note above.
-  date_of_birth: "request_approval",
-  work_permit_type: "request_approval",
-  work_authorization_expires_on: "request_approval",
-  ssn_last4: "hr_only",
-  employee_number: "hr_only",
-  hire_date: "hr_only",
-  termination_date: "hr_only",
-  job_title_id: "hr_only",
-  department_id: "hr_only",
-  location_id: "hr_only",
-  flsa_status: "hr_only",
-  worker_class: "hr_only",
-  manager_employment_id: "hr_only",
-  work_email: "hr_only",
-  /*
-    🚨 `work_phone` IS `self_free`, AND SAYING `hr_only` HERE LOCKED IT FOR NOTHING —
-    CORRECTED 2026-08-27 against the seeded row (`hr_employee.work_phone = self_free`),
-    proved by calling the door: it APPLIED a new work phone immediately.
-
-    This is the third time this exact mistake has been found in this table, and it is
-    always the same shape: a hint STRICTER than the boundary. It never fails loudly —
-    it renders a padlock and "Contact HR to change this" over a field the server would
-    have taken, so the capability is unreachable and nobody sees an error, because the
-    server is never asked. Seven controls rendered where eight fields were editable,
-    and the missing one looked deliberate.
-  */
-  work_phone: "free",
-};
+/**
+ * The policy for one column ON ONE TOKEN, or `null` when the column does not exist
+ * on that token's table.
+ *
+ * 🚨 `null` IS A DIFFERENT ANSWER FROM `hr_only` AND MUST NOT BE COLLAPSED INTO IT.
+ * `hr_only` means the field is real and HR holds it — render it read-only with
+ * "contact HR". `null` means there is no such field on this record, which is what
+ * the door says in words, and the surface should render nothing at all. Treating
+ * the second as the first is exactly how `worker_class` got a padlock.
+ */
+export function selfServicePolicyFor(
+  token: string,
+  field: string,
+): HrSelfServicePolicy | null {
+  // The address law wins over anything the table says, in both directions: an org
+  // override to `free` is rejected by the server's own validation predicate.
+  if (HR_ADDRESS_FIELDS.has(field)) return "request_approval";
+  return HR_SELF_SERVICE_POLICY[token]?.[field] ?? null;
+}
 
 /**
  * 🚨 THE ADDRESS FIELDS. An org override to `free` is rejected by the server's
@@ -105,12 +80,15 @@ export const HR_ADDRESS_FIELDS: ReadonlySet<string> = new Set([
 ]);
 
 export function resolveSelfServicePolicy(
+  token: string,
   field: string,
   overrides?: Record<string, HrSelfServicePolicy> | null,
 ): HrSelfServicePolicy {
   // The address law wins over any override, in both directions.
   if (HR_ADDRESS_FIELDS.has(field)) return "request_approval";
-  return overrides?.[field] ?? HR_SELF_SERVICE_DEFAULTS[field] ?? "hr_only";
+  // Fail closed on an unknown pair — but callers that must tell "held by HR" from
+  // "not a field here" should use `selfServicePolicyFor`, which keeps them apart.
+  return overrides?.[field] ?? selfServicePolicyFor(token, field) ?? "hr_only";
 }
 
 /**

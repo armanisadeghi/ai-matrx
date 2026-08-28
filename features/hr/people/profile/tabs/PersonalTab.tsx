@@ -61,7 +61,7 @@ import { SelfServiceField } from "@/features/hr/me/SelfServiceField";
 import { SelfServiceAddressField } from "@/features/hr/me/SelfServiceAddressField";
 import { SelfServicePhotoField } from "@/features/hr/me/SelfServicePhotoField";
 import { usePendingFieldRequests } from "@/features/hr/me/usePendingFieldRequests";
-import { HR_SELF_SERVICE_DEFAULTS } from "@/features/hr/me/selfServicePolicy";
+import { selfServicePolicyFor } from "@/features/hr/me/selfServicePolicy";
 import { MoreSection } from "../MoreSection";
 import { PlatformAccessSection } from "../PlatformAccessSection";
 
@@ -182,6 +182,9 @@ export function PersonalTab({
   /** The door a field belongs to, decided by where its policy row lives. */
   const updaterFor = (source: "personal" | "confidential") =>
     source === "confidential" ? selfUpdatePrivate : selfUpdate;
+  /** ...and the token that door writes through, which is what the policy is keyed by. */
+  const tokenFor = (source: "personal" | "confidential") =>
+    source === "confidential" ? "hr_employee_private" : "hr_employee";
   /*
     §7.2's open requests, keyed by field. `SelfServiceField` renders the REQUESTED
     value for any field that has one — never the stored value as if nothing happened,
@@ -295,7 +298,9 @@ export function PersonalTab({
         touch. This is the same shape that hid `SelfServiceToggle` and confused the
         party card; a grep-guard test now fails the build on a fourth instance.
 
-        Which control each field gets is `HR_SELF_SERVICE_DEFAULTS`, reconciled today
+        Which control each field gets is `selfServicePolicyFor(token, field)`, whose
+        table is GENERATED from the catalog and `hr.field_policy` so it cannot hold a
+        different opinion from the door. It was hand-kept until today and disagreed
         against the seeded `hr.field_policy` rows. It is a RENDERING HINT and never a
         decision: `hr_self_update` splits the patch itself, applies `self_free`
         immediately, turns `self_request_approval` into one workflow request per
@@ -384,14 +389,22 @@ export function PersonalTab({
               if (!bag || !(field in bag)) return null;
               const raw = (bag as Record<string, unknown>)[field];
               const updater = updaterFor(source);
+              /*
+                🚨 NO POLICY MEANS NO SUCH FIELD ON THIS RECORD — RENDER NOTHING.
+                `selfServicePolicyFor` answers null when the column is not on the
+                token's table, which is the door's "… is not a field on your record".
+                Falling back to a policy here is what put a padlock on `worker_class`,
+                a field that lives on the position assignment and was never editable
+                from this surface in any state.
+              */
+              const policy = selfServicePolicyFor(tokenFor(source), field);
+              if (policy === null) return null;
               return (
                 <SelfServiceField
                   key={field}
                   field={field}
                   value={typeof raw === "string" ? raw : null}
-                  policy={
-                    HR_SELF_SERVICE_DEFAULTS[field] ?? "read_only"
-                  }
+                  policy={policy}
                   pending={pending.byField[field] ?? null}
                   saving={updater.saving}
                   onSave={(name, next) => updater.save(name, next)}
