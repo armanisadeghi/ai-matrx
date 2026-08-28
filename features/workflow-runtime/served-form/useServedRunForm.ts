@@ -18,7 +18,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 
 import {
@@ -41,11 +42,23 @@ export type ServedRunFormState =
 /** GET /workflows/{id}/run-form → THE compiled input surface. */
 export function useServedRunForm(definitionId: string): ServedRunFormState {
   const dispatch = useAppDispatch();
+  /**
+   * 🚨 THE HYDRATION RACE (found on the proving ground, 2026-08-28).
+   * `requireSelectedOrgId()` THROWS until `appContext.organization_id` has
+   * hydrated from the session, and that lands AFTER this component's first
+   * effect. Fetching on mount alone meant EVERY cold load of a served run form
+   * showed "Could not load the run form — Select an organization before
+   * sending this request", permanently, with no retry: the form was
+   * unreachable unless the user happened to re-navigate after hydration.
+   * Depending on the id re-runs the fetch the moment context arrives.
+   */
+  const organizationId = useAppSelector(selectOrganizationId);
   const [state, setState] = useState<ServedRunFormState>({
     status: "loading",
   });
 
   useEffect(() => {
+    if (!organizationId) return; // not sendable yet — wait, never fail
     let live = true;
     setState({ status: "loading" });
     void (async () => {
@@ -69,7 +82,7 @@ export function useServedRunForm(definitionId: string): ServedRunFormState {
     return () => {
       live = false;
     };
-  }, [dispatch, definitionId]);
+  }, [dispatch, definitionId, organizationId]);
 
   return state;
 }

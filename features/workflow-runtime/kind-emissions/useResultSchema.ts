@@ -17,7 +17,8 @@
 
 import { useEffect, useState } from "react";
 
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { callApi } from "@/lib/api/call-api";
 
 import { parseResultSchema, type DeclaredResultSchema } from "./result-schema";
@@ -41,12 +42,26 @@ interface Answered {
 
 export function useResultSchema(definitionId: string): ResultSchemaState {
   const dispatch = useAppDispatch();
+  /**
+   * 🚨 THE HYDRATION RACE, and why this dependency is load-bearing.
+   * Every backend transport calls `requireSelectedOrgId()`, which THROWS
+   * ("Select an organization before sending this request.") until
+   * `appContext.organization_id` has hydrated from the user's session. That
+   * hydration is asynchronous and lands AFTER this component's first effect,
+   * so a fetch fired on mount alone is refused on every cold load and never
+   * retried — the promise reads as "this workflow couldn't be loaded" for the
+   * whole visit. Depending on the id makes the effect re-run the moment
+   * context arrives, which is the only honest fix: the request genuinely was
+   * not sendable before.
+   */
+  const organizationId = useAppSelector(selectOrganizationId);
   const [answered, setAnswered] = useState<Answered>({
     forId: definitionId,
     state: { status: "loading" },
   });
 
   useEffect(() => {
+    if (!organizationId) return; // not sendable yet — wait, never fail
     let live = true;
     void (async () => {
       const result = await dispatch(
@@ -72,7 +87,7 @@ export function useResultSchema(definitionId: string): ResultSchemaState {
     return () => {
       live = false;
     };
-  }, [dispatch, definitionId]);
+  }, [dispatch, definitionId, organizationId]);
 
   return answered.forId === definitionId
     ? answered.state
