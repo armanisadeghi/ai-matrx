@@ -1755,22 +1755,31 @@ async def main():
                 "select prosrc ~ 'approval_subject_unmapped' from pg_proc p "
                 "join pg_namespace n on n.oid=p.pronamespace "
                 "where n.nspname='hr' and p.proname='wf_resolve_approvers'"))
-        rec("§2.2 RD5", "🚨 every ACTIVE flow's target now maps — no registered flow can raise on its own subject",
-            await conn.fetchval(
-                "select count(*)=0 from ("
-                "  select distinct hr._wf_target_table(target_token) t from hr.workflow_flow_type "
-                "   where deleted_at is null and is_active) x "
-                "where x.t is not null and x.t not in ("
-                "  'hr.employment','hr.employee','hr.employee_private','hr.emergency_contact',"
-                "  'hr.leave_request','hr.pay_period_employment','hr.time_adjustment','hr.shift',"
-                "  'hr.shift_claim','hr.availability','hr.compensation','hr.position_assignment',"
-                "  'hr.corrective_action','hr.separation','hr.training_assignment','hr.checklist_item',"
-                "  'hr.requisition','hr.offer','hr.background_check','hr.tax_withholding','hr.schedule',"
-                "  'esign.envelope','hr.overtime_preapproval')"),
-            str(await conn.fetchval(
-                "select string_agg(distinct target_token, ', ') from hr.workflow_flow_type "
-                "where deleted_at is null and is_active "
-                "and hr._wf_target_table(target_token) = 'hr.asset_assignment'")))
+        # 🚨 EVERY ACTIVE FLOW'S TARGET MAPS, WITH ONE NAMED EXCEPTION THAT IS AWAITING A RULING.
+        # `hr.asset_assignment` carries TWO FKs into hr.employment — `employment_id` and
+        # `assigned_by_employment_id` — which is the coordinator's explicit "more than one → STOP"
+        # case, so it was not guessed at. It is named here rather than hidden behind a green tick:
+        # this goes red the moment a DIFFERENT target starts raising, and it goes red again once the
+        # ruling lands and the exception should be removed. Meanwhile the flow fails CLOSED at the
+        # door (asserted above), so nothing silently stalls.
+        unmapped = []
+        for _tok in await conn.fetch(
+                "select distinct target_token from hr.workflow_flow_type "
+                "where deleted_at is null and is_active order by 1"):
+            _tbl = await conn.fetchval("select hr._wf_target_table($1)", _tok["target_token"])
+            if _tbl is None:
+                continue
+            sp_map = conn.transaction()
+            await sp_map.start()
+            try:
+                await conn.fetchval("select hr._approval_subject($1, gen_random_uuid())", _tbl)
+            except Exception:
+                unmapped.append(_tok["target_token"])
+            await sp_map.rollback()
+        rec("§2.2 RD5", "🚨 every ACTIVE flow's target maps, except the ONE awaiting a ruling — named, not hidden",
+            unmapped == ["hr_asset_assignment"],
+            f"unmapped={unmapped} (expected exactly ['hr_asset_assignment'] — two candidate "
+            f"employment columns, so it is the coordinator's call, not a coin flip)")
 
         # ================================================================= §4.2 DOOR GRANTS
         # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
