@@ -1457,8 +1457,9 @@
      under 40-44px" rejections. Put this class on a feature/section root and
      the floor applies to everything inside it, including files written later.
 
-     Applies ONLY under `pointer: coarse` (a real touch device or the browser's
-     mobile emulation), so desktop density is completely untouched.
+     Applies under `pointer: coarse` (a real touch device) OR below the `lg`
+     breakpoint (the responsive tablet/mobile contract), so wide desktop
+     density is completely untouched and viewport-only QA measures reality.
 
      Deliberately NOT covered:
        - checkbox / radio / switch inputs — a min-height would distort the
@@ -1474,7 +1475,7 @@
      A control that must stay small inside an opted-in subtree sets
      `data-touch-exempt` and states why at the callsite.
      ========================================================================= */
-  @media (pointer: coarse) {
+  @media (pointer: coarse), (max-width: 1023px) {
     .matrx-touch-targets
       :is(
         button,

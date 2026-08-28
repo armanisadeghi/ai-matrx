@@ -1169,7 +1169,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           metadata agent's kind components, chat blocks) can land values on
           this page through its canonical services. */}
       <MarketingPageWriteTargets page={page} />
-      <main className="h-full overflow-y-auto bg-textured p-3 sm:p-4">
+      <main className="matrx-touch-targets h-full overflow-y-auto bg-textured p-3 sm:p-4">
         <div className="grid min-w-0 w-full gap-3">
           <nav
             aria-label="Page sections"
