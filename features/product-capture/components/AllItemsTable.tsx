@@ -17,7 +17,16 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Eye, FileAudio, Loader2, Trash2, Video } from "lucide-react";
+import {
+  Camera,
+  CheckCircle2,
+  Eye,
+  FileAudio,
+  Loader2,
+  RefreshCw,
+  Trash2,
+  Video,
+} from "lucide-react";
 
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
@@ -29,7 +38,7 @@ import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlic
 import { toast } from "@/lib/toast";
 
 import type { CaptureItem } from "../types";
-import { deleteItem, listAllFiles, listAllItems } from "../service";
+import { closeItem, deleteItem, listAllFiles, listAllItems } from "../service";
 
 interface ItemTableRow {
   id: string;
@@ -42,10 +51,13 @@ interface ItemTableRow {
   videoCount: number;
   audioCount: number;
   firstPhotoFileId: string | null;
+  /** The full item — status writes ride the guarded CAS on its version. */
+  item: CaptureItem;
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  captured: "Captured",
+  capturing: "Capturing",
+  captured: "Ready",
   processed: "Processed",
 };
 
@@ -88,6 +100,7 @@ export function AllItemsTable() {
             audioCount: files.filter((f) => f.kind === "audio").length,
             firstPhotoFileId:
               files.find((f) => f.kind === "photo")?.fileId ?? null,
+            item,
           };
         }),
       );
@@ -117,6 +130,28 @@ export function AllItemsTable() {
     },
     [router],
   );
+
+  const markReady = useCallback(async (row: ItemTableRow) => {
+    try {
+      const wasProcessed = row.status === "processed";
+      // Flipping into `captured` IS the workflow handoff (the DB transition
+      // fires the event trigger) — one write covers "mark ready" and
+      // "reprocess" alike.
+      const saved = await closeItem(row.item);
+      setRows(
+        (prev) =>
+          prev?.map((r) =>
+            r.id === row.id ? { ...r, status: saved.status, item: saved } : r,
+          ) ?? prev,
+      );
+      toast.success(
+        wasProcessed ? "Queued for reprocessing." : "Marked ready for processing.",
+      );
+    } catch (err) {
+      console.error("[product-capture] status change failed", err);
+      toast.error("Could not update the item's status.");
+    }
+  }, []);
 
   const remove = useCallback(async (row: ItemTableRow) => {
     try {
@@ -274,6 +309,28 @@ export function AllItemsTable() {
             >
               <Camera className="h-4 w-4" />
             </Button>
+            {(row.status === "capturing" || row.status === "processed") && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                aria-label={
+                  row.status === "processed"
+                    ? "Reprocess this item"
+                    : "Mark ready for processing"
+                }
+                onClick={(e) => {
+                  e.stopPropagation();
+                  void markReady(row);
+                }}
+              >
+                {row.status === "processed" ? (
+                  <RefreshCw className="h-4 w-4" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

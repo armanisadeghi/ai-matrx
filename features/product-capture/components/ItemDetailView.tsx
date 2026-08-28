@@ -32,6 +32,7 @@ import { toast } from "@/lib/toast";
 
 import type { CaptureFile, CaptureItem } from "../types";
 import {
+  closeItem,
   listItemFiles,
   loadItem,
   setItemCode,
@@ -57,6 +58,7 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
   const [pending, setPending] = useState<PendingUpload[]>([]);
   const [notes, setNotes] = useState("");
   const [notesSaving, setNotesSaving] = useState(false);
+  const [statusBusy, setStatusBusy] = useState(false);
   const [previewFile, setPreviewFile] = useState<CaptureFile | null>(null);
   const [confirmDeleteFile, setConfirmDeleteFile] =
     useState<CaptureFile | null>(null);
@@ -134,6 +136,27 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
       if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
     };
   }, [flushNotes]);
+
+  const markReady = useCallback(async () => {
+    const current = itemRef.current;
+    if (!current) return;
+    setStatusBusy(true);
+    try {
+      const wasProcessed = current.status === "processed";
+      // Flipping into `captured` IS the workflow handoff (the DB transition
+      // fires the event trigger) — one write covers "mark ready" and
+      // "reprocess" alike.
+      adoptItem(await closeItem(current));
+      toast.success(
+        wasProcessed ? "Queued for reprocessing." : "Marked ready for processing.",
+      );
+    } catch (err) {
+      console.error("[product-capture] status change failed", err);
+      toast.error("Could not update the item's status.");
+    } finally {
+      setStatusBusy(false);
+    }
+  }, [adoptItem]);
 
   const commitCode = useCallback(
     async (code: string) => {
@@ -266,7 +289,28 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
                       minute: "2-digit",
                     })}
                   </p>
-                  <p className="mt-0.5 capitalize">{item.status}</p>
+                  <p className="mt-0.5 capitalize">
+                    {item.status === "captured"
+                      ? "Ready for processing"
+                      : item.status}
+                  </p>
+                  {(item.status === "capturing" ||
+                    item.status === "processed") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-1.5 h-7 px-2 text-xs"
+                      disabled={statusBusy}
+                      onClick={() => void markReady()}
+                    >
+                      {statusBusy ? (
+                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      ) : null}
+                      {item.status === "processed"
+                        ? "Reprocess"
+                        : "Mark ready for processing"}
+                    </Button>
+                  )}
                 </div>
               </div>
               <label className="block">

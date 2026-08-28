@@ -61,7 +61,10 @@ function toItem(row: ItemRow): CaptureItem {
     codeSource: (row.code_source as CaptureItem["codeSource"]) ?? null,
     notes: row.notes,
     folderPath: row.folder_path,
-    status: row.status === "processed" ? "processed" : "captured",
+    status:
+      row.status === "processed" || row.status === "capturing"
+        ? row.status
+        : "captured",
     createdAt: row.created_at,
     version: row.version,
   };
@@ -264,6 +267,29 @@ export async function appendToItemNotes(
   return guardedItemWrite(current, (row) => ({
     notes: row.notes ? `${row.notes}\n\n${text}` : text,
   }));
+}
+
+/**
+ * Close the item — the photographer moved on (Next / QR-advance / "mark
+ * ready"). The DB transition `capturing → captured` is what fires the
+ * product-capture workflow event trigger (the table is instrumented with
+ * `workflow.watch_table`), so this write IS the handoff. Also the reprocess
+ * action: flipping a `processed` item back to `captured` fires the
+ * transition again.
+ */
+export async function closeItem(item: CaptureItem): Promise<CaptureItem> {
+  if (item.status === "captured") return item;
+  return guardedItemWrite(item, () => ({ status: "captured" }));
+}
+
+/**
+ * Reopen an item on the capture surface (deep link / review-sheet resume):
+ * back to `capturing` so downstream consumers know it is mid-capture again.
+ * Closing it later re-fires the transition — more photos mean a reprocess.
+ */
+export async function reopenItem(item: CaptureItem): Promise<CaptureItem> {
+  if (item.status === "capturing") return item;
+  return guardedItemWrite(item, () => ({ status: "capturing" }));
 }
 
 /** Soft-delete an item. Its uploaded files stay in the org's file tree. */
