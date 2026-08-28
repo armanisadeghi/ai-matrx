@@ -32,6 +32,9 @@ import {
   usePrintOptions,
 } from "@/lib/block-print/PrintOptionsDialog";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatCollapsibleWrapper";
 import { Button } from "@/components/ui/button";
@@ -59,6 +62,7 @@ interface MultipleChoiceQuizProps {
   quizData: RawQuizJSON;
   sessionId?: string;
   taskId?: string;
+  artifactId?: string;
   enableAutoSave?: boolean;
   autoSaveInterval?: number;
   showCanvasButton?: boolean;
@@ -195,13 +199,18 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
   quizData,
   sessionId,
   taskId,
+  artifactId,
   enableAutoSave = true,
   autoSaveInterval = 10000,
   showCanvasButton = true,
   className,
+  conversationId,
+  messageId,
+  blockIndex,
 }) => {
   // Canvas integration
   const { open: openCanvas } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
 
   // Print integration
   const {
@@ -502,6 +511,23 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
   };
 
   const handleOpenCanvas = () => {
+    const rawPayload =
+      typeof quizData === "string" ? quizData : JSON.stringify(quizData);
+    const def = getArtifactDef("quiz");
+
+    if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+      void openArtifact({
+        canvasType: "quiz",
+        title: parsedQuiz?.title || "Quiz",
+        content: rawPayload,
+        conversationId,
+        messageId,
+        artifactId,
+        artifactIndex: blockIndex && blockIndex > 0 ? blockIndex : 1,
+      });
+      return;
+    }
+
     openCanvas({
       type: "quiz",
       data: quizData,

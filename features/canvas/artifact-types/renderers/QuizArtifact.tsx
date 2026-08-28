@@ -54,6 +54,7 @@ export default function QuizArtifact(props: ArtifactRendererProps) {
       <MultipleChoiceQuiz
         quizData={payload}
         taskId={artifactDedupKey(taskId, artifactId)}
+        artifactId={artifactId}
         conversationId={conversationId}
         messageId={messageId}
         blockIndex={blockIndex}
