@@ -102,6 +102,10 @@ const EXPECTED: ReadonlyArray<{ name: string; why: string }> = [
     name: "entity_types_drop_flag",
     why: "flags the registry row when its table is dropped",
   },
+  {
+    name: "enforce_definer_client_grants",
+    why: "removes undeclared client EXECUTE grants from SECURITY DEFINER functions at creation time",
+  },
 ];
 
 const C = {

@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 484 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 489 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "38270a57575a";
+export const KIND_REGISTRY_FINGERPRINT = "b5238e67683b";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -6475,6 +6475,17 @@ export interface CompetitorPageAutopsyV1 {
 }
 
 /**
+ * Kind `condition_assessment` (registry v2).
+ */
+export interface ConditionAssessment {
+  __kind: "condition_assessment";
+  damage_flags?: unknown[];
+  overall_grade?: string;
+  positive_flags?: unknown[];
+  condition_notes?: string;
+}
+
+/**
  * Near-duplicate detection signatures for the page body.
  *
  * ``simhash`` is a STRING and must stay one. Measured: a real page returned
@@ -8039,6 +8050,16 @@ export interface HumanTextAnswer {
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
   };
+}
+
+/**
+ * Kind `identifier_entry` (registry v2).
+ */
+export interface IdentifierEntry {
+  label?: string;
+  value?: string;
+  __kind: "identifier_entry";
+  confidence?: string;
 }
 
 /**
@@ -10972,6 +10993,112 @@ export interface PressStoryAngleRulingResult {
 }
 
 /**
+ * Kind `product_entry` (registry v2).
+ */
+export interface ProductEntry {
+  __kind: "product_entry";
+  quantity?: {
+    __kind: "quantity_assessment";
+    unit_type?: string;
+    quantity_notes?: string;
+    estimated_count?: string | number | boolean | Record<string, unknown> | unknown[] | null;
+  };
+  condition?: {
+    __kind: "condition_assessment";
+    damage_flags?: unknown[];
+    overall_grade?: string;
+    positive_flags?: unknown[];
+    condition_notes?: string;
+  };
+  analyst_notes?: string;
+  image_indices?: number[];
+  product_index?: number;
+  identification?: {
+    brand?: {
+    value?: string;
+    confidence?: string;
+  };
+    __kind: "product_identification";
+    summary?: string;
+    category?: string;
+    model_name?: {
+    value?: string;
+    confidence?: string;
+  };
+    part_number?: {
+    value?: string;
+    confidence?: string;
+  };
+    model_number?: {
+    value?: string;
+    confidence?: string;
+  };
+    serial_number?: {
+    value?: string;
+    confidence?: string;
+  };
+    manufacture_year?: {
+    value?: string;
+    confidence?: string;
+  };
+    version_revision?: {
+    value?: string;
+    confidence?: string;
+  };
+    other_identifiers?: ({
+    label?: string;
+    value?: string;
+    __kind: "identifier_entry";
+    confidence?: string;
+  })[];
+  };
+  accessories_and_components?: unknown[];
+}
+
+/**
+ * Kind `product_identification` (registry v2).
+ */
+export interface ProductIdentification {
+  brand?: {
+    value?: string;
+    confidence?: string;
+  };
+  __kind: "product_identification";
+  summary?: string;
+  category?: string;
+  model_name?: {
+    value?: string;
+    confidence?: string;
+  };
+  part_number?: {
+    value?: string;
+    confidence?: string;
+  };
+  model_number?: {
+    value?: string;
+    confidence?: string;
+  };
+  serial_number?: {
+    value?: string;
+    confidence?: string;
+  };
+  manufacture_year?: {
+    value?: string;
+    confidence?: string;
+  };
+  version_revision?: {
+    value?: string;
+    confidence?: string;
+  };
+  other_identifiers?: ({
+    label?: string;
+    value?: string;
+    __kind: "identifier_entry";
+    confidence?: string;
+  })[];
+}
+
+/**
  * Kind `product_research_report` (registry v5).
  */
 export interface ProductResearchReport {
@@ -11167,6 +11294,16 @@ export interface ProviderRunReceipt {
    * How long this result is considered fresh.
    */
   freshness_ttl_seconds?: number | null;
+}
+
+/**
+ * Kind `quantity_assessment` (registry v2).
+ */
+export interface QuantityAssessment {
+  __kind: "quantity_assessment";
+  unit_type?: string;
+  quantity_notes?: string;
+  estimated_count?: string | number | boolean | Record<string, unknown> | unknown[] | null;
 }
 
 /**
@@ -18966,6 +19103,7 @@ export type GeneratedKindSlug =
   | "competitor_opportunity_autopsy_result"
   | "competitor_opportunity_autopsy_v1"
   | "competitor_page_autopsy_v1"
+  | "condition_assessment"
   | "content_fingerprint"
   | "content_plan_archetype_instantiation"
   | "content_plan_archetype_list"
@@ -19032,6 +19170,7 @@ export type GeneratedKindSlug =
   | "http_response"
   | "human_answer"
   | "human_text_answer"
+  | "identifier_entry"
   | "image_concepts_result"
   | "image_edit_result"
   | "image_metadata"
@@ -19142,11 +19281,14 @@ export type GeneratedKindSlug =
   | "press_source_request_ingest_result"
   | "press_story_angle_generation_result"
   | "press_story_angle_ruling_result"
+  | "product_entry"
+  | "product_identification"
   | "product_research_report"
   | "progress_tracker"
   | "proof_attestation"
   | "proof_check_status"
   | "provider_run_receipt"
+  | "quantity_assessment"
   | "questionnaire"
   | "quiz_item"
   | "quiz_set"
@@ -19453,6 +19595,7 @@ export interface KindPayloadBySlug {
   "competitor_opportunity_autopsy_result": CompetitorOpportunityAutopsyResult;
   "competitor_opportunity_autopsy_v1": CompetitorOpportunityAutopsyV1;
   "competitor_page_autopsy_v1": CompetitorPageAutopsyV1;
+  "condition_assessment": ConditionAssessment;
   "content_fingerprint": ContentFingerprint;
   "content_plan_archetype_instantiation": ContentPlanArchetypeInstantiation;
   "content_plan_archetype_list": ContentPlanArchetypeList;
@@ -19519,6 +19662,7 @@ export interface KindPayloadBySlug {
   "http_response": HttpResponse;
   "human_answer": HumanAnswer;
   "human_text_answer": HumanTextAnswer;
+  "identifier_entry": IdentifierEntry;
   "image_concepts_result": ImageConceptsResult;
   "image_edit_result": ImageEditResult;
   "image_metadata": ImageMetadata;
@@ -19629,11 +19773,14 @@ export interface KindPayloadBySlug {
   "press_source_request_ingest_result": PressSourceRequestIngestResult;
   "press_story_angle_generation_result": PressStoryAngleGenerationResult;
   "press_story_angle_ruling_result": PressStoryAngleRulingResult;
+  "product_entry": ProductEntry;
+  "product_identification": ProductIdentification;
   "product_research_report": ProductResearchReport;
   "progress_tracker": ProgressTracker;
   "proof_attestation": ProofAttestation;
   "proof_check_status": ProofCheckStatus;
   "provider_run_receipt": ProviderRunReceipt;
+  "quantity_assessment": QuantityAssessment;
   "questionnaire": Questionnaire;
   "quiz_item": QuizItem;
   "quiz_set": QuizSet;
@@ -19944,6 +20091,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "competitor_opportunity_autopsy_result",
   "competitor_opportunity_autopsy_v1",
   "competitor_page_autopsy_v1",
+  "condition_assessment",
   "content_fingerprint",
   "content_plan_archetype_instantiation",
   "content_plan_archetype_list",
@@ -20010,6 +20158,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "http_response",
   "human_answer",
   "human_text_answer",
+  "identifier_entry",
   "image_concepts_result",
   "image_edit_result",
   "image_metadata",
@@ -20120,11 +20269,14 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "press_source_request_ingest_result",
   "press_story_angle_generation_result",
   "press_story_angle_ruling_result",
+  "product_entry",
+  "product_identification",
   "product_research_report",
   "progress_tracker",
   "proof_attestation",
   "proof_check_status",
   "provider_run_receipt",
+  "quantity_assessment",
   "questionnaire",
   "quiz_item",
   "quiz_set",
