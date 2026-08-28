@@ -203,6 +203,27 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).toContain("py-1.5 align-middle lg:py-0.5");
   });
 
+  it("keeps pagination in one compact row without overflow narration", () => {
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[
+          { id: "row-a", name: "Alpha" },
+          { id: "row-b", name: "Beta" },
+        ]}
+        columns={COLUMNS}
+        getRowId={(row) => row.id}
+        pageSize={1}
+        detail={{ enabled: false }}
+      />,
+    );
+
+    expect(markup).toContain("data-matrx-table-footer");
+    expect(markup).toContain("h-11 gap-0 px-0 py-0 lg:h-8");
+    expect(markup).toContain("before:inset-1.5");
+    expect(markup).not.toContain("More columns off-screen");
+    expect(markup).not.toContain("scroll the table sideways");
+  });
+
   it("adds the canonical hierarchy move handle only when configured", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable
