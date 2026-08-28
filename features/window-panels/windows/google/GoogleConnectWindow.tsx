@@ -312,7 +312,7 @@ function GoogleConnectWindowBody({
                 No files chosen yet. Pick one and it stays available to you and
                 your agents.
               </p>
-            )}
+            ) : null}
 
             {mode === "workspace" && !canSend ? (
               <div className="flex flex-col gap-1.5 rounded-md border border-border bg-muted/30 p-2.5">
