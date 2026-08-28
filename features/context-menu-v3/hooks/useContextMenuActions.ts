@@ -68,10 +68,8 @@ import { useQuickActions } from "@/features/quick-actions/hooks/useQuickActions"
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useSpeech } from "@/features/audio/service/useSpeech";
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
-import {
-  LISTEN_SUMMARY_HOME_SURFACE,
-  useOpenListenSummaryWindow,
-} from "@/features/overlays/openers/listenSummaryWindow";
+import { useOpenListenSummaryWindow } from "@/features/overlays/openers/listenSummaryWindow";
+import { LISTENING_HOME_SURFACE } from "@/features/audio/service/listeningConfig";
 import { insertTextAtCursor } from "@/utils/editor-text-insertion";
 import { insertTextAtTextareaCursor } from "@/utils/text-insertion";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -484,7 +482,7 @@ export function useContextMenuActions(
   // every user). The home fetch is cached once per session by
   // `ensureSurfaceConfig`'s single-flight.
   const { roles: listenHomeRoles } = useSurfaceAgentRoles(
-    LISTEN_SUMMARY_HOME_SURFACE,
+    LISTENING_HOME_SURFACE,
   );
   const spokenSummaryRole = surfaceAgentRoles.spoken_summary?.effectiveAgentId
     ? surfaceAgentRoles.spoken_summary

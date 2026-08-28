@@ -31,7 +31,7 @@ import type { PrimingMessageRole } from "@/features/agents/types/agent-message-t
 import type { AssistantEditTarget } from "./resolveAssistantEditTarget";
 import { useOpenQuickMessageTemplateSaveWindow } from "@/features/overlays/openers/quickMessageTemplateSaveWindow";
 import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
-import { LISTEN_SUMMARY_HOME_SURFACE } from "@/features/overlays/openers/listenSummaryWindow";
+import { LISTENING_HOME_SURFACE } from "@/features/audio/service/listeningConfig";
 
 export interface MessageOptionsMenuProps {
   isOpen: boolean;
@@ -116,7 +116,7 @@ export function MessageOptionsMenu({
   // Effective `spoken_summary` agent — powers the two listening actions
   // (Summarize for listening / Summarize & listen). Null hides them.
   const { roles: surfaceAgentRoles } = useSurfaceAgentRoles(
-    LISTEN_SUMMARY_HOME_SURFACE,
+    LISTENING_HOME_SURFACE,
   );
   const spokenSummaryRole = surfaceAgentRoles.spoken_summary;
   const spokenSummaryAgent = spokenSummaryRole?.effectiveAgentId

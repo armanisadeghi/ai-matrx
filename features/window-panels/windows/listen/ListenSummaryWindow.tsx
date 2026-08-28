@@ -47,13 +47,13 @@ import {
   stopVoicePlayback,
 } from "@/features/transcript-studio/state/voicePlaybackBus";
 import { skipPlayback } from "@/features/audio/playback/playbackQueue";
-import { useSetting } from "@/features/settings/hooks/useSetting";
+import { useListeningSettings } from "@/features/audio/service/useListeningSettings";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsSlider } from "@/components/official/settings/primitives/SettingsSlider";
 import { availableVoices } from "@/lib/cartesia/voices";
 import { LANGUAGE_OPTIONS } from "@/features/settings/agent-writable-settings";
-import { resolveVoiceId, TTS_DEFAULT_SPEED } from "@/lib/cartesia/config";
+import { TTS_DEFAULT_SPEED } from "@/lib/cartesia/config";
 
 const SUMMARY_STYLE_DEFAULT = "Extremely Concise Summary";
 
@@ -404,12 +404,12 @@ function ListenSummaryWindowInner({
 }
 
 /**
- * Voice settings pane — the SAME setting paths the canonical Settings → Voice
- * tab edits (`features/settings/tabs/VoiceTab.tsx`), rendered through the same
- * official settings primitives. Every change auto-saves to the user's profile
- * and is the app-wide default: `speak()` and the app-root streaming speaker
- * read these preferences at each utterance, so the next playback (or Listen
- * again) uses the new voice/speed everywhere, not just in this panel.
+ * Voice settings pane — the TIERED listening config (system → org → user;
+ * `features/audio/service/listeningConfig.ts`), rendered through the official
+ * settings primitives. Every change writes ONE row at the user's tier and
+ * auto-saves — the app-wide winner over the org and system defaults. All
+ * speech consumers resolve through the same config at utterance/start time,
+ * so the next playback everywhere uses the new voice/speed.
  */
 const VOICE_OPTIONS = availableVoices.map((v) => ({
   value: v.id,
@@ -421,15 +421,10 @@ const PREVIEW_TEXT =
   "Here's how your listening voice sounds. Summaries, notes, and replies will all be read like this.";
 
 function ListenVoiceSettings() {
-  const [voice, setVoice] = useSetting<string>("userPreferences.voice.voice");
-  const [speed, setSpeed] = useSetting<number>("userPreferences.voice.speed");
-  const [language, setLanguage] = useSetting<string>(
-    "userPreferences.voice.language",
-  );
-
-  // Show the voice that will ACTUALLY speak: an unset preference resolves to
-  // the assistant default, so surface that instead of a blank select.
-  const effectiveVoiceId = resolveVoiceId(voice, "assistant");
+  const { effectiveVoiceId, speed, language, update } = useListeningSettings();
+  // Local echo while dragging — each persisted write is a DB row upsert, so
+  // the drag tracks locally and commits ONCE on release.
+  const [dragSpeed, setDragSpeed] = useState<number | null>(null);
 
   const handlePreview = useCallback(() => {
     // Deliberately STOP whatever is playing before enqueueing, instead of
@@ -450,15 +445,19 @@ function ListenVoiceSettings() {
           label="Voice"
           description="Used everywhere speech plays, app-wide."
           value={effectiveVoiceId}
-          onValueChange={setVoice}
+          onValueChange={(v) => void update({ voice: v })}
           options={VOICE_OPTIONS}
           width="lg"
         />
         <SettingsSlider
           label="Speech speed"
           description="1.0 = original pace. Our default is 1.2."
-          value={speed || TTS_DEFAULT_SPEED}
-          onValueChange={setSpeed}
+          value={dragSpeed ?? (speed || TTS_DEFAULT_SPEED)}
+          onValueChange={setDragSpeed}
+          onValueCommit={(v) => {
+            setDragSpeed(null);
+            void update({ speed: v });
+          }}
           min={0.6}
           max={1.5}
           step={0.05}
@@ -470,7 +469,7 @@ function ListenVoiceSettings() {
         <SettingsSelect
           label="Language"
           value={language}
-          onValueChange={setLanguage}
+          onValueChange={(v) => void update({ language: v })}
           options={LANGUAGE_OPTIONS}
           last
         />
@@ -478,8 +477,8 @@ function ListenVoiceSettings() {
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <p className="text-[11px] leading-snug text-muted-foreground">
-          Saved to your profile automatically. Changes apply from the next
-          playback.
+          Saved as your personal default automatically — it wins over your
+          organization and system defaults. Applies from the next playback.
         </p>
         <button
           type="button"

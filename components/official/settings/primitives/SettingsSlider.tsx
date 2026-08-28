@@ -7,6 +7,12 @@ import type { SettingsCommonProps } from "../types";
 export type SettingsSliderProps = SettingsCommonProps & {
   value: number;
   onValueChange: (value: number) => void;
+  /**
+   * Fires once when the drag ends (Radix onValueCommit). Use it when each
+   * write is a network/database round-trip: track the drag with local state
+   * via `onValueChange`, persist here.
+   */
+  onValueCommit?: (value: number) => void;
   min: number;
   max: number;
   step?: number;
@@ -26,6 +32,7 @@ export type SettingsSliderProps = SettingsCommonProps & {
 export function SettingsSlider({
   value,
   onValueChange,
+  onValueCommit,
   min,
   max,
   step = 1,
@@ -67,6 +74,9 @@ export function SettingsSlider({
           step={step}
           value={[value]}
           onValueChange={(v) => onValueChange(v[0])}
+          onValueCommit={
+            onValueCommit ? (v) => onValueCommit(v[0]) : undefined
+          }
           disabled={rowProps.disabled}
         />
         {(minLabel || midLabel || maxLabel) && (

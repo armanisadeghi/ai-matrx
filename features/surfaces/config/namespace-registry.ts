@@ -132,3 +132,51 @@ registerNamespace<DictionaryConfig>({
   },
   empty: EMPTY_DICTIONARY,
 });
+
+// ---------------------------------------------------------------------------
+// "listening" — app-wide speech playback defaults (voice / speed / language),
+// layered system → org → user (user wins). Hosted on the listening HOME
+// surface (`matrx-user/assistant-message`, see
+// features/audio/service/listeningConfig.ts) because speech is app-wide, not
+// per-surface: every TTS consumer (`speak()`, the app-root streaming speaker,
+// the Listen panel) resolves through this ONE namespace. The system default
+// is the platform-global row (editable at
+// /administration/ui/surfaces/matrx-user/assistant-message); orgs and users
+// override per-field. Fields are OPTIONAL on purpose — an absent field falls
+// through to the weaker tier, so a user who only chose a voice still gets
+// the org/system speed.
+// ---------------------------------------------------------------------------
+
+export interface ListeningConfig {
+  /** Cartesia voice id. Empty string = "no explicit choice" (purpose default). */
+  voice?: string;
+  /** generation_config speed (0.6–1.5; 1.0 = original). */
+  speed?: number;
+  /** BCP-47-ish language code (e.g. "en"). */
+  language?: string;
+}
+
+registerNamespace<ListeningConfig>({
+  namespace: "listening",
+  validate: (input): input is ListeningConfig => {
+    if (!isPlainObject(input)) return false;
+    const { voice, speed, language } = input as ListeningConfig;
+    return (
+      (voice === undefined || typeof voice === "string") &&
+      (speed === undefined || typeof speed === "number") &&
+      (language === undefined || typeof language === "string")
+    );
+  },
+  // Per-field shallow merge: a stronger tier's ABSENT field must not erase the
+  // weaker tier's value, so drop undefined keys before assigning.
+  merge: (layers) => {
+    const out: ListeningConfig = {};
+    for (const layer of layers) {
+      if (layer.voice !== undefined) out.voice = layer.voice;
+      if (layer.speed !== undefined) out.speed = layer.speed;
+      if (layer.language !== undefined) out.language = layer.language;
+    }
+    return out;
+  },
+  empty: {},
+});

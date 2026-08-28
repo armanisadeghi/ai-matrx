@@ -203,7 +203,7 @@ This surface is for acting ON rendered output (explain, transform, extract, save
       kind: "single",
       // Platform-wide job: agent.mandate holds the default builtin (never a
       // UUID in code). This surface is the HOME role every context menu falls
-      // back to (see LISTEN_SUMMARY_HOME_SURFACE in the listenSummaryWindow
+      // back to (see LISTENING_HOME_SURFACE in features/audio/service/listeningConfig.ts,
       // opener), so the mandate makes the Listen actions work for every user
       // on every surface.
       mandateKey: "ambient.spoken_summary",
@@ -211,6 +211,14 @@ This surface is for acting ON rendered output (explain, transform, extract, save
       allowCustom: true,
       autoRun: "always",
       sortOrder: 100,
+    },
+  ],
+  configNamespaces: [
+    {
+      namespace: "listening",
+      label: "Listening",
+      description:
+        "App-wide speech playback defaults — voice, speed, language. System → org → user tiers, user wins; every TTS consumer resolves through this namespace (features/audio/service/listeningConfig.ts).",
     },
   ],
 };

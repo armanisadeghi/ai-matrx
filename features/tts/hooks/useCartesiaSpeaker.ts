@@ -13,7 +13,11 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { SinkAwarePlayer } from '@/features/audio/sinkAwarePlayer';
 import { connectCartesiaTts } from '@/lib/cartesia/connection';
 import { useAppSelector } from '@/lib/redux/hooks';
-import { selectVoicePreferences } from '@/lib/redux/preferences/userPreferenceSelectors';
+import {
+  selectListeningLanguage,
+  selectListeningSpeed,
+  selectListeningVoice,
+} from '@/features/audio/service/listeningConfig';
 import { parseMarkdownToText } from '@/utils/markdown-processors/parse-markdown-for-speech';
 import {
   buildGenerationConfig,
@@ -62,10 +66,11 @@ export function useCartesiaSpeaker({
   const hasPlayedRef = useRef(false);
   const mountedRef = useRef(true);
 
-  const voicePrefs = useAppSelector(selectVoicePreferences);
-  const voiceId = resolveVoiceId(voicePrefs.voice, purpose);
-  const language = voicePrefs.language || 'en';
-  const speed = voicePrefs.speed;
+  // Tiered listening config (system → org → user; legacy prefs = boot fallback).
+  const rawVoice = useAppSelector(selectListeningVoice);
+  const voiceId = resolveVoiceId(rawVoice, purpose);
+  const language = useAppSelector(selectListeningLanguage);
+  const speed = useAppSelector(selectListeningSpeed);
 
   useEffect(() => {
     mountedRef.current = true;

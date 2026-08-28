@@ -34,8 +34,19 @@ export interface PlaybackRequest {
   label?: string;
   /** Opt this utterance into Custom Dictionary pronunciation (Cartesia). */
   dictionarySurfaceKey?: string;
-  /** Cartesia voice params — resolved by `speak()` from the user's prefs. */
-  cartesia?: { voiceId: string; language: string; speed: number };
+  /**
+   * Cartesia voice params — EXPLICIT overrides only. Anything absent is
+   * resolved by the adapter AT START TIME from the tiered listening config
+   * (`getListeningSettings`), so queued items and history replays honor the
+   * settings current when audio actually plays, not when it was enqueued.
+   * `purpose` picks the default-voice slot when no voice is set anywhere.
+   */
+  cartesia?: {
+    voiceId?: string;
+    language?: string;
+    speed?: number;
+    purpose?: "reading" | "assistant";
+  };
   /** Catalog speech voice params — resolved by `speak()`; server picks the vendor. */
   catalog?: { voice?: string; model?: string };
 }

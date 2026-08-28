@@ -16,9 +16,11 @@ import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { connectCartesiaTts } from "@/lib/cartesia/connection";
 import {
   buildGenerationConfig,
+  resolveVoiceId,
   TTS_MODEL_ID,
   TTS_PLAYBACK_BUFFER_SEC,
 } from "@/lib/cartesia/config";
+import { getListeningSettings } from "@/features/audio/service/listeningConfig";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
 import type {
   ActivePlayback,
@@ -67,10 +69,19 @@ export const cartesiaAdapter: PlaybackAdapter = {
   ): Promise<ActivePlayback> {
     cb.onLoading();
 
-    const voice = item.cartesia;
-    if (!voice) {
-      throw new Error("Cartesia playback requires resolved voice parameters");
-    }
+    // START-time resolution: the item carries only the caller's EXPLICIT
+    // overrides; everything else comes from the tiered listening config
+    // (system → org → user) as it stands NOW — so queued items and history
+    // replays honor settings changed after they were enqueued.
+    const overrides = item.cartesia ?? {};
+    const settings = getListeningSettings();
+    const voice = {
+      voiceId:
+        overrides.voiceId ??
+        resolveVoiceId(settings.voice, overrides.purpose ?? "assistant"),
+      language: overrides.language ?? settings.language,
+      speed: overrides.speed ?? settings.speed,
+    };
 
     const processed = (await resolveText(item)).trim();
     if (!processed) {

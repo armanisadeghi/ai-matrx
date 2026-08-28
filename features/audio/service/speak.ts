@@ -17,16 +17,10 @@
  */
 
 import { enqueuePlayback } from "@/features/audio/playback/playbackQueue";
-import { resolveVoiceId, type VoicePurpose } from "@/lib/cartesia/config";
+import type { VoicePurpose } from "@/lib/cartesia/config";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import {
-  selectTextToSpeechPreferences,
-  selectVoicePreferences,
-} from "@/lib/redux/preferences/userPreferenceSelectors";
-import type {
-  TextToSpeechPreferences,
-  VoicePreferences,
-} from "@/lib/redux/preferences/userPreferencesSlice";
+import { selectTextToSpeechPreferences } from "@/lib/redux/preferences/userPreferenceSelectors";
+import type { TextToSpeechPreferences } from "@/lib/redux/preferences/userPreferencesSlice";
 import {
   DEFAULT_SPEAK_ENGINE,
   engineAcceptsVoice,
@@ -62,30 +56,27 @@ export interface SpeakResult {
 }
 
 /**
- * Read the saved preferences without React, through the SAME canonical
- * selectors the React surfaces use — never a hand-written state path, which is
- * exactly how a "speak" call silently loses the user's chosen voice.
+ * Read the catalog engine's saved preference without React, through the SAME
+ * canonical selector the React surfaces use — never a hand-written state path.
  *
- * Each engine reads its OWN preference: the streaming engine uses the Voice
- * settings (a voice id + language + speed), the catalog engine uses the
- * Text-to-speech settings (a named voice). They are different vocabularies and
- * must never be crossed.
+ * The CARTESIA engine no longer resolves here at all: its voice/speed/language
+ * come from the tiered listening config (system → org → user;
+ * features/audio/service/listeningConfig.ts) and are resolved by the adapter
+ * at START time, so replays honor current settings. The catalog engine keeps
+ * its own Text-to-speech preference (a named voice) — a different vocabulary,
+ * never crossed with Cartesia voice ids.
  *
  * Returns null before the store exists (SSR, a very early call) — speech is
  * never worth throwing over a missing preference.
  */
-function preferences(): {
-  voice: VoicePreferences | null;
-  tts: TextToSpeechPreferences | null;
-} {
+function preferences(): { tts: TextToSpeechPreferences | null } {
   const store = getStoreSingleton();
-  if (!store) return { voice: null, tts: null };
-  const state = store.getState() as Parameters<typeof selectVoicePreferences>[0];
-  if (!state?.userPreferences) return { voice: null, tts: null };
-  return {
-    voice: selectVoicePreferences(state) ?? null,
-    tts: selectTextToSpeechPreferences(state) ?? null,
-  };
+  if (!store) return { tts: null };
+  const state = store.getState() as Parameters<
+    typeof selectTextToSpeechPreferences
+  >[0];
+  if (!state?.userPreferences) return { tts: null };
+  return { tts: selectTextToSpeechPreferences(state) ?? null };
 }
 
 /**
@@ -111,15 +102,17 @@ export function speak(request: SpeakRequest): SpeakResult {
   };
 
   if (engine.id === "cartesia") {
+    // Only the caller's EXPLICIT overrides ride the item; the adapter resolves
+    // everything else from the tiered listening config (system → org → user)
+    // at START time — so queued items and replays honor current settings.
     const { id } = enqueuePlayback({
       ...common,
       provider: "cartesia",
       cartesia: {
-        voiceId:
-          request.voice ??
-          resolveVoiceId(prefs.voice?.voice, request.purpose ?? "assistant"),
-        language: request.language ?? prefs.voice?.language ?? "en",
-        speed: request.speed ?? prefs.voice?.speed ?? 1,
+        voiceId: request.voice,
+        language: request.language,
+        speed: request.speed,
+        purpose: request.purpose ?? "assistant",
       },
     });
     return { id, engine: engine.id };

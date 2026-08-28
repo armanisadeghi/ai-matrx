@@ -40,7 +40,14 @@
 import { useEffect, useId, useRef, useCallback, useState } from "react";
 import { SinkAwarePlayer } from "@/features/audio/sinkAwarePlayer";
 import { connectCartesiaTts } from "@/lib/cartesia/connection";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { ensureSurfaceConfig } from "@/features/surfaces/redux/surfaceConfigSlice";
+import {
+  LISTENING_HOME_SURFACE,
+  selectListeningLanguage,
+  selectListeningSpeed,
+  selectListeningVoice,
+} from "@/features/audio/service/listeningConfig";
 import { parseMarkdownToText } from "@/utils/markdown-processors/parse-markdown-for-speech";
 import { toast } from "@/lib/toast";
 import { chunkTextForSpeech } from "../utils/chunk-text-for-speech";
@@ -200,18 +207,27 @@ export function useCartesiaStreamingSpeaker({
     return opQueueRef.current;
   }, []);
 
-  // Primitive selectors — each returns a scalar so unrelated userPreferences
-  // updates don't re-render the speaker.
-  const voiceId = useAppSelector((s) =>
-    resolveVoiceId(s.userPreferences.voice?.voice, "assistant"),
-  );
-  const language = useAppSelector(
-    (s) => s.userPreferences.voice?.language || "en",
-  );
-  const speed = useAppSelector((s) => s.userPreferences.voice?.speed ?? 0);
+  // Primitive selectors — each returns a scalar so unrelated state updates
+  // don't re-render the speaker. Values come from the tiered listening config
+  // (system → org → user; legacy prefs = boot fallback) — warm the surface
+  // config once so the tiers actually resolve for this app-root singleton.
+  const dispatch = useAppDispatch();
+  useEffect(() => {
+    void dispatch(
+      ensureSurfaceConfig({ surfaceName: LISTENING_HOME_SURFACE }),
+    );
+  }, [dispatch]);
+  const rawVoice = useAppSelector(selectListeningVoice);
+  const voiceId = resolveVoiceId(rawVoice, "assistant");
+  const language = useAppSelector(selectListeningLanguage);
+  const speed = useAppSelector(selectListeningSpeed);
 
   // Replay a finished utterance through the unified playback QUEUE (not this
-  // hook instance) so replay works even after the button unmounts.
+  // hook instance) so replay works even after the button unmounts. No voice
+  // params on purpose: the Cartesia adapter resolves the CURRENT tiered
+  // settings at start time, so a replay from history honors settings changed
+  // since the utterance was registered (the old enqueue-time capture replayed
+  // stale voice/speed).
   const enqueueReplay = useCallback(
     (text: string) => {
       if (!text.trim()) return;
@@ -221,10 +237,10 @@ export function useCartesiaStreamingSpeaker({
         processMarkdown,
         label: previewLabel(text),
         dictionarySurfaceKey,
-        cartesia: { voiceId, language, speed },
+        cartesia: { purpose: "assistant" },
       });
     },
-    [processMarkdown, dictionarySurfaceKey, voiceId, language, speed],
+    [processMarkdown, dictionarySurfaceKey],
   );
 
   /**

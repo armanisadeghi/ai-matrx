@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Mic, ExternalLink } from "lucide-react";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
@@ -9,7 +10,9 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
 import { useSetting } from "../hooks/useSetting";
+import { useListeningSettings } from "@/features/audio/service/useListeningSettings";
 import { availableVoices } from "@/lib/cartesia/voices";
+import { TTS_DEFAULT_SPEED } from "@/lib/cartesia/config";
 import { LANGUAGE_OPTIONS } from "../agent-writable-settings";
 
 const voiceOptions = availableVoices.map((v) => ({
@@ -19,11 +22,14 @@ const voiceOptions = availableVoices.map((v) => ({
 }));
 
 export default function VoiceTab() {
-  const [voice, setVoice] = useSetting<string>("userPreferences.voice.voice");
-  const [language, setLanguage] = useSetting<string>(
-    "userPreferences.voice.language",
-  );
-  const [speed, setSpeed] = useSetting<number>("userPreferences.voice.speed");
+  // Voice / speed / language live in the TIERED listening config (system →
+  // org → user, user wins) — the same rows the Listen panel edits, resolved
+  // by every speech consumer. See features/audio/service/listeningConfig.ts.
+  const { effectiveVoiceId, speed, language, update } = useListeningSettings();
+  const [dragSpeed, setDragSpeed] = useState<number | null>(null);
+
+  // Assistant-behavior fields stay on personal preferences — they are not
+  // playback settings and have no org/system tier.
   const [emotion, setEmotion] = useSetting<string>(
     "userPreferences.voice.emotion",
   );
@@ -48,23 +54,27 @@ export default function VoiceTab() {
       <SettingsSection title="Voice">
         <SettingsSelect
           label="Voice"
-          description="Cartesia voice used for replies."
-          value={voice || voiceOptions[0]?.value || ""}
-          onValueChange={setVoice}
+          description="Your default for all speech, app-wide. Wins over your organization and system defaults."
+          value={effectiveVoiceId}
+          onValueChange={(v) => void update({ voice: v })}
           options={voiceOptions}
           width="lg"
         />
         <SettingsSelect
           label="Language"
           value={language}
-          onValueChange={setLanguage}
+          onValueChange={(v) => void update({ language: v })}
           options={LANGUAGE_OPTIONS}
         />
         <SettingsSlider
           label="Speech speed"
           description="Playback speed (1.0 = original). Our default is 1.2."
-          value={speed}
-          onValueChange={setSpeed}
+          value={dragSpeed ?? (speed || TTS_DEFAULT_SPEED)}
+          onValueChange={setDragSpeed}
+          onValueCommit={(v) => {
+            setDragSpeed(null);
+            void update({ speed: v });
+          }}
           min={0.6}
           max={1.5}
           step={0.05}
