@@ -859,7 +859,8 @@ const DiagramFlow: React.FC<{
   editing = false,
   onDiagramChange,
 }) => {
-  const { fitView, getNodes, getEdges, screenToFlowPosition } = useReactFlow();
+  const { fitView, setViewport, getNodes, getEdges, screenToFlowPosition } =
+    useReactFlow();
   const nodesInitialized = useNodesInitialized();
   const hasAutoLayoutApplied = useRef(false);
   const autoLayoutFrameRef = useRef<number | null>(null);
@@ -1545,43 +1546,86 @@ const DiagramFlow: React.FC<{
       .finally(() => document.body.removeChild(exportContainer));
   }, [getNodes, diagram.title, onExportImage]);
 
-  const fitViewAfterLayout = useCallback(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        fitView({ duration: 800, padding: workspace ? 0.12 : 0.2 });
-      });
-    });
-  }, [fitView, workspace]);
-
-  // Re-fit when the canvas RESIZES after the diagram has been laid out.
-  // The one-shot fit after auto-layout races the container: on a surface whose
-  // height comes from flex (the shared-canvas viewer, the canvas pane) React
-  // Flow can measure before the box has settled, so that fit lands on a stale
-  // size and the graph ends up off-screen. Watching React Flow's own measured
-  // size also covers phone rotation and desktop window resizes.
-  //
-  // Gated on the layout having run: before that, every node still sits at the
-  // origin, and fitting those bounds slams the viewport to maxZoom. The first
-  // measurement is recorded, never fitted — `fitViewAfterLayout` owns the
-  // initial fit.
+  // React Flow's own measured canvas size. Read here (not from a DOM ref) so
+  // the fit math below has one source of truth.
   const measuredWidth = useStore((s) => s.width);
   const measuredHeight = useStore((s) => s.height);
-  const lastFittedSize = useRef<string | null>(null);
+
+  const fitPadding = workspace ? 0.12 : 0.2;
+  const fitMinZoom = workspace ? 0.05 : 0.5;
+
+  // Signature of the last (canvas size + node bounds) we fitted for.
+  const lastFitKey = useRef<string | null>(null);
+
+  // Ask for a re-fit after a layout change.
+  //
+  // This used to animate `fitView` itself, on a double rAF. That was the bug:
+  // when the canvas had not been measured yet — routine on a surface whose
+  // height comes from flex — that call computed against a zero-size canvas and
+  // reset the viewport to zoom 1, throwing away a correct fit that had already
+  // been applied and leaving the graph off-screen. There is now exactly ONE
+  // place that moves the viewport (the effect below); this only invalidates it.
+  const fitViewAfterLayout = useCallback(() => {
+    lastFitKey.current = null;
+  }, []);
+
+  // Fit the graph whenever the thing being fitted, or the box it is fitted
+  // into, actually changes.
+  //
+  // The old one-shot fit after auto-layout was ordering-dependent, and on a
+  // surface whose height comes from flex (the shared-canvas viewer, the canvas
+  // pane) the ordering does not hold: React Flow's measured size and the
+  // laid-out node positions arrive in either order, and whichever lost the race
+  // left the viewport at zoom 1 with the graph off-screen. That is why a shared
+  // diagram opened on a phone showed two boxes out of twenty-one.
+  //
+  // Keying on (canvas size + node bounds) removes the ordering question: the
+  // fit runs once both are real, and again only if either genuinely changes —
+  // which is also what makes rotation and window resizes work. Editing is
+  // excluded so dragging a box never yanks the viewport out from under the
+  // person doing the dragging.
   useEffect(() => {
+    if (editing) return undefined;
     if (!nodesInitialized || !measuredWidth || !measuredHeight) return undefined;
-    const size = `${Math.round(measuredWidth)}x${Math.round(measuredHeight)}`;
-    if (lastFittedSize.current === null) {
-      lastFittedSize.current = size;
-      return undefined;
-    }
-    if (lastFittedSize.current === size) return undefined;
-    lastFittedSize.current = size;
-    if (!hasAutoLayoutApplied.current) return undefined;
+    const laidOut = getNodes();
+    if (!laidOut.length) return undefined;
+    const bounds = getNodesBounds(laidOut);
+    if (bounds.width <= 0 || bounds.height <= 0) return undefined;
+    const key = [
+      Math.round(measuredWidth),
+      Math.round(measuredHeight),
+      Math.round(bounds.x),
+      Math.round(bounds.y),
+      Math.round(bounds.width),
+      Math.round(bounds.height),
+    ].join(":");
+    if (lastFitKey.current === key) return undefined;
+    lastFitKey.current = key;
     const frame = requestAnimationFrame(() => {
-      fitView({ duration: 200, padding: workspace ? 0.12 : 0.2 });
+      setViewport(
+        getViewportForBounds(
+          bounds,
+          measuredWidth,
+          measuredHeight,
+          fitMinZoom,
+          2,
+          fitPadding,
+        ),
+        { duration: 300 },
+      );
     });
     return () => cancelAnimationFrame(frame);
-  }, [measuredWidth, measuredHeight, nodesInitialized, fitView, workspace]);
+  }, [
+    editing,
+    nodesInitialized,
+    measuredWidth,
+    measuredHeight,
+    nodes,
+    getNodes,
+    setViewport,
+    fitMinZoom,
+    fitPadding,
+  ]);
 
   // ── Layout helpers ──
   const applyDirectedLayout = useCallback(
@@ -1703,14 +1747,12 @@ const DiagramFlow: React.FC<{
       diagram.nodes.every((n) => n.position)
     ) {
       hasAutoLayoutApplied.current = true;
-      autoLayoutFrameRef.current = requestAnimationFrame(() => {
-        // The dedicated workspace changes React Flow's measured width to make
-        // room for the inspector. Wait through the next layout pass so the
-        // first fit uses the canvas width, not the full route width.
-        autoLayoutFrameRef.current = requestAnimationFrame(() => {
-          fitView({ duration: 450, padding: workspace ? 0.12 : 0.22 });
-        });
-      });
+      // An authored map keeps its saved positions, but it still has to be
+      // fitted into whatever canvas it is opened in. Invalidate rather than
+      // animating a fit here: the workspace changes React Flow's measured width
+      // to make room for the inspector, so a fit fired now would use the wrong
+      // width. The size/bounds effect fits once the canvas is really measured.
+      fitViewAfterLayout();
       return () => {
         if (autoLayoutFrameRef.current !== null) {
           cancelAnimationFrame(autoLayoutFrameRef.current);
@@ -1735,11 +1777,10 @@ const DiagramFlow: React.FC<{
   }, [
     nodesInitialized,
     applyAutoLayout,
-    fitView,
+    fitViewAfterLayout,
     getNodes,
     diagram,
     onDiagramChange,
-    workspace,
   ]);
 
   return (
