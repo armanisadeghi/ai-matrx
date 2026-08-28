@@ -9,6 +9,7 @@ import type { AgentShortcut } from "../types";
 import { fetchFullShortcut } from "../thunks";
 import type { Database } from "@/types/database.types";
 import type { ValueMappingMap } from "@/features/surfaces/types";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 /**
  * Whitelist of `agx_shortcut` columns the RPC accepts in its `p_overrides`
@@ -74,6 +75,7 @@ export const createShortcutFromAgentSurface = createAsyncThunk<
   CreateShortcutFromAgentSurfaceArgs,
   { dispatch: AppDispatch; state: RootState }
 >("agentShortcut/createFromAgentSurface", async (args, { dispatch }) => {
+  const organizationId = await ensureOrgId(args.organizationId);
   // Postgres reads missing params as null. The generated `Args` type marks
   // the scope fields as optional `string`, so we omit any that the caller
   // didn't set rather than passing literal nulls.
@@ -82,7 +84,7 @@ export const createShortcutFromAgentSurface = createAsyncThunk<
     p_category_id: args.categoryId,
     p_overrides: (args.overrides ?? {}) as unknown as RpcArgs["p_overrides"],
     ...(args.userId ? { p_user_id: args.userId } : {}),
-    ...(args.organizationId ? { p_organization_id: args.organizationId } : {}),
+    p_organization_id: organizationId,
     ...(args.projectId ? { p_project_id: args.projectId } : {}),
     ...(args.taskId ? { p_task_id: args.taskId } : {}),
   };

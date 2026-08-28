@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   createShortcut,
   updateShortcut,
@@ -29,6 +30,7 @@ import type {
   CategoryFormData,
   ShortcutFormData,
 } from "../types";
+import { resolveShortcutWriteScope } from "../resolveShortcutWriteScope";
 
 export interface UseAgentShortcutCrudArgs {
   scope: AgentScope;
@@ -74,43 +76,25 @@ function applyScopeWrapper<T extends object>(
   };
 }
 
-function applyScopeToRowFields<T extends object>(
-  scope: AgentScope,
-  scopeId: string | undefined,
-  payload: T,
-): T & {
-  userId?: string | null;
-  organizationId?: string | null;
-  projectId?: string | null;
-  taskId?: string | null;
-} {
-  const scoped = {
-    ...payload,
-    userId: null as string | null,
-    organizationId: null as string | null,
-    projectId: null as string | null,
-    taskId: null as string | null,
-  };
-  const id = scopeId ?? null;
-  if (scope === "organization") scoped.organizationId = id;
-  else if (scope === "project") scoped.projectId = id;
-  else if (scope === "task") scoped.taskId = id;
-  return scoped;
-}
-
 export function useAgentShortcutCrud({
   scope,
   scopeId,
 }: UseAgentShortcutCrudArgs): UseAgentShortcutCrudResult {
   const dispatch = useAppDispatch();
+  const userId = useAppSelector(selectUserId);
 
   const doCreateShortcut = useCallback(
     async (data: ShortcutFormData) => {
-      const scoped = applyScopeToRowFields(scope, scopeId, data);
+      const scopeFields = await resolveShortcutWriteScope({
+        scope,
+        scopeId,
+        userId,
+      });
+      const scoped = { ...data, ...scopeFields };
       const result = await dispatch(createShortcut(scoped)).unwrap();
       return result as string;
     },
-    [dispatch, scope, scopeId],
+    [dispatch, scope, scopeId, userId],
   );
 
   const doUpdateShortcut = useCallback(

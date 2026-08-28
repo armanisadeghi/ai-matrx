@@ -43,6 +43,7 @@ import { createClient } from "@/utils/supabase/client";
 import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
 import type { Json } from "@/types/database.types";
 import type { WorkDestinationId } from "./destinations";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 /** The one platform-seeded category that marks a shortcut row as a saved request. */
 export const SAVED_REQUEST_CATEGORY_ID =
@@ -235,12 +236,14 @@ export async function createSavedRequest(
   input: SavedRequestInput,
 ): Promise<SavedRequest> {
   const supabase = createClient();
+  const organizationId = await ensureOrgId(undefined);
   const { data: newId, error: createError } = await supabase.rpc(
     "agx_create_shortcut",
     {
       p_agent_id: input.agentId,
       p_category_id: SAVED_REQUEST_CATEGORY_ID,
       p_label: input.label,
+      p_organization_id: organizationId,
       p_use_latest: true,
     },
   );

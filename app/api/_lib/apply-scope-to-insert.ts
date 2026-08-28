@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 
 /**
  * Resolves `scope` + `scopeId` from a JSON request body into the four row-level
@@ -16,10 +15,9 @@ import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
  * `organization_id` is **NOT NULL** on all three tables, so it is ALWAYS
  * resolved to a real org — never left null:
  *  - global  → the system org (global/platform content)
- *  - user    → the user's personal org
+ *  - user    → the organization explicitly carried by the client operation
  *  - org     → the given org scopeId
- *  - project/task → the creator's personal org (the read filters by the
- *    project_id/task_id FK, not by org)
+ *  - project/task → the organization explicitly carried by the client
  *
  * Returns either a mutated `payload` with the correct FKs set, or a
  * `NextResponse` with a 400 if the scope is malformed.
@@ -36,6 +34,11 @@ export async function applyScopeToInsertPayload(args: {
     typeof body.scopeId === "string" && body.scopeId.length > 0
       ? body.scopeId
       : null;
+  const organizationId =
+    typeof body.organization_id === "string" &&
+    body.organization_id.trim().length > 0
+      ? body.organization_id.trim()
+      : null;
 
   // Always normalize so clients cannot inject a scope FK out of band.
   payload.created_by = null;
@@ -49,8 +52,14 @@ export async function applyScopeToInsertPayload(args: {
   }
 
   if (scope === "user") {
+    if (!organizationId) {
+      return NextResponse.json(
+        { error: "organization_id is required when scope=user" },
+        { status: 400 },
+      );
+    }
     payload.created_by = userId;
-    payload.organization_id = await ensureOrgIdServer(client, undefined);
+    payload.organization_id = organizationId;
     return payload;
   }
 
@@ -62,11 +71,23 @@ export async function applyScopeToInsertPayload(args: {
       );
     }
     if (scope === "organization") {
+      if (organizationId && organizationId !== scopeId) {
+        return NextResponse.json(
+          { error: "organization_id must match scopeId when scope=organization" },
+          { status: 400 },
+        );
+      }
       payload.organization_id = scopeId;
     } else {
+      if (!organizationId) {
+        return NextResponse.json(
+          { error: `organization_id is required when scope=${scope}` },
+          { status: 400 },
+        );
+      }
       if (scope === "project") payload.project_id = scopeId;
       else payload.task_id = scopeId;
-      payload.organization_id = await ensureOrgIdServer(client, undefined);
+      payload.organization_id = organizationId;
     }
     return payload;
   }

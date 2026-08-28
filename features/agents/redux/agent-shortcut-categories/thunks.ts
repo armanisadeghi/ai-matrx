@@ -30,6 +30,8 @@ import type {
   UpdateCategoryPatch,
 } from "./types";
 import { selectCategoryById } from "./selectors";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { resolveShortcutWriteScope } from "@/features/agent-shortcuts/resolveShortcutWriteScope";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
@@ -88,7 +90,7 @@ export const createCategory = createAsyncThunk<
   AgentShortcutCategoryDef,
   CreateCategoryPayload,
   ThunkApi
->("agentShortcutCategory/create", async (payload, { dispatch }) => {
+>("agentShortcutCategory/create", async (payload, { dispatch, getState }) => {
   const { scope: explicitScope, scopeId, ...rest } = payload;
   const scope: Scope =
     explicitScope ??
@@ -98,10 +100,16 @@ export const createCategory = createAsyncThunk<
       projectId: rest.projectId ?? null,
       taskId: rest.taskId ?? null,
     });
+  const scopeFields = await resolveShortcutWriteScope({
+    scope,
+    scopeId: scopeId ?? undefined,
+    userId: selectUserId(getState()),
+  });
   const body = {
     scope,
     scopeId: scopeId ?? null,
     ...categoryDefToRowPatch(rest as Partial<AgentShortcutCategoryDef>),
+    organization_id: scopeFields.organizationId,
   };
   const response = await fetch("/api/agent-shortcut-categories", {
     method: "POST",

@@ -6,7 +6,8 @@ import { Loader2, Save, Trash2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
+import { extractErrorMessage } from "@/utils/errors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
@@ -251,7 +252,7 @@ export function ShortcutEditorNext({
         toast.success("Shortcut saved");
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save failed");
+      toastErrorAlreadyCaptured(extractErrorMessage(e));
     } finally {
       setBusy(false);
     }

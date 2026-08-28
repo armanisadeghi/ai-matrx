@@ -21,6 +21,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { assignField } from "@/features/agents/redux/shared/field-flags";
@@ -621,12 +622,16 @@ export const createShortcut = createAsyncThunk<
   ThunkApi
 >("agentShortcut/create", async (shortcutData, { dispatch, getState }) => {
   const userId = selectUserId(getState());
+  const organizationId = await ensureOrgId(shortcutData.organizationId);
 
   const draft: AgentShortcut = {
     ...shortcutData,
+    organizationId,
     id: "",
-    // Default to current user as owner if no hierarchy set
-    userId: shortcutData.userId ?? userId,
+    // `null` is deliberate for global/org/project/task visibility. Only an
+    // actually omitted value falls back to the current user.
+    userId:
+      shortcutData.userId === undefined ? userId : shortcutData.userId,
     createdAt: "",
     updatedAt: "",
   };
@@ -804,10 +809,12 @@ export const createShortcutForAgent = createAsyncThunk<
   ThunkApi
 >("agentShortcut/createForAgent", async (params, { dispatch, getState }) => {
   const userId = selectUserId(getState());
+  const organizationId = await ensureOrgId(params.p_organization_id);
 
   // Default to personal scope if no scope params provided
   const rpcParams: CreateShortcutForAgentParams = {
     ...params,
+    p_organization_id: organizationId,
     p_user_id:
       params.p_user_id ??
       (!params.p_organization_id && !params.p_project_id && !params.p_task_id
