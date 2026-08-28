@@ -86,6 +86,10 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-08-27` — Quiz, comparison, presentation, research, resources, progress,
+  troubleshooting, recipe, decision-tree, diagram, and both generic block wrappers now open
+  materialized artifacts through `useOpenArtifactInCanvas`; inline blocks without a persisted id
+  retain their snapshot fallback.
 - `2026-08-27` — Missing canonical chat-message rows now defer artifact materialization through
   `maybeSingle()` to the durable on-load reconciler without generating a false system error.
 - `2026-08-27` — Canonical `/s/[token]` shared-canvas links now reuse the immersive canvas viewer;
