@@ -62119,7 +62119,6 @@ export type Database = {
         Args: { p_instance_id: string; p_reason?: string }
         Returns: Json
       }
-      hr_zzz_f1_probe: { Args: { p_id: string }; Returns: Json }
       industry_assign_org: {
         Args: {
           p_actor?: string
