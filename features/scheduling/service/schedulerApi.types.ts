@@ -13,6 +13,7 @@ import type {
   Surface,
   TriggerType,
 } from "../types";
+import type { components as ApiComponents } from "@/types/python-generated/api-types";
 
 // ── Task ───────────────────────────────────────────────────────────────────
 
@@ -282,39 +283,17 @@ export interface SystemTaskTrigger {
   next_due_at: string | null;
 }
 
-export interface SystemTaskLastRun {
-  status: string;
-  started_at: string | null;
-  finished_at: string | null;
-  error_message: string | null;
-}
+export type SystemTaskLastRun =
+  ApiComponents["schemas"]["SystemTaskLastRun"];
 
-export interface SystemTaskResponse {
-  id: string;
-  title: string;
-  description: string | null;
-  tool_name: string;
-  enabled: boolean;
-  /** The tool exists but its handler is gated behind a pending approval. */
-  handler_gate_pending: boolean;
-  /** False = no handler is registered server-side; enabling will be refused. */
-  handler_registered: boolean;
-  trigger: SystemTaskTrigger | null;
-  last_run: SystemTaskLastRun | null;
-}
+export type SystemTaskResponse = ApiComponents["schemas"]["SystemTaskItem"];
 
 export interface SystemTaskListResponse {
   tasks: SystemTaskResponse[];
 }
 
-export interface SystemTaskPatchRequest {
-  enabled?: boolean;
-  trigger?: {
-    type?: string;
-    config?: Record<string, unknown>;
-  };
-  variables_args?: Record<string, unknown>;
-}
+export type SystemTaskPatchRequest =
+  ApiComponents["schemas"]["SystemTaskPatchRequest"];
 
 // ── List query params ──────────────────────────────────────────────────────
 

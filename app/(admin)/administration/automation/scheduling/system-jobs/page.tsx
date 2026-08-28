@@ -244,8 +244,8 @@ export default function SystemJobsPage() {
         header: "Tool",
         width: 200,
         cell: (r) => (
-          <span className="font-mono text-xs truncate" title={r.tool_name}>
-            {r.tool_name}
+          <span className="font-mono text-xs truncate" title={r.tool_name ?? undefined}>
+            {r.tool_name ?? "—"}
           </span>
         ),
       },
