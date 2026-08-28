@@ -41,7 +41,10 @@ import { ArrowRight, Gauge, TriangleAlert } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { humanLines, webLocation } from "@/features/marketing/lib/copy-payloads";
+import {
+  humanLines,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { GSC_DATA_LAG_DAYS } from "@/features/marketing/search-console/lib/url-state";
@@ -50,6 +53,7 @@ import {
   shiftGscDay,
 } from "@/features/marketing/search-console/lib/gsc-day";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { dimensionBlanksHref } from "../reason-links";
 import {
   DIMENSION_COVERAGE_KNOB_FEATURE,
@@ -89,28 +93,30 @@ interface Measured extends DimensionCoverageRow {
 }
 
 function measure(rows: DimensionCoverageRow[], threshold: number): Measured[] {
-  return rows
-    .map((row) => {
-      const clickShare = share(row.decided_clicks, row.total_clicks);
-      return {
-        ...row,
-        clickShare,
-        keywordShare: share(row.decided_keywords, row.total_keywords),
-        unclearShare: Math.max(
-          share(row.stamped_clicks - row.decided_clicks, row.total_clicks),
-          0,
-        ),
-        blankKeywords: Math.max(row.total_keywords - row.decided_keywords, 0),
-        thin: clickShare < threshold,
-      };
-    })
-    // WORST FIRST — the empty question is the one worth reading.
-    .sort(
-      (a, b) =>
-        a.clickShare - b.clickShare ||
-        a.keywordShare - b.keywordShare ||
-        a.dimension_label.localeCompare(b.dimension_label),
-    );
+  return (
+    rows
+      .map((row) => {
+        const clickShare = share(row.decided_clicks, row.total_clicks);
+        return {
+          ...row,
+          clickShare,
+          keywordShare: share(row.decided_keywords, row.total_keywords),
+          unclearShare: Math.max(
+            share(row.stamped_clicks - row.decided_clicks, row.total_clicks),
+            0,
+          ),
+          blankKeywords: Math.max(row.total_keywords - row.decided_keywords, 0),
+          thin: clickShare < threshold,
+        };
+      })
+      // WORST FIRST — the empty question is the one worth reading.
+      .sort(
+        (a, b) =>
+          a.clickShare - b.clickShare ||
+          a.keywordShare - b.keywordShare ||
+          a.dimension_label.localeCompare(b.dimension_label),
+      )
+  );
 }
 
 /** The 90-day-ish window this meter measures, ending where GSC's data does. */
@@ -119,13 +125,7 @@ function coverageWindow(days: number): { start: string; end: string } {
   return { start: shiftGscDay(end, -(Math.max(days, 1) - 1)), end };
 }
 
-function CoverageRow({
-  row,
-  href,
-}: {
-  row: Measured;
-  href: string;
-}) {
+function CoverageRow({ row, href }: { row: Measured; href: string }) {
   const note = scopeNote(row);
   return (
     <li>
@@ -185,12 +185,12 @@ function CoverageRow({
 }
 
 function Loading({ compact }: { compact: boolean }) {
+  if (compact) {
+    return <Skeleton className="h-7 w-56 rounded-md max-lg:h-11" />;
+  }
   return (
     <div
-      className={cn(
-        "rounded-lg border border-border bg-card p-3",
-        compact && "p-2.5",
-      )}
+      className={cn("rounded-lg border border-border bg-card p-3")}
       aria-hidden
     >
       <div className="flex items-center gap-2">
@@ -198,7 +198,7 @@ function Loading({ compact }: { compact: boolean }) {
         <Skeleton className="h-4 w-48" />
       </div>
       <div className="mt-2.5 space-y-2">
-        {(compact ? [0, 1] : [0, 1, 2, 3]).map((row) => (
+        {[0, 1, 2, 3].map((row) => (
           <div key={row} className="flex items-center gap-3">
             <div className="flex-1 space-y-1.5">
               <Skeleton className="h-2.5 w-32" />
@@ -285,52 +285,32 @@ export function DimensionCoverage({
     return null;
   }
 
-  // ── The compact form: only what is wrong, and the door to the rest ────────
+  // ── The compact form: one status and one door to its owning screen ────────
   if (compact) {
     if (thin.length === 0) return null;
+    const dimensionsHref = marketingRoutes.site(
+      brandId,
+      siteId,
+      "/value/dimensions",
+    );
     return (
-      <section
+      <Link
+        href={dimensionsHref}
         data-surface-value="dimension-coverage-compact"
+        aria-label={`Question coverage: ${thin.length} need attention`}
         className={cn(
-          "shrink-0 rounded-lg border border-warning/40 bg-card px-2.5 py-2",
+          "inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-warning/40 bg-warning/5 px-2 text-[11px] text-foreground transition-colors hover:border-warning max-lg:h-11",
           className,
         )}
+        title={`${thin.length} of ${measured.length} questions describe under ${pctLabel(threshold)} of clicks. Open Dimensions for the full coverage breakdown.`}
       >
-        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] text-foreground">
-          <TriangleAlert className="h-3.5 w-3.5 shrink-0 text-warning" />
-          <span className="font-medium">
-            {thin.length} of {measured.length} question
-            {measured.length === 1 ? "" : "s"} describe
-            {thin.length === 1 ? "s" : ""} under {pctLabel(threshold)} of your
-            clicks
-          </span>
-          <span className="text-muted-foreground">
-            — filtering by {thin.length === 1 ? "it" : "them"} says more about
-            what is unanswered than about the business.
-          </span>
-        </p>
-        <ul className="mt-1.5 flex flex-wrap gap-1">
-          {thin.slice(0, 6).map((row) => (
-            <li key={row.dimension}>
-              <Link
-                href={dimensionBlanksHref(ctx, row.dimension, window)}
-                className="inline-flex items-center gap-1 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground transition-colors hover:border-warning/50 hover:text-foreground"
-                title={`Open the ${formatCount(row.blankKeywords)} keyword${row.blankKeywords === 1 ? "" : "s"} “${row.dimension_label}” has no answer for`}
-              >
-                <span className="text-foreground">{row.dimension_label}</span>
-                <span className="tabular-nums">
-                  {pctLabel(row.clickShare)}
-                </span>
-              </Link>
-            </li>
-          ))}
-          {thin.length > 6 ? (
-            <li className="self-center text-[10px] text-muted-foreground">
-              +{thin.length - 6} more
-            </li>
-          ) : null}
-        </ul>
-      </section>
+        <TriangleAlert className="h-3.5 w-3.5 shrink-0 text-warning" />
+        <span className="font-medium">Coverage</span>
+        <span className="font-semibold tabular-nums text-warning">
+          {thin.length}
+        </span>
+        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+      </Link>
     );
   }
 
@@ -368,7 +348,10 @@ export function DimensionCoverage({
                 ["Window", `${window.start} to ${window.end}`],
                 ["Clicks in window", totalClicks],
                 ["Keywords in window", totalKeywords],
-                ["Too thin to filter on", `${thin.length} of ${measured.length}`],
+                [
+                  "Too thin to filter on",
+                  `${thin.length} of ${measured.length}`,
+                ],
                 ...measured.map(
                   (row) =>
                     [
@@ -415,8 +398,8 @@ export function DimensionCoverage({
           </ul>
           <p className="border-t border-border px-3 py-2 text-[10px] leading-4 text-muted-foreground">
             {formatCount(totalClicks)} click
-            {totalClicks === 1 ? "" : "s"} across{" "}
-            {formatCount(totalKeywords)} keyword
+            {totalClicks === 1 ? "" : "s"} across {formatCount(totalKeywords)}{" "}
+            keyword
             {totalKeywords === 1 ? "" : "s"}, {window.start} to {window.end}. A
             row opens the keywords that question has no answer for. Anything
             under {pctLabel(threshold)} of clicks is flagged — filter by it and

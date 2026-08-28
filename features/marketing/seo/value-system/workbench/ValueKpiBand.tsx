@@ -36,6 +36,7 @@ import {
   BrainCircuit,
   Gavel,
   Minus,
+  ScanSearch,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Button } from "@/components/ui/button";
@@ -166,6 +167,7 @@ export function ValueKpiBand({
   onStartSession,
   onQuickAnswers,
   sessionOpen,
+  trafficInsight,
 }: {
   kpis: ValueKpis | null;
   rulings: { total: number; thisWeek: number } | null;
@@ -180,6 +182,12 @@ export function ValueKpiBand({
   /** KI-054 — opens the floating one-question-five-keywords panel. */
   onQuickAnswers: () => void;
   sessionOpen: boolean;
+  trafficInsight: {
+    band: string;
+    label: string;
+    pct: number;
+    detail: string;
+  } | null;
 }) {
   if (isLoading || !kpis) {
     return (
@@ -206,6 +214,22 @@ export function ValueKpiBand({
         active={noFilter}
         onClick={onClearFilters}
         doorLabel="Opens every keyword in the table below."
+        action={
+          trafficInsight ? (
+            <button
+              type="button"
+              onClick={() => onFilterBand(trafficInsight.band)}
+              className="flex h-7 w-full min-w-0 items-center gap-1 rounded-md border border-border bg-background px-2 text-[10px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground max-lg:h-11"
+              title={trafficInsight.detail}
+            >
+              <ScanSearch className="h-3 w-3 shrink-0 text-primary" />
+              <span className="truncate">
+                Look closer: {trafficInsight.label}{" "}
+                {formatPct(trafficInsight.pct)}
+              </span>
+            </button>
+          ) : null
+        }
       />
 
       <Tile

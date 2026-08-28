@@ -11,11 +11,10 @@
  * bake-off while five more surfaces were wired into C only, so they were telling
  * a story about this feature that had stopped being true.
  *
- * Two ideas were GRAFTED from variant B before it went, and they are marked as
- * such where they render:
- *   • the VERDICT SENTENCE (`buildVerdict` in ../lib) — the page opens with
- *     composed English naming the band that diverges most from the site's own
- *     direction, because a flat total can hide a band that moved 160%.
+ * Two ideas were GRAFTED from variant B before it went:
+ *   • the TRAFFIC CONTRAST (`buildVerdict` in ../lib) — the useful divergent
+ *     band is nested inside the Clicks tile it explains; the redundant site
+ *     traffic sentence does not become a second headline.
  *   • the RULING SESSION (./RulingSession) — the unvalued queue as a focused
  *     one-at-a-time card flow, biggest traffic first.
  *
@@ -52,15 +51,14 @@
  *                                 never repeats them as a route-button row.
  *   2. THE KPI BAND             — ./ValueKpiBand. Four numbers, biggest type
  *                                 on the page, every one of them a door.
- *   3. THE VERDICT             — one sentence, under the numbers it explains.
- *   4. SETUP STATES             — ./MeaningHealth, a row of pills, not five
- *                                 cards. The novel lives in their hover and
- *                                 in "Details".
- *   5. BY LEVEL (provisional)   — ./BandScoreboard, kept on his instruction,
+ *   3. BY LEVEL (provisional)   — ./BandScoreboard, kept on his instruction,
  *                                 subordinate and collapsible.
- *   6. AI SUGGESTIONS           — one chip row, BELOW the numbers. A proposal
+ *   4. SUPPORTING STATUS        — setup and question coverage are compact
+ *                                 doors into their owning screens, not a
+ *                                 second workbench.
+ *   5. AI SUGGESTIONS           — one chip row, BELOW the numbers. A proposal
  *                                 never outranks the site's own facts.
- *   7. THE TABLE.
+ *   6. THE TABLE.
  *
  * DUPLICATIONS DELETED in the same pass, because one page said the same thing
  * three times: the scoreboard's own "site clicks vs prior 28 days" headline
@@ -72,9 +70,11 @@
  * to the reader on their second visit).
  *
  * NOTHING WAS CULLED. Rulings, the ruling session, receipts, the level editor,
- * and packs stay in their canonical homes. Supporting destinations stay in the
- * canonical site header; the computation explanation is a compact contextual
- * control in By level, and the admin facet registry stays on its admin surface.
+ * and packs stay in their canonical homes. Industry defaults render only in
+ * the Industry Packs catalog, not in this workbench or the Rulebook. Supporting
+ * destinations stay in the canonical site header; the computation explanation
+ * is a compact contextual control in By level, and the admin facet registry
+ * stays on its admin surface.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -178,7 +178,6 @@ import { ReasonChainDetail } from "./ReasonChain";
 import { MeaningPanel } from "./MeaningPanel";
 import { MeaningHealth } from "./MeaningHealth";
 import { DimensionCoverage } from "@/features/marketing/seo/value-system/coverage/DimensionCoverage";
-import { ReadyDefaultsBanner } from "../packs/ReadyDefaultsBanner";
 import { RulingDialog, type RulingDraft } from "./RulingDialog";
 import { AddLevelDialog } from "../pickers/AddLevelDialog";
 import { RulingSession } from "./RulingSession";
@@ -354,7 +353,9 @@ export function ValueWorkbench() {
   // Counted from rulings that LANDED, never from taps — see RulingSession.
   const [sessionRuled, setSessionRuled] = useState(0);
   // The by-level tiles: kept, subordinate, and collapsible (see BandScoreboard).
-  const [levelsOpen, setLevelsOpen] = useState(true);
+  // The level split is useful evidence, but the table is the primary job.
+  // Keep the evidence one click away instead of spending the first screen on it.
+  const [levelsOpen, setLevelsOpen] = useState(false);
   const levelsRef = useRef<HTMLElement | null>(null);
   /**
    * The doors other screens open onto this one (reason-links.ts):
@@ -1169,59 +1170,18 @@ export function ValueWorkbench() {
               )
             }
             sessionOpen={sessionOpen}
+            trafficInsight={
+              verdict?.contrastBand && verdict.contrastPct !== null
+                ? {
+                    band: verdict.contrastBand,
+                    label: bandMetaFor(metas, verdict.contrastBand).label,
+                    pct: verdict.contrastPct,
+                    detail: `${verdict.headline} ${verdict.detail}`,
+                  }
+                : null
+            }
           />
         )}
-
-        {/* THE VERDICT — grafted from variant B. Composed English that names the
-          divergence the totals hide. One sentence, under the numbers it is
-          about; the contrast band is clickable because the sentence is a claim
-          the user must be able to inspect. */}
-        {verdict ? (
-          <p className="shrink-0 text-xs leading-5 text-foreground">
-            <span className="font-medium">{verdict.headline}</span>
-            {verdict.detail ? (
-              verdict.contrastBand ? (
-                <button
-                  type="button"
-                  className="ml-1 text-left text-muted-foreground underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
-                  title={`Filter the table to ${bandMetaFor(metas, verdict.contrastBand).label}`}
-                  onClick={() => filterBy("value_band", verdict.contrastBand)}
-                >
-                  {verdict.detail}
-                </button>
-              ) : (
-                <span className="ml-1 text-muted-foreground">
-                  {verdict.detail}
-                </span>
-              )
-            ) : null}
-          </p>
-        ) : null}
-
-        {/* What is unfinished about this site's setup — states and doors, never
-          the page's headline (see ./MeaningHealth for why it is a row now). */}
-        <MeaningHealth
-          rows={health.data}
-          isLoading={health.isPending}
-          error={health.isError ? health.error : null}
-          onRetry={() => void health.refetch()}
-          brandId={brandId}
-          siteId={siteId}
-        />
-
-        {/* KI-022 — the honesty gauge, in its compact form. It renders NOTHING
-          while every question describes enough of the traffic to filter on;
-          the moment one does not, it says so here, beside the numbers a person
-          is about to draw a conclusion from, with a door into the keywords
-          that question has no answer for. Same server read as the Dimensions
-          screen's full panel — never a second, differently-computed summary. */}
-        <DimensionCoverage
-          siteId={siteId}
-          brandId={brandId}
-          variant="compact"
-        />
-
-        <ReadyDefaultsBanner />
 
         {/* WHAT THE AGENTS PROPOSED and you have not answered yet — rendered in
           BOTH postures. The ruling session's trial proposes rule changes into
@@ -1260,9 +1220,9 @@ export function ValueWorkbench() {
           <>
             {/* THE LEVEL BREAKDOWN — kept on Arman's explicit instruction ("don't
           get rid of them yet") and marked for exactly what he said about it:
-          he is not sure the tiles are meaningful. So they render UNDER the
-          KPIs, at tile size, behind a header that says so. Every tile is
-          still a live filter into the table. */}
+          he is not sure the tiles are meaningful. So they stay UNDER the
+          KPIs and collapse by default behind a header that says so. Every tile
+          is still a live filter into the table. */}
             <section ref={levelsRef} className="shrink-0 space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -1325,6 +1285,25 @@ export function ValueWorkbench() {
                 />
               ) : null}
             </section>
+
+            {/* Setup and coverage affect whether a valuation can be trusted,
+              so they remain visible as compact status doors. Their explanations
+              and actual work live on the owning setup screens. */}
+            <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+              <MeaningHealth
+                rows={health.data}
+                isLoading={health.isPending}
+                error={health.isError ? health.error : null}
+                onRetry={() => void health.refetch()}
+                brandId={brandId}
+                siteId={siteId}
+              />
+              <DimensionCoverage
+                siteId={siteId}
+                brandId={brandId}
+                variant="compact"
+              />
+            </div>
 
             {/* WHAT THE AGENTS PROPOSED and you have not answered yet. Nothing here
           has touched a matcher, a worth row, a stamp or the guidelines — that

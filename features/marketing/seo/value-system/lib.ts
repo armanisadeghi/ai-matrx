@@ -351,6 +351,8 @@ export interface Verdict {
   detail: string;
   /** The band the detail sentence is about, so the caller can filter to it. */
   contrastBand: string | null;
+  /** UI-only number for nesting the useful contrast inside the Clicks tile. */
+  contrastPct: number | null;
 }
 
 /** Divergence below this reads as noise, not a story. */
@@ -397,16 +399,18 @@ export function buildVerdict(
   const headline = `Search traffic ${siteMove} over the last 28 days.`;
   let detail = "";
   let contrastBand: string | null = null;
+  let contrastPct: number | null = null;
   if (contrast && contrast.divergence >= VERDICT_DIVERGENCE_FLOOR) {
     const label = bandMetaFor(metas, contrast.band).label;
     const dir = contrast.pct > 0 ? "up" : "down";
     detail = `But look closer: ${label} traffic is ${dir} ${Math.abs(Math.round(contrast.pct))}% — the totals don't tell that story.`;
     contrastBand = contrast.band;
+    contrastPct = contrast.pct;
   } else if (valuedBands === 0) {
     detail =
       "None of that traffic carries a value yet — the totals can't tell you what it's worth until you rule on it.";
   }
-  return { headline, detail, contrastBand };
+  return { headline, detail, contrastBand, contrastPct };
 }
 
 /** "Aug 1 – Aug 28" for a window, in the reader's locale. */

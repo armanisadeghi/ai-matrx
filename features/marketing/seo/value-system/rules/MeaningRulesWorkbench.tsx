@@ -100,7 +100,6 @@ import {
   RULEBOOK_SOURCE_QUERY,
 } from "../lib";
 import { SourceChip, type SourceChipState } from "../SourceChip";
-import { ReadyDefaultsBanner } from "../packs/ReadyDefaultsBanner";
 import { BandVocabularyEditor } from "../vocabulary/BandVocabularyEditor";
 import { ValueRuleEditor } from "./ValueRuleEditor";
 import { GeoAreaEditor } from "./GeoAreaEditor";
@@ -985,7 +984,6 @@ export function MeaningRulesWorkbench() {
             proposed. The platform never re-applies a pack over your changes.
           </p>
         </div>
-        <ReadyDefaultsBanner />
         {(adoptions.data?.length ?? 0) > 0 || sourceFilter ? (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
@@ -1412,8 +1410,8 @@ export function MeaningRulesWorkbench() {
                     {incompleteAreas.length === 1 ? "It was" : "They were"}{" "}
                     created with a name and a band but nothing inside, so
                     nothing matches{" "}
-                    {incompleteAreas.length === 1 ? "it" : "them"}{" "}
-                    automatically — no search will ever land in{" "}
+                    {incompleteAreas.length === 1 ? "it" : "them"} automatically
+                    — no search will ever land in{" "}
                     {incompleteAreas.length === 1 ? "it" : "them"} on its own.
                     {/* THE CONTRADICTION THIS SENTENCE EXISTS TO KILL (found by
                       the 2026-08-25 surface test): the banner said "no search

@@ -13,7 +13,7 @@
  * gate never fires on any keyword. That state is worse than an empty one,
  * because the screen that lists them looks configured.
  *
- * 🚨 2026-08-23 — WHY THIS IS NOW A ROW OF STATES, NOT FIVE CARDS. It was
+ * 🚨 2026-08-23 — WHY THIS IS NOT FIVE CARDS. It was
  * right about WHAT to say and wrong about how much room to say it in: five
  * full-width cards, ~185px, above every number on the page. Arman: "the part
  * where it says you're set up as it actually stands with five giant things
@@ -21,10 +21,10 @@
  * written." A setup warning is a state to glance at and a door to walk
  * through — not the page's headline.
  *
- * So the states collapse to one wrapped row of pills, worst first, each one a
- * link to the screen that fixes it. Nothing is lost: the pill carries the
- * DB's own sentence, the hover carries the full explanation, and "Details"
- * expands every row in full. Still deliberately NOT a score, a health
+ * 🚨 2026-08-28 — even that row still made setup a second workbench. The
+ * states now collapse to one compact status door. Its popover keeps every
+ * verbatim database sentence and every route to the screen that fixes it.
+ * Still deliberately NOT a score, a health
  * percentage or a progress ring — a number invites optimising the number
  * instead of the business. Nothing worth showing → nothing renders, never a
  * green all-clear badge.
@@ -35,7 +35,6 @@
  * own — a summary we wrote here would be the drift.
  */
 
-import { useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -46,6 +45,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { INCOMPLETE_AREAS_QUERY } from "../lib";
@@ -119,8 +123,6 @@ export function MeaningHealth({
   brandId: string | null | undefined;
   siteId: string;
 }) {
-  const [expanded, setExpanded] = useState(false);
-
   if (error) {
     return (
       <InlineQueryError
@@ -140,7 +142,8 @@ export function MeaningHealth({
       (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9) ||
       a.area.localeCompare(b.area),
   );
-  const needsWork = ordered.filter((row) => row.severity !== "ok").length;
+  const needsWork = ordered.filter((row) => row.severity !== "ok");
+  if (needsWork.length === 0) return null;
 
   /**
    * An `inert` geo row means areas EXIST and are empty, so the door opens
@@ -157,66 +160,35 @@ export function MeaningHealth({
   };
 
   return (
-    <section
-      aria-label="What is unfinished in your setup"
-      className="shrink-0 flex flex-wrap items-center gap-1.5"
-    >
-      <span className="text-[11px] text-muted-foreground">
-        Your setup
-        {needsWork > 0 ? (
-          <span className="ml-1 font-semibold text-warning">
-            {needsWork} to finish
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`Value setup: ${needsWork.length} need attention`}
+          className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-warning/40 bg-warning/5 px-2 text-[11px] text-foreground transition-colors hover:border-warning max-lg:h-11"
+          title="See the setup items that affect keyword valuation"
+        >
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning" />
+          <span className="font-medium">Setup</span>
+          <span className="font-semibold tabular-nums text-warning">
+            {needsWork.length}
           </span>
-        ) : null}
-      </span>
-
-      {ordered.map((row) => {
-        const chrome = SEVERITY_CHROME[row.severity] ?? SEVERITY_CHROME.ok;
-        const Icon = chrome.icon;
-        return (
-          <Link
-            key={`${row.area}-${row.severity}`}
-            href={hrefFor(row)}
-            title={`${row.headline}\n\n${row.detail}\n\n${AREA_ROUTE[row.area]?.label ?? "Open"}`}
-            className={cn(
-              "group inline-flex max-w-[240px] items-center gap-1.5 rounded-md border px-2 py-1 transition-colors",
-              chrome.pill,
-            )}
-          >
-            {Icon ? (
-              <Icon className={cn("h-3 w-3 shrink-0", chrome.tone)} />
-            ) : (
-              <span
-                aria-hidden
-                className="h-1.5 w-1.5 shrink-0 rounded-full bg-success"
-              />
-            )}
-            <span className="truncate text-[11px] text-foreground">
-              {row.headline}
-            </span>
-            <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-          </Link>
-        );
-      })}
-
-      <button
-        type="button"
-        onClick={() => setExpanded((open) => !open)}
-        className="inline-flex items-center gap-0.5 rounded-md px-1 py-1 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-        title="Read the full explanation of each state"
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[min(420px,calc(100vw-2rem))] p-2"
       >
-        <ChevronDown
-          className={cn(
-            "h-3 w-3 transition-transform",
-            expanded && "rotate-180",
-          )}
-        />
-        {expanded ? "Hide" : "Details"}
-      </button>
-
-      {expanded ? (
-        <ul className="mt-1 grid w-full gap-1.5 sm:grid-cols-2">
-          {ordered.map((row) => {
+        <div className="px-1 pb-2">
+          <p className="text-xs font-semibold text-foreground">Value setup</p>
+          <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+            These items affect how keywords are valued. Open the owning screen
+            to finish one.
+          </p>
+        </div>
+        <ul className="grid gap-1">
+          {needsWork.map((row) => {
             const chrome = SEVERITY_CHROME[row.severity] ?? SEVERITY_CHROME.ok;
             const Icon = chrome.icon;
             return (
@@ -243,7 +215,7 @@ export function MeaningHealth({
                     <span className="block text-[11px] font-medium text-foreground">
                       {row.headline}
                     </span>
-                    <span className="mt-0.5 block text-[10px] leading-4 text-muted-foreground">
+                    <span className="mt-0.5 block text-[10px] leading-4 text-muted-foreground line-clamp-2">
                       {row.detail}
                     </span>
                   </span>
@@ -253,7 +225,7 @@ export function MeaningHealth({
             );
           })}
         </ul>
-      ) : null}
-    </section>
+      </PopoverContent>
+    </Popover>
   );
 }
