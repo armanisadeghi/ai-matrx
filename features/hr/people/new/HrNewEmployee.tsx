@@ -152,6 +152,7 @@ export function HrNewEmployee({
     pay_basis: "hourly",
     schedule_class: "full_time",
     fte: "1",
+    standard_hours_per_week: "",
     compensation_amount: "",
     platform_of_record: "direct",
     platform_external_id: "",
@@ -214,6 +215,41 @@ export function HrNewEmployee({
       sentence: "An exempt classification needs the basis it rests on.",
     });
   }
+  /*
+    🚨 A NULL STANDARD WEEK MAKES A LEAVE DAY COST ZERO HOURS — L5-A5. The leave
+    door now refuses the null honestly instead of booking a free week, and the fix
+    belongs here: it is the hire that never asked.
+
+    🚨 AND THERE IS NO DEFAULT, DELIBERATELY. SPEC-DATA-MODEL declares this column
+    `numeric(6,2)` — nullable, no default — sitting directly beneath
+    `fte numeric(5,4) NOT NULL DEFAULT 1.0`, so the spec made two different choices
+    on two adjacent lines and this is the one it left to be authored;
+    SPEC-EMPLOYEES §442 lists it among the position's authored axes. There is also no
+    employer knob naming a full-time week, so a "40" here would be THIS FORM deciding
+    how long a working week is at somebody else's company — and 37.5 and 35 are both
+    ordinary. A wrong number costs leave silently; an absent one is refused loudly.
+
+    Required only where leave actually accrues. A contractor has no PTO (§4.7), so
+    demanding their standard week would be inventing a fact nobody needs.
+  */
+  const accruesLeave = !["contractor", "volunteer"].includes(form.worker_class);
+  const standardHours = form.standard_hours_per_week.trim();
+  if (accruesLeave && !standardHours) {
+    problems.push({
+      field: "standard_hours_per_week",
+      sentence:
+        "A standard week is needed — it is what a day of leave costs against.",
+    });
+  } else if (standardHours) {
+    const n = Number(standardHours);
+    if (!Number.isFinite(n) || n <= 0 || n > 168) {
+      problems.push({
+        field: "standard_hours_per_week",
+        sentence: "Standard hours must be more than 0 and no more than 168.",
+      });
+    }
+  }
+
   const fteNumber = Number(form.fte);
   if (!Number.isFinite(fteNumber) || fteNumber <= 0 || fteNumber > 2) {
     problems.push({
@@ -335,6 +371,9 @@ export function HrNewEmployee({
       pay_basis: form.pay_basis,
       schedule_class: form.schedule_class,
       fte: fteNumber,
+      standard_hours_per_week: form.standard_hours_per_week.trim()
+        ? Number(form.standard_hours_per_week)
+        : null,
       compensation_amount: form.compensation_amount || null,
       is_rehire: rehire !== null,
       ...(isContractor
@@ -826,6 +865,30 @@ export function HrNewEmployee({
                     onChange={(event) => set({ fte: event.target.value })}
                     className="h-11 lg:h-9"
                   />
+                </Field>
+
+                <Field
+                  label="Standard hours a week"
+                  error={problemFor(problems, "standard_hours_per_week")}
+                >
+                  <Input
+                    type="number"
+                    step="0.25"
+                    min="0.25"
+                    max="168"
+                    value={form.standard_hours_per_week}
+                    onChange={(event) =>
+                      set({ standard_hours_per_week: event.target.value })
+                    }
+                    placeholder={accruesLeave ? "e.g. 40" : "Optional"}
+                    className="h-11 lg:h-9"
+                  />
+                  {/* Said here, where the number is typed, not in a toast later. */}
+                  <p className="mt-1 text-[0.6875rem] text-muted-foreground">
+                    {accruesLeave
+                      ? "What a day of leave costs against. Yours to state — plenty of employers are 37.5 or 35, so nothing is assumed."
+                      : "Optional for this worker class — no leave accrues against it."}
+                  </p>
                 </Field>
               </Grid>
 

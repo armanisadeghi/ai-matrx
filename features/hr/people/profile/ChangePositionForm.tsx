@@ -93,6 +93,19 @@ export function ChangePositionForm({
     str(currentAssignment, "location_id") ?? "",
   );
   const [fte, setFte] = useState(String(currentAssignment?.fte ?? "1"));
+  /*
+    🚨 THE CORRECTION PATH FOR L5-A5. Existing assignments carry a NULL standard week,
+    which made a leave day cost zero hours. They are deliberately NOT backfilled: a
+    position row is effective-dated, so writing a number into a historical row would
+    assert that it was true on a date nobody checked. HR corrects them forward through
+    this form, which is what effective dating is for — and the empty box below is
+    honest about the row it is editing rather than pre-filling a guess.
+  */
+  const [standardHours, setStandardHours] = useState(
+    currentAssignment?.standard_hours_per_week != null
+      ? String(currentAssignment.standard_hours_per_week)
+      : "",
+  );
   const [flsaStatus, setFlsaStatus] = useState(
     str(currentAssignment, "flsa_status") ?? "",
   );
@@ -117,6 +130,14 @@ export function ChangePositionForm({
     chosenTitle.default_flsa_status !== flsaStatus;
 
   // ── Client mirrors of the server's validation. Speed, never authority. ──
+  const standardHoursTrimmed = standardHours.trim();
+  const standardHoursNumber = Number(standardHoursTrimmed);
+  const standardHoursInvalid =
+    standardHoursTrimmed !== "" &&
+    (!Number.isFinite(standardHoursNumber) ||
+      standardHoursNumber <= 0 ||
+      standardHoursNumber > 168);
+
   const fteNumber = Number(fte);
   const fteInvalid = !Number.isFinite(fteNumber) || fteNumber <= 0 || fteNumber > 2;
   const exemptWithoutBasis =
@@ -125,7 +146,11 @@ export function ChangePositionForm({
     nextLocation !== null && !nextLocation.jurisdiction_id;
 
   const blocked =
-    fteInvalid || exemptWithoutBasis || locationWithoutJurisdiction || !jobTitleId;
+    fteInvalid ||
+    standardHoursInvalid ||
+    exemptWithoutBasis ||
+    locationWithoutJurisdiction ||
+    !jobTitleId;
 
   const submit = async () => {
     setSubmitting(true);
@@ -138,6 +163,9 @@ export function ChangePositionForm({
       department_id: departmentId || null,
       location_id: locationId || null,
       fte: fteNumber,
+      standard_hours_per_week: standardHoursTrimmed
+        ? standardHoursNumber
+        : null,
       flsa_status: flsaStatus || null,
       flsa_exemption_basis: exemptionBasis || null,
       effective_from: dating.value.effectiveFrom,
@@ -246,6 +274,30 @@ export function ChangePositionForm({
               onChange={(event) => setFte(event.target.value)}
               className="h-11 sm:h-9"
             />
+          </Field>
+
+          <Field
+            label="Standard hours a week"
+            error={
+              standardHoursInvalid
+                ? "Standard hours must be more than 0 and no more than 168."
+                : null
+            }
+          >
+            <Input
+              type="number"
+              step="0.25"
+              min="0.25"
+              max="168"
+              value={standardHours}
+              onChange={(event) => setStandardHours(event.target.value)}
+              placeholder="e.g. 40"
+              className="h-11 sm:h-9"
+            />
+            <p className="mt-1 text-[0.6875rem] text-muted-foreground">
+              What a day of leave costs against. Empty on older assignments —
+              setting it here fixes it forward, from the date above.
+            </p>
           </Field>
 
           <Field label="FLSA status">

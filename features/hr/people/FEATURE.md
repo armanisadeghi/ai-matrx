@@ -75,6 +75,8 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
 
 ## Change Log
 
+- `2026-08-27` — Hire and effective-dated position-change forms now capture the authored
+  standard workweek used to price leave, without inventing a 40-hour default.
 - `2026-08-27` — A person's own profile exposes the server-governed directory privacy switch and
   refreshes from stored truth after each self-service write.
 - `2026-08-26` — Org-chart dotted-line and person doors retain 44px touch targets below desktop.
