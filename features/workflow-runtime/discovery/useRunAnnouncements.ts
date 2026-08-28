@@ -79,7 +79,22 @@ function closeChannel(): void {
 export function useRunAnnouncements(handlers: RunAnnouncementHandlers): void {
   const store = useAppStore();
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
-  const token = useAppSelector(selectAccessToken);
+  /**
+   * 🚨 **Whether there IS a token, never the token itself.**
+   *
+   * A dependency on the token STRING re-runs this effect on every refresh —
+   * and because the effect's cleanup drops the last subscriber, each re-run
+   * tore the shared channel down and reopened it, aborting the in-flight
+   * fetch. The stream never lived long enough to deliver a frame, so the
+   * lists looked static while the server was announcing correctly (measured:
+   * the endpoint delivered pending → running → interrupted, and not one frame
+   * reached the page).
+   *
+   * The boolean flips false → true exactly once, when the session hydrates;
+   * `getHeaders` below reads the CURRENT token from the store at connect time,
+   * so a refresh still reaches every reconnect without churning the socket.
+   */
+  const hasToken = Boolean(useAppSelector(selectAccessToken));
 
   // The handlers a frame is delivered to are read at delivery time, so a
   // consumer re-rendering with a new closure never churns the connection.
@@ -90,7 +105,7 @@ export function useRunAnnouncements(handlers: RunAnnouncementHandlers): void {
     // No origin, or not signed in yet: `/runs/stream` is user-scoped and
     // refuses an anonymous caller (401), so connecting before the session
     // hydrates would burn the retry budget on a guaranteed rejection.
-    if (!baseUrl || !token) return undefined;
+    if (!baseUrl || !hasToken) return undefined;
 
     const subscriber = held as Subscriber;
     subscribers.add(subscriber);
@@ -111,5 +126,5 @@ export function useRunAnnouncements(handlers: RunAnnouncementHandlers): void {
       subscribers.delete(subscriber);
       if (subscribers.size === 0) closeChannel();
     };
-  }, [baseUrl, token, store]);
+  }, [baseUrl, hasToken, store]);
 }

@@ -93,9 +93,6 @@ export function startAnnounceChannel(config: AnnounceChannelConfig): AnnounceCha
     }, STALL_TIMEOUT_MS);
   };
 
-  const isHidden = (): boolean =>
-    typeof document !== "undefined" && document.visibilityState === "hidden";
-
   const handleFrame = (_eventType: string, data: string): void => {
     if (stopped) return;
     let parsed: unknown;
@@ -121,15 +118,23 @@ export function startAnnounceChannel(config: AnnounceChannelConfig): AnnounceCha
     }, delay);
   };
 
+  /**
+   * 🚨 **A hidden tab still connects, unlike the per-run token stream.**
+   *
+   * `run-event-source.ts` refuses to open SSE while `document.hidden`, because
+   * a run's token stream is a firehose and browsers throttle background fetch
+   * streams hard. That rationale does not transfer here: this channel carries
+   * one small frame per status transition plus a ping every 15s, and an INBOX
+   * is precisely the thing a person leaves open in a background tab. Refusing
+   * to connect there would mean the tab you left open is the one that never
+   * tells you a run needs you — the exact failure this surface exists to end.
+   *
+   * (It also made the surface unverifiable: the agent browser harness reports
+   * `visibilityState: "hidden"` even for the fronted tab, so the guard blocked
+   * every connection during testing while the server was announcing correctly.)
+   */
   const connect = async (): Promise<void> => {
     if (stopped) return;
-    if (isHidden()) {
-      // Browsers throttle background fetch streams hard. Stay closed until the
-      // tab is looked at again; visibilitychange reconnects, and the refetch
-      // on "open" closes whatever hole the absence left.
-      setStatus("closed");
-      return;
-    }
     controller = new AbortController();
     armStall();
     try {
@@ -156,12 +161,21 @@ export function startAnnounceChannel(config: AnnounceChannelConfig): AnnounceCha
     }
   };
 
+  /**
+   * Coming back to the tab is the one moment a person is about to TRUST what
+   * this list says, so a connection that died while they were away is retried
+   * immediately rather than at the end of the backoff — and the `open` that
+   * follows makes every consumer refetch, closing the hole.
+   */
   const onVisibility = (): void => {
     if (stopped) return;
-    if (isHidden()) {
-      controller?.abort();
-    } else if (controller === null || controller.signal.aborted) {
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+    if (controller === null || controller.signal.aborted) {
       attempts = 0;
+      if (reconnectTimer !== null) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
       void connect();
     }
   };
