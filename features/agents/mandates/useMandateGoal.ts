@@ -29,49 +29,42 @@ export interface MandateGoalState {
   loaded: boolean;
 }
 
+/** What one settled lookup produced, stamped with the key it answers for. */
+interface GoalEntry {
+  key: string;
+  goal: string | null;
+  declaration: MandateCatalogueEntry | null;
+  error: string | null;
+}
+
 export function useMandateGoal(mandateKey: string | null): MandateGoalState {
   const dispatch = useAppDispatch();
-  const [state, setState] = useState<MandateGoalState>({
-    goal: null,
-    declaration: null,
-    loading: Boolean(mandateKey),
-    error: null,
-    loaded: false,
-  });
+  // ONE state slot, written only from async callbacks. Loading and the
+  // no-mandate case are DERIVED below rather than set synchronously in the
+  // effect (react-hooks/set-state-in-effect — cascading renders).
+  const [entry, setEntry] = useState<GoalEntry | null>(null);
 
   useEffect(() => {
-    if (!mandateKey) {
-      setState({
-        goal: null,
-        declaration: null,
-        loading: false,
-        error: null,
-        loaded: false,
-      });
-      return;
-    }
+    if (!mandateKey) return;
     let cancelled = false;
-    setState((s) => ({ ...s, loading: true }));
     fetchMandateCatalogue(dispatch)
       .then((catalogue) => {
         if (cancelled) return;
         const declaration = catalogue[mandateKey] ?? null;
-        setState({
+        setEntry({
+          key: mandateKey,
           goal: declaration?.goal?.trim() || null,
           declaration,
-          loading: false,
           error: null,
-          loaded: true,
         });
       })
       .catch((error: unknown) => {
         if (cancelled) return;
-        setState({
+        setEntry({
+          key: mandateKey,
           goal: null,
           declaration: null,
-          loading: false,
           error: error instanceof Error ? error.message : String(error),
-          loaded: false,
         });
       });
     return () => {
@@ -79,5 +72,16 @@ export function useMandateGoal(mandateKey: string | null): MandateGoalState {
     };
   }, [dispatch, mandateKey]);
 
-  return state;
+  // A settled entry counts only for the key it was fetched for — otherwise a
+  // drawer switching mandates would show the previous mandate's goal for a
+  // frame, which is worse than showing none.
+  const settled = mandateKey && entry?.key === mandateKey ? entry : null;
+
+  return {
+    goal: settled?.goal ?? null,
+    declaration: settled?.declaration ?? null,
+    loading: Boolean(mandateKey) && settled === null,
+    error: settled?.error ?? null,
+    loaded: settled !== null && settled.error === null,
+  };
 }
