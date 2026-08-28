@@ -335,6 +335,64 @@ async def main():
                 "select prosrc like '%''unreachable''%' and prosrc like '%resolved_user_ids%' "
                 "from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
                 "where n.nspname='hr' and p.proname='pay_period_get'"))
+        # ================= §7 `unreachable` MEANS THE ACTIVE STEP (hr_c4_46)
+        # 🚨 BOTH WAYS ON TWO LIVE ROWS THAT MUST DISAGREE — no fixture, because the database already
+        # holds the pair: one row whose ACTIVE step reaches nobody, and one whose ACTIVE step reaches
+        # a manager while a later step sits pending. hr_c4_44 called BOTH unreachable, because a
+        # `pending` step has zero resolved users by construction (approvers resolve at activation) —
+        # 3 of 3 pending steps database-wide. L3 stopped rather than ship a sentence for that.
+        rows = await conn.fetch(
+            "select ppe.id ppe, ppe.pay_period_id pp, "
+            "       bool_or(ws.state='active' and coalesce(cardinality(ws.resolved_user_ids),0)=0) has_unreachable_active, "
+            "       bool_or(ws.state='active' and coalesce(cardinality(ws.resolved_user_ids),0)>0) has_reachable_active, "
+            "       bool_or(ws.state='pending') has_pending "
+            "  from hr.pay_period_employment ppe "
+            "  join hr.workflow_binding b on b.target_id = ppe.id "
+            "  join hr.workflow_instance wi on wi.id = b.workflow_instance_id "
+            "  join hr.workflow_step ws on ws.workflow_instance_id = wi.id "
+            " group by ppe.id, ppe.pay_period_id")
+        # hr.pay_period_get reads auth.uid(); as_owner() clears the claims, so the door refuses and
+        # returns no workflow block at all. Read it as a real HR owner.
+        pp_owner = await conn.fetchval(
+            "select e.login_user_id from hr.role_assignment ra "
+            "join hr.employment em on em.id=ra.employment_id join hr.employee e on e.id=em.employee_id "
+            "where ra.role_key='hr_owner' and ra.is_active and e.login_user_id is not null limit 1")
+        await conn.execute("select set_config('request.jwt.claims',$1,true)",
+                           json.dumps({"sub": str(pp_owner), "role": "authenticated"}))
+        checked, wrong = 0, []
+        for row in rows:
+            env = json.loads(await conn.fetchval("select hr.pay_period_get($1)::text", row["pp"]))
+            body = (env.get("data") or env).get("workflow") or {}
+            mine = [x for x in (body.get("rows") or [])
+                    if str(x.get("pay_period_employment_id")) == str(row["ppe"])]
+            if not mine:
+                continue
+            checked += 1
+            got = mine[0].get("health")
+            want_unreachable = row["has_unreachable_active"]
+            if (got == "unreachable") != bool(want_unreachable):
+                wrong.append((str(row["ppe"]), got, bool(want_unreachable)))
+            # and the step is named exactly when the state is claimed
+            if (mine[0].get("unreachable_step_key") is not None) != (got == "unreachable"):
+                wrong.append((str(row["ppe"]), "step-key mismatch", mine[0].get("unreachable_step_key")))
+        rec("§7 unreachable",
+            "🚨 a row reads `unreachable` EXACTLY when its ACTIVE step reaches nobody — a queued "
+            "`pending` step has zero resolved users by construction and must never trigger it",
+            checked > 0 and not wrong, f"{checked} live rows checked; mismatches={wrong[:3]}")
+        await as_owner()
+        rec("§7 unreachable",
+            "🚨 and the payload NAMES the unreachable step — the state is a fact about the STEP's "
+            "assignee while the row is keyed by the SUBJECT, so without it the copy blames the wrong person",
+            await conn.fetchval(
+                "select prosrc like '%unreachable_step_key%' from pg_proc p join pg_namespace n "
+                "on n.oid=p.pronamespace where n.nspname='hr' and p.proname='pay_period_get'"))
+        rec("§7 unreachable", "and `pending` is gone from the classifier for good",
+            await conn.fetchval(
+                "select prosrc not like '%ws2.state in (''active'',''pending'')%' "
+                "and prosrc like '%ws2.state = ''active''%' "
+                "from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='hr' and p.proname='pay_period_get'"))
+
     except SystemExit:
         pass
     except Exception as exc:
