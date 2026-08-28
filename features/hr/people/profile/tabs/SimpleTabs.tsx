@@ -33,6 +33,8 @@ import { Button } from "@/components/ui/button";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { cn } from "@/lib/utils";
 
+import { EmployeeTimePanel } from "@/features/hr/time/people/EmployeeTimePanel";
+
 import { hrRelationsHref, type HrOrgRef } from "../../../routes";
 import type { HrEmployeeProfile } from "../../../types";
 
@@ -229,6 +231,39 @@ export function HostedTab({
 }) {
   const hosted = HOSTED[segment];
   if (!hosted) return null;
+
+  /*
+   * 🚨 THE TIME LANE HAS SHIPPED ITS PANEL, so `time` is no longer waiting on anybody. It mounts
+   * here on exactly the contract this file documents above: it receives the employment resolved as
+   * of today plus the viewer's capabilities, and it draws no identity header of its own.
+   *
+   * This slot mattered more than a placeholder: `hr_set_employment_pin` authorises "an HR writer OR
+   * the subject themselves", and only the self arm was mounted — behind a login. The staff a shared
+   * kiosk exists for have no login, so nobody could issue them a PIN and nobody could receive one.
+   * This tab is the HR arm.
+   */
+  if (segment === "time") {
+    return (
+      <TabShell title={hosted.title}>
+        <EmployeeTimePanel
+          employmentId={profile.header.employment_id}
+          displayName={profile.header.display_name}
+          capabilities={profile.capabilities}
+          isSelf={profile.viewer === "self"}
+          /*
+           * ABSENT (undefined) means this viewer was never allowed to ask — the key is omitted, not
+           * nulled. Passing `undefined` through preserves that distinction; `=== null` would turn
+           * "not permitted to know" into "has no login".
+           */
+          hasLogin={
+            profile.header.login_user_id === undefined
+              ? undefined
+              : profile.header.login_user_id !== null
+          }
+        />
+      </TabShell>
+    );
+  }
 
   return (
     <TabShell title={hosted.title}>

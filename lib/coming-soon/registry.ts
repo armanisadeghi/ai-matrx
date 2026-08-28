@@ -733,9 +733,9 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     owner: "hr",
     promise:
       "Their current timesheet, punches and published shifts, in the profile.",
-    stage: "planned",
+    stage: "building",
     blockedBy:
-      "Owned by the Time & Attendance and Scheduling lanes. The profile hosts the panel with employment_id and the viewer persona.",
+      "The Time lane's panel now MOUNTS on this tab and carries the HR arm of the kiosk PIN door — an HR writer can set or reset a PIN for someone with no login, which is the only way the kiosk's own population can ever receive one. Still owed on the same panel: this person's timesheet, punch history and published shifts.",
     surfaces: ["/hr/people/[employeeId]/time"],
   },
   "hr.people.tab-performance": {

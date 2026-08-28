@@ -5,10 +5,17 @@
  * can be paired, trusted and powered on, and still nobody can punch on it, because no employment has
  * a PIN and no surface existed to set one. This is that surface.
  *
- * 🚨 **WHY IT LIVES ON THE EMPLOYEE'S OWN CLOCK.** The function's authority check is
- * *"an HR writer **or the subject themselves**"* — self-service is sanctioned by the door itself,
- * and this is the one route an hourly employee already opens to deal with their own time. An admin
- * path over `/hr/people` is L1's surface, not this lane's; this is the half L3 owns.
+ * 🚨 **THE DOOR HAS TWO ARMS AND THIS COMPONENT SERVES BOTH.** `hr_set_employment_pin` authorises
+ * *"an HR writer **or the subject themselves**"*. For a long time only the self arm was mounted —
+ * on the employee's own clock, behind a login — which meant **the kiosk's own population could not
+ * be given a PIN by anybody**: the login-less staff a shared wall tablet exists for had no surface
+ * on either side of the door. The `hr` audience below is the missing arm, mounted on the employee
+ * profile's Time & schedule tab (SPEC-UI-IA §4.1 — a PIN belongs to a PERSON, and the devices page
+ * is device-scoped with no employee list by kiosk doctrine).
+ *
+ * One component, two audiences, deliberately: the masking, the never-held discipline, the
+ * type-it-twice rule and the refusal rendering are identical, and a second copy would drift on the
+ * half nobody is looking at.
  *
  * 🚨 **THE PIN CANNOT BE READ BACK, SO IT IS ENTERED TWICE.** The server stores a bcrypt hash,
  * returns `{granted, employment_pin_id, audit_id}`, and never echoes the value. A single-field form
@@ -45,7 +52,31 @@ function withoutKnobKey(sentence: string): string {
   return sentence.replace(/\s*\((?:hr|platform)\.[a-z0-9_.]+\)\s*$/i, "").trim();
 }
 
-export function SetKioskPinCard({ employmentId }: { employmentId: string }) {
+export interface SetKioskPinCardProps {
+  employmentId: string;
+  /**
+   * Which arm of the door this is. `self` is the employee setting their own; `hr` is a
+   * `working_record.write` holder setting or resetting somebody else's. The server enforces both —
+   * this only decides the wording, so a mis-set prop cannot grant anything.
+   */
+  audience?: "self" | "hr";
+  /** Whose PIN, on the `hr` arm. Named so an administrator cannot set the wrong person's. */
+  subjectName?: string | null;
+  /**
+   * Whether this person has a platform login. `undefined` means the viewer was never allowed to
+   * ask (the profile omits the key rather than nulling it), so the card says nothing about it
+   * instead of guessing.
+   */
+  hasLogin?: boolean;
+}
+
+export function SetKioskPinCard({
+  employmentId,
+  audience = "self",
+  subjectName,
+  hasLogin,
+}: SetKioskPinCardProps) {
+  const hr = audience === "hr";
   const [open, setOpen] = useState(false);
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
@@ -75,7 +106,7 @@ export function SetKioskPinCard({ employmentId }: { employmentId: string }) {
       setPin("");
       setConfirmPin("");
       setOpen(false);
-      toast.success("Your kiosk PIN is set");
+      toast.success(hr ? `Time clock PIN set for ${subjectName ?? "this employee"}` : "Your kiosk PIN is set");
     } catch (cause: unknown) {
       setRefusal(
         cause instanceof Error && cause.message.trim()
@@ -96,7 +127,7 @@ export function SetKioskPinCard({ employmentId }: { employmentId: string }) {
         className="min-h-[48px] w-full gap-2"
       >
         <KeyRound className="size-4" />
-        Set my time clock PIN
+        {hr ? "Set or reset this person's time clock PIN" : "Set my time clock PIN"}
       </Button>
     );
   }
@@ -104,16 +135,39 @@ export function SetKioskPinCard({ employmentId }: { employmentId: string }) {
   return (
     <section className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5">
       <div className="flex flex-col gap-1">
-        <h2 className="text-base font-semibold text-foreground">Your time clock PIN</h2>
-        <p className="text-sm text-muted-foreground">
-          This is what you type on a shared time clock tablet, along with your employee number. Only
-          you know it — nobody can look it up, so choose something you will remember.
-        </p>
+        <h2 className="text-base font-semibold text-foreground">
+          {hr
+            ? `Time clock PIN${subjectName ? ` for ${subjectName}` : ""}`
+            : "Your time clock PIN"}
+        </h2>
+        {hr ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              {/*
+                Said plainly, because this arm exists for a population that cannot use the other
+                one: staff who have no platform login and therefore no clock surface of their own.
+              */}
+              Set or reset the kiosk PIN for someone without a login. They type it on a shared
+              tablet along with their employee number.
+            </p>
+            {hasLogin === true && (
+              <p className="text-sm text-muted-foreground">
+                This person has a login and can set their own PIN from their time clock. Setting one
+                here replaces it, and they are not told what it is.
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            This is what you type on a shared time clock tablet, along with your employee number.
+            Only you know it — nobody can look it up, so choose something you will remember.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-2">
         <label htmlFor="hr-kiosk-pin" className="text-sm font-medium text-foreground">
-          New PIN
+          {hr ? "New PIN for this person" : "New PIN"}
         </label>
         <Input
           id="hr-kiosk-pin"
@@ -149,6 +203,17 @@ export function SetKioskPinCard({ employmentId }: { employmentId: string }) {
         )}
       </div>
 
+      {hr && (
+        /*
+          🚨 The PIN is stored as a bcrypt hash and is never returned. An administrator who sets one
+          and does not hand it over has locked the person out, and nothing in the product can
+          recover it — only another reset. Saying so here is cheaper than the support call.
+        */
+        <p className="text-sm text-muted-foreground">
+          Write this down before you save it. It cannot be read back afterwards — only replaced.
+        </p>
+      )}
+
       {refusal && <p className="text-sm text-foreground">{refusal}</p>}
 
       <div className="flex flex-col gap-2">
@@ -159,7 +224,7 @@ export function SetKioskPinCard({ employmentId }: { employmentId: string }) {
           className="min-h-[52px] gap-2 text-base"
         >
           {busy && <Loader2 className="size-4 animate-spin" />}
-          Save my PIN
+          {hr ? "Save this PIN" : "Save my PIN"}
         </Button>
         <Button
           type="button"
