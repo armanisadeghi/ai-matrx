@@ -24,6 +24,9 @@ export default function ProgressArtifact({
   taskId,
   artifactId,
   isStreamActive,
+  conversationId,
+  messageId,
+  blockIndex,
 }: ArtifactRendererProps) {
   const { state, loaded, save } = useArtifactState<
     ProgressTrackerState & Record<string, unknown>
@@ -55,6 +58,10 @@ export default function ProgressArtifact({
       <ProgressTrackerBlock
         tracker={tracker}
         taskId={artifactDedupKey(taskId, artifactId)}
+        artifactId={artifactId}
+        conversationId={conversationId}
+        messageId={messageId}
+        blockIndex={blockIndex}
         initialState={state ?? undefined}
         onStateChange={save as (state: ProgressTrackerState) => void}
       />

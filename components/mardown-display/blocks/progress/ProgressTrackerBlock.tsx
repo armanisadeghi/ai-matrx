@@ -43,6 +43,9 @@ import {
   Printer,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import ImportTasksModal from "@/features/tasks/components/ImportTasksModal";
 import { convertProgressToTasks } from "@/features/tasks/utils/importConverters";
 
@@ -56,6 +59,10 @@ export interface ProgressTrackerState {
 interface ProgressTrackerBlockProps {
   tracker: ProgressTrackerData;
   taskId?: string; // Task ID for canvas deduplication
+  artifactId?: string;
+  conversationId?: string;
+  messageId?: string;
+  blockIndex?: number;
   /** Seed the completed-steps set from persisted state (optional). */
   initialState?: ProgressTrackerState;
   /** Called whenever the user changes interaction state (optional). */
@@ -65,6 +72,10 @@ interface ProgressTrackerBlockProps {
 const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
   tracker,
   taskId,
+  artifactId,
+  conversationId,
+  messageId,
+  blockIndex,
   initialState,
   onStateChange,
 }) => {
@@ -90,6 +101,33 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
   }, [tracker.title, isPrinting]);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const { open: openCanvas } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
+
+  const handleOpenCanvas = () => {
+    const def = getArtifactDef("progress");
+
+    if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+      void openArtifact({
+        canvasType: "progress",
+        title: tracker.title,
+        content: tracker.rawContent || JSON.stringify(tracker),
+        conversationId,
+        messageId,
+        artifactId,
+        artifactIndex: blockIndex && blockIndex > 0 ? blockIndex : 1,
+      });
+      return;
+    }
+
+    openCanvas({
+      type: "progress",
+      data: tracker,
+      metadata: {
+        title: tracker.title,
+        sourceTaskId: taskId,
+      },
+    });
+  };
 
   // Initialize completed_items from persisted state when available, otherwise from tracker data.
   const [completed_items, setCompletedItems] = useState<Set<string>>(() => {
@@ -387,16 +425,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                         <span>Import to Tasks</span>
                       </button>
                       <button
-                        onClick={() =>
-                          openCanvas({
-                            type: "progress",
-                            data: tracker,
-                            metadata: {
-                              title: tracker.title,
-                              sourceTaskId: taskId,
-                            },
-                          })
-                        }
+                        onClick={handleOpenCanvas}
                         className="flex steps-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all"
                       >
                         <ExternalLink className="h-4 w-4" />
