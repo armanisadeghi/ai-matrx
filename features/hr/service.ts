@@ -54,6 +54,28 @@ import type { HrDirectorySort } from "./constants";
 const PG_INSUFFICIENT_PRIVILEGE = "42501";
 
 /**
+ * 🚨 A CONSTRAINT VIOLATION IS BREAKAGE, AND THE USER MUST NOT READ SQL ABOUT IT.
+ *
+ * These are the integrity classes: the database refusing a row the FORM should have
+ * refused at the keyboard. When one arrives, the honest thing to say is that this
+ * surface let something through that it should have caught — not
+ * `null value in column "job_title_id" of relation "position_assignment" violates
+ * not-null constraint`, which is what a person hiring their first employee actually
+ * saw (round 22).
+ *
+ * The raw text is not discarded; it goes to the console and the error capture, where
+ * whoever has to fix the missing validation will look. §4.1: a refusal renders in
+ * words. A CRASH renders in words too — different words, and never the DB's.
+ */
+const PG_INTEGRITY_CLASSES: Record<string, string> = {
+  "23502": "a required field was left empty",
+  "23503": "something it points at does not exist",
+  "23505": "a record like this already exists",
+  "23514": "a value outside what this field allows",
+  "22P02": "a value in the wrong format",
+};
+
+/**
  * HR is authenticated-only. The server-rendered Redux identity can briefly be
  * newer than the browser's Supabase session (most often after a session expires
  * in another tab), so it is not sufficient proof that an RPC will carry a JWT.
@@ -180,6 +202,22 @@ async function callHrRaw(
       // the surface renders the picker or the nearest legitimate place.
       return denied("no_standing", error.message ?? null);
     }
+    const integrity = error.code ? PG_INTEGRITY_CLASSES[error.code] : undefined;
+    if (integrity) {
+      // Findable by whoever must add the missing validation; invisible to the person
+      // who merely tried to do their job.
+      console.error(
+        `[hr] ${fn} rejected by a database constraint (${error.code}) — the surface should have caught this first:`,
+        error.message,
+      );
+      return failed(
+        `${options.whatFailed} could not be saved because of ${integrity}. ` +
+          "This screen should have caught that before asking the server, so it is a " +
+          "defect in the form rather than something you did — the details are in the log.",
+        error.code ?? null,
+      );
+    }
+
     return failed(
       `${options.whatFailed} could not be loaded. ${
         error.message?.trim() || "The database did not say why."
