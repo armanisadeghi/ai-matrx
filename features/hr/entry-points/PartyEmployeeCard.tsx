@@ -34,6 +34,12 @@ import { formatHrDay as formatDay } from "@/features/hr/people/shared/HrStatusCh
 type PartyEmployee = {
   employee_id: string | null;
   display_name: string | null;
+  /**
+   * Directory tier — the same identifier the directory card and the profile header
+   * already show. Added to the door by `hr_l1_24`, because a CRM surface must never
+   * query HR itself to fill a gap in what this door sends.
+   */
+  employee_number: string | null;
   directory_status: string | null;
   job_title: string | null;
   department: string | null;
@@ -90,9 +96,21 @@ export function PartyEmployeeCard({
   return (
     <Card className="p-4">
       <div className="flex items-start justify-between gap-3">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-          <IdCard className="h-3.5 w-3.5 text-muted-foreground" />
-          Employee
+        <h3 className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-foreground">
+          <IdCard className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <span>Employee</span>
+          {/*
+            🚨 THE NUMBER IS THE POINT OF THE PANEL FOR THE PERSON READING IT.
+            A CRM record and an employee record must never look like two unrelated
+            search results for the same person (SPEC-UI-IA §6), and the employee
+            number is what somebody actually reads back on the phone to prove the
+            two are one person. It renders only when the door sent it.
+          */}
+          {row.employee_number ? (
+            <span className="truncate font-mono text-[0.6875rem] font-normal text-muted-foreground">
+              {row.employee_number}
+            </span>
+          ) : null}
         </h3>
         {row.directory_status ? (
           <Badge variant="outline" className="text-xs">
