@@ -24,6 +24,9 @@ export default function TroubleshootingArtifact({
   taskId,
   artifactId,
   isStreamActive,
+  conversationId,
+  messageId,
+  blockIndex,
 }: ArtifactRendererProps) {
   const { state, loaded, save } = useArtifactState<
     TroubleshootingState & Record<string, unknown>
@@ -55,6 +58,10 @@ export default function TroubleshootingArtifact({
       <TroubleshootingBlock
         troubleshooting={troubleshooting}
         taskId={artifactDedupKey(taskId, artifactId)}
+        artifactId={artifactId}
+        conversationId={conversationId}
+        messageId={messageId}
+        blockIndex={blockIndex}
         initialState={state ?? undefined}
         onStateChange={save as (state: TroubleshootingState) => void}
       />

@@ -38,6 +38,9 @@ import {
   Printer,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import ImportTasksModal from "@/features/tasks/components/ImportTasksModal";
 import { convertTroubleshootingToTasks } from "@/features/tasks/utils/importConverters";
 
@@ -56,6 +59,10 @@ export interface TroubleshootingState {
 interface TroubleshootingBlockProps {
   troubleshooting: TroubleshootingData;
   taskId?: string; // Task ID for canvas deduplication
+  artifactId?: string;
+  conversationId?: string;
+  messageId?: string;
+  blockIndex?: number;
   /** Seed interaction state from persisted storage (optional). */
   initialState?: TroubleshootingState;
   /** Called whenever the user changes interaction state (optional). */
@@ -65,6 +72,10 @@ interface TroubleshootingBlockProps {
 const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
   troubleshooting,
   taskId,
+  artifactId,
+  conversationId,
+  messageId,
+  blockIndex,
   initialState,
   onStateChange,
 }) => {
@@ -104,6 +115,33 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
     () => initialState ? new Set(initialState.completedSteps) : new Set(),
   );
   const { open: openCanvas } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
+
+  const handleOpenCanvas = () => {
+    const def = getArtifactDef("troubleshooting");
+
+    if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+      void openArtifact({
+        canvasType: "troubleshooting",
+        title: troubleshooting.title,
+        content: JSON.stringify(troubleshooting),
+        conversationId,
+        messageId,
+        artifactId,
+        artifactIndex: blockIndex && blockIndex > 0 ? blockIndex : 1,
+      });
+      return;
+    }
+
+    openCanvas({
+      type: "troubleshooting",
+      data: troubleshooting,
+      metadata: {
+        title: troubleshooting.title,
+        sourceTaskId: taskId,
+      },
+    });
+  };
 
   // Keep a stable ref to onStateChange so closures don't go stale.
   const onStateChangeRef = useRef(onStateChange);
@@ -374,16 +412,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
                         <span>Import to Tasks</span>
                       </button>
                       <button
-                        onClick={() =>
-                          openCanvas({
-                            type: "troubleshooting",
-                            data: troubleshooting,
-                            metadata: {
-                              title: troubleshooting.title,
-                              sourceTaskId: taskId,
-                            },
-                          })
-                        }
+                        onClick={handleOpenCanvas}
                         className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all"
                       >
                         <ExternalLink className="h-4 w-4" />
