@@ -613,6 +613,25 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
     ],
   },
   {
+    name: "Preview",
+    slug: "preview",
+    iconName: "PanelsTopLeft",
+    iconColor: "text-fuchsia-600",
+    sections: [
+      {
+        name: "Unified Management",
+        iconName: "PanelsTopLeft",
+        destinations: [
+          destination("/administration/preview/unified-management", [
+            "/administration/preview/unified-management/batch",
+            "/administration/preview/unified-management/jobs",
+            "/administration/preview/unified-management/places",
+          ]),
+        ],
+      },
+    ],
+  },
+  {
     name: "Reporting",
     slug: "reporting",
     iconName: "ChartNoAxesCombined",

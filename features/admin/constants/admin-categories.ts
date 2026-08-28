@@ -1323,6 +1323,21 @@ export const adminCategoriesData: AdminCategory[] = [
     ],
   },
   {
+    name: "Previews",
+    iconName: "PanelsTopLeft",
+    iconColor: "text-fuchsia-600",
+    features: [
+      {
+        title: "Unified Management Preview",
+        description:
+          "Non-functional preview of the job, place, and batch management workspaces.",
+        iconName: "PanelsTopLeft",
+        link: "/administration/preview/unified-management",
+        isNew: true,
+      },
+    ],
+  },
+  {
     name: "Extras",
     iconName: "Wrench",
     iconColor: "text-green-600",
