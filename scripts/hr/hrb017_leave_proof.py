@@ -386,6 +386,17 @@ async def main() -> None:  # noqa: C901
         cc = sub.get("conflict_check") or {}
         check("validation was frozen onto the request", bool(cc.get("evaluated_at")), str(cc)[:200])
         check("the request costs real hours, not zero", float(sub.get("requested_hours") or 0) > 0, str(sub.get("requested_hours")))
+        # 🚨 hr_l5_28: hr.wf_request ALREADY submits and routes, so this door calls it once and
+        # uses what it returned. It used to call hr.wf_submit again, which always landed on a
+        # non-draft and always refused — surfacing as a nested WF_STEP_CLOSED that read like an
+        # engine fault on every single successful request.
+        check("the workflow envelope carries NO nested refusal",
+              isinstance(sub.get("workflow"), dict)
+              and sub["workflow"].get("granted") is True
+              and sub["workflow"].get("reason") is None,
+              str(sub.get("workflow"))[:300])
+        check("and specifically not WF_STEP_CLOSED",
+              "WF_STEP_CLOSED" not in json.dumps(sub), json.dumps(sub)[:250])
 
         state = await conn.fetchrow(
             "select state, state_reason, current_step_order, payload from hr.workflow_instance where id=$1::uuid",
