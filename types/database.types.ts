@@ -62156,6 +62156,10 @@ export type Database = {
         Returns: Json
       }
       hr_wf_instance: { Args: { p_instance_id: string }; Returns: Json }
+      hr_wf_publish_definition: {
+        Args: { p_definition_id: string }
+        Returns: Json
+      }
       hr_wf_reassign_step: {
         Args: {
           p_reason?: string
