@@ -167,6 +167,8 @@ before changing them.
 
 ## Change Log
 
+- `2026-08-27` — **The `/lists/v3` sidebar now exposes the same universal list-row menu on touch.** Every picklist row is the `structured_list` entity context and carries a visible 44px Actions control at tablet/mobile widths; it opens the canonical v3 menu/sheet without replacing the existing select, quick-look, or open-in-new-tab doors.
+- `2026-08-27` — **The deterministic review list is ownership-safe for both authorized admin identities.** The original `Countries by Continent` fixture remains at `/lists/9f9241bc-7046-479a-a883-2133ef03cba8` for `admin@admin.com`; the in-app Browser admin identity owns an idempotent clone at `/lists/3c5a879d-69b0-7d36-827a-c49760e4ff98`. Both contain the same 15 grouped items, including `Africa`, so `/lists/v3` search and list-specific owner actions can be verified without widening RLS or transferring the original fixture.
 - `2026-08-26` — **List/group actions are discoverable on touch.** Canonical `/lists` cards, `/lists/[id]` group headings, and the tree-layout nodes expose a visible 44px overflow control at tablet/mobile widths. Each dispatches into its existing universal v3 context-menu scope, so Copy, Agents, Quick Actions, and list-specific actions stay one implementation rather than drifting into a second mobile menu. Deterministic review target: `/lists/9f9241bc-7046-479a-a883-2133ef03cba8` (`Countries by Continent`, including the `Africa` group).
 - `2026-08-22` — claude: **surface-check `matrx-user/lists` — pass-with-arman-items
   (checklist v1, 4 fixes).** S2: five values added

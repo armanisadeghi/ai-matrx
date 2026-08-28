@@ -27,4 +27,33 @@ describe("Code library tree responsive context-menu contract", () => {
       "aria-label={`Actions for ${adapter.label}`}",
     );
   });
+
+  it("keeps the persisted file and folder menus operationally complete", () => {
+    const treeNode = source("LibraryTreeNode.tsx");
+    for (const actionId of [
+      "library-file-open",
+      "library-file-properties",
+      "library-file-rename",
+      "library-file-delete",
+      "library-file-copy-path",
+      "library-file-refresh",
+      "library-folder-new-file",
+      "library-folder-new-folder",
+      "library-folder-properties",
+      "library-folder-rename",
+      "library-folder-delete",
+      "library-folder-copy-path",
+      "library-folder-refresh",
+    ]) {
+      expect(treeNode).toContain(`id: "${actionId}"`);
+    }
+  });
+
+  it("keeps the tablet explorer at or above the twelve-rem floor", () => {
+    const layout = fs.readFileSync(
+      path.join(__dirname, "../../layout/WorkspaceLayout.tsx"),
+      "utf8",
+    );
+    expect(layout).toContain('minSize="calc(12rem + 1px)"');
+  });
 });

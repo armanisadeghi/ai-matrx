@@ -75,6 +75,7 @@ import {
   TreePine,
   Sun,
   Moon,
+  MoreHorizontal,
   Cloud,
   MapPin,
   Plane,
@@ -144,6 +145,8 @@ import { cn } from "@/lib/utils";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { idMatchesQuery } from "@/utils/search-scoring";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";
 
 // ---------- Types ----------
 
@@ -801,38 +804,66 @@ export function StructuredListManagerV3({ supabase, userId }: PicklistManagerPro
               // quick look + open `/lists/<id>` in a new tab, resolved from the
               // registry, so a user mid-edit never has to trade this pane for
               // the answer to "which list is that?".
-              <div
+              <NonEditableContextMenu
                 key={l.id}
-                className={cn(
-                  "group/entity-ref mb-px flex items-center gap-0.5 rounded-md pr-1 transition-colors",
-                  isActive
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-accent/50",
-                )}
+                sourceFeature="udt"
+                contextData={{
+                  content: [l.list_name, l.description].filter(Boolean).join("\n"),
+                }}
+                entity={{
+                  type: "structured_list",
+                  id: l.id,
+                  title: l.list_name || "Untitled list",
+                  resourceType: "structured_list",
+                }}
+                enableFloatingIcon={false}
               >
-                <button
-                  onClick={() => setActiveId(l.id)}
-                  className="flex min-w-0 flex-1 flex-col items-start gap-0.5 px-2 py-1.5 text-left"
+                <div
+                  className={cn(
+                    "group/entity-ref mb-px flex items-center gap-0.5 rounded-md pr-1 transition-colors",
+                    isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent/50",
+                  )}
                 >
-                  <span className="line-clamp-1 w-full text-sm leading-tight">
-                    {l.list_name || (
-                      <span className="italic text-muted-foreground">
-                        Untitled list
+                  <button
+                    onClick={() => setActiveId(l.id)}
+                    className="flex min-w-0 flex-1 flex-col items-start gap-0.5 px-2 py-1.5 text-left"
+                  >
+                    <span className="line-clamp-1 w-full text-sm leading-tight">
+                      {l.list_name || (
+                        <span className="italic text-muted-foreground">
+                          Untitled list
+                        </span>
+                      )}
+                    </span>
+                    {itemCount !== null && (
+                      <span className="text-[11px] text-muted-foreground">
+                        {itemCount} item{itemCount === 1 ? "" : "s"}
                       </span>
                     )}
-                  </span>
-                  {itemCount !== null && (
-                    <span className="text-[11px] text-muted-foreground">
-                      {itemCount} item{itemCount === 1 ? "" : "s"}
-                    </span>
-                  )}
-                </button>
-                <EntityDoorControls
-                  token="structured_list"
-                  id={l.id}
-                  name={l.list_name || "Untitled list"}
-                />
-              </div>
+                  </button>
+                  <EntityDoorControls
+                    token="structured_list"
+                    id={l.id}
+                    name={l.list_name || "Untitled list"}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+                    aria-label={`Actions for ${l.list_name || "Untitled list"}`}
+                    aria-haspopup="menu"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openContextMenuForElement(event.currentTarget.parentElement);
+                    }}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </div>
+              </NonEditableContextMenu>
             );
           })
         )}
