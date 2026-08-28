@@ -108,6 +108,23 @@ function renderValue(value: Json | null): string | null {
   return JSON.stringify(value);
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isJson(value: unknown): value is Json {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return true;
+  }
+  if (Array.isArray(value)) return value.every(isJson);
+  return isRecord(value) && Object.values(value).every(isJson);
+}
+
 // Route a raw string into the jsonb value column per value_type. Returns
 // [value, null] on success or [null, errorMessage].
 function coerceToJson(
@@ -164,22 +181,17 @@ async function buildPreview(
   if (error)
     return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const variables =
-    data && typeof data === "object" && !Array.isArray(data)
-      ? (((data as Record<string, unknown>).variables as Record<
-          string,
-          unknown
-        >) ?? {})
-      : {};
+  const variablesValue = isRecord(data) ? data.variables : null;
+  const variables = isRecord(variablesValue) ? variablesValue : {};
   const entries: ResolvedPreviewEntry[] = Object.entries(variables)
     .map(([key, v]) => {
-      const o = (v ?? {}) as Record<string, unknown>;
+      const o = isRecord(v) ? v : {};
       return {
         key,
         type: typeof o.type === "string" ? o.type : "string",
         source: typeof o.source === "string" ? o.source : "system",
         description: typeof o.description === "string" ? o.description : null,
-        value: (o.value ?? null) as Json,
+        value: isJson(o.value) ? o.value : null,
       };
     })
     // Only the global (system-sourced) entries every user receives.
@@ -352,12 +364,13 @@ async function createItem(admin: AdminClient, body: CreateItemBody) {
     .insert({
       key,
       display_name: displayName,
-      description: body.description?.trim() || "",
+      description:
+        typeof body.description === "string" ? body.description.trim() : "",
       item_class: itemClass,
       value_type: body.value_type,
       value,
       feed_type: feedType,
-      feed_config: body.feed_config ?? {},
+      feed_config: body.feed_config === undefined ? {} : body.feed_config,
       // A non-manual feed hasn't run yet; mark it pending so the UI tells the
       // truth (the executor populates the value later).
       feed_status: feedType === "manual" ? null : "pending",
@@ -387,6 +400,9 @@ async function setValue(admin: AdminClient, body: SetValueBody) {
   if (!body?.itemId) {
     return NextResponse.json({ error: "itemId is required" }, { status: 400 });
   }
+  if (typeof body.value !== "string") {
+    return NextResponse.json({ error: "value is required" }, { status: 400 });
+  }
 
   const { data: item, error: itemErr } = await systemTable(admin)
     .select("id, key, item_class, value_type")
@@ -406,7 +422,7 @@ async function setValue(admin: AdminClient, body: SetValueBody) {
     );
   }
 
-  const [value, valErr] = coerceToJson(item.value_type, body.value ?? "");
+  const [value, valErr] = coerceToJson(item.value_type, body.value);
   if (valErr) return NextResponse.json({ error: valErr }, { status: 400 });
 
   const { error } = await systemTable(admin)
