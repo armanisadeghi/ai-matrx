@@ -55,8 +55,3 @@ values ('crm', 'ensure_user_party', 'hr_l1_42_register_the_hr_source.sql',
         || 'removing it returns that path to raising 100% of the time, and passing ''backfill'' '
         || 'instead would write a false provenance to make the call succeed.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_42_register_the_hr_source.sql',
-        md5('hr_l1_42_register_the_hr_source'), now(), 0)
-on conflict do nothing;

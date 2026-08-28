@@ -53,8 +53,3 @@ values ('public', 'hr_employee_create', 'hr_l1_43_a_position_needs_a_department.
         'Both NOT NULL position columns are validated BY NAME before the insert, and the crm '
         || 'source string stays ''hr.employee_create'' — see the crm.ensure_user_party row.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_43_a_position_needs_a_department.sql',
-        md5('hr_l1_43_a_position_needs_a_department'), now(), 0)
-on conflict do nothing;
