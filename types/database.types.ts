@@ -43176,6 +43176,7 @@ export type Database = {
         }
         Returns: string[]
       }
+      _strip_sql_comments: { Args: { p_src: string }; Returns: string }
       _subject_display_name: {
         Args: { p_employment_id: string; p_uid: string }
         Returns: string

@@ -231,8 +231,6 @@ export interface NodeEmittedEvent {
   run_id: string;
   step: number;
   node_id: string;
-  dispatch_id?: string;
-  item_index?: number;
   attempt: number;
   mode: "confirmation" | "summary" | "full" | "restructured";
   payload: Record<string, unknown>;
@@ -359,8 +357,6 @@ export interface NodeStreamEvent {
   event: "node_stream";
   run_id: string;
   node_id: string | null;
-  dispatch_id?: string;
-  item_index?: number;
   kind: "chunk" | "reasoning" | "phase" | "tool" | "warning" | "record_update" | "resource_changed" | "render_block";
   delta: string;
   stream_seq: number;
