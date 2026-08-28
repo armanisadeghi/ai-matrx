@@ -222,7 +222,11 @@ const Slideshow = (
                 <DropdownMenuContent align="end" className="max-h-80 w-56 overflow-y-auto">
                   <DropdownMenuLabel className="text-xs">Template</DropdownMenuLabel>
                   {PRESET_LIST.map((p) => (
-                    <DropdownMenuItem key={p.key} onClick={() => setPickedPreset(p.key)} className="gap-2">
+                    <DropdownMenuItem
+                      key={p.key}
+                      onClick={() => setPickedPreset(p.key)}
+                      className="min-h-11 gap-2 sm:min-h-0"
+                    >
                       <span
                         className="h-4 w-4 shrink-0 rounded-full"
                         style={{ background: `linear-gradient(135deg, ${p.primaryColor}, ${p.accentColor})` }}
