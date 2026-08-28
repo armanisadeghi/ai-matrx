@@ -42836,6 +42836,7 @@ export type Database = {
         Args: { p_class: string; p_policy: Json }
         Returns: Json
       }
+      _leave_hours_text: { Args: { p_hours: number }; Returns: string }
       _leave_jurisdiction_key_or_federal: {
         Args: { p_employment_id: string }
         Returns: string
@@ -43814,6 +43815,13 @@ export type Database = {
         }
         Returns: Json
       }
+      leave_hours_format_debt: {
+        Args: never
+        Returns: {
+          fn: string
+          raw_uses: number
+        }[]
+      }
       leave_ledger_post: {
         Args: {
           p_actor_employment_id?: string
@@ -43848,6 +43856,15 @@ export type Database = {
           p_leave_policy_id: string
         }
         Returns: Json
+      }
+      leave_notification_gap: {
+        Args: never
+        Returns: {
+          consequence: string
+          declared_in: string
+          event_key: string
+          exists_live: boolean
+        }[]
       }
       leave_policy_list: { Args: { p_organization_id: string }; Returns: Json }
       leave_policy_save: {
@@ -43901,6 +43918,17 @@ export type Database = {
           p_starts_on: string
         }
         Returns: Json
+      }
+      leave_requests_without_an_approver: {
+        Args: never
+        Returns: {
+          employment_id: string
+          has_manager: boolean
+          leave_request_id: string
+          organization_id: string
+          shape: string
+          subject: string
+        }[]
       }
       leave_span_hours: {
         Args: {
