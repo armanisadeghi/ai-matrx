@@ -426,7 +426,7 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
                             onClick={() => adjustServings(false)}
                             disabled={servingMultiplier <= 0.5}
                             aria-label="Decrease servings"
-                            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-purple-500 text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-purple-600 dark:hover:bg-purple-700 sm:h-6 sm:w-6"
                           >
                             <Minus className="h-3 w-3" />
                           </button>
@@ -438,7 +438,7 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
                             onClick={() => adjustServings(true)}
                             disabled={servingMultiplier >= 5}
                             aria-label="Increase servings"
-                            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                            className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-purple-500 text-white transition-colors hover:bg-purple-600 disabled:cursor-not-allowed disabled:opacity-40 dark:bg-purple-600 dark:hover:bg-purple-700 sm:h-6 sm:w-6"
                           >
                             <Plus className="h-3 w-3" />
                           </button>

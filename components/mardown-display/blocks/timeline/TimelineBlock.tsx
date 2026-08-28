@@ -250,7 +250,7 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="flex-1 sm:flex-none px-2 py-1.5 rounded-md border border-border bg-background text-foreground text-xs min-w-0 max-w-[10rem]"
+            className="min-h-11 min-w-0 max-w-[10rem] flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-base text-foreground sm:min-h-0 sm:flex-none sm:text-xs"
             aria-label="Filter by category"
           >
             {categories.map((cat) => (
@@ -264,7 +264,8 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
         {completedCount > 0 && (
           <button
             onClick={resetProgress}
-            className="flex items-center gap-1 px-2 py-1.5 rounded-md border border-border bg-background hover:bg-muted text-foreground text-xs font-medium transition-colors"
+            aria-label="Reset timeline progress"
+            className="flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-md border border-border bg-background px-2 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted sm:min-h-0 sm:min-w-0"
           >
             <RotateCcw className="h-3 w-3" />
             <span className="hidden sm:inline">Reset</span>
@@ -346,7 +347,7 @@ const TimelineBlock: React.FC<TimelineBlockProps> = ({
                   <button
                     type="button"
                     onClick={() => togglePeriodCollapse(period.period)}
-                    className={`inline-flex max-w-full items-center gap-1.5 px-2.5 py-1.5 rounded-full shadow-sm transition-all hover:shadow-md min-w-0 ${
+                    className={`inline-flex min-h-11 max-w-full min-w-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 shadow-sm transition-all hover:shadow-md sm:min-h-0 ${
                       isCompleted
                         ? "bg-green-500 dark:bg-green-600 text-white"
                         : "bg-indigo-500 dark:bg-indigo-600 text-white"

@@ -97,7 +97,7 @@ const STAT_ITEMS = [
 ] as const;
 
 const navBtnClass =
-  "inline-flex items-center justify-center gap-1 p-1.5 md:px-2 md:py-1.5 rounded-md text-xs font-medium border transition-colors";
+  "inline-flex h-11 w-11 items-center justify-center gap-1 rounded-md border p-1.5 text-xs font-medium transition-colors md:h-auto md:w-auto md:px-2 md:py-1.5";
 
 const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
   decisionTree,
@@ -641,6 +641,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                     type="button"
                     onClick={goToRoot}
                     title="Start Over"
+                    aria-label="Start over"
                     className={`${navBtnClass} bg-background/60 hover:bg-background text-foreground border-border`}
                   >
                     <Home className="h-3.5 w-3.5 flex-shrink-0" />
@@ -652,6 +653,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                     onClick={goBack}
                     disabled={navigationHistory.length === 0}
                     title="Back"
+                    aria-label="Go back"
                     className={`${navBtnClass} bg-background/60 hover:bg-background disabled:opacity-50 disabled:cursor-not-allowed text-foreground border-border`}
                   >
                     <ArrowLeft className="h-3.5 w-3.5 flex-shrink-0" />
@@ -662,6 +664,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                     type="button"
                     onClick={resetTree}
                     title="Reset"
+                    aria-label="Reset decision tree"
                     className={`${navBtnClass} bg-background/60 hover:bg-background text-foreground border-border`}
                   >
                     <RotateCcw className="h-3.5 w-3.5 flex-shrink-0" />
@@ -672,6 +675,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                     type="button"
                     onClick={() => setShowFullTree(!showFullTree)}
                     title={showFullTree ? "Hide full tree" : "Show full tree"}
+                    aria-label={showFullTree ? "Hide full tree" : "Show full tree"}
                     className={`${navBtnClass} border ${
                       showFullTree
                         ? "bg-indigo-100 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700"

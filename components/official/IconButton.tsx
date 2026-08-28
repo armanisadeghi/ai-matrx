@@ -19,10 +19,10 @@ export interface IconButtonProps extends Omit<ButtonProps, "size"> {
 }
 
 const sizeClasses = {
-  xs: "w-5 h-5 p-0.5",
-  sm: "w-6 h-6 p-0.5",
-  md: "w-8 h-8 p-1",
-  lg: "w-10 h-10 p-1.5",
+  xs: "h-11 w-11 p-0.5 sm:h-5 sm:w-5",
+  sm: "h-11 w-11 p-0.5 sm:h-6 sm:w-6",
+  md: "h-11 w-11 p-1 sm:h-8 sm:w-8",
+  lg: "h-11 w-11 p-1.5 sm:h-10 sm:w-10",
   xl: "w-12 h-12 p-2",
 };
 
@@ -44,12 +44,14 @@ const IconButton: React.FC<IconButtonProps> = ({
   tooltipOffset = 5,
   className,
   iconClassName,
+  "aria-label": ariaLabel,
   ...props
 }) => {
   const ButtonComponent = (
     <Button
       variant={variant}
       size="icon"
+      aria-label={ariaLabel ?? tooltip}
       className={cn(
         sizeClasses[size],
         "focus-visible:ring-offset-0 focus-visible:ring-1",

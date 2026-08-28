@@ -177,22 +177,26 @@ const Slideshow = (
           {/* Header with Controls */}
           <div className="flex-shrink-0 px-3 py-2 border-b border-border flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
             <div className="flex items-center gap-2 min-w-0">
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-0.5 sm:gap-1.5">
                 {slides.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => goToSlide(index)}
-                    className="transition-all rounded-full"
-                    style={{
-                      width: currentSlide === index ? "24px" : "6px",
-                      height: "6px",
-                      backgroundColor:
-                        currentSlide === index
-                          ? effectiveTheme.primaryColor
-                          : `${effectiveTheme.primaryColor}30`,
-                    }}
+                    className="flex h-11 min-w-11 items-center justify-center rounded-full sm:h-6 sm:min-w-0"
                     aria-label={`Go to slide ${index + 1}`}
-                  />
+                  >
+                    <span
+                      className="rounded-full transition-all"
+                      style={{
+                        width: currentSlide === index ? "24px" : "6px",
+                        height: "6px",
+                        backgroundColor:
+                          currentSlide === index
+                            ? effectiveTheme.primaryColor
+                            : `${effectiveTheme.primaryColor}30`,
+                      }}
+                    />
+                  </button>
                 ))}
               </div>
               <div className="text-xs font-medium text-muted-foreground tabular-nums">
@@ -207,7 +211,7 @@ const Slideshow = (
                     type="button"
                     aria-label="Theme / template"
                     title="Theme / template"
-                    className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card/70 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    className="flex h-11 items-center gap-1.5 rounded-md border border-border bg-card/70 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground sm:h-7"
                   >
                     <Palette className="h-3.5 w-3.5" style={{ color: effectiveTheme.primaryColor }} />
                     <span className="hidden capitalize sm:inline">
@@ -241,7 +245,7 @@ const Slideshow = (
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Suspense fallback={<div className="h-7 w-7" />}>
+              <Suspense fallback={<div className="h-11 w-11 sm:h-7 sm:w-7" />}>
                 <PresentationExportMenu
                   presentationData={presentationData}
                   presentationTitle={slides[0]?.title || "presentation"}
@@ -303,7 +307,7 @@ const Slideshow = (
               <button
                 onClick={goToPrevious}
                 disabled={currentSlide === 0}
-                className={`px-3 py-1 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                className={`min-h-11 px-3 py-1 rounded-lg font-medium transition-all flex items-center gap-2 sm:min-h-0 ${
                   currentSlide === 0
                     ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed text-gray-400 dark:text-gray-600"
                     : "bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
@@ -316,7 +320,7 @@ const Slideshow = (
               <button
                 onClick={goToNext}
                 disabled={currentSlide === slides.length - 1}
-                className={`px-3 py-1 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                className={`min-h-11 px-3 py-1 rounded-lg font-medium transition-all flex items-center gap-2 sm:min-h-0 ${
                   currentSlide === slides.length - 1
                     ? "bg-gray-300 dark:bg-gray-700 cursor-not-allowed text-gray-400 dark:text-gray-600"
                     : "bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-sm hover:shadow-md"
