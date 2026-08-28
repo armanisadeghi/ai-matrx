@@ -16,7 +16,7 @@
  * exists exactly once, in the browser that created it.
  */
 
-export type TriggerKind = "cron" | "webhook" | "manual";
+export type TriggerKind = "cron" | "webhook" | "manual" | "event";
 
 export interface WorkflowTrigger {
   id: string;
@@ -25,6 +25,9 @@ export interface WorkflowTrigger {
   description: string | null;
   kind: TriggerKind;
   cronExpression: string | null;
+  /** kind='event' only — the EventSourceSpec (watched table, operation,
+   *  when-transition, input_map). Server-validated; opaque here. */
+  eventSource: Record<string, unknown> | null;
   timezone: string;
   isActive: boolean;
   defaultInputs: Record<string, unknown>;
@@ -57,7 +60,12 @@ function str(value: unknown): string | null {
 }
 
 function isTriggerKind(value: unknown): value is TriggerKind {
-  return value === "cron" || value === "webhook" || value === "manual";
+  return (
+    value === "cron" ||
+    value === "webhook" ||
+    value === "manual" ||
+    value === "event"
+  );
 }
 
 /** Narrow one wire row; returns null for anything without an identity. */
@@ -73,6 +81,7 @@ export function parseTrigger(raw: unknown): WorkflowTrigger | null {
     description: str(raw.description),
     kind: isTriggerKind(raw.kind) ? raw.kind : "manual",
     cronExpression: str(raw.cron_expression),
+    eventSource: isRecord(raw.event_source) ? raw.event_source : null,
     timezone: str(raw.timezone) ?? "UTC",
     isActive: raw.is_active !== false,
     defaultInputs: isRecord(raw.default_inputs) ? raw.default_inputs : {},

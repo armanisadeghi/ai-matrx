@@ -15,6 +15,7 @@ import {
   CalendarClock,
   ChevronDown,
   ChevronRight,
+  DatabaseZap,
   Globe,
   Loader2,
   Play,
@@ -50,9 +51,15 @@ export function TriggerCard({
 }) {
   const [open, setOpen] = useState(false);
   const isSchedule = trigger.kind === "cron";
+  const isEvent = trigger.kind === "event";
+  const isWebhook = trigger.kind === "webhook";
   const plain = trigger.cronExpression
     ? describeRecurrence(fromCron(trigger.cronExpression))
     : null;
+  const watchedTable =
+    isEvent && typeof trigger.eventSource?.table === "string"
+      ? trigger.eventSource.table
+      : null;
 
   return (
     <div
@@ -65,6 +72,8 @@ export function TriggerCard({
         <span className="mt-0.5 text-muted-foreground">
           {isSchedule ? (
             <CalendarClock className="h-4 w-4" />
+          ) : isEvent ? (
+            <DatabaseZap className="h-4 w-4" />
           ) : (
             <Globe className="h-4 w-4" />
           )}
@@ -76,14 +85,18 @@ export function TriggerCard({
           <p className="mt-0.5 text-xs text-muted-foreground">
             {isSchedule
               ? `${plain ?? "A custom schedule"} · ${trigger.timezone}`
-              : "Runs when something calls its address"}
+              : isEvent
+                ? watchedTable
+                  ? `Runs when data changes · ${watchedTable}`
+                  : "Runs when data changes"
+                : "Runs when something calls its address"}
           </p>
           {isSchedule && trigger.isActive && trigger.nextRunAt ? (
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               Next: {formatInZone(trigger.nextRunAt, trigger.timezone)}
             </p>
           ) : null}
-          {isSchedule && !trigger.isActive ? (
+          {(isSchedule || isEvent) && !trigger.isActive ? (
             <p className="mt-0.5 text-[11px] text-muted-foreground">
               Paused — it won&apos;t run until you turn it back on.
             </p>
@@ -102,7 +115,7 @@ export function TriggerCard({
         </div>
       </div>
 
-      {!isSchedule ? (
+      {isWebhook ? (
         <div className="mt-2.5 space-y-1.5">
           <span className="text-[11px] font-medium text-muted-foreground">
             Its address
@@ -140,7 +153,11 @@ export function TriggerCard({
           </Link>
         ) : null}
 
-        {!isSchedule ? (
+        {/* Event triggers fire from data changes; a bare "try it now" would
+            start a run with none of the row's inputs and fail confusingly —
+            the retry lane is the owning surface's action (e.g. product
+            capture's Reprocess) or an API fire carrying the entity's inputs. */}
+        {!isSchedule && !isEvent ? (
           <button
             type="button"
             disabled={busy || !trigger.isActive}
