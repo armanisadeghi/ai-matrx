@@ -134,6 +134,7 @@
     "check:api-contracts:accept": "tsx scripts/check-api-contracts.ts --accept",
     "check:backend-boundaries": "tsx scripts/check-backend-boundaries.ts",
     "check:backend-boundaries:strict": "tsx scripts/check-backend-boundaries.ts --strict",
+    "check:scraper-routing": "tsx scripts/check-scraper-routing.ts",
     "check:auth-destinations": "jest utils/auth/__tests__ --runInBand --no-coverage",
     "hr:exports-cases": "NEXT_PUBLIC_HR_MOCK=1 tsx scripts/hr/hrb025_exports_four_cases.ts",
     "hr:envelope-check": "tsx scripts/hr/hrb022_envelope_check.ts",

@@ -118,6 +118,7 @@ if $STRICT; then
         "URL identity twins (TS vs Python)|pnpm exec tsx scripts/check-url-identity.ts"
         "API contract ratchet|pnpm exec tsx scripts/check-api-contracts.ts --strict"
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts --strict"
+        "Scraper single transport boundary|pnpm check:scraper-routing"
         "Authentication destinations and gates|pnpm check:auth-destinations"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
@@ -330,6 +331,7 @@ else
         "Dead relation references|pnpm exec tsx scripts/check-dead-relations.ts"
         "API contract ratchet|pnpm exec tsx scripts/check-api-contracts.ts"
         "Backend boundary approvals|pnpm exec tsx scripts/check-backend-boundaries.ts"
+        "Scraper single transport boundary|pnpm check:scraper-routing"
         "Authentication destinations and gates|pnpm check:auth-destinations"
         "Surface manifest drift|pnpm exec tsx scripts/check-surface-drift.ts"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /

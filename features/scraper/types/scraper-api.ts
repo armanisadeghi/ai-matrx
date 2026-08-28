@@ -8,10 +8,8 @@
  * - POST /api/scraper/search-and-scrape-limited - Search and scrape (limited)
  * - POST /api/scraper/mic-check - Test endpoint
  *
- * Authentication: a REAL signed-in user. aidream mounts the whole `/scraper`
- * router under `Depends(require_authenticated)` (aidream/api/app.py), so a
- * guest fingerprint — either header spelling — gets `401 token_required`.
- * Guests are NOT supported here despite what this comment used to claim.
+ * Authentication: a REAL signed-in user. The standalone scraper service owns
+ * `/api/scraper`; guests are NOT supported here.
  * Guest-friendly SEO work belongs on aidream's `/seo/public` router — the
  * public `/seo/*` analyzers read page metadata through
  * `features/marketing/seo/public-tools/usePublicPageMetadata.ts`, never here.
@@ -24,8 +22,9 @@
 // These are NOT hand-written mirrors. `types/python-generated/api-types.ts` is
 // the source of truth (regenerate with `pnpm sync-types`); aliasing here keeps
 // ONE definition of the request shape for every caller. There is exactly one
-// client path to these endpoints — `useScraperApi` — calling the Python
-// backend directly. Never re-declare these option sets anywhere else.
+// client path to these endpoints — `useScraperApi` — selecting the standalone
+// scraper service directly. Never re-declare these option sets or assemble a
+// scraper URL anywhere else. `pnpm check:scraper-routing` enforces the boundary.
 
 import type { components } from "@/types/python-generated/api-types";
 
@@ -175,48 +174,3 @@ export interface SearchResult {
   results?: SearchResultItem[];
   total_results?: number;
 }
-
-// ============================================================================
-// USAGE EXAMPLES
-// ============================================================================
-
-/**
- * AUTHENTICATED USER FLOW
- *
- * ```typescript
- * import { BACKEND_URLS, ENDPOINTS } from '@/lib/api/endpoints';
- *
- * const response = await fetch(`${BACKEND_URLS.production}${ENDPOINTS.scraper.quickScrape}`, {
- *   method: "POST",
- *   headers: {
- *     "Content-Type": "application/json",
- *     "Authorization": `Bearer ${supabaseSession.access_token}`,
- *   },
- *   body: JSON.stringify({
- *     urls: ["https://example.com"],
- *     get_text_data: true,
- *     get_overview: true,
- *   }),
- * });
- * ```
- *
- * GUEST USER FLOW (using centralized fingerprint service)
- *
- * ```typescript
- * import { getFingerprint } from '@/lib/services/fingerprint-service';
- * import { BACKEND_URLS, ENDPOINTS } from '@/lib/api/endpoints';
- *
- * const fingerprintId = await getFingerprint();
- *
- * const response = await fetch(`${BACKEND_URLS.production}${ENDPOINTS.scraper.quickScrape}`, {
- *   method: "POST",
- *   headers: {
- *     "Content-Type": "application/json",
- *     "X-Fingerprint-ID": fingerprintId,
- *   },
- *   body: JSON.stringify({
- *     urls: ["https://example.com"],
- *   }),
- * });
- * ```
- */
