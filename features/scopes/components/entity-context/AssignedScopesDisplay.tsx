@@ -24,16 +24,16 @@
 import React from "react";
 import { Building2, Loader2, Tag } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { scopeShortHref } from "@/features/scope-system/utils/scopeRoutes";
+import { scopeShortHref } from "@/features/scopes/lib/scopeRoutes";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { EntityType } from "@/features/scopes/types";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
-} from "@/features/scope-system/constants/scope-colors";
+} from "@/features/scopes/constants/scope-colors";
 
 interface ScopeTypeRow {
   id: string;

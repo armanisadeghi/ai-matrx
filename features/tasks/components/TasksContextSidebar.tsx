@@ -90,7 +90,7 @@ function resolveIcon(name: string | undefined): LucideIcon {
   // MATRX-EXCEPTION: dynamic Lucide icon-by-name lookup — `import * as icons`
   // is the full module namespace (icon components + non-component exports),
   // so there is no narrower structural type to guard against; same pattern
-  // used codebase-wide (e.g. features/scope-system/utils/resolveIcon.ts).
+  // used codebase-wide (e.g. features/scopes/utils/resolveIcon.ts).
   const Icon = (icons as unknown as Record<string, LucideIcon>)[pascal];
   return Icon ?? CircleDashed;
 }

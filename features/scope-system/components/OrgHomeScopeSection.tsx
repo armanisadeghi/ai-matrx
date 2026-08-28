@@ -32,12 +32,12 @@ import {
   selectValuesByScope,
 } from "@/features/scope-system/redux/scopeValuesSlice";
 import { NewScopeInline } from "./NewScopeInline";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import {
   contextItemsHref,
   scopeSeg,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 import type { ScopeType } from "@/features/agent-context/redux/scope/types";
 import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
 import type { ScopeContextRow } from "@/features/scope-system/redux/scopeValuesSlice";

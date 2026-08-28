@@ -7,7 +7,7 @@ import { fetchFullContext } from "@/features/agent-context/redux/hierarchyThunks
 import {
   orgScopesHref,
   scopeSeg,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 import type { ScopeCrumbOption } from "@/features/scope-system/components/ScopeBreadcrumb";
 
 /**

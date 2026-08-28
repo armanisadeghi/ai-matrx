@@ -20,7 +20,7 @@ import {
   TapTargetButtonTransparent,
 } from "@/components/icons/TapTargetButton";
 import { TapTargetLabeled } from "@/components/icons/TapTargetLabeled";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import type { OrgNode } from "@/features/scopes/types";
 import { flattenScopes, selCount, type PickKind, type PickSel } from "./model";
 

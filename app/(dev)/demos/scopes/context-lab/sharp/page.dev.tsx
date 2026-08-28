@@ -16,7 +16,7 @@ import { AlertTriangle, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import {
   usePickerData,
   useSharpSelection,

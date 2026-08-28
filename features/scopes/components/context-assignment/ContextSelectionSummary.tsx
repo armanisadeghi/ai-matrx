@@ -16,7 +16,7 @@
 import React, { useMemo } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
 import type { AssignableProject, AssignableTask } from "./data";
 import type { ContextAssignmentDimension } from "./ContextAssignmentField";

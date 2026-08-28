@@ -17,16 +17,16 @@ import {
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { ContextItemSettingsForm } from "./forms/ContextItemSettingsForm";
 import { ScopeNotFound } from "./ScopeNotFound";
-import { ScopeGlyph } from "./ScopeGlyph";
+import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
-} from "@/features/scope-system/constants/scope-colors";
+} from "@/features/scopes/constants/scope-colors";
 import {
   contextItemHref,
   contextItemsHref,
   orgScopesHref,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 
 interface ContextItemEditViewProps {
   orgId: string;

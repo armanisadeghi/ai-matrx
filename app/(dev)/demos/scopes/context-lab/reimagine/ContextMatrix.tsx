@@ -14,7 +14,7 @@
 import React, { useMemo, useState } from "react";
 import { Building2, ChevronDown, Plus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import {
   createDraft,
   itemNodeOf,

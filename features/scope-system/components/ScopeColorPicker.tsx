@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import {
   SCOPE_COLORS,
   pickColorByKey,
-} from "@/features/scope-system/constants/scope-colors";
+} from "@/features/scopes/constants/scope-colors";
 
 interface ScopeColorPickerProps {
   /** The currently selected color key (one of SCOPE_COLORS keys). */

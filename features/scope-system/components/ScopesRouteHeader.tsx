@@ -50,7 +50,7 @@ import {
   contextItemsHref,
   contextItemHref,
   contextItemEditHref,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { CompoundReferenceCopyButton } from "@/features/matrx-envelope/components/CompoundReferenceCopyButton";
 import { buildContextValueReferenceFence } from "@/features/matrx-envelope/compoundReference";

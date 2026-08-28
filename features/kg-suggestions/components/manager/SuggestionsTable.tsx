@@ -30,7 +30,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/utils/cn";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKgRowMutation } from "@/lib/redux/slices/kgSuggestionsSlice";
-import { ScopeGlyph } from "@/features/scope-system/components/ScopeGlyph";
+import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import { KgSuggestionRowItem } from "@/features/kg-suggestions/components/KgSuggestionRowItem";
 import { useOpenSourcePreview } from "@/features/kg-suggestions/components/source-preview/SourcePreviewContext";
 import {

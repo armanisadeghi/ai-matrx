@@ -74,8 +74,8 @@ import {
 } from "@/features/scopes/redux/selectors/active-context";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import { listFiles } from "@/features/files/api/files";
 import { scopesService } from "@/features/scopes/service/scopesService";
 // THE OFFICIAL COMPONENT SET — this lab now demos the real shipping module,

@@ -48,7 +48,7 @@ import {
 } from "@/features/notes/components/NoteEditorCore";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import { ScopeContextTargetPicker } from "@/features/scopes/components/quick-assign/ScopeContextTargetPicker";
-import { scopeHref } from "@/features/scope-system/utils/scopeRoutes";
+import { scopeHref } from "@/features/scopes/lib/scopeRoutes";
 import { useSetContextValue } from "./useSetContextValue";
 
 export type PostSaveAction = "newTab" | "navigate" | "none";

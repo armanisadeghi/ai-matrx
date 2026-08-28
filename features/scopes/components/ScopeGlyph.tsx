@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 
 interface ScopeGlyphProps {
   /** Stored scope-type icon name (kebab/snake/Pascal — `resolveIcon` normalizes). */

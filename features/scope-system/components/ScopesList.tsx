@@ -44,7 +44,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EditScopeTypeSheet } from "./EditScopeTypeSheet";
 import { NewScopeInline } from "./NewScopeInline";
 import { ContextItemAddForm } from "./ContextItemAddForm";
-import { ScopeGlyph } from "./ScopeGlyph";
+import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ReorderDialog } from "./ReorderDialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -74,14 +74,14 @@ import {
 import {
   resolveColor,
   SCOPE_ICON_SURFACE,
-} from "@/features/scope-system/constants/scope-colors";
+} from "@/features/scopes/constants/scope-colors";
 import {
   orgScopesHref,
   scopeHref,
   scopeSeg,
   contextItemsHref,
   contextItemHref,
-} from "@/features/scope-system/utils/scopeRoutes";
+} from "@/features/scopes/lib/scopeRoutes";
 import { useOpenContextItemsWindow } from "@/features/overlays/openers/contextItemsWindow";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";

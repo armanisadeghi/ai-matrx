@@ -39,7 +39,7 @@ import {
   createContextItem,
   listScopeTypeItems,
 } from "@/features/scope-system/redux/contextItemsSlice";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 
 interface TemplateGalleryDrawerProps {
   open: boolean;

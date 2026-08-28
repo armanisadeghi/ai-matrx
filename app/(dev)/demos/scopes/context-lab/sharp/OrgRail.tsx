@@ -11,8 +11,8 @@
 import React, { useState } from "react";
 import { Briefcase, Check, SquareCheckBig } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
-import { resolveIcon } from "@/features/scope-system/utils/resolveIcon";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
+import { resolveIcon } from "@/features/scopes/utils/resolveIcon";
 import { orgInitials, type PickerData, type SelectionApi } from "./engine";
 
 interface OrgRailProps {

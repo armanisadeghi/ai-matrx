@@ -417,16 +417,12 @@ export interface EntityScopesEntry {
 
 // ─── Context item values (high-churn sidecar slice) ───────────────────
 
-/** Mirrors the `public.context_value_type` enum exactly. */
+/** The `public.context_value_type` enum — generated types are the source of truth. */
 export type ContextItemValueType =
-  | "string"
-  | "number"
-  | "boolean"
-  | "object"
-  | "array"
-  | "document"
-  | "reference"
-  | "date";
+  Database["public"]["Enums"]["context_value_type"];
+
+/** Migration alias for the legacy agent-context/scope-system `ContextValueType`. */
+export type ContextValueType = ContextItemValueType;
 
 export interface ContextItemValue {
   context_item_id: string;

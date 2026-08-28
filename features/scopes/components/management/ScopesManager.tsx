@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { orgHref } from "@/features/scope-system/utils/scopeRoutes";
+import { orgHref } from "@/features/scopes/lib/scopeRoutes";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopeTypes,

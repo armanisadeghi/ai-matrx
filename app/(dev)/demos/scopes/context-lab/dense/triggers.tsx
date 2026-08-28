@@ -24,7 +24,7 @@ import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
 } from "@/components/icons/TapTargetButton";
-import { resolveColor } from "@/features/scope-system/constants/scope-colors";
+import { resolveColor } from "@/features/scopes/constants/scope-colors";
 import {
   isEmptySelection,
   resolveSelection,
