@@ -10,7 +10,9 @@
 -- the two component lanes (`hr_leave_ledger`, `hr_payroll_export_line`) were
 -- walled by HRB-003; the computed-pay Working-record-tier COMPONENTS and the
 -- same-shape entity tables were left on the ordinary platform-admin lane. This
--- migration walls the remaining nine.
+-- migration walls eight of the remaining nine. `hr_job_title` is isolated in
+-- hr_p3e_privacy_wall_job_title.sql so contention on that hot table cannot hold
+-- locks for the other eight tables in the same migration transaction.
 --
 -- MECHANISM: identical to HRB-003 — flip suppress_platform_admin_lane and
 -- regenerate RLS. The flag is honoured by iam._apply_rls_unchecked (empties the
@@ -21,7 +23,7 @@
 -- through its parent via iam.accessible_entity_ids, the owner/org-admin/
 -- org-member/permissions arms on the entity tables — is untouched.
 --
--- Nine tokens, verified live to carry a pay-bearing column before flagging
+-- Eight tokens, verified live to carry a pay-bearing column before flagging
 -- (not flagged on name):
 --   hr_work_interval          (component)  rate, amount
 --   hr_workweek               (component)  weighted_average_regular_rate (FLSA)
@@ -30,7 +32,6 @@
 --   hr_time_adjustment        (component)  amount_delta, rate
 --   hr_schedule_change        (component)  premium_amount
 --   hr_requisition            (entity)     pay_range_min/max, budget_amount
---   hr_job_title              (entity)     pay_range_min/max
 --   hr_schedule               (entity)     labor_budget_amount, projected_labor_amount
 --
 -- FALSIFIED per table in a rolled-back transaction (real request.jwt.claims,
@@ -51,7 +52,7 @@ update platform.entity_types
    set suppress_platform_admin_lane = true
  where token in ('hr_work_interval','hr_workweek','hr_pay_period_employment',
                  'hr_payroll_export','hr_time_adjustment','hr_schedule_change',
-                 'hr_requisition','hr_job_title','hr_schedule');
+                 'hr_requisition','hr_schedule');
 
 do $regen$
 declare r record;
@@ -61,7 +62,7 @@ begin
       from platform.entity_types
      where token in ('hr_work_interval','hr_workweek','hr_pay_period_employment',
                      'hr_payroll_export','hr_time_adjustment','hr_schedule_change',
-                     'hr_requisition','hr_job_title','hr_schedule')
+                     'hr_requisition','hr_schedule')
   loop
     perform iam.apply_rls(r.schema_name, r.table_name, r.token, r.rls_variant);
   end loop;
@@ -77,7 +78,7 @@ begin
     select token, schema_name, table_name from platform.entity_types
      where token in ('hr_work_interval','hr_workweek','hr_pay_period_employment',
                      'hr_payroll_export','hr_time_adjustment','hr_schedule_change',
-                     'hr_requisition','hr_job_title','hr_schedule')
+                     'hr_requisition','hr_schedule')
   loop
     if exists (select 1 from pg_policies
                 where schemaname=r.schema_name and tablename=r.table_name
