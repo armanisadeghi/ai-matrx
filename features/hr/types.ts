@@ -173,6 +173,15 @@ export type HrActiveEmployer = {
    * assignment; nav hides nothing on null rather than guessing.
    */
   worker_class: string | null;
+  /**
+   * Does the viewer hold an ACTIVE leave enrolment today (`hr_l5_30`)? Nav uses it
+   * to keep My Time Off visible for somebody enrolled by a SPEC-LEAVE §2.8
+   * override — a contractor enrolled deliberately, with a recorded reason — whom
+   * the per-class default would otherwise hide from her own balance. Optional
+   * because an older payload simply will not carry it; only `true` reveals, so a
+   * missing flag can never strip a menu.
+   */
+  has_active_leave_enrolment?: boolean | null;
   employee_count: number;
   /** owner/admin, and no `hr_owner` assigned yet. The activation wizard's one gate. */
   can_activate: boolean;
