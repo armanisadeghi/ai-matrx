@@ -36,7 +36,7 @@
     {
       "sequence": 3,
       "state": "certifying",
-      "at": "2026-08-28T16:26:32.431Z",
+      "at": "2026-08-28T16:33:31.796Z",
       "actor": "codex-p12-worker",
       "summary": "Detector and duplicate-overlay repair batch passed worker gates and is ready for exact-SHA adversarial certification.",
       "evidence": [
@@ -45,7 +45,46 @@
         "preview lease belongs to another checkout; no visual proof required because the batch changes no UI or runtime behavior"
       ],
       "previousEventHash": "6ceaaa89db7ab5c336ef6614ff420ee1c7664b601c04b055caf57398f8ef5666",
-      "eventHash": "4cf7e5753cbfa453f140c47049227a1f4bf8541948d68abbebed6469dfe1732c"
+      "eventHash": "51864c169558731ddaa04d06fb0f5a157dd95661e6c15f32aab6e8d389c0795e"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-28T16:33:32.371Z",
+      "actor": "codex-p12-certifier",
+      "summary": "Independent adversarial review CERTIFIED the exact detector and duplicate-overlay candidate with no batch-caused defect.",
+      "evidence": [
+        "overlay total 189, unique 189, duplicates 0; injected duplicate failed loudly and restoration was clean",
+        "classifier output remains an audit queue, never automatic Surface findings"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "2470f82af0a2726af49786c4a25a8451282e7a76",
+        "certifierTaskId": "/root/p12_certifier",
+        "checks": [
+          "type-check matched baseline PASS; focused Jest 5/5; scoped ESLint, Prettier, and diff-check passed",
+          "surface-drift, surface-routes, surface-overlays, and surface-interactive-roots passed on exact candidate",
+          "adversarial alias, fake primitive, explicit-state, action/subordinate exclusion, and provider evidence assertions passed"
+        ]
+      },
+      "previousEventHash": "51864c169558731ddaa04d06fb0f5a157dd95661e6c15f32aab6e8d389c0795e",
+      "eventHash": "7edd0bae740bfebccd922dd2b50d9ceef49ea0b4bf6dcd5857579123f2f080e7"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-28T16:35:14.661Z",
+      "actor": "codex-p12-controller",
+      "summary": "Certified P12 candidate preserved and queued for fast integration",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P12/20260828T162115Z"
+      ],
+      "delivery": {
+        "candidateSha": "2470f82af0a2726af49786c4a25a8451282e7a76",
+        "preservedRef": "refs/heads/patrol-runs/P12/20260828T162115Z"
+      },
+      "previousEventHash": "7edd0bae740bfebccd922dd2b50d9ceef49ea0b4bf6dcd5857579123f2f080e7",
+      "eventHash": "a4b8223458455d1eb0b2a1f8f561e583af1197a88ffc3086c6ed4ef56df6eb0e"
     }
   ]
 }
