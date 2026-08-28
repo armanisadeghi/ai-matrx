@@ -251,6 +251,16 @@ export type RowHealth = "awaiting" | "stuck" | "no_flow" | "done";
 export interface PeriodWorkflowRow {
   payPeriodEmploymentId: string;
   employmentId: string;
+  /**
+   * 🚨 THE PERSON, NAMED BY THE DOOR. `hr.pay_period_get` projects this through
+   * `hr._subject_display_name`, the same suppression-aware helper the directory, the chart, the
+   * grid and the audit reads use — so an opted-out person is `null` here for a viewer the rule
+   * refuses and named for HR. `null` therefore means "this viewer may not have the name", NOT
+   * "there is no name", and the panel falls back to the id as a bare reference rather than
+   * inventing one. Never join for it on the client: that would make this surface the seventh
+   * place that decides who may be named.
+   */
+  subjectName: string | null;
   /** The ROW state machine (`hr.pay_period_employment.state`) — not the period's. */
   rowState: string;
   health: RowHealth;
@@ -299,6 +309,7 @@ function mapWorkflowRow(raw: unknown): PeriodWorkflowRow {
   return {
     payPeriodEmploymentId: str(r.payPeriodEmploymentId),
     employmentId: str(r.employmentId),
+    subjectName: strOrNull(r.subjectName),
     rowState: str(r.rowState),
     // Anything the server starts classifying that this client does not know reads as `no_flow`
     // rather than being silently dropped — an unrecognised health is not a healthy one.

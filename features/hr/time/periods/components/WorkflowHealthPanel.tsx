@@ -198,25 +198,46 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
                   </span>
                 ) : null}
 
-                {/* The identity, as a door. */}
+                {/*
+                  🚨 THE PERSON, NOT A UUID PREFIX. This panel's whole job is saying whether
+                  anybody was actually ASKED, and it spent four rounds answering with
+                  `4c32b064…` — which names nobody a payroll administrator could go and speak to.
+                  The name comes from the DOOR (`subject_name`, via the one suppression-aware
+                  rule), never a client-side join. When it is null the viewer may not have the
+                  name, so the id stays as a bare REFERENCE rather than the panel inventing one.
+                */}
                 {hrefForEmployment ? (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-6 font-mono text-[10px]"
+                    className={cn("h-6 text-[11px]", !row.subjectName && "font-mono text-[10px]")}
+                    title={`Record reference ${row.employmentId}`}
                     onClick={() => void announceComingSoon("hr.employment-record")}
                   >
-                    {row.employmentId.slice(0, 8)}…
+                    {row.subjectName ?? `${row.employmentId.slice(0, 8)}…`}
                   </Button>
                 ) : (
-                  <span className="font-mono text-[10px] text-muted-foreground">
-                    {row.employmentId.slice(0, 8)}…
+                  <span
+                    className={cn(
+                      "text-[11px] text-foreground",
+                      !row.subjectName && "font-mono text-[10px] text-muted-foreground",
+                    )}
+                    title={`Record reference ${row.employmentId}`}
+                  >
+                    {row.subjectName ?? `${row.employmentId.slice(0, 8)}…`}
                   </span>
                 )}
 
-                <span className="text-[11px] text-muted-foreground">
-                  row is {row.rowState}
+                {/*
+                  🚨 THE PRECISE STATE, NOT THE VAGUE ONE. `row is open` is the row-state machine
+                  talking, and `open` is exactly the value that cannot tell "waiting on a person"
+                  from "flow is dead" — the ambiguity this panel exists to remove. The health
+                  MEANING is the server's own classification said out loud; the raw row state stays
+                  reachable on hover for anyone reconciling against the table.
+                */}
+                <span className="text-[11px] text-muted-foreground" title={`row state: ${row.rowState}`}>
+                  {HEALTH_MEANING[row.health]}
                   {row.flowKey ? ` · ${row.flowKey}` : ""}
                   {row.instanceState ? ` · instance ${row.instanceState}` : ""}
                 </span>
