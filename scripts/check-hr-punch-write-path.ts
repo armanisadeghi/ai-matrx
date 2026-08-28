@@ -260,6 +260,18 @@ const EXPECTED_CHECKS = [
   // run. This check FLAGS and never revokes — revoking is a migration with a proof through the
   // public door, one door at a time.
   "definer_helpers_are_not_client_reachable",
+  // hr_l3_107 — CHECK 35, the CROSS-SCHEMA generalization of check 33. The security arc closed four
+  // LIVE P0s that check 33 could not see because they were one and two schemas over: an anon SMS
+  // gate/resolver and an authenticated SMS enqueue in communication.*, a cross-tenant
+  // mint_outsider_token and a direct actor_token INSERT in platform.*. Every one a grant a client
+  // role should never have held. This audits every PostgREST-reachable SECURITY DEFINER door across
+  // public/communication/platform that touches an HR notify or outsider-token object, and demands it
+  // be credentialed (takes a presented session/token secret) or baselined (a reviewed, caller-gated
+  // door); anything else, plus any client DML on platform.actor_token, is a violation. Proven by
+  // REPLAYING all four P0 pre-fix grants — each turns this check red. REACTIVE LIMIT: it runs against
+  // the live db, so it fails CI after a hole is applied, not before; the pre-apply DDL guard that
+  // would make creation impossible is boarded for Arman.
+  "cross_schema_outsider_doors_baselined",
 ] as const;
 
 interface ConformanceRow {

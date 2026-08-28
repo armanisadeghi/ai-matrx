@@ -117,7 +117,12 @@ as $fn$
            pg_get_function_identity_arguments(p.oid) as ia,
            has_function_privilege('anon', p.oid, 'EXECUTE') as anon_can,
            has_function_privilege('authenticated', p.oid, 'EXECUTE') as auth_can,
-           (pg_get_function_arguments(p.oid) ~* 'token|secret|pairing|code|session') as credentialed
+           -- 🚨 A CREDENTIAL IS A SECRET THE CALLER PRESENTS, AT THE END OF A PARAM NAME — the `\M`
+           -- word-boundary matters. `p_session`, `p_session_token`, `p_device_secret`,
+           -- `p_pairing_code` are secrets; `p_actor_token_id uuid` is an ATTRIBUTION id, and an
+           -- un-anchored `token` matched it and wrongly exempted resolve_channel_address (the phone
+           -- oracle). The boundary makes `token\M` miss `token_id`.
+           (pg_get_function_arguments(p.oid) ~* '(session|secret|pairing|token|code)\M') as credentialed
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname in ('public','communication','platform')
        and p.prosecdef
@@ -128,7 +133,14 @@ as $fn$
          or p.prosrc ~ '\msms_conversations\M' or p.prosrc ~ '\msms_consent\M'
          or p.prosrc ~ '\msms_notification' or p.prosrc ~ 'resolve_channel_address'
          or p.prosrc ~ '\mnotification\M' or p.prosrc ~ '\moutsider_consumer\M'
-         or p.prosrc ~ 'mint_outsider_token')
+         or p.prosrc ~ 'mint_outsider_token'
+         -- 🚨 THE RESOLVER PRIMITIVE ITSELF. resolve_channel_address reads the CRM contact graph
+         -- (party_contact_point / contact_medium), NOT the tables above, so a body-touch scan
+         -- misses it — yet it is the phone-resolution ORACLE the campaign proved (P0-1b). Matching
+         -- the contact graph directly would net five unrelated CRM party-management doors, so the
+         -- one named messaging-resolver primitive is included by name. This is the notify path's
+         -- resolver, not a hand list of the door set.
+         or p.proname = 'resolve_channel_address')
   )
   select d.qname, d.ia, d.anon_can, d.auth_can, d.credentialed,
          (b.function_name is not null) as baselined,
