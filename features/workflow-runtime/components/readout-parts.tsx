@@ -36,7 +36,10 @@ import {
 
 import { SettledOutputBody } from "./SettledOutputBody";
 
-import { useWorkflowRunControls } from "../hooks/useWorkflowRunControls";
+import {
+  InterruptQuestion,
+  type InterruptPlacement,
+} from "../interrupt/InterruptQuestion";
 import { StructuredValueTabs } from "@/components/mardown-display/blocks/generic/StructuredValueTabs";
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
 import {
@@ -47,7 +50,6 @@ import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loa
 import { explainRunFailure } from "../run-failure-explanation";
 import {
   selectRunError,
-  selectRunInterrupt,
   selectRunResult,
   selectRunStatus,
   selectRunStickyFacts,
@@ -504,66 +506,6 @@ export function InvocationBody({
   return null;
 }
 
-// ── Schema-driven interrupt form (Phase 4) ─────────────────────────────────
-// A Pause & Ask node may carry `schema_hint` — a JSON Schema for the answer
-// (the engine REJECTS a resume value that doesn't satisfy it, so a free-text
-// box against a schema'd interrupt could never succeed). A flat object
-// schema renders one field per property; anything else falls back to the
-// plain text box. Parsing is tolerant — malformed schemas degrade to text.
-
-interface InterruptField {
-  key: string;
-  label: string;
-  kind: "text" | "number" | "boolean" | "select";
-  options?: string[];
-  required: boolean;
-}
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
-function parseInterruptFields(schemaHint: unknown): InterruptField[] | null {
-  if (!isRecord(schemaHint)) return null;
-  if (schemaHint.type !== "object" || !isRecord(schemaHint.properties)) {
-    return null;
-  }
-  const required = new Set(
-    Array.isArray(schemaHint.required)
-      ? schemaHint.required.filter((r): r is string => typeof r === "string")
-      : [],
-  );
-  const fields: InterruptField[] = [];
-  for (const [key, raw] of Object.entries(schemaHint.properties)) {
-    if (!isRecord(raw)) return null;
-    const label =
-      typeof raw.title === "string" && raw.title.length > 0 ? raw.title : key;
-    const options = Array.isArray(raw.enum)
-      ? raw.enum.filter((o): o is string => typeof o === "string")
-      : null;
-    if (options && options.length > 0) {
-      fields.push({
-        key,
-        label,
-        kind: "select",
-        options,
-        required: required.has(key),
-      });
-    } else if (raw.type === "number" || raw.type === "integer") {
-      fields.push({ key, label, kind: "number", required: required.has(key) });
-    } else if (raw.type === "boolean") {
-      fields.push({ key, label, kind: "boolean", required: required.has(key) });
-    } else if (raw.type === "string" || raw.type === undefined) {
-      fields.push({ key, label, kind: "text", required: required.has(key) });
-    } else {
-      // A nested object/array property — beyond the flat form; fall back to
-      // free text rather than render a form that can't express the answer.
-      return null;
-    }
-  }
-  return fields.length > 0 ? fields : null;
-}
-
 /**
  * RunErrorCard — a terminal failed/errored run must SCREAM, not sit at
  * "Not started" forever (the 2026-08-18 defect: three Study Pack runs died
@@ -639,157 +581,27 @@ export function RunResultCard({ runId }: { runId: string }) {
   );
 }
 
-export function InterruptCard({ runId }: { runId: string }) {
-  const interrupt = useAppSelector(selectRunInterrupt(runId));
-  if (!interrupt) return null;
-  // Keyed by checkpoint so a LATER Pause & Ask in the same run mounts a
-  // fresh form — carrying the previous answer/values across interrupts
-  // submitted stale keys against the new question.
-  return (
-    <InterruptForm
-      key={`${runId}:${interrupt.checkpointId}`}
-      runId={runId}
-      interrupt={interrupt}
-    />
-  );
-}
-
-interface InterruptView {
-  nodeId: string;
-  payload: Record<string, unknown>;
-  checkpointId: string;
-}
-
-function InterruptForm({
+/**
+ * InterruptCard — the run's live question, delegated.
+ *
+ * SPEC-workflow-ui-contract §4 moved every decision this card used to make
+ * (which fields, which control, which presentation, who decided) into
+ * `interrupt/` — a pure view module plus ONE component that renders through
+ * the same `VariableInputComponent` ladder as the served run form. The flat
+ * `parseInterruptFields` switch that lived here was a third input renderer and
+ * is DELETED, not left beside its replacement (no-legacy).
+ *
+ * The signature is unchanged, so every existing host (the run stage, the run
+ * board, the surface view, the bake-offs, the masterwork try-box) keeps
+ * working; `placement` is the new opt-in for a host that stages the showcase
+ * question itself.
+ */
+export function InterruptCard({
   runId,
-  interrupt,
+  placement,
 }: {
   runId: string;
-  interrupt: InterruptView;
+  placement?: InterruptPlacement;
 }) {
-  const { answerInterrupt } = useWorkflowRunControls();
-  const [answer, setAnswer] = useState<string | null>(null);
-  const [values, setValues] = useState<Record<string, unknown>>({});
-  const [sending, setSending] = useState(false);
-
-  const prompt =
-    typeof interrupt.payload.prompt === "string"
-      ? interrupt.payload.prompt
-      : "This workflow is waiting for your answer.";
-  const defaultAnswer =
-    typeof interrupt.payload.default_answer === "string"
-      ? interrupt.payload.default_answer
-      : "";
-  const fields = parseInterruptFields(interrupt.payload.schema_hint);
-
-  // The engine's resume payload is an OBJECT — `control.human_input` fills its
-  // output model from these keys — so a free-text answer travels as
-  // `{ answer }`. A bare string is refused by the server (422).
-  const send = (value: Record<string, unknown>) => {
-    setSending(true);
-    void answerInterrupt(runId, interrupt.checkpointId, value).finally(() =>
-      setSending(false),
-    );
-  };
-
-  const fieldsComplete =
-    fields?.every(
-      (f) =>
-        !f.required || (values[f.key] !== undefined && values[f.key] !== ""),
-    ) ?? true;
-
-  return (
-    <div className="rounded-xl border border-primary/40 bg-primary/5 p-3">
-      <p className="text-sm font-medium">{prompt}</p>
-
-      {fields ? (
-        <div className="mt-2 space-y-2">
-          {fields.map((field) => (
-            <label key={field.key} className="block">
-              <span className="text-xs text-muted-foreground">
-                {field.label}
-                {field.required ? " *" : ""}
-              </span>
-              {field.kind === "select" ? (
-                <select
-                  value={
-                    typeof values[field.key] === "string"
-                      ? (values[field.key] as string)
-                      : ""
-                  }
-                  onChange={(e) =>
-                    setValues((v) => ({ ...v, [field.key]: e.target.value }))
-                  }
-                  className="mt-0.5 block w-full rounded-md border border-border bg-background p-2 text-base"
-                >
-                  <option value="">Choose…</option>
-                  {field.options?.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </select>
-              ) : field.kind === "boolean" ? (
-                <input
-                  type="checkbox"
-                  checked={values[field.key] === true}
-                  onChange={(e) =>
-                    setValues((v) => ({ ...v, [field.key]: e.target.checked }))
-                  }
-                  className="mt-1 block"
-                />
-              ) : (
-                <input
-                  type={field.kind === "number" ? "number" : "text"}
-                  value={
-                    typeof values[field.key] === "string" ||
-                    typeof values[field.key] === "number"
-                      ? String(values[field.key])
-                      : ""
-                  }
-                  onChange={(e) =>
-                    setValues((v) => ({
-                      ...v,
-                      [field.key]:
-                        field.kind === "number"
-                          ? e.target.value === ""
-                            ? ""
-                            : Number(e.target.value)
-                          : e.target.value,
-                    }))
-                  }
-                  className="mt-0.5 block w-full rounded-md border border-border bg-background p-2 text-base"
-                />
-              )}
-            </label>
-          ))}
-          <button
-            type="button"
-            disabled={sending || !fieldsComplete}
-            onClick={() => send(values)}
-            className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
-          >
-            {sending ? "Sending…" : "Send answer"}
-          </button>
-        </div>
-      ) : (
-        <>
-          <textarea
-            value={answer ?? defaultAnswer}
-            onChange={(e) => setAnswer(e.target.value)}
-            className="mt-2 w-full rounded-md border border-border bg-background p-2 text-base"
-            rows={2}
-          />
-          <button
-            type="button"
-            disabled={sending}
-            onClick={() => send({ answer: answer ?? defaultAnswer })}
-            className="mt-2 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
-          >
-            {sending ? "Sending…" : "Send answer"}
-          </button>
-        </>
-      )}
-    </div>
-  );
+  return <InterruptQuestion runId={runId} placement={placement} />;
 }

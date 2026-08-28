@@ -38,6 +38,7 @@ import {
 } from "../../redux/workflow-runs.selectors";
 import type { NodeAggregatePhase } from "../../redux/workflow-runs.selectors";
 import { activityLine } from "./activity-copy";
+import { RunFanOutLanes, RunWorkSetBar } from "./RunFanOut";
 import { StepIconChip } from "./RunHero";
 import {
   nodeVerbAvailability,
@@ -298,6 +299,20 @@ function JourneyRow({
             ) : null}
           </>
         ) : null}
+
+        {/* THE SIBLING LANES (SPEC §5.2). A fanned-out step is N independent
+            invocations, and until the wire carried `dispatch_id`/`item_index`
+            they were indistinguishable. Each lane says which item it is, what
+            phase it is in, and its own freshest text — so "which of the fifty
+            is stuck" is answerable on the rail. Renders nothing for a step
+            that ran once. */}
+        <RunFanOutLanes runId={runId} nodeId={step.nodeId} />
+
+        {/* The step's work queue, when it runs one — folded since the emitter
+            shipped and, until now, rendered nowhere. */}
+        <div className="mt-1 empty:hidden">
+          <RunWorkSetBar runId={runId} nodeId={step.nodeId} />
+        </div>
 
         {stepOffersControls(runStatus, phase) ? (
           <StepControls

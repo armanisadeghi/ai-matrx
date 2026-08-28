@@ -20,7 +20,12 @@ import type {
   WorkflowRunEmission,
   WorkflowRunState,
   WorkflowRunsState,
+  WorkflowRunWorkSet,
 } from "@/features/workflow-runtime/redux/workflow-runs.slice";
+import {
+  readSettledDecision,
+  type SettledDecision,
+} from "@/features/workflow-runtime/interrupt/interrupt-view";
 import type {
   RunRecordSignal,
   WorkflowRunStatus,
@@ -288,6 +293,82 @@ export const selectRunStepsExecuted = (runId: string) =>
     [selectByRunId],
     (byRunId): number => byRunId[runId]?.stepsExecuted ?? 0,
   );
+
+// ---------------------------------------------------------------------------
+// SPEC §4.2 — settled decisions, so provenance is ALWAYS on screen
+// ---------------------------------------------------------------------------
+
+const EMPTY_DECISIONS: SettledDecision[] = [];
+
+/** The node spec whose settled output IS a decision record. */
+const HUMAN_INPUT_SPEC = "control.human_input";
+
+/**
+ * Every `control.human_input` step of this run that has SETTLED, with who
+ * decided read off `matrx_decision`.
+ *
+ * The live interrupt card disappears the instant the run resumes — which is
+ * exactly when the answer becomes a record somebody may need to audit. §4.2:
+ * "every surface showing an approval MUST show 'Approved by <person>' or
+ * 'Auto-approved by <agent> after the deadline'." This is what makes that
+ * possible without replaying the run's events.
+ */
+export const selectRunDecisions = (runId: string) =>
+  createSelector([selectByRunId], (byRunId): SettledDecision[] => {
+    const run = byRunId[runId];
+    if (!run) return EMPTY_DECISIONS;
+    const decisions: SettledDecision[] = [];
+    for (const nodeId of run.nodeOrder) {
+      const aggregate = run.nodeAggregates[nodeId];
+      if (!aggregate || aggregate.specType !== HUMAN_INPUT_SPEC) continue;
+      for (const key of aggregate.invocationKeys) {
+        const invocation = run.nodes[key];
+        if (!invocation || invocation.phase !== "settled") continue;
+        const decision = readSettledDecision(nodeId, invocation.output);
+        if (decision) decisions.push(decision);
+      }
+    }
+    return decisions.length > 0 ? decisions : EMPTY_DECISIONS;
+  });
+
+// ---------------------------------------------------------------------------
+// SPEC §5 — work sets, folded since the emitter shipped and never rendered
+// ---------------------------------------------------------------------------
+
+/** One node's work set, or null when that node runs no queue. */
+export const selectNodeWorkSet = (runId: string, nodeId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): WorkflowRunWorkSet | null =>
+      byRunId[runId]?.workSets[nodeId] ?? null,
+  );
+
+// ---------------------------------------------------------------------------
+// SPEC §5.2 — the sibling lanes of a fanned-out node
+// ---------------------------------------------------------------------------
+
+/**
+ * The sibling invocations of ONE node, ordered by `item_index`, or the stable
+ * empty when the node never fanned out.
+ *
+ * A single-invocation node deliberately returns EMPTY: a "lane" for a step
+ * that ran once IS the step, and drawing it twice is the duplication the
+ * canonical component law exists to prevent.
+ */
+export const selectNodeSiblingLanes = (runId: string, nodeId: string) =>
+  createSelector([selectByRunId], (byRunId): NodeInvocationState[] => {
+    const run = byRunId[runId];
+    const aggregate = run?.nodeAggregates[nodeId];
+    if (!run || !aggregate || aggregate.invocationKeys.length < 2) {
+      return EMPTY_INVOCATIONS;
+    }
+    const lanes = aggregate.invocationKeys
+      .map((key) => run.nodes[key])
+      .filter((item): item is NodeInvocationState => item !== undefined);
+    return lanes.length < 2
+      ? EMPTY_INVOCATIONS
+      : [...lanes].sort((a, b) => a.itemIndex - b.itemIndex);
+  });
 
 export const selectAllAttachedRunIds = createSelector(
   [selectByRunId],

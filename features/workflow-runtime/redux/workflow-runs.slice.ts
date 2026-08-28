@@ -461,6 +461,62 @@ function streamTargetKey(run: WorkflowRunState, nodeId: string): string | null {
   return aggregate.invocationKeys[aggregate.invocationKeys.length - 1];
 }
 
+/**
+ * THE lane a live stream frame belongs to.
+ *
+ * SPEC §5.2, landed by V3-A: `node_stream` now carries `dispatch_id` +
+ * `item_index` — the same two fields every durable event already carried and
+ * that `NodeExecutionContext` already mints. When the frame states its
+ * identity we key it EXACTLY, through the one lane-identity function, and a
+ * 50-item fan-out becomes 50 separable lanes instead of one interleaved
+ * stream. When it does not (a node-level emitter, or a server predating the
+ * change) we fall back to the bounded heuristic above.
+ *
+ * The exact key is honored even when that invocation has not been seen yet —
+ * `streamTargetKey`'s guess would land the frame on the WRONG sibling, and a
+ * frame attributed to the wrong lane is worse than a frame held until its
+ * `node_started` arrives.
+ */
+function streamInvocationKey(
+  run: WorkflowRunState,
+  nodeId: string,
+  frame: { dispatch_id?: string | null; item_index?: number | null },
+): string | null {
+  const dispatchId = frame.dispatch_id;
+  const itemIndex = frame.item_index;
+  const attributed =
+    (typeof dispatchId === "string" && dispatchId !== "") ||
+    (typeof itemIndex === "number" && itemIndex > 0);
+  if (attributed) return invocationKeyOf(nodeId, dispatchId, itemIndex);
+  return streamTargetKey(run, nodeId);
+}
+
+/**
+ * The lane a HEARTBEAT tail belongs to.
+ *
+ * `metadata._heartbeat._streaming_by_node` used to be keyed by node id alone;
+ * SPEC §5.2 makes the emitter key it `f"{node_id}:{dispatch_id}:{item_index}"`
+ * once it streams per invocation. Both forms are in live rows (a run started
+ * before the change keeps the old keys forever), so both are read: a trailing
+ * `:<dispatch>:<integer>` is peeled off and keyed exactly, anything else is
+ * treated as a bare node id and falls to the single-target heuristic.
+ */
+function heartbeatInvocationKey(
+  run: WorkflowRunState,
+  heartbeatKey: string,
+): string | null {
+  const parts = heartbeatKey.split(":");
+  if (parts.length >= 3) {
+    const itemIndex = Number(parts[parts.length - 1]);
+    if (Number.isInteger(itemIndex)) {
+      const dispatchId = parts[parts.length - 2];
+      const nodeId = parts.slice(0, parts.length - 2).join(":");
+      if (nodeId) return invocationKeyOf(nodeId, dispatchId, itemIndex);
+    }
+  }
+  return streamTargetKey(run, heartbeatKey);
+}
+
 /** Idempotent attach shared by the attachRun reducer and the
  * subgraph_run_linked auto-attach — existing run state always survives. */
 function ensureRun(
@@ -1021,9 +1077,10 @@ const workflowRunsSlice = createSlice({
       for (const [nodeId, snapshot] of Object.entries(tails)) {
         const tail = snapshot.live_text_tail;
         if (!tail) continue;
-        // ONE target invocation — the heartbeat tail is node-level and
-        // multiplexed; seeding every sibling duplicated it N times.
-        const key = streamTargetKey(run, nodeId);
+        // ONE target invocation — an invocation-keyed heartbeat lands on its
+        // own lane; a node-level one falls to the single-target heuristic
+        // (seeding every sibling duplicated the tail N times).
+        const key = heartbeatInvocationKey(run, nodeId);
         const invocation = key ? run.nodes[key] : undefined;
         if (invocation && invocation.textTail === "") {
           invocation.textTail =
@@ -1119,9 +1176,9 @@ const workflowRunsSlice = createSlice({
           });
         }
       }
-      // ONE target invocation — node-level deltas carry no invocation
-      // identity; fanning them into every sibling rendered N copies.
-      const key = streamTargetKey(run, nodeId);
+      // ONE target invocation — the exact lane when the frame names it (the
+      // fan-out fix), the bounded single-target heuristic when it does not.
+      const key = streamInvocationKey(run, nodeId, event);
       const invocation = key ? run.nodes[key] : undefined;
       if (!invocation) return;
       invocation.lastStreamKind = event.kind;
@@ -1210,7 +1267,7 @@ const workflowRunsSlice = createSlice({
       for (const [nodeId, snapshot] of Object.entries(tails)) {
         const tail = snapshot.live_text_tail;
         if (!tail) continue;
-        const key = streamTargetKey(run, nodeId);
+        const key = heartbeatInvocationKey(run, nodeId);
         const invocation = key ? run.nodes[key] : undefined;
         if (!invocation) continue;
         invocation.textTail =

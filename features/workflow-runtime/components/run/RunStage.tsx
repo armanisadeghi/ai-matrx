@@ -78,6 +78,8 @@ import {
   type RunSurfaceConfig,
 } from "../../surface/config";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
+import { useInterruptQuestion } from "../../interrupt/InterruptQuestion";
+import { RunDecisions } from "../../interrupt/RunDecisions";
 import { InterruptCard, RunResultCard } from "../readout-parts";
 import { RunSurfaceView } from "../RunSurfaceView";
 import { RunActivityFeed } from "./RunActivityFeed";
@@ -245,6 +247,11 @@ export function RunStage({
   const schemaFailed = schemaState.status === "error";
   const declared = resultSchemaOrNull(schemaState);
   const { showcase, panel } = splitByPresentation(emissions);
+  // A live question that asked for the stage. Read once here so the slot and
+  // the panel placement cannot disagree about where it belongs.
+  const question = useInterruptQuestion(runId);
+  const stagedQuestion =
+    question && question.view.presentation === "showcase" ? question : null;
   // An authored surface that already places a node's readout keeps it — the
   // author's layout is the intent, and rendering one shape twice on one screen
   // is what THE CANONICAL COMPONENT LAW exists to prevent.
@@ -274,16 +281,28 @@ export function RunStage({
         whatItRan={workflowName}
         onRetry={onRetry}
       />
-      <InterruptCard runId={runId} />
+      {/* THE QUESTION (SPEC §4.1). A `panel` question sits here, in the run's
+          own column of cards; a `showcase` question is STAGED below instead —
+          `placement` is what keeps it from being drawn in both places. */}
+      <InterruptCard runId={runId} placement="panel" />
 
       {/* THE SHOWCASE — page-centered, above the columns, reserved from the
           declared contract and never also in the stream below. Renders
-          nothing at all when this workflow stages nothing. */}
+          nothing at all when this workflow stages nothing… unless a question
+          asked for the stage, which outranks a reveal: the run is blocked on
+          it, and "the sign-off you want the person to actually see" is the
+          whole reason `presentation: "showcase"` exists on a question. */}
       <ShowcaseSlot
         runId={runId}
         emission={showcase}
         declared={declaredShowcase}
         started={status !== null}
+        staged={
+          stagedQuestion ? (
+            <InterruptCard runId={runId} placement="showcase" />
+          ) : null
+        }
+        stagedTitle={stagedQuestion?.view.title ?? null}
       />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_22rem]">
@@ -307,6 +326,11 @@ export function RunStage({
               />
             </div>
           </div>
+
+          {/* THE DECISION RECORD (SPEC §4.2). The live question vanishes the
+              moment the run resumes; who signed off — or whether an agent did
+              it on the deadline — must not vanish with it. */}
+          <RunDecisions runId={runId} nodeLabels={stepLabels} />
 
           <RunActivityFeed runId={runId} stepLabels={stepLabels} />
         </aside>
