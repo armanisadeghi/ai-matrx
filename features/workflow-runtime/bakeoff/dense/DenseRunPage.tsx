@@ -26,9 +26,13 @@ import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { toast } from "@/lib/toast";
 
-import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
 import { fetchWorkflowDefinition } from "../../surface/service";
-import { deriveRunForm } from "../../surface/run-form";
+import { EMPTY_SERVED_INPUTS } from "../../served-form/ServedInputFields";
+import type { ServedSubmission } from "../../served-form/served-input";
+import {
+  useServedRunForm,
+  useServedRunStarter,
+} from "../../served-form/useServedRunForm";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 import { DenseIntake } from "./DenseIntake";
 import { DenseConsole } from "./DenseConsole";
@@ -71,7 +75,13 @@ export function DenseRunPage({ definitionId }: { definitionId: string }) {
 
   const [workflow, setWorkflow] = useState<LoadedWorkflow | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const { startRun, starting } = useWorkflowRunControls();
+
+  // THE compiled input surface — the same declaration the shipped run form
+  // renders. What this workflow asks for is served, never re-derived here.
+  const served = useServedRunForm(definitionId);
+  const inputs =
+    served.status === "ready" ? served.form.inputs : EMPTY_SERVED_INPUTS;
+  const { start: startServedRun, starting } = useServedRunStarter();
 
   useEffect(() => {
     let cancelled = false;
@@ -101,25 +111,24 @@ export function DenseRunPage({ definitionId }: { definitionId: string }) {
   }, [definitionId]);
 
   const begin = useCallback(
-    async (nodeInputs: Record<string, Record<string, unknown>>) => {
-      const started = await startRun({ definitionId, nodeInputs });
+    async (submission: ServedSubmission) => {
+      const started = await startServedRun(definitionId, submission);
       if (!started) return;
       toast.success("Off it goes.");
       // The run id rides the URL so a refresh re-adopts and resumes.
       router.replace(`/workflows/bakeoff/dense/${definitionId}?run=${started}`);
     },
-    [definitionId, router, startRun],
+    [definitionId, router, startServedRun],
   );
 
-  const collectsInput =
-    workflow !== null && deriveRunForm(workflow.definition).length > 0;
+  const collectsInput = inputs.length > 0;
 
   const runAgain = useCallback(() => {
     if (collectsInput) {
       router.replace(`/workflows/bakeoff/dense/${definitionId}`);
       return;
     }
-    void begin({});
+    void begin({ inputs: {}, inputSources: {} });
   }, [begin, collectsInput, definitionId, router]);
 
   const header = (
@@ -182,8 +191,9 @@ export function DenseRunPage({ definitionId }: { definitionId: string }) {
       <DenseIntake
         workflowName={workflow.name}
         definition={workflow.definition}
+        state={served}
         starting={starting}
-        onStart={(nodeInputs) => void begin(nodeInputs)}
+        onStart={(submission) => void begin(submission)}
       />
     );
   }

@@ -21,6 +21,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
+import { toast } from "@/lib/toast";
 
 import {
   parseServedRunForm,
@@ -202,4 +203,53 @@ export function useServedRunStart(): ServedRunStart {
   );
 
   return { starting, start };
+}
+
+// ---------------------------------------------------------------------------
+// The host-shaped start
+// ---------------------------------------------------------------------------
+
+/**
+ * `useServedRunStart` with the refusal already explained — for a HOST that
+ * owns its own Start button and only wants the run id back.
+ *
+ * The bake-off pages, and the Masterwork try-box, all previously called
+ * `useWorkflowRunControls().startRun`, which returns `runId | null` and toasts
+ * its own failures. This is that shape over the served contract, so adopting
+ * the surface does not also mean seven copies of "what do I do with a 409".
+ *
+ * A 409 `inputs_required` becomes a toast NAMING the gaps, never a bare error:
+ * a start refused for want of an input is never a dead end. A host that wants
+ * to render those gaps in place (the run form does) uses `useServedRunStart`
+ * directly instead.
+ */
+export function useServedRunStarter(): {
+  starting: boolean;
+  start: (
+    definitionId: string,
+    submission: ServedSubmission,
+  ) => Promise<string | null>;
+} {
+  const { starting, start } = useServedRunStart();
+  const startAndExplain = useCallback(
+    async (
+      definitionId: string,
+      submission: ServedSubmission,
+    ): Promise<string | null> => {
+      const outcome = await start(definitionId, submission);
+      if (outcome.status === "started") return outcome.runId;
+      if (outcome.status === "gaps") {
+        toast.error(
+          outcome.gaps.length > 0
+            ? `Still needed: ${outcome.gaps.map((g) => g.label).join(", ")}.`
+            : outcome.message,
+        );
+        return null;
+      }
+      toast.error(outcome.message);
+      return null;
+    },
+    [start],
+  );
+  return { starting, start: startAndExplain };
 }

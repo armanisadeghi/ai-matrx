@@ -7,22 +7,31 @@
  * (every step of the definition). Nothing is a surprise later — the run
  * console shows the same plan and the same deliverables, filling in.
  *
- * Inputs render through the canonical `RunFormFieldControl` (THE one field
- * renderer for `deriveRunForm` fields); this file only arranges them densely.
+ * Inputs are the SERVED surface (`GET /workflows/{id}/run-form`), rendered
+ * through `ServedFieldControl` — THE one control for a declared input. This
+ * file only arranges them densely: two columns, long text spanning both. The
+ * arrangement is the variant; the fields, the gate and the submission are not.
  */
 
-import { useState } from "react";
+
 import { Package, Play } from "lucide-react";
 
 import IconResolver from "@/components/official/icons/IconResolver";
 import { cn } from "@/lib/utils";
 
-import { RunFormFieldControl } from "../../components/RunFormFieldControl";
 import {
-  deriveRunForm,
-  missingRequiredFields,
-  seedRunFormValues,
-} from "../../surface/run-form";
+  EMPTY_SERVED_INPUTS,
+  ServedFieldControl,
+  ServedFormScream,
+  useServedInputKinds,
+  useServedInputValues,
+} from "../../served-form/ServedInputFields";
+import {
+  buildSubmission,
+  unsatisfiedServedInputs,
+  type ServedSubmission,
+} from "../../served-form/served-input";
+import type { ServedRunFormState } from "../../served-form/useServedRunForm";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 import {
   FAMILY_ICON,
@@ -36,27 +45,28 @@ import {
 export function DenseIntake({
   workflowName,
   definition,
+  state,
   starting,
   onStart,
 }: {
   workflowName: string;
+  /** The plan and the deliverables still come from the graph. */
   definition: WorkflowDefinitionLike;
+  /** The served input surface, fetched by the page. */
+  state: ServedRunFormState;
   starting: boolean;
-  onStart: (nodeInputs: Record<string, Record<string, unknown>>) => void;
+  onStart: (submission: ServedSubmission) => void;
 }) {
-  const sections = deriveRunForm(definition);
   const steps = describeWorkflowSteps(definition);
   const deliverables = deliverableSteps(steps);
 
-  const [values, setValues] = useState<Record<string, Record<string, unknown>>>(
-    () => seedRunFormValues(sections),
+  const inputs =
+    state.status === "ready" ? state.form.inputs : EMPTY_SERVED_INPUTS;
+  const { values, touched, setValue } = useServedInputValues(inputs);
+  const { kinds, error: kindError } = useServedInputKinds(inputs);
+  const missing = unsatisfiedServedInputs(inputs, values, touched).map(
+    (i) => i.label,
   );
-  const missing = missingRequiredFields(sections, values);
-  const setValue = (nodeId: string, key: string, v: unknown) =>
-    setValues((prev) => ({
-      ...prev,
-      [nodeId]: { ...prev[nodeId], [key]: v },
-    }));
 
   return (
     <div className="h-full overflow-y-auto">
@@ -74,7 +84,7 @@ export function DenseIntake({
           <button
             type="button"
             disabled={starting || missing.length > 0}
-            onClick={() => onStart(values)}
+            onClick={() => onStart(buildSubmission(inputs, values, touched))}
             className={cn(
               "inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3.5 text-sm font-medium text-primary-foreground transition-opacity",
               starting || missing.length > 0
@@ -93,51 +103,66 @@ export function DenseIntake({
             <div className="border-b border-border/60 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               What it needs from you
             </div>
-            {sections.length === 0 ? (
-              <p className="px-3 py-4 text-sm text-muted-foreground">
-                Nothing — press Run and it takes it from here.
-              </p>
+            {state.status === "loading" ? (
+              <div className="space-y-2 p-3">
+                <div className="h-9 animate-pulse rounded-md bg-muted/50" />
+                <div className="h-9 animate-pulse rounded-md bg-muted/30" />
+              </div>
+            ) : state.status === "error" ? (
+              <div className="p-3">
+                <ServedFormScream
+                  title="Could not load what this workflow needs"
+                  body={`${state.message} The run form is SERVED (GET /workflows/{id}/run-form) — without it there is nothing honest to ask for.`}
+                />
+              </div>
+            ) : inputs.length === 0 ? (
+              <div className="p-3">
+                {!state.form.surfaceServed ? (
+                  <ServedFormScream
+                    title="This backend serves no input surface"
+                    body="The run-form response carried no `inputs` array, so the reachable server predates the compiled input surface. &ldquo;Nothing to fill in&rdquo; below is not a real answer."
+                  />
+                ) : null}
+                <p className="text-sm text-muted-foreground">
+                  Nothing — press Run and it takes it from here.
+                </p>
+              </div>
             ) : (
               <div className="space-y-3 p-3">
-                {sections.map((section) => (
-                  <div key={section.nodeId}>
-                    {sections.length > 1 ? (
-                      <div className="mb-1.5 text-xs font-medium text-foreground">
-                        {section.title}
-                      </div>
-                    ) : null}
-                    <div className="grid gap-x-3 gap-y-2 sm:grid-cols-2">
-                      {section.fields.map((field) => (
-                        <label
-                          key={field.key}
-                          className={cn(
-                            "block",
-                            (field.type === "long_text" ||
-                              field.type === "file") &&
-                              "sm:col-span-2",
-                          )}
-                        >
-                          <span className="text-xs text-muted-foreground">
-                            {field.label}
-                            {field.required ? " *" : ""}
-                          </span>
-                          <RunFormFieldControl
-                            field={field}
-                            value={values[section.nodeId]?.[field.key]}
-                            onChange={(v) =>
-                              setValue(section.nodeId, field.key, v)
-                            }
-                          />
-                          {field.help ? (
-                            <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                              {field.help}
-                            </span>
-                          ) : null}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                {kindError ? (
+                  <ServedFormScream title="Kind registry gap" body={kindError} />
+                ) : null}
+                <div className="grid gap-x-3 gap-y-2 sm:grid-cols-2">
+                  {inputs.map((input) => (
+                    <label
+                      key={input.name}
+                      className={cn(
+                        "block",
+                        // Dense means two columns — but a long answer, a file
+                        // or anything structured gets the full width, or the
+                        // density costs the reader more than it saves.
+                        spansBothColumns(input.jsonSchema, input.variant) &&
+                          "sm:col-span-2",
+                      )}
+                    >
+                      <span className="text-xs text-muted-foreground">
+                        {input.label}
+                        {input.sourcing === "optional" ? "" : " *"}
+                      </span>
+                      <ServedFieldControl
+                        input={input}
+                        kind={kinds[input.kind]}
+                        value={values[input.name]}
+                        onChange={(v) => setValue(input.name, v)}
+                      />
+                      {input.help ? (
+                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                          {input.help}
+                        </span>
+                      ) : null}
+                    </label>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -221,4 +246,21 @@ export function DenseIntake({
       </div>
     </div>
   );
+}
+
+/**
+ * Which inputs refuse the dense two-column grid. The legacy form read a field
+ * `type` ("long_text" | "file"); a served input carries a value contract and a
+ * named variant instead, so the same judgement is made from those.
+ */
+function spansBothColumns(
+  jsonSchema: Record<string, unknown>,
+  variant: string | null,
+): boolean {
+  if (variant && /textarea|long|rich|markdown|file|upload/i.test(variant)) {
+    return true;
+  }
+  const type = jsonSchema.type;
+  if (type === "object" || type === "array") return true;
+  return jsonSchema["ui:widget"] === "textarea";
 }

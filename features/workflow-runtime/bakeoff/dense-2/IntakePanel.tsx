@@ -2,8 +2,9 @@
 
 /**
  * IntakePanel — the center pane before a run exists: the workflow's declared
- * inputs (deriveRunForm → RunFormFieldControl, the ONE field renderer), the
- * promises restated ("you will get"), recent runs as doors, and Start.
+ * inputs (the SERVED surface → `ServedFieldControl`, the ONE control for a
+ * declared input), the promises restated ("you will get"), recent runs as
+ * doors, and Start.
  *
  * Promise-first: the same deliverables named here become the delivered
  * artifacts on this same page — one continuous thread.
@@ -14,38 +15,43 @@ import { History, Play } from "lucide-react";
 
 import { toast } from "@/lib/toast";
 
-import { RunFormFieldControl } from "../../components/RunFormFieldControl";
 import { RunStatusChip } from "../../run-status";
 import { humanizeKind } from "../../components/run/node-presentation";
 import {
-  deriveRunForm,
-  missingRequiredFields,
-  seedRunFormValues,
-  type RunFormSection,
-} from "../../surface/run-form";
+  EMPTY_SERVED_INPUTS,
+  ServedFieldControl,
+  ServedFormScream,
+  useServedInputKinds,
+  useServedInputValues,
+} from "../../served-form/ServedInputFields";
+import {
+  buildSubmission,
+  unsatisfiedServedInputs,
+} from "../../served-form/served-input";
+import {
+  useServedRunForm,
+  useServedRunStarter,
+} from "../../served-form/useServedRunForm";
 import { listRecentRuns, type RecentRunSummary } from "../../surface/service";
-import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
-import type { WorkflowDefinitionLike } from "../../trigger-points";
 import type { RunStepPresentation } from "../../components/run/node-presentation";
 
 export function IntakePanel({
   definitionId,
-  definition,
   deliverables,
   onStarted,
   onOpenRun,
 }: {
   definitionId: string;
-  definition: WorkflowDefinitionLike;
   deliverables: RunStepPresentation[];
   onStarted: (runId: string) => void;
   onOpenRun: (runId: string) => void;
 }) {
-  const sections: RunFormSection[] = deriveRunForm(definition);
-  const [values, setValues] = useState<Record<string, Record<string, unknown>>>(
-    () => seedRunFormValues(sections),
-  );
-  const { startRun, starting } = useWorkflowRunControls();
+  const served = useServedRunForm(definitionId);
+  const inputs =
+    served.status === "ready" ? served.form.inputs : EMPTY_SERVED_INPUTS;
+  const { values, touched, setValue } = useServedInputValues(inputs);
+  const { kinds, error: kindError } = useServedInputKinds(inputs);
+  const { start: startServedRun, starting } = useServedRunStarter();
   const [recent, setRecent] = useState<RecentRunSummary[] | null>(null);
   const [recentFailed, setRecentFailed] = useState(false);
 
@@ -63,17 +69,19 @@ export function IntakePanel({
     };
   }, [definitionId]);
 
-  const missing = missingRequiredFields(sections, values);
+  const missing = unsatisfiedServedInputs(inputs, values, touched).map(
+    (i) => i.label,
+  );
 
   const start = async () => {
     if (missing.length > 0) {
       toast.error(`Still needed: ${missing.join(", ")}`);
       return;
     }
-    const runId = await startRun({
+    const runId = await startServedRun(
       definitionId,
-      nodeInputs: sections.length > 0 ? values : undefined,
-    });
+      buildSubmission(inputs, values, touched),
+    );
     if (runId) onStarted(runId);
   };
 
@@ -108,48 +116,55 @@ export function IntakePanel({
           </div>
         ) : null}
 
-        {sections.length === 0 ? (
+        {served.status === "error" ? (
+          <ServedFormScream
+            title="Could not load what this workflow needs"
+            body={`${served.message} The run form is SERVED (GET /workflows/{id}/run-form) — without it there is nothing honest to ask for.`}
+          />
+        ) : null}
+        {served.status === "ready" && !served.form.surfaceServed ? (
+          <ServedFormScream
+            title="This backend serves no input surface"
+            body="The run-form response carried no `inputs` array, so the reachable server predates the compiled input surface. Nothing below is a real declaration."
+          />
+        ) : null}
+        {kindError ? (
+          <ServedFormScream title="Kind registry gap" body={kindError} />
+        ) : null}
+
+        {served.status === "loading" ? (
+          <div className="space-y-2">
+            <div className="h-9 animate-pulse rounded-md bg-muted/50" />
+            <div className="h-9 animate-pulse rounded-md bg-muted/30" />
+          </div>
+        ) : inputs.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             This workflow needs nothing from you — press Start and watch it
             work.
           </p>
         ) : (
           <div className="space-y-4">
-            {sections.map((section) => (
-              <fieldset key={section.nodeId}>
-                <legend className="mb-1.5 text-sm font-medium text-foreground">
-                  {section.title}
-                </legend>
-                <div className="space-y-2">
-                  {section.fields.map((field) => (
-                    <label key={field.key} className="block">
-                      <span className="text-xs text-muted-foreground">
-                        {field.label}
-                        {field.required ? " *" : ""}
-                      </span>
-                      <RunFormFieldControl
-                        field={field}
-                        value={values[section.nodeId]?.[field.key]}
-                        onChange={(v) =>
-                          setValues((prev) => ({
-                            ...prev,
-                            [section.nodeId]: {
-                              ...prev[section.nodeId],
-                              [field.key]: v,
-                            },
-                          }))
-                        }
-                      />
-                      {field.help ? (
-                        <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                          {field.help}
-                        </span>
-                      ) : null}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            ))}
+            <div className="space-y-2">
+              {inputs.map((input) => (
+                <label key={input.name} className="block">
+                  <span className="text-xs text-muted-foreground">
+                    {input.label}
+                    {input.sourcing === "optional" ? "" : " *"}
+                  </span>
+                  <ServedFieldControl
+                    input={input}
+                    kind={kinds[input.kind]}
+                    value={values[input.name]}
+                    onChange={(v) => setValue(input.name, v)}
+                  />
+                  {input.help ? (
+                    <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                      {input.help}
+                    </span>
+                  ) : null}
+                </label>
+              ))}
+            </div>
             {missing.length > 0 ? (
               <p className="text-xs text-muted-foreground">
                 Still needed: {missing.join(", ")}
