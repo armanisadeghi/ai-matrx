@@ -592,11 +592,16 @@ begin
   end if;
   pol := hr._leave_policy_at(req.leave_policy_id);
 
-  select d.decider_employment_id into v_by
+  -- Column names read off the live catalog: `hr.workflow_decision` stamps the decider as
+  -- `actor_employment_id` (with `on_behalf_of_employment_id` beside it for a delegation), and it
+  -- carries `workflow_instance_id` directly, so no join through the step is needed. An earlier
+  -- draft guessed `decider_employment_id`; the engine's fail-closed apply caught it on the first
+  -- real approval and refused to record an effect that had not happened — which is the engine
+  -- working, not the engine failing.
+  select coalesce(d.on_behalf_of_employment_id, d.actor_employment_id) into v_by
     from hr.workflow_decision d
-    join hr.workflow_step s on s.id = d.workflow_step_id
-   where s.workflow_instance_id = p_instance
-   order by d.created_at desc limit 1;
+   where d.workflow_instance_id = p_instance
+   order by d.decided_at desc nulls last, d.created_at desc limit 1;
 
   -- ================= cancellation =================
   if inst.flow_key = 'leave_cancellation' then

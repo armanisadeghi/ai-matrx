@@ -217,16 +217,41 @@ begin
   returning * into v_entry;
 
   -- decision 4: the writer writes the snapshot, so no entry of a computed kind can lack one.
-  if p_entry_kind in ('accrual', 'carryover', 'forfeiture', 'carryover_expiry', 'payout',
-                      'adjustment', 'reinstatement') then
-    select j.key into v_juris
-      from hr.position_assignment pa
-      join hr.location loc on loc.id = pa.location_id
-      join hr.jurisdiction j on j.id = loc.jurisdiction_id
-     where pa.employment_id = p_employment_id and pa.is_primary and pa.deleted_at is null
-       and pa.effective_from <= p_occurred_on
-       and (pa.effective_to is null or pa.effective_to > p_occurred_on)
-     limit 1;
+  -- EVERY kind, not only §3.5's five. §12 is the stricter requirement — "every row has a rule
+  -- door", and an entry with no snapshot renders a red "Unexplained entry" chip. A `usage` row
+  -- with no door is the one an employee disputes most often ("where did my four hours go?"), so
+  -- it is the last row that should be missing its explanation.
+  if p_entry_kind is not null then
+    -- 🚨 `hr._subject_jurisdiction_key` RAISES for `hr_employment` — SPEC-JURISDICTION §2.0 says
+    -- jurisdiction is STAMPED on a record, and an employment carries no stamp. So the canonical
+    -- resolver is asked first and its refusal is caught, not treated as an outage; the working
+    -- record's own answer (the primary assignment's work location) is next; and only then the
+    -- federal key. `hr.calculation_snapshot.jurisdiction_key` is NOT NULL, so a null here is not
+    -- an option — but a fallback nobody can see IS a fabricated jurisdiction on a wage-adjacent
+    -- record, which is why the last rung writes its own reason into the snapshot's inputs.
+    begin
+      v_juris := hr._subject_jurisdiction_key('hr_employment', p_employment_id);
+    exception when others then
+      v_juris := null;
+    end;
+    if v_juris is null then
+      select j.key into v_juris
+        from hr.position_assignment pa
+        join hr.location loc on loc.id = pa.location_id
+        join hr.jurisdiction j on j.id = loc.jurisdiction_id
+       where pa.employment_id = p_employment_id and pa.is_primary and pa.deleted_at is null
+       order by (pa.effective_from <= p_occurred_on
+                 and (pa.effective_to is null or pa.effective_to > p_occurred_on)) desc,
+                pa.effective_from desc
+       limit 1;
+    end if;
+    if v_juris is null then
+      v_juris := 'US';
+      p_snapshot_inputs := coalesce(p_snapshot_inputs, '{}'::jsonb)
+        || jsonb_build_object('jurisdiction_key_fallback', true,
+             'jurisdiction_key_fallback_reason',
+             'no jurisdiction resolves for this employment; the federal key was used');
+    end if;
 
     v_snap := hr.write_calculation_snapshot(
       v_org, 'hr_leave_ledger', v_entry.id,
@@ -495,12 +520,16 @@ begin
     v_project := false;
     v_basis := 'posted_only';
   elsif v_pol.accrual_method = 'per_pay_period' then
+    -- Column names read off the live catalog, not remembered: `hr.pay_period` carries
+    -- `period_start_on` / `period_end_on` and has no `deleted_at`. An earlier draft of this
+    -- function guessed `ends_on`, and the first real request through the door raised
+    -- `42703 column pp.ends_on does not exist` — which is why the proof runs as a real user
+    -- before anything is called finished.
     select count(*) into v_periods
       from hr.pay_period pp
       join hr.employment em on em.id = p_employment_id
      where pp.organization_id = em.organization_id
-       and pp.ends_on > current_date and pp.ends_on <= p_as_of
-       and pp.deleted_at is null;
+       and pp.period_end_on > current_date and pp.period_end_on <= p_as_of;
     v_earn := coalesce(v_pol.accrual_rate, 0) * v_periods;
     v_basis := 'pay_periods_closing';
   elsif v_pol.accrual_method = 'per_month' then

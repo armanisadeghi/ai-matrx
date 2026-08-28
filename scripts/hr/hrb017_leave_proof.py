@@ -86,6 +86,12 @@ async def main() -> None:  # noqa: C901
                 "apikey": anon,
                 "Authorization": f"Bearer {token}",
                 "Content-Type": "application/json",
+                # PostgREST resolves an RPC in the FIRST exposed schema unless the caller names
+                # one. `api` is first on this fleet, so a `public.hr_*` door is a 404 without
+                # these two headers — which is exactly what supabase-js sends by default
+                # (`db.schema = "public"`), so this matches what the browser will do.
+                "Content-Profile": "public",
+                "Accept-Profile": "public",
             },
             json=body,
         )
@@ -106,11 +112,9 @@ async def main() -> None:  # noqa: C901
         )
         for row in ids:
             pid = str(row["id"])
-            await conn.execute(
-                "do $$ begin perform hr.arm_write(); "
-                "delete from hr.calculation_snapshot where subject_type='hr_leave_ledger' and subject_id in "
-                f"  (select id from hr.leave_ledger where leave_policy_id = $tok${pid}$tok$::uuid); end $$;"
-            )
+            # `hr.calculation_snapshot` refuses deletion outright ("evidence is never deleted",
+            # SPEC-JURISDICTION §4.5) and that refusal is correct — so the proof's snapshots stay.
+            # They outlive the rows they explain, which is exactly what evidence is for.
             await conn.execute("alter table hr.leave_ledger disable trigger _zz_leave_ledger_no_delete")
             await conn.execute(
                 "do $$ begin perform hr.arm_write(); "
@@ -289,9 +293,14 @@ async def main() -> None:  # noqa: C901
               str(state["payload"])[:200])
 
         print("\n=== 6. THE ONE INBOX carries it (no second queue was built) ===")
+        # The step to decide is the ACTIVE one, never the highest-ordered one: `auto_approve` is
+        # skipped (mode 5, off by default) and `hr_review` sits `pending` until its condition is
+        # evaluated. An earlier draft took the last step by order and the engine correctly refused
+        # it with WF_STEP_CLOSED — the engine was right and the probe was wrong.
         step = await conn.fetchrow(
             "select s.id, s.step_key, s.state from hr.workflow_step s "
-            " where s.workflow_instance_id=$1::uuid order by s.step_order desc limit 1",
+            " where s.workflow_instance_id=$1::uuid and s.state = 'active' "
+            " order by s.step_order limit 1",
             instance_id,
         )
         check("a workflow step exists for the leave request", step is not None, "no step row")
@@ -343,8 +352,13 @@ async def main() -> None:  # noqa: C901
         check("EXACTLY ONE usage entry was written at approval", len(usage) == 1,
               f"{len(usage)} usage entries: {[dict(x) for x in entries]}")
         if usage:
+            # Compared against the DATABASE's current_date, not Python's. The server runs UTC and
+            # this machine does not; an earlier draft compared to `date.today()` and went red at
+            # 21:00 local for a row that was correctly dated.
+            db_today = await conn.fetchval("select current_date")
             check("the usage entry is dated the approval date, never the leave dates",
-                  usage[0]["occurred_on"] == date.today(), str(usage[0]["occurred_on"]))
+                  usage[0]["occurred_on"] == db_today,
+                  f"{usage[0]['occurred_on']} vs db current_date {db_today}")
             check("the usage entry is negative", float(usage[0]["hours_delta"]) < 0,
                   str(usage[0]["hours_delta"]))
 
@@ -354,7 +368,10 @@ async def main() -> None:  # noqa: C901
             " where l.leave_policy_id=$1::uuid",
             policy_id,
         )
-        print(f"  calculation snapshots on this policy's entries: {snap}")
+        total_entries = await conn.fetchval(
+            "select count(*) from hr.leave_ledger where leave_policy_id=$1::uuid", policy_id)
+        check("EVERY ledger entry carries a rule door (§12: no unexplained entry)",
+              snap == total_entries, f"{snap} snapshots for {total_entries} entries")
 
         print("\n=== 8. The figures moved, and the identity still holds ===")
         me2 = await rpc("hr_my_time_off", {"p_employment_id": EMPLOYEE}, emp_token)
@@ -396,12 +413,6 @@ async def main() -> None:  # noqa: C901
     finally:
         if "--keep" not in sys.argv and policy_id:
             print("\n=== cleanup ===")
-            await conn.execute(
-                "do $$ begin perform hr.arm_write(); "
-                "delete from hr.calculation_snapshot where subject_type='hr_leave_ledger' and subject_id in "
-                "  (select id from hr.leave_ledger where leave_policy_id = $tok$" + policy_id + "$tok$::uuid); "
-                "end $$;"
-            )
             await conn.execute(
                 "alter table hr.leave_ledger disable trigger _zz_leave_ledger_no_delete")
             await conn.execute(
