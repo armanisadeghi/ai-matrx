@@ -1239,6 +1239,13 @@ export type HrMyVerificationConsent = {
  * `rpc()` by NAME, so every call was PGRST202: consent could not be recorded through
  * the product at all. Verified against `pg_proc`:
  *   hr_verification_consent(p_id uuid, p_granted boolean, p_note text DEFAULT NULL)
+ *
+ * 🚨 ITS ANSWER IS `consent_granted`, NOT `granted` (hr_l1_55).
+ * `granted` is the envelope's word for "you were permitted" — {@link isRefusal} returns true
+ * on `granted === false`. The door used to return `granted` meaning "the subject agreed", so
+ * a DECLINE (a successful decision) was read as a permission refusal and the subject was told
+ * "Recording your decision is not available to you here." over a decision that had just been
+ * recorded. Nothing in an HR response may reuse `granted` for a domain fact.
  */
 export function setHrVerificationConsent(args: {
   letterId: string;
