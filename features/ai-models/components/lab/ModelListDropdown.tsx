@@ -1805,10 +1805,6 @@ export function ModelListDropdown({
           <div className="p-4 text-center text-xs text-muted-foreground">
             Loading catalog…
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-4 text-center text-xs text-muted-foreground">
-            No models match your filters.
-          </div>
         ) : (
           <>
             {emptyOptionLabel && onClear && (
@@ -1825,28 +1821,34 @@ export function ModelListDropdown({
                 {emptyOptionLabel}
               </button>
             )}
-            {filtered.map((m) => (
-            <ModelRow
-              key={m.id}
-              model={m}
-              tier={costRatingTier(m.costRating)}
-              variant={variant}
-              selected={m.id === value}
-              isFavorite={favoriteSet.has(m.id)}
-              onToggleFavorite={() => toggleFavorite(m.id)}
-              onSelect={() =>
-                isMobile ? setMobileDetail(m) : handleSelect(m.id)
-              }
-              onHover={
-                isMobile
-                  ? undefined
-                  : () => {
-                      setHovered(m);
-                      if (rightPanel !== "filters") setRightPanel("detail");
-                    }
-              }
-            />
-            ))}
+            {filtered.length === 0 ? (
+              <div className="p-4 text-center text-xs text-muted-foreground">
+                No models match your filters.
+              </div>
+            ) : (
+              filtered.map((m) => (
+                <ModelRow
+                  key={m.id}
+                  model={m}
+                  tier={costRatingTier(m.costRating)}
+                  variant={variant}
+                  selected={m.id === value}
+                  isFavorite={favoriteSet.has(m.id)}
+                  onToggleFavorite={() => toggleFavorite(m.id)}
+                  onSelect={() =>
+                    isMobile ? setMobileDetail(m) : handleSelect(m.id)
+                  }
+                  onHover={
+                    isMobile
+                      ? undefined
+                      : () => {
+                          setHovered(m);
+                          if (rightPanel !== "filters") setRightPanel("detail");
+                        }
+                  }
+                />
+              ))
+            )}
           </>
         )}
       </div>
