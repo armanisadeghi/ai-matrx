@@ -90,7 +90,6 @@ export function VerificationRowActions({
     const result = await denyHrVerification({
       letterId: row.id,
       denialBasis: basis,
-      note: note.trim() || null,
     });
     setSaving(false);
     if (result.ok) {
@@ -107,7 +106,6 @@ export function VerificationRowActions({
     const result = await deliverHrVerification({
       letterId: row.id,
       method,
-      recipient: recipient.trim() || null,
     });
     setSaving(false);
     if (result.ok) {
@@ -224,15 +222,13 @@ export function VerificationRowActions({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="deny-note">Note for the record</Label>
-                <Input
-                  id="deny-note"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="min-h-11 sm:min-h-9"
-                />
-              </div>
+              {/*
+                🚨 THERE WAS A "Note for the record" FIELD HERE AND NOTHING KEPT IT.
+                `hr_verification_deny(p_id, p_basis)` takes no note — the text was posted
+                under an argument the door does not have, and the whole call was PGRST202.
+                A field labelled "for the record" that records nothing is worse than no
+                field, so it is gone. The basis IS the record.
+              */}
             </div>
             <DialogFooter>
               <Button
@@ -293,15 +289,14 @@ export function VerificationRowActions({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="deliver-recipient">To</Label>
-                <Input
-                  id="deliver-recipient"
-                  value={recipient}
-                  onChange={(e) => setRecipient(e.target.value)}
-                  className="min-h-11 sm:min-h-9"
-                />
-              </div>
+              {/*
+                🚨 THERE WAS A "To" FIELD HERE AND THE DOOR HAS NO RECIPIENT.
+                `hr_verification_deliver(p_id, p_method, p_payload)` reads exactly one
+                payload key, `outsider_token_ref`. The typed address went nowhere — and
+                it was pre-filled from `row.requester_email`, so it LOOKED like it was
+                addressing the letter. Delivery records the method against the request
+                that already carries the requester; it does not re-address it.
+              */}
             </div>
             <DialogFooter>
               <Button

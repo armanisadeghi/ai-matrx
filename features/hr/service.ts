@@ -1183,16 +1183,25 @@ export function fetchHrIncidentStatus(
 // on aidream, because a letter is a rendered PDF frozen into `files.files`.
 // See `features/hr/people/verifications/service.ts`.
 
-/** The subject grants or withholds consent. A withheld consent is itself the record. */
+/**
+ * The subject grants or withholds consent. A withheld consent is itself the record.
+ *
+ * 🚨 THE DOOR IS `hr_verification_consent`, AND ITS FIRST ARGUMENT IS `p_id`.
+ * This called `hr_verification_consent_set` with `p_letter_id` — a function that has
+ * never existed, under an argument name the real one does not take. PostgREST resolves
+ * `rpc()` by NAME, so every call was PGRST202: consent could not be recorded through
+ * the product at all. Verified against `pg_proc`:
+ *   hr_verification_consent(p_id uuid, p_granted boolean, p_note text DEFAULT NULL)
+ */
 export function setHrVerificationConsent(args: {
   letterId: string;
   granted: boolean;
   note?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
-    "hr_verification_consent_set",
+    "hr_verification_consent",
     {
-      p_letter_id: args.letterId,
+      p_id: args.letterId,
       p_granted: args.granted,
       p_note: args.note ?? null,
     },
@@ -1200,35 +1209,52 @@ export function setHrVerificationConsent(args: {
   );
 }
 
-/** Deny a request with a basis. A request for someone who never worked here ends HERE. */
+/**
+ * Deny a request with a basis. A request for someone who never worked here ends HERE.
+ *
+ * 🚨 THE ARGUMENTS ARE `p_id` AND `p_basis`, AND THERE IS NO NOTE.
+ * This posted `p_letter_id`/`p_denial_basis`/`p_note` — PGRST202 on every call. The
+ * note had nowhere to land in the door, so it is not accepted here either rather than
+ * being taken from the user and dropped. Verified against `pg_proc`:
+ *   hr_verification_deny(p_id uuid, p_basis text)
+ */
 export function denyHrVerification(args: {
   letterId: string;
   denialBasis: string;
-  note?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
     "hr_verification_deny",
     {
-      p_letter_id: args.letterId,
-      p_denial_basis: args.denialBasis,
-      p_note: args.note ?? null,
+      p_id: args.letterId,
+      p_basis: args.denialBasis,
     },
     { envelope: true, whatFailed: "Denying this request" },
   );
 }
 
-/** Record delivery: `token_link | email | mail | in_person`. */
+/**
+ * Record delivery: `token_link | email | mail | in_person`.
+ *
+ * 🚨 THE ARGUMENTS ARE `p_id` AND `p_method`, PLUS A `p_payload` JSONB.
+ * This posted `p_letter_id`/`p_recipient` — PGRST202 on every call. The door reads
+ * exactly one key out of the payload, `outsider_token_ref`; it has no notion of a
+ * "recipient", so that parameter is gone rather than posted into nothing. Verified
+ * against `pg_proc`:
+ *   hr_verification_deliver(p_id uuid, p_method text, p_payload jsonb DEFAULT '{}')
+ */
 export function deliverHrVerification(args: {
   letterId: string;
   method: string;
-  recipient?: string | null;
+  outsiderTokenRef?: string | null;
 }): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
     "hr_verification_deliver",
     {
-      p_letter_id: args.letterId,
+      p_id: args.letterId,
       p_method: args.method,
-      p_recipient: args.recipient ?? null,
+      p_payload: args.outsiderTokenRef
+        ? { outsider_token_ref: args.outsiderTokenRef }
+        : {},
     },
     { envelope: true, whatFailed: "Recording the delivery" },
   );
