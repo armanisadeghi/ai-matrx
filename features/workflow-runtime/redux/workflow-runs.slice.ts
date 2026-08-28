@@ -820,6 +820,18 @@ function applyEvent(
     case "node_skipped": {
       const invocation = upsertInvocation(run, event, event);
       invocation.phase = "skipped";
+      // A SKIPPED NODE STILL HAS AN OUTPUT, and the fold was throwing it away.
+      // `NodeSkippedEvent` declares `output` because the substituted value is
+      // what downstream edges receive — and the engine settles a RESUMED
+      // `control.human_input` as skipped, so the person's answer (and the
+      // `matrx_decision` stamped beside it) arrives on exactly this event.
+      // Discarding it is why an answered question left no record on screen.
+      const skippedOutput = asRecord(event.output);
+      if (skippedOutput) {
+        invocation.output = skippedOutput;
+        const inBand = readObjectKind(skippedOutput);
+        if (inBand) invocation.outputKind = inBand;
+      }
       if (append) {
         pushActivity(run, {
           nodeId: event.node_id,

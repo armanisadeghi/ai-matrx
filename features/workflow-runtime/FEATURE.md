@@ -90,11 +90,16 @@ that is the exit-test surface.
    20–100 nodes (PLAN §4.2). Tracked tier is unlimited; streamed tier is bounded; promotion is
    viewer-driven (`ensureLane`).
 3. **One flush timer per run tree.** Never reintroduce a per-lane/per-stream timer.
-4. **`invocationKeyOf` is the only lane identity.** Fan-out siblings are separate invocations;
-   the wire's `node_stream` deltas carry `node_id` only, so a FAN-OUT node's deltas stay in the
-   TRACKED tier (single-target invocation, one bounded copy) — no lane is opened for fan-out
-   (a root lane registers to no invocation and sibling lanes can receive no content; both
-   burned budget on invisible panes) until the server grows per-invocation stream identity.
+4. **`invocationKeyOf` is the only lane identity.** Fan-out siblings are separate invocations.
+   **The server grew per-invocation stream identity (SPEC §5.2, V3-A): `node_stream` and
+   `node_emitted` now carry `dispatch_id` + `item_index`**, so an ATTRIBUTED frame is keyed
+   exactly (`streamInvocationKey`) and a fanned-out node renders N separable lanes
+   (`RunFanOutLanes`, proven live on run `1358667d`). An UNATTRIBUTED frame — a node-level
+   emitter, or a server predating the change — still lands on ONE invocation (single-target,
+   one bounded copy), never all N. The heartbeat is read the same way: `_streaming_by_node`
+   keys are now `node:dispatch:index`, and the legacy bare-node-id form still resolves.
+   Fan-out deltas remain TRACKED-tier — the lane budget is unchanged; a sibling lane is a
+   phase + tail on the rail, not a promoted content pane.
 5. **Cursor discipline:** `after_seq` only, monotonic, shared by SSE and poller; ephemeral frames
    never advance it.
 6. **A refresh never re-streams tokens.** Replay rebuilds node states + outputs (including
@@ -155,6 +160,35 @@ that is the exit-test surface.
   artifact with no runtime consumer is a decision for Arman, not something an agent retires.
 
 ## Change Log
+
+- 2026-08-28 — **The interrupt contract, the approval preset and fan-out lanes (Volley 7).**
+  `interrupt/` is the new home of everything a mid-run question needs: `interrupt-view.ts`
+  (pure — the §4.1 presentation block, the answer fields, the deadline copy, the provenance
+  sentence), `InterruptQuestion.tsx` (the one component) and `RunDecisions.tsx` (the record).
+  🚨 **The answer control is no longer a third input renderer**: it resolves through
+  `resolveVariantComponent` → `VariableInputComponent`, the same ladder `ServedRunForm` walks,
+  and the flat `parseInterruptFields` switch in `readout-parts.tsx` is DELETED (it was
+  module-local with exactly one consumer). A `presentation: "showcase"` question is STAGED in
+  `ShowcaseSlot` and OUTRANKS a showcase emission while it waits — the run is blocked on it —
+  with `InterruptCard placement="panel"|"showcase"` keeping it from being drawn twice; hosts
+  that pass no `placement` are unchanged. A `context` value carrying `__kind` renders through
+  `KindInstanceRender` above the control. **Provenance is always shown**: `selectRunDecisions`
+  reads `matrx_decision` off the settled `control.human_input` outputs, because the live card
+  vanishes the instant the run resumes. 🚨 **The engine settles a RESUMED `human_input` as
+  `node_skipped`, and the fold was discarding that event's `output` entirely** — a skipped
+  node's output is what downstream edges receive, and for a question it IS the answer. Fixed
+  in the slice; the selector reads both terminal phases. §5.2: `streamInvocationKey` +
+  `heartbeatInvocationKey` key live frames by the identity the wire now carries, and
+  `RunFanOutLanes` / `RunWorkSetBar` render the sibling lanes and the `work_set_progress`
+  numbers that had been folded since the emitter shipped and rendered nowhere.
+  **Proven live** (fixture `Approval + Fan-out Proof (no LLM)`,
+  `a1c0de00-0000-4000-8000-000000000701`): run `6ffdc118` approved with a note, run `1358667d`
+  paused→resumed→rejected, both themes, three lanes keyed by `dispatch_id:item_index`.
+  🚨 **Open SERVER defect the walks surfaced:** `POST /runs/{id}/resume` never builds a
+  `DecisionProvenance` for the authenticated human, so `stamp_decision` is skipped and a
+  human's approval lands with NO `matrx_decision` — while the escalation sweeper does stamp,
+  making an auto-decision better attributed than a person's. The UI says "Approved — decider
+  not recorded" out loud rather than implying a person; do not soften that copy, fix the seam.
 
 - 2026-08-28 — **Discovery exists as a surface (census #38/#39, Volley 6).** `discovery/`:
   `/workflows/waiting` is THE "waiting on you" inbox over `GET /runs/waiting` — `interrupted`

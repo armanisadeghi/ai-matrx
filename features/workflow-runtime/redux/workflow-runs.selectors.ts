@@ -323,7 +323,16 @@ export const selectRunDecisions = (runId: string) =>
       if (!aggregate || aggregate.specType !== HUMAN_INPUT_SPEC) continue;
       for (const key of aggregate.invocationKeys) {
         const invocation = run.nodes[key];
-        if (!invocation || invocation.phase !== "settled") continue;
+        // BOTH terminal phases carry a decision. Proven live on run
+        // 6ffdc118: the engine settles a RESUMED `control.human_input` as
+        // `node_skipped` (the node did not execute — its output IS the
+        // person's answer), so reading only `settled` found nothing, ever.
+        if (
+          !invocation ||
+          (invocation.phase !== "settled" && invocation.phase !== "skipped")
+        ) {
+          continue;
+        }
         const decision = readSettledDecision(nodeId, invocation.output);
         if (decision) decisions.push(decision);
       }

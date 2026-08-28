@@ -26,6 +26,7 @@ import reducer, {
 import {
   selectNodeSiblingLanes,
   selectNodeWorkSet,
+  selectRunDecisions,
 } from "../redux/workflow-runs.selectors";
 import { invocationKeyOf } from "../types";
 import type { NodeStreamEvent, RunRow, WorkflowRunEvent } from "../types";
@@ -266,6 +267,64 @@ describe("selectNodeSiblingLanes", () => {
     expect(
       selectNodeSiblingLanes(RUN, "solo")({ workflowRuns: state }),
     ).toHaveLength(0);
+  });
+});
+
+describe("a resumed question leaves a decision record", () => {
+  it("reads the answer off node_skipped — which is how the engine settles it", () => {
+    // Proven live on run 6ffdc118: a resumed `control.human_input` settles as
+    // `node_skipped` (it never executed; its output IS the answer), and the
+    // fold used to discard that event's `output` entirely.
+    let state = reducer(undefined, attachRun({ runId: RUN }));
+    state = reducer(
+      state,
+      applyRunEvent({
+        runId: RUN,
+        event: {
+          event: "node_started",
+          run_id: RUN,
+          ts: "2026-08-28T00:00:00Z",
+          step: 1,
+          node_id: "ask",
+          spec_type: "control.human_input",
+          attempt: 1,
+          inputs: {},
+        } as WorkflowRunEvent,
+        seq: 1,
+        replay: false,
+      }),
+    );
+    state = reducer(
+      state,
+      applyRunEvent({
+        runId: RUN,
+        event: {
+          event: "node_skipped",
+          run_id: RUN,
+          ts: "2026-08-28T00:00:05Z",
+          step: 1,
+          node_id: "ask",
+          spec_type: "control.human_input",
+          attempt: 1,
+          output: {
+            extras: { approved: true, note: "Looks right - ship it." },
+            matrx_decision: {
+              authority: "human",
+              actor_label: "Dana Reyes",
+              decided_at: "2026-08-28T00:00:05Z",
+              escalated: false,
+            },
+          },
+        } as unknown as WorkflowRunEvent,
+        seq: 2,
+        replay: false,
+      }),
+    );
+    const decisions = selectRunDecisions(RUN)({ workflowRuns: state });
+    expect(decisions).toHaveLength(1);
+    expect(decisions[0].approved).toBe(true);
+    expect(decisions[0].note).toBe("Looks right - ship it.");
+    expect(decisions[0].provenance?.actorLabel).toBe("Dana Reyes");
   });
 });
 
