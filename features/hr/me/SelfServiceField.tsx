@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 
 import {
   HR_SELF_SERVICE_HINTS,
+  fieldNote,
   humanFieldName,
   type HrSelfServicePolicy,
 } from "./selfServicePolicy";
@@ -88,6 +89,7 @@ export function SelfServiceField({
 
   const heading = label ?? humanFieldName(field);
   const hint = HR_SELF_SERVICE_HINTS[policy];
+  const note = fieldNote(field);
   const editable = policy === "free" || policy === "request_approval";
 
   // THE RULE. A pending request owns the display: neither the old value nor a
@@ -197,6 +199,16 @@ export function SelfServiceField({
           {policy === "hr_only" ? <Lock className="h-3 w-3 shrink-0" /> : null}
           {hint}
         </p>
+      ) : null}
+      {/*
+        🚨 LOOKED UP BY FIELD HERE, NOT PASSED IN BY EACH SURFACE.
+        The note exists because a field's NAME can promise something the field does not do —
+        the phone fields never reach text messaging. If every caller had to remember to pass
+        it, the one surface that forgot would be the one that lies. Looking it up inside the
+        component means the field cannot be rendered anywhere without its own correction.
+      */}
+      {note ? (
+        <p className="text-[0.6875rem] text-muted-foreground">{note}</p>
       ) : null}
     </div>
   );

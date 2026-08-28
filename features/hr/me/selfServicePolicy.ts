@@ -193,6 +193,35 @@ const HR_FIELD_LABELS: Record<string, string> = {
   directory_opt_out: "Directory listing",
 };
 
+/**
+ * A note about what a field DOES, for fields whose name promises more than they deliver.
+ *
+ * 🚨 THE PHONE FIELDS DO NOT REACH TEXT MESSAGING, AND THE FORM IMPLIED THEY DID.
+ * Traced end to end (HRB-013 r45/r46): an SMS notice's `to_address` resolves through
+ * `communication.resolve_channel_address`, which reads the CRM contact graph
+ * (`crm.party_contact_point` ⋈ `crm.contact_medium`) — and `hr_self_update` /
+ * `hr_employee_update` write `hr.employee.work_phone` / `hr.employee_private.personal_phone`
+ * and touch that graph NOT AT ALL. Both fields are `self_free`, so the product invites
+ * somebody to type a number with no friction and no approval, and nothing will ever text it.
+ *
+ * The note deliberately does NOT say "until it's confirmed". Confirming is not offered on
+ * this surface, and on the measured evidence a confirmed number would not work either: the
+ * only automatic producer of a phone contact point writes `purpose_code = 'personal'`, while
+ * the resolver accepts only `mobile`/`work` unless the knob `hr.sms.allow_personal_number`
+ * is on — and that knob is **not seeded at all**, so it reads false. Promising that
+ * confirmation would fix it is a second false claim on top of the one being removed.
+ * When the feed lands, this note changes with it.
+ */
+const HR_FIELD_NOTES: Record<string, string> = {
+  work_phone: "Text message notifications don't use this number.",
+  personal_phone: "Text message notifications don't use this number.",
+};
+
+/** The honest note for a field, or null when the field's name already tells the truth. */
+export function fieldNote(field: string): string | null {
+  return HR_FIELD_NOTES[field] ?? null;
+}
+
 export function humanFieldName(field: string): string {
   const override = HR_FIELD_LABELS[field];
   if (override) return override;
