@@ -9,7 +9,16 @@ _Last updated: 2026-08-25_
 
 ## Active
 
-_(none)_
+- **Apply the pending guard-hardening section of the definer-grant fix (one SQL run).** The 2026-08-28
+  production outage (42501 `permission denied for function has_access` on reads platform-wide) is
+  already FIXED live — door registry, grandfather repair, and grants are applied and verified. One
+  belt-and-suspenders piece remains: replacing `platform.enforce_definer_client_grants` so its
+  grandfather/door matching is search_path-independent for FUTURE functions (the agent sandbox's
+  permission gate refused replacing a security-enforcement function). Guided step: open the SQL
+  editor at https://supabase.com/dashboard/project/brsgrqvjdzwihsvnfqkf/sql/new, paste the entire
+  contents of `migrations/definer_guard_search_path_grandfather_fix_2026_08_28.sql` (idempotent —
+  the already-applied sections no-op), click **Run**, and confirm it reports success with no red
+  error. Report back: "definer guard section E applied" (2026-08-28).
 
 ## Pending Arman review
 
