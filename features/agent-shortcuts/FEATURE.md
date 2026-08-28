@@ -2,7 +2,7 @@
 
 **Status:** `migrating` (multi-scope UI in progress; see phases 11–13)
 **Tier:** `1`
-**Last updated:** `2026-04-25`
+**Last updated:** `2026-08-27`
 
 ---
 
@@ -15,6 +15,7 @@ A **Shortcut** is a stored, first-class invocation of a specific agent version t
 ## Entry points
 
 **Routes**
+
 - `app/(admin)/administration/agents/system-agents/shortcuts/` — admin global shortcuts CRUD
 - `app/(admin)/administration/agents/system-agents/shortcuts/all/` — admin directory of every shortcut (global + non-global), with filter/group-by and UUID jump
 - `app/(admin)/administration/agents/system-agents/shortcuts/[shortcutId]/` — admin direct-open by UUID (resolves to agent-scoped or global editor)
@@ -28,15 +29,18 @@ A **Shortcut** is a stored, first-class invocation of a specific agent version t
   - `features/agents/migration/phases/phase-13-org-shortcuts-ui.md` — org-owned shortcuts
 
 **Feature code** (`features/agent-shortcuts/`)
+
 - `components/` — CRUD components shared across admin/user/org scopes (`ShortcutList`, `ShortcutDirectory`, `ShortcutDirectResolver`, …)
 - `hooks/` — React hooks for listing, creating, editing, running
 - `types.ts`, `utils/`, `constants.ts`, `index.ts` — usual layout
 
 **Redux** (split — note this!)
+
 - `features/agents/redux/agent-shortcuts/` — canonical slice, types, selectors, thunks. Do NOT create a parallel slice under `features/agent-shortcuts/redux/`.
 - `features/agents/redux/agent-shortcut-categories/` — categories slice
 
 **Invocation**
+
 - Shortcut click → `createInstanceFromShortcut` factory (`features/agents/redux/execution-system/thunks/create-instance.thunk.ts`) → `launchConversation` thunk.
 
 ---
@@ -56,10 +60,10 @@ interface AgentShortcut {
   sortOrder: number;
   agentId: string | null;
   agentVersionId: string | null;
-  useLatest: boolean;              // false ⇒ version-pinned (default); true ⇒ follow current pointer
+  useLatest: boolean; // false ⇒ version-pinned (default); true ⇒ follow current pointer
   enabledContexts: ShortcutContext[];
-  scopeMappings: Record<string, string> | null;  // UI-context-key → agent-variable-name
-  resultDisplay: ResultDisplay;    // displayMode + variableInputStyle + flags
+  scopeMappings: Record<string, string> | null; // UI-context-key → agent-variable-name
+  resultDisplay: ResultDisplay; // displayMode + variableInputStyle + flags
   allowChat: boolean;
   autoRun: boolean;
   applyVariables: boolean;
@@ -75,7 +79,7 @@ interface AgentShortcut {
 }
 ```
 
-**Scope columns** (`userId` / `organizationId` / `projectId` / `taskId`) are how the same table backs System, Organization, and Personal shortcuts. See [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
+**Visibility and ownership are separate.** `agent.shortcut.organization_id` is required tenant ownership. Personal visibility is `created_by`; global visibility is `created_by IS NULL` plus the system org; project/task scope is a `platform.associations` edge. The frontend compatibility fields (`userId` / `organizationId` / `projectId` / `taskId`) must never be mistaken for four interchangeable ownership columns. See [`features/scopes/FEATURE.md`](../scopes/FEATURE.md).
 
 ---
 
@@ -85,15 +89,15 @@ Every surface that hosts Shortcuts (code editor, Notes, Agent Builder, user-buil
 
 ### Universal keys (available on every surface)
 
-| Key | Meaning |
-|---|---|
-| `selection` | Currently highlighted content |
-| `textBefore` / `textAfter` | Text surrounding the selection or cursor |
-| `content` | Primary payload of the current view (surface decides) |
-| `context` | Broader situational context (surface decides) |
-| `appFeature` | Which feature within the app the user is in |
-| `featureAgentOverview` | Description of the current feature's purpose for the agent |
-| `user_overview` | Normalized summary of the user |
+| Key                        | Meaning                                                    |
+| -------------------------- | ---------------------------------------------------------- |
+| `selection`                | Currently highlighted content                              |
+| `textBefore` / `textAfter` | Text surrounding the selection or cursor                   |
+| `content`                  | Primary payload of the current view (surface decides)      |
+| `context`                  | Broader situational context (surface decides)              |
+| `appFeature`               | Which feature within the app the user is in                |
+| `featureAgentOverview`     | Description of the current feature's purpose for the agent |
+| `user_overview`            | Normalized summary of the user                             |
 
 ### Surface-specific extensions
 
@@ -115,16 +119,16 @@ A structured component (like Card — with title + description fields) flips one
 
 **Other flags** that reshape the experience:
 
-| Flag | What it controls |
-|---|---|
-| `autoRun` | `true` = fire immediately; `false` = show variable inputs first |
-| `allowChat` | `true` = multi-turn allowed; `false` = one turn and done |
-| `usePreExecutionInput` | With `autoRun`, still give the user a confirm step (optional `preExecutionMessage`) |
-| `showVariablePanel` | Let the user see and modify auto-bound variable values |
-| `showDefinitionMessages` | Expose non-system messages baked into the agent definition |
-| `showDefinitionMessageContent` | When shown, render full content vs just the user's literal text |
-| `showSubAgents` | When `false`, sub-agent turns are filtered from the transcript selector |
-| `hideReasoning` / `hideToolResults` | Clean up what the user sees mid-run |
+| Flag                                | What it controls                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------------------- |
+| `autoRun`                           | `true` = fire immediately; `false` = show variable inputs first                     |
+| `allowChat`                         | `true` = multi-turn allowed; `false` = one turn and done                            |
+| `usePreExecutionInput`              | With `autoRun`, still give the user a confirm step (optional `preExecutionMessage`) |
+| `showVariablePanel`                 | Let the user see and modify auto-bound variable values                              |
+| `showDefinitionMessages`            | Expose non-system messages baked into the agent definition                          |
+| `showDefinitionMessageContent`      | When shown, render full content vs just the user's literal text                     |
+| `showSubAgents`                     | When `false`, sub-agent turns are filtered from the transcript selector             |
+| `hideReasoning` / `hideToolResults` | Clean up what the user sees mid-run                                                 |
 
 ---
 
@@ -160,6 +164,7 @@ A structured component (like Card — with title + description fields) flips one
 - **Agents have no awareness of Shortcuts.** A shortcut is a wrapper — the agent sees a normal invocation with variables already filled.
 - **Redux slice lives under `features/agents/redux/agent-shortcuts/`, not under `features/agent-shortcuts/`.** Extend that slice; never create a parallel one.
 - **Multi-scope from day one.** A shortcut belongs to exactly one scope row (user / org / project / task), but the CRUD components must work for all scopes — build once, reuse across admin/user/org routes per CLAUDE.md.
+- **Every create resolves scope and organization together.** Use `resolveShortcutWriteScope` at the shared CRUD boundary: personal rows carry `created_by` and the selected org; global rows carry the system org; org/project/task rows require an explicit scope id. Every direct insert and creation RPC still sends `organization_id` explicitly.
 - **`scopeMappings` targets variable NAMES, not indexes.** Renaming a variable on the agent is a breaking change for every pinned shortcut using that mapping.
 - **Shortcuts can trigger Workflows** instead of a single agent (`features/workflows/` — currently broken per CLAUDE.md, out of scope).
 - **Shortcuts can ship their own source code** for custom rendering — they're not limited to variable bindings. See [`features/tool-call-visualization/FEATURE.md`](../tool-call-visualization/FEATURE.md).
@@ -189,7 +194,7 @@ See `features/agents/migration/MASTER-PLAN.md`.
 
 ## Change log
 
-- `2026-08-15` — **Blocked at the last step: creating a user-scoped shortcut is impossible platform-wide — see FOUND_DEFECTS D200.** `agentShortcutToInsert` throws without an `organizationId`, and all three create callsites (`ShortcutForm`, `useShortcutQuickCreate`, `LinkAgentToShortcutModal`) pass `null`, while `applyScopeToRowFields` fills the org only for `organization`/`project`/`task`. So `scope: "user"` can never insert — the reason `/agents/[id]/shortcuts` reads "Your shortcuts: 0". Which org owns a *personal* shortcut (and what happens with no active org, given db-rules §6 forbids keying on the active one) is **Arman's decision**, so the fix is filed rather than guessed. Fixed here in passing: the modal was masking the real cause — RTK's `unwrap()` rejects with a plain object, so `err instanceof Error` never matched and every failure showed a generic string; `errorMessage()` now surfaces the actual message. Also verified live on production: both entry points, the modal, inline category create, and auto-select all work; only the final insert is blocked.
+- `2026-08-27` — **D200 fixed at the shared write boundary.** `resolveShortcutWriteScope` now combines visibility with required tenant ownership for form, quick-create, bulk, surface-seeded, Saved Request, and category paths; the direct thunk independently calls `ensureOrgId`. The next editor preserves RTK plain-object messages and uses the already-captured toast path, so one rejection is one attributable incident. `check:organization-context` now pins the resolver and every writer connection. The live table's `_stamp_org_default` removal remains the ordered post-deployment cutover in `common-docs/projects/no-db-assigned-org/PLAN.md`; callers no longer depend on it.
 - `2026-08-15` — Nested `CategoryForm` is mounted once and then kept mounted (`isOpen` drives the close). Unmounting it the instant it succeeded skipped Radix's own close cleanup, leaving `body { pointer-events: none }` behind and making the whole link modal inert — every button looked enabled and silently did nothing.
 - `2026-08-14` — **`LinkAgentToShortcutModal` finally has a mounter.** Task 1.7 of `phase-01-agent-shortcuts-foundation.md` shipped this modal with "No routes mounted; Phases 11/12/13 will consume" — those phases never landed, so a 483-line component sat at reachability rung 2 (exists, nothing calls it) and `pnpm check:unwired` reported it. It is now mounted in `AgentShortcutsPanel`, which serves BOTH `/agents/[id]/shortcuts` and `/administration/agents/system-agents/agents/[id]/shortcuts` — one mount, two surfaces. Entry points: a **Link shortcut** header button and a primary **Link this agent to a shortcut** button in the empty state. The panel gained `agentDescription`, `agentVariableDefinitions`, and `linkScope` props; both routes pass them from the `getAgent` row they already load. `linkScope` is explicit per callsite (`user` on the core route, `global` on system-agents) — the `{ scope, scopeId }` contract is never inferred from the URL. Two defects fixed while wiring: (1) the modal **required a category and offered no way to create one**, so a scope with zero categories was a wall — `CategoryForm` is now mounted beside the modal behind a **New category** button and auto-selects what it creates; (2) the open-reset `useEffect` listed `categories` as a dependency, so any category arriving (including the one just created) wiped the label, mappings, and selection — split into an open-only reset plus a seed-if-empty effect. Verified stale: the phase-03.5 follow-up claiming `agx_get_shortcuts_initial` / `agx_build_shortcut_menu` / `agx_get_user_shortcuts` "reference old column names and need updating before management-page paths work" — all three carry the full v2 execution-config column set (`display_mode`, `variables_panel_style`, `bypass_gate_seconds`, …) in both the latest migration bodies and the live-generated `types/database.types.ts`. This flow does not touch them regardless: it reads through `fetchShortcutsForScope` / `fetchCategoriesForScope`.
 - `2026-08-09` — DOOR LAW pass on `AgentShortcutsPanel` (`/agents/[id]/shortcuts`): the target agent, each shortcut row's label (basePath-aware editor route + peek), and an org-scoped shortcut's org now render as `EntityRef` doors; rows became div-with-button-semantics so doors can nest. Pinned by `features/agents/components/shortcuts/__tests__/shortcuts-panel-doors.test.tsx`.

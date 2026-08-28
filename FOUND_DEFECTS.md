@@ -5,7 +5,7 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 **Rules**
 
 - File only defects you can't fully fix in the moment, and only UNRELATED findings — a bug related to your current task gets **fixed**, not filed. Enough context to act cold: what, where, the fix.
-- **Claim the next free ID by grepping `^### D` first — then confirm it is genuinely free.** An entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered. Past collisions: two D138s, D150s, D167s, D183s, D184s — and the D184→D193 / D183→D194 renumbers then landed on numbers that were **already taken**, so D193/D194/D195/D219 each named two entries. All cleared 2026-08-21 by moving the *uncited* namesake to a free ID (D242–D246) — the entry other docs cite always keeps its number. **Grep before you claim, and take the next ID above the current maximum, not above the last entry in the file:** `grep -oE '^### \**D[0-9]+' FOUND_DEFECTS.md | grep -oE '[0-9]+' | sort -n | tail -1`, then add 1.
+- **Claim the next free ID by grepping `^### D` first — then confirm it is genuinely free.** An entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered. Past collisions: two D138s, D150s, D167s, D183s, D184s — and the D184→D193 / D183→D194 renumbers then landed on numbers that were **already taken**, so D193/D194/D195/D219 each named two entries. All cleared 2026-08-21 by moving the _uncited_ namesake to a free ID (D242–D246) — the entry other docs cite always keeps its number. **Grep before you claim, and take the next ID above the current maximum, not above the last entry in the file:** `grep -oE '^### \**D[0-9]+' FOUND_DEFECTS.md | grep -oE '[0-9]+' | sort -n | tail -1`, then add 1.
 - 🚨 **This ledger's IDs are `D<n>`. aidream's are `AD<n>`** (adopted 2026-08-22). Across repos write `matrx-frontend D184` / `aidream AD57` — a bare `D<n>` always means THIS file, so never use one for an aidream defect. **A defect spanning both repos keeps ONE number — this file's** — and aidream files its half as `AD<n> — D<n> remainder: …` (live example: `aidream AD108` = this file's D158). Full body: `../common-docs/policies/defect-ownership.md` § Entry IDs.
 - **When you fix one: collapse it to a one-line bullet in Resolved (title + date + commit/file pointer) — or delete it outright.** No histories, no verification narratives, no journeys. An entry earns lines only while it is open.
 - Keep open entries compressed to load-bearing facts: what's broken, exact paths, the fix, who decides. A partially-fixed entry keeps only the open remainder.
@@ -179,6 +179,7 @@ and had no standing to change an HR contract surface.
 
 > ✅ **RESOLVED 2026-08-27 (lane L13 / HRB-025), migration `hr_l13_06_provider_seam_definer_projection`.**
 > The judgment call went **both** ways, because the two columns are not the same case.
+>
 > - `connector` was **dropped** from `provider_webhook_candidates` — the one caller
 >   (`aidream services/hr/providers/engine.py::verify_webhook`) unmarshals it and never reads it,
 >   and it reads it as `dict(row.get("connector") or {})`, so an absent key is `{}` and nothing
@@ -189,15 +190,15 @@ and had no standing to change an HR contract surface.
 >   the recorded why is: `authenticated`, `anon` and `PUBLIC` lost `EXECUTE`; `service_role` keeps
 >   it. The client's door to bindings stays E-27 (`hr.provider_bindings_list`), whose projection was
 >   already secret-free.
-> Two sibling functions were in the same state and got the same revoke: `provider_binding_resolve`
-> and `provider_sync_targets` (both project `connector`, both genuinely need it for the REST/MCP
-> adapters, neither has a browser caller).
-> **The class is now guarded**, in `scripts/hr/hrb012_type_proof.py` group F: for every
-> `SECURITY DEFINER` function in a frozen schema, if its result projects an excluded column *of a
-> table its body actually reads*, then no client role may execute it. The per-entity scoping is
-> load-bearing — `amount` is excluded on `hr.leave_ledger` and legitimate on `hr.work_interval`, so
-> a name-only match would flag `hr.export_line_source` forever and get the guard switched off.
-> `--self-test` replays the pre-fix shape and requires it to be caught.
+>   Two sibling functions were in the same state and got the same revoke: `provider_binding_resolve`
+>   and `provider_sync_targets` (both project `connector`, both genuinely need it for the REST/MCP
+>   adapters, neither has a browser caller).
+>   **The class is now guarded**, in `scripts/hr/hrb012_type_proof.py` group F: for every
+>   `SECURITY DEFINER` function in a frozen schema, if its result projects an excluded column _of a
+>   table its body actually reads_, then no client role may execute it. The per-entity scoping is
+>   load-bearing — `amount` is excluded on `hr.leave_ledger` and legitimate on `hr.work_interval`, so
+>   a name-only match would flag `hr.export_line_source` forever and get the guard switched off.
+>   `--self-test` replays the pre-fix shape and requires it to be caught.
 
 ### D267 — `assoc_list` with a NULL direction silently returns ZERO rows instead of raising (2026-08-26)
 
@@ -250,11 +251,11 @@ present — but each is a structural defect, and each is named in
 `migrations/component_read_lane_no_created_by.sql`'s sweep so a fourth failure stops that migration
 rather than vanishing into a silent skip.
 
-| Table | Failure | What it actually is |
-|---|---|---|
-| `files.analysis` | `column "id" does not exist` | never generated; bespoke policies; also carries the D264 `owner_id` arm |
-| `transcripts.studio_session_settings` | `column "id" does not exist` | never generated; bespoke policies |
-| `legal.wc_impairment_definition` | `component … has no composition parent` | a 215-row global REFERENCE table (no owner/org/visibility column, read by every signed-in user via a bespoke `auth_read`) **misclassified as a component** |
+| Table                                 | Failure                                 | What it actually is                                                                                                                                        |
+| ------------------------------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `files.analysis`                      | `column "id" does not exist`            | never generated; bespoke policies; also carries the D264 `owner_id` arm                                                                                    |
+| `transcripts.studio_session_settings` | `column "id" does not exist`            | never generated; bespoke policies                                                                                                                          |
+| `legal.wc_impairment_definition`      | `component … has no composition parent` | a 215-row global REFERENCE table (no owner/org/visibility column, read by every signed-in user via a bespoke `auth_read`) **misclassified as a component** |
 
 The emitted read expression is keyed on `id` in both the bounded-definer arm and every candidate
 set, so a registered entity without `id` can never take a generated policy (§2 base contract).
@@ -273,11 +274,11 @@ Measured live 2026-08-26: **251 policies across 251 tables, every one a componen
 these tokens walk small parent sets, unlike `folder`'s 32k self-edge — but the signature is
 unmistakable, as a real non-admin JWT:
 
-| Table | Planning | Execution | Ratio |
-|---|---|---|---|
-| `files.file_versions` | 597 ms | 0.44 ms | 1,400× |
-| `seo.search_performance_daily` | 243 ms | 0.43 ms | 566× |
-| `chat.message` | 63 ms | 0.40 ms | 159× |
+| Table                          | Planning | Execution | Ratio  |
+| ------------------------------ | -------- | --------- | ------ |
+| `files.file_versions`          | 597 ms   | 0.44 ms   | 1,400× |
+| `seo.search_performance_daily` | 243 ms   | 0.43 ms   | 566×   |
+| `chat.message`                 | 63 ms    | 0.40 ms   | 159×   |
 
 Cost tracks the PARENT walk, so any parent that grows the way `folder` did takes its children over
 the `authenticated` role's 8s cap with it — a 57014 → HTTP 500 that reads like an outage.
@@ -298,15 +299,15 @@ All seven have `organization_id` **NOT NULL, no column default, and no `_stamp_o
 `inherit_org_from_parent` trigger** (verified 2026-08-26 via `information_schema.columns` +
 `pg_trigger` join `pg_proc`, non-internal triggers only):
 
-| Table | Triggers it does have |
-|---|---|
-| `agent.prompt_remediation` | governance/actor/touch/version only |
-| `seo.engine_schedule` | `fn_engine_schedule_target_guard` |
+| Table                       | Triggers it does have               |
+| --------------------------- | ----------------------------------- |
+| `agent.prompt_remediation`  | governance/actor/touch/version only |
+| `seo.engine_schedule`       | `fn_engine_schedule_target_guard`   |
 | `seo.site_keyword_offering` | `validate_site_offering_fact_scope` |
-| `seo.site_offering_value` | `validate_site_offering_fact_scope` |
-| `web.brand_offering` | `validate_brand_offering_scope` |
-| `web.offering_template` | `validate_offering_template_scope` |
-| `web.site_offering` | `validate_site_offering_scope` |
+| `seo.site_offering_value`   | `validate_site_offering_fact_scope` |
+| `web.brand_offering`        | `validate_brand_offering_scope`     |
+| `web.offering_template`     | `validate_offering_template_scope`  |
+| `web.site_offering`         | `validate_site_offering_scope`      |
 
 **The scope guards are not backstops.** Each of those five `validate_*` functions was read live
 (`pg_proc.prosrc`): none assigns `NEW.organization_id`. They REJECT a mismatched scope; they never
@@ -332,17 +333,17 @@ Found by the docs-steward's daily `platform.ddl_guard_log` read (skill step 7c).
 all. Every column below was confirmed present live 2026-08-26 (`information_schema.columns`) —
 none is a stale warning.
 
-| Table | Column | Canonical replacement | Owner |
-|---|---|---|---|
-| `billing.plan` | `is_public` | `visibility` enum | matrx-frontend |
-| `billing.subscription` | `org_id` | `organization_id` | matrx-frontend |
-| `iam.permissions` | `is_public` | `visibility` enum | matrx-frontend |
-| `scraper.scrape_domain` | `is_public` | `visibility` enum | aidream (scraper service) |
-| `scraper.scrape_parsed_page` | `is_public` | `visibility` enum | aidream (scraper service) |
-| `scraper.scrape_path_pattern` | `is_public` | `visibility` enum | aidream (scraper service) |
-| `extend.wbx_demo` | `is_deleted` | `deleted_at timestamptz` | matrx-extend |
-| `extend.wbx_guidance` | `is_deleted` | `deleted_at timestamptz` | matrx-extend |
-| `extend.wbx_highlight` | `is_deleted` | `deleted_at timestamptz` | matrx-extend |
+| Table                         | Column       | Canonical replacement    | Owner                     |
+| ----------------------------- | ------------ | ------------------------ | ------------------------- |
+| `billing.plan`                | `is_public`  | `visibility` enum        | matrx-frontend            |
+| `billing.subscription`        | `org_id`     | `organization_id`        | matrx-frontend            |
+| `iam.permissions`             | `is_public`  | `visibility` enum        | matrx-frontend            |
+| `scraper.scrape_domain`       | `is_public`  | `visibility` enum        | aidream (scraper service) |
+| `scraper.scrape_parsed_page`  | `is_public`  | `visibility` enum        | aidream (scraper service) |
+| `scraper.scrape_path_pattern` | `is_public`  | `visibility` enum        | aidream (scraper service) |
+| `extend.wbx_demo`             | `is_deleted` | `deleted_at timestamptz` | matrx-extend              |
+| `extend.wbx_guidance`         | `is_deleted` | `deleted_at timestamptz` | matrx-extend              |
+| `extend.wbx_highlight`        | `is_deleted` | `deleted_at timestamptz` | matrx-extend              |
 
 `billing.subscription.org_id` is the sharpest one: the canonical name is `organization_id`
 everywhere else, so every new billing caller learns the wrong column — the same alias-spreading
@@ -433,7 +434,6 @@ see migrations/guest_executions_close_anon_pii_read.sql. Also observed, not file
 `extend.wbx_recipe` (12 rows) is anon-readable, exposing which sites/routes we
 automate — no credentials, mild competitive disclosure only.
 
-
 ### D256 — `rag.library_docs`: restrictive admin-only gate hides rows marked PUBLIC from everyone (2026-08-25)
 
 The table carries three RESTRICTIVE policies — `platform_admin_select_only`,
@@ -453,7 +453,6 @@ should actually be readable.
 
 Found in passing during the 2026-08-25 policy-overlap investigation
 (common-docs/systems/platform/access/POLICY_OVERLAP.md); unrelated to it.
-
 
 ### D255 — text inputs are 14px, so iOS zooms the page on every focus (2026-08-24)
 
@@ -481,7 +480,6 @@ not import content-ir; left for their owners:
 - `features/agents/redux/execution-system/selectors/__tests__/assembled-request-preview.test.ts` —
   2 tests: "Select an organization before sending this message" thrown by the org resolver; the
   fixture state carries no organization since org gating landed.
-
 
 ### D252 — the global admin-lane backfill exposes personal rows in ordinary app sessions (2026-08-22)
 
@@ -558,9 +556,9 @@ from the select body. Nothing else reads them — verified by grep across both r
 
 **Two functions that must answer the same question give different answers for the same (token, id, level).** Measured live as a real non-admin (`929274b1…`), on rulebook `e492a07f…`:
 
-| call | result |
-|---|---|
-| `iam.has_access('rulebook', e492a07f, 'viewer')` | **True** |
+| call                                                                    | result    |
+| ----------------------------------------------------------------------- | --------- |
+| `iam.has_access('rulebook', e492a07f, 'viewer')`                        | **True**  |
 | `e492a07f = ANY(iam.accessible_entity_ids('rulebook','viewer',0,true))` | **False** |
 
 **Cause.** `iam.has_access_for_base` gained two token-agnostic viewer lanes earlier the same day — `public.user_can_read_via_library_grant(...)` and `public.library_is_open(...)` ("THE OPEN LIBRARY"), both reading `platform.entity_grants`. `iam.accessible_entity_ids` was not updated. Its candidate sources are `iam.permissions`, `iam.memberships`, `platform.reachability` and assignment associations — **`platform.entity_grants` is not among them** — so a row readable ONLY through a library grant never becomes a candidate and is never tested. Verified:
@@ -580,10 +578,9 @@ platform.entity_grants where entity_type='rulebook'       : 2 rows, audience='gl
 
 **The general lesson, and it is the same one D254's own history taught twice:** when a resolver is expressed in two forms — one per-row, one set-wise — a lane added to one and not the other is invisible until something stops masking it. There is no test asserting `has_access(t,id,l) == (id = ANY(accessible_entity_ids(t,l)))`. There should be; it is a one-query property check over real rows.
 
-
 **RESOLVED** (aidream `0526`/`0527`/`0528`). `platform.entity_grants` and the two curator lanes were added to `accessible_entity_ids`'s candidate sources. Verified live before landing: **15 disagreements → 0**, in BOTH directions, across all three tokens. Both blocked component tables then proved row-identical to their original lane and were regenerated — **all 206 component tables are on the correct bounded lane, 0 remaining**.
 
-Safe on machinery every component parent arm depends on because the change adds *candidate sources only*, and every candidate is confirmed by `has_access_for_base` — the authority — before entering the result. The set stays a subset of what the per-row resolver approves, so it can only move toward agreement.
+Safe on machinery every component parent arm depends on because the change adds _candidate sources only_, and every candidate is confirmed by `has_access_for_base` — the authority — before entering the result. The set stays a subset of what the per-row resolver approves, so it can only move toward agreement.
 
 **The guard now exists.** `scripts/check_access_resolver_agreement.py` + `iam.access_resolver_disagreements()` assert the property in both directions and BLOCK the release.
 
@@ -593,10 +590,10 @@ Safe on machinery every component parent arm depends on because the change adds 
 
 **Measured live as the real non-admin `test@test.com`, immediately after D249's rollout:**
 
-| query | result |
-|---|---|
-| `select count(*) from files.file_versions` | **TIMES OUT** (>90s) |
-| `select count(*) from files.files` (same user, D249 lane) | 3,391 rows, fast |
+| query                                                     | result               |
+| --------------------------------------------------------- | -------------------- |
+| `select count(*) from files.file_versions`                | **TIMES OUT** (>90s) |
+| `select count(*) from files.files` (same user, D249 lane) | 3,391 rows, fast     |
 
 The generated `component` `std_select` is:
 
@@ -608,10 +605,10 @@ The generated `component` `std_select` is:
 
 The parent arm is already set-wise — that is the `component` lane's whole design and it works. The **trailing arm is not**, and it is the identical D146 shape D249 removed from `entity`: for every row the parent arm does not admit, Postgres calls a SECURITY DEFINER function once. Broken down live:
 
-| component | cost |
-|---|---|
-| `files.file_versions` row count | 50,423 |
-| `iam.accessible_entity_ids('file','viewer')` | 2.78s → 3,623 ids (once per query — fine) |
+| component                                      | cost                                      |
+| ---------------------------------------------- | ----------------------------------------- |
+| `files.file_versions` row count                | 50,423                                    |
+| `iam.accessible_entity_ids('file','viewer')`   | 2.78s → 3,623 ids (once per query — fine) |
 | `iam.has_access('file_version', id, 'viewer')` | ~7ms per row → **~350s over 50,423 rows** |
 
 **Pre-existing, and NOT caused by the D249 work** — `iam.apply_rls`'s `component` branch was not touched by migrations 0476–0481, and its policy text is byte-identical to what that branch has always emitted.
@@ -629,13 +626,12 @@ OR (id IN (<permissions ∪ memberships ∪ reachability ∪ entity_grants for t
 
 **Filed rather than done in the same session as D249**, deliberately: that was six live migrations across every entity table's read policy, and starting a seventh on a second variant at the end of it is how the mistakes in D249's own history happened (a bound that admitted half the table, a mirror that went stale mid-rollout, a lockout the proof could not see). This one wants its own measurement pass. **191 component tables** carry the lane.
 
-
 **RESOLVED** (aidream `0515`–`0528`). One shared builder serves both variants — `iam.entity_read_expr(schema, table, token, variant)` — rather than a second component-shaped copy that would drift. **206 of 206** component tables are on the correct bounded lane. `files.file_versions`: **120s timeout → 1.53s**, 2,495 rows.
 
 Two things the proving caught that reading would not have:
 
-* **A component's `has_access` can be true via the ORG-ADMIN lane — but only when the table has an owner column.** `platform.entity_row_access_attrs` needs `created_by` or `owner_id` *alongside* `organization_id`; without one it returns `o_org = NULL`, so those lanes cannot fire. 13 of 195 component tables are that shape, and emitting the org arms there would have GRANTED rows the kernel denies.
-* **The deployed component lane is more permissive than the kernel it expresses** — it walks parents with `include_public => true` while `has_access_for_base` walks with `false`. Mirroring the kernel would have removed 4,784 rows from `runtime.global_execution_event` and 4,734 from `runtime.global_execution`. D254 was a PERFORMANCE defect; that disagreement is filed separately rather than silently resolved inside one.
+- **A component's `has_access` can be true via the ORG-ADMIN lane — but only when the table has an owner column.** `platform.entity_row_access_attrs` needs `created_by` or `owner_id` _alongside_ `organization_id`; without one it returns `o_org = NULL`, so those lanes cannot fire. 13 of 195 component tables are that shape, and emitting the org arms there would have GRANTED rows the kernel denies.
+- **The deployed component lane is more permissive than the kernel it expresses** — it walks parents with `include_public => true` while `has_access_for_base` walks with `false`. Mirroring the kernel would have removed 4,784 rows from `runtime.global_execution_event` and 4,734 from `runtime.global_execution`. D254 was a PERFORMANCE defect; that disagreement is filed separately rather than silently resolved inside one.
 
 **A regression shipped mid-rollout, recorded because why it was invisible matters more than the bug.** 163 component tables briefly carried a stricter parent arm than the lane they replaced (1,110 rows of read access removed on `files.file_versions` alone). The prover could not see it because it compared each candidate against the DEPLOYED policy — so once the bad expression was deployed, both sides came from the same wrong builder and it reported IDENTICAL. **A differential test whose two sides share a source cannot detect that the source is wrong.** Fixed by reconstructing the original lane (`iam.component_original_lane`), validating that reconstruction against 6 untouched tables, and re-proving all 163 against it. Net access change: zero.
 
@@ -643,12 +639,12 @@ Two things the proving caught that reading would not have:
 
 **Measured live 2026-08-22** as the real non-admin `test@test.com` (owns 3 files), under `SET LOCAL ROLE authenticated` + `request.jwt.claims`, with `statement_timeout = 25s`:
 
-| query | time |
-|---|---|
-| `select id, file_name from files.files where created_by = auth.uid() limit 3` | **TIMED OUT at 25s** |
-| `select id from runtime.global_request where created_by = auth.uid() limit 3` (81k rows) | 18.8s |
-| `select id from chat.conversation where created_by = auth.uid() limit 3` (17.8k rows) | 2.1s |
-| `select id, file_id, version_number from files.file_versions limit 3` | 7.5s |
+| query                                                                                    | time                 |
+| ---------------------------------------------------------------------------------------- | -------------------- |
+| `select id, file_name from files.files where created_by = auth.uid() limit 3`            | **TIMED OUT at 25s** |
+| `select id from runtime.global_request where created_by = auth.uid() limit 3` (81k rows) | 18.8s                |
+| `select id from chat.conversation where created_by = auth.uid() limit 3` (17.8k rows)    | 2.1s                 |
+| `select id, file_id, version_number from files.file_versions limit 3`                    | 7.5s                 |
 
 **Not caused by, and not specific to, `files.files`.** It is the shape `iam.apply_rls` emits for EVERY `entity`:
 
@@ -658,17 +654,17 @@ std_select USING (created_by = (select auth.uid()) OR iam.has_access('<token>', 
 
 `iam.has_access` is a `SECURITY DEFINER` function and is not `LEAKPROOF`, so Postgres must apply the RLS qual before the user's own `WHERE`; the `OR` means no index can serve it, and the planner falls back to a sequential scan calling `has_access` **once per row**. That is the D146 per-row-definer class — already recognized for the `ledger` variant (whose `std_select` was rewritten to a set-wise uncorrelated subquery for exactly this reason, `aidream/db/migrations/0439`) — but the `entity` lane still has it, on the biggest tables the platform owns.
 
-**Why it matters more than a slow query:** `files.files` is the user's file list. A first-party user cannot enumerate their own files inside a normal request timeout. Under db-rules §6a that is as serious as a leak — *"a legitimate user blocked from their own data is as serious a bug as a stranger let in"*.
+**Why it matters more than a slow query:** `files.files` is the user's file list. A first-party user cannot enumerate their own files inside a normal request timeout. Under db-rules §6a that is as serious as a leak — _"a legitimate user blocked from their own data is as serious a bug as a stranger let in"_.
 
 **Found in passing** while re-locking `storage_uri` on the same table (D231). Confirmed pre-existing and NOT caused by that work: the policy text is byte-identical to what `apply_rls` emits, the table already carried exactly the generator's six policies before it ran, and `runtime.global_request` — untouched — shows the same behaviour at the same shape.
 
 **RESOLVED 2026-08-23.** Measured live as the same real non-admin, same queries:
 
-| table | rows | before | after |
-|---|---|---|---|
-| `runtime.global_request` | 81k | 23.9s | **0.33s** |
-| `chat.conversation` | 17.8k | 2.6s | **0.17s** |
-| `files.files` | 48.5k | **timeout** | **3.0s** (407ms execution) |
+| table                    | rows  | before      | after                      |
+| ------------------------ | ----- | ----------- | -------------------------- |
+| `runtime.global_request` | 81k   | 23.9s       | **0.33s**                  |
+| `chat.conversation`      | 17.8k | 2.6s        | **0.17s**                  |
+| `files.files`            | 48.5k | **timeout** | **3.0s** (407ms execution) |
 
 `iam.apply_rls`'s `entity`/`system` `std_select` now comes from
 `iam.entity_read_expr` (aidream migrations `0476`, `0477`, `0480`, `0481`): the
@@ -782,7 +778,6 @@ itself is already correct and cheap.
 Found while converging the value workbench (2026-08-22). Not fixed there because
 that task was explicitly scoped "do NOT change any SQL/RPC".
 
-
 ### D239 — 48,493 `scheduler.sch_run` rows are un-updatable by anyone (NOT VALID check constraint) (2026-08-21)
 
 `scheduler.sch_run_claim_protocol_by_claimed_at_chk` is
@@ -811,7 +806,7 @@ because the constraint was never validated the rows simply persist pointing at u
 Live: **21** `files.files` rows reference **5** deleted `auth.users` ids.
 
 Surfaced by the §6d-1 neutralization: `files.file_versions` (a component) now correctly mirrors its
-parent, so those same 21 ghost ids are now present on the child too — which is the *right* answer per
+parent, so those same 21 ghost ids are now present on the child too — which is the _right_ answer per
 §6d-1 (child agrees with parent) and must not be "fixed" by desynchronising the child. The real fix
 is at the parent. `files.file_versions.created_by` is nullable and carries the same
 `ON DELETE SET NULL NOT VALID` FK, so the child half is already consistent.
@@ -918,6 +913,7 @@ the two columns **disagree on zero rows** across all four parents (140/35/29/19 
 respectively, `visibility='public'` on exactly those).
 
 **The breaking half is why it is one item and not seven.** Cutting the column requires, together:
+
 - **15 RPCs** naming it — `public._d31_impl_get_user_table_complete`, `_d31_impl_update_user_table_config`,
   `_d31_impl_update_user_table_metadata`, `create_new_user_table_dynamic`, `create_user_table_with_fields`,
   `delete_user_table`, `get_user_table_complete`, `get_user_tables`, `inherit_table_security_on_insert`,
@@ -961,9 +957,9 @@ at the moment of the fix.
 **STILL OPEN — two things, neither of which a fix should decide by itself:**
 
 1. **The 4.86M existing rows.** They are pure noise and they are 92% of the table. `version_prune(token,
-   id, keep)` can drop them per row. Deleting history is Arman's call — recommendation: prune to
+id, keep)` can drop them per row. Deleting history is Arman's call — recommendation: prune to
    `keep=5` per row (leaves ~1,875 rows, reclaims ~4.86M).
-2. **The upstream writer.** The fix stops the *history* cost; the wasted write traffic to
+2. **The upstream writer.** The fix stops the _history_ cost; the wasted write traffic to
    `sandbox_instances` is untouched and still running. Needs a code hunt in `aidream` /
    `matrx-sandbox` for the loop issuing no-change UPDATEs (likely a status/heartbeat poller writing
    unconditionally instead of on change).
@@ -1014,9 +1010,9 @@ Found while building the §6d-2 column-grant guard (D182/D184 family); **not fix
 
 **Live, verified 2026-08-21:** `has_column_privilege('authenticated','files.files','storage_uri','SELECT')` → **true**; same for `files.file_versions`. `relacl` shows `authenticated=arwd` (table-level) on both.
 
-**Root cause.** `migrations/files_authenticated_table_select_grants.sql` (2026-07-07) issues `GRANT SELECT, INSERT, UPDATE ON files.files TO authenticated` and then tries to subtract it with `REVOKE SELECT (storage_uri) ON files.files FROM authenticated, anon, PUBLIC`. **In Postgres a column-level REVOKE cannot subtract from a table-level grant** — the table grant already covers every column, so the revoke is a silent no-op. That migration therefore *undid* the whole aidream `0146`/`0147`/`0149`/`0156` storage_uri lockdown lineage while reading as though it preserved it. `0156_storage_uri_grant_relock.sql` had already caught this exact regression once ("the 2026 schema-reorg silently REVERTED it by re-granting TABLE-level") — this is the third occurrence of the same class.
+**Root cause.** `migrations/files_authenticated_table_select_grants.sql` (2026-07-07) issues `GRANT SELECT, INSERT, UPDATE ON files.files TO authenticated` and then tries to subtract it with `REVOKE SELECT (storage_uri) ON files.files FROM authenticated, anon, PUBLIC`. **In Postgres a column-level REVOKE cannot subtract from a table-level grant** — the table grant already covers every column, so the revoke is a silent no-op. That migration therefore _undid_ the whole aidream `0146`/`0147`/`0149`/`0156` storage_uri lockdown lineage while reading as though it preserved it. `0156_storage_uri_grant_relock.sql` had already caught this exact regression once ("the 2026 schema-reorg silently REVERTED it by re-granting TABLE-level") — this is the third occurrence of the same class.
 
-**The fix (needs a decision, because it can 42501 the client):** drop the table-level privilege and re-`GRANT` the explicit client-safe column list — the shape `users.user_secrets`, `docproc.processed_documents`, and `rag.library_docs` all use today, and the shape the new guard (`migrations/iam_apply_table_grants_column_grant_guard.sql`) protects. Note the 2026-07-07 migration exists *because* PostgREST returned 42501 "permission denied for table files" under a column-only grant; whoever re-closes this must confirm the client column list is complete first (`features/files/filesDb.ts`) or file reads break platform-wide. **Until then the guard does not protect these two tables — there is no column ACL left to protect.**
+**The fix (needs a decision, because it can 42501 the client):** drop the table-level privilege and re-`GRANT` the explicit client-safe column list — the shape `users.user_secrets`, `docproc.processed_documents`, and `rag.library_docs` all use today, and the shape the new guard (`migrations/iam_apply_table_grants_column_grant_guard.sql`) protects. Note the 2026-07-07 migration exists _because_ PostgREST returned 42501 "permission denied for table files" under a column-only grant; whoever re-closes this must confirm the client column list is complete first (`features/files/filesDb.ts`) or file reads break platform-wide. **Until then the guard does not protect these two tables — there is no column ACL left to protect.**
 
 </details>
 
@@ -1024,9 +1020,10 @@ Found while building the §6d-2 column-grant guard (D182/D184 family); **not fix
 
 First live test of /vision-interview failed with PGRST106: the `interview` schema existed, was granted, had RLS — but was missing from `pgrst.db_schemas` on `authenticator`, a list nothing in code or checks knows about. Fixed live for `interview`. The CLASS fix: `pnpm check:schema` (scripts/schema-check/) should compare every schema used in `.schema("…")` calls against the exposed list (readable via `pg_roles.rolconfig` for `authenticator` — needs the snapshot RPC to include it). Until then, every new browser-read schema will 406 on its first live call with zero build-time signal.
 
-*(Filed 2026-08-16; recovered 2026-08-21 from inside the "claim the next free ID" rule bullet, where it had been spliced and invisible.)*
+_(Filed 2026-08-16; recovered 2026-08-21 from inside the "claim the next free ID" rule bullet, where it had been spliced and invisible.)_
 
 ### D229 — the FE mirrors aidream's contract inventory to serve one always-null lookup (2026-08-20)
+
 Fallout from the contract-artifact eviction (`../common-docs/systems/content-ir-system/KINDS_EVERYWHERE_PLAN.md` §10b item **5a**, which holds the full context). The 986 machine-minted I/O contracts left `content_ir.kind_definition` for `content_ir.io_contract`, and after the gate repairs (`c02e9b57b`) the shape doctor no longer reads the committed manifest at all.
 
 What's left: `scripts/shape/content-ir-contract-manifest.json` (~776 stale contract slugs) plus `scripts/shape/refresh-contract-manifest.ts`, `scripts/shape/contract-manifest-format.ts` and the `check:shapes:manifest:refresh` script. Its **only** remaining consumer is `familyByKind` in `features/content-ir/admin/shape-doctor-server.ts:442`, which now resolves `null` for every live kind because the map is built exclusively from contract slugs — so the admin board's Family column is dead (it was always null for real shapes; now it is null for everything).
@@ -1034,7 +1031,6 @@ What's left: `scripts/shape/content-ir-contract-manifest.json` (~776 stale contr
 Fix, either way: (a) point `familyByKind` at `metadata.family` — where a live kind's family actually lives — and delete the mirror, since inventory parity is now owned by aidream's `sync_content_ir_contracts.py --check`; or (b) keep the mirror only if a reader is found. `GENERATED_CONTRACT_FAMILIES` (`features/content-ir/registry/shape-doctor.ts`) retires with it — its last use aggregates report rows in `scripts/shape/check-shapes.ts` and now aggregates nothing.
 
 Related decision, NOT this repo's alone: `is_contract_artifact` is now permanently false everywhere but still plumbed through `types/database.types.ts`, the `KindDescriptor` API wire shape, the FE registry sources, and two DB functions that read it by name. The exclusion filters were kept as deliberate re-drift backstops; retiring the column is a cross-repo call (see §10b 5a).
-
 
 ### D219 — five ACTIVE kinds have an uncompilable `emitted_json_schema` (dangling `$defs` ref) (2026-08-20)
 
@@ -1073,6 +1069,7 @@ registered web/output route and renders its nested `evidence_source` children
 never mean a broken screen. Its ledger row stays `blocked` on the EXAMPLE only.
 
 ### D246 (filed as a second D219, renumbered 2026-08-21) — OPEN REMAINDER: crm_12_merge_fidelity.sql is written but NOT APPLIED (2026-08-21)
+
 The lossy merge/unmerge round trip (merge blanked the winner's job title via the affiliation
 mirror trigger; unmerge never restored `is_primary`) is fixed in
 `migrations/crm_12_merge_fidelity.sql`: merge demotes a moved primary ONLY when the winner
@@ -1092,12 +1089,12 @@ platform.** CLAUDE.md asserts they are the same (`Project: txzxabzwovsujtloxrus 
 this repo talks to. NEXT_PUBLIC_SUPABASE_URL → db.matrxserver.com`). Measured simultaneously,
 2026-08-20 07:35 UTC:
 
-| | live (`db.matrxserver.com`, what the app + aidream use) | MCP (`txzxabzwovsujtloxrus`) |
-|---|---|---|
-| `workflow.definition` count | 160 | 154 |
-| `workflow.run` newest | 07:23 **today** | 2026-08-19 23:25 (**8h stale**) |
-| `workflow.trigger` | 2 rows (created via the app today) | 0 |
-| `public.app_log` newest | 07:35 | 07:23 |
+|                             | live (`db.matrxserver.com`, what the app + aidream use) | MCP (`txzxabzwovsujtloxrus`)    |
+| --------------------------- | ------------------------------------------------------- | ------------------------------- |
+| `workflow.definition` count | 160                                                     | 154                             |
+| `workflow.run` newest       | 07:23 **today**                                         | 2026-08-19 23:25 (**8h stale**) |
+| `workflow.trigger`          | 2 rows (created via the app today)                      | 0                               |
+| `public.app_log` newest     | 07:35                                                   | 07:23                           |
 
 Writes do not cross **in either direction**: a row INSERTed via the MCP is invisible to the app
 (proved with `agent.review_queue` — inserted, absent from `/administration/users/agent-review`,
@@ -1126,10 +1123,11 @@ that the running app never sees the change.
 
 **It bit again on 2026-08-21**, and — as every time — not because anyone invented the id, but
 because the repo handed it over. Three sources were feeding it to agents:
+
 - `package.json`'s `db-types` script generated `types/database.types.ts` from the retired
   project (fixed 2026-08-19 in `e632312ec`);
 - the `db-change` skill's own description said "any DDL on project `txzxabzwovsujtloxrus`";
-- `docs/official/db-rules.md` — the security canon CLAUDE.md links to — named it as *the*
+- `docs/official/db-rules.md` — the security canon CLAUDE.md links to — named it as _the_
   project, as did 10 `FEATURE.md` files.
 
 All are now repointed, and **`pnpm check:retired-db-ref`** (in the release gates) fails loudly
@@ -1177,10 +1175,10 @@ Note the shim file exists **only** for this caller now: the other 12 names in
 ### D215 — RESOLVED (was WRONG): continuation runs DO have a per-turn context channel (2026-08-18, corrected 2026-08-21)
 
 **The original entry was factually wrong and is retained only so nobody re-files it.** It claimed
-aidream continuation runs "have no per-turn variable/context channel." The *variable* half is
+aidream continuation runs "have no per-turn variable/context channel." The _variable_ half is
 correct and is by DESIGN — a variable is a value fixed at conversation initialization
 (`agent_run.py:861`: `resolve_variables=False,  # continue turn: slots fresh, variables stay
-frozen`). The *context* half was false: `request.context` is sent on continuations
+frozen`). The _context_ half was false: `request.context` is sent on continuations
 (`execute-instance.thunk.ts:874`) and applied server-side (`agent_run.py:872,900`), and the
 manifest block is prepended to that turn's last user message without ever persisting
 (`aidream/services/conversation_context/context_objects.py:52-58`).
@@ -1193,7 +1191,6 @@ constraint, and it is satisfied, not outstanding.
 
 Law: `common-docs/systems/agents/agent-variable-binding/FEATURE.md` § VARIABLE vs CONTEXT and
 § THE TWO CHANNELS EXIST.
-
 
 ### D214 — Google Slides export requests an UNAPPROVED scope through a hand-rolled OAuth path (2026-08-18)
 
@@ -1247,7 +1244,7 @@ selected Slides use the existing `drive.file` grant and do not start a broad Sli
 
 ### D212 — class join-code lookup RPCs have no rate limit (2026-08-18)
 
-`edu_class_by_code` / `edu_class_join_by_code` (migrations/edu_class_join_code_empty_match_fix.sql) give distinguishable valid/invalid outcomes with no throttle. The 6-char/32-symbol space (~1.07e9) makes targeting a specific class infeasible, but an attacker can grind for *random* live codes and preview/auto-join whatever surfaces. Acceptable pre-launch (Google Classroom's model is comparable); revisit when there are enough live classes for the hit rate to matter — options: per-user attempt throttle in the RPC (count recent failures in a small table), or an 8-char code. Flagged by the WP6 adversarial review.
+`edu_class_by_code` / `edu_class_join_by_code` (migrations/edu_class_join_code_empty_match_fix.sql) give distinguishable valid/invalid outcomes with no throttle. The 6-char/32-symbol space (~1.07e9) makes targeting a specific class infeasible, but an attacker can grind for _random_ live codes and preview/auto-join whatever surfaces. Acceptable pre-launch (Google Classroom's model is comparable); revisit when there are enough live classes for the hit rate to matter — options: per-user attempt throttle in the RPC (count recent failures in a small table), or an 8-char code. Flagged by the WP6 adversarial review.
 
 ### D210 — `/notes` React #418 hydration mismatch has no attributable source (2026-08-18)
 
@@ -1270,7 +1267,7 @@ prove no post-fix occurrence, and resolve only the two exact ids above.
 
 ### D208 — the Context Policy rename's last tail: `slotMatched` / `slot_matched` (2026-08-17)
 
-Found by the final Mandate/Context-Policy verification sweep. Every *readable* "slot" is gone and
+Found by the final Mandate/Context-Policy verification sweep. Every _readable_ "slot" is gone and
 every unambiguous local identifier was converted, but ~25 files still carry `slotMatched` (camel)
 and `messages.slice.ts:57` carries **`slot_matched` (snake)**, which is the giveaway: that shape
 crosses to aidream inside the context-entry payload and is **not in the OpenAPI**, so nothing
@@ -1303,8 +1300,8 @@ Why it is filed rather than fixed: the counter is a platform-wide readiness disp
 surface, and "the page declared this but did not fill it" is a real thing it may be trying to
 say — I cannot tell from here whether some surfaces rely on empties reading as missing.
 
-The decision: does `alwaysAvailable` mean *the key is always emitted* (then an empty value is
-SUPPLIED, and only `undefined`/`null` is missing) or *the value is always meaningful*? If the
+The decision: does `alwaysAvailable` mean _the key is always emitted_ (then an empty value is
+SUPPLIED, and only `undefined`/`null` is missing) or _the value is always meaningful_? If the
 former — the reading that matches "absence is never loss" — the fix is to split `hasValue` into
 `isPresent` (key emitted, not null) for the supplied/missing counters and keep the emptiness test
 only for display. Whoever decides should also say what a legitimate `0`, `false` and `""` mean,
@@ -1335,6 +1332,7 @@ export async function GET(request: NextRequest) {
 ```
 
 Two distinct exposures:
+
 1. **Unauthenticated token grant** — anyone who knows the URL can mint tokens and
    spend against our Deepgram account.
 2. **Raw key disclosure** — if `DEEPGRAM_ENV` is ever set to `"development"` on a
@@ -1414,6 +1412,7 @@ The directory also holds `helpers.ts`, `types.ts`, `hooks/`, and a 12k
 `analysis.md`, i.e. a real unfinished voice surface, not scratch.
 
 **The two honest options, both Arman's call:**
+
 1. FINISH it — wire the Deepgram voice surface, move the three distinct personas
    into `agent.definition` rows, declare slots in aidream `client_slots.py`, and
    delete the constants (the `voice.intro` conversion is the worked pattern).
@@ -1446,7 +1445,6 @@ wrong: this is a superseded experiment, and the capability it reached for is
 live and better elsewhere. **Still Arman's call to name it dead** — this update
 is the brief. See also **D206**, which must be fixed regardless of this ruling.
 
-
 ### D203 — `get_resource_access` grants the row's owner `admin` without asking the authority; on 3 tokens `iam.has_access` grants them less (2026-08-15)
 
 **Needs a product ruling — not fixed unilaterally because it moves access reporting.**
@@ -1457,11 +1455,11 @@ is the brief. See also **D206**, which must be fixed regardless of this ruling.
 2026-08-15 over a 1543-row / 149-token owner + non-owner corpus, it does **not**
 agree on three non-component tokens:
 
-| token | `get_resource_access` | `iam.has_access_for` / `access_denied_context` |
-|---|---|---|
-| `file` | `admin` | `view` |
-| `sandbox_instance` | `admin` | `view` |
-| `context_item` | `admin` | `none` |
+| token              | `get_resource_access` | `iam.has_access_for` / `access_denied_context` |
+| ------------------ | --------------------- | ---------------------------------------------- |
+| `file`             | `admin`               | `view`                                         |
+| `sandbox_instance` | `admin`               | `view`                                         |
+| `context_item`     | `admin`               | `none`                                         |
 
 So a `file` owner is shown edit/admin affordances by `useAccess`, while RLS —
 the actual boundary — allows only a read. The short-circuit predates the G16b
@@ -1492,7 +1490,7 @@ not a site id.
 
 Not confirmed live, which is why it is filed rather than fixed. The read path is
 safe by accident — `usePlanNodes("")` sets `enabled: Boolean(siteId)` → false —
-and the write path is *probably* unreachable because the same component passes
+and the write path is _probably_ unreachable because the same component passes
 `cmsSiteId: site.web_site_id ? site.id : null`, so `judgePageReality` returns a
 not-linked verdict and the realize/publish buttons should not render. If that
 guard ever moves, `bridgeFillPreview(dispatch, "", { nodeId: "" })` fires a
@@ -1503,47 +1501,6 @@ request with empty ids and fails server-side instead of being disabled client-si
 refuse early when either is null. That deletes the sentinel instead of guarding
 it. `NodePanel.tsx:285` is the other caller and passes real ids, so it is
 unaffected.
-
-### D200 — creating a personal (user-scoped) agent shortcut is IMPOSSIBLE — every path throws (2026-08-15)
-
-Measured live on production as a signed-in admin. `agentShortcutToInsert`
-(`features/agents/redux/agent-shortcuts/converters.ts:321`) hard-throws
-`"cannot insert a shortcut without an organization"` when `organizationId` is
-null — and **all three create callsites pass `organizationId: null`**:
-`ShortcutForm.tsx:338`, `useShortcutQuickCreate.ts:304`, and
-`LinkAgentToShortcutModal.handleCreate`. `applyScopeToRowFields`
-(`features/agent-shortcuts/hooks/useAgentShortcutCrud.ts`) only fills the org for
-`organization`/`project`/`task` scopes, and the `createShortcut` thunk
-(`thunks.ts:618`) stamps `userId` but never an org. So **scope `user` can never
-insert** — which is why `/agents/[id]/shortcuts` reads "Your shortcuts: 0" for an
-account that has been trying.
-
-Two things make it invisible: the failure is client-side (no request is ever
-sent, so a network tab shows nothing), and `unwrap()` throws a plain RTK object,
-so the modal's `err instanceof Error` check misses and every caller renders its
-generic fallback string instead of the real message. **Fix that masking
-regardless** — it cost an entire debugging session here.
-
-**Arman decides the semantics, not an agent:** which organization owns a
-*personal* shortcut, and what happens when the user has **no active org** (this
-very account shows the "Choose your organization — no active organization is
-set" prompt). Stamping from the active org would also collide with db-rules §6
-("access NEVER depends on the active organization"). Candidate answers: make
-`organization_id` nullable for user-scoped rows; or resolve the owner's personal
-org server-side from `auth.uid()`; or route creates through the
-`createShortcutForAgent` RPC, which already takes `p_organization_id`.
-
-**The RPC candidate is now proven.** AI Work's Saved Requests create personal
-shortcuts through `agx_create_shortcut` with no org argument
-(`features/ai-work/compose/savedRequests.ts`), verified live 2026-08-15: the
-`_stamp_org_default` BEFORE INSERT trigger fills `organization_id`, so the RPC
-path works today where the three converter callsites cannot. Whether to route
-the other three through it is still Arman's call.
-
-Found while mounting `LinkAgentToShortcutModal` (that mount shipped, v0.4.660/664).
-Everything upstream of the insert is verified working live: both entry points,
-the modal, inline category create (`crm`-style POST returns 201), and the
-auto-select. Only the final insert is blocked.
 
 ### D199 — ~657 rows across 8 tables are invisible to EVERY non-admin user (2026-08-14)
 
@@ -1637,12 +1594,12 @@ converge? Neither may be deleted (unfinished-work alarm).
 
 The real gap is `visibility`. These four are **registered as shareable**, are user-created work product, already carry `organization_id` — and have **no `visibility` column**, so they sit on the legacy boolean `is_public` + `user_id` model. There is no way to express "share with my org": every row is private-or-world.
 
-| token | table | live rows |
-|---|---|---|
-| `workbook` | `workbench.udt_workbooks` | 17 |
-| `udt_document` | `workbench.udt_documents` | 24 |
-| `dataset` | `workbench.udt_datasets` | 140 |
-| `structured_list` | `workbench.udt_structured_lists` | 28 |
+| token             | table                            | live rows |
+| ----------------- | -------------------------------- | --------- |
+| `workbook`        | `workbench.udt_workbooks`        | 17        |
+| `udt_document`    | `workbench.udt_documents`        | 24        |
+| `dataset`         | `workbench.udt_datasets`         | 140       |
+| `structured_list` | `workbench.udt_structured_lists` | 28        |
 
 Their `shareable_resource_registry` rows say `is_public_column='is_public'`, `owner_column='user_id'` — the legacy `make_resource_public` path, not the canonical `setVisibilityColumn` enum path. **Chip fired 2026-08-15.**
 
@@ -1676,9 +1633,9 @@ Nothing is broken today (that caller does not string-match the message), but the
 receives an access answer it does not route. **Relay prompt for the matrx-extend agent:**
 
 > `append_rows_to_user_table` (public, SECURITY INVOKER) no longer raises `'table not found or not
-> owned by caller'`. Its zero-row gate is ambiguous under RLS, so it now raises an honest message
+owned by caller'`. Its zero-row gate is ambiguous under RLS, so it now raises an honest message
 > under errcode `P0002`. In `src/lib/supabase/user-tables.ts:257`, branch on `error.code ===
-> "P0002"` and surface it as an access-unresolved state (never as "not found" / "not yours"). Do
+"P0002"` and surface it as an access-unresolved state (never as "not found" / "not yours"). Do
 > not match the message text.
 
 ### D196 — two SECURITY DEFINER functions embed the access predicate in the lookup, then say "not found" (2026-08-15)
@@ -1725,7 +1682,7 @@ landed: `crm.party` "Priya N. Ravensworth", `record_class='contact'`, `source='a
 `headline = 'Director of Clinical Ops at Halloway Biomedical'`. What did NOT land: no
 `Halloway Biomedical` organization party, no `crm.affiliation`, `primary_employer_party_id` NULL —
 **and `job_title` is NULL too**, even though the dialog collected "Director of Clinical Ops" in
-its own Title/role field. So the fix is two columns wide, not one: carry the employer *and* land
+its own Title/role field. So the fix is two columns wide, not one: carry the employer _and_ land
 the title the dialog already asks for.
 
 ### D158 remainder — persisted DataRef and legacy dynamic-table contracts still use bare names (2026-08-13)
@@ -1751,7 +1708,7 @@ conformance checker's contract — **act on `audit.broken_functions.severity`, N
 `level`** — is `common-docs/systems/platform/db-rules/FEATURE.md` §11.
 
 ⚠️ **The old "`audit.broken_functions` is ~97% false positives" warning is obsolete —
-do not act on it.** That was true of the *broken* checker: 101 rows for 3 genuinely
+do not act on it.** That was true of the _broken_ checker: 101 rows for 3 genuinely
 broken functions, because `plpgsql_check` ran under a `search_path` no function ever
 uses. Fixed 2026-08-13; each function is now checked under its own effective search
 path, every finding carries a `severity`, and the actionable count is **0**. A `real`
@@ -1784,20 +1741,20 @@ writing a bad schema name into `pgrst.db_schemas` takes the WHOLE API down (proj
 
 Found by the guard rail Arman required before folding GRANTs into `iam.apply_rls` (see D182). These are holes, **not closed doors** — a table with RLS off or zero policies is one migration (or one grant) away from wide open. **Of the original 6: `ui.ui_surface` (the one live hole) is fixed, `agent.card` was never a defect (a VIEW), and the four ops sinks remain OPEN.**
 
-| Table | Variant | State | `authenticated` grants |
-|---|---|---|---|
-| ~~**`ui.ui_surface`**~~ | entity | ✅ **FIXED 2026-08-14** — RLS ON, policied | closed by `migrations/ui_surface_registry_rls_d184.sql` (read broadly, write admin-only, `service_role` bypass — the pattern its siblings `ui.ui_surface_value` / `ui.ui_surface_agent_role` / `tool.executor` already use). `anon` held the same four privileges and is closed by the absence of an anon write policy. Grants deliberately untouched: the fix is RLS, never grants |
-| ~~**`agent.card`**~~ | — | ✅ **NOT A DEFECT** — it is a **VIEW**, not a table | **views have no RLS**; `agent.card` is the platform's one registered view, a deliberate public sharing surface with explicit `security_invoker=false` that **self-filters** (anon 138 rows vs authenticated 515). `security_invoker=true` would give anon **0** and kill public agent-card discovery. See `../aidream/docs/security/SUPABASE_ADVISOR_2026-08-13.md` + `../common-docs/systems/platform/db-rules/FEATURE.md` §1 |
-| ~~**`batch.cost_event`**~~ | ledger | ✅ **FIXED 2026-08-21** — RLS ON with generated policies (`svc_all` + `std_select`) | closed the RIGHT way: real policies first, then variant grants. `authenticated` is now `SELECT` only via `iam.apply_table_grants(...,'ledger')`; **`anon` — which held the same `SIUD` and is deliberately never touched by the generator — was revoked by hand** in the same migration, along with `provider_batch` and `work_item`. aidream `db/migrations/0438_batch_schema_canonical_access_model.sql` |
-| `public.system_error` | entity | RLS on, **0 policies** | `SIUD` |
-| `public.system_write_failure` | entity | RLS on, **0 policies** | `SIUD` |
-| `runtime.global_origin` | entity | RLS on, **0 policies** | `----` |
+| Table                         | Variant | State                                                                               | `authenticated` grants                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------- | ------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ~~**`ui.ui_surface`**~~       | entity  | ✅ **FIXED 2026-08-14** — RLS ON, policied                                          | closed by `migrations/ui_surface_registry_rls_d184.sql` (read broadly, write admin-only, `service_role` bypass — the pattern its siblings `ui.ui_surface_value` / `ui.ui_surface_agent_role` / `tool.executor` already use). `anon` held the same four privileges and is closed by the absence of an anon write policy. Grants deliberately untouched: the fix is RLS, never grants                                            |
+| ~~**`agent.card`**~~          | —       | ✅ **NOT A DEFECT** — it is a **VIEW**, not a table                                 | **views have no RLS**; `agent.card` is the platform's one registered view, a deliberate public sharing surface with explicit `security_invoker=false` that **self-filters** (anon 138 rows vs authenticated 515). `security_invoker=true` would give anon **0** and kill public agent-card discovery. See `../aidream/docs/security/SUPABASE_ADVISOR_2026-08-13.md` + `../common-docs/systems/platform/db-rules/FEATURE.md` §1 |
+| ~~**`batch.cost_event`**~~    | ledger  | ✅ **FIXED 2026-08-21** — RLS ON with generated policies (`svc_all` + `std_select`) | closed the RIGHT way: real policies first, then variant grants. `authenticated` is now `SELECT` only via `iam.apply_table_grants(...,'ledger')`; **`anon` — which held the same `SIUD` and is deliberately never touched by the generator — was revoked by hand** in the same migration, along with `provider_batch` and `work_item`. aidream `db/migrations/0438_batch_schema_canonical_access_model.sql`                     |
+| `public.system_error`         | entity  | RLS on, **0 policies**                                                              | `SIUD`                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `public.system_write_failure` | entity  | RLS on, **0 policies**                                                              | `SIUD`                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `runtime.global_origin`       | entity  | RLS on, **0 policies**                                                              | `----`                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 **STILL OPEN — three ops sinks** (`public.system_error`, `public.system_write_failure`, `runtime.global_origin`). They are currently closed (no policy = no rows for `authenticated`) but grant-wide, so **the first policy anyone adds opens them fully**.
 
-**`batch.cost_event` is closed (2026-08-21) and its answer is the template for the other three.** The openness call this entry says is Arman's was *made* by Arman for batch — *"Absolutely users need to be able to see their batch jobs. Fix it please."* — and the resolution needed no new judgement once the table was classified: it is an append-only org-scoped cost log, so it is a **`ledger`**, and the `ledger` variant already encodes exactly "users read their own org, the server writes." The whole fix was `update platform.entity_types set rls_variant='ledger'` + `iam.apply_rls(...)`; the generator then issued `SELECT`-only grants and the pre-existing `SIUD` disappeared as a side effect of being done properly. **The `anon` grant was the part the generator could NOT fix** (§6d-2: `anon` is deliberately untouched), and it was worse than this entry recorded — `anon` held the same four privileges as `authenticated`, not none. Check `anon` explicitly on the remaining three. Sibling migrations: aidream `0438`/`0439`/`0440`; live proof `aidream/scripts/_verify_batch_access_model.py`.
+**`batch.cost_event` is closed (2026-08-21) and its answer is the template for the other three.** The openness call this entry says is Arman's was _made_ by Arman for batch — _"Absolutely users need to be able to see their batch jobs. Fix it please."_ — and the resolution needed no new judgement once the table was classified: it is an append-only org-scoped cost log, so it is a **`ledger`**, and the `ledger` variant already encodes exactly "users read their own org, the server writes." The whole fix was `update platform.entity_types set rls_variant='ledger'` + `iam.apply_rls(...)`; the generator then issued `SELECT`-only grants and the pre-existing `SIUD` disappeared as a side effect of being done properly. **The `anon` grant was the part the generator could NOT fix** (§6d-2: `anon` is deliberately untouched), and it was worse than this entry recorded — `anon` held the same four privileges as `authenticated`, not none. Check `anon` explicitly on the remaining three. Sibling migrations: aidream `0438`/`0439`/`0440`; live proof `aidream/scripts/_verify_batch_access_model.py`.
 
-**Deliberately NOT auto-swept.** `iam.apply_table_grants` refuses to grant on any of them, so the v3 backfill skipped them safely. Fixing each needs a judgement about *intended* openness — an openness call (db-rules §6 security philosophy), so it is Arman's, not an agent's. **Do not "fix" these by granting; give them real policies.**
+**Deliberately NOT auto-swept.** `iam.apply_table_grants` refuses to grant on any of them, so the v3 backfill skipped them safely. Fixing each needs a judgement about _intended_ openness — an openness call (db-rules §6 security philosophy), so it is Arman's, not an agent's. **Do not "fix" these by granting; give them real policies.**
 
 ### D182 — Component-RLS remainder (2026-08-13; **re-measured live + largely fixed 2026-08-14**)
 
@@ -1807,21 +1764,22 @@ Found by the guard rail Arman required before folding GRANTs into `iam.apply_rls
 
 **FIXED — (1) partially.** Only **2** component tables genuinely lacked the actor stamp (`seo.gsc_dig_rule`, `seo.keyword_class_rule`); trigger attached. The original "21" over-counted by detecting the trigger by **name** — 5 tables already run `platform._stamp_actor` under a bespoke name (`trg_stamp_actor`, `<table>_stamp_actor`). **Detect by `tgfoid`, never by trigger name**, or you create duplicates.
 
-**OPEN — (1) remainder, and the original prescription is a trap.** 22 component tables have `created_by` but **no `updated_by`** column (15 of them `created_by NOT NULL` with no default, so a client insert fails **23502**, not 42501). ⚠️ **Do NOT "attach the canonical trigger trio" to them** — `platform._stamp_actor()` assigns `NEW.updated_by` *unconditionally*, so attaching it to a table without that column raises **42703 `record "new" has no field "updated_by"` on every insert and update**, breaking the service_role pipelines that are those tables' only writers. Verified empirically. Correct order: base-contract column retrofit (`updated_by`) **first**, then the trigger.
+**OPEN — (1) remainder, and the original prescription is a trap.** 22 component tables have `created_by` but **no `updated_by`** column (15 of them `created_by NOT NULL` with no default, so a client insert fails **23502**, not 42501). ⚠️ **Do NOT "attach the canonical trigger trio" to them** — `platform._stamp_actor()` assigns `NEW.updated_by` _unconditionally_, so attaching it to a table without that column raises **42703 `record "new" has no field "updated_by"` on every insert and update**, breaking the service_role pipelines that are those tables' only writers. Verified empirically. Correct order: base-contract column retrofit (`updated_by`) **first**, then the trigger.
 
-**FIXED — table GRANTs now come from the generator.** Neither `iam.apply_rls` nor `platform.create_entity_table` issued a single `GRANT`, so privileges were ad-hoc across the 162 active component tables: 101 `SIUD`, **40 SELECT-only**, **9 with none**, 4 `SU`, 3 `SI`, 3 `SIU`, 1 `SD`, and **`files.file_versions` DELETE-only — unreadable by the very role its `std_select` targets**. GRANTs are the *first* gate: where missing, RLS is never reached. Now owned by `iam.apply_table_grants(schema, table, variant)`, called by `apply_rls` — `entity`/`component`/`system`/`restricted` → `SIUD`, `ledger` → `SELECT` only; `anon` untouched. Openness is decided by RLS, not grants. Safety rail: it **refuses** to grant on a table with RLS off or zero policies → **D184**.
+**FIXED — table GRANTs now come from the generator.** Neither `iam.apply_rls` nor `platform.create_entity_table` issued a single `GRANT`, so privileges were ad-hoc across the 162 active component tables: 101 `SIUD`, **40 SELECT-only**, **9 with none**, 4 `SU`, 3 `SI`, 3 `SIU`, 1 `SD`, and **`files.file_versions` DELETE-only — unreadable by the very role its `std_select` targets**. GRANTs are the _first_ gate: where missing, RLS is never reached. Now owned by `iam.apply_table_grants(schema, table, variant)`, called by `apply_rls` — `entity`/`component`/`system`/`restricted` → `SIUD`, `ledger` → `SELECT` only; `anon` untouched. Openness is decided by RLS, not grants. Safety rail: it **refuses** to grant on a table with RLS off or zero policies → **D184**.
 
-**[2026-08-21] SECOND RAIL ADDED — column-grant designs.** `apply_table_grants` is table-level and starts with `revoke all … from authenticated`, which also destroys **column-level** ACLs. Five live tables run a deliberate exclusion design that the generator would have silently reopened: `users.user_secrets` and `users.credential_attachments` (exclude `value_encrypted`), `users.integration_connections` (excludes `vault_secret_key`, `credential_item_id`), `docproc.processed_documents` and `rag.library_docs` (exclude `storage_uri`). It now **refuses** when the `authenticated` column grants are a *strict subset* of live columns, naming the excluded columns, with a session-scoped override (`set local iam.allow_column_grant_override = 'on'`) for a deliberate retirement. Applied + verified live: all five refuse; `chat.conversation` (normal entity) behaves unchanged; the override proceeds. Migration: `migrations/iam_apply_table_grants_column_grant_guard.sql`. Canon: db-rules §6d-2. A full-coverage column-grant table (`users.integration_connection_resources`, 11/11) excludes nothing and is deliberately not refused.
+**[2026-08-21] SECOND RAIL ADDED — column-grant designs.** `apply_table_grants` is table-level and starts with `revoke all … from authenticated`, which also destroys **column-level** ACLs. Five live tables run a deliberate exclusion design that the generator would have silently reopened: `users.user_secrets` and `users.credential_attachments` (exclude `value_encrypted`), `users.integration_connections` (excludes `vault_secret_key`, `credential_item_id`), `docproc.processed_documents` and `rag.library_docs` (exclude `storage_uri`). It now **refuses** when the `authenticated` column grants are a _strict subset_ of live columns, naming the excluded columns, with a session-scoped override (`set local iam.allow_column_grant_override = 'on'`) for a deliberate retirement. Applied + verified live: all five refuse; `chat.conversation` (normal entity) behaves unchanged; the override proceeds. Migration: `migrations/iam_apply_table_grants_column_grant_guard.sql`. Canon: db-rules §6d-2. A full-coverage column-grant table (`users.integration_connection_resources`, 11/11) excludes nothing and is deliberately not refused.
 
 **FIXED — (3) the created_by conveyance hole. Arman's ruling: THE COMPONENT OWNERSHIP LAW.** `created_by` does two different jobs and they only coincide on an **entity** (creator = owner). On a **component** the actor and the owner come apart — the owner is the parent — so the column cannot be an access key. The component `std_insert` parent-editor arm never constrained `created_by` while `std_select` led with `created_by = auth.uid()`, so a parent-editor could stamp another user as creator and hand that user owner-read; **56** component tables carried both halves (`chat.message`, `chat.request`, `chat.tool_call`, all `research.rs_*`, `workflow.*`, `content_ir.kind_*`). The fix is **not** to force `auth.uid()` (that is the entity fix) — it is that `apply_rls(…,'component')` **never emits a `created_by` clause at all**. Nothing is lost: `history.row_versions` already records the real actor. Verified live: **0** component policies reference `created_by`. Canon: db-rules §6d-1.
 
 **OPEN — follow-ups to the ownership law** (safe, non-urgent — the column now grants nothing):
-1. ~~**Neutralize the surviving `created_by` values**~~ — **DONE 2026-08-21.** `platform.component_created_by_from_parent()` derives a component row's `created_by` from its composition parent's, on INSERT and on reparent. Attached as `zzz_component_created_by` to all **169** active component tables carrying `created_by` — full coverage, zero skips (`agent.card`, the one registered component that was a VIEW and could not take a row trigger, was deregistered the same day by the entity-registry pass, commit `c0806b236`). **The `zzz_` prefix is the mechanism, not decoration:** BEFORE triggers fire in alphabetical name order (db-rules §10) and `_stamp_actor` runs `created_by := coalesce(created_by, uid)`, so the neutralizer must sort after every live stamp-trigger name (`_stamp_actor` ×140, `trg_stamp_actor` ×4, `coding_session_entry_stamp_actor` ×1) to overwrite both the actor stamp *and* a value a writer supplied explicitly. Chosen over editing `_stamp_actor` because that one function backs **279** triggers and skipping `created_by` there would leave the column NULL rather than correct. TG_ARGV is `(parent_schema, parent_table, fk_column)` triples generated from `platform.entity_relationships`; a multi-parent component derives from the **first non-null parent FK** (a CASE chain, never a `coalesce` over values). NULL parent FK → value left as-is; parent's own `created_by` NULL on a `NOT NULL` child column → left as-is rather than 23502. **Backfill: 497,090 rows across 72 of 169 tables** re-derived; residual **27,816**, all `scheduler.sch_run`, blocked by a pre-existing defect (**D239**). The backfill had to **iterate to a fixed point** — a component's parent is usually itself a component, so one pass left 298,623 rows still wrong including `web.crawl_url`, which had *zero* drift until its parents were corrected. Verified live end-to-end (rolled-back transaction): user B inserting under user A's parent while explicitly passing `created_by=B` lands **A**; `history.row_versions` still records **B** as `actor_id`; reparenting to C's parent re-derives to **C**; a non-FK UPDATE leaves the column alone. Migrations: `migrations/component_created_by_neutralize_from_parent.sql` (trigger + attach) and `migrations/component_created_by_backfill_from_parent.sql` (idempotent fixed-point backfill + FK re-check).
-2. **Then clean up:** drop `created_by` where it carries no domain meaning; where "who acted" is genuinely meaningful (a message sender) rename it to an explicit `sender_id`/`author_role` that never appears in a policy. **Swept 2026-08-21 and NOTHING was dropped — the "zero consumers" precondition is met by none of the 151 nullable-`created_by` component tables.** Every one is named by generated artifacts that also carry `created_by`: `types/database.types.ts`, `types/generated/entity-types.generated.ts`, and the Matrx ORM models (`aidream/**/db/models_*.py`, where `created_by` is a declared `ForeignKey`). Lowest hit count of all 151 was **9** files (`seo.site_geo_area`); highest 21,097 (`interview.turn`). So each drop is a real full-change contract (regen ORM + regen types + per-table consumer read), not a sweep — and the neutralizer makes the column *correct* meanwhile, which is what removes the urgency.
-3. ~~**Conformance check** that fails any component policy referencing `created_by`~~ — **DONE 2026-08-21.** `public.component_created_by_report()` (`migrations/component_created_by_conformance_report.sql`) is one query over `pg_policies` joined to `platform.entity_types` (`rls_variant='component'`, `is_active`); `scripts/access-matrix/check-component-created-by.ts` reads it and is wired **BLOCKING** into `run-release-gates.sh --strict` — no advisory carve-out, because there is no backlog to grandfather. Live at adoption: 191 component tables, 945 policies scanned, **0** offenders; the same regex over `entity`-variant tables matches **599**, so the zero is measured, not vacuous. Negative-tested by temporarily mislabeling `workbench.working_documents` as a component inside a rolled-back transaction — the gate reported 4 offenders, then returned to 0. **A failure here is never allowlisted**: regenerate the policy, or fix the variant. *Still OPEN, second half:* no check yet that an active table's GRANTs match its variant.
+
+1. ~~**Neutralize the surviving `created_by` values**~~ — **DONE 2026-08-21.** `platform.component_created_by_from_parent()` derives a component row's `created_by` from its composition parent's, on INSERT and on reparent. Attached as `zzz_component_created_by` to all **169** active component tables carrying `created_by` — full coverage, zero skips (`agent.card`, the one registered component that was a VIEW and could not take a row trigger, was deregistered the same day by the entity-registry pass, commit `c0806b236`). **The `zzz_` prefix is the mechanism, not decoration:** BEFORE triggers fire in alphabetical name order (db-rules §10) and `_stamp_actor` runs `created_by := coalesce(created_by, uid)`, so the neutralizer must sort after every live stamp-trigger name (`_stamp_actor` ×140, `trg_stamp_actor` ×4, `coding_session_entry_stamp_actor` ×1) to overwrite both the actor stamp _and_ a value a writer supplied explicitly. Chosen over editing `_stamp_actor` because that one function backs **279** triggers and skipping `created_by` there would leave the column NULL rather than correct. TG_ARGV is `(parent_schema, parent_table, fk_column)` triples generated from `platform.entity_relationships`; a multi-parent component derives from the **first non-null parent FK** (a CASE chain, never a `coalesce` over values). NULL parent FK → value left as-is; parent's own `created_by` NULL on a `NOT NULL` child column → left as-is rather than 23502. **Backfill: 497,090 rows across 72 of 169 tables** re-derived; residual **27,816**, all `scheduler.sch_run`, blocked by a pre-existing defect (**D239**). The backfill had to **iterate to a fixed point** — a component's parent is usually itself a component, so one pass left 298,623 rows still wrong including `web.crawl_url`, which had _zero_ drift until its parents were corrected. Verified live end-to-end (rolled-back transaction): user B inserting under user A's parent while explicitly passing `created_by=B` lands **A**; `history.row_versions` still records **B** as `actor_id`; reparenting to C's parent re-derives to **C**; a non-FK UPDATE leaves the column alone. Migrations: `migrations/component_created_by_neutralize_from_parent.sql` (trigger + attach) and `migrations/component_created_by_backfill_from_parent.sql` (idempotent fixed-point backfill + FK re-check).
+2. **Then clean up:** drop `created_by` where it carries no domain meaning; where "who acted" is genuinely meaningful (a message sender) rename it to an explicit `sender_id`/`author_role` that never appears in a policy. **Swept 2026-08-21 and NOTHING was dropped — the "zero consumers" precondition is met by none of the 151 nullable-`created_by` component tables.** Every one is named by generated artifacts that also carry `created_by`: `types/database.types.ts`, `types/generated/entity-types.generated.ts`, and the Matrx ORM models (`aidream/**/db/models_*.py`, where `created_by` is a declared `ForeignKey`). Lowest hit count of all 151 was **9** files (`seo.site_geo_area`); highest 21,097 (`interview.turn`). So each drop is a real full-change contract (regen ORM + regen types + per-table consumer read), not a sweep — and the neutralizer makes the column _correct_ meanwhile, which is what removes the urgency.
+3. ~~**Conformance check** that fails any component policy referencing `created_by`~~ — **DONE 2026-08-21.** `public.component_created_by_report()` (`migrations/component_created_by_conformance_report.sql`) is one query over `pg_policies` joined to `platform.entity_types` (`rls_variant='component'`, `is_active`); `scripts/access-matrix/check-component-created-by.ts` reads it and is wired **BLOCKING** into `run-release-gates.sh --strict` — no advisory carve-out, because there is no backlog to grandfather. Live at adoption: 191 component tables, 945 policies scanned, **0** offenders; the same regex over `entity`-variant tables matches **599**, so the zero is measured, not vacuous. Negative-tested by temporarily mislabeling `workbench.working_documents` as a component inside a rolled-back transaction — the gate reported 4 offenders, then returned to 0. **A failure here is never allowlisted**: regenerate the policy, or fix the variant. _Still OPEN, second half:_ no check yet that an active table's GRANTs match its variant.
 4. **`platform.create_entity_table` should call `iam.apply_table_grants`** so the create path and the repair path agree. Not yet wired.
 
-**OPEN — (1) remainder, and the original prescription is a trap.** 22 component tables have `created_by` but **no `updated_by`** column (15 of them `created_by NOT NULL` with no default, so a client insert fails **23502**). ⚠️ **Do NOT "attach the canonical trigger trio" to them** — `platform._stamp_actor()` assigns `NEW.updated_by` *unconditionally*, so attaching it to a table without that column raises **42703 `record "new" has no field "updated_by"` on every insert and update**, breaking the service_role pipelines that are those tables' only writers. Verified empirically. Note this is now *lower* priority: under the ownership law those component `created_by` columns are slated for removal (follow-up 2), so most of these tables should lose the column rather than gain a stamp.
+**OPEN — (1) remainder, and the original prescription is a trap.** 22 component tables have `created_by` but **no `updated_by`** column (15 of them `created_by NOT NULL` with no default, so a client insert fails **23502**). ⚠️ **Do NOT "attach the canonical trigger trio" to them** — `platform._stamp_actor()` assigns `NEW.updated_by` _unconditionally_, so attaching it to a table without that column raises **42703 `record "new" has no field "updated_by"` on every insert and update**, breaking the service_role pipelines that are those tables' only writers. Verified empirically. Note this is now _lower_ priority: under the ownership law those component `created_by` columns are slated for removal (follow-up 2), so most of these tables should lose the column rather than gain a stamp.
 
 **OPEN — `rag.kg_sweep_state` fails the base contract** (entity variant, no `created_by`), so it is the 1 table of 290 the v3 backfill could not regenerate.
 
@@ -1866,6 +1824,7 @@ under a real member JWT; `link_edge` returns 750 rows in 3.5 ms. Four proven
 class members were repaired and the generator prevents regeneration drift.
 
 Remaining durability defects from that incident:
+
 - **A paid SEO keyword-research result was destroyed.** `SeoKeywordResearch`
   (request `4f293980-4f9a-4329-954b-a1d652e1c277`) timed out on its single
   `INSERT INTO content_ir.kind_instance … RETURNING *` (matrx-orm
@@ -1896,11 +1855,12 @@ realize stored `data-matrx-scaffold` / `data-matrx-section` bodies (matched by `
 and by `attributes.template`, each reporting `matched_by`), a real fill returned authored
 HTML with every marker stripped, and a realize with an EMPTY library created an empty body
 and filled normally. Also closed: `aidream/services/content_plan/FEATURE.md` § Page templates
-+ a Change Log entry, and `tests/test_templates.py` (30 tests — there was none).
-**One open product question, for Arman, deliberately NOT invented as machinery:** the builtin
-library lives on the shared system-org row, so every site's realize now resolves a scaffold
-(the `default` floor always matches). If a site should instead have to *choose* the library
-before realize applies it, that is a ruling, not an agent's call — see the note below.
+
+- a Change Log entry, and `tests/test_templates.py` (30 tests — there was none).
+  **One open product question, for Arman, deliberately NOT invented as machinery:** the builtin
+  library lives on the shared system-org row, so every site's realize now resolves a scaffold
+  (the `default` floor always matches). If a site should instead have to _choose_ the library
+  before realize applies it, that is a ruling, not an agent's call — see the note below.
 
 <details><summary>Original entry</summary>
 
@@ -1917,7 +1877,7 @@ resolves a per-node HTML scaffold from `plan.profile.template_map.templates` and
 `cms_reconciler` realize writes it into the page body — but **not one `plan.profile` row
 has a `templates` key** (all six carry only `archetypes` / `concepts`) and nothing seeds
 one, so `BUILTIN_TEMPLATES` (18 templates) is referenced only by its own definition and
-`__all__`. The option exists in code and cannot be *chosen* by anyone.
+`__all__`. The option exists in code and cannot be _chosen_ by anyone.
 
 Also unfinished: no `FEATURE.md` section, no Change Log entry, no `/templates` route in the
 registration map, and **no test file** for `templates.py`.
@@ -1942,7 +1902,7 @@ The floating-window posture only kills the spinner for markdown payloads. Watche
 
 **The XML-WRAPPER half is FIXED (2026-08-18, `abad51c24`).** Found while diagnosing the flashcard live preview, which turned out to be the same defect: the stream accumulator opened content-ir regions for fences and bare JSON only, so an **attribute-XML** region (`<artifact …>`, `<image_prompt>`) swallowed its body whole — no region, no `metadata.__ir`, and every envelope reader answered null for the whole run and after it. An attr-XML body that opens as JSON now feeds the kind parser exactly like a bare JSON region, fragment path included, so a minified single-line payload parses live. Rendering is unchanged by design (`applyIrKindRoute` refuses to re-type an `artifact` block — the artifact system keeps its renderer and its Canvas door). Pinned with real production bytes: `features/agents/redux/execution-system/utils/__tests__/artifact-wrapped-payload-live-stream.test.ts`.
 
-**The JSON half is CLOSED too (2026-08-18) — Arman ruled, and the answer was to delete the JSON, not to build a kind.** The podcast blog/show-notes agents' envelope was flattened to markdown by `articleMarkdown.ts` the instant it landed, and markdown is what `pc_articles` stores, so nothing in the product ever consumed the structure. Per the Class E rule (a kind is earned only when the output is consumed STRUCTURALLY) the structure was not earning anything: both agents now WRITE markdown, the window renders it as it streams, and the assembler is deleted. The platform half is `runHeadlessAgentJson`'s new `expect: "json" | "text"` — a prose agent's product is its answer text, and asking the JSON primitive for it failed a run that answered perfectly. The marketing image-prompt step (`<image_prompt>`) is covered by the XML half above. See `features/podcasts/FEATURE.md` (2026-08-18). Note also that on the flashcard surfaces the envelope was only *part* of the reason for the blank window.
+**The JSON half is CLOSED too (2026-08-18) — Arman ruled, and the answer was to delete the JSON, not to build a kind.** The podcast blog/show-notes agents' envelope was flattened to markdown by `articleMarkdown.ts` the instant it landed, and markdown is what `pc_articles` stores, so nothing in the product ever consumed the structure. Per the Class E rule (a kind is earned only when the output is consumed STRUCTURALLY) the structure was not earning anything: both agents now WRITE markdown, the window renders it as it streams, and the assembler is deleted. The platform half is `runHeadlessAgentJson`'s new `expect: "json" | "text"` — a prose agent's product is its answer text, and asking the JSON primitive for it failed a run that answered perfectly. The marketing image-prompt step (`<image_prompt>`) is covered by the XML half above. See `features/podcasts/FEATURE.md` (2026-08-18). Note also that on the flashcard surfaces the envelope was only _part_ of the reason for the blank window.
 
 **The third half — THE DISCRIMINATOR-ORDER CLASS (fixed 2026-08-18, aidream) — is the one worth remembering, because it is platform-wide and the first diagnosis of it was WRONG.** The flashcard run was recorded here as "emits no chunks at all until it completes". It does not: tee'ing the response body of a real run showed aidream streaming it token-by-token from the first second. What arrived late was the **kind** — the first text chunk was `{"cards":` and `"__kind":"flashcard_set"` was the LAST key of the payload, so `selectKindEnvelope` could not route until the run was over. A grammar-constrained model emits an object's keys in the order the schema's `properties` map declares them (proven on gemini-3.7-flash by swapping `properties` and by swapping `required` — only the former moves the wire), and **`content_ir.kind_definition.emitted_json_schema` is a `jsonb` column, which sorts object keys by (length, bytewise)**. The agent's authored `["__kind","title","cards"]` came back out of the registry as `["cards","title","__kind"]` — byte-for-byte the order the run emitted. Fix: `hoist_discriminator_first` (aidream `packages/matrx-ai/matrx_ai/schema/rules.py`), applied in the lint gate's `_make_portable` and in `BaseTranslator.sanitize_structured_output_schema` — the seam all four provider boundaries call, now applied even for providers that strip nothing. It is a request-boundary normalization, so no data migration is needed and **every kind-routed structured agent is repaired at once**; pinned by `packages/matrx-ai/tests/test_schema_rules_kind_first.py`. Verified live on both flashcard surfaces (cards appear one by one; Redux envelope 2→6→10 while page text grows 237→1356→2110).
 
@@ -1958,7 +1918,7 @@ Measured live against the CMS project (`viyklljfdhtidwecakwx`): all **7** `web.s
 
 **The gap is that `client_sites` has no org or sharing model at all** — just `owner_user_id`. A marketing site owned by an org can therefore point at a CMS site only one person can reach, and nothing surfaces WHY.
 
-✅ **DECIDED — Arman 2026-08-15: "of course they should be ORG scoped and shareable."** CMS sites get `organization_id` + canonical `visibility` + `created_by` like every other entity. ⚠️ The CMS is the one declared SEPARATE database (`viyklljfdhtidwecakwx`), so how org identity crosses the two projects must follow existing precedent — and if none exists, that is an architecture call for Arman, not an invention. **Chip fired 2026-08-15.** Still worth building afterwards: the validating picker, which must validate *reachability*, not existence — a picker that only checked the id exists would have called this link healthy.
+✅ **DECIDED — Arman 2026-08-15: "of course they should be ORG scoped and shareable."** CMS sites get `organization_id` + canonical `visibility` + `created_by` like every other entity. ⚠️ The CMS is the one declared SEPARATE database (`viyklljfdhtidwecakwx`), so how org identity crosses the two projects must follow existing precedent — and if none exists, that is an architecture call for Arman, not an invention. **Chip fired 2026-08-15.** Still worth building afterwards: the validating picker, which must validate _reachability_, not existence — a picker that only checked the id exists would have called this link healthy.
 
 ### D186 — ~~The CMS-draft leg is unexercised~~ **FALSE — same root cause as D185 (re-measured 2026-08-15)**
 
@@ -1982,7 +1942,7 @@ Found by `pnpm shape:reemit-discriminator`. 10 rows: `additionalDetails.addition
 
 Symptoms: (a) aidream `execution_definition.py` → `definition_manager.load_by_id(id)` reads a **process-global** record cache — grounding disabled in the DB, production kept grounding until restart. (b) matrx-ai `_agx_manager_impl.py:52,71` `to_config()` under `CachePolicy.SHORT_TERM` (10 min, staggered per worker) makes migration-applied agent edits FLAP; "verified live" within 10 min of an agent migration can be a false claim (unchanged `input_tokens` = still reading cache, not proof of no-op).
 
-✅ **ROOT CAUSE FIXED 2026-08-14 — the cache was never touched.** The defect was the *reach* of invalidation, in two layers, and the second is the one no writer inventory could have fixed:
+✅ **ROOT CAUSE FIXED 2026-08-14 — the cache was never touched.** The defect was the _reach_ of invalidation, in two layers, and the second is the one no writer inventory could have fixed:
 
 1. **Out-of-band writers.** Migrations (`migrations/agent_bind_*.sql`), psql, the Supabase SQL editor, `agx_*` RPCs, and every direct `supabase.from("definition").update(...)` write straight to Postgres. No application-level hook can fire for any of them.
 2. **Every other process.** `bust_agent_caches` evicts only the process that runs it, and aidream deploys one image as several (`MATRX_ROLE` = app_server | worker | sandbox). `POST /ai/agents/{id}/invalidate-cache` lands on one app_server; **the workflow worker, which also executes agents, was never invalidated by any writer, ever.**
@@ -2015,16 +1975,16 @@ Four consecutive live runs of `prompt-app-auto-create` returned bare TSX with no
 
 Structural cause: `run-headless-agent-json.ts:142` delivers only via the returned promise, no AbortSignal — unmount mid-run spends the money and writes into a dead component. Sites and what's lost:
 
-| Site | What is lost |
-|---|---|
-| `features/flashcards/components/study/StudyDeck.tsx:417` | per-card coaching tip → 8s toast only, fires on EVERY graded card |
-| `features/education/memory/components/MemoryAidButton.tsx:59` | `MemoryHintPayload` wiped on card advance; `fc_detail` has the slot |
-| `features/education/study/analytics/components/StudyAnalyticsDashboard.tsx:36` | full narrated report, auto-fired per mount — every visit re-pays ~120s |
-| `features/education/trust/useVerifyAgainstSource.ts:85` | `suggestedFix` with no apply affordance; same card re-verified forever |
-| `features/flashcards/data/useQuizStudy.ts:171` | `question`/`correct`/`explanation` dropped at coercion; every quiz re-pays |
-| `features/flashcards/fast-fire/components/FastFireLiveCard.tsx:97` + `StudyDeck.tsx:278` | `HelpLiveResult` cleared on card change, no attempt/journal row |
-| `features/podcasts/generator/components/TopicIdeaHelper.tsx:73` | 4 of 5 ideas + all fields of the chosen one except title/hook |
-| `features/flashcards/components/set-detail/EnhanceSetDialog.tsx:91` | unsaved previews on refresh — and quota committed at generation |
+| Site                                                                                     | What is lost                                                               |
+| ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `features/flashcards/components/study/StudyDeck.tsx:417`                                 | per-card coaching tip → 8s toast only, fires on EVERY graded card          |
+| `features/education/memory/components/MemoryAidButton.tsx:59`                            | `MemoryHintPayload` wiped on card advance; `fc_detail` has the slot        |
+| `features/education/study/analytics/components/StudyAnalyticsDashboard.tsx:36`           | full narrated report, auto-fired per mount — every visit re-pays ~120s     |
+| `features/education/trust/useVerifyAgainstSource.ts:85`                                  | `suggestedFix` with no apply affordance; same card re-verified forever     |
+| `features/flashcards/data/useQuizStudy.ts:171`                                           | `question`/`correct`/`explanation` dropped at coercion; every quiz re-pays |
+| `features/flashcards/fast-fire/components/FastFireLiveCard.tsx:97` + `StudyDeck.tsx:278` | `HelpLiveResult` cleared on card change, no attempt/journal row            |
+| `features/podcasts/generator/components/TopicIdeaHelper.tsx:73`                          | 4 of 5 ideas + all fields of the chosen one except title/hook              |
+| `features/flashcards/components/set-detail/EnhanceSetDialog.tsx:91`                      | unsaved previews on refresh — and quota committed at generation            |
 
 ### D150 — Marketing item surfaces hide stored identities, evidence, and doors (2026-08-11)
 
@@ -2160,6 +2120,7 @@ Never hand-write a per-table guard — add the column to that set. Migrations
 `pnpm check:governance-tier` (18/18 through real requests with real user logins).
 
 **Two corrections to my first pass, both from misreading the levels — do not reintroduce either:**
+
 - **Publishing is EDIT-level.** I wrongly made `visibility` owner-only. Creating something does not
   make you the only person qualified to publish it; in real companies the publisher is the approver
   at the end of the line. Removed from the governed set.
@@ -2192,7 +2153,6 @@ Server announces the persisted invisible steering row via `record_reserved cx_me
 
 `Workers Builds: ai-matrx-admin` fails while Vercel is green; no Cloudflare config exists in the repo. **Decides: Arman** — retire the integration or configure it.
 
-
 ### D105b — file surfaces must separate MY files from ORG files (Arman ruling 2026-07-28)
 
 `internal` default is correct and stays. The real defect: file lists don't separate yours vs the org's (Mine / My Orgs scope pattern). **Needs an architecture discussion with Arman before building.**
@@ -2220,7 +2180,6 @@ Org-teammate agents invisible in `agx_get_list` — belongs with retiring `/agen
 ### D93 — `rag.kg_chunks` reads statement-timeout for non-entitled users (2026-07-23)
 
 Per-row SECURITY DEFINER policy functions over thousands of rows → denial-by-timeout. Hoist constant predicates to an initplan-friendly shape; optimize only against measured plans.
-
 
 ### D88 — service-role RPCs accept raw p_user_id with no internal actor guard (2026-07-23)
 
@@ -2314,6 +2273,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D200 — RESOLVED 2026-08-27:** shortcut/category creation now carries the selected org through `resolveShortcutWriteScope` and every shortcut writer; the next editor preserves the RTK rejection detail without duplicating its captured incident.
 - **D279 — RESOLVED 2026-08-27:** the collapsed sidebar server toggle now identifies itself and its current state in both its tooltip and accessible name (`features/shell/components/controls/SidebarEnvToggle.tsx`).
 - **D278 — RESOLVED 2026-08-27:** removed the inert `AIDREAM_API_URL` alias and replaced its test seam with explicit base-URL injection (`app/api/cms/_lib/validateContent.ts`).
 

@@ -94,3 +94,39 @@ describe("resolveShortcutWriteScope", () => {
     ).rejects.toThrow("task scope requires an explicit scope id");
   });
 });
+
+describe("agent shortcut writer wiring", () => {
+  const source = (path: string) =>
+    readFileSync(resolve(process.cwd(), path), "utf8");
+
+  it.each([
+    [
+      "features/agent-shortcuts/hooks/useAgentShortcutCrud.ts",
+      "resolveShortcutWriteScope({",
+    ],
+    [
+      "features/agents/redux/agent-shortcuts/thunks.ts",
+      "ensureOrgId(shortcutData.organizationId)",
+    ],
+    [
+      "features/agents/redux/agent-shortcuts/thunks/createShortcutFromAgentSurface.thunk.ts",
+      "ensureOrgId(args.organizationId)",
+    ],
+    [
+      "features/agents/redux/agent-shortcuts/thunks/bulkWriteShortcuts.thunk.ts",
+      "resolveShortcutWriteScope({",
+    ],
+    [
+      "features/agents/redux/agent-shortcut-categories/thunks.ts",
+      "resolveShortcutWriteScope({",
+    ],
+    [
+      "features/ai-work/compose/savedRequests.ts",
+      "p_organization_id: organizationId",
+    ],
+  ])("keeps %s on the explicit organization boundary", (path, marker) => {
+    expect(source(path)).toContain(marker);
+  });
+});
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";

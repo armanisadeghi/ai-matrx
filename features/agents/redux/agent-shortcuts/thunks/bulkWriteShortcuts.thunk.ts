@@ -9,6 +9,9 @@ import type { AgentShortcut } from "../types";
 import type { ShortcutFormData } from "@/features/agent-shortcuts/types";
 import { agentShortcutToInsert, dbRowToAgentShortcut } from "../converters";
 import { upsertShortcuts } from "../slice";
+import { selectCategoryById } from "../../agent-shortcut-categories/selectors";
+import { resolveShortcutWriteScope } from "@/features/agent-shortcuts/resolveShortcutWriteScope";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
@@ -25,16 +28,50 @@ export const bulkCreateShortcuts = createAsyncThunk<
   ThunkApi
 >("agentShortcut/bulkCreate", async (drafts, { dispatch, getState }) => {
   if (drafts.length === 0) return [];
-  const userId = selectUserId(getState());
+  const state = getState();
+  const userId = selectUserId(state);
+  const systemOrgId = await resolveSystemOrgId();
 
-  const rows = drafts.map((d) =>
-    agentShortcutToInsert({
-      ...d,
-      id: "",
-      userId: d.userId ?? userId,
-      createdAt: "",
-      updatedAt: "",
-    } as AgentShortcut),
+  const rows = await Promise.all(
+    drafts.map(async (d) => {
+      const category = selectCategoryById(state, d.categoryId);
+      if (!category) {
+        throw new Error(
+          `[agent-shortcuts] category ${d.categoryId} is not loaded; refusing to guess shortcut scope`,
+        );
+      }
+
+      const scope = category.userId
+        ? "user"
+        : category.projectId
+          ? "project"
+          : category.taskId
+            ? "task"
+            : category.organizationId && category.organizationId !== systemOrgId
+              ? "organization"
+              : "global";
+      const scopeId =
+        scope === "organization"
+          ? (category.organizationId ?? undefined)
+          : scope === "project"
+            ? (category.projectId ?? undefined)
+            : scope === "task"
+              ? (category.taskId ?? undefined)
+              : undefined;
+      const scopeFields = await resolveShortcutWriteScope({
+        scope,
+        scopeId,
+        userId,
+      });
+
+      return agentShortcutToInsert({
+        ...d,
+        ...scopeFields,
+        id: "",
+        createdAt: "",
+        updatedAt: "",
+      } as AgentShortcut);
+    }),
   );
 
   const { data, error } = await supabase
