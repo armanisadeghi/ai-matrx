@@ -192,7 +192,7 @@ function isRefusalEnvelope(value: unknown): value is HrRefusalEnvelope {
 async function callHrRaw(
   fn: string,
   args: Record<string, unknown>,
-  options: { envelope: boolean; whatFailed: string },
+  options: { envelope: boolean; whatFailed: string; write?: boolean },
 ): Promise<HrResult<Record<string, unknown>>> {
   /*
     🚨 THE TRANSPORT NEVER THROWS. IT RETURNS.
@@ -243,8 +243,14 @@ async function callHrRaw(
       );
     }
 
+    /*
+      🚨 A WRITE IS NOT "LOADED". This branch served both lanes and phrased every
+      failure as a read, so a broken save announced itself as "Saving your change
+      could not be loaded" — a sentence that tells somebody their write failed
+      while describing it as a fetch. The verb comes from the caller's lane now.
+    */
     return failed(
-      `${options.whatFailed} could not be loaded. ${
+      `${options.whatFailed} ${options.write ? "did not go through" : "could not be loaded"}. ${
         error.message?.trim() || "The database did not say why."
       }`,
       error.code ?? null,
@@ -348,7 +354,11 @@ async function callHrWrite(
   args: Record<string, unknown>,
   options: { envelope: boolean; whatFailed: string },
 ): Promise<HrResult<HrWriteAck>> {
-  return mapWriteAck(await callHrRaw(fn, args, options), options.whatFailed);
+  // The write lane, named as such, so a failure is phrased as a failed SAVE.
+  return mapWriteAck(
+    await callHrRaw(fn, args, { ...options, write: true }),
+    options.whatFailed,
+  );
 }
 
 // ── Read doors — LIVE ───────────────────────────────────────────────────────

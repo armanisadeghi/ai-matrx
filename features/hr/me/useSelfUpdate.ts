@@ -140,11 +140,14 @@ export function useSelfUpdate(args: {
         // or wait — when a door is broken platform-wide, "try again" is advice
         // that cannot work, and a surface that offers it is guessing at a remedy
         // it has no way to stand behind.
+        // The transport already says the save did not go through, so this does not
+        // say it a second time — two sentences making the same point read as noise
+        // and push the part that identifies the failure off the end.
         const sentence =
           result.kind === "denied"
             ? result.detail?.trim() ||
               "That change is not something you can make here."
-            : `${result.message} Your change was not saved.`;
+            : result.message;
         setFailure(sentence);
         toast.error(sentence);
         return false;
