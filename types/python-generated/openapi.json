@@ -97356,6 +97356,28 @@
             ],
             "title": "Task Id"
           },
+          "input_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Kind"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
           "updated_at": {
             "anyOf": [
               {
@@ -97665,6 +97687,52 @@
           "deleted"
         ],
         "title": "DeleteTriggerResponse"
+      },
+      "Deliverable": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "json_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Json Schema"
+          },
+          "presentation": {
+            "type": "string",
+            "title": "Presentation",
+            "default": "panel"
+          },
+          "is_primary": {
+            "type": "boolean",
+            "title": "Is Primary",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "node_id",
+          "title"
+        ],
+        "title": "Deliverable",
+        "description": "One declared deliverable of a workflow (SPEC §2.2/§2.4): an\n``output.*`` node, or a terminal node declaring an output kind, with\n``node.data.deliverable: true|false`` overriding membership either way."
       },
       "DerivationDocumentCounts": {
         "properties": {
@@ -154096,52 +154164,6 @@
         ],
         "title": "RestoreWriteResponse"
       },
-      "ResultDeliverable": {
-        "properties": {
-          "node_id": {
-            "type": "string",
-            "title": "Node Id"
-          },
-          "title": {
-            "type": "string",
-            "title": "Title"
-          },
-          "output_kind": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Output Kind"
-          },
-          "json_schema": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Json Schema"
-          },
-          "presentation": {
-            "type": "string",
-            "title": "Presentation",
-            "default": "panel"
-          },
-          "is_primary": {
-            "type": "boolean",
-            "title": "Is Primary",
-            "default": false
-          }
-        },
-        "additionalProperties": true,
-        "type": "object",
-        "required": [
-          "node_id",
-          "title"
-        ],
-        "title": "ResultDeliverable",
-        "description": "One declared deliverable of a workflow (SPEC §2.2/§2.4): an output.*\nnode, or a terminal node declaring an output kind, with\n``node.data.deliverable: true|false`` overriding membership either way."
-      },
       "ResumeRunRequest": {
         "properties": {
           "checkpoint_id": {
@@ -156001,6 +156023,24 @@
             "type": "integer",
             "title": "Version"
           },
+          "input_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Kind",
+            "description": "SPEC §1.3/§2.1: the kind this workflow consumes. The AUTHOR'S DECLARATION when the definition carries one, otherwise derived from the entry nodes. NULL = collected via this form (the normal case)."
+          },
+          "input_kind_declared": {
+            "type": "boolean",
+            "title": "Input Kind Declared",
+            "description": "True when input_kind came from the declared column, not from derivation.",
+            "default": false
+          },
           "sections": {
             "items": {
               "$ref": "#/components/schemas/RunFormField"
@@ -156731,9 +156771,30 @@
             ],
             "title": "Output Kind"
           },
+          "input_kind_declared": {
+            "type": "boolean",
+            "title": "Input Kind Declared",
+            "default": false
+          },
+          "output_kind_declared": {
+            "type": "boolean",
+            "title": "Output Kind Declared",
+            "default": false
+          },
+          "declaration_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Declaration Error"
+          },
           "deliverables": {
             "items": {
-              "$ref": "#/components/schemas/ResultDeliverable"
+              "$ref": "#/components/schemas/Deliverable"
             },
             "type": "array",
             "title": "Deliverables"
@@ -156746,7 +156807,7 @@
           "version"
         ],
         "title": "RunResultSchema",
-        "description": "GET /workflows/{id}/result-schema — the twin of /run-form (SPEC §2.4):\nwhat a run of this workflow PROMISES to produce, served BEFORE any run\nexists so result surfaces can reserve their kind silhouettes."
+        "description": "GET /workflows/{id}/result-schema — the twin of /run-form (SPEC §2.4):\nwhat a run of this workflow PROMISES to produce, served BEFORE any run\nexists so result surfaces can reserve their kind silhouettes.\n\n``input_kind`` / ``output_kind`` are the AUTHOR'S DECLARATION when the\ndefinition carries one (SPEC §2.1 columns) — declaration takes precedence\nover derivation. Derivation from the graph remains the fallback for the\n(currently normal) undeclared case, and ``*_declared`` says which you got,\nso a surface can tell a promise from a guess."
       },
       "RunSuggestionsRequest": {
         "properties": {
@@ -157829,6 +157890,28 @@
               }
             ],
             "title": "Expected Updated At"
+          },
+          "input_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Kind"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
           }
         },
         "type": "object",

@@ -37502,6 +37502,10 @@ export interface components {
             project_id?: string | null;
             /** Task Id */
             task_id?: string | null;
+            /** Input Kind */
+            input_kind?: string | null;
+            /** Output Kind */
+            output_kind?: string | null;
             /** Updated At */
             updated_at?: string | null;
             /** Shared */
@@ -37601,6 +37605,36 @@ export interface components {
         DeleteTriggerResponse: {
             /** Deleted */
             deleted: boolean;
+        };
+        /**
+         * Deliverable
+         * @description One declared deliverable of a workflow (SPEC §2.2/§2.4): an
+         *     ``output.*`` node, or a terminal node declaring an output kind, with
+         *     ``node.data.deliverable: true|false`` overriding membership either way.
+         */
+        Deliverable: {
+            /** Node Id */
+            node_id: string;
+            /** Title */
+            title: string;
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Json Schema */
+            json_schema?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Presentation
+             * @default panel
+             */
+            presentation?: string;
+            /**
+             * Is Primary
+             * @default false
+             */
+            is_primary?: boolean;
+        } & {
+            [key: string]: unknown;
         };
         /** DerivationDocumentCounts */
         DerivationDocumentCounts: {
@@ -60028,36 +60062,6 @@ export interface components {
             rules_restored?: number | null;
             detail?: components["schemas"]["JsonValue"] | null;
         };
-        /**
-         * ResultDeliverable
-         * @description One declared deliverable of a workflow (SPEC §2.2/§2.4): an output.*
-         *     node, or a terminal node declaring an output kind, with
-         *     ``node.data.deliverable: true|false`` overriding membership either way.
-         */
-        ResultDeliverable: {
-            /** Node Id */
-            node_id: string;
-            /** Title */
-            title: string;
-            /** Output Kind */
-            output_kind?: string | null;
-            /** Json Schema */
-            json_schema?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Presentation
-             * @default panel
-             */
-            presentation?: string;
-            /**
-             * Is Primary
-             * @default false
-             */
-            is_primary?: boolean;
-        } & {
-            [key: string]: unknown;
-        };
         /** ResumeRunRequest */
         ResumeRunRequest: {
             /**
@@ -60840,6 +60844,17 @@ export interface components {
             definition_id: string;
             /** Version */
             version: number;
+            /**
+             * Input Kind
+             * @description SPEC §1.3/§2.1: the kind this workflow consumes. The AUTHOR'S DECLARATION when the definition carries one, otherwise derived from the entry nodes. NULL = collected via this form (the normal case).
+             */
+            input_kind?: string | null;
+            /**
+             * Input Kind Declared
+             * @description True when input_kind came from the declared column, not from derivation.
+             * @default false
+             */
+            input_kind_declared?: boolean;
             /** Sections */
             sections?: components["schemas"]["RunFormField"][];
             /**
@@ -61086,6 +61101,12 @@ export interface components {
          * @description GET /workflows/{id}/result-schema — the twin of /run-form (SPEC §2.4):
          *     what a run of this workflow PROMISES to produce, served BEFORE any run
          *     exists so result surfaces can reserve their kind silhouettes.
+         *
+         *     ``input_kind`` / ``output_kind`` are the AUTHOR'S DECLARATION when the
+         *     definition carries one (SPEC §2.1 columns) — declaration takes precedence
+         *     over derivation. Derivation from the graph remains the fallback for the
+         *     (currently normal) undeclared case, and ``*_declared`` says which you got,
+         *     so a surface can tell a promise from a guess.
          */
         RunResultSchema: {
             /** Definition Id */
@@ -61096,8 +61117,20 @@ export interface components {
             input_kind?: string | null;
             /** Output Kind */
             output_kind?: string | null;
+            /**
+             * Input Kind Declared
+             * @default false
+             */
+            input_kind_declared?: boolean;
+            /**
+             * Output Kind Declared
+             * @default false
+             */
+            output_kind_declared?: boolean;
+            /** Declaration Error */
+            declaration_error?: string | null;
             /** Deliverables */
-            deliverables?: components["schemas"]["ResultDeliverable"][];
+            deliverables?: components["schemas"]["Deliverable"][];
         } & {
             [key: string]: unknown;
         };
@@ -61581,6 +61614,10 @@ export interface components {
             description?: string | null;
             /** Expected Updated At */
             expected_updated_at?: string | null;
+            /** Input Kind */
+            input_kind?: string | null;
+            /** Output Kind */
+            output_kind?: string | null;
         };
         /** SaveDraftResult */
         SaveDraftResult: {
