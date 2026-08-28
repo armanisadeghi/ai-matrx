@@ -19,18 +19,32 @@
  */
 
 import { useEffect, useState } from "react";
-import { AlertTriangle, Check, SkipForward } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Loader2,
+  RotateCcw,
+  SkipForward,
+} from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 
+import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
 import {
   selectNodeAggregatePhases,
   selectRunActivity,
+  selectRunStatus,
 } from "../../redux/workflow-runs.selectors";
 import type { NodeAggregatePhase } from "../../redux/workflow-runs.selectors";
 import { activityLine } from "./activity-copy";
 import { StepIconChip } from "./RunHero";
+import {
+  nodeVerbAvailability,
+  stepOffersControls,
+  type NodeControlVerb,
+  type RunStatusOrPending,
+} from "./run-controls";
 import {
   FAMILY_STYLE,
   familyNoun,
@@ -103,13 +117,99 @@ function iconState(
   return "idle";
 }
 
+/**
+ * THE PER-STEP VERBS (census #34), on the one row that needs them.
+ *
+ * A step that stopped is the only place in a run where a person still has a
+ * move: run it again, or move past it. Both verbs already existed on
+ * `useWorkflowRunControls` and nothing called them. They appear ONLY on a step
+ * that is eligible (`stepOffersControls`) — a Retry on a step that is happily
+ * running is noise — and each carries its own disabled reason when the run's
+ * status has taken the move away underneath it.
+ */
+function StepControls({
+  runId,
+  nodeId,
+  runStatus,
+  phase,
+}: {
+  runId: string;
+  nodeId: string;
+  runStatus: RunStatusOrPending;
+  phase: NodeAggregatePhase | undefined;
+}) {
+  const { retryNode, skipNode } = useWorkflowRunControls();
+  const [busy, setBusy] = useState<NodeControlVerb | null>(null);
+
+  const fire = async (verb: NodeControlVerb, action: () => Promise<boolean>) => {
+    setBusy(verb);
+    try {
+      await action();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const retry = nodeVerbAvailability("retry", runStatus, phase);
+  const skip = nodeVerbAvailability("skip", runStatus, phase);
+
+  const button = (
+    verb: NodeControlVerb,
+    label: string,
+    icon: React.ReactNode,
+    state: { enabled: boolean; reason: string | null },
+    action: () => Promise<boolean>,
+  ) => (
+    <button
+      type="button"
+      data-step-verb={verb}
+      data-step-verb-node={nodeId}
+      data-step-verb-enabled={state.enabled ? "true" : "false"}
+      disabled={!state.enabled || busy !== null}
+      title={state.reason ?? label}
+      onClick={() => void fire(verb, action)}
+      className={cn(
+        "inline-flex min-h-7 items-center gap-1 rounded-md border border-border px-2 text-[11px] font-medium text-foreground transition-colors hover:bg-accent/60",
+        (!state.enabled || busy !== null) &&
+          "cursor-not-allowed opacity-45 hover:bg-transparent",
+      )}
+    >
+      {busy === verb ? <Loader2 className="h-3 w-3 animate-spin" /> : icon}
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+      {button(
+        "retry",
+        "Try again",
+        <RotateCcw className="h-3 w-3" />,
+        retry,
+        () => retryNode(runId, nodeId),
+      )}
+      {button(
+        "skip",
+        "Move past it",
+        <SkipForward className="h-3 w-3" />,
+        skip,
+        () => skipNode(runId, nodeId),
+      )}
+    </div>
+  );
+}
+
 function JourneyRow({
+  runId,
+  runStatus,
   step,
   phase,
   latest,
   syntheticLabels,
   isLast,
 }: {
+  runId: string;
+  runStatus: RunStatusOrPending;
   step: RunStepPresentation;
   phase: NodeAggregatePhase | undefined;
   /** The step's freshest REAL signal, already in the reader's language. */
@@ -198,6 +298,15 @@ function JourneyRow({
             ) : null}
           </>
         ) : null}
+
+        {stepOffersControls(runStatus, phase) ? (
+          <StepControls
+            runId={runId}
+            nodeId={step.nodeId}
+            runStatus={runStatus}
+            phase={phase}
+          />
+        ) : null}
       </div>
     </li>
   );
@@ -215,6 +324,7 @@ export function RunJourney({
 }) {
   const phases = useAppSelector(selectNodeAggregatePhases(runId));
   const activity = useAppSelector(selectRunActivity(runId));
+  const runStatus = useAppSelector(selectRunStatus(runId));
 
   const stepLabels: Record<string, string> = {};
   for (const step of steps) stepLabels[step.nodeId] = step.label;
@@ -242,6 +352,8 @@ export function RunJourney({
       {steps.map((step, index) => (
         <JourneyRow
           key={step.nodeId}
+          runId={runId}
+          runStatus={runStatus}
           step={step}
           phase={phases[step.nodeId]}
           latest={latestByNode[step.nodeId] ?? null}

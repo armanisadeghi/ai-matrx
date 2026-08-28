@@ -58,7 +58,11 @@ import {
   type ServedInputGap,
 } from "./served-input";
 import { loadKindSources, valueTypeFromJsonSchema } from "./kind-source";
-import { useServedRunForm, useServedRunStart } from "./useServedRunForm";
+import {
+  useServedRunForm,
+  useServedRunStart,
+  type ServedRunFormState,
+} from "./useServedRunForm";
 
 export interface ServedRunFormProps {
   definitionId: string;
@@ -67,6 +71,16 @@ export interface ServedRunFormProps {
   /** Copy above the fields. The surface itself never carries page chrome. */
   heading?: string;
   startLabel?: string;
+  /**
+   * The already-fetched surface, when the HOST had to read it first.
+   *
+   * The shipped run form (`RunStartForm`) must know whether a served surface
+   * exists BEFORE it decides between this component and the legacy derivation,
+   * so it holds the fetch. Passing the answer down is the alternative to two
+   * components asking the same endpoint the same question on the same paint.
+   * Omitted → this component fetches for itself, exactly as the bake-off does.
+   */
+  state?: ServedRunFormState;
 }
 
 export function ServedRunForm({
@@ -74,8 +88,12 @@ export function ServedRunForm({
   onStarted,
   heading = "What it needs from you",
   startLabel = "Start",
+  state: hoistedState,
 }: ServedRunFormProps) {
-  const state = useServedRunForm(definitionId);
+  // `null` when the host already holds the answer — the hook then makes no
+  // request at all, so the endpoint is asked exactly once per paint either way.
+  const ownState = useServedRunForm(hoistedState ? null : definitionId);
+  const state = hoistedState ?? ownState;
   const { starting, start } = useServedRunStart();
 
   const inputs = state.status === "ready" ? state.form.inputs : EMPTY_INPUTS;

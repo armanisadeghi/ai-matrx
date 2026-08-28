@@ -17,14 +17,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CalendarClock, PenLine, Play, RotateCcw } from "lucide-react";
+import { CalendarClock, PenLine, RotateCcw } from "lucide-react";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
 
 import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
 import {
@@ -33,7 +32,6 @@ import {
   getDefaultSurface,
 } from "../../surface/service";
 import type { RunSurfaceConfig } from "../../surface/config";
-import { deriveRunForm } from "../../surface/run-form";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 import { RunStartForm } from "../RunStartForm";
 import { RunStage } from "./RunStage";
@@ -142,31 +140,46 @@ export function WorkflowRunPage({
     };
   }, [definitionId]);
 
-  const begin = useCallback(
-    async (nodeInputs: Record<string, Record<string, unknown>>) => {
+  /**
+   * ADOPTED (Volley 5): a started run is announced by ID, whichever branch of
+   * the form started it. The served branch calls the contract's own start verb
+   * (it alone may stamp `input_sources`) and hands the id back here; the legacy
+   * branch hands back derived `node_inputs` for `begin` to start. One landing
+   * for both, so the URL and the toast can never diverge by branch.
+   */
+  const adopt = useCallback(
+    (started: string) => {
       if (!definitionId) return;
-      const started = await startRun({ definitionId, nodeInputs });
-      if (!started) return;
       setShowForm(false);
       toast.success("Off it goes.");
       // The run id rides the URL so a refresh re-adopts and resumes.
       router.replace(`/workflows/${definitionId}?run=${started}`);
     },
-    [definitionId, router, startRun],
+    [definitionId, router],
   );
 
-  const collectsInput =
-    workflow !== null && deriveRunForm(workflow.definition).length > 0;
+  const begin = useCallback(
+    async (nodeInputs: Record<string, Record<string, unknown>>) => {
+      if (!definitionId) return;
+      const started = await startRun({ definitionId, nodeInputs });
+      if (!started) return;
+      adopt(started);
+    },
+    [adopt, definitionId, startRun],
+  );
 
+  /**
+   * "Run it again" always returns to the start surface. What a workflow asks
+   * for is the SERVED surface's answer, not a client-side derivation of it —
+   * so the page no longer guesses with `deriveRunForm` in order to skip the
+   * form. A workflow that asks for nothing shows one button and one click,
+   * which the form itself renders.
+   */
   const runAgain = useCallback(() => {
     if (!definitionId) return;
-    if (collectsInput) {
-      setShowForm(true);
-      router.replace(`/workflows/${definitionId}`);
-      return;
-    }
-    void begin({});
-  }, [begin, collectsInput, definitionId, router]);
+    setShowForm(true);
+    router.replace(`/workflows/${definitionId}`);
+  }, [definitionId, router]);
 
   const header = (
     <RouteHeader
@@ -267,6 +280,7 @@ export function WorkflowRunPage({
     body = (
       <RunStage
         runId={runId}
+        definitionId={workflow.id}
         definition={workflow.definition}
         workflowName={workflow.name}
         config={workflow.config}
@@ -280,36 +294,21 @@ export function WorkflowRunPage({
           {workflow.name}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {collectsInput
-            ? "Tell it what to work with, then press Run."
-            : "Press Run and watch it work."}
+          Tell it what to work with, then press Run.
         </p>
         <div className="mt-5">
-          {collectsInput ? (
-            <RunStartForm
-              definition={workflow.definition}
-              starting={starting}
-              startLabel="Run it"
-              onStart={(nodeInputs) => void begin(nodeInputs)}
-              onCancel={() => {
-                if (runId) setShowForm(false);
-                else router.push("/workflows/all");
-              }}
-            />
-          ) : (
-            <button
-              type="button"
-              disabled={starting}
-              onClick={() => void begin({})}
-              className={cn(
-                "inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-opacity",
-                starting ? "opacity-60" : "hover:opacity-90",
-              )}
-            >
-              <Play className="h-4 w-4" />
-              {starting ? "Starting…" : "Run it"}
-            </button>
-          )}
+          <RunStartForm
+            definitionId={workflow.id}
+            definition={workflow.definition}
+            starting={starting}
+            startLabel="Run it"
+            onStart={(nodeInputs) => void begin(nodeInputs)}
+            onStarted={adopt}
+            onCancel={() => {
+              if (runId) setShowForm(false);
+              else router.push("/workflows/all");
+            }}
+          />
         </div>
       </div>
     );

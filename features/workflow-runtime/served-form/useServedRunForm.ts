@@ -39,8 +39,18 @@ export type ServedRunFormState =
   | { status: "ready"; form: ServedRunFormSchema }
   | { status: "error"; message: string };
 
-/** GET /workflows/{id}/run-form → THE compiled input surface. */
-export function useServedRunForm(definitionId: string): ServedRunFormState {
+/**
+ * GET /workflows/{id}/run-form → THE compiled input surface.
+ *
+ * `null` means "somebody else already has this answer" — the hook then makes
+ * no request and stays `loading` forever, which is what a caller that is about
+ * to ignore the result wants. (`ServedRunForm` passes null when its host
+ * hoisted the fetch to decide between served and legacy.) It is never a way to
+ * express "no workflow": a surface with no definition has nothing to render.
+ */
+export function useServedRunForm(
+  definitionId: string | null,
+): ServedRunFormState {
   const dispatch = useAppDispatch();
   /**
    * 🚨 THE HYDRATION RACE (found on the proving ground, 2026-08-28).
@@ -59,6 +69,7 @@ export function useServedRunForm(definitionId: string): ServedRunFormState {
 
   useEffect(() => {
     if (!organizationId) return; // not sendable yet — wait, never fail
+    if (definitionId === null) return; // the host holds the answer
     let live = true;
     setState({ status: "loading" });
     void (async () => {
