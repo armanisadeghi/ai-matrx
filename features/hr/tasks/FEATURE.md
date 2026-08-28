@@ -46,6 +46,10 @@ build lane's call**. If you need a new HR read or write here, add a door, do not
 
 Reads and writes still go **React → Supabase direct**. Nothing routes through Next.js or Python.
 
+**Guests stop in `utils/auth/protected-routes.ts` before this feature renders.** The whole `/hr`
+route family is protected, so neither the inbox nor a notification deep link may call an HR RPC
+as `anon`; the shared auth-destination flow returns the person to the exact task after sign-in.
+
 ## 🚨 NO CAST STANDS BETWEEN `Json` AND A TYPED ENVELOPE
 
 All 13 doors are in `types/database.types.ts`, so `supabase.rpc("hr_wf_inbox", …)` checks the
@@ -195,6 +199,8 @@ the fix is in that pillar's flow declaration — never a second list on this pag
 
 # Change Log
 
+- 2026-08-28 — Protected the `/hr` route family at the shared proxy boundary so guests reach
+  sign-in before any HR RPC runs, with the exact task path and query preserved as their destination.
 - 2026-08-27 — Decision controls now translate through the one server-verified past-tense verb map,
   preventing `unknown_decision` refusals from present-tense UI intents.
 - 2026-08-27 — Round-5 T2: **Escalate did nothing.** Root cause was the global `confirm()`'s

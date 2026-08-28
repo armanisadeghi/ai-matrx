@@ -7,6 +7,8 @@ export function routeRequiresAuthentication(pathname: string): boolean {
     pathname.startsWith("/dashboard/") ||
     pathname === "/chat" ||
     pathname.startsWith("/chat/") ||
+    pathname === "/hr" ||
+    pathname.startsWith("/hr/") ||
     pathname === "/launchpad" ||
     pathname.startsWith("/launchpad/") ||
     pathname === "/scraper" ||
