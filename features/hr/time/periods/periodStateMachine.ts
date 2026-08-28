@@ -216,6 +216,12 @@ export interface PeriodOfferContext {
   allowPeriodReopen: boolean;
   /** Today, as an ISO date, in the pay group's own reckoning — passed in, never derived here. */
   todayLocalDate: string;
+  /**
+   * §4.1's `recomputed-since-approval`, from `hr.pay_period_get`. Only the DETAIL read carries it,
+   * so it defaults to false: a surface that does not know must not offer a re-approval, and the
+   * period list does not know.
+   */
+  recomputedSinceApproval?: boolean;
 }
 
 /**
@@ -279,6 +285,7 @@ function endDateHasPassed(period: PayPeriodRow, todayLocalDate: string): boolean
  */
 export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[] {
   const { period, role, allowPeriodReopen, todayLocalDate } = ctx;
+  const stale = ctx.recomputedSinceApproval === true;
   const legal = PERIOD_EDGES[period.state] ?? [];
   const offers: PeriodActionOffer[] = [];
 
@@ -330,6 +337,13 @@ export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[]
 
     if (to === "approved") {
       /*
+       * 🚨 RE-APPROVAL IS OFFERED ONLY WHEN THERE IS SOMETHING TO RE-APPROVE. `approved -> approved`
+       * exists for §4.1's stale case alone; offering "Approve period" on a period already approved
+       * and unchanged is a button with no meaning, and one a payroll admin would reasonably read as
+       * "this did not take the first time".
+       */
+      if (period.state === "approved" && !stale) continue;
+      /*
        * 🚨 REFUSED while any timecard is UNDECIDED. PERMITTED with an unresolved dispute.
        *
        * This counted `counts.open` alone and offered an enabled "Approve period" on a period the
@@ -358,7 +372,10 @@ export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[]
       const stillOpen = period.counts.open + period.counts.attested;
       offers.push({
         to,
-        label: period.state === "reopened" ? "Re-approve period" : "Approve period",
+        label:
+          period.state === "reopened" || period.state === "approved"
+            ? "Re-approve period"
+            : "Approve period",
         unavailableBecause:
           roleBlock(CAN_TRANSITION, "Approving a period") ??
           (stillOpen > 0
@@ -366,9 +383,11 @@ export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[]
               `approved yet. A period is approved when every timecard in it is.`
             : null),
         reasonRequired: false,
-        consequence:
-          disputeSentence(period.counts.disputed) ??
-          "The period becomes eligible for a payroll export.",
+        consequence: stale
+          ? "The approval is restamped for the hours as they stand now, and the period becomes " +
+            "exportable again."
+          : disputeSentence(period.counts.disputed) ??
+            "The period becomes eligible for a payroll export.",
         destructiveTone: false,
       });
       continue;
