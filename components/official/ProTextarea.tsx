@@ -17,9 +17,10 @@
  * - **"…" actions menu** — a hover-revealed top-right menu hosting Copy and
  *   agent actions (Clean up, Help with this…, Custom Agent). Fine pointers float
  *   it over the text with no reserved gutter. Touch devices keep the controls
- *   visible in a shallow reserved top row so every text line retains the full
- *   editor width. Keyboard users reveal it with focus-within so its mic/menu
- *   buttons are never invisible tab stops.
+ *   visible in a shallow reserved bottom row so every text line retains the
+ *   full editor width and the cursor starts at the natural top. Keyboard users
+ *   reveal it with focus-within so its mic/menu buttons are never invisible
+ *   tab stops.
  * - **Agent actions** — each runs an agent over the current text, streams the
  *   result into a popover, and replaces the field on Apply (never auto-mutates):
  *   - **Clean up** — ON by default (`enableCleanup={false}` to hide). Default
@@ -842,11 +843,12 @@ export const ProTextarea = React.forwardRef<
       (showCopyButton ||
         enabledAgentActionIds.length > 0 ||
         showBoundAgentsMenu);
-    // Touch devices have no hover, so the top-right cluster is ALWAYS visible
-    // there (pointer-coarse). Reserve one shallow toolbar row above the text,
-    // not a right gutter on every line: the old pr-24 workaround fixed control
-    // overlap but made long mobile values wrap at roughly 70% of the editor.
-    // Fine pointers keep the hover-reveal + zero-gutter float.
+    // Touch devices have no hover, so the control cluster is ALWAYS visible
+    // there (pointer-coarse). Reserve one shallow toolbar row below the text,
+    // not a right gutter on every line: this preserves full-width lines while
+    // keeping the cursor at the natural top edge. A textarea with its own
+    // submit button keeps the controls at the top so the two clusters do not
+    // collide. Fine pointers keep the hover-reveal + zero-gutter float.
     const hasCoarseControls =
       (enableVoice && isAudioAvailable && !disabled) || showMenu;
     const showTextStats = enableTextStats && showMenu;
@@ -911,10 +913,13 @@ export const ProTextarea = React.forwardRef<
                 autoGrow && "resize-none overflow-y-auto",
                 // Fine pointers float the controls over the text with no
                 // reserved space (they hide while typing). Coarse pointers keep
-                // them visible in a dedicated 44px top row, preserving the full
-                // width for every line below it.
+                // them visible in a dedicated 44px bottom row, preserving the
+                // full width of every line and the natural top inset. When a
+                // submit control already owns the bottom-right, reserve the
+                // controls at the top instead.
                 "pr-3",
-                hasCoarseControls && "pointer-coarse:pt-12",
+                hasCoarseControls &&
+                  (onSubmit ? "pointer-coarse:pt-12" : "pointer-coarse:pb-12"),
                 // Bottom padding for the submit button — TapTargetButtonSolid is
                 // 44px tall (h-11), so reserve enough vertical clearance.
                 onSubmit && "pb-14",
@@ -954,15 +959,17 @@ export const ProTextarea = React.forwardRef<
               </Label>
             )}
 
-            {/* Top-right control cluster (mic + "…" menu) — floats OVER the text
+            {/* Control cluster (mic + "…" menu) — floats OVER the text
             and fades in on pointer hover or keyboard focus-within. It also
             stays visible while the menu popover is open so it can't vanish
             mid-interaction. */}
             <div
               className={cn(
                 "absolute right-0 top-0 flex items-center transition-opacity duration-200 z-10 focus-within:opacity-100 focus-within:pointer-events-auto",
-                // Coarse pointers can't hover — the cluster stays visible in
-                // the textarea's reserved top row.
+                // Coarse pointers can't hover. Textareas without a submit
+                // button move the cluster to the reserved bottom row; submit
+                // textareas retain the top row to avoid a button collision.
+                !onSubmit && "pointer-coarse:top-auto pointer-coarse:bottom-0",
                 "pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto",
                 showControls || menuOpen
                   ? "opacity-100"

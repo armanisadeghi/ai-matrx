@@ -11,7 +11,7 @@
  * Prop: conversationId only.
  */
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
 import { ChevronRight, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -37,6 +37,7 @@ import { VariableInputComponent } from "./input-components/VariableInputComponen
 import { BoundVariableChips } from "./BoundVariableChips";
 import { formatText } from "@/utils/text/text-case-converter";
 import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
+import { calculateVisualViewportLift } from "@/lib/dom/visual-viewport-lift";
 
 interface AgentVariablesInlineProps {
   conversationId: string;
@@ -55,6 +56,9 @@ export function AgentVariablesInline({
 }: AgentVariablesInlineProps) {
   const dispatch = useAppDispatch();
   const rootRef = useRef<HTMLDivElement>(null);
+  const expandedEditorRef = useRef<HTMLDivElement>(null);
+  const expandedEditorLiftRef = useRef(0);
+  const [expandedEditorLift, setExpandedEditorLift] = useState(0);
 
   const showVariablePanel = useAppSelector(
     selectShowVariablePanel(conversationId),
@@ -84,6 +88,8 @@ export function AgentVariablesInline({
 
   const handleExpand = useCallback(
     (name: string | null) => {
+      expandedEditorLiftRef.current = 0;
+      setExpandedEditorLift(0);
       dispatch(setExpandedVariableId({ conversationId, variableId: name }));
     },
     [conversationId, dispatch],
@@ -157,6 +163,67 @@ export function AgentVariablesInline({
     [visibleDefs, handleExpand, focusMainInput, submitOnEnter, onSubmit],
   );
 
+  // Radix positions popovers against the layout viewport. On iOS, the
+  // software keyboard shrinks and offsets the *visual* viewport instead, so a
+  // focused textarea inside this portal can remain partially behind the
+  // keyboard even though the main in-flow composer moves correctly. Follow
+  // VisualViewport through the keyboard animation and lift only the expanded
+  // editor by the exact overlap. The CSS height cap below handles surfaces
+  // taller than the remaining viewport; this effect handles their position.
+  useEffect(() => {
+    if (!expandedVariableId || typeof window === "undefined") return undefined;
+
+    const viewport = window.visualViewport;
+    if (!viewport) return undefined;
+
+    let frameId = 0;
+    const alignEditor = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        const editor = expandedEditorRef.current;
+        if (!editor) return;
+
+        const rect = editor.getBoundingClientRect();
+        const nextLift = calculateVisualViewportLift({
+          surfaceTop: rect.top,
+          surfaceBottom: rect.bottom,
+          currentLift: expandedEditorLiftRef.current,
+          viewportTop: viewport.offsetTop,
+          viewportHeight: viewport.height,
+        });
+
+        if (nextLift !== expandedEditorLiftRef.current) {
+          expandedEditorLiftRef.current = nextLift;
+          setExpandedEditorLift(nextLift);
+        }
+
+        requestAnimationFrame(() => {
+          const activeElement = document.activeElement;
+          if (
+            activeElement instanceof HTMLElement &&
+            editor.contains(activeElement)
+          ) {
+            activeElement.scrollIntoView({ block: "nearest" });
+          }
+        });
+      });
+    };
+
+    alignEditor();
+    const settleTimer = window.setTimeout(alignEditor, 350);
+    viewport.addEventListener("resize", alignEditor);
+    viewport.addEventListener("scroll", alignEditor);
+    window.addEventListener("resize", alignEditor);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.clearTimeout(settleTimer);
+      viewport.removeEventListener("resize", alignEditor);
+      viewport.removeEventListener("scroll", alignEditor);
+      window.removeEventListener("resize", alignEditor);
+    };
+  }, [expandedVariableId]);
+
   if (!shouldShowVariables || !showVariablePanel || definitions.length === 0)
     return null;
 
@@ -174,7 +241,8 @@ export function AgentVariablesInline({
           // Envelope-aware: picklist values render as their public label, never
           // "[object Object]" and never the secret description.
           const displayValue: string = variableValueToDisplay(rawValue);
-          const isPicklistBound = !!readStructuredList(variable.customComponent)?.listId;
+          const isPicklistBound = !!readStructuredList(variable.customComponent)
+            ?.listId;
 
           if (isExpanded) {
             return (
@@ -212,8 +280,15 @@ export function AgentVariablesInline({
                   </div>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="max-h-[500px] p-2 border-border overflow-y-auto rounded-2xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_8px_24px_-8px_rgba(0,0,0,0.6)]"
-                  style={{ width: "var(--radix-popover-trigger-width)" }}
+                  ref={expandedEditorRef}
+                  className="relative p-2 border-border overflow-y-auto rounded-2xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.18)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.04)_inset,0_8px_24px_-8px_rgba(0,0,0,0.6)]"
+                  style={{
+                    width: "var(--radix-popover-trigger-width)",
+                    maxHeight:
+                      "min(500px, calc(var(--visual-viewport-height, 100dvh) - 1.5rem))",
+                    top:
+                      expandedEditorLift > 0 ? -expandedEditorLift : undefined,
+                  }}
                   align="start"
                   side="top"
                   sideOffset={6}
