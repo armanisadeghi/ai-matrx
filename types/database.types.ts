@@ -87046,6 +87046,110 @@ export type Database = {
           },
         ]
       }
+      product_capture_file: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          file_id: string
+          id: string
+          item_id: string
+          kind: string
+          metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          file_id: string
+          id?: string
+          item_id: string
+          kind: string
+          metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          file_id?: string
+          id?: string
+          item_id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_capture_file_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "product_capture_item"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_capture_item: {
+        Row: {
+          code: string | null
+          code_source: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          folder_path: string
+          id: string
+          metadata: Json
+          notes: string
+          organization_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          code?: string | null
+          code_source?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          folder_path?: string
+          id?: string
+          metadata?: Json
+          notes?: string
+          organization_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          code?: string | null
+          code_source?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          folder_path?: string
+          id?: string
+          metadata?: Json
+          notes?: string
+          organization_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       schema_templates: {
         Row: {
           created_at: string | null

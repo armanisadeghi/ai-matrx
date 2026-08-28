@@ -1344,6 +1344,16 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        label: "Product Capture",
+        href: "/tools/product-capture",
+        iconName: "PackagePlus",
+        description:
+          "Rapid-fire product photos, QR item switching, and voice notes ahead of listing",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
         label: "Webscraper",
         href: "/scraper",
         guestHref: "/features",
