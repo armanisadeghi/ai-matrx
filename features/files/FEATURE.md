@@ -49,10 +49,12 @@ in the same change.
 8. **Reads hit Supabase directly, never Python.** Adding a `getJson('/files/...')` for plain table
    data is a regression.
 9. **Renderable media identity and bytes are centrally cached.** Keep `fileId` as identity; use
-   `useFileSrc` for the durable element URL and the shared `useFileBlob` cache when private
-   thumbnail pixels must not depend on the file-session cookie. A successful upload seeds those
-   same bytes under its new file ID before the local preview is retired. Never call a file URL
-   endpoint directly from image or thumbnail UI.
+   `useFileAsset` to select a persisted display variant and the shared `useFileBlob` cache whenever
+   private image pixels must not depend on the file-session cookie. `FilePreview`,
+   `MediaThumbnail`, and picker thumbnails all consume that same asset/variant identity; HEIC/HEIF
+   never binds its original bytes to `<img>`. A successful upload seeds the original bytes under
+   its new file ID before the local preview is retired. Never call a file URL endpoint directly
+   from image or thumbnail UI.
 10. **Dialog on desktop, Drawer on mobile**, branched in the surface. `dvh` not `vh` under
     `app/(a)/files/`; `pb-safe` on fixed bottoms; 16px inputs. Tablet list rows reserve space for
     a visible 44px **More** control; mobile rows expose a 44px **Actions** control plus the canonical
@@ -88,6 +90,11 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-28 — Image preview and thumbnail surfaces converge on the canonical asset variant.**
+  `useFileAsset` now exposes the concrete `primaryVariant`; `FilePreview` renders non-public image
+  bytes through the existing bearer-authenticated blob cache, and `MediaThumbnail` accepts a
+  browser-safe derived primary when an older HEIC/HEIF master predates baseline thumbnails. The
+  picker deleted its local `<img>` path and now reuses `MediaThumbnail`.
 - **2026-08-28 — Attachment thumbnails retain their pixels through upload, send, and reload.** The
   canonical upload path now seeds the authenticated byte cache under the committed `fileId` before
   callers retire their local object URL. `MediaThumbnail` preserves thumbnail-variant `file_id`
