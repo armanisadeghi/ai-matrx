@@ -229,6 +229,16 @@ const EXPECTED_CHECKS = [
   // Coverage is opt-in and reported on every run; see the check's coverage_note for what it cannot
   // see. Falsified against the exact lived history.
   "function_contracts_hold",
+  // hr_l3_80. F1's edge matcher has been changed twice and each change fixed one shape while
+  // breaking another: a bare substring matched a writer name inside a TABLE name
+  // (hr.leave_enroll in hr.leave_enrollment) and invented edges; requiring a following paren fixed
+  // that and went BLIND to dynamic calls, where the callee sits in a format()-built string literal
+  // followed by a quote. Identifier-boundary matching satisfies all four shapes. They are asserted
+  // on EVERY run rather than proven once at migration time — a one-time proof protects only the
+  // matcher that existed that day, which is exactly how the dynamic shape was lost. A failure with
+  // expected=true is a FALSE NEGATIVE: an over-firing detector gets investigated, a blind one lets
+  // a STABLE door write in silence.
+  "edge_matcher_sees_every_call_shape",
 ] as const;
 
 interface ConformanceRow {
