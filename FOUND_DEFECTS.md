@@ -15,6 +15,20 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D287 — a `party` (non-user) notification recipient has NO read path, and §4.5 leaves it unspecified — STOP, needs a ruling (2026-08-28)
+
+`communication.mark_notification_read` authorizes on `is_platform_admin() OR recipient_user_id = auth.uid() OR created_by = auth.uid()`. For a `party` recipient — a job applicant, a candidate, anyone with no platform account — `recipient_user_id` and `created_by` are **both NULL** by §4.5's own design (external notices are `visibility='personal'` with `created_by = NULL`). So a party can never stamp their own `read_at`; only an HR admin can, and that is oversight, not the recipient reading it.
+
+**Live:** 4 `party` + 2 `address` non-user notifications, all `read_at` NULL — the CT-14 headline case. They are `hr.hiring.application_ack` (applicant acknowledgements), emailed.
+
+**Why it is a STOP, not a build:** SPEC-NOTIFICATIONS **§4.5 defines preferences, visibility, unsubscribe, and abuse control for non-users but says NOTHING about how a party stamps read** (confirmed by a full-spec sweep: no token-scoped read path in SPEC-NOTIFICATIONS or SPEC-ESIGN; the only non-user "read path" named is the HR admin's audited RPC into the ledger). The coordinator's own instruction: "if §4.5 genuinely leaves non-user read unspecified, STOP and report — that's a ruling, not a guess." The natural design is a token-scoped read (the e-sign outsider-token pattern) — an `actor_token`-authorized `mark_notification_read` variant, with the token minted into the party's email link — but which token, its lifetime, and whether a party read is even wanted are design calls, not a lane's. **Owed: a §4.5 ruling on the non-user read model.**
+
+### D286 — `esign._notify` composes the same notice-less deep link (2026-08-28)
+
+`hr_c4_47` threaded the read reference (`&notice=<notification id>`) into the deep links `hr._wf_notify` emits, and `hr_c4_48` did the same for the `hr.wf_pending` / `hr.wf_inbox` queue links. The verifier named a third producer of the notice-less `/hr/tasks/...` link: **`esign._notify`** (in the `esign` schema). It composes `deep_link` without a notice reference, so following an e-sign notification stamps no `read_at` either — the same DEFECT-1 the HR producers had.
+
+**Not fixed here — it is the e-sign lane's function**, and the coordinator's instruction was to flag it rather than reach into e-sign silently. `esign._notify` takes a pre-resolved `p_to_address` and a `p_deep_link` argument; the fix is that whatever CALLS `esign._notify` (or the function itself) appends `&notice=<the row's id>` to the deep link, exactly as `hr._wf_notify` now does — generate the id up front, thread it in. **Owed to the e-sign lane.**
+
 ### D285 — the attestation "flagged to the manager" notification has never fired, platform-wide (2026-08-28)
 
 `hr._wf_not_attested` closes an overdue attestation and then calls:
