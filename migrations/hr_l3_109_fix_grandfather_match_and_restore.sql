@@ -81,6 +81,22 @@ begin
 end
 $restore$;
 
+-- ── 1b. ONE SECURITY REFINEMENT ON THE RESTORE: `_set_notification_outcome` is an internal helper ─
+-- (called by record_notification_outcome as owner) that check 35 governs as a notify-door — it was
+-- owner-only before hr_l3_108 and must stay so. The blanket restore above re-granted it by Supabase
+-- convention; lock it back down so check 35 stays green. Every other restored function returns to its
+-- pre-incident state and is governed by the reactive checks like any other.
+do $refine$
+begin
+  if to_regprocedure('communication._set_notification_outcome(uuid,text,timestamptz)') is not null then
+    revoke execute on function communication._set_notification_outcome(uuid,text,timestamptz) from public;
+    revoke execute on function communication._set_notification_outcome(uuid,text,timestamptz) from anon;
+    revoke execute on function communication._set_notification_outcome(uuid,text,timestamptz) from authenticated;
+    revoke execute on function communication._set_notification_outcome(uuid,text,timestamptz) from service_role;
+  end if;
+end
+$refine$;
+
 -- ── 2. RE-KEY the grandfather on argument-type OIDs (search-path-independent) ─────────────────────
 alter table platform.definer_client_grant_grandfather
   add column if not exists argtypes text;
@@ -185,6 +201,11 @@ begin
   if exists (select 1 from hr.punch_write_path_conformance()
               where check_key = 'definer_grant_ddl_guard_installed' and not ok) then
     raise exception 'hr_l3_109: check 36 is red';
+  end if;
+  -- check 35 must be green: the restore must not have re-opened a notify/outsider door.
+  if (select count(*) from hr.notify_outsider_doors_client_reachable()) <> 0 then
+    raise exception 'hr_l3_109: check 35 has % violation(s) after the restore',
+      (select count(*) from hr.notify_outsider_doors_client_reachable());
   end if;
 end
 $chk$;
