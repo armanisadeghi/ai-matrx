@@ -60,7 +60,9 @@ describe("fetchAgentAccessLevel session boundary", () => {
 
     expect(result.meta.requestStatus).toBe("fulfilled");
     expect(rpc).toHaveBeenCalledTimes(2);
-    expect(getSession).toHaveBeenCalledTimes(1);
+    // One preflight proves the request may run authenticated; the second
+    // re-resolves the session after PostgREST reports the transient anon gap.
+    expect(getSession).toHaveBeenCalledTimes(2);
     expect(consoleError).toHaveBeenCalledWith(
       expect.stringContaining("session re-resolved"),
     );
