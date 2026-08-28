@@ -321,7 +321,15 @@ async function main(): Promise<void> {
     reopenedAt: null,
     reopenReason: null,
     boundaryWorkweekIds: ["w1", "w2"],
-    counts: { employments: 288, approved: 285, open: 0, attested: 285, disputed: 3 },
+    /*
+      🚨 `attested` WAS 285 HERE, ALONGSIDE `approved: 285`, OUT OF 288 EMPLOYMENTS — a state no
+      period can be in. Both are STATE counts server-side
+      (`count(*) filter (where state = ...)`), and a row cannot be `approved` and `attested` at
+      once; 285 + 285 also exceeds the 288 rows that exist. The fixture read `attested` as "how
+      many people ever attested" rather than "how many are sitting in that state right now", which
+      is what let a client gate that ignores `attested` look correct for as long as it did.
+    */
+    counts: { employments: 288, approved: 285, open: 0, attested: 0, disputed: 3 },
   };
   const ctx = {
     role: "payroll_admin" as const,
@@ -467,6 +475,35 @@ async function main(): Promise<void> {
      !/did not|failed|late|ignored|unresponsive/i.test(askingSentence(3, 1) ?? ""));
   ok("with no rows the surface says NOTHING rather than guessing",
      askingSentence(0, 0) === null);
+
+  // ── The approve gate must match the SERVER's rule, not a narrower one. ──────────────────────
+  // 🚨 An ATTESTED timecard has left `open` and is still waiting on its manager. Counting only
+  // `open` offered an enabled "Approve period" that the server refused with
+  // hr_period_has_open_timecards — a control that could not work, beside a panel already reading
+  // "0 of 1 timecards approved".
+  const attestedCtx = {
+    role: "payroll_admin" as const,
+    allowPeriodReopen: true,
+    todayLocalDate: "2026-08-28",
+  };
+  const attestedOnly = {
+    ...basePeriod,
+    state: "submitted" as const,
+    counts: { employments: 1, approved: 0, open: 0, attested: 1, disputed: 0 },
+  };
+  const offerFor = (p: unknown, to: string) =>
+    offeredTransitions({ period: p as never, ...attestedCtx }).find((o) => o.to === to);
+  const attestedOffer = offerFor(attestedOnly, "approved");
+  ok("an ATTESTED-but-unapproved timecard still blocks approval",
+     attestedOffer?.unavailableBecause !== null && attestedOffer?.unavailableBecause !== undefined);
+  ok("…and the reason counts it", /1 timecard has not been approved/i.test(
+       attestedOffer?.unavailableBecause ?? ""));
+  const allApproved = {
+    ...attestedOnly,
+    counts: { employments: 1, approved: 1, open: 0, attested: 0, disputed: 0 },
+  };
+  ok("with every timecard approved, approval IS offered",
+     offerFor(allApproved, "approved")?.unavailableBecause === null);
 
   const getEdge = HR_TIME_RPC_FIXTURES.hr_pay_period_get?.edge?.data as {
     workflow: { stuck: number; awaiting: number; noFlow: number; rows: Array<Record<string, unknown>> };

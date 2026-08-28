@@ -322,16 +322,41 @@ export function offeredTransitions(ctx: PeriodOfferContext): PeriodActionOffer[]
     }
 
     if (to === "approved") {
-      // 🚨 REFUSED while any employment is still `open`. PERMITTED with an unresolved dispute.
-      const stillOpen = period.counts.open;
+      /*
+       * 🚨 REFUSED while any timecard is UNDECIDED. PERMITTED with an unresolved dispute.
+       *
+       * This counted `counts.open` alone and offered an enabled "Approve period" on a period the
+       * server then refused with `hr_period_has_open_timecards` — a button that could not work.
+       * The server had already fixed the same bug on its side, and its comment says why:
+       * "the employee attested has left `open` for `attested` and is still waiting on its manager;
+       * counting only `open` let a period reach `approved` with timecards nobody had approved."
+       * The client was the stale half of that fix, and the panel beside it already disagreed with
+       * the button — it read "0 of 1 timecards approved" while the control said go ahead.
+       *
+       * The server's rule is `state not in ('approved','exported','locked')`. `exported` and
+       * `locked` are states a row only reaches AFTER approval, so where this control is offered the
+       * undecided set is `open + attested + disputed`.
+       *
+       * 🚨 `disputed` IS DELIBERATELY NOT COUNTED HERE, AND THAT IS A KNOWN NARROWER GAP, NOT AN
+       * OVERSIGHT. `counts.disputed` is a STATE count server-side
+       * (`count(*) filter (where state = 'disputed')`), but this client reads it elsewhere as
+       * "approved rows carrying an open disagreement" — `disputeSentence` is built on that reading,
+       * and the server's own note distinguishes them: "An unresolved DISAGREEMENT does not block
+       * approval — it travels to the export on the approved row." Those are two different
+       * populations, and resolving which one this count is takes a change to the read layer rather
+       * than a guess here. Counting it would flip a passing contract on a belief I have not proved.
+       * So this closes the case that WAS proved — an attested timecard offering an approval the
+       * server refuses — and the conflation is reported rather than papered over.
+       */
+      const stillOpen = period.counts.open + period.counts.attested;
       offers.push({
         to,
         label: period.state === "reopened" ? "Re-approve period" : "Approve period",
         unavailableBecause:
           roleBlock(CAN_TRANSITION, "Approving a period") ??
           (stillOpen > 0
-            ? `${stillOpen} ${stillOpen === 1 ? "timecard is" : "timecards are"} still awaiting a ` +
-              `decision. Every timecard must be decided before the period is approved.`
+            ? `${stillOpen} ${stillOpen === 1 ? "timecard has" : "timecards have"} not been ` +
+              `approved yet. A period is approved when every timecard in it is.`
             : null),
         reasonRequired: false,
         consequence:
