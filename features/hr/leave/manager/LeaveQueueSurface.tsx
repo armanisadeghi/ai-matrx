@@ -118,6 +118,15 @@ export function LeaveQueueSurface() {
   const scopeParam = params?.get("scope") ?? null;
   // A query string is user input, so it is VALIDATED rather than asserted.
   const scope: HrInboxScope = scopeParam && isScope(scopeParam) ? scopeParam : "mine";
+  /**
+   * 🚨 `?request=` IS THE DOOR THE SERVER ITSELF BUILDS. `hr.leave_calendar` returns
+   * `href = '/hr/leave?request=<id>'` for a manager or an admin, and the §12 ledger's `usage`
+   * rows point here too. So this route ANSWERS that parameter: it narrows to the request when
+   * it is still waiting on a decision, and says so in words when it is not. Ignoring it would
+   * turn every one of those links into a landing on an unrelated list — which is how a door
+   * becomes a dead end without anything going red.
+   */
+  const requestParam = params?.get("request") ?? null;
 
   const queue = useLeaveQueue(scope);
 
@@ -133,6 +142,12 @@ export function LeaveQueueSurface() {
   const [bulkRefusal, setBulkRefusal] = useState<HrRefusal | null>(null);
 
   const scopeMeta = SCOPES.find((s) => s.key === scope) ?? SCOPES[0];
+
+  const focused = requestParam
+    ? queue.mine.filter((row) => row.request?.id === requestParam)
+    : queue.mine;
+  /** The link resolved to nothing decidable — a real answer, not an empty list. */
+  const focusMissed = requestParam !== null && !queue.loading && focused.length === 0;
   const visibleScopes = SCOPES.filter(
     (s) => s.key !== "queue" || queue.meta?.can_view_queue === true,
   );
@@ -428,8 +443,26 @@ export function LeaveQueueSurface() {
             </div>
           ) : null}
 
+          {requestParam ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card p-3">
+              <p className="text-sm text-foreground">
+                {focusMissed
+                  ? "That time-off request is not waiting on a decision any more. It may already have been decided, cancelled, or handed to somebody else."
+                  : "Showing one request you followed a link to."}
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => router.replace(leaveQueueHref(orgRef, { scope }))}
+              >
+                Show everything waiting
+              </Button>
+            </div>
+          ) : null}
+
           <MatrxDataTable<LeaveQueueRow>
-            data={queue.mine}
+            data={focused}
             columns={columns}
             getRowId={(row) => row.step_id}
             isLoading={queue.loading}
