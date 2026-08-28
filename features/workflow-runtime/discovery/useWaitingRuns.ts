@@ -65,7 +65,16 @@ export function useWaitingRuns(): WaitingRunsState {
     if (!organizationId) return undefined;
     let live = true;
     void (async () => {
-      const result = await dispatch(callApi({ path: "/runs/waiting", method: "GET" }));
+      const result = await dispatch(
+        callApi({
+          path: "/runs/waiting",
+          method: "GET",
+          // This projection is authenticated-only. During logout/session expiry
+          // the protected shell can finish one in-flight read as a guest; the
+          // caller renders the refusal, but it is not a product incident.
+          expectedErrorStatuses: [401],
+        }),
+      );
       if (!live) return;
       if (result.error) {
         setError(result.error.message || "Could not check what is waiting on you.");

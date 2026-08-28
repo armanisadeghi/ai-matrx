@@ -22,6 +22,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const API_TYPES = join(process.cwd(), "types/python-generated/api-types.ts");
+const WAITING_HOOK = join(
+  process.cwd(),
+  "features/workflow-runtime/discovery/useWaitingRuns.ts",
+);
 
 describe("the waiting-runs contract survives a type regen", () => {
   const generated = readFileSync(API_TYPES, "utf8");
@@ -39,5 +43,11 @@ describe("the waiting-runs contract survives a type regen", () => {
 
   it("still declares GET /runs/stream, the announce channel", () => {
     expect(generated).toContain('"/runs/stream"');
+  });
+
+  it("treats the authenticated projection's logout 401 as handled control flow", () => {
+    const hook = readFileSync(WAITING_HOOK, "utf8");
+    expect(hook).toContain('path: "/runs/waiting"');
+    expect(hook).toContain("expectedErrorStatuses: [401]");
   });
 });

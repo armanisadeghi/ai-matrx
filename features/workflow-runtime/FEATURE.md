@@ -161,6 +161,9 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-28 — **Waiting discovery does not persist logout/session-expiry 401s as incidents.**
+  `useWaitingRuns` still renders the authenticated projection's refusal, but declares HTTP 401
+  expected so a protected shell finishing one in-flight badge read as a guest stays control flow.
 - 2026-08-28 — **The interrupt contract, the approval preset and fan-out lanes (Volley 7).**
   `interrupt/` is the new home of everything a mid-run question needs: `interrupt-view.ts`
   (pure — the §4.1 presentation block, the answer fields, the deadline copy, the provenance
