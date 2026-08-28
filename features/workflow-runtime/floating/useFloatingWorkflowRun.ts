@@ -58,11 +58,18 @@ export interface FloatingWorkflowRunOptions {
   runId: string | null;
   /** The workflow's name, so the float's title is words rather than a uuid. */
   workflowName?: string | null;
+  /**
+   * nodeId → the definition's human step name. THE NO-GRAPH-IDS LAW: this
+   * surface is the last thing that still holds the definition, so the labels
+   * go over with the run — the window has no way to get them itself.
+   */
+  stepLabels?: Record<string, string> | null;
 }
 
 export function useFloatingWorkflowRun({
   runId,
   workflowName = null,
+  stepLabels = null,
 }: FloatingWorkflowRunOptions): void {
   const dispatch = useAppDispatch();
   const status = useAppSelector(selectRunStatus(runId ?? ""));
@@ -70,9 +77,9 @@ export function useFloatingWorkflowRun({
   // The cleanup runs after the last render, so it must read the LATEST status
   // and name rather than the ones captured when the effect was set up — a run
   // that finished while the page was open must not be handed off.
-  const latest = useRef({ status, workflowName });
+  const latest = useRef({ status, workflowName, stepLabels });
   useEffect(() => {
-    latest.current = { status, workflowName };
+    latest.current = { status, workflowName, stepLabels };
   });
 
   useEffect(() => {
@@ -80,11 +87,18 @@ export function useFloatingWorkflowRun({
     // The page is on screen: it is the run's home, and the float steps aside.
     dispatch(closeWorkflowRunWindowAction(runId));
     return () => {
-      const { status: finalStatus, workflowName: name } = latest.current;
+      const { status: finalStatus, workflowName: name, stepLabels: labels } =
+        latest.current;
       // Never seen (no status yet) still counts as live — a run adopted
       // moments ago is the most important one not to lose.
       if (finalStatus !== null && TERMINAL_STATUSES.has(finalStatus)) return;
-      dispatch(openWorkflowRunWindowAction({ runId, workflowName: name }));
+      dispatch(
+        openWorkflowRunWindowAction({
+          runId,
+          workflowName: name,
+          stepLabels: labels,
+        }),
+      );
     };
   }, [dispatch, runId]);
 }

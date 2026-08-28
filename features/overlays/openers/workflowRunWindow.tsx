@@ -27,6 +27,17 @@ export interface OpenWorkflowRunWindowOptions {
   runId: string;
   /** The workflow's name, so the title is words rather than a uuid. */
   workflowName?: string | null;
+  /**
+   * nodeId → the definition's human step name.
+   *
+   * 🚨 Not a nicety — THE NO-GRAPH-IDS LAW. The window renders at the root of
+   * the tree, outside every provider that knows the workflow, so without this
+   * the float narrates a run in node ids: "T in · Started", "io.user_input".
+   * The surface handing the run over is the last thing that still has the
+   * definition, so it hands the labels over with it. Plain JSON, small, and
+   * it travels once at handoff rather than being refetched by the window.
+   */
+  stepLabels?: Record<string, string> | null;
 }
 
 /** ONE float per run — the identity is the run, not the click. */
@@ -49,6 +60,7 @@ export function openWorkflowRunWindowAction(
       windowInstanceId: instanceId,
       runId: opts.runId,
       workflowName: opts.workflowName ?? null,
+      stepLabels: opts.stepLabels ?? null,
     },
   });
 }

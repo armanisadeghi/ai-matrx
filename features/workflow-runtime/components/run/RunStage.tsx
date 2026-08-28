@@ -252,7 +252,7 @@ export function RunStage({
    * person got a spinner somewhere else and no way back. See
    * `floating/useFloatingWorkflowRun.ts` for the handoff itself.
    */
-  useFloatingWorkflowRun({ runId, workflowName });
+  useFloatingWorkflowRun({ runId, workflowName, stepLabels });
 
   const schemaState = useResultSchema(definitionId);
   const schemaPending = schemaState.status === "loading";

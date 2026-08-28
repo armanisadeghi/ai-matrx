@@ -83,6 +83,24 @@ function isMessageRole(value: unknown): value is MessageRole {
   );
 }
 
+/**
+ * A `nodeId → step name` map off overlay data, narrowed here rather than in
+ * the window — anything that travelled through Redux is `unknown`, and a
+ * window's props are the one place this file guarantees are typed. Non-string
+ * entries are dropped rather than rendered, so a malformed payload degrades to
+ * humanised node ids instead of printing `[object Object]` at somebody.
+ */
+function parseStepLabels(value: unknown): Record<string, string> | null {
+  if (typeof value !== "object" || value === null) return null;
+  const labels: Record<string, string> = {};
+  for (const [nodeId, label] of Object.entries(
+    value as Record<string, unknown>,
+  )) {
+    if (typeof label === "string" && label) labels[nodeId] = label;
+  }
+  return Object.keys(labels).length > 0 ? labels : null;
+}
+
 const AdminIndicator = lazyOverlay(
   () => import("@/components/admin/controls/AdminIndicator"),
   { ssr: false },
@@ -5160,6 +5178,7 @@ export default function OverlayController() {
             workflowName={
               typeof data?.workflowName === "string" ? data.workflowName : null
             }
+            stepLabels={parseStepLabels(data?.stepLabels)}
           />
         );
       })}

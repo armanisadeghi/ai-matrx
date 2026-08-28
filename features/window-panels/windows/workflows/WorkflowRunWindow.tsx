@@ -53,6 +53,13 @@ export interface WorkflowRunWindowProps {
   runId: string;
   /** The workflow's name, so the title is words rather than a uuid. */
   workflowName?: string | null;
+  /**
+   * nodeId → the definition's human step name, handed over with the run.
+   * THE NO-GRAPH-IDS LAW: this window is rendered at the root of the tree and
+   * has no route to the definition, so a float without these narrates in node
+   * ids ("T in · Started"). The surface giving the run up supplies them.
+   */
+  stepLabels?: Record<string, string> | null;
 }
 
 export default function WorkflowRunWindow({
@@ -60,6 +67,7 @@ export default function WorkflowRunWindow({
   onClose,
   runId,
   workflowName = null,
+  stepLabels = null,
 }: WorkflowRunWindowProps) {
   // THE WHOLE POINT: this adoption is what survives the navigation. The page
   // released its refcount as it unmounted; this one takes it, and the adapter
@@ -90,7 +98,7 @@ export default function WorkflowRunWindow({
       }
       onClose={onClose}
     >
-      <FloatingRunBody runId={runId} />
+      <FloatingRunBody runId={runId} stepLabels={stepLabels ?? undefined} />
     </WindowPanel>
   );
 }

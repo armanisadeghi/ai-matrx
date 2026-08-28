@@ -50,7 +50,21 @@ const TERMINAL_STATUSES = new Set([
   "errored",
 ]);
 
-export function FloatingRunBody({ runId }: { runId: string }) {
+const NO_STEP_LABELS: Record<string, string> = {};
+
+export function FloatingRunBody({
+  runId,
+  stepLabels = NO_STEP_LABELS,
+}: {
+  runId: string;
+  /**
+   * nodeId → the definition's human step name, handed over by the surface
+   * that gave this run up (`useFloatingWorkflowRun`). Absent only when a
+   * float was opened by something with no definition in hand; node ids then
+   * humanise, which reads roughly but never lies.
+   */
+  stepLabels?: Record<string, string>;
+}) {
   const status = useAppSelector(selectRunStatus(runId));
   const activity = useAppSelector(selectRunActivity(runId));
   const interrupt = useAppSelector(selectRunInterrupt(runId));
@@ -59,11 +73,7 @@ export function FloatingRunBody({ runId }: { runId: string }) {
   const terminal = status !== null && TERMINAL_STATUSES.has(status);
   const live = !terminal && !waiting;
 
-  // Step labels come from the DEFINITION, which is not in reach here: the
-  // window renders at the root of the tree, outside the workflow's providers.
-  // `activityLine` humanises the node id instead — a readable fallback, and
-  // the door below is one click from the page that has the real names.
-  const line = currentLivenessLine(activity);
+  const line = currentLivenessLine(activity, stepLabels);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto px-3 py-2.5">
@@ -106,7 +116,7 @@ export function FloatingRunBody({ runId }: { runId: string }) {
         </p>
       </div>
 
-      <ProgressRailReadout runId={runId} />
+      <ProgressRailReadout runId={runId} nodeLabels={stepLabels} />
     </div>
   );
 }
