@@ -385,7 +385,6 @@ function Desk({
   ) : (
     <IntakePanel
       definitionId={definitionId}
-      definition={definition}
       deliverables={deliverables}
       onStarted={onStarted}
       onOpenRun={onOpenRun}
