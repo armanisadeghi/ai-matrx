@@ -34,25 +34,6 @@ export const TERMINAL_RUN_STATUSES: ReadonlySet<WorkflowRunStatus> = new Set<Wor
 /** The scheduler is (or is about to be) making progress. */
 export const ACTIVE_RUN_STATUSES: ReadonlySet<WorkflowRunStatus> = new Set<WorkflowRunStatus>(["pending", "running", "pausing", "cancelling"]);
 
-// --- Agent-step liveness vocabulary ---
-
-/** What an agent-family step is DOING right now, carried as the `delta`
- *  of a `node_stream` frame with `kind: "phase"`. CLOSED: the server folds
- *  every label onto this set before it reaches the wire, so a renderer may
- *  switch exhaustively. An unrecognised string is still possible (the server
- *  passes an unmapped label through and logs it) — render it verbatim. */
-export type AgentStepPhase =
-  | "preparing"
-  | "streaming"
-  | "tool"
-  | "reasoning"
-  | "finalizing"
-  | "retrying"
-  | "complete";
-
-/** The same set, ordered as a healthy step walks it. */
-export const AGENT_STEP_PHASES: readonly AgentStepPhase[] = ["preparing", "streaming", "tool", "reasoning", "finalizing", "retrying", "complete"];
-
 // --- Durable scheduler events (recorded in wf_node_events, replayed) ---
 
 export interface RunStartedEvent {
