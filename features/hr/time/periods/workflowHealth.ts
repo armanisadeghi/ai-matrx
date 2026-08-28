@@ -41,16 +41,22 @@ export const HEALTH_MEANING: Record<RowHealth, string> = {
 /**
  * Failure classes in words.
  *
- * 🚨 `not_attested` is the engine's coming terminal for "the deadline passed and the employee never
- * attested". SPEC-TIME §7.1 is explicit that this is **never silently attested** — it closes as
- * not-attested and is FLAGGED TO THE MANAGER. Its wording is here already so that the moment the
- * engine starts emitting it, the surface says the right thing instead of printing a raw token.
+ * 🚨 `not_attested` is the engine's terminal for "the attestation closed without the employee
+ * confirming". SPEC-TIME §7.1 is explicit that this is **never silently attested**.
+ *
+ * 🚨 THIS LINE USED TO END "and it is flagged for a manager", AND THAT WAS THE D285 CLAIM ITSELF.
+ * The engine resolves a recipient at close time and READS BACK how many notices were actually
+ * written; when none were, it records `notified_as: 'nobody'`. So whether anyone was flagged is a
+ * fact about a particular close, and this map — which is per-CLASS, not per-ROW — cannot know it.
+ * The row-level sentence below carries the truth, because the server composes it from what actually
+ * happened. A per-class string asserting the flag would be wrong on exactly the rows where being
+ * wrong matters most: the ones nobody was told about.
  */
 const FAILURE_WORDS: Record<string, string> = {
   approver_ineligible:
     "the person who should decide cannot — they are not eligible to act on this timecard",
   not_attested:
-    "the attestation deadline passed without the employee attesting — this was never treated as agreed, and it is flagged for a manager",
+    "the attestation closed without the employee confirming — this was never treated as agreed",
   no_approver_resolved: "nobody could be resolved to decide this",
   approver_inactive: "the person who should decide is no longer active",
   subject_excluded: "the person who would decide is a party to this record and cannot act on it",
@@ -70,11 +76,17 @@ export function failureWords(failureClass: string | null): string | null {
 }
 
 /**
- * 🚨 The engine's not-attested terminal — flagged to a manager, never treated as agreement.
+ * 🚨 The engine's not-attested terminal — never treated as agreement.
  * Checked on BOTH members because the engine is mid-build and has not settled which one carries it;
- * reading only one would mean the flag silently fails to appear.
+ * reading only one would mean the terminal silently fails to appear.
+ *
+ * 🚨 RENAMED FROM `isManagerFlagged`. The old name asserted the D285 claim in the type system: it
+ * told every caller that a manager had been flagged, when what it actually detects is that the step
+ * closed as not-attested. Those are different facts, and the engine records `notified_as: 'nobody'`
+ * for the closes where they come apart. A predicate that answers one question under the name of
+ * another is how the false claim reached three separate surfaces from a single import.
  */
-export function isManagerFlagged(
+export function isNotAttestedTerminal(
   row: Pick<PeriodWorkflowRow, "failureClass" | "instanceState">,
 ): boolean {
   return row.failureClass === "not_attested" || row.instanceState === "not_attested";
@@ -121,7 +133,12 @@ function unableWords(reason: string | null): string | null {
 export function attestationOutcomeSentence(
   row: Pick<
     PeriodWorkflowRow,
-    "attestationOutcome" | "attestationNote" | "attestedAt" | "managerApprovedAt" | "unableReason"
+    | "attestationOutcome"
+    | "attestationReason"
+    | "attestationNote"
+    | "attestedAt"
+    | "managerApprovedAt"
+    | "unableReason"
   >,
 ): string | null {
   if (!row.attestationOutcome) return null;
@@ -131,17 +148,39 @@ export function attestationOutcomeSentence(
     return row.attestationNote;
   }
 
-  const why = unableWords(row.unableReason);
   const approved = row.managerApprovedAt !== null;
+  // The manager half is the CLIENT's to add: it is the one part of this sentence the server's note
+  // does not carry, and it is the combination §7.1 exists to make visible.
+  const managerClause = approved
+    ? " The manager approved this timecard anyway."
+    : " No manager decision has been recorded on it yet.";
 
-  return (
-    `Not attested — closed without the employee's confirmation` +
-    (why ? ` (${why})` : "") +
-    `;` +
-    (approved
-      ? " the manager approved the flagged timecard."
-      : " no manager decision has been recorded on it yet.")
-  );
+  // 🚨 THE SERVER'S NOTE WINS VERBATIM — ONE BODY FOR THE SENTENCE.
+  // The engine composes this from the close evidence, and it is the only place that can: it knows
+  // WHICH not_attested this was, and it knows whether a notice was actually delivered (D285), which
+  // the period payload does not carry. Re-writing these sentences here would put a second body of
+  // the same rule in a file that cannot see half the facts it would be asserting — and the copy
+  // without the facts is the one that would go stale silently.
+  if (row.attestationNote) return row.attestationNote + managerClause;
+
+  // Fallback ONLY for rows closed before the engine started shipping a note. It says less, on
+  // purpose: with no close evidence in hand it claims nothing about who was told.
+  //
+  // 🚨 THE TWO CASES ARE NOT THE SAME SENTENCE, AND THE OLD ONE BLAMED BOTH. "Closed without the
+  // employee's confirmation" reads as a person who ignored something. For a `no_reach` employee
+  // there was never anything to ignore: they hold no login, no surface could reach them, and they
+  // did not decline — nobody asked. Wording those two identically accuses somebody of a silence
+  // that was the platform's, not theirs.
+  const base =
+    row.attestationReason === "no_reach"
+      ? "Not attested — this employee holds no platform login, so the attestation was never" +
+        " deliverable to them. Nobody asked, and they did not decline."
+      : row.attestationReason === "no_response"
+        ? "Not attested — they were asked and did not answer before the deadline."
+        : `Not attested — closed without the employee's confirmation` +
+          (unableWords(row.unableReason) ? ` (${unableWords(row.unableReason)})` : "");
+
+  return base + " Nothing here was attested on their behalf." + managerClause;
 }
 
 /**

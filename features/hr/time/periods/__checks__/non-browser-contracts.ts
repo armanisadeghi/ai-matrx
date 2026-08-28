@@ -386,7 +386,7 @@ async function main(): Promise<void> {
   ok("submit is offered once the end date has passed", late?.unavailableBecause === null);
 
   // ── T3: row health must distinguish "waiting on a person" from "the flow is dead". ──────────
-  const { failureWords, isManagerFlagged, HEALTH_LABEL } = await import(
+  const { failureWords, isNotAttestedTerminal, HEALTH_LABEL } = await import(
     "@/features/hr/time/periods/workflowHealth"
   );
   ok("a stuck row is not labelled the same as an awaiting one",
@@ -400,10 +400,16 @@ async function main(): Promise<void> {
   ok("an unrecognised failure class is still rendered, never swallowed",
      (failureWords("some_new_class") ?? "").includes("some new class"));
   ok("no failure class means no sentence", failureWords(null) === null);
-  ok("not_attested is flagged for a manager",
-     isManagerFlagged({ failureClass: "not_attested", instanceState: "active" } as never));
-  ok("a live awaiting row is NOT flagged",
-     !isManagerFlagged({ failureClass: null, instanceState: "active" } as never));
+  ok("the not_attested terminal is detected",
+     isNotAttestedTerminal({ failureClass: "not_attested", instanceState: "active" } as never));
+  ok("a live awaiting row is NOT a not_attested terminal",
+     !isNotAttestedTerminal({ failureClass: null, instanceState: "active" } as never));
+  // 🚨 D285 AS AN ASSERTION. The per-class wording must not claim anybody was told: whether a
+  // notice was actually written is decided per close and read back from the count sent, and this
+  // map cannot see it. The claim lived here for three rounds while being false on the rows that
+  // matter most — the ones no recipient could be resolved for.
+  ok("the not_attested wording claims NO notification",
+     !/flagged|notified|manager/i.test(failureWords("not_attested") ?? ""));
 
   const getEdge = HR_TIME_RPC_FIXTURES.hr_pay_period_get?.edge?.data as {
     workflow: { stuck: number; awaiting: number; noFlow: number; rows: Array<Record<string, unknown>> };
@@ -425,6 +431,7 @@ async function main(): Promise<void> {
   );
   const realRow = {
     attestationOutcome: "not_attested",
+    attestationReason: null,
     attestationNote: null,
     attestedAt: null,
     managerApprovedAt: "2026-08-27T11:35:56Z",
@@ -437,7 +444,40 @@ async function main(): Promise<void> {
     sentence.includes("without the employee's confirmation"),
   );
   ok("…names WHY they could not act", sentence.includes("no platform login"));
-  ok("…and says the manager approved it anyway", sentence.includes("the manager approved"));
+  ok("…and says the manager approved it anyway", sentence.includes("The manager approved"));
+
+  // ── THE RULING: the two not_attested cases must NOT read as the same sentence. ───────────────
+  // 🚨 A person with no login was never asked. Wording that case identically to a person who WAS
+  // asked and stayed silent accuses them of a silence that was the platform's, not theirs.
+  const noReach = attestationOutcomeSentence({
+    ...realRow, attestationReason: "no_reach", managerApprovedAt: null,
+  }) ?? "";
+  const noResponse = attestationOutcomeSentence({
+    ...realRow, attestationReason: "no_response", managerApprovedAt: null,
+  }) ?? "";
+  ok("no_reach and no_response are DIFFERENT sentences", noReach !== noResponse);
+  ok("no_reach says nobody asked them", /never deliverable|Nobody asked/i.test(noReach));
+  ok("no_reach does NOT accuse them of not answering",
+     !/did not answer|no action from the employee|deadline passed/i.test(noReach));
+  ok("no_response says they were asked and did not answer",
+     /asked and did not answer/i.test(noResponse));
+  ok("neither case claims a notification the payload cannot support",
+     !/flagged|notified/i.test(noReach) && !/flagged|notified/i.test(noResponse));
+  ok("both keep the never-on-their-behalf guarantee",
+     noReach.includes("on their behalf") && noResponse.includes("on their behalf"));
+
+  // 🚨 ONE BODY FOR THE SENTENCE. When the server ships its own note it wins verbatim — it is the
+  // only place that knows whether a notice was actually delivered. The client may only ADD the
+  // manager-decision clause, which the note does not carry.
+  const withNote = attestationOutcomeSentence({
+    ...realRow,
+    attestationReason: "no_reach",
+    attestationNote: "SERVER SENTENCE.",
+    managerApprovedAt: null,
+  }) ?? "";
+  ok("the server's note is rendered verbatim", withNote.startsWith("SERVER SENTENCE."));
+  ok("…and the client adds only the manager clause",
+     withNote === "SERVER SENTENCE. No manager decision has been recorded on it yet.");
   ok("money-moved-on-unconfirmed-hours is detectable", approvedWithoutAttestation(realRow));
 
   // 🚨 THE NEVER-INFER RULE. attested_at is null and a manager approved — which LOOKS like proof —

@@ -44,7 +44,7 @@ import {
   approvedWithoutAttestation,
   attestationOutcomeSentence,
   failureWords,
-  isManagerFlagged,
+  isNotAttestedTerminal,
 } from "../workflowHealth";
 
 const HEALTH_TONE: Record<RowHealth, string> = {
@@ -85,7 +85,10 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
 
   // A failure at ANY health — the `awaiting`-with-an-open-failure case included.
   const withFailure = rows.filter((r) => r.failureClass !== null);
-  const flagged = rows.filter(isManagerFlagged);
+  const notAttested = rows.filter(isNotAttestedTerminal);
+  // 🚨 The ruling's distinction, counted: a person who holds no login was never asked,
+  // so they are not part of any "did not respond" total.
+  const neverAskable = rows.filter((r) => r.attestationReason === "no_reach");
   // Money moved on hours the subject never confirmed — §7.1's case, read from the record.
   const unconfirmed = rows.filter(approvedWithoutAttestation);
 
@@ -150,13 +153,32 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
           </p>
         ) : null}
 
-        {flagged.length > 0 ? (
+        {notAttested.length > 0 ? (
           <p className="mt-3 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[12px] leading-relaxed text-amber-800 dark:text-amber-300">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+            {/*
+              🚨 THIS BANNER USED TO SAY THEY WERE "never attested by the deadline and are flagged
+              for a manager". Both halves could be false at once. An employee with no platform login
+              was never asked, so "by the deadline" charges them with missing something they were
+              never shown; and the engine records `notified_as: 'nobody'` when no recipient could be
+              resolved, so the flag is a per-close fact this summary cannot see. What is always true
+              is the part that matters for money: nothing here was treated as agreed.
+            */}
             <span>
-              {flagged.length === 1 ? "1 timecard was" : `${flagged.length} timecards were`} never
-              attested by the deadline and {flagged.length === 1 ? "is" : "are"} flagged for a
-              manager. Nothing here was treated as agreed.
+              {notAttested.length === 1
+                ? "1 timecard closed"
+                : `${notAttested.length} timecards closed`}{" "}
+              without the employee confirming{" "}
+              {notAttested.length === 1 ? "it" : "them"}. Nothing here was treated as agreed.
+              {neverAskable.length > 0 ? (
+                <>
+                  {" "}
+                  {neverAskable.length === 1
+                    ? "One of them could never be asked: that employee holds no platform login,"
+                    : `${neverAskable.length} of them could never be asked: those employees hold no platform login,`}{" "}
+                  so no surface could reach them.
+                </>
+              ) : null}
             </span>
           </p>
         ) : null}
@@ -183,18 +205,29 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
                     : HEALTH_LABEL[row.health]}
                 </span>
 
-                {row.attestationOutcome === "not_attested" ? (
+                {/*
+                  🚨 ONE BADGE, AND IT DOES NOT CLAIM A NOTIFICATION.
+                  There were two here: "Not attested" from the outcome, and "Flagged for a manager"
+                  from the flow terminal — the same fact, twice, and the second one asserting D285's
+                  claim. Whether anybody was actually told is decided at close time and read back
+                  from how many notices were written; the period payload does not carry it, so this
+                  badge cannot say it. The row's sentence below does, because the server composes it
+                  from what actually happened.
+
+                  The two conditions are OR'd rather than dropped: the outcome is projected onto the
+                  timecard row while the terminal lives on the flow, and a row can carry either one
+                  first. Reading only one is how a not-attested timecard renders as unremarkable.
+                */}
+                {row.attestationOutcome === "not_attested" || isNotAttestedTerminal(row) ? (
                   <span
-                    title="The employee never confirmed these hours. Nothing attested on their behalf."
+                    title={
+                      row.attestationReason === "no_reach"
+                        ? "Closed without a confirmation. This employee holds no platform login, so they were never asked. Nothing attested on their behalf."
+                        : "Closed without the employee confirming these hours. Nothing attested on their behalf."
+                    }
                     className="inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-300"
                   >
                     Not attested
-                  </span>
-                ) : null}
-
-                {isManagerFlagged(row) ? (
-                  <span className="inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-800 dark:text-amber-300">
-                    Flagged for a manager
                   </span>
                 ) : null}
 

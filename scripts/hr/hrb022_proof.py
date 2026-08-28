@@ -132,7 +132,14 @@ async def main():
                     deep_links.append(row["deep_link"])
         return env
 
-    # counts taken BEFORE a single fixture row exists — the rollback proof compares against these
+    # 🚨 THE ROLLBACK PROOF IS FIXTURE-SCOPED, NOT GLOBAL — three unreproducible reds bought this.
+    # It used to compare GLOBAL row counts taken here against counts taken after the rollback. The
+    # "after" read happens outside the transaction, so it sees a fresh snapshot: any other lane
+    # committing a row mid-run flipped this suite red, and re-running it went green because the
+    # concurrent write had landed before the "before" count. A suite cannot assert a property of the
+    # whole database while other lanes are writing to it. What it CAN assert — and what the
+    # assertion was always for — is that IT left nothing behind, which is scoped to its own fixture
+    # organization and is deterministic under any concurrency.
     await as_owner()
     n_inst_before = await conn.fetchval("select count(*) from hr.workflow_instance")
     n_emp_before = await conn.fetchval("select count(*) from hr.employment")
@@ -784,16 +791,29 @@ async def main():
         n_inst_after = await conn.fetchval("select count(*) from hr.workflow_instance")
         n_emp_after = await conn.fetchval("select count(*) from hr.employment")
         n_notif_after = await conn.fetchval("select count(*) from communication.notification")
+        # everything this suite could have created is scoped to its own organization
         left_org = await conn.fetchval(
             "select count(*) from iam.organizations where id = $1", org) if org else 0
+        left_inst = await conn.fetchval(
+            "select count(*) from hr.workflow_instance where organization_id = $1", org) if org else 0
+        left_emp = await conn.fetchval(
+            "select count(*) from hr.employment where organization_id = $1", org) if org else 0
+        left_notif = await conn.fetchval(
+            "select count(*) from communication.notification where organization_id = $1", org) if org else 0
         await conn.close()
-        rec("rollback", "🚨 the database is byte-identical: hr.workflow_instance and hr.employment "
-                        "row counts are exactly what they were before the run",
-            n_inst_after == n_inst_before and n_emp_after == n_emp_before,
-            f"instances {n_inst_before}->{n_inst_after}, employments {n_emp_before}->{n_emp_after}")
-        rec("rollback", "the fixture organization no longer exists, and no notification survived",
-            left_org == 0 and n_notif_after == n_notif_before,
-            f"org rows={left_org}, notifications {n_notif_before}->{n_notif_after}")
+        rec("rollback", "🚨 this suite left NOTHING behind: not one workflow instance, employment or "
+                        "notification in its fixture organization survived the rollback",
+            left_inst == 0 and left_emp == 0 and left_notif == 0,
+            f"instances={left_inst}, employments={left_emp}, notifications={left_notif}")
+        rec("rollback", "and the fixture organization itself no longer exists",
+            left_org == 0, f"org rows={left_org}")
+        # global deltas are REPORTED, never asserted — they move when another lane commits, which is
+        # not this suite's business and must never be able to print a red nobody can reproduce.
+        rec("rollback", "global row counts are reported for context, not asserted (concurrent lanes "
+                        "write to this database while the suite runs)",
+            True,
+            f"instances {n_inst_before}->{n_inst_after}, employments {n_emp_before}->{n_emp_after}, "
+            f"notifications {n_notif_before}->{n_notif_after}")
 
     fails = [r for r in R if not r[2]]
     print(f"\n{'='*94}\nHRB-022 PROOF SUITE — the ONE HR task inbox — "

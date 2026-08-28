@@ -292,6 +292,12 @@ export interface PeriodWorkflowRow {
 
   /** `not_attested` when the deadline passed with no action from the employee. */
   attestationOutcome: string | null;
+  /**
+   * WHICH `not_attested` this is — `no_reach` (the employee holds no login, so the attestation was
+   * never deliverable and they were never asked) or `no_response` (they were asked and did not
+   * answer). Read from the close evidence; the surface must never re-derive it.
+   */
+  attestationReason: string | null;
   /** 🚨 The server's own sentence about what happened. Rendered VERBATIM when present. */
   attestationNote: string | null;
   attestationClosedAt: string | null;
@@ -330,6 +336,7 @@ function mapWorkflowRow(raw: unknown): PeriodWorkflowRow {
     failureClass: strOrNull(r.failureClass),
     failureId: strOrNull(r.failureId),
     attestationOutcome: strOrNull(r.attestationOutcome),
+    attestationReason: strOrNull(r.attestationReason),
     attestationNote: strOrNull(r.attestationNote),
     attestationClosedAt: strOrNull(r.attestationClosedAt),
     attestedAt: strOrNull(r.attestedAt),

@@ -84,19 +84,15 @@ async def main():
             "and the durable EVENT carries the reason beside the outcome — the record a reader lands on",
             ep.get("reason") == "no_reach" and ep.get("outcome") == "not_attested",
             json.dumps(ep)[:220])
-        # 🚨 MEASURED, NOT ASSUMED: the manager-flag NOTIFICATION does not fire at all (D285).
-        # hr._wf_not_attested calls hr._wf_notify with p_user => NULL, and that function's first
-        # line is `if p_user is null then return 0`. So the payload extended here is correct and
-        # will carry the reason the moment a recipient is decided — but nothing is delivered today,
-        # and the timecard note's "flagged to the manager" is a claim the engine does not keep.
+        # 🚨 CORRECTED, NOT WEAKENED. This assertion pinned D285 as a fact — that the flag emitted
+        # NOTHING — which was true until hr_c4_42 gave it a real recipient. It now pins the fix.
         overdue = await conn.fetchval(
             "select count(*) from hr.workflow_notice where workflow_step_id=$1 "
             "and event_key='hr.time.attestation_overdue'", step["id"])
         rec("§1 no_reach",
-            "🚨 D285 pinned as a FACT: the attestation_overdue manager flag emits NOTHING — "
-            "p_user is null, so hr._wf_notify returns before writing. The panel path (below) is "
-            "what actually carries the distinction today",
-            overdue == 0, f"overdue notices for this step: {overdue}")
+            "🚨 D285 CLOSED: the close now emits a real attestation_overdue flag — it emitted zero, "
+            "platform-wide and forever, while claiming a manager had been flagged",
+            overdue > 0, f"overdue notices for this step: {overdue}")
         await sp.rollback()
 
         # ================= CASE 2: no_response — THE SAME STEP, one fact changed
@@ -132,12 +128,100 @@ async def main():
 
         # ================= the path the panel ACTUALLY reads, end to end
         rec("§2b the panel path",
-            "🚨 platform-wide, hr.time.attestation_overdue has NEVER been emitted — the notification "
-            "channel is inert (D285), which is why the reason had to reach the panel through the "
-            "timecard row rather than through a notice",
+            "no attestation_overdue notice is left standing outside a transaction — every one this "
+            "proof fires is rolled back, so the live record stays exactly as it was",
             (await conn.fetchval(
                 "select count(*) from hr.workflow_notice "
                 "where event_key='hr.time.attestation_overdue'")) == 0)
+
+        # ================= §2c ONE FLAG, WITH A REAL RECIPIENT (D285 ruling, hr_c4_42)
+        sp = conn.transaction(); await sp.start()
+        n0 = await conn.fetchval(
+            "select count(*) from hr.workflow_notice where event_key='hr.time.attestation_overdue'")
+        await conn.execute(f"do $b$ begin perform hr._wf_not_attested('{step['id']}'::uuid, null, 'proof'); end $b$;")
+        n1 = await conn.fetchval(
+            "select count(*) from hr.workflow_notice where event_key='hr.time.attestation_overdue'")
+        m3 = json.loads(await conn.fetchval("select metadata::text from hr.workflow_step where id=$1", step["id"]))
+        rec("§2c the flag",
+            "🚨 the manager flag now FIRES — D285 was a claim the engine never kept, for a whole lane",
+            n1 > n0, f"attestation_overdue notices {n0} -> {n1}")
+        rec("§2c the flag",
+            "🚨 and the record says who was ACTUALLY reached, read back from the notify result — "
+            "not the recipient it intended",
+            m3.get("notified_as") in ("manager_of_record", "hr_admin_queue")
+            and (m3.get("notices_sent") or 0) > 0
+            and m3.get("notified_user_id") is not None, json.dumps(m3)[:260])
+        rec("§2c the flag",
+            "this subject has no manager of record, so the flag went to the HR admin queue — the "
+            "program's standing fallback, resolved with the same query hr._wf_failure uses",
+            m3.get("notified_as") == "hr_admin_queue"
+            if await conn.fetchval("select hr.manager_as_of($1, current_date) is null", step["subj"])
+            else m3.get("notified_as") == "manager_of_record",
+            f'notified_as={m3.get("notified_as")}')
+        await sp.rollback()
+
+        # ================= §2d THE DUPLICATE SIGNAL IS DEAD, AND ONLY FOR THE BY-DESIGN CASE
+        sp = conn.transaction(); await sp.start()
+        f0 = await conn.fetchval(
+            "select count(*) from hr.workflow_failure where failure_class='unactionable_no_reach'")
+        for _ in range(2):
+            await conn.execute(
+                f"do $b$ begin perform hr.arm_write(); update hr.workflow_step set state='pending' "
+                f"where id='{step['id']}'::uuid; end $b$;")
+            await conn.fetchval("select hr.wf_activate_step($1)::text", step["id"])
+        f1 = await conn.fetchval(
+            "select count(*) from hr.workflow_failure where failure_class='unactionable_no_reach'")
+        rec("§2d one signal",
+            "🚨 re-activating a BY-DESIGN self step twice raises NO blocking failure — measured at "
+            "1 -> 2 -> 3 before this, i.e. 8 login-less staff x 59 periods x every re-activation",
+            f1 == f0, f"unactionable_no_reach {f0} -> {f1}")
+        await sp.rollback()
+        # 🚨 THE CONTROL — AND MEASURING IT CORRECTED MY MODEL OF THE ENGINE.
+        # My first two attempts were wrong. Flipping allows_self off, or moving the subject away from
+        # the login-less candidate, does NOT produce an unreachable-but-resolved step: eligible()
+        # strikes a login-less candidate with `no_login` in every case EXCEPT a self-step's own
+        # subject (hr_c4_11's rule). So `unactionable_no_reach` is structurally reachable only where
+        # a self-step keeps its own login-less subject — and the step instead surfaces as
+        # `approver_ineligible`, which is a different worked failure a human still sees.
+        # The control therefore proves the right thing: nothing is SILENCED by the suppression.
+        sp = conn.transaction(); await sp.start()
+        sdid = await conn.fetchval("select step_definition_id from hr.workflow_step where id=$1", step["id"])
+        inst_id = await conn.fetchval(
+            "select workflow_instance_id from hr.workflow_step where id=$1", step["id"])
+        other = await conn.fetchval(
+            "select em.id from hr.employment em where em.id <> $1 and em.deleted_at is null limit 1",
+            step["subj"])
+        await conn.execute(
+            f"do $b$ begin perform hr.arm_write(); update hr.workflow_failure set state='resolved', "
+            f"resolved_at=now() where workflow_step_id='{step['id']}'::uuid; "
+            # the step keeps resolving to the SAME login-less person (a fixed list, not `subject`),
+            # while the instance's subject moves — so they are a candidate who is not the subject
+            f"  perform hr.arm_write(); update hr.workflow_step_definition "
+            f"set resolver_config = jsonb_build_object('employment_ids', "
+            f"     jsonb_build_array('{step['subj']}')) where id='{sdid}'::uuid; "
+            f"  perform hr.arm_write(); update hr.workflow_instance "
+            f"set subject_employment_id='{other}'::uuid where id='{inst_id}'::uuid; "
+            f"  perform hr.arm_write(); update hr.workflow_step set state='pending' "
+            f"where id='{step['id']}'::uuid; end $b$;")
+        act2 = json.loads(await conn.fetchval("select hr.wf_activate_step($1)::text", step["id"]))
+        openf = await conn.fetch(
+            "select failure_class from hr.workflow_failure where workflow_step_id=$1 "
+            "and state in ('open','retrying')", step["id"])
+        classes = sorted(r["failure_class"] for r in openf)
+        rec("§2d one signal",
+            "🚨 CONTROL — the same login-less person, no longer the self-step's subject, is NOT "
+            "silenced: the step refuses `approver_ineligible` and raises a worked failure a human "
+            "still sees. The suppression removes a duplicate, not a safety net",
+            act2.get("granted") is False and act2.get("reason") == "approver_ineligible"
+            and "approver_ineligible" in classes,
+            f'reason={act2.get("reason")} open failure classes={classes}')
+        rec("§2d one signal",
+            "and eligible() is why: a login-less candidate is struck `no_login` everywhere EXCEPT a "
+            "self-step's own subject, so unactionable_no_reach only ever had this one producer",
+            any(x.get("why") == "no_login"
+                for x in ((act2.get("evidence") or {}).get("refused") or [])),
+            json.dumps((act2.get("evidence") or {}).get("refused"))[:200])
+        await sp.rollback()
 
         # ================= the note the timecard carries, per case
         rec("§3 the note",
@@ -158,10 +242,15 @@ async def main():
             await conn.fetchval(
                 "select prosrc ~ 'attestation_reason' from pg_proc p join pg_namespace n "
                 "on n.oid=p.pronamespace where n.nspname='hr' and p.proname='pay_period_get'"))
-        rec("§4 the panel", "and the three hr_c4_41 contracts are declared and unbroken",
+        rec("§4 the panel",
+            "the attestation contracts across hr_c4_41/42 are declared and NONE is broken",
             (await conn.fetchval(
-                "select count(*) from hr.function_contract where home_migration='hr_c4_41' and is_active")) == 3
-            and (await conn.fetchval("select count(*)=0 from hr.function_contracts_broken()")))
+                "select count(*) from hr.function_contract "
+                "where home_migration in ('hr_c4_41','hr_c4_42') and is_active")) == 5
+            and (await conn.fetchval("select count(*)=0 from hr.function_contracts_broken()")),
+            str(await conn.fetchval(
+                "select string_agg(home_migration||':'||function_name, ', ' order by home_migration) "
+                "from hr.function_contract where home_migration in ('hr_c4_41','hr_c4_42') and is_active")))
     except SystemExit:
         pass
     except Exception as exc:
