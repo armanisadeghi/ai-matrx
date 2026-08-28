@@ -54,10 +54,11 @@ export function mapPgError(e: unknown): ScopesRpcError {
   // console instead of vanishing into a generic message.
   //
   // EXCEPT a transport failure. A browser that is asleep, offline, or mid-wifi
-  // handoff rejects fetch with `TypeError: Failed to fetch` — no code, no hint,
-  // nothing lossy to preserve, and nothing an engineer can act on. Filing those
-  // as errors buried the real ones under connectivity noise (2026-08-11), so
-  // they log as warnings; every genuine Postgres/PostgREST failure stays loud.
+  // handoff rejects fetch with `TypeError: Failed to fetch`; the Supabase
+  // gateway can likewise return its bounded upstream-connect/reset-before-
+  // headers shape. Neither carries a database refusal an engineer can act on.
+  // Filing those as errors buries real failures, so they log as warnings; every
+  // genuine Postgres/PostgREST failure stays loud.
   if (isTransportFailure(e)) {
     console.warn("[scopes/rpcResult] network unreachable (browser offline?)", e);
   } else if (!isPostgrestResultError(e)) {

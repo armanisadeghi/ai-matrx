@@ -29,4 +29,26 @@ describe("mapPgError diagnostics ownership", () => {
     );
     errorSpy.mockRestore();
   });
+
+  it("keeps a Supabase upstream connection reset out of the repair queue", () => {
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const failure = {
+      message:
+        "upstream connect error or disconnect/reset before headers. retried and the latest reset reason: remote connection failure, transport failure reason: delayed connect error: 111",
+    };
+
+    expect(mapPgError(failure)).toMatchObject({
+      code: "internal",
+      message: failure.message,
+    });
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[scopes/rpcResult] network unreachable (browser offline?)",
+      failure,
+    );
+    expect(errorSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
 });

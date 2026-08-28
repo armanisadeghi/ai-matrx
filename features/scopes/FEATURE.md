@@ -35,6 +35,9 @@ this directory.
 8. **Personal organization is a real org row** (`organizations.is_personal = true`) — never
    synthesize or persist a fake personal org id in Redux, routes, RPC args, or edges.
 9. **Templates are read-only catalog here.** Mutations happen in seed scripts / admin paths.
+10. **Transport failures warn; database refusals scream.** `service/rpcResult.ts` uses
+    `lib/net/errors.ts` for browser-network and upstream-connect/reset classification. Never
+    downgrade an error carrying a Postgres code or HTTP status.
 
 ## File map
 
@@ -167,3 +170,8 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 - [`features/agent-context/FEATURE.md`](../agent-context/FEATURE.md) — the invocation-time consumer.
 - [`features/sharing/FEATURE.md`](../sharing/FEATURE.md) — permissions cross-cut scope; they are
   not the same axis.
+
+## Change Log
+
+- 2026-08-28 — Classified the bounded Supabase upstream-connect/reset-before-headers response as
+  transport noise while preserving loud Postgres/PostgREST failures.

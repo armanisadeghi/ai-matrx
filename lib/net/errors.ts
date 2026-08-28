@@ -104,7 +104,9 @@ export function isNetError(err: unknown): err is NetError {
 
 /**
  * True when a failure is the TRANSPORT dying, not the server answering: the
- * browser is offline, asleep, mid-wifi-handoff, or DNS/TLS failed. `fetch`
+ * browser is offline, asleep, mid-wifi-handoff, or DNS/TLS failed. It also
+ * covers the bounded Envoy/Supabase gateway shape emitted when the upstream
+ * database connection dies before response headers. `fetch`
  * rejects with a bare `TypeError: Failed to fetch` in every browser, and
  * supabase-js surfaces that verbatim (message only — no code, no hint).
  *
@@ -129,7 +131,8 @@ export function isTransportFailure(err: unknown): boolean {
       text.includes("failed to fetch") ||
       text.includes("networkerror") ||
       text.includes("network request failed") ||
-      text.includes("load failed") // Safari's wording for the same condition
+      text.includes("load failed") || // Safari's wording for the same condition
+      text.includes("upstream connect error or disconnect/reset before headers")
     );
   }
   return false;
