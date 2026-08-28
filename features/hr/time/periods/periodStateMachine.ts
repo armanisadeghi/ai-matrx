@@ -36,7 +36,14 @@ import type { PayPeriodRow, PayPeriodState, PayPeriodEmploymentState } from "../
 const PERIOD_EDGES: Record<PayPeriodState, PayPeriodState[]> = {
   open: ["submitted"],
   submitted: ["approved"],
-  approved: ["exported"],
+  /*
+   * 🚨 `approved -> approved` IS RE-APPROVAL IN PLACE, not a typo. §4.1 requires an already-approved
+   * period to be approved again once a recompute has moved its hours, and the period does not leave
+   * `approved` to do it (§2.4 calls it a banner state). Without this the export refusal shipped in
+   * hr_l3_100 would be a deadlock: refused for want of a re-approval no control could perform.
+   * It is not a backward edge — the period does not go anywhere.
+   */
+  approved: ["exported", "approved"],
   exported: ["locked"],
   locked: ["closed", "reopened"],
   closed: [],

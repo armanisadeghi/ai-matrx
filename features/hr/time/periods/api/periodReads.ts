@@ -239,6 +239,16 @@ export interface PayPeriodDetail extends PayPeriodRow {
    * "no workweek straddles this period" as a world-fact it has not computed (hr_l3_92).
    */
   boundaryComputed: boolean;
+  /**
+   * §4.1's `recomputed-since-approval`. True when a CURRENT interval was written after this period's
+   * `approved_at` — so the approval on file was given for a number that has since moved, and nobody
+   * has approved what an export would carry. DERIVED server-side, never a stored flag somebody has
+   * to remember to set.
+   */
+  recomputedSinceApproval: boolean;
+  /** What the approval was FOR, and what the figure is now. Both, because "stale" is not actionable. */
+  hoursAtApproval: number | null;
+  hoursNow: number | null;
   /** The resolved `hr.time_and_attendance.allow_period_reopen`. Never assumed by the client. */
   reopenAllowed: boolean;
   /** 🚨 *"Reopening does NOT un-export and does NOT re-pay…"* — the server's wording, verbatim. */
@@ -388,6 +398,11 @@ export async function getPayPeriod(
     ...mapPayPeriodRow(raw),
     boundaryNote: strOrNull(r.boundaryNote),
     boundaryComputed: r.boundaryComputed === true,
+    recomputedSinceApproval: r.recomputedSinceApproval === true,
+    hoursAtApproval: typeof r.hoursAtApproval === "number" ? r.hoursAtApproval
+      : r.hoursAtApproval != null ? Number(r.hoursAtApproval) : null,
+    hoursNow: typeof r.hoursNow === "number" ? r.hoursNow
+      : r.hoursNow != null ? Number(r.hoursNow) : null,
     // Defaults TRUE only because the platform default is true and the knob resolves server-side;
     // an explicit `false` from the server is always honoured.
     reopenAllowed: r.reopenAllowed !== false,
