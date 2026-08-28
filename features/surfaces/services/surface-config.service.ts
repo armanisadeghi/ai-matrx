@@ -203,6 +203,19 @@ export async function fetchSurfaceConfigBundle(
   const mandatePins =
     mandateKeys.length > 0 ? await fetchMandatePins(mandateKeys) : {};
 
+  // 🚨 THE USER TIER IS PERSONAL — filter it to the CURRENT user explicitly.
+  // RLS breadth is NOT a personal-tier filter: a platform admin can read
+  // EVERY user's rows, and org-visibility branches can expose org-mates'
+  // rows. Without this filter those rows enter the tier merge as if they
+  // were "the user tier", so an admin's effective config became a per-field
+  // blend of OTHER PEOPLE's choices (observed: another user's voice + a
+  // third user's speed in the Listening settings, 2026-08-28). A missing
+  // session keeps only tier rows with no user_id (global/org).
+  const { data: sessionData } = await client.auth.getSession();
+  const uid = sessionData.session?.user?.id ?? null;
+  const isMineOrShared = (row: { user_id: string | null }) =>
+    row.user_id === null || row.user_id === uid;
+
   return {
     surfaceName,
     dbRoles: (rolesRes.data ?? []).map((r) => ({
@@ -220,7 +233,7 @@ export async function fetchSurfaceConfigBundle(
       autoRun: r.auto_run as "always" | "never" | "user-choice",
       sortOrder: r.sort_order,
     })),
-    prefs: (prefsRes.data ?? []).map((p) => ({
+    prefs: (prefsRes.data ?? []).filter(isMineOrShared).map((p) => ({
       id: p.id,
       surfaceName: p.surface_name,
       roleName: p.role_name,
@@ -233,7 +246,7 @@ export async function fetchSurfaceConfigBundle(
       scopeId: p.scope_id,
       updatedAt: p.updated_at,
     })),
-    configRows: (configRes.data ?? []).map((c) => ({
+    configRows: (configRes.data ?? []).filter(isMineOrShared).map((c) => ({
       id: c.id,
       surfaceName: c.surface_name,
       namespace: c.namespace,
