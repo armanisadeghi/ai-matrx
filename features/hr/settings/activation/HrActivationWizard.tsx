@@ -496,7 +496,17 @@ export function HrActivationWizard({
           <StepShell
             icon={MapPin}
             title="Where the first people work"
-            blurb="One location and one department is enough to start. You can add job titles later — a location you cannot."
+            /*
+              🚨 "LATER" WAS TRUE AND INCOMPLETE, WHICH IS THE WORST KIND OF TRUE.
+              Activation seeds a location and a department and deliberately seeds NO
+              job title — a job title carries an EEO category and is the employer's to
+              name, so inventing one would be putting words in their mouth on a
+              compliance field. Correct. But the sentence let somebody finish setup
+              believing titles were optional for a while, and the very next thing they
+              tried was their first hire, which cannot be saved without one. The
+              deadline is what was missing, not the permission.
+            */
+            blurb="One location and one department is enough to start. A location you cannot add later — and you'll need at least one job title before your first hire, because every position carries one."
           >
             <Field
               id="location-name"
