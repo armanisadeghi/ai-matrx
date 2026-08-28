@@ -124,8 +124,3 @@ values ('public', 'hr_invite_accept', 'hr_l1_50_the_generic_door_cannot_half_lin
         'The only door entitled to accept an HR-tied invitation, because it is the only one that '
         || 'binds login_user_id. It must keep opting in explicitly.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_50_the_generic_door_cannot_half_link.sql',
-        md5('hr_l1_50_the_generic_door_cannot_half_link'), now(), 0)
-on conflict do nothing;
