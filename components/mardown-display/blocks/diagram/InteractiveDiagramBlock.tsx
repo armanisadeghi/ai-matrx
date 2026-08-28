@@ -1553,29 +1553,35 @@ const DiagramFlow: React.FC<{
     });
   }, [fitView, workspace]);
 
-  // Re-fit whenever the canvas actually changes size. The one-shot fit after
-  // auto-layout races the container: on a surface whose height comes from flex
-  // (the shared-canvas viewer, the canvas pane) React Flow can measure before
-  // the box has settled, so the animated fit lands on a stale size — or never
-  // visibly lands at all, leaving the viewport at identity while the graph sits
-  // off-screen. Watching React Flow's own measured width/height also covers
-  // phone rotation and desktop window resizes, which had no refit before.
+  // Re-fit when the canvas RESIZES after the diagram has been laid out.
+  // The one-shot fit after auto-layout races the container: on a surface whose
+  // height comes from flex (the shared-canvas viewer, the canvas pane) React
+  // Flow can measure before the box has settled, so that fit lands on a stale
+  // size and the graph ends up off-screen. Watching React Flow's own measured
+  // size also covers phone rotation and desktop window resizes.
+  //
+  // Gated on the layout having run: before that, every node still sits at the
+  // origin, and fitting those bounds slams the viewport to maxZoom. The first
+  // measurement is recorded, never fitted — `fitViewAfterLayout` owns the
+  // initial fit.
   const measuredWidth = useStore((s) => s.width);
   const measuredHeight = useStore((s) => s.height);
+  const lastFittedSize = useRef<string | null>(null);
   useEffect(() => {
-    if (!nodesInitialized) return undefined;
-    if (!measuredWidth || !measuredHeight) return undefined;
+    if (!nodesInitialized || !measuredWidth || !measuredHeight) return undefined;
+    const size = `${Math.round(measuredWidth)}x${Math.round(measuredHeight)}`;
+    if (lastFittedSize.current === null) {
+      lastFittedSize.current = size;
+      return undefined;
+    }
+    if (lastFittedSize.current === size) return undefined;
+    lastFittedSize.current = size;
+    if (!hasAutoLayoutApplied.current) return undefined;
     const frame = requestAnimationFrame(() => {
       fitView({ duration: 200, padding: workspace ? 0.12 : 0.2 });
     });
     return () => cancelAnimationFrame(frame);
-  }, [
-    measuredWidth,
-    measuredHeight,
-    nodesInitialized,
-    fitView,
-    workspace,
-  ]);
+  }, [measuredWidth, measuredHeight, nodesInitialized, fitView, workspace]);
 
   // ── Layout helpers ──
   const applyDirectedLayout = useCallback(
