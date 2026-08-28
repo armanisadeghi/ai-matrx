@@ -312,9 +312,9 @@ export function PageKeywordsCard({
                 return (
                   <span
                     key={entry.keywordId}
-                    className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground"
+                    className="group inline-flex max-w-full flex-wrap items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-foreground"
                   >
-                    {entry.phrase}
+                    <span className="min-w-0 break-words">{entry.phrase}</span>
                     {stampCells(entry.phrase)}
                     {entry.volume !== null ? (
                       <span className="tabular-nums text-[10px] text-muted-foreground">
@@ -330,7 +330,7 @@ export function PageKeywordsCard({
                     {busy ? (
                       <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                     ) : (
-                      <span className="flex items-center gap-0.5">
+                      <span className="ml-auto flex shrink-0 items-center gap-0.5">
                         <button
                           type="button"
                           aria-label={`Open Keyword Intelligence for ${entry.phrase}`}

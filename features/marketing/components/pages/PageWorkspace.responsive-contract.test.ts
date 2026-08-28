@@ -31,4 +31,17 @@ describe("PageWorkspace responsive contract", () => {
     expect(globals).toContain("min-height: 2.75rem; /* 44px */");
     expect(searchConsoleSource).toContain("h-5 max-lg:min-w-11 rounded");
   });
+
+  it("keeps a supporting keyword's action group reachable on phones", () => {
+    const source = readFileSync(
+      join(__dirname, "cards/PageKeywordsCard.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain("inline-flex max-w-full flex-wrap items-center");
+    expect(source).toContain('className="min-w-0 break-words"');
+    expect(source).toContain(
+      'className="ml-auto flex shrink-0 items-center gap-0.5"',
+    );
+  });
 });

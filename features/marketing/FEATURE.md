@@ -4,6 +4,10 @@
 **Tier:** 1  
 **Last updated:** 2026-08-28
 
+Supporting-keyword chips in the Page Workspace may wrap their label and
+metadata, but keep their action buttons together and inside the phone viewport.
+The shared 44px touch floor must never make a keyword action unreachable.
+
 ## Internal Authority Router
 
 The site layout's route-child boundary always provides a vertical-scroll
@@ -592,6 +596,11 @@ judgments are removed rather than silently transplanted to a different offering.
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. Google approved GA4 and YouTube read-only access on 2026-08-25: their code-controlled campaign phases are `approved`, so normal signed-in users can authorize, bind, manually sync GA4, and read an explicitly discovered owned YouTube channel. The GA4 recurring dispatcher remains disabled pending exact name-and-interval approval. Google Ads now has a real reporting-only workspace and server path behind an `internal_test` super-admin gate; live certification remains blocked on Google's passkey requirement for revealing the existing Explorer Access developer token and on a distinct Ads test identity. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-08-28 — Codex: **Page Workspace supporting-keyword actions stay
+  reachable on phones.** Long keyword chips now wrap their text and metadata
+  while keeping the three-button action group together inside the viewport;
+  the shared 44px touch floor no longer clips Remove beyond the page edge.
 
 - 2026-08-28 — Codex: **Page Workspace enforces the shared responsive 44px control floor.** The workspace opts into `matrx-touch-targets`, whose floor now applies on real coarse pointers and below the `lg` breakpoint so viewport-only tablet/mobile QA matches touch hardware. Tooltip-titled icon controls and the GSC range pills receive the matching width floor; wide desktop density remains unchanged.
 - 2026-08-27 — Codex: **Keyword Value bulk mode now edits the questions, not only the computed answer.** Selecting keyword rows on `.../value` exposes **Set dimensions…**, which mounts the existing keyword-workbench `AssignPanel` inline and writes through the same `gsc_set_keyword_stamps` path as every per-row dimension cell. The panel can choose any site dimension and value, add one shared reason, remove an existing value, and repeat across the still-selected batch; a newly assigned dimension becomes visible as a table column. The old ambiguous **Set value…** ruling action is now **Set level…**, making clear that it pins the final level rather than teaching the dimension model.
