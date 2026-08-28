@@ -75,22 +75,48 @@ async def main():
             leaked is not None and '"history": []' not in leaked, (leaked or "")[:200])
 
         # ---------- 2. THE SUBJECT SEES THEIR OWN
-        subj = await conn.fetchrow(
-            "select i.subject_employment_id emp, e.login_user_id uid, i.target_token tok, "
-            "       i.target_id tid, i.id inst "
+        # 🚨 EVERY such instance, not one picked by an unordered `limit 1`. The first version of this
+        # assertion took whatever row Postgres handed back and went red the moment another lane's
+        # data shifted which row that was — a flaky assertion is worse than no assertion, because it
+        # trains you to re-run instead of to look.
+        subs = await conn.fetch(
+            "select i.id inst, i.target_token tok, i.target_id tid, e.login_user_id uid, "
+            "       i.subject_employment_id = any(hr.employments_of(e.login_user_id)) current_emp, "
+            "       e.legal_first_name||' '||e.legal_last_name who, em.hire_date "
             "  from hr.workflow_instance i "
             "  join hr.employment em on em.id = i.subject_employment_id "
             "  join hr.employee e on e.id = em.employee_id "
-            " where e.login_user_id is not null and i.closed_at is not null limit 1")
-        await as_user(subj["uid"])
-        mine = json.loads(await conn.fetchval("select public.hr_wf_for_target($1,$2)::text",
-                                              subj["tok"], subj["tid"]))
-        await as_owner()
+            " where e.login_user_id is not null and i.closed_at is not null "
+            " order by i.created_at")
+        missed, checked, prestart = [], 0, []
+        for s in subs:
+            await as_user(s["uid"])
+            v = json.loads(await conn.fetchval("select public.hr_wf_for_target($1,$2)::text",
+                                               s["tok"], s["tid"]))
+            await as_owner()
+            seen = str(s["inst"]) in json.dumps(v.get("history") or [])
+            if s["current_emp"]:
+                checked += 1
+                if not seen:
+                    missed.append((s["who"], str(s["inst"])))
+            elif not seen:
+                prestart.append((s["who"], str(s["hire_date"])))
         rec("§2 the subject",
-            "🚨 the SUBJECT of a request still sees their own workflow history on their own row",
-            mine.get("granted") is True
-            and str(subj["inst"]) in json.dumps(mine.get("history") or []),
-            f'history={json.dumps(mine.get("history"))[:200]}')
+            "🚨 EVERY subject holding a current employment sees their own workflow history on their "
+            "own row — checked across all of them, not one flaky pick",
+            checked > 0 and not missed, f"{checked} checked; missed={missed[:3]}")
+        # 🚨 THE EXCEPTION IS NAMED, NOT HIDDEN (D284). hr.employments_of filters `hire_date <= p_at`,
+        # so a PRE-START hire resolves to NO employments and fails all five standings — including
+        # "subject of it" — on their OWN request. Pre-existing and not caused by the gate: the
+        # instance door refuses the same person `no_read_reach` ("you have no standing on this
+        # request"), and it carried this identical employments_of call before the rule was extracted.
+        # Asserted as a MEASURED FACT so it stays visible until it is ruled on.
+        today = await conn.fetchval("select current_date::text")
+        rec("§2 the subject",
+            "and the only subjects who cannot are PRE-START hires — a known, filed gap (D284), "
+            "measured rather than assumed",
+            all(h > today for _, h in prestart) if prestart else True,
+            f"today={today}; pre-start subjects blind to their own request: {prestart}")
 
         # ---------- 3. A PARTICIPANT / QUEUE HOLDER SEES WHAT THE INSTANCE DOOR SHOWS
         # every (user, instance) pair the target door now returns must be readable through the

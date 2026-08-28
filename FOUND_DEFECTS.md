@@ -15,6 +15,44 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D284 — a pre-start hire cannot read their OWN workflow request, on any surface (2026-08-28)
+
+`hr.employments_of(user, at)` filters `em.hire_date <= p_at`, so an employment whose hire date is in
+the future resolves to **`{}`**. Every workflow visibility standing is built on that array, so a
+person who has been onboarded but has not started fails **all five** — including *"subject of it"* —
+on a request **about themselves**.
+
+**Measured live**, Marisol Okonkwo-R36 (`hire_date 2026-09-15`, status `pending`, today 2026-08-28),
+subject **and** requester of closed `profile_edit_request` `474d7ac2-…`:
+
+```
+public.hr_wf_instance(474d7ac2-…)  → granted:false, no_read_reach,
+                                     "you have no standing on this request"
+public.hr_wf_inbox('mine')         → granted:true, employment_ids: []
+public.hr_wf_for_target(…)         → history: []   (the absence shape)
+```
+
+**Pre-existing, and not caused by `hr_c4_36`.** The instance door refuses her by name and carried
+this identical `employments_of` call before the visibility rule was extracted into
+`hr._wf_instance_visible`; the extraction moved it faithfully (the gate's "0 widened" proof). What
+changed is only that `hr.wf_for_target` now applies the same rule, so the blind spot is consistent
+across surfaces instead of being papered over by an ungated door.
+
+Scope today: **7 pre-start employments** platform-wide, **1** with a workflow instance. It grows with
+every pre-boarding hire, and pre-boarding is exactly when a new hire files profile and address
+changes.
+
+**Why it is filed rather than fixed:** the fix is a change to `hr.employments_of`, which is the
+backbone of `hr.capability` and is called by essentially every HR door — widening it to include
+pre-start employments would widen **read and write standing everywhere at once**. That is a spec
+decision, not a lane's. **The likely shape:** `employments_of` gains an explicit read-standing
+variant (or a `p_include_prestart` flag) used by the visibility predicate only, so a pre-start hire
+can see their own record without gaining any capability that acts. Needs a ruling with
+SPEC-ACCESS §1.4 open.
+
+Pinned as a measured fact in `scripts/hr/hrb008_for_target_visibility_proof.py` §2 so it stays
+visible until ruled on.
+
 ### D281 — `esign.envelope` is not in `hr._approval_subject`'s allowlist, so `signature_request` can never route (2026-08-28)
 
 `hrb011_proof.py` aborts at 106 assertions with:
