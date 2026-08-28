@@ -42786,6 +42786,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      _field_phrase: { Args: { p_field: string }; Returns: string }
       _governance_refusal: {
         Args: {
           p_org: string
@@ -43252,6 +43253,7 @@ export type Database = {
         }
         Returns: string[]
       }
+      _sentence_list: { Args: { p_items: string[] }; Returns: string }
       _strip_sql_comments: { Args: { p_src: string }; Returns: string }
       _subject_display_name: {
         Args: { p_employment_id: string; p_uid: string }
