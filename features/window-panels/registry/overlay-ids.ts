@@ -121,7 +121,6 @@ export const OVERLAY_IDS = [
   "itemDetailWindow",
   "jsonTruncator",
   "keywordWindow",
-  "keywordQuickAnswersWindow",
   "kgSuggestionsDrawer",
   "listManagerWindow",
   "markdownEditor",
