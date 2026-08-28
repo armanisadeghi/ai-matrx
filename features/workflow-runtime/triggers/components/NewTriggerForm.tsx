@@ -11,16 +11,19 @@
  * Redux, storage, or a URL.
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Globe, Loader2, CalendarClock } from "lucide-react";
 
 import { toast } from "@/lib/toast";
 import { validateCron } from "@/lib/scheduler-client/next-due";
 import { cn } from "@/utils/cn";
 
-import { deriveRunForm } from "../../surface/run-form";
-import type { WorkflowDefinitionLike } from "../../trigger-points";
-import { flattenRunFormValues } from "../default-inputs";
+import {
+  EMPTY_SERVED_INPUTS,
+  useServedInputValues,
+} from "../../served-form/ServedInputFields";
+import { useServedRunForm } from "../../served-form/useServedRunForm";
+import { triggerDefaultInputs } from "../default-inputs";
 import { DEFAULT_RECURRENCE, toCron, type Recurrence } from "../recurrence";
 import type { CreateTriggerArgs } from "../useWorkflowTriggers";
 import { generateWebhookSecret } from "../useWorkflowTriggers";
@@ -31,14 +34,12 @@ type NewKind = "cron" | "webhook";
 
 export function NewTriggerForm({
   definitionId,
-  definition,
   workflowName,
   creating,
   onCreate,
   onCancel,
 }: {
   definitionId: string;
-  definition: WorkflowDefinitionLike;
   workflowName: string;
   creating: boolean;
   /** Resolves with the plaintext secret when one was minted, else null. */
@@ -49,11 +50,14 @@ export function NewTriggerForm({
   const [name, setName] = useState(`${workflowName} — automatic`);
   const [recurrence, setRecurrence] = useState<Recurrence>(DEFAULT_RECURRENCE);
   const [timezone, setTimezone] = useState<string>(browserTimezone());
-  const [values, setValues] = useState<Record<string, Record<string, unknown>>>(
-    {},
-  );
 
-  const sections = useMemo(() => deriveRunForm(definition), [definition]);
+  // THE surface is fetched HERE, not inside the fields: saving the trigger
+  // needs the same declaration the editor renders, and one paint asks once.
+  const served = useServedRunForm(definitionId);
+  const inputs =
+    served.status === "ready" ? served.form.inputs : EMPTY_SERVED_INPUTS;
+  const { values, setValue } = useServedInputValues(inputs);
+
   const expression = toCron(recurrence);
   const cronError =
     kind === "cron"
@@ -71,7 +75,7 @@ export function NewTriggerForm({
       toast.error("That schedule isn't valid yet.");
       return;
     }
-    const defaultInputs = flattenRunFormValues(sections, values);
+    const defaultInputs = triggerDefaultInputs(inputs, values);
     if (kind === "webhook") {
       const secret = generateWebhookSecret();
       onCreate(
@@ -153,14 +157,9 @@ export function NewTriggerForm({
           These are the answers it uses every time it runs on its own.
         </p>
         <TriggerDefaultInputs
-          definition={definition}
+          state={served}
           values={values}
-          onChange={(nodeId, key, value) =>
-            setValues((prev) => ({
-              ...prev,
-              [nodeId]: { ...prev[nodeId], [key]: value },
-            }))
-          }
+          onChange={setValue}
         />
       </div>
 

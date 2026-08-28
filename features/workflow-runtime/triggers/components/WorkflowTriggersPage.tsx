@@ -192,7 +192,6 @@ export function WorkflowTriggersPage({
         {adding ? (
           <NewTriggerForm
             definitionId={definitionId}
-            definition={workflow.definition}
             workflowName={workflow.name}
             creating={creating}
             onCreate={onCreate}
