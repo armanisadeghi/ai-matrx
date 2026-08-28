@@ -379,7 +379,7 @@ async def main():
             "🚨 a row reads `unreachable` EXACTLY when its ACTIVE step reaches nobody — a queued "
             "`pending` step has zero resolved users by construction and must never trigger it",
             checked > 0 and not wrong, f"{checked} live rows checked; mismatches={wrong[:3]}")
-        await as_owner()
+        await conn.execute("select set_config('request.jwt.claims','',true)")
         rec("§7 unreachable",
             "🚨 and the payload NAMES the unreachable step — the state is a fact about the STEP's "
             "assignee while the row is keyed by the SUBJECT, so without it the copy blames the wrong person",
