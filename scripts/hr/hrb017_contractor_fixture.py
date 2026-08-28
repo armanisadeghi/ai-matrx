@@ -109,15 +109,17 @@ async def main() -> None:  # noqa: C901
             user_id, ORG,
         )
         if stuck:
-            print(f"clearing half-made    : {stuck} (linked login, no membership, uninvitable)")
-            # `hr.employee.current_position_id` FKs the assignment, so the pointer is cleared
-            # before the rows it points at.
+            # UNLINK rather than delete. The employee is fine — it is only the login link that is
+            # premature, and it is what makes `hr_employee_invite` refuse ("already signs in
+            # here"). Clearing it lets the invitation do its job: accepting is what writes the
+            # organization membership AND links the login, in that one act. Deleting instead
+            # would fight a web of denormalised pointers and a trigger that restores them, to
+            # arrive at the same place.
+            print(f"unlinking half-made   : {stuck} (linked login, no membership, uninvitable)")
             await conn.execute(
                 "do $$ begin perform hr.arm_write(); "
-                "update hr.employee set current_position_id = null "
+                "update hr.employee set login_user_id = null "
                 f" where id in (select employee_id from hr.employment where id = $tok${stuck}$tok$::uuid); "
-                f"delete from hr.position_assignment where employment_id = $tok${stuck}$tok$::uuid; "
-                f"delete from hr.employment where id = $tok${stuck}$tok$::uuid; "
                 "end $$;")
             await conn.execute(
                 "do $$ begin perform hr.arm_write(); "
@@ -262,13 +264,17 @@ async def main() -> None:  # noqa: C901
                 headers={"apikey": service, "Authorization": f"Bearer {service}"},
                 json={"password": pw},
             )
-            r.raise_for_status()
+            if r.status_code >= 400:
+                print(f"password set FAILED {r.status_code}: {r.text[:300]}")
+                raise SystemExit(1)
             r = await http.post(
                 f"{base}/auth/v1/token?grant_type=password",
                 headers={"apikey": anon, "Content-Type": "application/json"},
                 json={"email": EMAIL, "password": pw},
             )
-            r.raise_for_status()
+            if r.status_code >= 400:
+                print(f"sign-in FAILED {r.status_code}: {r.text[:300]}")
+                raise SystemExit(1)
             print("\naccess_token (expires with the session; the password is discarded):")
             print(r.json()["access_token"])
     finally:
