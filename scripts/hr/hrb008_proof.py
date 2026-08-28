@@ -828,6 +828,66 @@ async def main():
         rec("§9.1 P-only", "an org definition setting allows_self is refused at publish time",
             rs.get("granted") is False and rs.get("reason") == "definition_invalid", rs.get("detail"))
 
+        # ===== §1.4 PUBLISHING ROUTING IS AN OWNER POWER (hr_c4_38)
+        # 🚨 The gate used to read `workflow.cancel` — a stand-in that let ANY hr_admin rewrite who
+        # approves what, which is authority.grant's power class. RULED: `workflow.publish_definition`,
+        # hr_owner ONLY, on the principle that already excludes hr_admin from workflow.record_result.
+        # This NARROWS deliberately, so it is falsified in both directions AND controlled: the admin
+        # must still hold workflow.cancel, or the refusal proves only that a role went missing.
+        await as_owner()
+        clean = await conn.fetchval(
+            "insert into hr.workflow_definition (organization_id, flow_key, name, definition_version, "
+            "status, visibility) values ($1,'leave_request','Owner-power probe',4,'draft','internal') returning id", org)
+        await conn.execute(
+            "insert into hr.workflow_step_definition (organization_id, workflow_definition_id, step_key, "
+            "label, step_order, resolver_kind, authority_action) "
+            "values ($1,$2,'manager_approval','Manager',10,'authority','leave_approve')", org, clean)
+        admin_ra = await conn.fetchval(
+            "insert into hr.role_assignment (organization_id, employment_id, role_key, scope_kind) "
+            "values ($1,$2,'hr_admin','org') returning id", org, people["dave"]["employment"])
+        rec("§1.4 owner power",
+            "the control: this hr_admin DOES hold workflow.cancel — so a publish refusal below is the "
+            "new capability, not a role that went missing",
+            await conn.fetchval("select hr.capability($1,'workflow.cancel',null,current_date,$2)",
+                                people["dave"]["uid"], org))
+        rec("§1.4 owner power",
+            "and does NOT hold workflow.publish_definition — hr_owner only, like workflow.record_result",
+            (await conn.fetchval("select hr.capability($1,'workflow.publish_definition',null,current_date,$2)",
+                                 people["dave"]["uid"], org)) is False)
+        await as_user(people["dave"]["uid"])
+        admin_pub = await j("select public.hr_wf_publish_definition($1)", clean)
+        await as_owner()
+        rec("§1.4 owner power",
+            "🚨 an hr_admin publishing a CLEAN draft is REFUSED — the only thing wrong is their standing",
+            admin_pub.get("granted") is False and admin_pub.get("reason") == "no_publish_authority",
+            json.dumps(admin_pub)[:200])
+        rec("§1.4 owner power",
+            "and the refusal is a human sentence, not a raw SQL error",
+            "HR administration standing" in str(admin_pub.get("detail")), admin_pub.get("detail"))
+        still_draft = await conn.fetchval("select status from hr.workflow_definition where id=$1", clean)
+        rec("§1.4 owner power", "and nothing was published — the definition is still a draft",
+            still_draft == "draft", f"status={still_draft}")
+        # the other direction: the OWNER publishes the very same draft
+        await as_user(people["carol"]["uid"])
+        owner_pub = await j("select public.hr_wf_publish_definition($1)", clean)
+        await as_owner()
+        rec("§1.4 owner power",
+            "🚨 and the HR OWNER publishes that identical draft — the narrowing hit standing, not the draft",
+            owner_pub.get("granted") is True, json.dumps(owner_pub)[:200])
+        rec("§1.4 owner power", "hr_owner is the ONLY role holding workflow.publish_definition",
+            await conn.fetchval(
+                "select count(*)=1 and bool_and(role_key='hr_owner') from hr.access_role "
+                "where deleted_at is null and 'workflow.publish_definition'=any(capabilities)"))
+        # 🚨 the stand-in must not come back: workflow.cancel is BANNED from that gate by contract
+        rec("§1.4 owner power",
+            "the contract BANS the workflow.cancel stand-in, so it cannot quietly return",
+            await conn.fetchval(
+                "select must_not_contain @> array['''workflow.cancel'''] and "
+                "must_contain @> array['workflow.publish_definition'] from hr.function_contract "
+                "where schema_name='hr' and function_name='wf_publish_definition' and is_active"))
+        # leave the fixture as it was found: the admin role was for this block only
+        await conn.execute("update hr.role_assignment set is_active=false where id=$1", admin_ra)
+
         # ================================================================= DELEGATION
         await as_owner()
         await conn.execute("update hr.approval_authority set is_active=true where id=$1", auth_ids["leave_approve"])
