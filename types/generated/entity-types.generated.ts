@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 604 active entity tokens. A token here is FK-valid for
+// 605 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -281,6 +281,7 @@ export type EntityTypeToken =
   | "hr_jurisdiction"
   | "hr_jurisdiction_rule"
   | "hr_jurisdiction_rule_class"
+  | "hr_jurisdiction_rule_org_decision"
   | "hr_jurisdiction_rule_test"
   | "hr_kiosk_device"
   | "hr_kiosk_session"
@@ -1262,6 +1263,7 @@ export type ScopeableEntityToken =
   | "hr_jurisdiction"
   | "hr_jurisdiction_rule"
   | "hr_jurisdiction_rule_class"
+  | "hr_jurisdiction_rule_org_decision"
   | "hr_jurisdiction_rule_test"
   | "hr_kiosk_device"
   | "hr_kiosk_session"
@@ -1963,6 +1965,7 @@ export const ENTITY_TYPE_METADATA = {
   "hr_jurisdiction": { token: "hr_jurisdiction", schema: "hr", table: "jurisdiction", label: "Jurisdiction", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "hr_jurisdiction_rule": { token: "hr_jurisdiction_rule", schema: "hr", table: "jurisdiction_rule", label: "Jurisdiction rule", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_jurisdiction_rule_class": { token: "hr_jurisdiction_rule_class", schema: "hr", table: "jurisdiction_rule_class", label: "Jurisdiction rule class", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
+  "hr_jurisdiction_rule_org_decision": { token: "hr_jurisdiction_rule_org_decision", schema: "hr", table: "jurisdiction_rule_org_decision", label: "Jurisdiction rule org decision", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_jurisdiction_rule_test": { token: "hr_jurisdiction_rule_test", schema: "hr", table: "jurisdiction_rule_test", label: "Jurisdiction rule fixture", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "hr_kiosk_device": { token: "hr_kiosk_device", schema: "hr", table: "kiosk_device", label: "Kiosk device", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_kiosk_session": { token: "hr_kiosk_session", schema: "hr", table: "kiosk_session", label: "Kiosk session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2571,6 +2574,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hr_jurisdiction",
   "hr_jurisdiction_rule",
   "hr_jurisdiction_rule_class",
+  "hr_jurisdiction_rule_org_decision",
   "hr_jurisdiction_rule_test",
   "hr_kiosk_device",
   "hr_kiosk_session",
