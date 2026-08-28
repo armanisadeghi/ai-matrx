@@ -22,6 +22,9 @@ import {
   Printer,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 
 interface Ingredient {
@@ -50,6 +53,10 @@ export interface RecipeState {
 interface RecipeViewerProps {
   recipe: RecipeData;
   taskId?: string;
+  artifactId?: string;
+  conversationId?: string;
+  messageId?: string;
+  blockIndex?: number;
   /** Seed interaction state (checked ingredients, completed steps, servings) from persisted state (optional). */
   initialState?: RecipeState;
   /** Called whenever the user changes interaction state (optional). */
@@ -66,6 +73,10 @@ const STAT_ITEMS = [
 const RecipeViewer: React.FC<RecipeViewerProps> = ({
   recipe,
   taskId,
+  artifactId,
+  conversationId,
+  messageId,
+  blockIndex,
   initialState,
   onStateChange,
 }) => {
@@ -81,6 +92,33 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
     () => initialState?.servingMultiplier ?? 1,
   );
   const { open: openCanvas } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
+
+  const handleOpenCanvas = () => {
+    const def = getArtifactDef("recipe");
+
+    if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+      void openArtifact({
+        canvasType: "recipe",
+        title: recipe.title,
+        content: JSON.stringify(recipe),
+        conversationId,
+        messageId,
+        artifactId,
+        artifactIndex: blockIndex && blockIndex > 0 ? blockIndex : 1,
+      });
+      return;
+    }
+
+    openCanvas({
+      type: "recipe",
+      data: recipe,
+      metadata: {
+        title: recipe.title,
+        sourceTaskId: taskId,
+      },
+    });
+  };
 
   // Keep a stable ref to onStateChange so closures don't go stale.
   const onStateChangeRef = useRef(onStateChange);
@@ -302,16 +340,7 @@ const RecipeViewer: React.FC<RecipeViewerProps> = ({
                       <IconButton
                         icon={ExternalLink}
                         tooltip="Open Canvas"
-                        onClick={() =>
-                          openCanvas({
-                            type: "recipe",
-                            data: recipe,
-                            metadata: {
-                              title: recipe.title,
-                              sourceTaskId: taskId,
-                            },
-                          })
-                        }
+                        onClick={handleOpenCanvas}
                         size="sm"
                         className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
                       />
