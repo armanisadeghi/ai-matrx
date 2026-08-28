@@ -20,6 +20,7 @@ import type { ArtifactRendererProps } from "../types";
  * garbage), mirroring the legacy block-loading guard.
  */
 export default function DiagramArtifact({
+  mode,
   raw,
   data,
   serverData,
@@ -60,6 +61,12 @@ export default function DiagramArtifact({
         conversationId={conversationId}
         artifactId={artifactId}
         blockIndex={blockIndex}
+        // On a surface where the diagram IS the page (canvas pane, shared
+        // canvas viewer) the compact `card` presentation is wrong: it caps
+        // itself at h-[600px]/max-w-6xl and repeats the title the surface
+        // already shows, so the diagram occupies half a viewport and clips
+        // when zoomed. `workspace` is the full-height, uncapped presentation.
+        presentation={mode === "canvas" ? "workspace" : "card"}
       />
     </Suspense>
   );
