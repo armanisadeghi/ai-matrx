@@ -15,6 +15,51 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D279 — Shape Studio reports an inactive DB override as the live renderer even when the compiled kind bridge actually renders (2026-08-27)
+
+**P1 · status: open.** Analyzed 2026-08-27 — verified in code and against the live
+`content_ir.kind_component` rows for `web_search_results`.
+
+`features/content-ir/studio/components/ShapeRenderStatusStrip.tsx` asks
+`resolveComponent(kind, "web", "output")` what renders the Shape. The shared resolver returns the
+DB tier before the compiled tier even when that DB row is inactive. For `web_search_results`, that
+means it selects the inactive, non-default custom row `web_search_results_list` and announces:
+"custom component (stored in the database)" / "the resolver currently picks this shape." The same
+status then says that selected component is off and therefore the Shape falls back to the generic
+viewer.
+
+Production does neither. `applyIrKindRoute` checks the kind definition's compiled
+`legacyBlockType` bridge before its inactive-resolution fallback, so `/search` and
+`/demos/search-kinds` render the active built-in `web_search_results` component. The status panel
+is therefore internally contradictory and false about the customer-visible renderer. The same
+false generic-fallback premise appears in `ShapeActivationControl.tsx`'s deactivate confirmation.
+
+**Fix:** derive first-screen status from the same render-leg satisfier order as `applyIrKindRoute`
+(compiled bridge first, resolved component last resort), not from raw `resolveComponent` alone;
+name inactive DB candidates as candidates, never as the active renderer; share one pure render-route
+diagnostic between runtime and Studio; pin this exact active-built-in + inactive-custom case in tests.
+
+### D278 — `web_search_results` is falsely classified as the data-only `workflow_io` family (2026-08-27)
+
+**P1 · status: open.** Analyzed 2026-08-27 — verified in the live Matrx Main registry and in the
+family-derived Studio code.
+
+The live `content_ir.kind_definition` row for `web_search_results` has
+`metadata.family = 'workflow_io'`. That family is reserved for generated contract/plumbing Shapes,
+so `shape-detail-server.ts` and the activation verdict classify the customer-visible search result
+collection as data-only and say that no render leg is expected. This contradicts the actual product:
+`/search` and `/demos/search-kinds` deliberately render it as a top-level Shape through
+`KindInstanceRender`, and it owns an active built-in web output component plus nested result kinds.
+
+The bad family value produces both warnings seen in Shape Studio: "family classifies it as
+data-only" and "family mismatch worth checking." It can also contaminate every doctor/gate/report
+that treats generated-contract families as structurally exempt from render assets.
+
+**Fix:** correct the canonical registry family to the real search family through the sanctioned DB
+change path, verify activation/render-leg evaluation live, regenerate derived catalog/type artifacts
+in both repos as required, and add a guard proving customer-visible compiled kinds cannot wear a
+reserved generated-contract family.
+
 ### D277 — the hire form lets you submit without a job title or department, and the user gets raw Postgres (2026-08-26)
 
 > (Renumbered from a colliding D275 — that id belongs to the resolved wf_request orphan-instance defect below.)
