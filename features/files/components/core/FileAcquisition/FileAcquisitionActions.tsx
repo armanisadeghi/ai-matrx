@@ -13,6 +13,15 @@ import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleCo
 export type FileAcquisitionPresentation =
   "menu" | "buttons" | "inline" | "icons";
 
+type FileAcquisitionActionKey =
+  "files" | "folder" | "existing" | "google-drive";
+
+type FileAcquisitionAction = {
+  key: FileAcquisitionActionKey;
+  label: string;
+  icon: typeof FileUp;
+};
+
 export interface FileAcquisitionActionsProps {
   onFiles: (files: File[]) => void | Promise<void>;
   onError?: (message: string) => void;
@@ -97,10 +106,14 @@ export function FileAcquisitionActions({
     },
     [deliverFiles],
   );
-  const openLocalFiles = useCallback(() => fileInputRef.current?.click(), []);
-  const openLocalFolder = useCallback(
-    () => folderInputRef.current?.click(),
-    [],
+  const runAction = useCallback(
+    (key: FileAcquisitionActionKey) => {
+      if (key === "files") fileInputRef.current?.click();
+      if (key === "folder") folderInputRef.current?.click();
+      if (key === "existing") onChooseExisting?.();
+      if (key === "google-drive") openDrive();
+    },
+    [onChooseExisting, openDrive],
   );
 
   const googleLabel = inventory.isLoading
@@ -143,19 +156,28 @@ export function FileAcquisitionActions({
     return (
       <>
         {enableLocalFiles ? (
-          <DropdownMenuItem disabled={disabled} onSelect={openLocalFiles}>
+          <DropdownMenuItem
+            disabled={disabled}
+            onSelect={() => runAction("files")}
+          >
             <FileUp className="mr-2 h-4 w-4" />
             Upload files
           </DropdownMenuItem>
         ) : null}
         {enableLocalFolder ? (
-          <DropdownMenuItem disabled={disabled} onSelect={openLocalFolder}>
+          <DropdownMenuItem
+            disabled={disabled}
+            onSelect={() => runAction("folder")}
+          >
             <FolderUp className="mr-2 h-4 w-4" />
             Upload folder
           </DropdownMenuItem>
         ) : null}
         {enableExistingFiles && onChooseExisting ? (
-          <DropdownMenuItem disabled={disabled} onSelect={onChooseExisting}>
+          <DropdownMenuItem
+            disabled={disabled}
+            onSelect={() => runAction("existing")}
+          >
             <Cloud className="mr-2 h-4 w-4" />
             Choose from Files
           </DropdownMenuItem>
@@ -163,7 +185,7 @@ export function FileAcquisitionActions({
         {enableGoogleDrive ? (
           <DropdownMenuItem
             disabled={disabled || googleBusy}
-            onSelect={openDrive}
+            onSelect={() => runAction("google-drive")}
           >
             {(() => {
               const Icon = googleIcon;
@@ -184,13 +206,12 @@ export function FileAcquisitionActions({
     );
   }
 
-  const actions = [
+  const actions = ([
     enableLocalFiles
       ? {
           key: "files",
           label: "Upload files",
           icon: FileUp,
-          onClick: openLocalFiles,
         }
       : null,
     enableLocalFolder
@@ -198,7 +219,6 @@ export function FileAcquisitionActions({
           key: "folder",
           label: "Upload folder",
           icon: FolderUp,
-          onClick: openLocalFolder,
         }
       : null,
     enableExistingFiles && onChooseExisting
@@ -206,7 +226,6 @@ export function FileAcquisitionActions({
           key: "existing",
           label: "Choose from Files",
           icon: FolderOpen,
-          onClick: onChooseExisting,
         }
       : null,
     enableGoogleDrive
@@ -214,10 +233,11 @@ export function FileAcquisitionActions({
           key: "google-drive",
           label: googleLabel,
           icon: googleIcon,
-          onClick: openDrive,
         }
       : null,
-  ].filter((action) => action !== null);
+  ] satisfies Array<FileAcquisitionAction | null>).filter(
+    (action): action is FileAcquisitionAction => action !== null,
+  );
 
   if (presentation === "inline") {
     return (
@@ -234,7 +254,7 @@ export function FileAcquisitionActions({
             <button
               key={action.key}
               type="button"
-              onClick={action.onClick}
+              onClick={() => runAction(action.key)}
               disabled={disabled || busy}
               className="inline-flex min-h-10 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-primary hover:bg-primary/5 disabled:opacity-50"
             >
@@ -260,7 +280,7 @@ export function FileAcquisitionActions({
             <button
               key={action.key}
               type="button"
-              onClick={action.onClick}
+              onClick={() => runAction(action.key)}
               disabled={disabled || busy}
               title={action.label}
               aria-label={action.label}
@@ -289,7 +309,7 @@ export function FileAcquisitionActions({
             key={action.key}
             type="button"
             variant={action.key === "files" ? "default" : "outline"}
-            onClick={action.onClick}
+            onClick={() => runAction(action.key)}
             disabled={disabled || busy}
           >
             <Icon className={cn("h-4 w-4", busy && "animate-spin")} />
