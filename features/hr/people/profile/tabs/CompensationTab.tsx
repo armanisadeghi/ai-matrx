@@ -38,6 +38,7 @@ import { hrStructureFocusHref, type HrOrgRef } from "../../../routes";
 import type { HrEmployeeProfile } from "../../../types";
 import { useHrStructure } from "../../shared/useHrStructure";
 import { ProposePayChange } from "../ProposePayChange";
+import { MyPaySurface } from "@/features/hr/me/MyPaySurface";
 
 export function CompensationTab({
   profile,
@@ -51,6 +52,28 @@ export function CompensationTab({
   // Defence in depth. The server already omitted the tab; this is the second
   // lock, and it renders NOTHING rather than a sentence about what is hidden.
   if (profile.comp_visibility === "none") return null;
+
+  /*
+    🚨 THE MISSING DOOR IS THE HR-FACING ONE. IT WAS NEVER THE SELF ONE.
+    The gap below is real and correctly stated: there is no audited read for ONE
+    OTHER employee's pay, and `hr_confidential_list` would record a whole-org list
+    read for a one-person purpose, corrupting the audit trail this tier exists to
+    produce. But `hr_my_compensation` HAS shipped — `/hr/me/pay` has been serving
+    it — so a person opening the Compensation tab of their OWN record was told
+    nothing could be read, about the one record the server will happily hand them.
+    §7.1's named pay refusal was unreachable as a result: you cannot be refused a
+    field on a surface that never shows you the field.
+
+    Reusing `MyPaySurface` rather than writing a second reader: same door, same
+    states, one implementation — a forked copy is how the two drift.
+  */
+  if (profile.viewer === "self") {
+    return (
+      <div className={cn("min-w-0", className)}>
+        <MyPaySurface />
+      </div>
+    );
+  }
 
   return (
     <div className={cn("space-y-6 p-3 sm:p-4", className)}>
