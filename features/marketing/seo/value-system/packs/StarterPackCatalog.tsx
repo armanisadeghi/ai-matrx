@@ -77,7 +77,10 @@ import { PackReview } from "./PackReview";
 import { ReadyDefaultsBanner } from "./ReadyDefaultsBanner";
 import { ResetToPackDialog } from "./ResetToPackDialog";
 
-const STATUS_META: Record<string, { label: string; hint: string; tone: string }> = {
+const STATUS_META: Record<
+  string,
+  { label: string; hint: string; tone: string }
+> = {
   ratified: {
     label: "Expert-ratified",
     hint: "A domain expert has signed off on these defaults.",
@@ -111,7 +114,11 @@ const GEO_MODEL_LABEL: Record<string, string> = {
 function formatWhen(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
-  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  return d.toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 function Stat({
@@ -186,7 +193,9 @@ function PackCard({
       aria-pressed={selected}
       className={cn(
         "w-full rounded-lg border p-3 text-left transition-colors",
-        selected ? "border-primary/50 bg-primary/5" : "border-border bg-card hover:bg-muted/50",
+        selected
+          ? "border-primary/50 bg-primary/5"
+          : "border-border bg-card hover:bg-muted/50",
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -202,7 +211,11 @@ function PackCard({
               Adopted
             </Badge>
           ) : null}
-          <Badge variant="outline" className={cn("text-[10px]", status.tone)} title={status.hint}>
+          <Badge
+            variant="outline"
+            className={cn("text-[10px]", status.tone)}
+            title={status.hint}
+          >
             {status.label}
           </Badge>
         </div>
@@ -213,7 +226,11 @@ function PackCard({
       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
         <Stat icon={ListChecks} count={pack.meaning_count} label="answers" />
         <Stat icon={TreePine} count={pack.topic_count} label="offerings" />
-        <Stat icon={Layers} count={pack.value_band_count + pack.geo_band_count} label="bands" />
+        <Stat
+          icon={Layers}
+          count={pack.value_band_count + pack.geo_band_count}
+          label="bands"
+        />
         <Stat icon={MapPinned} count={pack.geo_area_count} label="areas" />
       </div>
     </button>
@@ -239,18 +256,26 @@ function IncompleteAreasBanner({
       href={incompleteAreasHref(brandId, siteId)}
       className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 transition-colors hover:bg-warning/15"
     >
-      <TriangleAlert className="mt-px size-3.5 shrink-0 text-warning" aria-hidden />
+      <TriangleAlert
+        className="mt-px size-3.5 shrink-0 text-warning"
+        aria-hidden
+      />
       <span className="min-w-0 flex-1">
         <span className="block text-xs font-semibold text-warning">
-          {count} service area{count === 1 ? " has" : "s have"} no places yet — add them
+          {count} service area{count === 1 ? " has" : "s have"} no places yet —
+          add them
         </span>
         <span className="mt-0.5 block text-[11px] leading-4 text-muted-foreground">
-          {count === 1 ? "It has" : "They have"} a name and a band but no town, city or region
-          inside, so no search has ever matched {count === 1 ? "it" : "them"} and geography
-          counts for nothing in your value tiers.
+          {count === 1 ? "It has" : "They have"} a name and a band but no town,
+          city or region inside, so no search has ever matched{" "}
+          {count === 1 ? "it" : "them"} and geography counts for nothing in your
+          value tiers.
         </span>
       </span>
-      <ChevronRight className="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden />
+      <ChevronRight
+        className="mt-0.5 size-3.5 shrink-0 text-warning"
+        aria-hidden
+      />
     </Link>
   );
 }
@@ -273,7 +298,9 @@ function PackSummaryPanel({
   const [showSource, setShowSource] = useState(false);
   const status = STATUS_META[pack.status] ?? STATUS_META.draft;
   const geoModel = GEO_MODEL_LABEL[pack.geo_model] ?? null;
-  const canReset = Boolean(adoption && adoption.changed + adoption.archived > 0);
+  const canReset = Boolean(
+    adoption && adoption.changed + adoption.archived > 0,
+  );
   const canTakeMore = Boolean(adoption && adoption.missing > 0);
 
   return (
@@ -282,8 +309,14 @@ function PackSummaryPanel({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-base font-semibold text-foreground">{pack.name}</h2>
-              <Badge variant="outline" className={cn("text-[10px]", status.tone)} title={status.hint}>
+              <h2 className="text-base font-semibold text-foreground">
+                {pack.name}
+              </h2>
+              <Badge
+                variant="outline"
+                className={cn("text-[10px]", status.tone)}
+                title={status.hint}
+              >
                 {status.label}
               </Badge>
             </div>
@@ -293,7 +326,12 @@ function PackSummaryPanel({
             </p>
           </div>
           {adoption ? null : (
-            <Button type="button" size="sm" className="h-8 gap-1.5 text-xs" onClick={onPreview}>
+            <Button
+              type="button"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={onPreview}
+            >
               <Eye className="size-3.5" aria-hidden />
               Preview on your data
             </Button>
@@ -307,15 +345,17 @@ function PackSummaryPanel({
             <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <BadgeCheck className="size-3.5 text-info" aria-hidden />
               Adopted {formatWhen(adoption.adopted_at)}
-              {adoption.adopted_by_label ? ` by ${adoption.adopted_by_label}` : ""}
+              {adoption.adopted_by_label
+                ? ` by ${adoption.adopted_by_label}`
+                : ""}
             </p>
             <div className="mt-1.5">
               <ReceiptCounts a={adoption} />
             </div>
             <p className="mt-2 text-[11px] leading-4 text-muted-foreground">
-              Everything you took is yours now: the platform never re-applies this pack over
-              your edits. Re-applying is a button — two, in fact — and each one lists exactly
-              what it will touch.
+              Everything you took is yours now: the platform never re-applies
+              this pack over your edits. Re-applying is a button — two, in fact
+              — and each one lists exactly what it will touch.
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Link
@@ -339,7 +379,8 @@ function PackSummaryPanel({
                 }
               >
                 <Download className="size-3" aria-hidden />
-                Take what&apos;s missing{canTakeMore ? ` (${adoption.missing})` : ""}
+                Take what&apos;s missing
+                {canTakeMore ? ` (${adoption.missing})` : ""}
               </Button>
               <Button
                 type="button"
@@ -355,43 +396,77 @@ function PackSummaryPanel({
                 }
               >
                 <RotateCcw className="size-3" aria-hidden />
-                Reset to pack{canReset ? ` (${adoption.changed + adoption.archived})` : ""}
+                Reset to pack
+                {canReset ? ` (${adoption.changed + adoption.archived})` : ""}
               </Button>
             </div>
           </section>
         ) : null}
 
         {pack.summary ? (
-          <p className="text-xs leading-relaxed text-foreground">{pack.summary}</p>
+          <p className="text-xs leading-relaxed text-foreground">
+            {pack.summary}
+          </p>
         ) : null}
         {pack.description ? (
-          <p className="text-xs leading-relaxed text-muted-foreground">{pack.description}</p>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {pack.description}
+          </p>
         ) : null}
 
         <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {(
             [
-              [ListChecks, pack.meaning_count, "answers", "what this industry's searches mean, and what each meaning is worth"],
-              [TreePine, pack.topic_count, "offering worths", "what each offering or branch is worth — the base every rule multiplies"],
-              [Layers, pack.value_band_count + pack.geo_band_count, "bands", "tier names and thresholds, geo band multipliers"],
-              [MapPinned, pack.geo_area_count, "service areas", "archetypes you fill with your own places"],
+              [
+                ListChecks,
+                pack.meaning_count,
+                "answers",
+                "what this industry's searches mean, and what each meaning is worth",
+              ],
+              [
+                TreePine,
+                pack.topic_count,
+                "offering worths",
+                "what each offering or branch is worth — the base every rule multiplies",
+              ],
+              [
+                Layers,
+                pack.value_band_count + pack.geo_band_count,
+                "bands",
+                "tier names and thresholds, geo band multipliers",
+              ],
+              [
+                MapPinned,
+                pack.geo_area_count,
+                "service areas",
+                "archetypes you fill with your own places",
+              ],
             ] as const
           ).map(([Icon, n, label, hint]) => (
-            <div key={label} className="rounded-md border border-border bg-card p-2" title={hint}>
+            <div
+              key={label}
+              className="rounded-md border border-border bg-card p-2"
+              title={hint}
+            >
               <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
                 <Icon className="size-3" aria-hidden />
                 {label}
               </p>
-              <p className="text-base font-semibold tabular-nums text-foreground">{n}</p>
+              <p className="text-base font-semibold tabular-nums text-foreground">
+                {n}
+              </p>
             </div>
           ))}
         </dl>
 
         {!adoption ? (
           <p className="text-[11px] leading-4 text-muted-foreground">
-            <span className="font-medium text-foreground">Preview on your data</span> shows every
-            item with the numbers it would change on your own keywords — before anything is
-            written. You pick what to take, item by item.
+            <span className="font-medium text-foreground">
+              Preview on your data
+            </span>{" "}
+            shows every item with the numbers it would change on your own
+            keywords — before anything is written. You pick what to take, item
+            by item.
           </p>
         ) : null}
 
@@ -403,7 +478,10 @@ function PackSummaryPanel({
               className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground hover:text-foreground"
             >
               <ChevronDown
-                className={cn("size-3 transition-transform", showSource ? "rotate-180" : "")}
+                className={cn(
+                  "size-3 transition-transform",
+                  showSource ? "rotate-180" : "",
+                )}
                 aria-hidden
               />
               Where this pack came from
@@ -413,7 +491,9 @@ function PackSummaryPanel({
                 {pack.source_notes ? <p>{pack.source_notes}</p> : null}
                 {pack.ratification_notes ? (
                   <p>
-                    <span className="font-medium text-foreground">Ratification:</span>{" "}
+                    <span className="font-medium text-foreground">
+                      Ratification:
+                    </span>{" "}
                     {pack.ratification_notes}
                   </p>
                 ) : null}
@@ -450,7 +530,8 @@ export function StarterPackCatalog() {
 
   const catalog = useQuery({
     queryKey: [...starterPackCatalogQueryKey, organizationId ?? "none"],
-    queryFn: ({ signal }) => getStarterPackCatalog(null, organizationId, signal),
+    queryFn: ({ signal }) =>
+      getStarterPackCatalog(null, organizationId, signal),
     staleTime: 5 * 60_000,
   });
   const adoptions = useQuery({
@@ -465,7 +546,9 @@ export function StarterPackCatalog() {
   // Drafts are the admin side's work in progress and never a customer's
   // choice; a retired pack is listed only for a site that adopted from it.
   const packs = (catalog.data ?? []).filter(
-    (p) => p.status !== "draft" && (p.status !== "retired" || adoptionByPack.has(p.id)),
+    (p) =>
+      p.status !== "draft" &&
+      (p.status !== "retired" || adoptionByPack.has(p.id)),
   );
   const activeId = packParam ?? selectedId ?? packs[0]?.id ?? null;
   const activePack = packs.find((p) => p.id === activeId) ?? null;
@@ -478,12 +561,14 @@ export function StarterPackCatalog() {
   });
   const status = useQuery({
     queryKey: starterPackStatusQueryKey(siteId, activeId ?? "none"),
-    queryFn: ({ signal }) => getStarterPackSiteStatus(siteId, activeId as string, signal),
+    queryFn: ({ signal }) =>
+      getStarterPackSiteStatus(siteId, activeId as string, signal),
     enabled: Boolean(activeId) && Boolean(activeAdoption),
     staleTime: 30_000,
   });
 
-  const openReview = (packId: string) => router.push(packReviewHref(brandId, siteId, packId));
+  const openReview = (packId: string) =>
+    router.push(packReviewHref(brandId, siteId, packId));
   const closeReview = () => router.push(`${basePath}?pack=${activeId ?? ""}`);
   const selectPack = (packId: string) => {
     setSelectedId(packId);
@@ -523,7 +608,9 @@ export function StarterPackCatalog() {
         siteDomain={site.domain}
         onBack={closeReview}
         onAdopted={() => {
-          void queryClient.invalidateQueries({ queryKey: starterPackAdoptionsQueryKey(siteId) });
+          void queryClient.invalidateQueries({
+            queryKey: starterPackAdoptionsQueryKey(siteId),
+          });
           closeReview();
         }}
       />
@@ -549,14 +636,19 @@ export function StarterPackCatalog() {
             Industry packs
           </h1>
           <p className="mt-0.5 max-w-3xl text-xs leading-relaxed text-muted-foreground">
-            A pack is a day-one answer to &ldquo;what is this keyword worth to a business like
-            mine?&rdquo; — rules, offering worth, bands and service-area archetypes an expert
-            ratified for an industry. Preview one on your own keywords, take the parts you
-            want, and from then on they are yours.
+            A pack is a day-one answer to &ldquo;what is this keyword worth to a
+            business like mine?&rdquo; — rules, offering worth, bands and
+            service-area archetypes an expert ratified for an industry. Preview
+            one on your own keywords, take the parts you want, and from then on
+            they are yours.
           </p>
         </div>
         <ReadyDefaultsBanner />
-        <IncompleteAreasBanner count={incompleteAreas} brandId={brandId} siteId={siteId} />
+        <IncompleteAreasBanner
+          count={incompleteAreas}
+          brandId={brandId}
+          siteId={siteId}
+        />
       </div>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -574,7 +666,9 @@ export function StarterPackCatalog() {
               onRetry={() => void catalog.refetch()}
             />
           ) : packs.length === 0 ? (
-            <p className="p-3 text-xs text-muted-foreground">No industry packs exist yet.</p>
+            <p className="p-3 text-xs text-muted-foreground">
+              No industry packs exist yet.
+            </p>
           ) : (
             <>
               {brandHasMatchingIndustry ? (
@@ -599,7 +693,10 @@ export function StarterPackCatalog() {
                         className="flex w-full items-center gap-1 px-1 pt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
                       >
                         <ChevronDown
-                          className={cn("size-3 transition-transform", othersOpen ? "rotate-180" : "")}
+                          className={cn(
+                            "size-3 transition-transform",
+                            othersOpen ? "rotate-180" : "",
+                          )}
                           aria-hidden
                         />
                         Other available industries ({others.length})
@@ -626,10 +723,14 @@ export function StarterPackCatalog() {
                       className="flex items-start gap-2 rounded-md border border-dashed border-border bg-muted/30 px-2.5 py-2 text-[11px] leading-4 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                       title="Open this brand and set its industry"
                     >
-                      <Settings2 className="mt-px size-3 shrink-0" aria-hidden />
+                      <Settings2
+                        className="mt-px size-3 shrink-0"
+                        aria-hidden
+                      />
                       <span>
-                        Set this brand&apos;s industry in its profile and matching packs list
-                        first here — and can be offered to this brand&apos;s sites automatically.
+                        Set this brand&apos;s industry in its profile and
+                        matching packs list first here — and can be offered to
+                        this brand&apos;s sites automatically.
                       </span>
                     </Link>
                   ) : null}
@@ -667,7 +768,8 @@ export function StarterPackCatalog() {
             <div className="flex h-full items-center justify-center p-6 text-center">
               <p className="max-w-sm text-xs text-muted-foreground">
                 <BadgeCheck className="mx-auto mb-2 size-5" aria-hidden />
-                Pick a pack to see what it proposes and preview it on your keywords.
+                Pick a pack to see what it proposes and preview it on your
+                keywords.
               </p>
             </div>
           )}

@@ -88,7 +88,8 @@ export function areaNeedsPlaces(
   area: Pick<SiteGeoArea, "match_tokens" | "place_ids">,
 ): boolean {
   return (
-    (area.match_tokens?.length ?? 0) === 0 && (area.place_ids?.length ?? 0) === 0
+    (area.match_tokens?.length ?? 0) === 0 &&
+    (area.place_ids?.length ?? 0) === 0
   );
 }
 
@@ -99,7 +100,11 @@ export function incompleteAreasHref(
   brandId: string | null | undefined,
   siteId: string,
 ): string {
-  return marketingRoutes.site(brandId, siteId, `/value/rules?${INCOMPLETE_AREAS_QUERY}`);
+  return marketingRoutes.site(
+    brandId,
+    siteId,
+    `/value/rules?${INCOMPLETE_AREAS_QUERY}`,
+  );
 }
 
 // ── Review window ────────────────────────────────────────────────────────────
@@ -147,10 +152,19 @@ export interface BandMeta {
 }
 
 const TONE_LADDER = [
-  { tone: "text-success", chip: "border-success/40 bg-success/10 text-success" },
-  { tone: "text-primary", chip: "border-primary/40 bg-primary/10 text-primary" },
+  {
+    tone: "text-success",
+    chip: "border-success/40 bg-success/10 text-success",
+  },
+  {
+    tone: "text-primary",
+    chip: "border-primary/40 bg-primary/10 text-primary",
+  },
   { tone: "text-info", chip: "border-info/40 bg-info/10 text-info" },
-  { tone: "text-foreground", chip: "border-border bg-muted/50 text-foreground" },
+  {
+    tone: "text-foreground",
+    chip: "border-border bg-muted/50 text-foreground",
+  },
   {
     tone: "text-muted-foreground",
     chip: "border-border bg-muted/40 text-muted-foreground",
@@ -474,7 +488,10 @@ export function describeRuleMatch(rule: {
 // two builders are the only place those are turned into a sentence.
 
 /** "contains “data destruction”" / "the whole word “crt”". */
-export function describeMatcher(matcher: { kind: string; pattern: string }): string {
+export function describeMatcher(matcher: {
+  kind: string;
+  pattern: string;
+}): string {
   const readable =
     matcher.kind === "word"
       ? "the whole word"
@@ -556,7 +573,9 @@ export function worthIsDemotion(
 }
 
 /** "×0.2 — worth one fifth" / "×2.5 — worth two and a half times". */
-export function describeMultiplier(multiplier: number | null | undefined): string {
+export function describeMultiplier(
+  multiplier: number | null | undefined,
+): string {
   if (multiplier === null || multiplier === undefined) return "no change";
   if (multiplier === 1) return "×1 — no change";
   if (multiplier < 1) {

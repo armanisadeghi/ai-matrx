@@ -51,7 +51,8 @@ export function ReadyDefaultsBanner() {
 
   const catalog = useQuery({
     queryKey: [...starterPackCatalogQueryKey, organizationId ?? "none"],
-    queryFn: ({ signal }) => getStarterPackCatalog(null, organizationId, signal),
+    queryFn: ({ signal }) =>
+      getStarterPackCatalog(null, organizationId, signal),
     staleTime: 5 * 60_000,
     enabled: Boolean(organizationId),
   });
@@ -85,14 +86,20 @@ export function ReadyDefaultsBanner() {
   return (
     <div className="flex flex-col gap-2 rounded-md border border-info/40 bg-info/10 px-3 py-2 sm:flex-row sm:flex-wrap sm:items-center">
       <div className="flex min-w-0 flex-1 items-start gap-2 sm:items-center">
-        <BadgeCheck className="mt-px h-4 w-4 shrink-0 text-info sm:mt-0" aria-hidden />
+        <BadgeCheck
+          className="mt-px h-4 w-4 shrink-0 text-info sm:mt-0"
+          aria-hidden
+        />
         <p className="min-w-0 flex-1 text-xs text-foreground">
-          <span className="font-semibold">Your industry defaults are ready.</span>{" "}
+          <span className="font-semibold">
+            Your industry defaults are ready.
+          </span>{" "}
           <span className="text-muted-foreground">
-            {ready.name} — {ready.meaning_count} answers, {ready.topic_count} topic worths,{" "}
-            {ready.value_band_count + ready.geo_band_count} bands — expert-ratified for{" "}
-            {ready.industry_name ?? ready.industry}. Nothing is applied until you look and
-            accept; take all of it or just the parts you want.
+            {ready.name} — {ready.meaning_count} answers, {ready.topic_count}{" "}
+            topic worths, {ready.value_band_count + ready.geo_band_count} bands
+            — expert-ratified for {ready.industry_name ?? ready.industry}.
+            Nothing is applied until you look and accept; take all of it or just
+            the parts you want.
           </span>
         </p>
       </div>
