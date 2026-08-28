@@ -67,6 +67,12 @@ export const CloudFolders = {
   /** Audio recorded through the Capture Studio (media-capture Phase 7). */
   CAPTURES_AUDIO: "Captures/Audio",
 
+  /** Product-capture staging (features/product-capture) — per-item folders of
+   *  photos/videos/voice notes shot ahead of listing creation. Org-namespaced
+   *  via `folderForProductCaptureItem` (same server one-path-one-org rule as
+   *  Captures). User-produced, so visible. */
+  PRODUCT_CAPTURES: "Product Captures",
+
   /**
    * Static app assets (sounds, hero images, model-card thumbnails, demo
    * data) owned by an admin service account and rendered globally.
@@ -356,6 +362,23 @@ export function folderForCaptures(
     : kind === "video"
       ? CloudFolders.CAPTURES_VIDEOS
       : CloudFolders.CAPTURES_AUDIO;
+}
+
+/** Per-item product-capture folder: `Product Captures/<orgId>/<leaf>`.
+ *  `leaf` is the item's sanitized code (the QR value / SKU) when known at
+ *  creation, else the item id — set ONCE at item creation and never renamed.
+ *  Org id in the path for the same one-path-one-org server rule as
+ *  `folderForCaptures`. Files here upload with explicit `visibility:
+ *  "internal"` (org-wide access is the point of the surface), so the
+ *  `resolveDefaultVisibility` prefix rules are deliberately not consulted. */
+export function folderForProductCaptureItem(orgId: string, leaf: string): string {
+  // Folder path segments: a scanned QR can carry separators/reserved chars --
+  // collapse anything unsafe to single dashes. Callers pass the item id when
+  // the code sanitizes to nothing.
+  const safe = leaf
+    .replace(/[^A-Za-z0-9._@-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `${CloudFolders.PRODUCT_CAPTURES}/${orgId.trim()}/${safe}`;
 }
 
 // ---------------------------------------------------------------------------
