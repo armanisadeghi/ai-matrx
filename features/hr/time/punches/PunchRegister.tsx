@@ -139,9 +139,12 @@ export function PunchRegister({
       */}
       <PunchRegisterScopePicker
         scope={{ employmentId: employmentId ?? null, orgScope }}
-        /* The register's rows carry `employmentId` but no display name, so the picker says "one
-           person" rather than inventing one. Naming the subject needs the read to carry it. */
-        subjectName={null}
+        /*
+          hr_l3_96: the register now carries `subjectName`, through the one suppression-aware rule.
+          It is read off the ROWS rather than resolved separately, so a viewer who may not be shown
+          the name gets null here for the same reason they get null there — one answer, one place.
+        */
+        subjectName={rows[0]?.subjectName ?? null}
       />
 
       <HrTimeReadState loading={register.loading} error={register.error}>

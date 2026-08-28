@@ -202,6 +202,7 @@ export function mapLivePunch(raw: Live, fallbackDate = "", fallbackTz = "UTC"): 
   return {
     id: str(raw.id),
     employmentId: str(raw.employmentId),
+    subjectName: nstr(raw.subjectName),
     positionAssignmentId: nstr(raw.positionAssignmentId),
     shiftId: nstr(raw.shiftId),
     punchKind: str(raw.punchKind, "clock_in") as PunchRow["punchKind"],

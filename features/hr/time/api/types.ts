@@ -248,6 +248,13 @@ export interface MoneyBearing {
 export interface PunchRow {
   id: string;
   employmentId: string;
+  /**
+   * The person this punch is ABOUT, from `hr._subject_display_name` (hr_l3_96). Distinct from
+   * `actor.actorName`, which is whoever RECORDED it — the same person on a self-punch, a different
+   * one on every manager entry. Null when the viewer may not be shown the name; the surface then
+   * falls back to the id as a bare reference and never invents one.
+   */
+  subjectName: string | null;
   positionAssignmentId: string | null;
   shiftId: string | null;
   punchKind: PunchKind;
