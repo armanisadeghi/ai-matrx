@@ -51,6 +51,15 @@ LOCATION = "0ebbf294-2c02-4c0f-968f-fe780bf000ac"      # Sandbox HQ (US)
 DEPARTMENT = "6715f29c-c677-4546-9c9a-5e2b591ab16e"    # Operations
 
 
+def throwaway_password() -> str:
+    """A password that satisfies the project's complexity policy and is never stored.
+
+    Supabase rejects a hex-only string with `weak_password` — it wants lower, upper, digit and
+    symbol. It exists for the length of one sign-in and is discarded.
+    """
+    return "Zz9!" + os.urandom(12).hex() + "Aa1@"
+
+
 def env() -> dict[str, str]:
     out: dict[str, str] = {}
     for line in ENV.read_text().splitlines():
@@ -91,7 +100,7 @@ async def main() -> None:  # noqa: C901
                 f"{base}/auth/v1/admin/users",
                 headers={"apikey": service, "Authorization": f"Bearer {service}"},
                 json={"email": EMAIL, "email_confirm": True,
-                      "password": "zzz-" + os.urandom(12).hex()},
+                      "password": throwaway_password()},
             )
             r.raise_for_status()
             user_id = r.json()["id"]
@@ -258,7 +267,7 @@ async def main() -> None:  # noqa: C901
 
         # ---- 5. a session, without writing a credential anywhere
         if "--session" in sys.argv:
-            pw = "zzz-" + os.urandom(12).hex()
+            pw = throwaway_password()
             r = await http.put(
                 f"{base}/auth/v1/admin/users/{user_id}",
                 headers={"apikey": service, "Authorization": f"Bearer {service}"},
