@@ -254,7 +254,13 @@ export interface PayPeriodDetail extends PayPeriodRow {
 }
 
 /** How a row's attestation flow is actually doing, as the server classifies it. */
-export type RowHealth = "awaiting" | "stuck" | "no_flow" | "done";
+/**
+ * 🚨 `unreachable` is NOT a flavour of `awaiting`. `awaiting` renders as "somebody has been asked
+ * and the flow is alive"; a row whose live step resolves to NOBODY was landing there and saying
+ * that, when nobody had been asked at all (hr_c4_44/45). It is its own state because it needs its
+ * own sentence and its own count.
+ */
+export type RowHealth = "awaiting" | "stuck" | "no_flow" | "done" | "unreachable";
 
 export interface PeriodWorkflowRow {
   payPeriodEmploymentId: string;
@@ -307,12 +313,20 @@ export interface PeriodWorkflowRow {
   managerApprovedAt: string | null;
   /** Why the subject could never act, e.g. `no_login`. From the flow's own failure detail. */
   unableReason: string | null;
+  /**
+   * WHICH step reaches nobody, when `health` is `unreachable` (hr_c4_46). Load-bearing for the
+   * wording: on `employee_attestation` the assignee IS the subject, so "nobody could be asked"
+   * is about this employee; on `manager_approval` it is about an approver who was never resolved.
+   * Saying "they have no login" on a manager step blames the wrong person for someone else's gap.
+   */
+  unreachableStepKey: string | null;
 }
 
 export interface PeriodWorkflowHealth {
   awaiting: number;
   stuck: number;
   noFlow: number;
+  unreachable: number;
   done: number;
   rows: PeriodWorkflowRow[];
 }
@@ -327,7 +341,7 @@ function mapWorkflowRow(raw: unknown): PeriodWorkflowRow {
     rowState: str(r.rowState),
     // Anything the server starts classifying that this client does not know reads as `no_flow`
     // rather than being silently dropped — an unrecognised health is not a healthy one.
-    health: (["awaiting", "stuck", "no_flow", "done"].includes(health)
+    health: (["awaiting", "stuck", "no_flow", "done", "unreachable"].includes(health)
       ? health
       : "no_flow") as RowHealth,
     flowKey: strOrNull(r.flowKey),
@@ -342,6 +356,7 @@ function mapWorkflowRow(raw: unknown): PeriodWorkflowRow {
     attestedAt: strOrNull(r.attestedAt),
     managerApprovedAt: strOrNull(r.managerApprovedAt),
     unableReason: strOrNull(r.unableReason),
+    unreachableStepKey: strOrNull(r.unreachableStepKey),
   };
 }
 
@@ -353,6 +368,7 @@ function mapWorkflowHealth(raw: unknown): PeriodWorkflowHealth {
     stuck: num(w.stuck, 0),
     // `no_flow` camelizes to `noFlow`.
     noFlow: num(w.noFlow, 0),
+    unreachable: num(w.unreachable, 0),
     done: num(w.done, 0),
     rows: rows.map(mapWorkflowRow),
   };

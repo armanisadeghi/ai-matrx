@@ -411,6 +411,38 @@ async function main(): Promise<void> {
   ok("the not_attested wording claims NO notification",
      !/flagged|notified|manager/i.test(failureWords("not_attested") ?? ""));
 
+  // ── `unreachable`: its own state, and the attribution comes from the STEP. ───────────────────
+  const { unreachableWords, HEALTH_MEANING } = await import(
+    "@/features/hr/time/periods/workflowHealth"
+  );
+  ok("unreachable is not worded as awaiting",
+     HEALTH_MEANING.unreachable !== HEALTH_MEANING.awaiting);
+  ok("…and it does NOT claim anybody was asked",
+     !/somebody has been asked/i.test(HEALTH_MEANING.unreachable));
+  ok("…it says waiting will not help",
+     /waiting will not move it/i.test(HEALTH_MEANING.unreachable));
+  ok("…and it blames nobody for the silence",
+     /nobody is late/i.test(HEALTH_MEANING.unreachable));
+
+  // 🚨 THE RULING: a SELF step's assignee IS the subject, so that sentence may speak about this
+  // employee. An approval step's assignee is somebody else, and saying the employee cannot be
+  // reached there points payroll at the wrong person for someone else's gap.
+  const selfStep = unreachableWords("employee_attestation");
+  const mgrStep = unreachableWords("manager_approval");
+  ok("a self step and an approval step get DIFFERENT sentences", selfStep !== mgrStep);
+  ok("the self step names the employee's own missing sign-in", /sign in/i.test(selfStep));
+  ok("the approval step names a missing APPROVER, not the employee",
+     /approver/i.test(mgrStep) && !/sign in/i.test(mgrStep));
+
+  // 🚨 THE FALLBACK IS THE SAFE DIRECTION TO BE WRONG IN. A step key this screen has never seen
+  // might be a self step or might not; guessing is how the accusation comes back.
+  const unknownStep = unreachableWords("some_future_step");
+  ok("an unknown step is still RENDERED, named", /some future step/i.test(unknownStep));
+  ok("…and attributes the gap to NOBODY",
+     !/employee|sign in|approver|they|their/i.test(unknownStep));
+  ok("a missing step key attributes to nobody either",
+     !/employee|sign in|approver/i.test(unreachableWords(null)));
+
   const getEdge = HR_TIME_RPC_FIXTURES.hr_pay_period_get?.edge?.data as {
     workflow: { stuck: number; awaiting: number; noFlow: number; rows: Array<Record<string, unknown>> };
   };

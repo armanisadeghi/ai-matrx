@@ -31,7 +31,7 @@
  * NO CLIENT COMPUTES ANYTHING: every count and classification is the server's.
  */
 
-import { AlertTriangle, CheckCircle2, CircleDashed, Clock, ShieldAlert } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleDashed, Clock, ShieldAlert, UserX } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
@@ -44,6 +44,7 @@ import {
   approvedWithoutAttestation,
   attestationOutcomeSentence,
   failureWords,
+  unreachableWords,
   isNotAttestedTerminal,
 } from "../workflowHealth";
 
@@ -51,6 +52,12 @@ const HEALTH_TONE: Record<RowHealth, string> = {
   awaiting: "bg-primary/10 text-primary border-primary/30",
   stuck: "bg-destructive/10 text-destructive border-destructive/40",
   no_flow: "bg-muted text-muted-foreground border-border",
+  /*
+   * Amber, not the destructive red of `stuck`. Nothing has FAILED here — the flow is intact and no
+   * person is at fault; it simply has nobody to route to. Reading it as a failure sends a payroll
+   * administrator looking for a broken thing to fix instead of a missing person to assign.
+   */
+  unreachable: "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/40",
   done: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
 };
 
@@ -58,6 +65,7 @@ const HEALTH_ICON: Record<RowHealth, typeof Clock> = {
   awaiting: Clock,
   stuck: ShieldAlert,
   no_flow: CircleDashed,
+  unreachable: UserX,
   done: CheckCircle2,
 };
 
@@ -68,8 +76,8 @@ export interface WorkflowHealthPanelProps {
 }
 
 export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHealthPanelProps) {
-  const { awaiting, stuck, noFlow, done, rows } = workflow;
-  const total = awaiting + stuck + noFlow + done;
+  const { awaiting, stuck, noFlow, unreachable, done, rows } = workflow;
+  const total = awaiting + stuck + noFlow + unreachable + done;
 
   if (total === 0) {
     return (
@@ -108,9 +116,11 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
           asked.
         </p>
 
-        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-4">
+        {/* Five columns now: `unreachable` is its own count because it is its own answer. */}
+        <dl className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-5">
           <HealthCount health="awaiting" value={awaiting} />
           <HealthCount health="stuck" value={stuck} />
+          <HealthCount health="unreachable" value={unreachable} />
           <HealthCount health="no_flow" value={noFlow} />
           <HealthCount health="done" value={done} />
         </dl>
@@ -195,6 +205,13 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
           const Icon = HEALTH_ICON[row.health];
           const words = failureWords(row.failureClass);
           const outcome = attestationOutcomeSentence(row);
+          /*
+            🚨 WHO is missing comes from the STEP, never from the row's person. On a self step the
+            assignee IS the subject; on an approval step it is somebody else, and saying "this
+            employee cannot be reached" there points payroll at the wrong person entirely.
+          */
+          const unreachable =
+            row.health === "unreachable" ? unreachableWords(row.unreachableStepKey) : null;
           return (
             <li key={row.payPeriodEmploymentId} className="p-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -281,6 +298,12 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
                   {row.instanceState ? ` · instance ${row.instanceState}` : ""}
                 </span>
               </div>
+
+              {unreachable ? (
+                <p className="mt-1 text-[11px] leading-relaxed text-amber-800 dark:text-amber-300">
+                  {unreachable}
+                </p>
+              ) : null}
 
               {/*
                 🚨 THE OUTCOME, ON THE ROW. The server's own note wins verbatim when it sent one;

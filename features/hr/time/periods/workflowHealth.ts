@@ -24,6 +24,7 @@ export const HEALTH_LABEL: Record<RowHealth, string> = {
   awaiting: "Awaiting decision",
   stuck: "Stuck",
   no_flow: "Not started",
+  unreachable: "Nobody to ask",
   done: "Done",
 };
 
@@ -35,8 +36,50 @@ export const HEALTH_MEANING: Record<RowHealth, string> = {
     "The flow behind this timecard has failed. Waiting will not move it — it needs a human before this period can be approved.",
   no_flow:
     "No attestation has been started for this timecard. Nobody has been asked, so nobody is late.",
+  /*
+   * 🚨 THE STATE THAT USED TO READ AS `awaiting` AND SAY THE OPPOSITE OF THE TRUTH.
+   * A live step that resolves to nobody was rendering "somebody has been asked and the flow is
+   * alive" — while nobody had been asked at all. This sentence says both halves that matter to a
+   * payroll administrator: waiting will not help, and no person is at fault for the silence.
+   */
+  unreachable:
+    "The flow is alive, but its current step has nobody it can reach. Nobody has been asked, so nobody is late — and waiting will not move it.",
   done: "Decided. Nothing further is waiting on this row.",
 };
+
+/**
+ * WHO is missing, decided by WHICH STEP is unreachable — never by the row's person.
+ *
+ * 🚨 THIS DISTINCTION IS THE WHOLE POINT. `employee_attestation` is a SELF step: its assignee IS
+ * the subject, so "nobody could be asked" is genuinely about this employee. `manager_approval` and
+ * the payroll steps are not: their assignee is somebody else entirely, and telling a payroll
+ * administrator that *this employee* cannot be reached — when the gap is a missing approver — points
+ * them at the wrong person and the wrong fix.
+ *
+ * 🚨 THE FALLBACK NEVER ATTRIBUTES. A step key this screen does not know might be a self step or
+ * might not, and guessing wrong is how the accusation comes back. An unknown step is NAMED and its
+ * consequence stated, and nothing is said about whose gap it is — the safe direction to be wrong in.
+ */
+const UNREACHABLE_BY_STEP: Record<string, string> = {
+  employee_attestation:
+    "Nobody could be asked to attest: this timecard's own employee has no way to sign in, so the request cannot reach them.",
+  manager_approval:
+    "No approver could be resolved for this timecard, so nobody has been asked to approve it.",
+  payroll_approval:
+    "No payroll approver could be resolved for this timecard, so nobody has been asked to approve it.",
+  payroll_exception_review:
+    "Nobody is assigned to the payroll exception review, so it cannot move on its own.",
+};
+
+export function unreachableWords(stepKey: string | null): string {
+  if (!stepKey) {
+    return "One step in this flow has nobody assigned, so it cannot move on its own.";
+  }
+  return (
+    UNREACHABLE_BY_STEP[stepKey] ??
+    `The "${stepKey.replace(/_/g, " ")}" step has nobody assigned, so it cannot move on its own.`
+  );
+}
 
 /**
  * Failure classes in words.
