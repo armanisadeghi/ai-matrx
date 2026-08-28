@@ -208,7 +208,7 @@ export function CaptureScreen() {
       const handle = await startVideoRecording({
         lease,
         withMic: true,
-        sourceFeature: "product-capture",
+        sourceFeature: "files",
         label: "Product video",
       });
       recordingRef.current = handle;
