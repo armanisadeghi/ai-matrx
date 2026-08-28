@@ -1184,6 +1184,53 @@ export function fetchHrIncidentStatus(
 // See `features/hr/people/verifications/service.ts`.
 
 /**
+ * Verification letters about ME that are waiting on my consent, plus the ones I recently
+ * decided so the outcome is visible.
+ *
+ * 🚨 THIS IS THE SUBJECT'S ONLY READ PATH, AND UNTIL hr_l1_54 IT DID NOT EXIST.
+ * Five verification doors shipped and every one was a write or the generation call, so
+ * `awaiting_consent` was a state only HR could see: the person whose pay was about to be
+ * disclosed had nothing to read and nowhere to answer.
+ *
+ * Scoped by LOGIN LINKAGE inside the door, never by `hr._l1_self_employment(uid, org, today)`
+ * — a letter is about me whether or not I am employed today, so a PRE-START hire sees their
+ * own ask (hr_l1_52's identity law). It spans employers on purpose: "letters about me" is not
+ * an employer-scoped question, so this takes no organization argument.
+ */
+export function fetchHrMyVerificationConsents(): Promise<
+  HrResult<{
+    consent_expiry_days: number;
+    requests: HrMyVerificationConsent[];
+  }>
+> {
+  return callHrAligned(
+    "hr_my_verification_consents",
+    {},
+    { envelope: true, whatFailed: "Requests waiting on your consent" },
+  );
+}
+
+/** One row of {@link fetchHrMyVerificationConsents} — what is disclosed, and to whom. */
+export type HrMyVerificationConsent = {
+  id: string;
+  state: string;
+  verification_kind: string;
+  includes_compensation: boolean;
+  /** WHO receives it. The subject is deciding about a named recipient, not an abstraction. */
+  requester_name: string | null;
+  requester_organization: string | null;
+  requester_email: string | null;
+  request_source: string;
+  employer_name: string;
+  requested_at: string;
+  /** The clock the knob `hr.employees.verification_consent_expiry_days` sets. */
+  expires_at: string;
+  employee_consent_at: string | null;
+  decided: boolean;
+  granted: boolean;
+};
+
+/**
  * The subject grants or withholds consent. A withheld consent is itself the record.
  *
  * 🚨 THE DOOR IS `hr_verification_consent`, AND ITS FIRST ARGUMENT IS `p_id`.
