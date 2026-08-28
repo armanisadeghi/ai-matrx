@@ -50,8 +50,8 @@ the rules an agent editing THIS directory must obey.
 - **Materialize chat from persisted `cx_message.content`, never stream reservation content.**
   Reservation bookkeeping is not source-content authority; reading the row first prevents a
   later iteration's artifacts from being attributed to an earlier message. The existence-sensitive
-  lookup uses `maybeSingle()`; a rolled-back/missing row aborts materialization without emitting
-  PostgREST `PGRST116` as a system failure.
+  lookup uses `maybeSingle()`; a rolled-back/not-yet-visible row defers silently to the durable
+  on-load reconciler, while a real read failure remains loud.
 - Chat rewrites go through **`cx_message_set_content`** (status-preserving, archives to
   `content_history`), **never `cx_message_edit`** (marks the row `'edited'`).
 - **Read the node's `TWO-WAY-BINDING.md` before touching artifact EDIT or UNBIND on any surface.**
@@ -86,8 +86,8 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
-- `2026-08-27` — Missing canonical chat-message rows now abort artifact materialization through
-  `maybeSingle()` without generating a false `PGRST116` system error.
+- `2026-08-27` — Missing canonical chat-message rows now defer artifact materialization through
+  `maybeSingle()` to the durable on-load reconciler without generating a false system error.
 - `2026-08-27` — Canonical `/s/[token]` shared-canvas links now reuse the immersive canvas viewer;
   other share lenses keep the normal public shell.
 - `2026-08-27` — Shared canvases became immersive one-header viewers; public Mermaid snapshots

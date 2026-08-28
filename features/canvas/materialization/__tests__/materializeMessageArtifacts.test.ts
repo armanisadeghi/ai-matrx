@@ -83,7 +83,7 @@ describe("materializeMessageArtifacts", () => {
     expect(result).toEqual({
       materializedCount: 0,
       rewrittenContent: null,
-      errors: ["canonical source read failed: message row not found"],
+      errors: [],
     });
   });
 });

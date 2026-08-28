@@ -96,13 +96,22 @@ export async function materializeMessageArtifacts(
     .eq("id", params.messageId)
     .maybeSingle();
 
-  if (error || data === null) {
+  if (error) {
     return {
       materializedCount: 0,
       rewrittenContent: null,
-      errors: [
-        `canonical source read failed: ${error?.message ?? "message row not found"}`,
-      ],
+      errors: [`canonical source read failed: ${error.message}`],
+    };
+  }
+
+  // The terminal stream can beat row visibility, and a failed persistence
+  // lane can roll the reservation back entirely. Defer either zero-row state
+  // to the on-load reconciler, which runs only against durable messages.
+  if (data === null) {
+    return {
+      materializedCount: 0,
+      rewrittenContent: null,
+      errors: [],
     };
   }
 
