@@ -213,11 +213,30 @@ export async function generateHrVerificationLetter(args: {
     };
   }
 
+  /*
+    🚨 THE RESPONSE KEYS ARE `artifact_file_id` AND `letter_id`, AND THIS READ NEITHER.
+    It read `letter_file_id` and `id` — the names of the DATABASE COLUMN and of a generic
+    row — against `VerificationLetterGenerateResponse`, which declares exactly
+    `{letter_id, artifact_file_id, snapshot, issued_at}` with `extra="forbid"`. So a
+    perfectly successful generation always yielded `letterFileId: null`, and the letter id
+    silently fell through to the argument the caller already had. Nothing threw, because
+    reading an absent key off an `unknown` record is just `undefined` — the same
+    cast-at-a-seam class as the request door's `subject_employment_id`.
+
+    Both spellings are accepted on the way in so a redeploy in either order stays honest,
+    but the server's own name is what is trusted first.
+  */
   const record = (payload ?? {}) as Record<string, unknown>;
+  const str = (...keys: string[]): string | null => {
+    for (const k of keys) {
+      const v = record[k];
+      if (typeof v === "string" && v.length > 0) return v;
+    }
+    return null;
+  };
   return {
     kind: "generated",
-    letterFileId:
-      typeof record.letter_file_id === "string" ? record.letter_file_id : null,
-    letterId: typeof record.id === "string" ? record.id : args.letterId,
+    letterFileId: str("artifact_file_id", "letter_file_id"),
+    letterId: str("letter_id", "id") ?? args.letterId,
   };
 }
