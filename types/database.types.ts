@@ -32596,6 +32596,82 @@ export type Database = {
         }
         Relationships: []
       }
+      jurisdiction_rule_org_decision: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          decision: string
+          deleted_at: string | null
+          id: string
+          jurisdiction_key: string
+          metadata: Json
+          organization_id: string
+          reason: string | null
+          rule_class_id: string
+          rule_id_at_decision: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          decision: string
+          deleted_at?: string | null
+          id?: string
+          jurisdiction_key: string
+          metadata?: Json
+          organization_id: string
+          reason?: string | null
+          rule_class_id: string
+          rule_id_at_decision?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          decision?: string
+          deleted_at?: string | null
+          id?: string
+          jurisdiction_key?: string
+          metadata?: Json
+          organization_id?: string
+          reason?: string | null
+          rule_class_id?: string
+          rule_id_at_decision?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jurisdiction_rule_org_decision_jurisdiction_key_fkey"
+            columns: ["jurisdiction_key"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "jurisdiction_rule_org_decision_rule_class_id_fkey"
+            columns: ["rule_class_id"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule_class"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jurisdiction_rule_org_decision_rule_id_at_decision_fkey"
+            columns: ["rule_id_at_decision"]
+            isOneToOne: false
+            referencedRelation: "jurisdiction_rule"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jurisdiction_rule_test: {
         Row: {
           as_of_date: string
@@ -44285,6 +44361,16 @@ export type Database = {
           p_accept_warnings?: boolean
           p_organization_id: string
           p_payload: Json
+        }
+        Returns: Json
+      }
+      org_jurisdiction_rule_set_applies: {
+        Args: {
+          p_applies: boolean
+          p_jurisdiction_key: string
+          p_organization_id: string
+          p_reason?: string
+          p_rule_class: string
         }
         Returns: Json
       }
@@ -61954,6 +62040,16 @@ export type Database = {
           p_accept_warnings?: boolean
           p_organization_id: string
           p_payload: Json
+        }
+        Returns: Json
+      }
+      hr_org_jurisdiction_rule_set_applies: {
+        Args: {
+          p_applies: boolean
+          p_jurisdiction_key: string
+          p_organization_id: string
+          p_reason?: string
+          p_rule_class: string
         }
         Returns: Json
       }
