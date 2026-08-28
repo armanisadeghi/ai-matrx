@@ -15,6 +15,32 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D282 — `pay_change` shows the amount to an approver who holds no `comp.read`, and the spec that would fix it contradicts itself (2026-08-28)
+
+`hr_c4_33` moved read entitlement to routing time for **patch** flows: a candidate who may not read
+the fields a request proposes to change is struck before assignment (`hr.wf_resolve_approvers` →
+`hr._wf_change_entitlement` / `hr._wf_may_see_change`). `pay_change` is NOT covered and was left
+exactly as it was, deliberately.
+
+**What's open.** `pay_change` carries its proposal FLAT (`amount`, `pay_basis`, `effective_from`)
+under `target_token = 'hr_position_assignment'`, which has **no door** — `hr._door_spec` returns zero
+rows for it. `hr._wf_display` renders that amount via `hr._wf_pay_change_digest` to anyone whose
+`v_entitled` is true, and `v_entitled` is *"are you on this step"*. So the salary is shown because
+the step was routed to you, not because you may read comp. 12 live `pay_change` steps.
+
+**Why it was not fixed here — needs a ruling, not a guess.** SPEC-EMPLOYEES §4.4 routes `pay_change`
+to the *manager of record*; SPEC-ACCESS §1.4 gives the derived `manager` role
+*"directory.read, working_record.read over reports, time.read; nothing else"* — **no `comp.read`**.
+No spec text reconciles "may approve" with "may read what is being approved" for this flow. Gating
+`pay_change` on the `hr_compensation` door (`comp.read`) would strand all 12 live steps and
+contradict SPEC-EMPLOYEES; leaving it is a Confidential value on an unentitled screen.
+
+**Fix shape (one of, coordinator's call):** (a) give `pay_change`'s approval action a door token so
+`hr._wf_change_entitlement` can arm on the flat payload as it does on a patch, and grant `comp.read`
+to whoever holds `pay_change_approve`; or (b) rule that approving comp *is* entitlement to see the
+one proposed number, and record that as an explicit carve-out rather than an accident of a missing
+door. Either way the amendment belongs in SPEC-ACCESS §1.4, not in the engine.
+
 ### D281 — `esign.envelope` is not in `hr._approval_subject`'s allowlist, so `signature_request` can never route (2026-08-28)
 
 `hrb011_proof.py` aborts at 106 assertions with:
