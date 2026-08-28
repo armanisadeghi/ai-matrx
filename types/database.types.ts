@@ -42839,6 +42839,10 @@ export type Database = {
         Args: { p_class: string; p_policy: Json }
         Returns: Json
       }
+      _leave_has_reports: {
+        Args: { p_employment_id: string }
+        Returns: boolean
+      }
       _leave_hours_text: { Args: { p_hours: number }; Returns: string }
       _leave_jurisdiction_key_or_federal: {
         Args: { p_employment_id: string }
@@ -42847,6 +42851,10 @@ export type Database = {
       _leave_lead_days: {
         Args: { p_key: string; p_organization_id?: string }
         Returns: number[]
+      }
+      _leave_manages: {
+        Args: { p_employment_id: string; p_manager_employment_id: string }
+        Returns: boolean
       }
       _leave_policy_at: {
         Args: { p_leave_policy_id: string }
@@ -42900,6 +42908,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      _leave_policy_constraint_violation: {
+        Args: { p_constraint: string; p_payload: Json }
+        Returns: Json
+      }
       _leave_policy_probe: { Args: { p_case: string }; Returns: Json }
       _leave_reason_is_mandated: {
         Args: { p_mandated: Json; p_reason_category_id: string }
@@ -42907,6 +42919,10 @@ export type Database = {
       }
       _leave_sentence: { Args: { p_fig: Json }; Returns: string }
       _leave_span_is_costless: { Args: { p_span: Json }; Returns: boolean }
+      _leave_unknown_axes: {
+        Args: { p_allowed: string[]; p_filters: Json }
+        Returns: Json
+      }
       _leave_viewer: { Args: { p_employment_id: string }; Returns: Json }
       _legality_envelope: {
         Args: { p_class: string; p_rules: Json }
@@ -43145,10 +43161,19 @@ export type Database = {
         Args: { p_employment_id: string; p_uid: string }
         Returns: string
       }
-      _subject_jurisdiction_key: {
-        Args: { p_subject_id: string; p_subject_type: string }
-        Returns: string
-      }
+      _subject_jurisdiction_key:
+        | {
+            Args: { p_subject_id: string; p_subject_type: string }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_as_of: string
+              p_subject_id: string
+              p_subject_type: string
+            }
+            Returns: string
+          }
       _time_actor_employment: {
         Args: { p_organization_id: string; p_user: string }
         Returns: string
@@ -43869,6 +43894,15 @@ export type Database = {
           is_declared: boolean
         }[]
       }
+      leave_policy_deactivate: {
+        Args: {
+          p_disposition: string
+          p_leave_policy_id: string
+          p_migrate_to_policy_id?: string
+          p_note?: string
+        }
+        Returns: Json
+      }
       leave_policy_list: { Args: { p_organization_id: string }; Returns: Json }
       leave_policy_save: {
         Args: {
@@ -44374,6 +44408,15 @@ export type Database = {
           p_organization_id: string
           p_subject_id: string
           p_subject_type: string
+        }
+        Returns: Json
+      }
+      resolve_rules_display: {
+        Args: {
+          p_as_of: string
+          p_classes?: string[]
+          p_jurisdiction_key: string
+          p_organization_id: string
         }
         Returns: Json
       }
@@ -61491,6 +61534,15 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_leave_policy_deactivate: {
+        Args: {
+          p_disposition: string
+          p_leave_policy_id: string
+          p_migrate_to_policy_id?: string
+          p_note?: string
+        }
+        Returns: Json
+      }
       hr_leave_policy_list: {
         Args: { p_organization_id: string }
         Returns: Json
@@ -61666,6 +61718,15 @@ export type Database = {
         Returns: Json
       }
       hr_reporting_line_upsert: { Args: { p_payload: Json }; Returns: Json }
+      hr_resolve_rules: {
+        Args: {
+          p_as_of: string
+          p_classes?: string[]
+          p_jurisdiction_key: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
       hr_restricted_get: {
         Args: {
           p_id: string
