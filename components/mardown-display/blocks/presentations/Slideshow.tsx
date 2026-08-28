@@ -10,6 +10,9 @@ import {
   Palette,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import {
   DropdownMenu,
@@ -39,13 +42,26 @@ export interface SlideshowState {
 const Slideshow = (
   presentationData: PresentationData & {
     taskId?: string;
+    artifactId?: string;
+    conversationId?: string;
+    messageId?: string;
+    blockIndex?: number;
     /** Seed the current slide from persisted state (optional). */
     initialState?: SlideshowState;
     /** Called whenever the user changes interaction state (optional). */
     onStateChange?: (state: SlideshowState) => void;
   },
 ) => {
-  const { slides, theme, initialState, onStateChange } = presentationData;
+  const {
+    slides,
+    theme,
+    artifactId,
+    conversationId,
+    messageId,
+    blockIndex,
+    initialState,
+    onStateChange,
+  } = presentationData;
   // Preset/template → a complete look (variant + palette + font). A live pick
   // wins; otherwise merge the deck's `theme.preset`; otherwise the theme as-is.
   // Visual tier defaults to "fancy" so existing decks instantly look better.
@@ -70,6 +86,34 @@ const Slideshow = (
   const [isFullScreen, setIsFullScreen] = useState(false);
   const slideContainerRef = useRef<HTMLDivElement>(null);
   const { open: openCanvas } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
+
+  const handleOpenCanvas = () => {
+    const title = slides[0]?.title || "Presentation";
+    const def = getArtifactDef("presentation");
+
+    if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+      void openArtifact({
+        canvasType: "presentation",
+        title,
+        content: JSON.stringify({ slides, theme }),
+        conversationId,
+        messageId,
+        artifactId,
+        artifactIndex: blockIndex && blockIndex > 0 ? blockIndex : 1,
+      });
+      return;
+    }
+
+    openCanvas({
+      type: "presentation",
+      data: presentationData,
+      metadata: {
+        title,
+        sourceTaskId: presentationData.taskId,
+      },
+    });
+  };
 
   // Keep a stable ref to onStateChange so closures don't go stale (updated in
   // an effect, not during render — refs must not be written while rendering).
@@ -210,16 +254,7 @@ const Slideshow = (
                 <IconButton
                   icon={ExternalLink}
                   tooltip="Open Canvas"
-                  onClick={() =>
-                    openCanvas({
-                      type: "presentation",
-                      data: presentationData,
-                      metadata: {
-                        title: slides[0]?.title || "Presentation",
-                        sourceTaskId: presentationData.taskId,
-                      },
-                    })
-                  }
+                  onClick={handleOpenCanvas}
                   size="sm"
                   className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
                 />

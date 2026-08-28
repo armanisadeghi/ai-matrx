@@ -24,6 +24,9 @@ export default function PresentationArtifact({
   taskId,
   artifactId,
   isStreamActive,
+  conversationId,
+  messageId,
+  blockIndex,
 }: ArtifactRendererProps) {
   const { state, loaded, save } = useArtifactState<
     SlideshowState & Record<string, unknown>
@@ -59,6 +62,10 @@ export default function PresentationArtifact({
         slides={slides}
         theme={theme}
         taskId={artifactDedupKey(taskId, artifactId)}
+        artifactId={artifactId}
+        conversationId={conversationId}
+        messageId={messageId}
+        blockIndex={blockIndex}
         initialState={state ?? undefined}
         onStateChange={save as (s: SlideshowState) => void}
       />
