@@ -61340,6 +61340,10 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_kiosk_pin_reset: {
+        Args: { p_new_pin: string; p_session_token: string }
+        Returns: Json
+      }
       hr_kiosk_punch: {
         Args: {
           p_attestation?: Json
