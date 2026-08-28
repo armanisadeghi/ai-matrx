@@ -46520,7 +46520,8 @@
                   "enum": [
                     "cron",
                     "webhook",
-                    "manual"
+                    "manual",
+                    "event"
                   ],
                   "type": "string"
                 },
@@ -46851,6 +46852,65 @@
                     "$ref": "#/components/schemas/TriggerFireRecord"
                   },
                   "title": "Response List Trigger Fires Triggers  Trigger Id  Fires Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/triggers/{trigger_id}/events": {
+      "get": {
+        "tags": [
+          "Workflow Triggers"
+        ],
+        "summary": "List Trigger Events",
+        "description": "Owner-gated view of the durable event queue behind a kind='event'\ntrigger. Most-recent first. A 'dead' row here is the retry handle: fix\nthe cause, then fire the trigger manually with the entity's inputs.",
+        "operationId": "list_trigger_events_triggers__trigger_id__events_get",
+        "parameters": [
+          {
+            "name": "trigger_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Trigger Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TriggerEventRecord"
+                  },
+                  "title": "Response List Trigger Events Triggers  Trigger Id  Events Get"
                 }
               }
             }
@@ -93907,7 +93967,8 @@
             "enum": [
               "cron",
               "webhook",
-              "manual"
+              "manual",
+              "event"
             ],
             "title": "Kind"
           },
@@ -93940,6 +94001,17 @@
             ],
             "title": "Webhook Secret",
             "description": "Optional secret required as X-Matrx-Trigger-Secret on webhook fires."
+          },
+          "event_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EventSourceSpec"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Required when kind='event': which data change fires this trigger (watched table + operation + optional when-transition + input_map). The table must be instrumented via workflow.watch_table to produce events, and only rows of the trigger's organization ever fire it."
           },
           "default_inputs": {
             "additionalProperties": true,
@@ -104413,6 +104485,73 @@
           "success"
         ],
         "title": "EvalJsResult"
+      },
+      "EventSourceSpec": {
+        "properties": {
+          "table": {
+            "type": "string",
+            "pattern": "^[a-z_][a-z0-9_]*\\.[a-z_][a-z0-9_]*$",
+            "title": "Table",
+            "description": "Schema-qualified watched table."
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "insert",
+              "update"
+            ],
+            "title": "Operation",
+            "default": "insert"
+          },
+          "when_column": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When Column"
+          },
+          "when_value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When Value"
+          },
+          "entity_key_column": {
+            "type": "string",
+            "title": "Entity Key Column",
+            "default": "id"
+          },
+          "debounce_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 0,
+            "title": "Debounce Seconds",
+            "default": 0
+          },
+          "input_map": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Input Map"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "table"
+        ],
+        "title": "EventSourceSpec",
+        "description": "kind='event' config — what data change fires this trigger.\n\nMatching happens in the DB capture function (workflow.emit_trigger_events,\nmigration 0111): a write on the watched ``table`` with the matching\n``operation`` — and, when ``when_column`` is set, a TRANSITION into\n``when_value`` — enqueues a durable workflow.trigger_event row. A table\nonly produces events after ``workflow.watch_table(...)`` attached the\ncapture trigger; the trigger's organization_id must equal the row's.\n\n``input_map`` maps run input names to columns of the watched row; the\nfull event also rides the run inputs under the reserved key ``event``.\n``debounce_seconds`` is the settle window: while an event for the same\nentity is still pending, a newer change replaces it and pushes the fire\ntime forward instead of firing once per write."
       },
       "EvidenceReference": {
         "properties": {
@@ -175505,6 +175644,98 @@
         "title": "TriggerCreateRequest",
         "description": "Create a sch_trigger row attached to an existing task."
       },
+      "TriggerEventRecord": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "trigger_id": {
+            "type": "string",
+            "title": "Trigger Id"
+          },
+          "entity_key": {
+            "type": "string",
+            "title": "Entity Key"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "claimed",
+              "fired",
+              "dead"
+            ],
+            "title": "Status"
+          },
+          "claim_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Claim At"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts",
+            "default": 0
+          },
+          "max_attempts": {
+            "type": "integer",
+            "title": "Max Attempts",
+            "default": 5
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "id",
+          "trigger_id",
+          "entity_key",
+          "status"
+        ],
+        "title": "TriggerEventRecord",
+        "description": "Queue row behind a kind='event' trigger — wire shape of\nGET /triggers/{id}/events. The durable event ledger: pending (waiting\nout its settle window), claimed (a watcher is firing it), fired\n(run_id points at the run), or dead (exhausted retries / orphaned)."
+      },
       "TriggerFireRecord": {
         "properties": {
           "id": {
@@ -175744,6 +175975,18 @@
               }
             ],
             "title": "Cron Expression"
+          },
+          "event_source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Source"
           },
           "timezone": {
             "anyOf": [

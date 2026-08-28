@@ -18150,6 +18150,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/triggers/{trigger_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Trigger Events
+         * @description Owner-gated view of the durable event queue behind a kind='event'
+         *     trigger. Most-recent first. A 'dead' row here is the retry handle: fix
+         *     the cause, then fire the trigger manually with the entity's inputs.
+         */
+        get: operations["list_trigger_events_triggers__trigger_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workflows/{definition_id}/plans": {
         parameters: {
             query?: never;
@@ -36184,7 +36206,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cron" | "webhook" | "manual";
+            kind: "cron" | "webhook" | "manual" | "event";
             /**
              * Cron Expression
              * @description Required when kind='cron'. Standard 5-field syntax.
@@ -36201,6 +36223,8 @@ export interface components {
              * @description Optional secret required as X-Matrx-Trigger-Secret on webhook fires.
              */
             webhook_secret?: string | null;
+            /** @description Required when kind='event': which data change fires this trigger (watched table + operation + optional when-transition + input_map). The table must be instrumented via workflow.watch_table to produce events, and only rows of the trigger's organization ever fire it. */
+            event_source?: components["schemas"]["EventSourceSpec"] | null;
             /** Default Inputs */
             default_inputs?: {
                 [key: string]: unknown;
@@ -40125,6 +40149,54 @@ export interface components {
             error_type?: string | null;
             /** Value */
             value?: unknown;
+        };
+        /**
+         * EventSourceSpec
+         * @description kind='event' config — what data change fires this trigger.
+         *
+         *     Matching happens in the DB capture function (workflow.emit_trigger_events,
+         *     migration 0111): a write on the watched ``table`` with the matching
+         *     ``operation`` — and, when ``when_column`` is set, a TRANSITION into
+         *     ``when_value`` — enqueues a durable workflow.trigger_event row. A table
+         *     only produces events after ``workflow.watch_table(...)`` attached the
+         *     capture trigger; the trigger's organization_id must equal the row's.
+         *
+         *     ``input_map`` maps run input names to columns of the watched row; the
+         *     full event also rides the run inputs under the reserved key ``event``.
+         *     ``debounce_seconds`` is the settle window: while an event for the same
+         *     entity is still pending, a newer change replaces it and pushes the fire
+         *     time forward instead of firing once per write.
+         */
+        EventSourceSpec: {
+            /**
+             * Table
+             * @description Schema-qualified watched table.
+             */
+            table: string;
+            /**
+             * Operation
+             * @default insert
+             * @enum {string}
+             */
+            operation?: "insert" | "update";
+            /** When Column */
+            when_column?: string | null;
+            /** When Value */
+            when_value?: string | null;
+            /**
+             * Entity Key Column
+             * @default id
+             */
+            entity_key_column?: string;
+            /**
+             * Debounce Seconds
+             * @default 0
+             */
+            debounce_seconds?: number;
+            /** Input Map */
+            input_map?: {
+                [key: string]: string;
+            };
         };
         /** EvidenceReference */
         EvidenceReference: {
@@ -68797,6 +68869,46 @@ export interface components {
             enabled?: boolean;
         };
         /**
+         * TriggerEventRecord
+         * @description Queue row behind a kind='event' trigger — wire shape of
+         *     GET /triggers/{id}/events. The durable event ledger: pending (waiting
+         *     out its settle window), claimed (a watcher is firing it), fired
+         *     (run_id points at the run), or dead (exhausted retries / orphaned).
+         */
+        TriggerEventRecord: {
+            /** Id */
+            id: string;
+            /** Trigger Id */
+            trigger_id: string;
+            /** Entity Key */
+            entity_key: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "claimed" | "fired" | "dead";
+            /** Claim At */
+            claim_at?: string | null;
+            /**
+             * Attempts
+             * @default 0
+             */
+            attempts?: number;
+            /**
+             * Max Attempts
+             * @default 5
+             */
+            max_attempts?: number;
+            /** Run Id */
+            run_id?: string | null;
+            /** Last Error */
+            last_error?: string | null;
+            /** Created At */
+            created_at?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * TriggerFireRecord
          * @description Audit row for one trigger fire attempt — wire shape of
          *     GET /triggers/{id}/fires.
@@ -68871,6 +68983,10 @@ export interface components {
             kind?: string | null;
             /** Cron Expression */
             cron_expression?: string | null;
+            /** Event Source */
+            event_source?: {
+                [key: string]: unknown;
+            } | null;
             /** Timezone */
             timezone?: string | null;
             /** Description */
@@ -104627,7 +104743,7 @@ export interface operations {
         parameters: {
             query?: {
                 definition_id?: string | null;
-                kind?: ("cron" | "webhook" | "manual") | null;
+                kind?: ("cron" | "webhook" | "manual" | "event") | null;
                 limit?: number;
                 offset?: number;
             };
@@ -104846,6 +104962,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TriggerFireRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_trigger_events_triggers__trigger_id__events_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                trigger_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriggerEventRecord"][];
                 };
             };
             /** @description Validation Error */
