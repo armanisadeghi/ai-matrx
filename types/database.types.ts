@@ -87863,11 +87863,13 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          featured_file_id: string | null
           folder_path: string
           id: string
           metadata: Json
           notes: string
           organization_id: string
+          stage: string
           status: string
           updated_at: string
           updated_by: string | null
@@ -87880,11 +87882,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          featured_file_id?: string | null
           folder_path?: string
           id?: string
           metadata?: Json
           notes?: string
           organization_id: string
+          stage?: string
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -87897,11 +87901,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          featured_file_id?: string | null
           folder_path?: string
           id?: string
           metadata?: Json
           notes?: string
           organization_id?: string
+          stage?: string
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -87909,6 +87915,133 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
+      }
+      product_capture_payload: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: Json
+          id: string
+          item_id: string
+          kind: string
+          metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          item_id: string
+          kind: string
+          metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          id?: string
+          item_id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_capture_payload_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "product_capture_item"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_capture_question: {
+        Row: {
+          answer: string | null
+          answered_at: string | null
+          context: string | null
+          created_at: string
+          created_by: string | null
+          deferred_reason: string | null
+          id: string
+          item_id: string
+          kind: string
+          metadata: Json
+          options: Json
+          organization_id: string
+          priority: number
+          prompt: string
+          skip_count: number
+          source: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          answer?: string | null
+          answered_at?: string | null
+          context?: string | null
+          created_at?: string
+          created_by?: string | null
+          deferred_reason?: string | null
+          id?: string
+          item_id: string
+          kind?: string
+          metadata?: Json
+          options?: Json
+          organization_id: string
+          priority?: number
+          prompt: string
+          skip_count?: number
+          source?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          answer?: string | null
+          answered_at?: string | null
+          context?: string | null
+          created_at?: string
+          created_by?: string | null
+          deferred_reason?: string | null
+          id?: string
+          item_id?: string
+          kind?: string
+          metadata?: Json
+          options?: Json
+          organization_id?: string
+          priority?: number
+          prompt?: string
+          skip_count?: number
+          source?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_capture_question_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "product_capture_item"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schema_templates: {
         Row: {

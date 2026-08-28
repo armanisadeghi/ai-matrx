@@ -5,9 +5,12 @@
  * (back to capture, Capture action) and the table body.
  */
 
-import { Camera } from "lucide-react";
+import { Camera, TableProperties } from "lucide-react";
 
-import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import {
+  TapTargetButton,
+  TapTargetButtonSolid,
+} from "@/components/icons/TapTargetButton";
 import { ProductCaptureHeader } from "@/features/product-capture/components/ProductCaptureHeader";
 import { AllItemsTable } from "@/features/product-capture/components/AllItemsTable";
 
@@ -16,12 +19,20 @@ export function AllItemsHeader() {
     <ProductCaptureHeader
       title="Product Capture"
       right={
-        <TapTargetButtonSolid
-          icon={<Camera className="h-4 w-4" />}
-          label="Capture"
-          href="/tools/product-capture"
-          ariaLabel="Open the capture screen"
-        />
+        <>
+          <TapTargetButton
+            icon={<TableProperties className="h-4 w-4" />}
+            label="Pipeline"
+            href="/tools/product-capture/manage"
+            ariaLabel="Open the pipeline manager"
+          />
+          <TapTargetButtonSolid
+            icon={<Camera className="h-4 w-4" />}
+            label="Capture"
+            href="/tools/product-capture"
+            ariaLabel="Open the capture screen"
+          />
+        </>
       }
     />
   );
