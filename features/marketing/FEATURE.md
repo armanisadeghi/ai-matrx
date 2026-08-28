@@ -602,8 +602,9 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
-- 2026-08-28 — Codex: **Keyword Value is a workbench again, not a stack of
-  competing dashboards.** The useful divergent-band traffic insight is nested
+- 2026-08-28 — Codex: **Surface check v2: pass (5 hierarchy fixes) — Keyword
+  Value is a workbench again, not a stack of competing dashboards.** The useful
+  divergent-band traffic insight is nested
   inside the Clicks KPI it explains; the duplicate traffic narrative is gone.
   Value setup and thin question coverage are one-line status doors into their
   owning screens. The relevant value-by-level breakdown remains in place but
