@@ -965,6 +965,13 @@ export interface KioskPunchResult {
   /** The clock state the punch produced, as a bare word. Deliberately not the full envelope. */
   resultingState: ClockPhase | null;
   /**
+   * 🚨 The clock-out leaves a break attestation OWED (§3.2). The tablet cannot COLLECT it — an
+   * attestation must show the total it is asking about and the rule it asks under, and a wall
+   * tablet is deliberately given neither — so it states that one is owed and points at the
+   * timesheet. One boolean: no rule detail, no totals, no roster.
+   */
+  attestationOwed: boolean;
+  /**
    * 🚨 **A BOOLEAN, not an object.** The door answers `exists(... detector = 'near_duplicate')`.
    * It carries no previous-punch time and no message, so the duplicate card states the fact and
    * offers its one door — it does not invent "you already clocked in at 8:02am".

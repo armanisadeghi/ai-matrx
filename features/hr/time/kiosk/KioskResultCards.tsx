@@ -61,11 +61,19 @@ export function KioskConfirmationCard({ result }: { result: KioskPunchResult }) 
         notice the server never confirmed, the kiosk says nothing here and the gap is reported.
       */}
       {/*
-        🚨 An owed break attestation is NOT on this door either — the earlier `attestationRequired`
-        field never existed on the wire. §3.2's card must show the total it is asking about and the
-        meal rule it asks under, and the kiosk can reach neither, so there was never a card to show;
-        now there is not a phantom flag for one either. Carried as a named debt.
+        🚨 THE AMENDED CLAUSE. The tablet CANNOT collect the attestation — §3.2 requires it to show
+        the total it is asking about and the meal rule it asks under, and §1.2 deliberately keeps
+        the clock_state block off a wall tablet. So it states plainly that one is owed and points at
+        the surface that can take it. `attestation_owed` is one boolean on the wire and carries no
+        rule detail, no totals and nobody else's name.
       */}
+      {result.attestationOwed && (
+        <p className="max-w-lg text-xl text-muted-foreground">
+          You still need to confirm your hours and breaks for today. Do that on your timesheet — on
+          your own phone or computer, or ask your manager.
+        </p>
+      )}
+
     </div>
   );
 }

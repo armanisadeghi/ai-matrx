@@ -810,6 +810,7 @@ function mapKioskPunchResult(raw: unknown): KioskPunchResult {
       tz: str(punch.tz),
     },
     resultingState: (str(r.resultingState) as KioskPunchResult["resultingState"]) ?? null,
+    attestationOwed: r.attestationOwed === true,
     // A boolean on the wire. Never an object.
     duplicateSuspected: r.duplicateSuspected === true,
     confirmDismissSeconds:
