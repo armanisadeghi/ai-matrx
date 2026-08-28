@@ -186,6 +186,22 @@ export function HrNewEmployee({
       sentence: "A position needs a location.",
     });
   }
+  /*
+    🚨 `job_title_id` IS NOT NULL ON `hr.position_assignment`, AND THIS FORM LET YOU
+    SUBMIT WITHOUT ONE. The picker sat there empty, the button stayed enabled, and the
+    database's own constraint message came back at the user — a raw SQL sentence for a
+    field the form should have refused at the keyboard. A validation that exists in the
+    database and nowhere else is not validation, it is a trap with a stack trace.
+  */
+  if (!form.job_title_id) {
+    problems.push({
+      field: "job_title_id",
+      sentence:
+        jobTitles.length === 0
+          ? "This employer has no job titles yet, and every position needs one."
+          : "A position needs a job title.",
+    });
+  }
   if (chosenLocation && !chosenLocation.jurisdiction_id) {
     problems.push({
       field: "location_id",
@@ -662,6 +678,34 @@ export function HrNewEmployee({
             <Fieldset title="Position">
               <Grid>
                 <Field label="Job title">
+                  {/*
+                    🚨 THE FIRST-RUN GAP, SAID OUT LOUD. Activation seeds a location and
+                    a department but NO job title — deliberately, because a job title
+                    carries an EEO category and is the employer's to name, so inventing
+                    one on their behalf would be putting words in their mouth on a
+                    compliance field. That is the right call, and it means a freshly
+                    activated employer genuinely cannot hire until somebody creates a
+                    title. What was wrong was leaving that fact for the database to
+                    deliver: an empty dropdown is not an explanation, and it is
+                    especially not one on the very first thing a new employer tries.
+                  */}
+                  {jobTitles.length === 0 ? (
+                    <div className="space-y-1.5 rounded-md border border-dashed border-border p-2.5">
+                      <p className="text-sm text-foreground">
+                        No job titles exist yet.
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Every position needs one, and a job title carries an EEO
+                        category — so it is yours to name, not ours to guess.
+                      </p>
+                      <Link
+                        href={hrSettingsHref("structure", { org: orgRef })}
+                        className="inline-flex min-h-11 items-center text-xs text-foreground underline underline-offset-2 hover:text-primary lg:min-h-0"
+                      >
+                        Create one first — Settings → Structure
+                      </Link>
+                    </div>
+                  ) : (
                   <Select
                     value={form.job_title_id}
                     onValueChange={(value) => {
@@ -694,6 +738,7 @@ export function HrNewEmployee({
                       ))}
                     </SelectContent>
                   </Select>
+                  )}
                 </Field>
 
                 <Field label="Department">
