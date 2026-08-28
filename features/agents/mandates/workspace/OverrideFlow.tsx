@@ -5,13 +5,19 @@
 // §4 of the mandate workspace — YOUR OVERRIDE, as Arman's stepwise doctrine
 // (2026-08-26): never everything at once.
 //
-//   Step 1  HOLDER      keep the system agent, or choose your own (agent now;
-//                       workflow is a registered promise). The version choice
+//   Step 1  HOLDER      keep the system agent, or choose your own — an AGENT
+//                       or a WORKFLOW. Both execute end to end (aidream
+//                       services/mandates/workflow_holder.py); a workflow runs
+//                       as a child run and answers with the deliverable whose
+//                       kind is this mandate's output kind. The version choice
 //                       (latest vs pin) lives HERE — rule 6.
-//   Step 2  VALIDATION  automatic on selection, the server's own rules run
-//                       client-side first (output keys both eras; legacy
-//                       variable superset); the server's 422 stays the
-//                       authority and surfaces VERBATIM.
+//   Step 2  VALIDATION  automatic on selection. For an AGENT Holder the
+//                       server's own rules run client-side first (output keys
+//                       both eras; legacy variable superset). For a WORKFLOW
+//                       Holder the bind gate is the ONLY judge — it compiles
+//                       the graph, checks deliverables and the input surface,
+//                       and its refusals are worth reading, so they surface
+//                       VERBATIM instead of being guessed at here.
 //   Step 3  MAP VALUES  target-centric: the chosen Holder's declared variables
 //                       and context policies are the rows; each picks its
 //                       source from the Provision's offer. The wire map is
@@ -42,7 +48,6 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   fetchAgentExecutionFull,
@@ -54,6 +59,11 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { AgentVersionPicker } from "@/features/agent-shortcuts/components/AgentVersionPicker";
+import {
+  fetchWorkflowHolderCandidates,
+  type WorkflowHolderCandidate,
+  type WorkflowHolderCandidates,
+} from "../workflow-holders";
 import {
   initInstanceOverrides,
   markRemoved,
@@ -136,6 +146,17 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
   }, [myBinding?.id, myBinding?.updated_at]);
 
   // ── Step 1 state — the Holder + version choice ────────────────────────────
+  //
+  // A binding names ONE Holder: an agent or a workflow. `holderKind` is the
+  // switch; the two identity slots are never both populated (the server 422s,
+  // and buildBindingSavePayload refuses before the wire).
+  const storedHolder = parseBindingWave1(myBinding);
+  const [holderKind, setHolderKind] = useState<"agent" | "workflow">(
+    storedHolder.holderType === "workflow" ? "workflow" : "agent",
+  );
+  const [workflowId, setWorkflowId] = useState<string | null>(
+    storedHolder.holderId ?? null,
+  );
   const [agentId, setAgentId] = useState<string | null>(myBinding?.agent_id ?? null);
   const [agentVersionId, setAgentVersionId] = useState<string | null>(
     myBinding?.agent_version_id ?? null,
@@ -144,6 +165,9 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
     myBinding ? myBinding.use_latest === true : true,
   );
   useEffect(() => {
+    const stored = parseBindingWave1(myBinding);
+    setHolderKind(stored.holderType === "workflow" ? "workflow" : "agent");
+    setWorkflowId(stored.holderId ?? null);
     setAgentId(myBinding?.agent_id ?? null);
     setAgentVersionId(myBinding?.agent_version_id ?? null);
     setUseLatest(myBinding ? myBinding.use_latest === true : true);
@@ -152,8 +176,12 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
   // The effective master the later steps reason about (a pinned version's
   // master resolves through versionsById once known).
   const effectiveAgentId =
-    agentId ??
-    (agentVersionId ? (data.versionsById[agentVersionId]?.agentId ?? null) : null);
+    holderKind === "workflow"
+      ? null
+      : (agentId ??
+        (agentVersionId
+          ? (data.versionsById[agentVersionId]?.agentId ?? null)
+          : null));
 
   // ── Step 2 — validation (client pre-flight; server stays the authority) ───
   const [verdict, setVerdict] = useState<{

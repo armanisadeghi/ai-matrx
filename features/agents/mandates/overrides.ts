@@ -238,10 +238,22 @@ export interface MandateBindingInput {
   /** LLMParams-shaped settings override (model, thinking_level, …). Null =
    * agent-swap-only. At least one of agent/settings/consumption must be set. */
   configOverrides: JsonObject | null;
-  /** Holder neutrality (Wave 1): 'agent' | 'workflow'. Only agent Holders
-   * execute today — a 'workflow' binding stores but refuses at run time.
-   * Omitted = 'agent'. */
+  /**
+   * WHICH KIND OF HOLDER fulfils the job. Both execute end to end: an agent
+   * Holder runs the agent; a workflow Holder runs the workflow as a child run
+   * and returns the deliverable whose kind is the Mandate's output kind.
+   * Omitted = 'agent'.
+   */
   holderType?: "agent" | "workflow";
+  /**
+   * The workflow Holder's identity — ALWAYS a `workflow.definition` id, never
+   * a version id (`bindings.py`). Set only with `holderType: "workflow"`; the
+   * server 422s if it arrives beside `agentId`/`agentVersionId`.
+   */
+  holderId?: string | null;
+  /** Optional pin to one `workflow.definition_version`. Omit to follow the
+   * live definition. */
+  holderVersionId?: string | null;
   /**
    * The consumption map — which of the mandate's OFFERED values this Holder
    * consumes and through which channel (`features/agents/mandates/
@@ -252,18 +264,6 @@ export interface MandateBindingInput {
    * `when_absent`; structured kinds may only ride context.
    */
   consumptionMap?: ConsumptionMap | null;
-}
-
-/**
- * Wave-1 fields of the bind PUT body. The generated
- * `MandateBindingRequest` (types/python-generated/api-types.ts) predates them
- * — production's OpenAPI has not shipped the aidream branch yet. Mirrors
- * `aidream/api/routers/mandate_bindings.py::MandateBindingRequest`; replace
- * with the generated shape on the next `pnpm sync-types` after deploy.
- */
-interface MandateBindingRequestWave1Fields {
-  holder_type?: "agent" | "workflow";
-  consumption_map?: Record<string, JsonObject> | null;
 }
 
 export interface MandateBindingPrincipalInput {
@@ -304,20 +304,14 @@ export async function putMandateBinding(
   principal: MandateBindingPrincipalInput,
   input: MandateBindingInput & { isEnabled?: boolean },
 ): Promise<void> {
-  // Wave-1 fields ride beside the generated body shape until sync-types
-  // catches up (see MandateBindingRequestWave1Fields). The deployed server's
-  // request model ignores unknown fields, so sending them is forward-safe.
-  const wave1: MandateBindingRequestWave1Fields = {
-    ...(input.holderType ? { holder_type: input.holderType } : {}),
-    ...(input.consumptionMap !== undefined
-      ? {
-          consumption_map:
-            input.consumptionMap === null
-              ? null
-              : consumptionMapForApi(input.consumptionMap),
-        }
-      : {}),
-  };
+  // The generated request model now carries every field the server accepts
+  // (holder_type / holder_id / holder_version_id / consumption_map), so the
+  // body is the contract itself — no side-channel object.
+  //
+  // A WORKFLOW Holder names `holder_id` and NOTHING agent-shaped: sending an
+  // agent id beside it is a 422 by design, and the two identities must never
+  // be smuggled through the same field.
+  const isWorkflow = input.holderType === "workflow";
   const result = await dispatch(
     callApi({
       path: "/mandates/{mandate_key}/binding",
@@ -325,15 +319,27 @@ export async function putMandateBinding(
       pathParams: { mandate_key: mandateKey },
       body: {
         principal_type: principal.principalType,
-        agent_id: input.agentId,
-        agent_version_id: input.agentVersionId ?? null,
-        use_latest: input.useLatest ?? (input.agentId != null),
+        holder_type: input.holderType ?? "agent",
+        agent_id: isWorkflow ? null : input.agentId,
+        agent_version_id: isWorkflow ? null : (input.agentVersionId ?? null),
+        holder_id: isWorkflow ? (input.holderId ?? null) : null,
+        holder_version_id: isWorkflow ? (input.holderVersionId ?? null) : null,
+        use_latest: isWorkflow
+          ? (input.useLatest ?? input.holderVersionId == null)
+          : (input.useLatest ?? input.agentId != null),
         config_overrides: input.configOverrides,
         is_enabled: input.isEnabled ?? true,
+        ...(input.consumptionMap !== undefined
+          ? {
+              consumption_map:
+                input.consumptionMap === null
+                  ? null
+                  : consumptionMapForApi(input.consumptionMap),
+            }
+          : {}),
         ...(principal.organizationId
           ? { organization_id: principal.organizationId }
           : {}),
-        ...wave1,
       },
     }),
   );

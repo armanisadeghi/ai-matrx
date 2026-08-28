@@ -21,14 +21,23 @@ import type { JsonObject } from "@/types/json";
 import type { ConsumptionMap } from "../provision-shapes";
 import type { MandateBindingInput } from "../overrides";
 
-export interface HolderChoice {
-  /** The chosen master agent id (floating), or null for settings-only. */
-  agentId: string | null;
-  /** The pinned definition_version id when the user chose to pin. */
-  agentVersionId: string | null;
-  /** true = follow latest; false = pinned. */
-  useLatest: boolean;
-}
+export type HolderChoice =
+  | {
+      kind?: "agent";
+      /** The chosen master agent id (floating), or null for settings-only. */
+      agentId: string | null;
+      /** The pinned definition_version id when the user chose to pin. */
+      agentVersionId: string | null;
+      /** true = follow latest; false = pinned. */
+      useLatest: boolean;
+    }
+  | {
+      kind: "workflow";
+      /** A `workflow.definition` id — NEVER a version id. */
+      workflowId: string;
+      /** Optional pin to one `workflow.definition_version`. */
+      workflowVersionId?: string | null;
+    };
 
 export interface SavePayloadArgs {
   holder: HolderChoice;
@@ -49,6 +58,28 @@ export function buildBindingSavePayload(args: SavePayloadArgs): MandateBindingIn
   const { holder, hasProvision, consumptionMap, capturedOverrides, storedOverrides } =
     args;
 
+  const configOverridesFor = () =>
+    capturedOverrides !== undefined
+      ? Object.keys(capturedOverrides).length > 0
+        ? capturedOverrides
+        : null
+      : storedOverrides;
+
+  // A WORKFLOW Holder carries no agent identity at all — the server 422s on
+  // any agent field beside `holder_id`, and the two must never share a slot.
+  if (holder.kind === "workflow") {
+    return {
+      holderType: "workflow",
+      holderId: holder.workflowId,
+      holderVersionId: holder.workflowVersionId ?? null,
+      useLatest: holder.workflowVersionId == null,
+      agentId: null,
+      agentVersionId: null,
+      configOverrides: configOverridesFor(),
+      consumptionMap: hasProvision ? consumptionMap : undefined,
+    };
+  }
+
   if (holder.agentId && holder.agentVersionId) {
     // Never trust a UI state that drifted into both — refuse client-side with
     // the same rule the server enforces, before any network call.
@@ -57,14 +88,10 @@ export function buildBindingSavePayload(args: SavePayloadArgs): MandateBindingIn
     );
   }
 
-  const configOverrides =
-    capturedOverrides !== undefined
-      ? Object.keys(capturedOverrides).length > 0
-        ? capturedOverrides
-        : null
-      : storedOverrides;
+  const configOverrides = configOverridesFor();
 
   return {
+    holderType: "agent",
     agentId: holder.agentId,
     agentVersionId: holder.agentVersionId,
     useLatest: holder.useLatest,
