@@ -30,6 +30,11 @@
 -- record) and §8 D12 (registration happens exactly once, in L10).
 -- Applied live as `hr_l10_06_leave_gap_counts_the_ruled_names`. Idempotent.
 
+-- The original declares its OUT columns with different names, so a plain replace is refused
+-- ("cannot change return type of existing function"). Dropping first is the only route, and the
+-- column names below are kept identical to hr_l5_13's so every existing caller is unaffected.
+drop function if exists hr.leave_notification_gap();
+
 create or replace function hr.leave_notification_gap()
 returns table (event_key text, declared_by text, is_declared boolean, consequence text)
 language sql stable as $fn$
