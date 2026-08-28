@@ -14,7 +14,7 @@
 --
 -- `hr.leave_ledger_post` is THE ONE INSERTER for `hr.leave_ledger` and it is deliberately
 -- `{postgres=X/postgres}` — PUBLIC's default EXECUTE was revoked, so the aidream connection
--- cannot reach it. It also cannot be reached "just for a moment" from Python: `hr.arm_write()`
+-- cannot reach it directly. It also cannot be reached "just for a moment" from Python: `hr.arm_write()`
 -- mints a token bound to `statement_timestamp()`, so arming in one round trip and inserting in
 -- the next can never validate. Every `hr.*` write therefore happens inside a SECURITY DEFINER
 -- body, and this is the leave engine's — the exact shape `public.hr_recompute_apply` already
@@ -227,18 +227,44 @@ revoke all on function public.hr_leave_accrual_apply(
   uuid, uuid, text, numeric, date, text, text, text, text, uuid[], jsonb, jsonb, jsonb,
   uuid, numeric, numeric, text, uuid, uuid, boolean, uuid, text, jsonb) from public;
 
--- 🚨 `revoke ... from public` does NOT remove a role-specific grant, and Supabase's ALTER
--- DEFAULT PRIVILEGES hands `anon` EXECUTE on every new public function. Measured live: after the
--- revoke above the ACL still read `anon=X`. A signed-out caller must never reach a leave writer,
--- so anon is revoked by name — exactly the ACL `public.hr_recompute_apply` carries.
+-- 🚨🚨 **THIS IS AN ENGINE PATH, NOT A CLIENT DOOR. IT IS NEVER GRANTED TO `authenticated`.**
+--
+-- The first version of this file granted `authenticated`, and that was a hole, not a style
+-- choice: the function is SECURITY DEFINER, takes `p_employment_id`, `p_entry_kind`,
+-- `p_hours_delta` and `p_actor_type` as free parameters, and authorizes NOBODY — so any signed-in
+-- user on the platform could have posted an arbitrary permanent entry to anyone's leave ledger in
+-- any organization, and `hr.leave_ledger` is append-only, so every one of those rows would have
+-- stayed. Caught by the lane's standing check and revoked in `hr_l5_11`; the revoke lives HERE so
+-- that re-applying this file can never re-open it.
+--
+-- The rule that tells the two kinds apart is one question — *is a human allowed to ask for this?*
+--   * A CLIENT DOOR is granted to `authenticated` and its FIRST job, before it reads anything, is
+--     to decide whether this caller may (`hr._leave_viewer` / `hr._leave_admin_rung`), returning
+--     `{granted:false, reason, detail}`.
+--   * An ENGINE PATH exists only to satisfy `hr.arm_write()`'s one-statement rule from a process
+--     that already IS the service role. It carries no authorization because its caller needed
+--     none — which is exactly why it must be unreachable from a session that did.
+--
+-- This is the second kind. Authorization for the four HTTP operations that reach it happens in
+-- aidream BEFORE the call — `require_organization_context`, `hr.capability('leave.calculate' |
+-- 'leave.accrue')`, and an RLS-enforced read of the enrollment population under the caller's own
+-- role — and the engine then leaves that RLS session to write. `anon` is revoked by name as well,
+-- because `revoke ... from public` does not remove a role-specific grant and Supabase's ALTER
+-- DEFAULT PRIVILEGES hands `anon` EXECUTE on every new public function (measured live: after the
+-- `from public` revoke above, the ACL still read `anon=X`).
+--
+-- Standing check, which must return zero DEFECT rows:
+--     select * from hr.leave_door_grant_audit();
 revoke execute on function public.hr_leave_accrual_apply(
   uuid, uuid, text, numeric, date, text, text, text, text, uuid[], jsonb, jsonb, jsonb,
   uuid, numeric, numeric, text, uuid, uuid, boolean, uuid, text, jsonb) from anon;
 
-grant execute on function public.hr_leave_accrual_apply(
+revoke execute on function public.hr_leave_accrual_apply(
   uuid, uuid, text, numeric, date, text, text, text, text, uuid[], jsonb, jsonb, jsonb,
-  uuid, numeric, numeric, text, uuid, uuid, boolean, uuid, text, jsonb) to authenticated;
+  uuid, numeric, numeric, text, uuid, uuid, boolean, uuid, text, jsonb) from authenticated;
 
+-- The ONLY grant. `service_role` is what the aidream engine connects as once it has left the
+-- caller's RLS session.
 grant execute on function public.hr_leave_accrual_apply(
   uuid, uuid, text, numeric, date, text, text, text, text, uuid[], jsonb, jsonb, jsonb,
   uuid, numeric, numeric, text, uuid, uuid, boolean, uuid, text, jsonb) to service_role;
