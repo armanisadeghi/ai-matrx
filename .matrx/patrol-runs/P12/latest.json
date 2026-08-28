@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P12",
   "runId": "20260818T161811Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-18T16:26:30.020Z",
-  "summary": "Certified detector candidate queued for fast integration; release remains serialized.",
+  "state": "delivered",
+  "updatedAt": "2026-08-28T16:13:30.463Z",
+  "summary": "Certified detector candidate is integrated and contained in release v0.4.1390; delivery bookkeeping reconciled.",
   "source": "20260818T161811Z.json",
-  "eventHash": "535b38d2ae15fd502f660ee0b259c46dc34d26c176b4afcc0c8df59013d7517b"
+  "eventHash": "a7e9fc274bfcd575a411835060e42d790d314a5ba31bcfa0fb68e4dfcf33547b"
 }
