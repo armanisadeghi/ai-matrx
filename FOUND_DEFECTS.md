@@ -15,32 +15,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D282 — `pay_change` shows the amount to an approver who holds no `comp.read`, and the spec that would fix it contradicts itself (2026-08-28)
-
-`hr_c4_33` moved read entitlement to routing time for **patch** flows: a candidate who may not read
-the fields a request proposes to change is struck before assignment (`hr.wf_resolve_approvers` →
-`hr._wf_change_entitlement` / `hr._wf_may_see_change`). `pay_change` is NOT covered and was left
-exactly as it was, deliberately.
-
-**What's open.** `pay_change` carries its proposal FLAT (`amount`, `pay_basis`, `effective_from`)
-under `target_token = 'hr_position_assignment'`, which has **no door** — `hr._door_spec` returns zero
-rows for it. `hr._wf_display` renders that amount via `hr._wf_pay_change_digest` to anyone whose
-`v_entitled` is true, and `v_entitled` is *"are you on this step"*. So the salary is shown because
-the step was routed to you, not because you may read comp. 12 live `pay_change` steps.
-
-**Why it was not fixed here — needs a ruling, not a guess.** SPEC-EMPLOYEES §4.4 routes `pay_change`
-to the *manager of record*; SPEC-ACCESS §1.4 gives the derived `manager` role
-*"directory.read, working_record.read over reports, time.read; nothing else"* — **no `comp.read`**.
-No spec text reconciles "may approve" with "may read what is being approved" for this flow. Gating
-`pay_change` on the `hr_compensation` door (`comp.read`) would strand all 12 live steps and
-contradict SPEC-EMPLOYEES; leaving it is a Confidential value on an unentitled screen.
-
-**Fix shape (one of, coordinator's call):** (a) give `pay_change`'s approval action a door token so
-`hr._wf_change_entitlement` can arm on the flat payload as it does on a patch, and grant `comp.read`
-to whoever holds `pay_change_approve`; or (b) rule that approving comp *is* entitlement to see the
-one proposed number, and record that as an explicit carve-out rather than an accident of a missing
-door. Either way the amendment belongs in SPEC-ACCESS §1.4, not in the engine.
-
 ### D281 — `esign.envelope` is not in `hr._approval_subject`'s allowlist, so `signature_request` can never route (2026-08-28)
 
 `hrb011_proof.py` aborts at 106 assertions with:
@@ -2369,6 +2343,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D282** — `pay_change` shows the salary to whoever was routed the step: it carries its proposal FLAT under `hr_position_assignment`, which is behind no door, so `hr_c4_33`'s routing-time entitlement gate does not arm on it. **RULED 2026-08-28 as the SPEC-ACCESS §1.4 approval carve-out — option (b), not an engine change:** holding the step's approval authority entitles the decider to THAT REQUEST'S change summary, both sides of the one number, only while assigned, and never `comp.read`. Option (a) was rejected because granting `comp.read` to `pay_change_approve` holders would breach the derived manager row's *"nothing else"* and hand out the subject's whole compensation history to approve one raise. The existing behaviour is therefore correct **by rule**. `hr_c4_34` pins the carve-out's precondition — assigned ⟹ holds the authority — in `hr._wf_pay_change_digest`'s contract row (one number, both sides, `array_agg` banned) and in five `hrb008_proof.py` assertions that re-resolve every live `pay_change` step and check `hr.can_approve`'s RULE 2b still carries the `auto_record` mode guard that keeps a bare manager off a pay change. 2026-08-28.
 
 - **D280** — `hrb022_proof.py` never enrolled anybody, so the leave lane's new `hr.leave_wf_validate` closed every request `rejected_at_intake` with `not_enrolled` and the whole inbox chain collapsed (10 RED, suite ending at 59 instead of 69). Fixed in the FIXTURE, with no assertion weakened: the people the suite creates are now enrolled in the policy it creates, which is what a policy plus an eligible employment actually means. Back to 69/69. `scripts/hr/hrb022_proof.py`. 2026-08-28.
 
