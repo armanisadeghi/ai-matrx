@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "77b986530692";
+export const KIND_REGISTRY_FINGERPRINT = "73763edaa5a3";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -5891,7 +5891,7 @@ export interface BlogPostOutline {
 }
 
 /**
- * Kind `boolean` (registry v3).
+ * Kind `boolean` (registry v4).
  */
 export type BooleanKind = boolean;
 
@@ -8840,7 +8840,7 @@ export interface MappedListResult {
 /**
  * A block of markdown prose. Rendered by the streaming markdown renderer.
  *  *
- *  * Kind `markdown` (registry v5).
+ *  * Kind `markdown` (registry v6).
  */
 export interface Markdown {
   text: string;
@@ -9444,7 +9444,7 @@ export interface NotableTimestamp {
 }
 
 /**
- * Kind `number` (registry v3).
+ * Kind `number` (registry v4).
  */
 export type NumberKind = number;
 
@@ -14203,7 +14203,7 @@ export interface StatusPingDebug {
 /**
  * A list of short text values.
  *  *
- *  * Kind `string_list` (registry v7).
+ *  * Kind `string_list` (registry v8).
  */
 export interface StringList {
   items?: string[];
@@ -14590,7 +14590,7 @@ export interface TestCard {
 /**
  * Plain text. The generic prose kind — one block of unformatted text.
  *  *
- *  * Kind `text` (registry v7).
+ *  * Kind `text` (registry v8).
  */
 export interface Text {
   text: string;
