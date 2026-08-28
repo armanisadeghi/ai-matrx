@@ -43,10 +43,11 @@ import {
   selectRunStatus,
 } from "@/features/workflow-runtime/redux/workflow-runs.selectors";
 import {
-  missingRequiredFields,
-  type RunFormSection,
-} from "@/features/workflow-runtime/surface/run-form";
-import { RunFormFieldControl } from "@/features/workflow-runtime/components/RunFormFieldControl";
+  ServedFieldControl,
+  ServedFormScream,
+} from "@/features/workflow-runtime/served-form/ServedInputFields";
+import type { ServedInput } from "@/features/workflow-runtime/served-form/served-input";
+import type { VariantResolvableKind } from "@/features/content-ir/variants/kind-variants";
 
 const EMIT_MODES: ReadonlySet<string> = new Set([
   "confirmation",
@@ -62,58 +63,66 @@ function toEmitMode(raw: string): EmitMode {
 // ── Act I — the order form ─────────────────────────────────────────────────
 
 export function OrderWindow({
-  sections,
+  inputs,
+  kinds,
   values,
+  missing,
+  surfaceProblem,
   onFieldChange,
   starting,
   onStart,
   stepCount,
 }: {
-  sections: RunFormSection[];
-  values: Record<string, Record<string, unknown>>;
-  onFieldChange: (nodeId: string, key: string, value: unknown) => void;
+  /** The SERVED input surface. The draft lives on the page (values out). */
+  inputs: readonly ServedInput[];
+  kinds: Record<string, VariantResolvableKind>;
+  values: Record<string, unknown>;
+  /** Labels still blocking the start, computed by the page's gate. */
+  missing: string[];
+  /** LOUD: the surface could not be read, or was never served. */
+  surfaceProblem: { title: string; body: string } | null;
+  onFieldChange: (name: string, value: unknown) => void;
   starting: boolean;
   onStart: () => void;
   stepCount: number;
 }) {
-  const missing = missingRequiredFields(sections, values);
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
+      {surfaceProblem ? (
+        <ServedFormScream
+          title={surfaceProblem.title}
+          body={surfaceProblem.body}
+        />
+      ) : null}
       <p className="text-sm text-muted-foreground">
-        {sections.length > 0
+        {inputs.length > 0
           ? "A few things it needs from you, then it takes over."
           : "Nothing needed from you — it has everything it needs."}
       </p>
 
-      {sections.map((section) => (
-        <fieldset key={section.nodeId} className="mt-5">
-          <legend className="text-sm font-semibold text-foreground">
-            {section.title}
-          </legend>
-          <div className="mt-2 space-y-3">
-            {section.fields.map((field) => (
-              <label key={field.key} className="block">
-                <span className="text-xs font-medium text-foreground">
-                  {field.label}
-                  {field.required ? (
-                    <span className="text-destructive"> *</span>
-                  ) : null}
-                </span>
-                {field.help ? (
-                  <span className="block text-[11px] text-muted-foreground">
-                    {field.help}
-                  </span>
-                ) : null}
-                <RunFormFieldControl
-                  field={field}
-                  value={values[section.nodeId]?.[field.key]}
-                  onChange={(v) => onFieldChange(section.nodeId, field.key, v)}
-                />
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      ))}
+      <div className="mt-5 space-y-3">
+        {inputs.map((input) => (
+          <label key={input.name} className="block">
+            <span className="text-xs font-medium text-foreground">
+              {input.label}
+              {input.sourcing === "optional" ? null : (
+                <span className="text-destructive"> *</span>
+              )}
+            </span>
+            {input.help ? (
+              <span className="block text-[11px] text-muted-foreground">
+                {input.help}
+              </span>
+            ) : null}
+            <ServedFieldControl
+              input={input}
+              kind={kinds[input.kind]}
+              value={values[input.name]}
+              onChange={(v) => onFieldChange(input.name, v)}
+            />
+          </label>
+        ))}
+      </div>
 
       <div className="mt-6 flex items-center gap-3">
         <button

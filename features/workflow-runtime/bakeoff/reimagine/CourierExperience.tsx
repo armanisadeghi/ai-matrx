@@ -44,9 +44,18 @@ import {
   stepsByNodeId,
 } from "@/features/workflow-runtime/components/run/node-presentation";
 import {
-  deriveRunForm,
-  seedRunFormValues,
-} from "@/features/workflow-runtime/surface/run-form";
+  EMPTY_SERVED_INPUTS,
+  useServedInputKinds,
+  useServedInputValues,
+} from "@/features/workflow-runtime/served-form/ServedInputFields";
+import {
+  buildSubmission,
+  unsatisfiedServedInputs,
+} from "@/features/workflow-runtime/served-form/served-input";
+import {
+  useServedRunForm,
+  useServedRunStarter,
+} from "@/features/workflow-runtime/served-form/useServedRunForm";
 import {
   fetchRunDefinitionId,
   fetchWorkflowDefinition,
@@ -75,9 +84,6 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
   // State is keyed to the fetch it belongs to and reset DURING RENDER when
   // the key changes (the React-sanctioned adjust-state-on-prop-change form —
   // never a synchronous setState inside the effect body).
-  const [formValues, setFormValues] = useState<
-    Record<string, Record<string, unknown>>
-  >({});
   const [reloadNonce, setReloadNonce] = useState(0);
   const defKey = `${definitionId}:${reloadNonce}`;
   const [defSlot, setDefSlot] = useState<{ key: string; state: DefinitionState }>(
@@ -101,7 +107,6 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
           key: defKey,
           state: { phase: "ready", name: row.name, definition: row.definition },
         });
-        setFormValues(seedRunFormValues(deriveRunForm(row.definition)));
       })
       .catch((error: unknown) => {
         if (!cancelled) setDefSlot({ key: defKey, state: { phase: "error", error } });
@@ -121,6 +126,40 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
   const startedAt = useAppSelector(selectRunStartedAt(runKey));
   const statusTs = useAppSelector(selectRunStatusTs(runKey));
   const costUsd = useAppSelector(selectRunCostTotal(runKey));
+
+  // ── The order — THE served input surface, values out ────────────────────
+  // The draft lives HERE rather than inside the order window, because this
+  // variant's window is a pure frame: it paints what it is given and reports
+  // what the person typed. Nothing is derived from the graph.
+  const served = useServedRunForm(definitionId);
+  const servedInputs =
+    served.status === "ready" ? served.form.inputs : EMPTY_SERVED_INPUTS;
+  const {
+    values: formValues,
+    touched: formTouched,
+    setValue: setFormValue,
+  } = useServedInputValues(servedInputs);
+  const { kinds, error: kindError } = useServedInputKinds(servedInputs);
+  const { start: startServedRun, starting } = useServedRunStarter();
+  const missing = unsatisfiedServedInputs(
+    servedInputs,
+    formValues,
+    formTouched,
+  ).map((i) => i.label);
+  const surfaceProblem =
+    served.status === "error"
+      ? {
+          title: "Could not load what this workflow needs",
+          body: `${served.message} The order form is SERVED (GET /workflows/{id}/run-form) — without it there is nothing honest to ask for.`,
+        }
+      : served.status === "ready" && !served.form.surfaceServed
+        ? {
+            title: "This backend serves no input surface",
+            body: "The run-form response carried no `inputs` array, so the reachable server predates the compiled input surface.",
+          }
+        : kindError
+          ? { title: "Kind registry gap", body: kindError }
+          : null;
 
   // ── The camera ──────────────────────────────────────────────────────────
   const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
@@ -214,20 +253,20 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
   const followLive = () => setPinnedNodeId(null);
 
   const start = () => {
-    void controls
-      .startRun({ definitionId, nodeInputs: formValues })
-      .then((newRunId) => {
-        if (!newRunId) return; // already toasted by the controls hook
-        setPinnedNodeId(null);
-        router.replace(`${pathname}?run=${newRunId}`, { scroll: false });
-      });
+    void startServedRun(
+      definitionId,
+      buildSubmission(servedInputs, formValues, formTouched),
+    ).then((newRunId) => {
+      if (!newRunId) return; // already toasted by the starter
+      setPinnedNodeId(null);
+      router.replace(`${pathname}?run=${newRunId}`, { scroll: false });
+    });
   };
   const runAgain = () => {
     setPinnedNodeId(null);
     router.replace(pathname, { scroll: false });
   };
 
-  const sections = deriveRunForm(def.definition);
   const showDeadRunNotice = Boolean(runId) && runProbe === "unreachable";
 
   return (
@@ -278,15 +317,13 @@ export function CourierExperience({ definitionId }: { definitionId: string }) {
           {!runId ? (
             <div className="min-h-0 flex-1 overflow-y-auto scrollbar-thin">
               <OrderWindow
-                sections={sections}
+                inputs={servedInputs}
+                kinds={kinds}
                 values={formValues}
-                onFieldChange={(nodeId, key, value) =>
-                  setFormValues((prev) => ({
-                    ...prev,
-                    [nodeId]: { ...prev[nodeId], [key]: value },
-                  }))
-                }
-                starting={controls.starting}
+                missing={missing}
+                surfaceProblem={surfaceProblem}
+                onFieldChange={setFormValue}
+                starting={starting}
                 onStart={start}
                 stepCount={steps.length}
               />
