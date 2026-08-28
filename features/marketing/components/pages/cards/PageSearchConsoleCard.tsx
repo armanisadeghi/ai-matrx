@@ -207,7 +207,7 @@ export function PageSearchConsoleCard({ page }: { page: MarketingPage }) {
           aria-pressed={range === entry.key}
           onClick={() => setRange(entry.key)}
           className={cn(
-            "h-5 rounded px-1.5 text-[11px] leading-none transition-colors",
+            "h-5 max-lg:min-w-11 rounded px-1.5 text-[11px] leading-none transition-colors",
             range === entry.key
               ? "bg-accent font-medium text-foreground"
               : "text-muted-foreground hover:text-foreground",

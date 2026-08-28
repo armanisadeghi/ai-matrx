@@ -1497,12 +1497,16 @@
        narrow TEXT button inside a flex row down to 44px and wraps its label
        one word per line (measured on the plan-vs-reality bar). So width is
        raised only for icon-only controls, whose convention in this codebase
-       is an `aria-label` carrying the name the icon can't say. A text button
-       that also has one is already wider than 44px, so this is a no-op there. */
+       is an `aria-label` or tooltip `title` carrying the name the icon can't
+       say. A text button that also has one is already wider than 44px, so this
+       is a no-op there. */
     .matrx-touch-targets
-      :is(button, [role="button"], a[data-tap-target])[aria-label]:not(
-        [data-touch-exempt]
-      ):not([role="checkbox"]):not([role="radio"]):not([role="switch"]) {
+      :is(button, [role="button"], a[data-tap-target]):is(
+        [aria-label],
+        [title]
+      ):not([data-touch-exempt]):not([role="checkbox"]):not([role="radio"]):not(
+        [role="switch"]
+      ) {
       min-width: 2.75rem;
     }
 

@@ -13,6 +13,10 @@ describe("PageWorkspace responsive contract", () => {
 
   it("enforces the shared 44px touch floor at responsive breakpoints", () => {
     const source = readFileSync(join(__dirname, "PageWorkspace.tsx"), "utf8");
+    const searchConsoleSource = readFileSync(
+      join(__dirname, "cards/PageSearchConsoleCard.tsx"),
+      "utf8",
+    );
     const globals = readFileSync(
       join(__dirname, "../../../../app/globals.css"),
       "utf8",
@@ -22,6 +26,9 @@ describe("PageWorkspace responsive contract", () => {
       'className="matrx-touch-targets h-full overflow-y-auto',
     );
     expect(globals).toContain("@media (pointer: coarse), (max-width: 1023px)");
+    expect(globals).toContain("[aria-label],");
+    expect(globals).toContain("[title]");
     expect(globals).toContain("min-height: 2.75rem; /* 44px */");
+    expect(searchConsoleSource).toContain("h-5 max-lg:min-w-11 rounded");
   });
 });
