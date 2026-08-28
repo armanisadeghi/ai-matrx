@@ -112,12 +112,22 @@ async def main():
     print("\n=== 5. the door left INVOKER on purpose is untouched and still works ===")
     ft = await rpc("hr_wf_for_target", {"p_target_token": tgt["target_token"],
                                         "p_target_id": str(tgt["target_id"])}, tok)
-    rec("public.hr_wf_for_target (still SECURITY INVOKER, stopped by name — D283) still answers",
-        isinstance(ft, dict) and ft.get("granted") is True, str(ft)[:200])
-    still_invoker = await conn.fetchval(
-        "select not p.prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
-        "where n.nspname='public' and p.proname='hr_wf_for_target'")
-    rec("and it is verifiably STILL INVOKER — the stop is real, not narrated", still_invoker)
+    rec("public.hr_wf_for_target still answers over HTTPS", isinstance(ft, dict) and ft.get("granted") is True,
+        str(ft)[:200])
+    # 🚨 CORRECTED, NOT WEAKENED. hr_c4_35 stopped this door and this assertion pinned the stop.
+    # hr_c4_36 gave it the visibility gate D283 was ruled to need, so it converted — the assertion
+    # now pins what the code DOES: the door is DEFINER, and an unentitled caller gets the ABSENCE
+    # SHAPE rather than a refusal that would confirm the target exists.
+    rec("and it is now SECURITY DEFINER — gated by hr._wf_instance_visible (D283 closed by hr_c4_36)",
+        await conn.fetchval(
+            "select p.prosecdef from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+            "where n.nspname='public' and p.proname='hr_wf_for_target'"))
+    fake = await rpc("hr_wf_for_target", {"p_target_token": "hr_position_assignment",
+                                          "p_target_id": "00000000-0000-0000-0000-000000000000"}, tok)
+    rec("🚨 and over HTTPS an id that was never real is INDISTINGUISHABLE from a target this caller "
+        "may not read — both are the absence shape",
+        isinstance(fake, dict) and fake == {"granted": True, "open": [], "history": []},
+        f"fake={fake}")
 
     await finish(conn, http)
 

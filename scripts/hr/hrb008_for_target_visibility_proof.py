@@ -10,12 +10,16 @@ Proves four ways, live, in ONE rolled-back transaction:
   3. a PARTICIPANT / queue-holder sees exactly what the instance door would show them;
   4. every ENTITLED result is BYTE-IDENTICAL to what the door returned before the gate.
 """
-import asyncio, json, os, sys
+import asyncio, json, os, pathlib, sys
 import asyncpg
 from dotenv import load_dotenv
 
 load_dotenv("/Users/armanisadeghi/code/aidream/.env")
-BEFORE = "/private/tmp/claude-501/-Users-armanisadeghi-code-common-docs/c70d36d3-9188-4d99-aaed-c2f11032e2eb/scratchpad/ft_before.json"
+# 🚨 THE PRE-GATE BASELINE IS COMMITTED, BECAUSE IT CAN NEVER BE RECAPTURED. It is every
+# (caller, target) answer hr_wf_for_target gave BEFORE hr_c4_36 closed D283 — captured in the one
+# window where that was still possible. §1's control and §4's byte-identical comparison are both
+# measured against it, so without it those two assertions are not re-provable by anybody, ever.
+BEFORE = str(pathlib.Path(__file__).parent / "fixtures" / "hrb008_for_target_pre_gate_baseline.json")
 FAKE = "00000000-0000-0000-0000-000000000000"
 
 R = []
@@ -158,11 +162,19 @@ async def main():
             narrowed > 0, f"narrowed={narrowed} e.g. {narrowed_examples}")
 
         # ---------- the door itself
+        # 🚨 THE PROPERTY, NOT A COUNT. This assertion first read `count(*) = 15` and went red the
+        # moment hr_c4_37 added a 16th door — a true fact reported as a failure. What must hold is
+        # that NO public.hr_wf_* door is SECURITY INVOKER, which stays true as doors are added.
         rec("§5 the door",
-            "public.hr_wf_for_target is now SECURITY DEFINER — all 15 workflow doors converted",
+            "public.hr_wf_for_target is SECURITY DEFINER — and so is EVERY public.hr_wf_* door, "
+            "with none left INVOKER",
             await conn.fetchval(
-                "select count(*)=15 from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
-                "where n.nspname='public' and p.proname like 'hr\\_wf\\_%' and p.prosecdef"))
+                "select count(*) filter (where not p.prosecdef)=0 and count(*)>0 "
+                "from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='public' and p.proname like 'hr\\_wf\\_%'"),
+            str(await conn.fetchval(
+                "select string_agg(p.proname,', ') from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='public' and p.proname like 'hr\\_wf\\_%' and not p.prosecdef")))
         rec("§5 the door",
             "the visibility rule exists exactly ONCE — neither door carries its own copy",
             await conn.fetchval(
