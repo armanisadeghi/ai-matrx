@@ -15,44 +15,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D284 — a pre-start hire cannot read their OWN workflow request, on any surface (2026-08-28)
-
-`hr.employments_of(user, at)` filters `em.hire_date <= p_at`, so an employment whose hire date is in
-the future resolves to **`{}`**. Every workflow visibility standing is built on that array, so a
-person who has been onboarded but has not started fails **all five** — including *"subject of it"* —
-on a request **about themselves**.
-
-**Measured live**, Marisol Okonkwo-R36 (`hire_date 2026-09-15`, status `pending`, today 2026-08-28),
-subject **and** requester of closed `profile_edit_request` `474d7ac2-…`:
-
-```
-public.hr_wf_instance(474d7ac2-…)  → granted:false, no_read_reach,
-                                     "you have no standing on this request"
-public.hr_wf_inbox('mine')         → granted:true, employment_ids: []
-public.hr_wf_for_target(…)         → history: []   (the absence shape)
-```
-
-**Pre-existing, and not caused by `hr_c4_36`.** The instance door refuses her by name and carried
-this identical `employments_of` call before the visibility rule was extracted into
-`hr._wf_instance_visible`; the extraction moved it faithfully (the gate's "0 widened" proof). What
-changed is only that `hr.wf_for_target` now applies the same rule, so the blind spot is consistent
-across surfaces instead of being papered over by an ungated door.
-
-Scope today: **7 pre-start employments** platform-wide, **1** with a workflow instance. It grows with
-every pre-boarding hire, and pre-boarding is exactly when a new hire files profile and address
-changes.
-
-**Why it is filed rather than fixed:** the fix is a change to `hr.employments_of`, which is the
-backbone of `hr.capability` and is called by essentially every HR door — widening it to include
-pre-start employments would widen **read and write standing everywhere at once**. That is a spec
-decision, not a lane's. **The likely shape:** `employments_of` gains an explicit read-standing
-variant (or a `p_include_prestart` flag) used by the visibility predicate only, so a pre-start hire
-can see their own record without gaining any capability that acts. Needs a ruling with
-SPEC-ACCESS §1.4 open.
-
-Pinned as a measured fact in `scripts/hr/hrb008_for_target_visibility_proof.py` §2 so it stays
-visible until ruled on.
-
 ### D281 — `esign.envelope` is not in `hr._approval_subject`'s allowlist, so `signature_request` can never route (2026-08-28)
 
 `hrb011_proof.py` aborts at 106 assertions with:
@@ -2381,6 +2343,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D284** — a pre-start hire could not read their OWN workflow request, on any surface: `hr.employments_of` filters `hire_date <= p_at`, so a future-dated employment resolved to `{}` and failed all five visibility standings — including *"subject of it"*. **RULED and FIXED 2026-08-28 by `hr_c4_39`**, extending hr_l3_88's law: **identity standings are identity facts, not date-scoped ones.** *"Filed it"* and *"subject of it"* now resolve through `hr._employments_of_identity` (the same linkage with the date window removed); *"routed it"* and *"decided it"* were already recorded facts on the user id; `workflow.view_queue` stays capability-gated and date-scoped, so a pre-start hire wields no admin power. `hr.employments_of` itself is **untouched** — the variant has exactly two callers, both read paths (`hr._wf_instance_visible` and `hr.wf_pending`'s own-requests arm). Proven 25/0 (`scripts/hr/hrb008_prestart_self_standing_proof.py`): Marisol Okonkwo-R36 reads her own request and her inbox lists it; she still cannot decide, publish, cancel, reassign or reach the queue scope, and cannot read anyone else's request; and across all 270 (caller, instance) pairs the **only** delta is her gaining her own request. 2026-08-28.
 
 - **D283** — `hr.wf_for_target` had no authorization gate at all and returned another organization's workflow history to an unrelated non-admin. **RULED and FIXED 2026-08-28 by `hr_c4_36`:** it now gates through **the same visibility predicate the instance read path applies** — the five-way standing test (filed it, subject of it, routed it, decided it, or holds `workflow.view_queue` in its org) was **extracted** from `hr.wf_instance` into `hr._wf_instance_visible`, and both doors now ASK it rather than each carrying a copy, because two implementations of one visibility rule drift on the first change. An unentitled caller gets the **absence shape** — `{granted:true, open:[], history:[]}`, byte-identical to an id that was never real — rather than a named refusal that would confirm the target exists. Proven live 12/0 (`scripts/hr/hrb008_for_target_visibility_proof.py`), with the pre-gate baseline committed as a fixture because it can never be recaptured: **75 entitled answers byte-identical, 132 narrowed, 0 widened.** `public.hr_wf_for_target` converted to SECURITY DEFINER with it, so every `public.hr_wf_*` door is now DEFINER. 2026-08-28.
 
