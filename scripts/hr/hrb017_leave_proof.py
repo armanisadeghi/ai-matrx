@@ -157,6 +157,7 @@ async def main() -> None:  # noqa: C901
             """,
             ORG,
         )
+        policy_id = str(policy_id)
         enroll_id = await conn.fetchval(
             """
             with armed as (select hr.arm_write())
@@ -178,17 +179,20 @@ async def main() -> None:  # noqa: C901
 
         # 🚨 No role and no org held `leave_approve` anywhere in the system before this line.
         # Granted here through the sanctioned door so the flow has somewhere to route.
-        await conn.execute(
-            "select set_config('request.jwt.claims', $1, false)",
-            json.dumps({"sub": "87a6e699-3622-4869-8843-d0867456c0dd", "role": "authenticated"}),
-        )
-        grant = await conn.fetchval(
-            "select public.hr_authority_grant('employment', $1, 'leave_approve', 'org', null, "
-            "null, '{}'::jsonb, 1, current_date - 1, null, 'ZZZ L5 PROOF', $2::uuid)",
-            APPROVER, ORG,
-        )
-        print(f"  leave_approve grant → {str(grant)[:120]}")
-        await conn.execute("select set_config('request.jwt.claims', '', false)")
+        # `set_config(..., is_local => true)` is TRANSACTION-scoped, and asyncpg autocommits every
+        # statement — so the claim must be set and used inside ONE explicit transaction or
+        # `auth.uid()` is null by the time the door reads it.
+        async with conn.transaction():
+            await conn.execute(
+                "select set_config('request.jwt.claims', $1, true)",
+                json.dumps({"sub": "87a6e699-3622-4869-8843-d0867456c0dd", "role": "authenticated"}),
+            )
+            grant = await conn.fetchval(
+                "select public.hr_authority_grant('employment', $1, 'leave_approve', 'org', null, "
+                "null, '{}'::jsonb, 1, current_date - 1, null, 'ZZZ L5 PROOF', $2::uuid)",
+                APPROVER, ORG,
+            )
+        print(f"  leave_approve grant → {str(grant)[:160]}")
 
         print("\n=== 1. THE BACK-DATE REFUSAL is real, not documented ===")
         try:
