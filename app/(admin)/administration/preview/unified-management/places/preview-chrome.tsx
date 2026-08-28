@@ -29,7 +29,8 @@ export function Inert({
       title={`Preview only — in the real workspace this would ${what}.`}
       aria-disabled
       className={cn(
-        "inline-flex cursor-not-allowed rounded-md outline-dashed outline-1 outline-offset-2 outline-border/70 opacity-80",
+        "inline-flex cursor-not-allowed rounded-md opacity-70 saturate-50",
+        "outline-dashed outline-2 outline-offset-1 outline-amber-500/60",
         "[&_*]:pointer-events-none",
         className,
       )}
