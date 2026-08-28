@@ -57,8 +57,14 @@ export const PERIOD_STATE_LABEL: Record<PayPeriodState, string> = {
 /** What the state MEANS to a payroll administrator, in one sentence, on the badge's hover. */
 export const PERIOD_STATE_MEANING: Record<PayPeriodState, string> = {
   open: "Punches are still landing and intervals recompute continuously. No approval is offered yet.",
-  submitted:
-    "The period is closed to new time and every included employee has been asked to attest.",
+  /*
+   * 🚨 THIS SENTENCE USED TO END "and every included employee has been asked to attest", and this
+   * map STRUCTURALLY CANNOT KNOW THAT. It is keyed by state alone, so it made the same claim for
+   * every submitted period — including one whose only included employee holds no login and could
+   * never be asked at all. A state means what the STATE means; who was actually asked is a fact
+   * about the rows, and `askingSentence` below derives it from them.
+   */
+  submitted: "The period is closed to new time.",
   approved: "Every timecard has been decided. The period is ready for a payroll export.",
   exported: "A payroll file has been generated for this period.",
   locked: "Nothing in this period is editable. Corrections are adjustments that ride the next export.",
@@ -66,6 +72,27 @@ export const PERIOD_STATE_MEANING: Record<PayPeriodState, string> = {
   reopened:
     "Reopened for a correction. This does not un-export and does not re-pay — a delivered export is never regenerated.",
 };
+
+/**
+ * The asking truth, derived from the rows rather than asserted by the state.
+ *
+ * Flows open when a period is submitted, so rows existing is what makes this answerable at all;
+ * with none, the surface says nothing rather than guessing. Takes primitives, not the workflow
+ * object, so this module stays free of the read layer and the headless proof can call it directly.
+ *
+ * 🚨 NO-BLAME REGISTER. An employee who could not be reached did not fail to respond — nobody could
+ * ask them. The sentence reports what the platform managed to do, and counts the rest without
+ * attributing the gap to the person on the row.
+ */
+export function askingSentence(rowCount: number, unreachable: number): string | null {
+  if (rowCount <= 0) return null;
+  if (unreachable <= 0) return "Every included employee has been asked to attest.";
+  return (
+    "Attestation was requested wherever anyone could be reached — " +
+    (unreachable === 1 ? "1 person had" : `${unreachable} people had`) +
+    " nobody to ask."
+  );
+}
 
 /** Semantic tone for the badge. Tokens only; the component maps these to `bg-*`/`text-*`. */
 export type StateTone = "neutral" | "progress" | "positive" | "locked" | "warning";

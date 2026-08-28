@@ -29,6 +29,7 @@ import type { PayPeriodRow } from "../../api/types";
 import type { PeriodWorkflowHealth } from "../api/periodReads";
 import {
   PERIOD_STATE_MEANING,
+  askingSentence,
   disputeSentence,
   rowProgressSentence,
   type PeriodViewerRole,
@@ -64,6 +65,14 @@ export function PeriodStatePanel({
   onTransitioned,
 }: PeriodStatePanelProps) {
   const disputes = disputeSentence(period.counts.disputed);
+  /*
+    Who was actually asked is a fact about the ROWS, so it is derived here where the rows are, and
+    never asserted by the per-state sentence beside it — that map is keyed by state alone and made
+    the same claim for a period whose one employee could never be asked.
+  */
+  // `workflow` is optional on this panel; with no rows in hand the asking truth is UNKNOWN, and
+  // unknown must render as silence rather than as the old unconditional claim.
+  const asking = workflow ? askingSentence(workflow.rows.length, workflow.unreachable) : null;
 
   return (
     <section className="rounded-lg border border-border bg-card">
@@ -91,6 +100,7 @@ export function PeriodStatePanel({
           <StateBadge machine="period" state={period.state} />
           <span className="text-[12px] text-muted-foreground">
             {PERIOD_STATE_MEANING[period.state]}
+            {asking ? ` ${asking}` : ""}
           </span>
         </div>
         {period.reopenReason ? (

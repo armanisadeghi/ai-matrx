@@ -443,6 +443,31 @@ async function main(): Promise<void> {
   ok("a missing step key attributes to nobody either",
      !/employee|sign in|approver/i.test(unreachableWords(null)));
 
+  // ── The period header may not CLAIM everyone was asked. ─────────────────────────────────────
+  const { askingSentence, PERIOD_STATE_MEANING } = await import(
+    "@/features/hr/time/periods/periodStateMachine"
+  );
+  // 🚨 The per-STATE sentence is keyed by state alone, so it cannot know who was asked — it made
+  // the same claim for a period whose only employee could never be asked at all.
+  ok("the submitted state sentence no longer claims everyone was asked",
+     !/asked to attest/i.test(PERIOD_STATE_MEANING.submitted));
+  ok("…and still says what the state DOES mean",
+     /closed to new time/i.test(PERIOD_STATE_MEANING.submitted));
+
+  ok("with everyone reachable, the claim is made — because it is true",
+     askingSentence(3, 0) === "Every included employee has been asked to attest.");
+  ok("with one unreachable, the claim is NOT made",
+     !/every included employee/i.test(askingSentence(3, 1) ?? ""));
+  ok("…it says what actually happened, and counts the rest",
+     /wherever anyone could be reached/i.test(askingSentence(3, 1) ?? "") &&
+       /1 person had nobody to ask/i.test(askingSentence(3, 1) ?? ""));
+  ok("…and pluralises honestly", /2 people had nobody to ask/i.test(askingSentence(5, 2) ?? ""));
+  // NO-BLAME: an employee nobody could reach did not fail to answer.
+  ok("no wording blames the unreachable person",
+     !/did not|failed|late|ignored|unresponsive/i.test(askingSentence(3, 1) ?? ""));
+  ok("with no rows the surface says NOTHING rather than guessing",
+     askingSentence(0, 0) === null);
+
   const getEdge = HR_TIME_RPC_FIXTURES.hr_pay_period_get?.edge?.data as {
     workflow: { stuck: number; awaiting: number; noFlow: number; rows: Array<Record<string, unknown>> };
   };
