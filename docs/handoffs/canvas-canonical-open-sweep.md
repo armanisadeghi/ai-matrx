@@ -2,7 +2,7 @@
 status: active
 updated: 2026-08-27
 repos: [matrx-frontend]
-scope: program
+scope: tail
 feature: Artifacts + Canvas
 vision: [/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md]
 ---
@@ -11,7 +11,7 @@ vision: [/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canva
 
 **What this is:** Make every surface that shows an artifact open it the SAME way — by pointer to
 its `canvas_items` row — instead of each one pushing its own private copy into the canvas slice.
-**Scope:** Program
+**Scope:** Tail
 **Feature:** Artifacts + Canvas
 **Vision:** [VISION.md](/Users/armanisadeghi/code/common-docs/systems/workspace/artifacts-canvas/VISION.md)
 
@@ -28,97 +28,21 @@ its `canvas_items` row — instead of each one pushing its own private copy into
 > "…for us to have a simple sort of canonical, reusable system where any place where we have them,
 > you click and they all do the same thing and they work."
 
-## The law this sweep enforces
-
-There are exactly **two** canonical openers. Nothing else may open an artifact.
-
-| Opener | Use when | File |
-|---|---|---|
-| `useOpenArtifactInCanvas` | You hold block CONTENT that may not be persisted yet | `features/canvas/hooks/useOpenArtifactInCanvas.ts` |
-| `useOpenCanvasItem` | You hold a row id for something already saved | `features/canvas/hooks/useOpenCanvasItem.ts` |
-
-`useCanvas().open` (→ `openCanvas`) pushes a full-payload SNAPSHOT into the slice. A snapshot has no
-UUID, so `findItemByArtifactId` cannot dedupe it against an item already showing that artifact, and
-it drifts the moment the row changes. It survives ONLY for content with no artifact behind it.
-
 ## Resources
 
 - Feature docs: [features/canvas/FEATURE.md](../../features/canvas/FEATURE.md) ·
   [features/artifacts/FEATURE.md](../../features/artifacts/FEATURE.md)
-- Type registry (what is materializable): `features/canvas/artifact-types/artifact-type-registry.ts`
-- Non-persistable types: `NON_PERSISTABLE_CANVAS_TYPES` in `features/canvas/redux/canvasSlice.ts`
-- Id check: `isMaterializedArtifactId` in `features/canvas/artifact-types/artifactId.ts`
 - Dev server: `pnpm preview:start` (port 3001, ONE machine-wide). Login: `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/artifacts`
-- Test route: `/artifacts` — click any card, the canvas pane opens.
+- Review queue: `b8b0091f-0cbf-49f4-bc83-cefe28224ef4` (`submitted`).
 
-## EXEMPLAR A — a block that holds content (copy this shape)
+## Remaining work
 
-`components/mardown-display/blocks/artifact/ArtifactBlock.tsx` L166-199. Registry decides, id decides,
-snapshot is the fallback:
-
-```tsx
-const handleOpenCanvas = () => {
-  const rawPayload = typeof canvasData === "string" ? canvasData : JSON.stringify(canvasData);
-  const def = getArtifactDef(canvasType);
-  const useArtifactPath = def?.materializable && isMaterializedArtifactId(artifactId);
-
-  if (useArtifactPath) {
-    void openArtifact({                       // useOpenArtifactInCanvas
-      canvasType, title: artifactTitle, content: rawPayload,
-      messageId, artifactId,
-      artifactIndex: artifactIndex > 0 ? artifactIndex : 1,
-    });
-    return;
-  }
-  open({ type: canvasType, data: canvasData, metadata: { /* … */ } });  // no artifact yet
-};
-```
-
-`components/mardown-display/blocks/mermaid/MermaidBlock.tsx` L211-263 is the same shape with
-per-type render metadata hoisted into an `extras` object shared by both branches — copy that when
-your block passes render options.
-
-## EXEMPLAR B — a list that holds a row id
-
-`features/canvas/core/SavedCanvasItems.tsx` `handleOpenInCanvas` and
-`features/artifacts/components/CmsArtifactList.tsx` `handleOpen`:
-
-```tsx
-const { openItem } = useOpenCanvasItem();
-void openItem({ artifactId: item.id, type: item.content?.type, title: item.title });
-```
-
-## Remaining work — 12 sites, all pending
-
-### Group 1 — thread `artifactId` down, then convert (10 files, do these first)
-
-Each block's renderer ALREADY receives `artifactId` but only folds it into `taskId` via
-`artifactDedupKey`. Three mechanical steps per row: (1) renderer passes `artifactId={artifactId}`
-to the block, (2) block accepts an optional `artifactId?: string` prop, (3) block's opener adopts
-Exemplar A. Do NOT change any rendering.
-
-| # | Block (open site) | Type | Renderer to edit |
-|---|---|---|---|
-| 1 | `components/mardown-display/blocks/quiz/MultipleChoiceQuiz.tsx` L506 | `quiz` | `renderers/QuizArtifact.tsx` |
-| 2 | `components/mardown-display/blocks/comparison/ComparisonTableBlock.tsx` L569 | `comparison` | `renderers/ComparisonArtifact.tsx` |
-| 3 | `components/mardown-display/blocks/presentations/Slideshow.tsx` L215 | `presentation` | `renderers/PresentationArtifact.tsx` |
-| 4 | `components/mardown-display/blocks/research/ResearchBlock.tsx` L226 | `research` | `renderers/ResearchArtifact.tsx` |
-| 5 | `components/mardown-display/blocks/resources/ResourceCollectionBlock.tsx` L318 | `resources` | `renderers/ResourcesArtifact.tsx` |
-| 6 | `components/mardown-display/blocks/progress/ProgressTrackerBlock.tsx` L392 | `progress` | `renderers/ProgressArtifact.tsx` |
-| 7 | `components/mardown-display/blocks/troubleshooting/TroubleshootingBlock.tsx` L379 | `troubleshooting` | `renderers/TroubleshootingArtifact.tsx` |
-| 8 | `components/mardown-display/blocks/cooking-recipes/cookingRecipeDisplay.tsx` L307 | `recipe` | `renderers/RecipeArtifact.tsx` |
-| 9 | `components/mardown-display/blocks/decision-tree/DecisionTreeBlock.tsx` L587 | `decision-tree` | `renderers/DecisionTreeArtifact.tsx` |
-| 10 | `components/mardown-display/blocks/diagram/InteractiveDiagramBlock.tsx` L2985 | `diagram` | `renderers/DiagramArtifact.tsx` |
-
-Renderers live under `features/canvas/artifact-types/`.
-
-### Group 2 — generic wrappers (2 files, do these last)
-
-`components/mardown-display/blocks/common/BlockHeaderWrapper.tsx` L122 and
-`components/mardown-display/blocks/common/ContentBlockWrapper.tsx` L119 open whatever
-`canvasType`/`canvasData`/`canvasMetadata` their caller passed. Read `canvasMetadata.artifactId`
-and adopt Exemplar A; when it is absent, keep the snapshot path unchanged. Callers already spread
-`canvasMetadata`, so no caller signature changes.
+- In the isolated in-app Browser, click each converted block's OWN Canvas control twice and prove
+  one pane item remains. Saved direct routes exist for quiz, comparison, presentation, research,
+  resources, recipe, decision-tree, diagram, and timeline; the Browser became unavailable before
+  this exact control-path pass could run.
+- Create or locate deterministic saved fixtures for progress, troubleshooting, and math problem,
+  then run the same direct-control/dedupe check. The current live DB has zero rows for those types.
 
 ## EXEMPT — do not touch, these are correct
 
@@ -143,20 +67,13 @@ so whether they are artifacts is a product call, not a refactor. Leave them and 
 `features/agent-apps/components/AgentAppPublicRendererImpl.tsx` L558 ·
 `features/agent-apps/components/shells/AgentAppFullyCustomShell.tsx` L180
 
-## Rules for this sweep
-
-1. **Never change rendering.** This moves how the canvas is OPENED. Nothing visual changes.
-2. **Never delete the snapshot branch.** A block with no artifact behind it still needs it.
-3. `pnpm type-check` must be clean before every commit — it is the ONLY type gate.
-4. Shared checkout: `git commit --only <your files>`. Never `git add -A`, never `git stash`,
-   never `reset --hard`. Other sessions edit this tree at the same time.
-5. One commit per file (or per Group-1 row: renderer + block together). Push as you go.
-6. Verify at least one converted type live before finishing: open `/artifacts`, click a card of
-   that type, confirm the pane opens and clicking the SAME artifact twice reuses one pane item
-   instead of stacking two.
-
 ## Done
 
+- All 10 typed blocks and both generic wrappers open materialized artifacts by pointer while
+  retaining the snapshot fallback — see `features/canvas/FEATURE.md`.
+- Independent `/artifacts` tests passed renderer interactions, full-page routes, list-card dedupe,
+  responsive containment, and zero console errors for quiz, comparison, presentation, diagram,
+  and timeline.
 - View mode + canonical opener for mermaid — see `components/mermaid/view/ViewModePane.tsx`, `MermaidBlock.tsx`.
 - `useOpenCanvasItem` primitive + both list surfaces converted — see `features/canvas/hooks/useOpenCanvasItem.ts`.
 - Pane "Open full page" + `/artifacts/[id]` resolving either identity — see `CanvasPane.tsx`, `artifactSelectors.ts`.
