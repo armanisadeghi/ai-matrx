@@ -60,8 +60,3 @@ values ('hr', '_wf_display', 'hr_l1_51_the_subject_sees_their_own_change.sql',
         'Entitlement must include the SUBJECT. Without _wf_login_of on subject_employment_id the '
         || 'derivation excludes the one person the change is about.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_51_the_subject_sees_their_own_change.sql',
-        md5('hr_l1_51_the_subject_sees_their_own_change'), now(), 0)
-on conflict do nothing;
