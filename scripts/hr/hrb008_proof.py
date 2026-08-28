@@ -1253,6 +1253,19 @@ async def main():
             "update hr.position_assignment set manager_employment_id=$1 where employment_id=$2",
             people["carol"]["employment"], people["erin"]["employment"])
         stale_inst = stale_req.get("instance_id")
+        # 🚨 asserted HERE, where the condition is built: a FAILED instance keeps its open row,
+        # because §3.1 retries from there and that row is the mechanism for getting it moving.
+        # Reading a leftover from an earlier section would be measuring whatever later sections did
+        # to it — which is exactly how this assertion went green-then-red on somebody else's change.
+        rec("§1.8 queue hygiene", "a FAILED instance keeps its open row — §3.1 retries from there, so that row is live work",
+            await conn.fetchval(
+                "select count(*)>0 from hr.workflow_failure f "
+                "join hr.workflow_instance i on i.id=f.workflow_instance_id "
+                "where i.id=$1 and i.state='failed' and f.state in ('open','retrying')", stale_inst),
+            str(await conn.fetchval(
+                "select i.state||' / '||coalesce(string_agg(f.state,','),'(no rows)') "
+                "from hr.workflow_instance i left join hr.workflow_failure f "
+                "on f.workflow_instance_id=i.id where i.id=$1 group by i.state", stale_inst)))
         rec("§1.8 queue hygiene", "an unroutable request opens a real failure row a human owns",
             await conn.fetchval(
                 "select count(*)>0 from hr.workflow_failure where workflow_instance_id=$1 and state='open'",
@@ -1282,17 +1295,7 @@ async def main():
                 "join hr.workflow_instance i on i.id=f.workflow_instance_id "
                 "where f.state in ('open','retrying') and i.state = any($1::text[])", list(TERMINAL))))
         # and the other half of the rule: a FAILED instance KEEPS its row, because that IS the work
-        rec("§1.8 queue hygiene", "and a FAILED instance keeps its open row — §3.1 retries from there, so that row is live work",
-            await conn.fetchval(
-                "select count(*)>0 from hr.workflow_failure f "
-                "join hr.workflow_instance i on i.id=f.workflow_instance_id "
-                "where i.id=$1 and i.state='failed' and f.state in ('open','retrying')",
-                r5.get("instance_id")),
-            str(await conn.fetchval(
-                "select i.state||' / '||coalesce(string_agg(f.state,','),'(no rows)') "
-                "from hr.workflow_instance i left join hr.workflow_failure f "
-                "on f.workflow_instance_id=i.id where i.id=$1 group by i.state",
-                r5.get("instance_id"))))
+
 
         # ===================================== §1.4 THE PREDICATE SPEAKS THE RUNGS THE SELECTOR WALKS
         # 🚨 A TIMECARD NOBODY CAN APPROVE STALLS PAYROLL WITH NO ERROR ANYWHERE. Two shapes, both
