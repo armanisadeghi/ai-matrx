@@ -87,8 +87,3 @@ values ('hr', 'stable_doors_that_write', 'hr_l1_38_an_edge_is_a_call.sql',
         || 'hr.leave_enrollment) and reported a reach that cannot exist. hr_l3_78 closed the '
         || 'comment half of this flaw; reverting to a substring test re-opens the other half.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_38_an_edge_is_a_call.sql',
-        md5('hr_l1_38_an_edge_is_a_call'), now(), 0)
-on conflict do nothing;

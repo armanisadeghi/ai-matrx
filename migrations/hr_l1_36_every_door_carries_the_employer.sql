@@ -94,8 +94,3 @@ values ('hr', 'clock_state', 'hr_l1_36_every_door_carries_the_employer.sql',
         || 'the hr_l1_34 row, which listed only the two dead doors known at the time and so '
         || 'could not catch the third.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_36_every_door_carries_the_employer.sql',
-        md5('hr_l1_36_every_door_carries_the_employer'), now(), 0)
-on conflict do nothing;
