@@ -130,6 +130,20 @@ export function PunchRegister({
         </p>
       </header>
 
+      {/*
+        🚨 ABOVE `HrTimeReadState`, DELIBERATELY. That wrapper renders the refusal INSTEAD of its
+        children, so a picker placed inside it would disappear in exactly the state it exists for:
+        the unscoped read, where the server says "Ask for a person or for an organization" and the
+        manager needs the control to ask with. The instruction and the answer must be on screen at
+        the same time.
+      */}
+      <PunchRegisterScopePicker
+        scope={{ employmentId: employmentId ?? null, orgScope }}
+        /* The register's rows carry `employmentId` but no display name, so the picker says "one
+           person" rather than inventing one. Naming the subject needs the read to carry it. */
+        subjectName={null}
+      />
+
       <HrTimeReadState loading={register.loading} error={register.error}>
         <>
           <div className="flex flex-wrap items-center gap-2">
