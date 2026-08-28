@@ -163,8 +163,11 @@ export function AgentSamplesManager({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading test cases…
+      <div
+        className="flex items-center justify-center p-6 text-muted-foreground"
+        aria-label="Loading test cases"
+      >
+        <Loader2 className="h-4 w-4 animate-spin" />
       </div>
     );
   }
@@ -281,7 +284,7 @@ export function AgentSamplesManager({
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Approved test cases
+            Approved
           </h3>
           <Button
             size="icon"
@@ -294,9 +297,7 @@ export function AgentSamplesManager({
           </Button>
         </div>
         {approved.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            None yet — approve a candidate below, or borrow one from a real run.
-          </p>
+          <p className="text-xs text-muted-foreground">None</p>
         ) : (
           approved.map(renderSample)
         )}
@@ -307,9 +308,7 @@ export function AgentSamplesManager({
           Candidates
         </h3>
         {candidates.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            No candidates. Runs of this agent can be borrowed below.
-          </p>
+          <p className="text-xs text-muted-foreground">None</p>
         ) : (
           candidates.map(renderSample)
         )}
@@ -388,7 +387,7 @@ function BorrowFromRunsSection({
     <section className="space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Borrow from real runs
+          Recent runs
         </h3>
         <Button
           size="sm"
@@ -400,7 +399,7 @@ function BorrowFromRunsSection({
             if (next && runs.length === 0) void load();
           }}
         >
-          {open ? "Hide runs" : "Browse runs"}
+          {open ? "Hide" : "Browse"}
         </Button>
       </div>
       {!open ? null : loading ? (
@@ -408,10 +407,7 @@ function BorrowFromRunsSection({
           <Loader2 className="h-4 w-4 animate-spin" /> Loading recent runs…
         </div>
       ) : runs.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          No runs of this agent are visible to you yet — run it once and the run
-          appears here.
-        </p>
+        <p className="text-xs text-muted-foreground">None</p>
       ) : (
         <div className="space-y-1.5">
           {runs.map((run) => {
@@ -498,9 +494,6 @@ function BorrowFromRunsSection({
                 </div>
                 {expanded ? (
                   <div className="mt-2 rounded bg-muted/50 p-2">
-                    <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                      Final response
-                    </div>
                     {final === undefined ? (
                       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                     ) : final ? (
@@ -509,7 +502,7 @@ function BorrowFromRunsSection({
                       </p>
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        This run has no assistant response.
+                        No response
                       </p>
                     )}
                   </div>

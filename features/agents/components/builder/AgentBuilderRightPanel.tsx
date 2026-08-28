@@ -88,20 +88,19 @@ export function AgentBuilderRightPanel({
   }
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col">
-      {/* Test cases: ONE floating icon, out of everything's way (builder-only
-          by design — samples never add page chrome). Picking a sample prefills
-          the composer through the normal input slices. */}
-      <AgentSamplesLauncher
-        agentId={agentId}
-        conversationId={conversationId}
-        className="absolute right-2 top-2 z-10"
-      />
+    <div className="flex h-full min-h-0 flex-col">
       <div className="min-h-0 flex-1">
         <AgentConversationColumn
           conversationId={conversationId}
           displayConversationId={displayConversationId ?? undefined}
           surfaceKey={surfaceKey}
+          aboveInput={
+            <AgentSamplesLauncher
+              agentId={agentId}
+              conversationId={conversationId}
+              className="px-2 pb-1"
+            />
+          }
           smartInputProps={{
             showSubmitOnEnterToggle: true,
             // Match the live run/chat surfaces (AgentRunnerPage, ChatRoomClient,

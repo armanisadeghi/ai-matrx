@@ -56,6 +56,7 @@ export const OVERLAY_IDS = [
   "agentPanelOverlay",
   "agentRunHistoryWindow",
   "agentRunWindow",
+  "agentTestCasesWindow",
   "agentSettingsWindow",
   "mandateWindow",
   "agentSkillsWindow",

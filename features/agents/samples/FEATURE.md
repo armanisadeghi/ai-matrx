@@ -38,14 +38,15 @@ shipped — the entry point is ONE floating icon, and it exists ONLY in the
 agent builder. Do not re-add chips, bars, or strips to any run surface.
 
 - **Builder launcher** — `components/samples/AgentSamplesLauncher.tsx`: a
-  single floating FlaskConical icon (absolute top-right of the builder test
-  panel, `AgentBuilderRightPanel.tsx`) opening the Test cases sheet. "Use"
+  single floating FlaskConical icon directly above the Smart Agent input in
+  `AgentBuilderRightPanel.tsx`, opening the non-blocking Test cases
+  `WindowPanel`. "Use"
   prefills the live instance through the SAME slices typing uses
   (`setUserVariableValues` + `setUserInputText`; the sample's `user_input` is
   human-typed text, so this is not a USER-INPUT-LAW violation). Context values
   are untouched. The runner has NO sample affordance.
 - **Manager** — `components/samples/AgentSamplesManager.tsx` (opened from the
-  launcher's sheet; also the admin page at
+  launcher's window; also the admin page at
   `/administration/agents/system-agents/agents/[id]/samples`): approved +
   candidate lists with freshness badges, approve/demote/delete, and
   **Borrow from real runs** — recent `chat.conversation` rows for the agent
@@ -70,6 +71,10 @@ agent builder. Do not re-add chips, bars, or strips to any run surface.
 
 ## Change Log
 
+- 2026-08-27 — Moved the builder's lone test-case icon from the test panel's
+  top-right corner to the band directly above Smart Agent. Replaced its
+  blocking right Sheet with the ephemeral `agentTestCasesWindow` and reduced
+  empty-state and section copy to compact labels.
 - 2026-08-26 — Chip strip removed same day on Arman's ruling ("worst place
   possible"): entry point is now the single floating `AgentSamplesLauncher`
   icon, builder-only; the runner carries no sample affordance.

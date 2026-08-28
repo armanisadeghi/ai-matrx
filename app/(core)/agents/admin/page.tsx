@@ -76,6 +76,12 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
 
   windowPanels: [
     {
+      overlayId: "agentTestCasesWindow",
+      description:
+        "Builder test cases — the canonical sample manager in a non-blocking window, opened from the Flask control directly above Smart Agent.",
+      status: "Live",
+    },
+    {
       overlayId: "scratchpadPanel",
       description:
         "Global scratchpad — the user's always-there notepad (pool + one active) in a right side panel, opened from Quick Actions on any page. Active scratchpad auto-attaches read-only to every conversation's agent context when non-empty.",
@@ -106,7 +112,15 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       name: "AgentSamplesLauncher",
       filePath: "features/agents/components/samples/AgentSamplesLauncher.tsx",
       description:
-        "The ONE floating test-cases icon in the builder test panel — opens the manager sheet; picking a sample prefills variables + user input through the normal instance slices. Builder-only; samples never add page chrome.",
+        "The ONE floating test-cases icon directly above Smart Agent — opens the manager WindowPanel; picking a sample prefills variables + user input through the normal instance slices. Builder-only; samples never add page chrome.",
+      tier: "internal",
+    },
+    {
+      name: "AgentTestCasesWindow",
+      filePath:
+        "features/window-panels/windows/agents/AgentTestCasesWindow.tsx",
+      description:
+        "Ephemeral non-blocking window around AgentSamplesManager, bound to the builder's active agent and test conversation.",
       tier: "internal",
     },
     {

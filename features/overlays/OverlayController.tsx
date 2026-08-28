@@ -166,6 +166,10 @@ const AgentConvertSystemWindow = lazyOverlay(
     import("@/features/window-panels/windows/agents/AgentConvertSystemWindow"),
   { ssr: false },
 );
+const AgentTestCasesWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/agents/AgentTestCasesWindow"),
+  { ssr: false },
+);
 const SystemInstructionWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/agents/SystemInstructionWindow"),
@@ -1182,6 +1186,9 @@ export default function OverlayController() {
     agentRunWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentRunWindow"),
     ),
+    agentTestCasesWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentTestCasesWindow"),
+    ),
     listenSummaryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "listenSummaryWindow"),
     ),
@@ -1548,6 +1555,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     agentRunWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentRunWindow"),
+    ) as Record<string, unknown> | null,
+    agentTestCasesWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentTestCasesWindow"),
     ) as Record<string, unknown> | null,
     listenSummaryWindow: useAppSelector((s) =>
       selectOverlayData(s, "listenSummaryWindow"),
@@ -2885,6 +2895,28 @@ export default function OverlayController() {
                 : null
             }
             initialAutoRun={data?.initialAutoRun === true}
+          />
+        );
+      })()}
+
+      {/* agentTestCasesWindow */}
+      {(() => {
+        const isOpen = isOpenById.agentTestCasesWindow;
+        const data = dataById.agentTestCasesWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <AgentTestCasesWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentTestCasesWindow" }))
+            }
+            agentId={typeof data?.agentId === "string" ? data.agentId : ""}
+            conversationId={
+              typeof data?.conversationId === "string"
+                ? data.conversationId
+                : ""
+            }
           />
         );
       })()}

@@ -696,6 +696,17 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "agent" },
   },
 
+  // ── Agent Test Cases ─────────────────────────────────────────────────────
+  {
+    slug: "agent-test-cases-window",
+    overlayId: "agentTestCasesWindow",
+    kind: "window",
+    label: "Test Cases",
+    defaultData: { agentId: "", conversationId: "" },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Agent Content (advanced editor) ──────────────────────────────────────
   {
     slug: "agent-advanced-editor-window",

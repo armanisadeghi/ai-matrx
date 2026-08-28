@@ -99,6 +99,8 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
+- 2026-08-27 — **Added `agentTestCasesWindow` for the agent builder's sample inputs.** The builder's Flask launcher now sits directly above Smart Agent and opens this singleton ephemeral WindowPanel instead of a blocking right Sheet. The window wraps the existing `AgentSamplesManager`, preserves the normal Redux prefill path, and uses fullscreen rather than drawer presentation on mobile.
+
 - 2026-08-27 — **Listen panel gains an in-place voice settings pane.** A tiny `Settings2` toggle in the window header swaps the BODY (transport footer stays live) for a settings pane composed from the canonical settings-system primitives on the SAME paths the Settings → Voice tab edits (`userPreferences.voice.voice/speed/language` via `useSetting`) — so every change auto-saves to the user's profile and is the app-wide default for all speech (`speak()` + the app-root streaming speaker read prefs per utterance). Includes a "Preview voice" button (stops current audio first, then speaks a sample through the canonical queue — no takeover popup). `LiveRunDisplay` is CSS-hidden, never unmounted, so its viewer retention keeps holding live request rows while settings are open.
 
 - 2026-08-27 — **URL hydration has one audited route-scoped pilot.** The lazy

@@ -215,6 +215,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  agentTestCasesWindow: {
+    label: "Test Cases",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentSettingsWindow: {
     label: "Agent Settings Window",
     instanceMode: "singleton",
