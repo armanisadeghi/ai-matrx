@@ -51,6 +51,16 @@
 --    conformance function matches its own body. Contract rows are DATA, never part of any
 --    function's `prosrc`, so they are stored plainly and cannot self-match. This lane has hit that
 --    trap five times; the registry removes the whole class for anything expressed as a contract.
+-- 4b. 🚨 THIS CHECK'S OWN PROSE MUST NOT BE SQL-SHAPED, AND F1 CAUGHT IT IMMEDIATELY. The first
+--    cut of check 31 explained itself with the phrase "protection is an INSERT into
+--    hr.function_contract" — inside a STRING LITERAL, not a comment — and F1 promptly flagged
+--    `hr.punch_write_path_conformance` as a STABLE door that writes. hr_l3_78 strips COMMENTS
+--    because comments cannot call anything; it deliberately does NOT strip literals, because that
+--    is exactly where `execute format('... hr.some_writer ...')` puts a real call, and stripping
+--    them would buy a false negative. So the constraint moves to the prose: say "a ROW in", never
+--    "an INSERT into". The old "don't name writers in comments" trap is dead; a narrower one —
+--    don't write write-SHAPED SQL in a string literal — is still real and is stated here rather
+--    than left for the next author to rediscover.
 -- 4. OVERLAP WITH CHECK 30 IS DELIBERATE AND BOUNDED. Check 30 asserts prosrc facts AND non-prosrc
 --    facts (the struck knob row is gone; the survivor's entry is seeded). Only the prosrc half is
 --    expressible as a contract, so 30 keeps the other half and stays. New protections go in the
@@ -225,7 +235,7 @@ begin
   || E'      || ''ledger row still said applied and nothing said the fix was gone. Each contract ''\n'
   || E'      || ''names WHAT MUST REMAIN TRUE rather than who owns the body, because a home-migration ''\n'
   || E'      || ''marker would be wiped by the very re-emit it exists to detect, leaving the gate ''\n'
-  || E'      || ''green over the loss. Adding protection is an INSERT into hr.function_contract, ''\n'
+  || E'      || ''green over the loss. Adding protection is a ROW in hr.function_contract, ''\n'
   || E'      || ''never a change to this check (D13).'');\n'
   || E'  return next;\n';
 

@@ -216,6 +216,19 @@ const EXPECTED_CHECKS = [
   // revert shapes are asserted, including the survivor being cleared, which would retire the switch
   // and turn the disclosure OFF: the exact failure the ordered pair exists to prevent.
   "existence_disclosure_has_one_switch",
+  // hr_l3_79. THE REPLAY-ORDER CLASS, GENERALIZED TO CONCURRENT LANES: an edit applied to a shared
+  // function must not be silently discardable by a later re-emit. hr_l3_69 was applied, ledgered
+  // and committed, then ERASED in the database when another lane re-created hr.leave_calendar from
+  // its own source — the ledger row still said "applied" and nothing said the fix was gone.
+  // Deriving the expected body from the migration corpus is infeasible here: 69 of 100 hr_l3
+  // migrations rewrite via pg_get_functiondef+replace, so no literal body exists to compare, and
+  // the SQL gate cannot read files at all. Instead each protected function declares WHAT MUST
+  // REMAIN TRUE of it, as rows in hr.function_contract — a re-emit that discards a fix breaks the
+  // contract by construction, where a home-migration marker would have been wiped by the same
+  // overwrite it was meant to detect. Protection is an INSERT, never a code change (D13).
+  // Coverage is opt-in and reported on every run; see the check's coverage_note for what it cannot
+  // see. Falsified against the exact lived history.
+  "function_contracts_hold",
 ] as const;
 
 interface ConformanceRow {
