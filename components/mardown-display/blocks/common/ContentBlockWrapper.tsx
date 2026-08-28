@@ -14,6 +14,9 @@ import {
     LucideIcon,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectCanvasIsAvailable, type CanvasContent, type CanvasContentType } from "@/features/canvas/redux/canvasSlice";
 import IconButton from "@/components/official/IconButton";
@@ -40,7 +43,10 @@ export interface ContentBlockWrapperProps {
     enableCanvas?: boolean;
     canvasType?: CanvasContentType;
     canvasData?: CanvasContent["data"];
-    canvasMetadata?: CanvasContent["metadata"];
+    canvasMetadata?: CanvasContent["metadata"] & {
+        artifactId?: string;
+        artifactIndex?: number;
+    };
     taskId?: string; // Task ID for canvas deduplication
     
     // Save/Download functionality
@@ -100,6 +106,7 @@ const ContentBlockWrapper: React.FC<ContentBlockWrapperProps> = ({
     
     // Canvas integration
     const { open: openCanvas } = useCanvas();
+    const { openArtifact } = useOpenArtifactInCanvas();
     const isCanvasAvailable = useAppSelector(selectCanvasIsAvailable);
     
     // ESC key handler
@@ -118,6 +125,37 @@ const ContentBlockWrapper: React.FC<ContentBlockWrapperProps> = ({
     
     const handleCanvasOpen = () => {
         if (!canvasType || !canvasData) return;
+        const artifactId = canvasMetadata?.artifactId;
+        const def = getArtifactDef(canvasType);
+
+        if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+            const rawPayload =
+                typeof canvasData === "string"
+                    ? canvasData
+                    : (JSON.stringify(canvasData) ?? String(canvasData));
+            const artifactTitle =
+                title ??
+                (typeof canvasMetadata?.title === "string"
+                    ? canvasMetadata.title
+                    : "Artifact");
+            const artifactIndex =
+                canvasMetadata?.artifactIndex && canvasMetadata.artifactIndex > 0
+                    ? canvasMetadata.artifactIndex
+                    : 1;
+
+            void openArtifact({
+                canvasType,
+                title: artifactTitle,
+                content: rawPayload,
+                messageId:
+                    canvasMetadata?.messageId ?? canvasMetadata?.sourceMessageId,
+                conversationId: canvasMetadata?.conversationId,
+                artifactId,
+                artifactIndex,
+                metadata: { ...canvasMetadata },
+            });
+            return;
+        }
         
         openCanvas({
             type: canvasType as CanvasContentType,
@@ -301,4 +339,3 @@ const ContentBlockWrapper: React.FC<ContentBlockWrapperProps> = ({
 };
 
 export default ContentBlockWrapper;
-
