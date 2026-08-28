@@ -38,6 +38,8 @@ EMPLOYEE = "11dfa190-8762-4bca-b131-ee13ed397f72"      # EMP-00012, g2t13.tomas@
 APPROVER = "ca9e12da-35bb-402d-8bda-1b76fa4c678d"      # EMP-00004, admin+g2v.priya@admin.com
 EMPLOYEE_USER = "daeb6d44-a7dd-4085-aba2-5025fb711b79"
 PROOF_PW = "L5-proof-" + os.urandom(6).hex()
+# Fixed so a page open across a run cannot go stale — see the note at the fixture insert.
+PROOF_POLICY_ID = "5e6a0d1c-0000-4a5b-9c00-11115e6a0d1c"
 
 RED: list[str] = []
 GREEN = 0
@@ -106,9 +108,12 @@ async def main() -> None:  # noqa: C901
         up is to disable that trigger for the delete and put it straight back. That is lawful for
         a proof fixture in a sandbox org and would be a defect anywhere else.
         """
+        # The STABLE policy is deliberately exempt: purging it is what broke a verifier's session.
+        # Only strays from older runs are removed.
         ids = await conn.fetch(
-            "select id from hr.leave_policy where organization_id=$1::uuid and name like 'ZZZ L5 PROOF%'",
-            ORG,
+            "select id from hr.leave_policy where organization_id=$1::uuid "
+            "  and name like 'ZZZ L5 PROOF%' and id <> $2::uuid",
+            ORG, PROOF_POLICY_ID,
         )
         for row in ids:
             pid = str(row["id"])
@@ -147,8 +152,29 @@ async def main() -> None:  # noqa: C901
             "   and standard_hours_per_week is null; end $$;"
         )
 
-        policy_id = await conn.fetchval(
+        # 🚨 A STABLE ID, NOT A NEW ONE EVERY RUN. Round 30 caught a `policy_not_available`
+        # refusal on a policy the form had just offered: this script used to purge and recreate
+        # its policy on every run, so a verifier's page loaded before a run held an id that no
+        # longer existed by submit time. **My test data was deleting a policy under a live
+        # session.** The policy is now upserted at a FIXED id and never purged, so an open page
+        # cannot go stale underneath somebody.
+        policy_id = PROOF_POLICY_ID
+        await conn.execute(
             """
+            with armed as (select hr.arm_write())
+            insert into hr.leave_policy
+              (id, name, leave_kind, accrual_method, accrual_rate, accrual_unit, accrual_starts,
+               balance_cap, carryover_allowed, increment_minutes, requires_approval,
+               worker_class_scope, schedule_class_scope, is_active, organization_id)
+            select $1::uuid, 'ZZZ L5 PROOF — PTO bank', 'pto', 'per_pay_period', 3.08,
+                   'pay_period', 'hire', 120, true, 15, true,
+                   '{employee}'::text[], '{}'::text[], true, $2::uuid
+              from armed
+            on conflict (id) do update set is_active = true
+            """,
+            PROOF_POLICY_ID, ORG,
+        )
+        _unused_policy_insert = """
             with armed as (select hr.arm_write())
             insert into hr.leave_policy
               (name, leave_kind, accrual_method, accrual_rate, accrual_unit, accrual_starts,
@@ -158,9 +184,7 @@ async def main() -> None:  # noqa: C901
                    120, true, 15, true, '{employee}'::text[], '{}'::text[], true, $1::uuid
               from armed
             returning id
-            """,
-            ORG,
-        )
+            """
         policy_id = str(policy_id)
         enroll_id = await conn.fetchval(
             """
