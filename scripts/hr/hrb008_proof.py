@@ -636,6 +636,18 @@ async def main():
         rk0b = await j("select hr.wf_decide($1,'rejected')", t_step)
         rec("§4.2 refusals", "rejecting with no reason is refused — a hard rule, never a knob (§9.1)",
             rk0b.get("granted") is False and rk0b.get("reason") == "WF_REASON_REQUIRED", rk0b.get("reason"))
+        # 🚨 SINCE hr_c4_22 A TERMINATION NEEDS TWO ACTORS ON ITS LADDER, and the fixture had one.
+        # Dave holds termination_approve at a WORSE rank than carol, so the authority rung still
+        # yields carol alone for hr_review (min rank wins), and once she is struck as a prior
+        # decider the `substitute` rung — "the next-rank holder in the same scope" — is what carries
+        # the second actor to the executive step. The ladder was always the mechanism for this.
+        await as_owner()
+        await conn.execute(
+            "insert into hr.approval_authority (organization_id, holder_kind, holder_id, action_type, "
+            "scope_kind, rank, effective_from) "
+            "values ($1,'employment',$2,'termination_approve','org',95,current_date - 300)",
+            org, str(people["dave"]["employment"]))
+        await as_user(people["carol"]["uid"])
         rk = await j("select hr.wf_decide($1,'approved','Position eliminated; approved by HR.')", t_step)
         rec("§8.3 termination", "HR review approves with a mandatory reason", rk.get("granted"),
             json.dumps(rk)[:160])
@@ -644,9 +656,26 @@ async def main():
             "select id from hr.workflow_step where workflow_instance_id=$1 and step_key='executive_approval'", term)
         rec("§2.4 condition", "the executive step ACTIVATED because the separation is involuntary",
             await conn.fetchval("select state='active' from hr.workflow_step where id=$1", e_step))
+        rec("§1.4 two actors", "🚨 §8.3's executive step is NOT offered to the HR reviewer who just decided — the second level is a second person",
+            not await conn.fetchval(
+                "select resolved_approver_ids @> array[$2]::uuid[] from hr.workflow_step where id=$1",
+                e_step, people["carol"]["employment"]),
+            str(await conn.fetchval(
+                "select resolved_approver_ids::text from hr.workflow_step where id=$1", e_step)))
         await as_user(people["carol"]["uid"])
+        rl_self = await j("select hr.wf_decide($1,'approved','Same person, second level.')", e_step)
+        rec("§1.4 two actors", "and the decide door refuses her by name if she reaches it anyway",
+            rl_self.get("granted") is False
+            and rl_self.get("reason") in ("WF_DISTINCT_ACTOR_REQUIRED", "WF_NOT_APPROVER"),
+            rl_self.get("reason"))
+        await as_user(people["dave"]["uid"])
         rl = await j("select hr.wf_decide($1,'approved','Confirmed.')", e_step)
         await as_owner()
+        rec("§1.4 two actors", "🚨 the SUBSTITUTE rung carries the second actor and the two-level review actually happens — two distinct deciders on the ladder",
+            rl.get("granted") is True and await conn.fetchval(
+                "select count(distinct actor_employment_id)=2 from hr.workflow_decision "
+                "where workflow_instance_id=$1 and step_key in ('hr_review','executive_approval')", term),
+            json.dumps(rl)[:140])
         term_state = await conn.fetchval("select state from hr.workflow_instance where id=$1", term)
         branches = await conn.fetch(
             "select step_key, state from hr.workflow_step where workflow_instance_id=$1 "
@@ -1499,12 +1528,24 @@ async def main():
         # twice. A control that reads as a control and is not one is worse than no second step,
         # because the second step is what everybody downstream trusts.
         await as_owner()
+        # its own subject: act_emp2 already holds a primary position (the pre-flight's), and the
+        # exclusion constraint allows exactly one at a time — correctly.
+        ta_party = await conn.fetchval(
+            "insert into crm.party (organization_id, party_kind, display_name) "
+            "values ($1,'person','Hana Two') returning id", act_org)
+        ta_e = await conn.fetchval(
+            "insert into hr.employee (organization_id, party_id, employee_number, legal_first_name, "
+            "legal_last_name, display_name) values ($1,$2,'EMP-hana','Hana','Two','Hana Two') returning id",
+            act_org, ta_party)
+        ta_emp = await conn.fetchval(
+            "insert into hr.employment (organization_id, employee_id, employer_profile_id, hire_date, status) "
+            "values ($1,$2,$3,current_date - 150,'active') returning id", act_org, ta_e, act_er)
         ta_pa = await conn.fetchval(
             "insert into hr.position_assignment (organization_id, employment_id, job_title_id, "
             "department_id, location_id, worker_class, flsa_status, pay_basis, schedule_class, "
             "effective_from, manager_employment_id) "
             "values ($1,$2,$3,$4,$5,'employee','nonexempt','hourly','full_time',current_date - 90,$6) returning id",
-            act_org, act_emp2, act_jt, act_dept, act_loc, act_owner_emp)
+            act_org, ta_emp, act_jt, act_dept, act_loc, act_owner_emp)
         # only Fay qualifies: she holds every founding authority in this org
         await as_user(gil_uid)
         ta_req = await j("select hr.wf_request('pay_change','hr_position_assignment',$1,$2)", ta_pa, act_org)
@@ -1558,14 +1599,28 @@ async def main():
             await conn.fetchval(
                 "select count(*)=1 from hr.workflow_decision where workflow_instance_id=$1", ta_inst))
         # grant a genuine second actor and the chain completes with TWO distinct deciders
+        # 🚨 NOT Gil — he SUBMITTED this request, and pay_change marks the requester an interested
+        # party (§2.2 rule 2), so he is struck from every step of it. The second actor has to be a
+        # genuinely uninvolved third person, which is the whole point of the rule.
+        ivy_uid = await conn.fetchval(
+            "insert into auth.users (id, instance_id, aud, role, email, encrypted_password, "
+            "email_confirmed_at, created_at, updated_at) values "
+            "(gen_random_uuid(),'00000000-0000-0000-0000-000000000000','authenticated','authenticated',"
+            "$1,'x',now(),now(),now()) returning id", f"ivy.{uuid.uuid4().hex[:8]}@example.invalid")
+        ivy_party = await conn.fetchval(
+            "insert into crm.party (organization_id, party_kind, display_name) "
+            "values ($1,'person','Ivy Second') returning id", act_org)
+        ivy_e = await conn.fetchval(
+            "insert into hr.employee (organization_id, party_id, login_user_id, employee_number, "
+            "legal_first_name, legal_last_name, display_name) values ($1,$2,$3,'EMP-ivy','Ivy','Second','Ivy Second') "
+            "returning id", act_org, ivy_party, ivy_uid)
+        gil_emp = await conn.fetchval(
+            "insert into hr.employment (organization_id, employee_id, employer_profile_id, hire_date, status) "
+            "values ($1,$2,$3,current_date - 250,'active') returning id", act_org, ivy_e, act_er)
         await conn.execute(
             "insert into hr.approval_authority (organization_id, holder_kind, holder_id, action_type, "
             "scope_kind, rank, effective_from) values ($1,'employment',$2,'pay_change_approve','org',5,current_date - 300)",
-            act_org, str((await conn.fetchrow(
-                "select id from hr.employment where organization_id=$1 and employee_id=$2",
-                act_org, gil_e))["id"]))
-        gil_emp = await conn.fetchval(
-            "select id from hr.employment where organization_id=$1 and employee_id=$2", act_org, gil_e)
+            act_org, str(gil_emp))
         await conn.execute("update hr.workflow_step set state='pending' where id=$1", ta_step2["id"])
         await conn.execute("select hr.wf_activate_step($1)", ta_step2["id"])
         ta_step2b = await conn.fetchrow(
@@ -1574,7 +1629,7 @@ async def main():
         rec("§1.4 two actors", "🚨 grant a genuine second actor and the SAME step routes to THEM — the block was never about the request",
             ta_step2b["state"] == "active" and gil_emp in list(ta_step2b["resolved_approver_ids"]),
             f'state={ta_step2b["state"]} approvers={list(ta_step2b["resolved_approver_ids"])}')
-        await as_user(gil_uid)
+        await as_user(ivy_uid)
         ta_d3 = await j("select hr.wf_decide($1,'approved','Second level, second person.')", ta_step2["id"])
         await as_owner()
         rec("§1.4 two actors", "🚨 and the chain completes with TWO DISTINCT deciders — a two-level review that actually happened",
