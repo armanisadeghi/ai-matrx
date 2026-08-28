@@ -99,6 +99,58 @@ async def main():
         rec(f"🚨 FORGE 3 — {fn} as a non-member is DENIED",
             denied(st, b), f"status={st} body={json.dumps(b)[:130] if isinstance(b,(dict,list)) else str(b)[:130]}")
 
+    # ============ TEST 4: the LEGITIMATE path still works (the fix must not break the door)
+    # 4a — the owner path (postgres/service_role — exactly what the DEFINER wrappers call as) still MINTS
+    import uuid as _uuid
+    org = await conn.fetchval("select id from iam.organizations limit 1")
+    sp = conn.transaction(); await sp.start()
+    await conn.execute("select set_config('hr.privileged_write','on',true)")
+    minted = False; mint_keys = None
+    try:
+        v = await conn.fetchval("""select platform.mint_outsider_token(
+            p_consumer_key => 'esign.signer', p_subject_type => 'esign_envelope_signer',
+            p_subject_id => $1::uuid, p_scope => '{}'::jsonb, p_organization_id => $2::uuid,
+            p_recipient => '{"email":"probe@example.invalid","name":"Probe"}'::jsonb,
+            p_overrides => '{}'::jsonb)::text""", _uuid.uuid4(), org)
+        vj = json.loads(v)
+        mint_keys = list(vj.keys())
+        minted = ("secret" in json.dumps(vj).lower() and vj.get("actor_token_id") is not None)
+    except Exception as e:
+        mint_keys = f"ERROR {str(e)[:120]}"
+    await sp.rollback()
+    rec("🚨 TEST 4a — the LEGITIMATE mint through the owner path (what the DEFINER wrappers use) STILL "
+        "MINTS a secret — the fix locked the client grant, not the function",
+        minted, f"result keys={mint_keys}")
+    # 4b — the per-purpose DEFINER wrappers stay reachable and gate internally
+    wrappers_ok = True; wdetail = []
+    for sig in ("public.esign_mint_signer_token(uuid,text)",
+                "public.hr_mint_investigation_token(uuid,text,text,text)",
+                "public.hr_mint_records_request_token(uuid,text,text[],text)"):
+        can = await conn.fetchval("select has_function_privilege('authenticated',$1,'EXECUTE')", sig)
+        definer = await conn.fetchval("select p.prosecdef from pg_proc p where p.oid=$1::regprocedure", sig)
+        wrappers_ok = wrappers_ok and can and definer
+        wdetail.append(f"{sig.split('(')[0].split('.')[-1]}:exec={can},definer={definer}")
+    rec("🚨 TEST 4b — the per-purpose DEFINER wrappers stay authenticated-executable AND SECURITY "
+        "DEFINER (they gate internally and call mint as owner) — the door is intact",
+        wrappers_ok, "; ".join(wdetail))
+
+    # ============ SPOT-CHECK: check-33 / platform reachability guard covers platform.* with 0 debt
+    drift = await conn.fetch("select * from platform.reachability_drift()")
+    parity = await conn.fetch("select * from platform.reachability_definition_parity()")
+    rec("SPOT-CHECK — the platform reachability guard reports ZERO drift and ZERO definition-parity "
+        "gaps (platform.* is swept, debt 0)",
+        len(drift) == 0 and len(parity) == 0, f"drift={len(drift)} parity={len(parity)}")
+    forge_reachable = await conn.fetchval(
+        "select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+        "where n.nspname='platform' and p.proname in "
+        "('mint_outsider_token','revoke_outsider_token','reanchor_outsider_token') "
+        "and (has_function_privilege('authenticated',p.oid,'EXECUTE') "
+        "     or has_function_privilege('anon',p.oid,'EXECUTE'))")
+    ins = await conn.fetchval("select has_table_privilege('authenticated','platform.actor_token','INSERT')")
+    rec("and the forge surface itself is 0-debt — no mint/revoke/reanchor is client-executable and "
+        "actor_token has no client INSERT grant",
+        forge_reachable == 0 and ins is False, f"client-reachable forge fns={forge_reachable}, actor_token INSERT grant={ins}")
+
     await conn.close(); await http.aclose()
     await report()
 
