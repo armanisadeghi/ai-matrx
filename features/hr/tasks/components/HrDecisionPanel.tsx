@@ -22,7 +22,6 @@ import {
 } from "@/features/hr/tasks/service";
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
 import { relativeDue } from "@/features/hr/tasks/urgency";
-import { useHrContext } from "@/features/hr/shared/useHrContext";
 import type {
     HrDecisionIntent,
     HrInboxChange,
@@ -126,9 +125,6 @@ export function HrDecisionPanel({
     }, [loading, detail]);
 
     const instance: Row = detail?.instance ?? {};
-    // The viewer's own employment, which is how "is this my request?" is answered.
-    const { active } = useHrContext();
-    const employmentId = active?.employment_id ?? null;
     const steps: Row[] = detail?.steps ?? [];
     const step = stepId ? steps.find((s) => s.id === stepId) : steps.find((s) => s.state === "active");
     const restricted = str(instance, "sensitivity_tier") === "restricted";
@@ -187,8 +183,19 @@ export function HrDecisionPanel({
       approver, or a different date, so a disabled button would imply a state that
       cannot arrive.
     */
-    const viewerIsSubject =
-        !!employmentId && employmentId === str(instance, "subject_employment_id");
+    /*
+      🚨 THE DOOR ANSWERS THIS, BECAUSE IT IS AN IDENTITY FACT.
+      This used to compare `subject_employment_id` against
+      `hr_my_context().active.employment_id` — which resolves through
+      hr._l1_self_employment(uid, org, TODAY) and is therefore DATE-SCOPED. For a
+      PRE-START hire it is null, so the comparison was false for exactly the
+      people whose requests are filed before their start date, and the guard
+      silently stopped firing: a subject saw the decider's four controls,
+      byte-identical. Whether a request is ABOUT ME does not depend on whether I
+      am employed today (hr_c4_39 / hr_l3_88), so `_wf_display` resolves it once
+      from the login on the subject's employment.
+    */
+    const viewerIsSubject = bool(shownStep, "viewer_is_subject");
     const openFailures = (detail?.failures ?? []).filter(
         (f) => f.state === "open" || f.state === "retrying",
     );
