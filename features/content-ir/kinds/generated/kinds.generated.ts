@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "5263c01ce882";
+export const KIND_REGISTRY_FINGERPRINT = "77b986530692";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2828,6 +2828,48 @@ export interface PressSourceRequestOutcome {
 }
 
 /**
+ * * From kind `web_result`.
+ */
+export interface ProductDetails {
+  url?: string | null;
+  name?: string | null;
+  type?: string | null;
+  price?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  offers?: ProductOffer[];
+  thumbnail?: ProductImage | null;
+  description?: string | null;
+}
+
+/**
+ * * From kind `web_result`.
+ */
+export interface ProductImage {
+  src?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  original?: string | null;
+}
+
+/**
+ * * From kind `web_result`.
+ */
+export interface ProductOffer {
+  url?: string | null;
+  price?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  priceCurrency?: string | null;
+}
+
+/**
  * * Shared by 2 kinds (entity_card, serp_placement).
  */
 export interface ProfileLink {
@@ -5334,7 +5376,7 @@ export interface AggregateResult {
 }
 
 /**
- * Kind `ai_answer` (registry v13).
+ * Kind `ai_answer` (registry v15).
  */
 export interface AiAnswer {
   /**
@@ -6949,7 +6991,7 @@ export interface DirectoryListing {
 }
 
 /**
- * Kind `discussion_result` (registry v12).
+ * Kind `discussion_result` (registry v14).
  */
 export interface DiscussionResult {
   url: string;
@@ -7031,7 +7073,7 @@ export interface DomainFoldReport {
 }
 
 /**
- * Kind `entity_card` (registry v13).
+ * Kind `entity_card` (registry v15).
  */
 export interface EntityCard {
   name: string;
@@ -7102,7 +7144,7 @@ export interface EvidenceSource {
  * `source`/`position` are OPTIONAL here because authored FAQs have neither —
  * the search adapters always fill both.
  *  *
- *  * Kind `faq_item` (registry v11).
+ *  * Kind `faq_item` (registry v13).
  */
 export interface FaqItem {
   /**
@@ -7578,7 +7620,7 @@ export interface GeneratedVideoSet {
 }
 
 /**
- * Kind `geo_coordinates` (registry v12).
+ * Kind `geo_coordinates` (registry v14).
  */
 export interface GeoCoordinates {
   /**
@@ -8690,7 +8732,7 @@ export interface LiveHelpAnswer {
 }
 
 /**
- * Kind `local_place` (registry v15).
+ * Kind `local_place` (registry v17).
  */
 export interface LocalPlace {
   name: string;
@@ -9227,7 +9269,7 @@ export interface NerEntityRef {
 }
 
 /**
- * Kind `news_result` (registry v12).
+ * Kind `news_result` (registry v14).
  */
 export interface NewsResult {
   url: string;
@@ -9490,7 +9532,7 @@ export interface OfficeSpreadsheet {
 }
 
 /**
- * Kind `opening_hours` (registry v13).
+ * Kind `opening_hours` (registry v15).
  */
 export interface OpeningHours {
   /**
@@ -10673,7 +10715,7 @@ export interface PodcastVideoComposeResult {
 }
 
 /**
- * Kind `postal_address` (registry v12).
+ * Kind `postal_address` (registry v14).
  */
 export interface PostalAddress {
   city?: string | null;
@@ -11433,7 +11475,7 @@ export interface RandomStringResult {
 }
 
 /**
- * Kind `rating` (registry v12).
+ * Kind `rating` (registry v14).
  */
 export interface Rating {
   /**
@@ -15206,7 +15248,7 @@ export interface VideoPromptOptions {
 }
 
 /**
- * Kind `video_result` (registry v12).
+ * Kind `video_result` (registry v14).
  */
 export interface VideoResult {
   url: string;
@@ -17720,7 +17762,7 @@ export interface WebRedirectLoopV1 {
 }
 
 /**
- * Kind `web_result` (registry v14).
+ * Kind `web_result` (registry v16).
  */
 export interface WebResult {
   url: string;
@@ -17737,6 +17779,10 @@ export interface WebResult {
   source: string;
   favicon?: string | null;
   is_live?: boolean | null;
+  /**
+   * Provider product metadata attached to this organic result, including offers.
+   */
+  product?: ProductDetails | null;
   snippet?: string | null;
   /**
    * Provider's verbatim relative age when that is all it gave.
