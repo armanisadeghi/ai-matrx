@@ -15,39 +15,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D283 — `hr_wf_for_target` has no authorization gate at all, and returns another organization's workflow history (2026-08-28)
-
-`public.hr_wf_for_target(p_target_token, p_target_id)` → `hr.wf_for_target` filters on
-`(target_token, target_id)` and **nothing else**. No `auth.uid()`, no capability call, no
-organization predicate. The inner is already `SECURITY DEFINER`, so RLS is bypassed and there is
-nothing else standing in front of it.
-
-**Measured live** (rolled back), as a non-admin employment in an **unrelated** organization:
-
-```
-public.hr_wf_for_target('hr_position_assignment', <another org's assignment id>)
-  → granted: true
-  → history: [{"flow_key":"pay_change","state":"cancelled","instance_id":"54d3ec54-…"}]
-```
-
-So knowing a target uuid is sufficient to learn that org's workflow existence, flow kind, state and
-timestamps. Not enumerable (uuids are not guessable) but not gated either. Every other workflow door
-refuses the same caller by name — `WF_NOT_APPROVER`, `no_cancel_authority`, `not_the_requester`,
-`no_reassign_authority`, `not_the_assignee`, `no_authority_to_delegate`.
-
-**This predates the door conversion and is not caused by it** — the INVOKER wrapper never protected
-anything, because the inner was already `DEFINER`. But it is why `hr_c4_35` converted 11 of the 12
-doors and **stopped this one by name**: stamping `SECURITY DEFINER` on a door that authorizes nobody
-is the one shape that conversion can turn into a hole. Cost of the stop is exactly **one** grant —
-`hr.wf_for_target` calls no other `hr` function, so 52 of the campaign's 53 inner grants are still
-free to revoke.
-
-**Fix shape (needs a ruling, not a guess):** the natural gate is the same one `hr.wf_instance`
-already applies — resolve the caller's employments and require either an organization match or
-`workflow.view_queue` over the subject. That is a behaviour change for any caller relying on the
-current openness, so it belongs to whoever owns the target-page contract. Once gated, converting the
-door is mechanical and the last inner grant closes with it.
-
 ### D281 — `esign.envelope` is not in `hr._approval_subject`'s allowlist, so `signature_request` can never route (2026-08-28)
 
 `hrb011_proof.py` aborts at 106 assertions with:
@@ -2376,6 +2343,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D283** — `hr.wf_for_target` had no authorization gate at all and returned another organization's workflow history to an unrelated non-admin. **RULED and FIXED 2026-08-28 by `hr_c4_36`:** it now gates through **the same visibility predicate the instance read path applies** — the five-way standing test (filed it, subject of it, routed it, decided it, or holds `workflow.view_queue` in its org) was **extracted** from `hr.wf_instance` into `hr._wf_instance_visible`, and both doors now ASK it rather than each carrying a copy, because two implementations of one visibility rule drift on the first change. An unentitled caller gets the **absence shape** — `{granted:true, open:[], history:[]}`, byte-identical to an id that was never real — rather than a named refusal that would confirm the target exists. Proven live 12/0 (`scripts/hr/hrb008_for_target_visibility_proof.py`), with the pre-gate baseline committed as a fixture because it can never be recaptured: **75 entitled answers byte-identical, 132 narrowed, 0 widened.** `public.hr_wf_for_target` converted to SECURITY DEFINER with it, so every `public.hr_wf_*` door is now DEFINER. 2026-08-28.
 
 - **D282** — `pay_change` shows the salary to whoever was routed the step: it carries its proposal FLAT under `hr_position_assignment`, which is behind no door, so `hr_c4_33`'s routing-time entitlement gate does not arm on it. **RULED 2026-08-28 as the SPEC-ACCESS §1.4 approval carve-out — option (b), not an engine change:** holding the step's approval authority entitles the decider to THAT REQUEST'S change summary, both sides of the one number, only while assigned, and never `comp.read`. Option (a) was rejected because granting `comp.read` to `pay_change_approve` holders would breach the derived manager row's *"nothing else"* and hand out the subject's whole compensation history to approve one raise. The existing behaviour is therefore correct **by rule**. `hr_c4_34` pins the carve-out's precondition — assigned ⟹ holds the authority — in `hr._wf_pay_change_digest`'s contract row (one number, both sides, `array_agg` banned) and in five `hrb008_proof.py` assertions that re-resolve every live `pay_change` step and check `hr.can_approve`'s RULE 2b still carries the `auto_record` mode guard that keeps a bare manager off a pay change. 2026-08-28.
 
