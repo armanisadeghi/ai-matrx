@@ -4,8 +4,10 @@
  * features/media-capture/components/CaptureThumb.tsx
  *
  * The capture thumbnail — a one-line leaf over the canonical
- * `<InlineMediaRef>` (which re-mints from `file_id`, so a thumbnail can never
- * rot into an expired signed URL).
+ * `<InlineMediaRef>`. The file_id remains the identity; the authenticated
+ * blob transport fetches its current bytes with bearer auth so the thumbnail
+ * also survives iOS Safari blocking the cross-site file-session cookie after
+ * a reload.
  *
  * Why it is its OWN component: `InlineMediaRef` takes its media reference on a
  * prop literally named `ref`. The React Compiler's ref analysis treats every
@@ -24,5 +26,13 @@ export interface CaptureThumbProps {
 }
 
 export function CaptureThumb({ fileId, alt }: CaptureThumbProps) {
-  return <InlineMediaRef ref={fileId} size="fill" alt={alt} fallback="icon" />;
+  return (
+    <InlineMediaRef
+      ref={fileId}
+      size="fill"
+      alt={alt}
+      fallback="icon"
+      transport="authenticated-blob"
+    />
+  );
 }

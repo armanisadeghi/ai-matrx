@@ -85,6 +85,10 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-27 — ID-backed mobile media can use bearer-authenticated blob transport.**
+  `InlineMediaRef` now offers `transport="authenticated-blob"` for persisted thumbnails that must
+  survive browsers blocking the cross-site file-session cookie; ordinary previews retain the
+  canonical element transport, and external URLs are unchanged.
 - **2026-08-27 — PDF Edit reaches the canonical annotation surface on every viewport.** The
   Preview action routes PDFs to Analysis Studio, while the File tab strip and Files/Studio PDF
   annotation controls keep the tablet/mobile 44px touch floor.

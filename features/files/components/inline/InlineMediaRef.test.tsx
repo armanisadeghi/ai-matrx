@@ -95,6 +95,26 @@ describe("InlineMediaRef canvas transport", () => {
     );
   });
 
+  it("loads ID-backed mobile media through the authenticated blob transport", () => {
+    act(() => {
+      root.render(
+        <InlineMediaRef
+          ref={FILE_ID}
+          transport="authenticated-blob"
+          alt="Persisted capture"
+        />,
+      );
+    });
+
+    expect(mockUseFileBlob).toHaveBeenCalledWith(FILE_ID);
+    expect(mockUseFileAs).toHaveBeenCalledWith(null, { kind: "html_src" });
+    const image = container.querySelector("img");
+    expect(image?.getAttribute("src")).toBe(
+      "blob:https://manage.aimatrx.com/canvas-safe",
+    );
+    expect(image?.getAttribute("crossorigin")).toBeNull();
+  });
+
   it("keeps ordinary previews on the universal display URL path", () => {
     act(() => {
       root.render(<InlineMediaRef ref={FILE_ID} alt="Screenshot" />);

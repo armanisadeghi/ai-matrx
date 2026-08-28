@@ -55,7 +55,7 @@ Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPrevi
 
 ## Invariants
 
-1. Bytes only via `uploads.ts` → `fileHandler.upload`; persist `file_id`, never a URL; render via `CaptureThumb`/`InlineMediaRef`.
+1. Bytes only via `uploads.ts` → `fileHandler.upload`; persist `file_id`, never a URL; render via `CaptureThumb`/`InlineMediaRef`. Persisted capture thumbnails use the bearer-authenticated blob transport, not the cross-site file-session cookie.
 2. An item's `folder_path` is set once at creation and never renamed — a code assigned later lives on the row + file metadata only.
 3. QR dedupe: the current item's own code never re-fires; a repeat value re-fires only after 4 s out of frame.
 4. Voice note and video recording never run together (the app-wide capture lock would take over) — the UI disables the other control.
@@ -63,5 +63,6 @@ Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPrevi
 
 ## Change log
 
+- 2026-08-27 — Persisted thumbnails now resolve from `file_id` through `CaptureThumb`'s authenticated blob transport, fixing post-refresh image failures in iOS Safari.
 - 2026-08-28 — v2 (Arman's round-1 feedback): full-screen capture (viewport-crop preview + FULL-SENSOR shutter — deliberate non-WYSIWYG, ratified), overlay controls on gradient scrims, hide-controls Eye toggle (recording/QR chips stay), `/all` manage table (MatrxDataTable, readAllRows-complete org reads), `/item/[id]` view mode (media grid + add/delete files + SKU/notes autosave), `?item=` capture deep link, shared `ProductCaptureHeader`, `removeItemFile` chokepoint. type-check/eslint/scroll-chain green.
 - 2026-08-28 — v1: DB pair created live (certified), capture surface (Mode 1 + QR Mode 2, photo/video, SKU, notes, voice notes w/ background transcription), review drawer, nav entry + `PackagePlus` shell icon, `PRODUCT_CAPTURES` folder convention. type-check green.
