@@ -4,8 +4,10 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ChevronRight,
   FilePlus,
+  FolderPlus,
   FolderHeart,
   MoreHorizontal,
+  RefreshCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,8 +45,11 @@ import {
   ROW_HEIGHT,
   TEXT_BODY,
 } from "../../styles/tokens";
-import { FileIcon } from "../../styles/file-icon";
-import { LibraryTreeNode } from "./LibraryTreeNode";
+import {
+  LibraryTreeNode,
+  PersistedLibraryFileRow,
+  type LibraryTreeActions,
+} from "./LibraryTreeNode";
 import { listLibrarySources } from "../../library-sources/registry";
 import { SourceFolderNode } from "./SourceFolderNode";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
@@ -54,6 +59,7 @@ const selectRootFiles = makeSelectFilesInFolder(null);
 interface LibraryTreeProps {
   refreshKey?: number;
   onCreateFile: (folderId: string | null, label: string) => void;
+  actions: LibraryTreeActions;
 }
 
 /**
@@ -63,6 +69,7 @@ interface LibraryTreeProps {
 export const LibraryTree: React.FC<LibraryTreeProps> = ({
   refreshKey = 0,
   onCreateFile,
+  actions,
 }) => {
   const dispatch = useAppDispatch();
   const listStatus = useAppSelector(selectCodeFilesListStatus);
@@ -148,6 +155,7 @@ export const LibraryTree: React.FC<LibraryTreeProps> = ({
         defaultExpanded={!focusedLibrarySourceId}
         forceExpanded={Boolean(focusedFolderId)}
         onCreateFile={onCreateFile}
+        actions={actions}
       />
 
       {/* Adapter-backed source roots. Each one is lazy — entries are
@@ -183,6 +191,7 @@ interface MyFilesRootProps {
   /** Held open by a `?folder=` deep link, regardless of the local toggle. */
   forceExpanded?: boolean;
   onCreateFile: (folderId: string | null, label: string) => void;
+  actions: LibraryTreeActions;
 }
 
 const MyFilesRoot: React.FC<MyFilesRootProps> = ({
@@ -195,6 +204,7 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
   defaultExpanded = true,
   forceExpanded = false,
   onCreateFile,
+  actions,
 }) => {
   const dispatch = useAppDispatch();
   const [locallyExpanded, setLocallyExpanded] = useState(defaultExpanded);
@@ -216,6 +226,20 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
           label: "New file",
           icon: FilePlus,
           onSelect: () => onCreateFile(null, "My Files"),
+        },
+        {
+          kind: "item",
+          id: "library-root-new-folder",
+          label: "New folder",
+          icon: FolderPlus,
+          onSelect: () => actions.onCreateFolder(null, "My Files"),
+        },
+        {
+          kind: "item",
+          id: "library-root-refresh",
+          label: "Refresh",
+          icon: RefreshCw,
+          onSelect: actions.onRefresh,
         },
       ],
     },
@@ -305,94 +329,25 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
               key={folder.id}
               folder={folder}
               depth={depth + 1}
+              parentPath="My Files"
               onOpenFile={openFile}
               activeTabId={activeTabId}
               onCreateFile={onCreateFile}
+              actions={actions}
             />
           ))}
 
-          {rootFiles.map((file) => {
-            const tabId = libraryTabId(file.id);
-            const active = activeTabId === tabId;
-            const fileMenuSections: ContextMenuExtraSection[] = [
-              {
-                id: "library-file-actions",
-                anchor: "after-clipboard",
-                items: [
-                  {
-                    kind: "item",
-                    id: "library-file-open",
-                    label: "Open",
-                    onSelect: () => openFile(file.id),
-                  },
-                ],
-              },
-            ];
-            return (
-              <NonEditableContextMenu
-                key={file.id}
-                sourceFeature="code-editor"
-                contextData={{ content: file.path ?? file.name }}
-                contentSource={{ type: "raw" }}
-                entity={{
-                  type: "code_file",
-                  id: file.id,
-                  title: file.name,
-                }}
-                extraSections={fileMenuSections}
-                enableFloatingIcon={false}
-              >
-                <div
-                  role="treeitem"
-                  aria-selected={active}
-                  tabIndex={0}
-                  onClick={() => openFile(file.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      openFile(file.id);
-                    }
-                  }}
-                  className={cn(
-                    "flex items-center gap-1 text-[13px] cursor-pointer rounded-sm",
-                    ROW_HEIGHT,
-                    "max-lg:h-11",
-                    TEXT_BODY,
-                    HOVER_ROW,
-                    active && ACTIVE_ROW,
-                  )}
-                  style={{ paddingLeft: 8 + (depth + 1) * 12 }}
-                  title={file.path ?? file.name}
-                >
-                  <span className="inline-block w-3" />
-                  <FileIcon name={file.name} kind="file" />
-                  <span className="min-w-0 flex-1 truncate">{file.name}</span>
-                  {file._dirty && (
-                    <span
-                      className="ml-1 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-neutral-400 dark:bg-neutral-500"
-                      aria-label="Unsaved changes"
-                    />
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
-                    aria-label={`Actions for ${file.name}`}
-                    aria-haspopup="menu"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openContextMenuForElement(
-                        event.currentTarget.parentElement,
-                      );
-                    }}
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
-              </NonEditableContextMenu>
-            );
-          })}
+          {rootFiles.map((file) => (
+            <PersistedLibraryFileRow
+              key={file.id}
+              file={file}
+              depth={depth + 1}
+              parentPath="My Files"
+              activeTabId={activeTabId}
+              onOpenFile={openFile}
+              actions={actions}
+            />
+          ))}
         </div>
       )}
     </div>
