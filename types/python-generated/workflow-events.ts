@@ -20,7 +20,6 @@ export type WorkflowRunStatus =
   | "running"
   | "paused"
   | "interrupted"
-  | "awaiting_input"
   | "errored"
   | "completed"
   | "failed"
@@ -163,7 +162,7 @@ export interface RunInterruptedEvent {
   checkpoint_id: string | null;
 }
 
-export type RunStatus = "pending" | "running" | "paused" | "interrupted" | "awaiting_input" | "errored" | "completed" | "failed" | "cancelled";
+export type RunStatus = "pending" | "running" | "paused" | "interrupted" | "errored" | "completed" | "failed" | "cancelled";
 
 export interface RunCompletedEvent {
   ts: string;

@@ -42750,6 +42750,7 @@ export type Database = {
         }
         Returns: Json
       }
+      _ics_escape: { Args: { p_text: string }; Returns: string }
       _interval_time_facts: {
         Args: {
           p_ended: string
@@ -42837,6 +42838,19 @@ export type Database = {
       _leave_case_rung: { Args: { p_case_id: string }; Returns: Json }
       _leave_config_parameters: {
         Args: { p_class: string; p_policy: Json }
+        Returns: Json
+      }
+      _leave_floor_field: {
+        Args: {
+          p_configured: Json
+          p_direction: string
+          p_field: string
+          p_floor: Json
+          p_param_key: string
+          p_rule_status: string
+          p_sentence: string
+          p_unverified: Json
+        }
         Returns: Json
       }
       _leave_has_reports: {
@@ -43784,7 +43798,20 @@ export type Database = {
         Args: { p_filters?: Json; p_organization_id: string; p_scope?: string }
         Returns: Json
       }
+      leave_balances_export: {
+        Args: { p_filters?: Json; p_organization_id: string; p_scope?: string }
+        Returns: Json
+      }
       leave_calendar: {
+        Args: {
+          p_filters?: Json
+          p_from: string
+          p_organization_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      leave_calendar_ics: {
         Args: {
           p_filters?: Json
           p_from: string
@@ -43854,6 +43881,14 @@ export type Database = {
           raw_uses: number
         }[]
       }
+      leave_ledger_export: {
+        Args: {
+          p_as_of?: string
+          p_employment_id: string
+          p_leave_policy_id: string
+        }
+        Returns: Json
+      }
       leave_ledger_post: {
         Args: {
           p_actor_employment_id?: string
@@ -43898,6 +43933,10 @@ export type Database = {
           is_declared: boolean
         }[]
       }
+      leave_operating_jurisdictions: {
+        Args: { p_organization_id: string }
+        Returns: string[]
+      }
       leave_policy_deactivate: {
         Args: {
           p_disposition: string
@@ -43905,6 +43944,10 @@ export type Database = {
           p_migrate_to_policy_id?: string
           p_note?: string
         }
+        Returns: Json
+      }
+      leave_policy_floors: {
+        Args: { p_organization_id: string; p_payload?: Json }
         Returns: Json
       }
       leave_policy_list: { Args: { p_organization_id: string }; Returns: Json }
@@ -61492,7 +61535,20 @@ export type Database = {
         Args: { p_filters?: Json; p_organization_id: string; p_scope?: string }
         Returns: Json
       }
+      hr_leave_balances_export: {
+        Args: { p_filters?: Json; p_organization_id: string; p_scope?: string }
+        Returns: Json
+      }
       hr_leave_calendar: {
+        Args: {
+          p_filters?: Json
+          p_from: string
+          p_organization_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      hr_leave_calendar_ics: {
         Args: {
           p_filters?: Json
           p_from: string
@@ -61530,6 +61586,14 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_leave_ledger_export: {
+        Args: {
+          p_as_of?: string
+          p_employment_id: string
+          p_leave_policy_id: string
+        }
+        Returns: Json
+      }
       hr_leave_ledger_view: {
         Args: {
           p_as_of?: string
@@ -61545,6 +61609,10 @@ export type Database = {
           p_migrate_to_policy_id?: string
           p_note?: string
         }
+        Returns: Json
+      }
+      hr_leave_policy_floors: {
+        Args: { p_organization_id: string; p_payload?: Json }
         Returns: Json
       }
       hr_leave_policy_list: {
