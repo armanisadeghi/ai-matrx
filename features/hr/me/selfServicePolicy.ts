@@ -199,8 +199,25 @@ export function isSelfUpdateAck(value: unknown): value is HrSelfUpdateAck {
   return value.ok === true && isPlainObject(value.applied);
 }
 
-/** Turn `home_address` into "Home address" for a sentence a person reads. */
+/**
+ * Names a column carries in a sentence somebody reads. The mechanical rule —
+ * strip `_id`, swap underscores, capitalise — is right for most fields and
+ * WRONG whenever the column name is not the thing's name.
+ *
+ * 🚨 `photo_file_id` was rendering as "Photo file", so a successful save said
+ * "Photo file updated." A person has a photo; the file is our storage detail
+ * leaking into their sentence. Override the ones where that happens rather than
+ * teaching every call site to special-case them.
+ */
+const HR_FIELD_LABELS: Record<string, string> = {
+  photo_file_id: "Photo",
+  ssn_last4: "Social Security number",
+  directory_opt_out: "Directory listing",
+};
+
 export function humanFieldName(field: string): string {
+  const override = HR_FIELD_LABELS[field];
+  if (override) return override;
   return field
     .replace(/_id$/, "")
     .replace(/_/g, " ")

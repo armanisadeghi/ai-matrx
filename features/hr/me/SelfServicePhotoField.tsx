@@ -76,8 +76,9 @@ export function SelfServicePhotoField({
         toast.error("The image uploaded but came back without an id, so nothing was saved.");
         return;
       }
-      const landed = await onSave("photo_file_id", fileId);
-      if (landed) toast.success("Photo updated.");
+      // No toast here: `useSelfUpdate` already announces the save by name, and
+      // two toasts for one act is the same sentence twice.
+      await onSave("photo_file_id", fileId);
     } catch (e) {
       toast.error(
         e instanceof Error && e.message.trim()
@@ -133,9 +134,8 @@ export function SelfServicePhotoField({
               variant="ghost"
               className="min-h-11 sm:min-h-9"
               disabled={busy}
-              onClick={async () => {
-                const landed = await onSave("photo_file_id", "");
-                if (landed) toast.success("Photo removed.");
+              onClick={() => {
+                void onSave("photo_file_id", "");
               }}
             >
               Remove
