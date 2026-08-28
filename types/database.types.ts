@@ -90145,6 +90145,7 @@ export type Database = {
           definition_version_id: string | null
           deleted_at: string | null
           description: string | null
+          event_source: Json | null
           fire_count: number
           id: string
           is_active: boolean
@@ -90175,6 +90176,7 @@ export type Database = {
           definition_version_id?: string | null
           deleted_at?: string | null
           description?: string | null
+          event_source?: Json | null
           fire_count?: number
           id?: string
           is_active?: boolean
@@ -90205,6 +90207,7 @@ export type Database = {
           definition_version_id?: string | null
           deleted_at?: string | null
           description?: string | null
+          event_source?: Json | null
           fire_count?: number
           id?: string
           is_active?: boolean
@@ -90252,6 +90255,65 @@ export type Database = {
             columns: ["definition_version_id"]
             isOneToOne: false
             referencedRelation: "definition_version"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trigger_event: {
+        Row: {
+          attempts: number
+          claim_at: string
+          claimed_at: string | null
+          created_at: string
+          entity_key: string
+          id: string
+          last_error: string | null
+          max_attempts: number
+          organization_id: string
+          payload: Json
+          run_id: string | null
+          status: string
+          trigger_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          claim_at?: string
+          claimed_at?: string | null
+          created_at?: string
+          entity_key: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          organization_id: string
+          payload?: Json
+          run_id?: string | null
+          status?: string
+          trigger_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          claim_at?: string
+          claimed_at?: string | null
+          created_at?: string
+          entity_key?: string
+          id?: string
+          last_error?: string | null
+          max_attempts?: number
+          organization_id?: string
+          payload?: Json
+          run_id?: string | null
+          status?: string
+          trigger_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trigger_event_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: false
+            referencedRelation: "trigger"
             referencedColumns: ["id"]
           },
         ]
@@ -90579,6 +90641,8 @@ export type Database = {
         Args: { p_definition_id: string }
         Returns: number
       }
+      unwatch_table: { Args: { p_table: unknown }; Returns: undefined }
+      watch_table: { Args: { p_table: unknown }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
