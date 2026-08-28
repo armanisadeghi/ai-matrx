@@ -37,7 +37,7 @@ begin
 $a1$       and wi.state in ('draft','submitted','in_review','conflict')$a1$,
 $r1$       -- 🚨 THE STATES THIS FILTER NAMED DO NOT EXIST.
        -- It asked for four states that `hr.workflow_instance` has never held; the table's
-       -- vocabulary is ('active','closed','failed','cancelled'), and `hr.wf_request`
+       -- vocabulary is ('active','closed','failed','cancelled'), and the wf_request door
        -- creates every request as 'active'. So `in_flight` was ALWAYS an empty array, for
        -- every flow and every person, and it looked exactly like "nothing is pending".
        -- That is what made a self-service edit vanish: the request really was opened, the
@@ -45,6 +45,14 @@ $r1$       -- 🚨 THE STATES THIS FILTER NAMED DO NOT EXIST.
        -- because the one door that could have said otherwise answered with [].
        -- A closed vocabulary invented rather than read is not a narrower filter, it is an
        -- empty one — and an empty list is the most convincing lie a door can tell.
+       --
+       -- 🚨 THAT DOOR IS NAMED UNQUALIFIED ON PURPOSE — DO NOT "FIX" IT TO hr.<name>.
+       -- The F1 gate (hr.stable_doors_that_write) builds its call graph by testing whether
+       -- one function's prosrc CONTAINS another's qualified name. It cannot tell a call from
+       -- a comment, so writing the schema-qualified name here — as this comment originally
+       -- did — invented an edge from this STABLE read door to a writer, and transitively to
+       -- six more, turning F1 red over prose. The reach was never real: this function calls
+       -- nothing. Keep workflow-door names unqualified inside comments in STABLE doors.
        and wi.state = 'active'$r1$);
 
   if v_new = v_def then raise exception 'hr_l1_31: state filter anchor not found'; end if;
