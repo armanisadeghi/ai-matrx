@@ -33,6 +33,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -88,12 +90,21 @@ import { registerMermaidEditor } from "./editor-bridge";
 import { useMermaidArtifactSave } from "./useMermaidArtifactSave";
 import { useMermaidEditor, type WorkbenchMode } from "./useMermaidEditor";
 
-const THEME_CHOICES: MermaidThemePreference[] = ["auto", "default", "dark", "forest", "neutral", "base"];
+const THEME_CHOICES: MermaidThemePreference[] = [
+  "auto",
+  "default",
+  "dark",
+  "forest",
+  "neutral",
+  "base",
+];
 const LOOK_CHOICES: MermaidLook[] = ["classic", "handDrawn"];
 const LAYOUT_CHOICES: MermaidLayout[] = ["dagre", "elk"];
 
 export interface MermaidWorkbenchProps {
   source: string;
+  /** Read-only public presentation: viewer controls float over the diagram. */
+  viewerMode?: boolean;
   metadata?: {
     title?: string | React.ReactNode;
     canvasItemId?: string;
@@ -110,7 +121,11 @@ export interface MermaidWorkbenchProps {
   };
 }
 
-export default function MermaidWorkbench({ source: initialSource, metadata }: MermaidWorkbenchProps) {
+export default function MermaidWorkbench({
+  source: initialSource,
+  metadata,
+  viewerMode = false,
+}: MermaidWorkbenchProps) {
   const { state, dispatch } = useMermaidEditor(initialSource);
   const appMode = useThemeMode();
   const userPrefs = useAppSelector(selectMermaidPreferences);
@@ -135,20 +150,26 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
     catalog.label;
 
   // ── Artifact identity: explicit id, or resolve via the source message ────
-  const [canvasItemId, setCanvasItemId] = useState<string | undefined>(metadata?.canvasItemId);
+  const [canvasItemId, setCanvasItemId] = useState<string | undefined>(
+    metadata?.canvasItemId,
+  );
   useEffect(() => {
     if (canvasItemId || !metadata?.sourceMessageId) return undefined;
     let cancelled = false;
-    canvasArtifactService.getByMessage(metadata.sourceMessageId).then((rows) => {
-      if (cancelled) return;
-      const mermaidRows = rows.filter((r) => r.type === "mermaid");
-      const stored = (r: CanvasArtifactRow) =>
-        typeof r.content === "object" && r.content ? (r.content as { data?: unknown }).data : null;
-      const match =
-        mermaidRows.find((r) => stored(r) === initialSource) ??
-        (mermaidRows.length === 1 ? mermaidRows[0] : undefined);
-      if (match) setCanvasItemId(match.id);
-    });
+    canvasArtifactService
+      .getByMessage(metadata.sourceMessageId)
+      .then((rows) => {
+        if (cancelled) return;
+        const mermaidRows = rows.filter((r) => r.type === "mermaid");
+        const stored = (r: CanvasArtifactRow) =>
+          typeof r.content === "object" && r.content
+            ? (r.content as { data?: unknown }).data
+            : null;
+        const match =
+          mermaidRows.find((r) => stored(r) === initialSource) ??
+          (mermaidRows.length === 1 ? mermaidRows[0] : undefined);
+        if (match) setCanvasItemId(match.id);
+      });
     return () => {
       cancelled = true;
     };
@@ -171,7 +192,10 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
 
   const lastQueuedRef = useRef(state.source);
   useEffect(() => {
-    if (state.source !== state.baselineSource && state.source !== lastQueuedRef.current) {
+    if (
+      state.source !== state.baselineSource &&
+      state.source !== lastQueuedRef.current
+    ) {
       lastQueuedRef.current = state.source;
       scheduleSave(state.source);
     }
@@ -188,7 +212,8 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
   }, [optionsKey]);
 
   // ── Editor bridge (AI edits + context-menu collaborators) ───────────────
-  const bridgeKey = canvasItemId ?? `draft:${metadata?.sourceMessageId ?? "new"}`;
+  const bridgeKey =
+    canvasItemId ?? `draft:${metadata?.sourceMessageId ?? "new"}`;
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
@@ -196,7 +221,8 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
   useEffect(() => {
     return registerMermaidEditor(bridgeKey, {
       getSource: () => stateRef.current.source,
-      applySource: (next) => dispatch({ type: "APPLY_EXTERNAL_SOURCE", source: next }),
+      applySource: (next) =>
+        dispatch({ type: "APPLY_EXTERNAL_SOURCE", source: next }),
     });
   }, [bridgeKey]);
 
@@ -236,7 +262,10 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
           : s.outcome?.status === "invalid"
             ? "invalid"
             : "unknown",
-      validation_errors: diagnostics.map((d) => ({ line: d.line, message: d.message })),
+      validation_errors: diagnostics.map((d) => ({
+        line: d.line,
+        message: d.message,
+      })),
       selected_node_text: selectedLabel(s),
       available_diagram_types: getFeaturedCatalogEntries().map((e) => e.type),
       canvas_item_id: canvasItemId,
@@ -267,7 +296,9 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
     diagram_source: (value: unknown) => {
       refuseWhileAiRailRuns("diagram_source");
       if (typeof value !== "string" || !value.trim())
-        throw new Error("diagram_source expects a non-empty string of mermaid DSL.");
+        throw new Error(
+          "diagram_source expects a non-empty string of mermaid DSL.",
+        );
       if (value.includes("```"))
         throw new Error(
           "diagram_source expects the raw mermaid DSL only — send the text BETWEEN the ``` fences, with no fence markers and no surrounding prose.",
@@ -331,7 +362,12 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
     toast.success(`Restored version ${row.version} — saving as a new version`);
   };
 
-  const modeButton = (mode: WorkbenchMode, Icon: typeof Shapes, label: string, requiresStructural: boolean) => {
+  const modeButton = (
+    mode: WorkbenchMode,
+    Icon: typeof Shapes,
+    label: string,
+    requiresStructural: boolean,
+  ) => {
     const disabled = requiresStructural && !structuralOk;
     const button = (
       <button
@@ -341,6 +377,7 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
         onClick={() => dispatch({ type: "SET_MODE", mode })}
         className={cn(
           "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors sm:flex-none",
+          viewerMode && "h-11 min-w-11 px-3 sm:h-8 sm:min-w-8",
           state.mode === mode
             ? "bg-card text-foreground shadow-sm"
             : "text-muted-foreground hover:text-foreground",
@@ -366,253 +403,398 @@ export default function MermaidWorkbench({ source: initialSource, metadata }: Me
     <SurfaceRuntimeProvider
       surfaceName={MERMAID_SURFACE_NAME}
       getScope={buildScope}
-      getWriteHandlers={getSurfaceWriteHandlers}
+      getWriteHandlers={viewerMode ? undefined : getSurfaceWriteHandlers}
     >
-    <TooltipProvider delayDuration={250}>
-      <div className="flex h-full min-h-0 flex-col bg-background">
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-2 py-1.5">
-          <div className="flex w-full items-center rounded-lg bg-muted p-0.5 sm:w-auto">
-            {modeButton("view", Eye, "View", false)}
-            {modeButton("visual", Shapes, "Diagram", true)}
-            {modeButton("outline", ListTree, "Outline", true)}
-            {modeButton("code", Code2, "Code", false)}
-          </div>
+      <TooltipProvider delayDuration={250}>
+        <div className="relative flex h-full min-h-0 flex-col bg-background">
+          {/* Toolbar */}
+          <div
+            className={cn(
+              "flex flex-wrap items-center gap-1.5 border-b border-border px-2 py-1.5",
+              viewerMode &&
+                "pointer-events-none absolute inset-x-0 top-2 z-20 flex-nowrap justify-center border-0 p-0",
+            )}
+          >
+            <div
+              className={cn(
+                "flex w-full items-center rounded-lg bg-muted p-0.5 sm:w-auto",
+                viewerMode &&
+                  "pointer-events-auto hidden w-auto border border-glass-edge bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass sm:flex",
+              )}
+            >
+              {modeButton("view", Eye, "View", false)}
+              {!viewerMode && modeButton("visual", Shapes, "Diagram", true)}
+              {!viewerMode && modeButton("outline", ListTree, "Outline", true)}
+              {modeButton("code", Code2, "Code", false)}
+            </div>
 
-          <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-            <TypeIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
-            <span className="hidden truncate sm:inline">{catalog.label}</span>
-            {version && version > 1 ? (
-              <span className="rounded border border-border bg-muted px-1 py-px text-[10px]">v{version}</span>
-            ) : null}
-          </div>
-
-          <div className="ml-auto flex items-center gap-0.5">
-            <SaveIndicator state={saveState} onRetry={flush} />
-
-            <SimpleTooltip text={aiOpen ? "Close AI panel" : "Edit with AI"}>
-              <button
-                type="button"
-                aria-label="Edit with AI"
-                onClick={() => setAiOpen((v) => !v)}
-                className={cn(
-                  "flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors",
-                  aiOpen
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <MessageSquare className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">AI</span>
-              </button>
-            </SimpleTooltip>
-
-            <SimpleTooltip text="Undo (⌘Z)">
-              <button
-                type="button"
-                aria-label="Undo"
-                disabled={state.undoStack.length === 0}
-                onClick={() => dispatch({ type: "UNDO" })}
-                className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
-              >
-                <Undo2 className="h-3.5 w-3.5" />
-              </button>
-            </SimpleTooltip>
-            <SimpleTooltip text="Redo (⇧⌘Z)">
-              <button
-                type="button"
-                aria-label="Redo"
-                disabled={state.redoStack.length === 0}
-                onClick={() => dispatch({ type: "REDO" })}
-                className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
-              >
-                <Redo2 className="h-3.5 w-3.5" />
-              </button>
-            </SimpleTooltip>
-
-            {/* Render options */}
-            <DropdownMenu>
-              <SimpleTooltip text="Diagram style">
+            {viewerMode ? (
+              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    aria-label="Diagram style"
-                    className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label="Choose canvas view"
+                    className="pointer-events-auto flex h-11 items-center gap-2 rounded-xl border border-glass-edge bg-glass px-3 text-sm font-medium shadow-glass backdrop-blur-glass backdrop-saturate-glass sm:hidden"
                   >
-                    <Palette className="h-3.5 w-3.5" />
+                    {state.mode === "code" ? (
+                      <Code2 className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    {state.mode === "code" ? "Source" : "View"}
                   </button>
                 </DropdownMenuTrigger>
-              </SimpleTooltip>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuLabel className="text-xs">Theme</DropdownMenuLabel>
-                {THEME_CHOICES.map((theme) => (
-                  <DropdownMenuItem key={theme} onClick={() => setOptions((o) => ({ ...o, theme }))}>
-                    <span className="flex-1 capitalize">{theme}</span>
-                    {options.theme === theme && <Check className="h-3.5 w-3.5" />}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs">Style</DropdownMenuLabel>
-                {LOOK_CHOICES.map((look) => (
-                  <DropdownMenuItem key={look} onClick={() => setOptions((o) => ({ ...o, look }))}>
-                    <span className="flex-1">{look === "handDrawn" ? "Hand-drawn" : "Classic"}</span>
-                    {options.look === look && <Check className="h-3.5 w-3.5" />}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-xs">Layout</DropdownMenuLabel>
-                {LAYOUT_CHOICES.map((layout) => (
-                  <DropdownMenuItem key={layout} onClick={() => setOptions((o) => ({ ...o, layout }))}>
-                    <span className="flex-1 uppercase">{layout}</span>
-                    {options.layout === layout && <Check className="h-3.5 w-3.5" />}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Export */}
-            <DropdownMenu>
-              <SimpleTooltip text="Export">
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Export"
-                    className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                <DropdownMenuContent align="start" className="w-44">
+                  <DropdownMenuRadioGroup
+                    value={state.mode === "code" ? "code" : "view"}
+                    onValueChange={(value) =>
+                      dispatch({
+                        type: "SET_MODE",
+                        mode: value === "code" ? "code" : "view",
+                      })
+                    }
                   >
-                    <Download className="h-3.5 w-3.5" />
-                  </button>
-                </DropdownMenuTrigger>
-              </SimpleTooltip>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem
-                  onClick={async () => {
-                    const svg = await exportSvg();
-                    if (svg) downloadMermaidSvg(svg, title);
-                  }}
-                >
-                  Download SVG
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={async () => {
-                    const svg = await exportSvg();
-                    if (!svg) return;
-                    try {
-                      await downloadMermaidPng(svg, title);
-                    } catch (err) {
-                      console.error("[MermaidWorkbench] PNG export failed", err);
-                      toast.error("PNG export failed");
-                    }
-                  }}
-                >
-                  Download PNG
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => downloadMermaidSource(state.source, title)}>
-                  Download source (.mmd)
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={async () => {
-                    await copyMermaidSource(state.source);
-                    toast.success("Diagram source copied");
-                  }}
-                >
-                  Copy source
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={async () => {
-                    const svg = await exportSvg();
-                    if (!svg) return;
-                    try {
-                      await saveMermaidToWorkspace({ svg, source: state.source, title });
-                      toast.success("Saved to your files (Diagrams folder)");
-                    } catch (err) {
-                      console.error("[MermaidWorkbench] save to files failed", err);
-                      toast.error("Could not save to your files");
-                    }
-                  }}
-                >
-                  Save to my files
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                    <DropdownMenuRadioItem value="view" className="min-h-11">
+                      <Eye className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Diagram
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="code" className="min-h-11">
+                      <Code2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Source
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                <TypeIcon className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span className="hidden truncate sm:inline">
+                  {catalog.label}
+                </span>
+                {version && version > 1 ? (
+                  <span className="rounded border border-border bg-muted px-1 py-px text-[10px]">
+                    v{version}
+                  </span>
+                ) : null}
+              </div>
+            )}
 
-            {/* Version history */}
-            {canvasItemId && (
-              <DropdownMenu onOpenChange={(open) => open && void loadHistory()}>
-                <SimpleTooltip text="Version history">
+            <div
+              className={cn(
+                "ml-auto flex items-center gap-0.5",
+                viewerMode &&
+                  "pointer-events-auto ml-0 rounded-xl border border-glass-edge bg-glass p-0.5 shadow-glass backdrop-blur-glass backdrop-saturate-glass",
+              )}
+            >
+              {!viewerMode ? (
+                <>
+                  <SaveIndicator state={saveState} onRetry={flush} />
+
+                  <SimpleTooltip
+                    text={aiOpen ? "Close AI panel" : "Edit with AI"}
+                  >
+                    <button
+                      type="button"
+                      aria-label="Edit with AI"
+                      onClick={() => setAiOpen((v) => !v)}
+                      className={cn(
+                        "flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors",
+                        aiOpen
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      )}
+                    >
+                      <MessageSquare className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">AI</span>
+                    </button>
+                  </SimpleTooltip>
+
+                  <SimpleTooltip text="Undo (⌘Z)">
+                    <button
+                      type="button"
+                      aria-label="Undo"
+                      disabled={state.undoStack.length === 0}
+                      onClick={() => dispatch({ type: "UNDO" })}
+                      className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                    >
+                      <Undo2 className="h-3.5 w-3.5" />
+                    </button>
+                  </SimpleTooltip>
+                  <SimpleTooltip text="Redo (⇧⌘Z)">
+                    <button
+                      type="button"
+                      aria-label="Redo"
+                      disabled={state.redoStack.length === 0}
+                      onClick={() => dispatch({ type: "REDO" })}
+                      className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                    >
+                      <Redo2 className="h-3.5 w-3.5" />
+                    </button>
+                  </SimpleTooltip>
+                </>
+              ) : null}
+
+              {/* Render options */}
+              <DropdownMenu>
+                <SimpleTooltip text="Diagram style">
                   <DropdownMenuTrigger asChild>
                     <button
                       type="button"
-                      aria-label="Version history"
-                      className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      aria-label="Diagram style"
+                      className={cn(
+                        "rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground",
+                        viewerMode && "h-11 w-11 sm:h-8 sm:w-8",
+                      )}
                     >
-                      <History className="h-3.5 w-3.5" />
+                      <Palette className="h-3.5 w-3.5" />
                     </button>
                   </DropdownMenuTrigger>
                 </SimpleTooltip>
-                <DropdownMenuContent align="end" className="max-h-72 w-56 overflow-y-auto">
-                  <DropdownMenuLabel className="text-xs">Versions</DropdownMenuLabel>
-                  {history === null ? (
-                    <div className="flex justify-center py-3">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : history.length === 0 ? (
-                    <p className="px-2 py-2 text-xs text-muted-foreground">No saved versions yet</p>
-                  ) : (
-                    history.map((row) => (
-                      <DropdownMenuItem key={row.id} onClick={() => restoreVersion(row)}>
-                        <span className="flex-1">Version {row.version}</span>
-                        <span className="text-[10px] text-muted-foreground">
-                          {row.created_at ? new Date(row.created_at).toLocaleDateString() : ""}
-                        </span>
-                      </DropdownMenuItem>
-                    ))
-                  )}
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuLabel className="text-xs">
+                    Theme
+                  </DropdownMenuLabel>
+                  {THEME_CHOICES.map((theme) => (
+                    <DropdownMenuItem
+                      key={theme}
+                      onClick={() => setOptions((o) => ({ ...o, theme }))}
+                    >
+                      <span className="flex-1 capitalize">{theme}</span>
+                      {options.theme === theme && (
+                        <Check className="h-3.5 w-3.5" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs">
+                    Style
+                  </DropdownMenuLabel>
+                  {LOOK_CHOICES.map((look) => (
+                    <DropdownMenuItem
+                      key={look}
+                      onClick={() => setOptions((o) => ({ ...o, look }))}
+                    >
+                      <span className="flex-1">
+                        {look === "handDrawn" ? "Hand-drawn" : "Classic"}
+                      </span>
+                      {options.look === look && (
+                        <Check className="h-3.5 w-3.5" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="text-xs">
+                    Layout
+                  </DropdownMenuLabel>
+                  {LAYOUT_CHOICES.map((layout) => (
+                    <DropdownMenuItem
+                      key={layout}
+                      onClick={() => setOptions((o) => ({ ...o, layout }))}
+                    >
+                      <span className="flex-1 uppercase">{layout}</span>
+                      {options.layout === layout && (
+                        <Check className="h-3.5 w-3.5" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-            )}
-          </div>
-        </div>
 
-        {/* Mode pane + optional AI rail (rail stacks below on mobile) */}
-        <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
-          <div className="min-h-0 flex-1">
-            {state.mode === "view" && (
-              <ViewModePane source={state.source} options={renderOptions} />
-            )}
-            {state.mode === "visual" && (
-              <VisualModePane
+              {/* Export */}
+              <DropdownMenu>
+                <SimpleTooltip text="Export">
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label="Export"
+                      className={cn(
+                        "rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground",
+                        viewerMode && "h-11 w-11 sm:h-8 sm:w-8",
+                      )}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </button>
+                  </DropdownMenuTrigger>
+                </SimpleTooltip>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      const svg = await exportSvg();
+                      if (svg) downloadMermaidSvg(svg, title);
+                    }}
+                  >
+                    Download SVG
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      const svg = await exportSvg();
+                      if (!svg) return;
+                      try {
+                        await downloadMermaidPng(svg, title);
+                      } catch (err) {
+                        console.error(
+                          "[MermaidWorkbench] PNG export failed",
+                          err,
+                        );
+                        toast.error("PNG export failed");
+                      }
+                    }}
+                  >
+                    Download PNG
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => downloadMermaidSource(state.source, title)}
+                  >
+                    Download source (.mmd)
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      await copyMermaidSource(state.source);
+                      toast.success("Diagram source copied");
+                    }}
+                  >
+                    Copy source
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      const svg = await exportSvg();
+                      if (!svg) return;
+                      try {
+                        await saveMermaidToWorkspace({
+                          svg,
+                          source: state.source,
+                          title,
+                        });
+                        toast.success("Saved to your files (Diagrams folder)");
+                      } catch (err) {
+                        console.error(
+                          "[MermaidWorkbench] save to files failed",
+                          err,
+                        );
+                        toast.error("Could not save to your files");
+                      }
+                    }}
+                  >
+                    Save to my files
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Version history */}
+              {!viewerMode && canvasItemId && (
+                <DropdownMenu
+                  onOpenChange={(open) => open && void loadHistory()}
+                >
+                  <SimpleTooltip text="Version history">
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="Version history"
+                        className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        <History className="h-3.5 w-3.5" />
+                      </button>
+                    </DropdownMenuTrigger>
+                  </SimpleTooltip>
+                  <DropdownMenuContent
+                    align="end"
+                    className="max-h-72 w-56 overflow-y-auto"
+                  >
+                    <DropdownMenuLabel className="text-xs">
+                      Versions
+                    </DropdownMenuLabel>
+                    {history === null ? (
+                      <div className="flex justify-center py-3">
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : history.length === 0 ? (
+                      <p className="px-2 py-2 text-xs text-muted-foreground">
+                        No saved versions yet
+                      </p>
+                    ) : (
+                      history.map((row) => (
+                        <DropdownMenuItem
+                          key={row.id}
+                          onClick={() => restoreVersion(row)}
+                        >
+                          <span className="flex-1">Version {row.version}</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {row.created_at
+                              ? new Date(row.created_at).toLocaleDateString()
+                              : ""}
+                          </span>
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+          </div>
+
+          {/* Mode pane + optional AI rail (rail stacks below on mobile) */}
+          <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+            <div className="min-h-0 flex-1">
+              {state.mode === "view" && (
+                <ViewModePane source={state.source} options={renderOptions} />
+              )}
+              {state.mode === "visual" && (
+                <VisualModePane
+                  source={state.source}
+                  options={renderOptions}
+                  doc={doc}
+                  selection={state.selection}
+                  dispatch={dispatch}
+                />
+              )}
+              {state.mode === "outline" && (
+                <OutlineModePane
+                  doc={doc}
+                  unavailableReason={codeOnlyReason}
+                  dispatch={dispatch}
+                />
+              )}
+              {state.mode === "code" &&
+                (viewerMode ? (
+                  <ViewerSourcePane source={state.source} />
+                ) : (
+                  <CodeModePane
+                    source={state.source}
+                    options={renderOptions}
+                    dispatch={dispatch}
+                  />
+                ))}
+            </div>
+            {!viewerMode && aiOpen && (
+              <AgentEditRail
                 source={state.source}
-                options={renderOptions}
-                doc={doc}
-                selection={state.selection}
-                dispatch={dispatch}
+                buildScope={buildScope}
+                initialAgentId={metadata?.aiAgentId}
+                initialAgentLabel={metadata?.aiAgentName}
+                onApply={(next) =>
+                  dispatch({ type: "APPLY_EXTERNAL_SOURCE", source: next })
+                }
+                onBusyChange={(busy) => {
+                  aiRailBusyRef.current = busy;
+                }}
+                onClose={() => setAiOpen(false)}
               />
             )}
-            {state.mode === "outline" && (
-              <OutlineModePane doc={doc} unavailableReason={codeOnlyReason} dispatch={dispatch} />
-            )}
-            {state.mode === "code" && (
-              <CodeModePane source={state.source} options={renderOptions} dispatch={dispatch} />
-            )}
           </div>
-          {aiOpen && (
-            <AgentEditRail
-              source={state.source}
-              buildScope={buildScope}
-              initialAgentId={metadata?.aiAgentId}
-              initialAgentLabel={metadata?.aiAgentName}
-              onApply={(next) => dispatch({ type: "APPLY_EXTERNAL_SOURCE", source: next })}
-              onBusyChange={(busy) => {
-                aiRailBusyRef.current = busy;
-              }}
-              onClose={() => setAiOpen(false)}
-            />
-          )}
         </div>
-      </div>
-    </TooltipProvider>
+      </TooltipProvider>
     </SurfaceRuntimeProvider>
+  );
+}
+
+function ViewerSourcePane({ source }: { source: string }) {
+  return (
+    <div className="h-full overflow-auto bg-textured px-4 pb-4 pt-20 sm:px-6 sm:pt-16">
+      <pre className="mx-auto min-h-full max-w-5xl whitespace-pre-wrap rounded-xl border border-border bg-card p-4 font-mono text-sm leading-relaxed text-foreground shadow-sm">
+        {source}
+      </pre>
+    </div>
   );
 }
 
@@ -624,14 +806,24 @@ function selectedLabel(state: {
   const sel = state.selection;
   if (!sel || state.outcome?.status !== "ok") return undefined;
   const doc = (state.outcome as { doc?: unknown }).doc as
-    | { nodes?: Array<{ id: string; label: string }>; edges?: Array<{ id: string; label?: string }> }
+    | {
+        nodes?: Array<{ id: string; label: string }>;
+        edges?: Array<{ id: string; label?: string }>;
+      }
     | undefined;
   if (!doc) return undefined;
-  if (sel.kind === "node") return doc.nodes?.find((n) => n.id === sel.id)?.label;
+  if (sel.kind === "node")
+    return doc.nodes?.find((n) => n.id === sel.id)?.label;
   return doc.edges?.find((e) => e.id === sel.id)?.label;
 }
 
-function SaveIndicator({ state, onRetry }: { state: string; onRetry: () => void }) {
+function SaveIndicator({
+  state,
+  onRetry,
+}: {
+  state: string;
+  onRetry: () => void;
+}) {
   if (state === "saving") {
     return (
       <span className="flex items-center gap-1 px-1.5 text-xs text-muted-foreground">
@@ -661,7 +853,9 @@ function SaveIndicator({ state, onRetry }: { state: string; onRetry: () => void 
     );
   }
   if (state === "dirty") {
-    return <span className="px-1.5 text-xs text-muted-foreground">Unsaved</span>;
+    return (
+      <span className="px-1.5 text-xs text-muted-foreground">Unsaved</span>
+    );
   }
   return null;
 }

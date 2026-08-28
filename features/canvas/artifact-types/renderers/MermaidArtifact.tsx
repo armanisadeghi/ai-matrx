@@ -6,6 +6,7 @@ import { artifactDedupKey } from "../artifact-renderers";
 import MermaidWorkbench from "@/components/mermaid/workbench/MermaidWorkbench";
 import MermaidBlock from "@/components/mardown-display/blocks/mermaid/MermaidBlock";
 import type { ArtifactRendererProps } from "../types";
+import type { MermaidBlockData } from "@/types/python-generated/stream-events";
 // Canvas mode: the full editable workbench — default export, props: source, metadata?
 // Path confirmed from CanvasBody's `mermaid` case:
 //   `import("@/components/mermaid/workbench/MermaidWorkbench")`
@@ -41,9 +42,11 @@ export default function MermaidArtifact(props: ArtifactRendererProps) {
     artifactId,
     conversationId,
     messageId,
+    isPublic,
+    blockIndex,
   } = props;
 
-  const blockIndex = (props as { blockIndex?: number }).blockIndex;
+  const mermaidServerData = isMermaidBlockData(serverData) ? serverData : null;
 
   // Mermaid source is always raw text, never JSON.
   const content = typeof data === "string" ? data : raw;
@@ -55,7 +58,11 @@ export default function MermaidArtifact(props: ArtifactRendererProps) {
   if (mode === "canvas") {
     return (
       <Suspense fallback={<MatrxMiniLoader />}>
-        <MermaidWorkbench source={content} metadata={metadata} />
+        <MermaidWorkbench
+          source={content}
+          metadata={metadata}
+          viewerMode={isPublic}
+        />
       </Suspense>
     );
   }
@@ -64,7 +71,7 @@ export default function MermaidArtifact(props: ArtifactRendererProps) {
     <Suspense fallback={<MatrxMiniLoader />}>
       <MermaidBlock
         content={content}
-        serverData={serverData as any}
+        serverData={mermaidServerData}
         metadata={metadata}
         isStreamActive={isStreamActive}
         conversationId={conversationId}
@@ -75,4 +82,41 @@ export default function MermaidArtifact(props: ArtifactRendererProps) {
       />
     </Suspense>
   );
+}
+
+function isMermaidBlockData(value: unknown): value is MermaidBlockData {
+  if (typeof value !== "object" || value === null) return false;
+  if (!("source" in value) || typeof value.source !== "string") return false;
+  if (
+    "title" in value &&
+    value.title !== undefined &&
+    value.title !== null &&
+    typeof value.title !== "string"
+  ) {
+    return false;
+  }
+  if (
+    "diagramType" in value &&
+    value.diagramType !== undefined &&
+    typeof value.diagramType !== "string"
+  ) {
+    return false;
+  }
+  if (
+    "isValid" in value &&
+    value.isValid !== undefined &&
+    value.isValid !== null &&
+    typeof value.isValid !== "boolean"
+  ) {
+    return false;
+  }
+  if (
+    "diagnostics" in value &&
+    value.diagnostics !== undefined &&
+    (!Array.isArray(value.diagnostics) ||
+      !value.diagnostics.every((entry) => typeof entry === "string"))
+  ) {
+    return false;
+  }
+  return true;
 }

@@ -75,8 +75,8 @@
   /* Font families */
   --font-sans:
     var(--typography-fontFamily-sans), ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
-    sans-serif;
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    "Noto Sans", sans-serif;
   --font-heading:
     var(--typography-fontFamily-heading), ui-sans-serif, system-ui, sans-serif;
   --font-mono:
@@ -1263,15 +1263,21 @@
 
   .matrx-glass-core {
     @apply bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass;
-    border: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
+    border: var(--matrx-glass-border-width) solid
+      var(--matrx-glass-border-color);
   }
 
   .matrx-glass-thin-border {
     @apply bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass;
-    border: var(--matrx-glass-border-width-thin) solid var(--matrx-glass-border-color);
+    border: var(--matrx-glass-border-width-thin) solid
+      var(--matrx-glass-border-color);
   }
-  .matrx-glass-thin-border:hover  { @apply bg-glass-hover; }
-  .matrx-glass-thin-border:active { @apply bg-glass-active; }
+  .matrx-glass-thin-border:hover {
+    @apply bg-glass-hover;
+  }
+  .matrx-glass-thin-border:active {
+    @apply bg-glass-active;
+  }
   /* Segmented pills (RouteModeNav): direct child segments own hover — don't lift the shell. */
   .matrx-glass-thin-border:has(> a:hover),
   .matrx-glass-thin-border:has(> a:active) {
@@ -1280,16 +1286,25 @@
 
   .matrx-glass-card {
     @apply bg-glass shadow-glass;
-    border: var(--matrx-glass-border-width) solid var(--matrx-glass-border-color);
+    border: var(--matrx-glass-border-width) solid
+      var(--matrx-glass-border-color);
   }
 
   /* Opt-in interactive states — pair with any glass class on a clickable element. */
-  .matrx-glass-interactive:hover  { @apply bg-glass-hover; }
-  .matrx-glass-interactive:active { @apply bg-glass-active; }
+  .matrx-glass-interactive:hover {
+    @apply bg-glass-hover;
+  }
+  .matrx-glass-interactive:active {
+    @apply bg-glass-active;
+  }
 
   /* Standalone shadow utilities (kept for low-cost reuse). */
-  .matrx-glass-shadow    { @apply shadow-glass; }
-  .matrx-glass-shadow-lg { @apply shadow-glass-lg; }
+  .matrx-glass-shadow {
+    @apply shadow-glass;
+  }
+  .matrx-glass-shadow-lg {
+    @apply shadow-glass-lg;
+  }
 
   /* Context-menu text-selection trigger: glassy without the heavy black halo. */
   .context-menu-floating-icon {
@@ -1385,7 +1400,9 @@
       background-color 150ms ease,
       transform 100ms ease;
   }
-  .matrx-tap-pill:active { transform: scale(0.92); }
+  .matrx-tap-pill:active {
+    transform: scale(0.92);
+  }
   .matrx-tap-pill-sm {
     height: 1.25rem; /* 20px */
     width: 1.25rem;
@@ -1958,7 +1975,6 @@
     overflow-x: hidden;
     max-width: 100vw;
   }
-
 }
 
 /* The blanket element defaults below live in @layer base ON PURPOSE.
@@ -2220,10 +2236,18 @@
    pointer-event interception.
    ──────────────────────────────────────────────────────────────────────── */
 .matrx-scroll-fade[data-fade-bottom] {
-  mask-image: linear-gradient(to bottom, black calc(100% - 2rem), transparent 100%);
+  mask-image: linear-gradient(
+    to bottom,
+    black calc(100% - 2rem),
+    transparent 100%
+  );
 }
 .matrx-scroll-fade[data-fade-top] {
-  mask-image: linear-gradient(to top, black calc(100% - 2rem), transparent 100%);
+  mask-image: linear-gradient(
+    to top,
+    black calc(100% - 2rem),
+    transparent 100%
+  );
 }
 .matrx-scroll-fade[data-fade-top][data-fade-bottom] {
   mask-image: linear-gradient(
@@ -2351,4 +2375,19 @@
     ):not([data-no-zoom-floor]) {
     font-size: max(16px, 1em);
   }
+}
+
+/* Public workspaces such as shared canvases own their entire viewport. The
+   marker lives inside the route so the shared public layout can keep its
+   normal marketing chrome everywhere else without client-side pathname
+   checks or a post-hydration layout jump. */
+[data-public-layout]:has([data-public-immersive-surface])
+  > [data-public-header],
+[data-public-layout]:has([data-public-immersive-surface])
+  > [data-public-footer] {
+  display: none;
+}
+
+[data-public-layout]:has([data-public-immersive-surface]) > [data-public-main] {
+  overflow: hidden;
 }

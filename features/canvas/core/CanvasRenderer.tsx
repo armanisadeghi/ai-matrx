@@ -13,6 +13,7 @@ import {
   type CanvasItem,
   type CanvasContent,
 } from "@/features/canvas/redux/canvasSlice";
+import { toast } from "@/lib/toast";
 import { CanvasHeader, ViewMode } from "./CanvasHeader";
 import { CanvasNavigation } from "./CanvasNavigation";
 import type { CanvasType } from "@/types/canvas-social";
@@ -128,50 +129,35 @@ export function CanvasRenderer({
     if (!content || !currentItem) return;
 
     setIsSyncing(true);
+    try {
+      // Imported lazily to keep the canvas chunk free of the persistence stack
+      // until the user actually syncs.
+      const { syncCanvasItemToCloud } = await import(
+        "@/features/canvas/materialization/syncCanvasItemToCloud"
+      );
+      const { markItemSynced } = await import(
+        "@/features/canvas/redux/canvasSlice"
+      );
 
-    // Import the service dynamically to avoid circular dependencies
-    const { canvasArtifactService } =
-      await import("@/features/canvas/services/canvasArtifactService");
-    const { ensureArtifactPersisted } =
-      await import("@/features/canvas/materialization/ensureArtifactPersisted");
-    const { markItemSynced } =
-      await import("@/features/canvas/redux/canvasSlice");
-    const { isMaterializedArtifactId } =
-      await import("@/features/canvas/artifact-types/artifactId");
+      const outcome = await syncCanvasItemToCloud({
+        content,
+        item: currentItem,
+        title:
+          typeof content.metadata?.title === "string"
+            ? content.metadata.title
+            : content.type,
+      });
 
-    const existingId =
-      content.metadata?.canvasItemId ?? currentItem.savedItemId;
-    let rawContent = typeof content.data === "string" ? content.data : "";
-    if (!rawContent && isMaterializedArtifactId(existingId)) {
-      const row = await canvasArtifactService.getById(existingId!);
-      if (
-        row?.content &&
-        typeof row.content === "object" &&
-        "data" in row.content
-      ) {
-        const d = (row.content as { data?: unknown }).data;
-        rawContent = typeof d === "string" ? d : JSON.stringify(d ?? "");
+      if (!outcome.ok) {
+        toast.error(outcome.error);
+        return;
       }
-    }
 
-    const result = await ensureArtifactPersisted({
-      canvasType: content.type,
-      title:
-        typeof content.metadata?.title === "string"
-          ? content.metadata.title
-          : content.type,
-      content: rawContent,
-      messageId:
-        content.metadata?.messageId ?? content.metadata?.sourceMessageId,
-      conversationId: content.metadata?.conversationId,
-      artifactId: existingId,
-    });
-
-    if (result.ok && result.artifactId) {
+      const { result } = outcome;
       dispatch(
         markItemSynced({
           sessionItemId: currentItem.id,
-          artifactId: result.artifactId,
+          artifactId: result.artifactId!,
           artifactDebug: {
             steps: result.steps,
             errors: result.errors,
@@ -180,9 +166,12 @@ export function CanvasRenderer({
           },
         }),
       );
+      toast.success(
+        result.wasCreated ? "Artifact created in cloud" : "Artifact verified",
+      );
+    } finally {
+      setIsSyncing(false);
     }
-
-    setIsSyncing(false);
   };
 
   // All canvas types now have sync support

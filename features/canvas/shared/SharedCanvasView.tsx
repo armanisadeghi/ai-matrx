@@ -1,239 +1,276 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useSharedCanvas } from '@/hooks/canvas/useSharedCanvas';
-import { CanvasSocialActions } from '../social/CanvasSocialActions';
-import { PublicCanvasRenderer } from './PublicCanvasRenderer';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { 
-    ChevronDown,
-    ChevronUp,
-    Trophy,
-    Loader2,
-    AlertCircle
-} from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { CanvasLeaderboard } from '../leaderboard/CanvasLeaderboard';
-import { cn } from '@/lib/utils';
+import { formatDistanceToNow } from "date-fns";
+import { AlertCircle, Eye, Heart, Trophy } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+
+import { MediumComponentLoading } from "@/components/matrx/LoadingComponents";
+import {
+  PUBLIC_HEADER_ICON_BUTTON,
+  PUBLIC_HEADER_ROW,
+} from "@/components/matrx/publicHeaderChrome";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { useSharedCanvas } from "@/hooks/canvas/useSharedCanvas";
+import { cn } from "@/lib/utils";
+
+import { CanvasLeaderboard } from "../leaderboard/CanvasLeaderboard";
+import { CanvasSocialActions } from "../social/CanvasSocialActions";
+import { PublicCanvasRenderer } from "./PublicCanvasRenderer";
 
 interface SharedCanvasViewProps {
-    shareToken: string;
-    className?: string;
+  shareToken: string;
+  className?: string;
 }
 
-export function SharedCanvasView({ shareToken, className = "h-[calc(100dvh-3.5rem)]" }: SharedCanvasViewProps) {
-    const { data: canvas, isLoading, error } = useSharedCanvas(shareToken);
-    const [showDetails, setShowDetails] = useState(false);
+function initials(name: string | null): string {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
-    // Page title + OG tags are handled server-side via generateMetadata in page.tsx.
-    // No client-side document manipulation needed.
+export function SharedCanvasView({
+  shareToken,
+  className = "h-full min-h-0",
+}: SharedCanvasViewProps) {
+  const { data: canvas, isLoading, error } = useSharedCanvas(shareToken);
 
-    if (isLoading) {
-        return (
-            <div className="min-h-dvh flex items-center justify-center bg-zinc-50 dark:bg-zinc-950">
-                <div className="text-center space-y-4">
-                    <Loader2 className="w-12 h-12 animate-spin mx-auto text-blue-600 dark:text-blue-400" />
-                    <p className="text-zinc-600 dark:text-zinc-400">Loading canvas...</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (error || !canvas) {
-        return (
-            <div className="min-h-dvh flex items-center justify-center p-4 bg-zinc-50 dark:bg-zinc-950">
-                <div className="text-center max-w-md">
-                    <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-200 dark:border-zinc-700">
-                        <AlertCircle className="w-8 h-8 text-zinc-600 dark:text-zinc-400" />
-                    </div>
-                    <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
-                        We couldn&apos;t open this canvas
-                    </h1>
-                    <p className="text-zinc-600 dark:text-zinc-400 mb-6">
-                        This share link didn&apos;t match a shared canvas. The
-                        link may be incorrect, or the canvas may no longer be
-                        shared.
-                    </p>
-                    <Button asChild className="w-full max-w-xs bg-blue-600 hover:bg-blue-700 text-white">
-                        <Link href="/">Go Home</Link>
-                    </Button>
-                </div>
-            </div>
-        );
-    }
-
-    const getInitials = (name: string | null) => {
-        if (!name) return '?';
-        return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    };
-
+  if (isLoading) {
     return (
-        <div className={cn(className, "flex flex-col overflow-hidden")}>
-            {/* Canvas Title Bar - Minimal & Professional */}
-            <div className="flex-shrink-0 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 px-4 py-2">
-                <div className="flex items-center justify-between gap-4">
-                    {/* Title & Type */}
-                    <div className="flex-1 min-w-0 flex items-center gap-2">
-                        <h1 className="text-base md:text-lg font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                            {canvas.title}
-                        </h1>
-                        <Badge variant="outline" className="capitalize flex-shrink-0 text-[10px] px-1.5 py-0.5">
-                            {canvas.canvas_type.replace('-', ' ')}
-                        </Badge>
-                        {canvas.has_scoring && (
-                            <Badge variant="secondary" className="flex-shrink-0 text-[10px] px-1.5 py-0.5">
-                                <Trophy className="w-3 h-3 mr-0.5" />
-                                Scored
-                            </Badge>
-                        )}
-                    </div>
-
-                    {/* Social Actions */}
-                    <CanvasSocialActions
-                        canvasId={canvas.id}
-                        shareToken={shareToken}
-                        likeCount={canvas.like_count}
-                        commentCount={canvas.comment_count}
-                        viewCount={canvas.view_count}
-                        shareCount={canvas.share_count}
-                        forkCount={canvas.fork_count}
-                        className="flex-shrink-0"
-                    />
-                </div>
-            </div>
-
-            {/* Canvas - Full Height */}
-            <div className="flex-1 overflow-hidden bg-zinc-50 dark:bg-zinc-950">
-                <PublicCanvasRenderer 
-                    content={{
-                        type: canvas.canvas_type,
-                        data: canvas.canvas_data,
-                        metadata: {
-                            title: canvas.title,
-                            description: canvas.description
-                        }
-                    }} 
-                />
-            </div>
-
-            {/* Collapsible Bottom Info Panel - Professional */}
-            <div className={cn(
-                "flex-shrink-0 bg-white dark:bg-zinc-900 border-t border-zinc-200 dark:border-zinc-800 transition-all duration-300",
-                showDetails ? "max-h-96" : "max-h-12"
-            )}>
-                {/* Toggle Button - Compact */}
-                <button
-                    onClick={() => setShowDetails(!showDetails)}
-                    className="w-full px-4 py-2 flex items-center justify-between hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors group"
-                >
-                    <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7 ring-1 ring-zinc-200 dark:ring-zinc-700">
-                            <AvatarFallback className="bg-blue-600 text-white text-[10px]">
-                                {getInitials(canvas.creator_display_name)}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="text-left">
-                            <div className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
-                                {canvas.creator_display_name || 'Anonymous'}
-                            </div>
-                            <div className="text-[10px] text-zinc-500 dark:text-zinc-400">
-                                {formatDistanceToNow(new Date(canvas.created_at), { addSuffix: true })}
-                            </div>
-                        </div>
-                        {canvas.description && !showDetails && (
-                            <span className="hidden md:block text-xs text-zinc-500 dark:text-zinc-400 max-w-md truncate ml-4">
-                                {canvas.description}
-                            </span>
-                        )}
-                    </div>
-                    {showDetails ? (
-                        <ChevronDown className="w-4 h-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
-                    ) : (
-                        <ChevronUp className="w-4 h-4 text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300" />
-                    )}
-                </button>
-
-                {/* Expanded Details - Professional */}
-                {showDetails && (
-                    <div className="px-4 pb-3 overflow-y-auto max-h-80">
-                        {canvas.description && (
-                            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-3 pb-3 border-b border-zinc-200 dark:border-zinc-800">
-                                {canvas.description}
-                            </p>
-                        )}
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Stats - Professional Grid */}
-                            <div className="space-y-3">
-                                <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                                    Statistics
-                                </h3>
-                                <div className="grid grid-cols-2 gap-2">
-                                    <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg p-2.5 border border-zinc-200 dark:border-zinc-700">
-                                        <div className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium">Views</div>
-                                        <div className="text-base font-semibold text-zinc-900 dark:text-zinc-100">{canvas.view_count.toLocaleString()}</div>
-                                    </div>
-                                    <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg p-2.5 border border-zinc-200 dark:border-zinc-700">
-                                        <div className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium">Likes</div>
-                                        <div className="text-base font-semibold text-zinc-900 dark:text-zinc-100">{canvas.like_count.toLocaleString()}</div>
-                                    </div>
-                                    {canvas.has_scoring && (
-                                        <>
-                                            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2.5 border border-blue-200 dark:border-blue-900">
-                                                <div className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">High Score</div>
-                                                <div className="text-base font-semibold text-blue-700 dark:text-blue-300">
-                                                    {canvas.high_score || 0}
-                                                </div>
-                                            </div>
-                                            <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg p-2.5 border border-zinc-200 dark:border-zinc-700">
-                                                <div className="text-[10px] text-zinc-600 dark:text-zinc-400 font-medium">Attempts</div>
-                                                <div className="text-base font-semibold text-zinc-900 dark:text-zinc-100">{canvas.total_attempts}</div>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Leaderboard - Professional */}
-                            {canvas.has_scoring && (
-                                <div className="space-y-3">
-                                    <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-                                        <Trophy className="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                                        Leaderboard
-                                    </h3>
-                                    <div className="bg-zinc-100 dark:bg-zinc-800 rounded-lg p-2 border border-zinc-200 dark:border-zinc-700 max-h-48 overflow-y-auto">
-                                        <CanvasLeaderboard canvasId={canvas.id} />
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Tags */}
-                            {canvas.tags && canvas.tags.length > 0 && (
-                                <div className="space-y-2 md:col-span-2">
-                                    <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                                        Tags
-                                    </h3>
-                                    <div className="flex flex-wrap gap-1">
-                                        {canvas.tags.map(tag => (
-                                            <Badge 
-                                                key={tag} 
-                                                variant="secondary" 
-                                                className="text-[10px] px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700"
-                                            >
-                                                #{tag}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-        </div>
+      <div className={cn(className, "bg-textured")}>
+        <MediumComponentLoading />
+      </div>
     );
-}
+  }
 
+  if (error || !canvas) {
+    return (
+      <div
+        className={cn(
+          className,
+          "flex items-center justify-center bg-textured p-4",
+        )}
+      >
+        <div className="max-w-md text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-border bg-card">
+            <AlertCircle
+              className="h-7 w-7 text-muted-foreground"
+              aria-hidden="true"
+            />
+          </div>
+          <h1 className="mb-2 text-2xl font-semibold text-foreground">
+            We couldn&apos;t open this canvas
+          </h1>
+          <p className="mb-6 text-sm text-muted-foreground">
+            This link may be incorrect, expired, or no longer shared.
+          </p>
+          <Button asChild className="w-full max-w-xs">
+            <Link href="/">Go to AI Matrx</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const creatorName =
+    canvas.creator_display_name ?? canvas.creator_username ?? "Anonymous";
+
+  return (
+    <section
+      className={cn(
+        className,
+        "flex flex-col overflow-hidden bg-textured text-foreground",
+      )}
+      aria-label={`Shared canvas: ${canvas.title}`}
+    >
+      <header
+        className={cn(
+          PUBLIC_HEADER_ROW,
+          "z-30 flex shrink-0 items-center gap-1 border-b border-glass-edge bg-glass px-2 shadow-glass backdrop-blur-glass backdrop-saturate-glass sm:px-3",
+        )}
+      >
+        <Link
+          href="/"
+          aria-label="AI Matrx home"
+          className={cn(
+            PUBLIC_HEADER_ICON_BUTTON,
+            "flex shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-glass-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          )}
+        >
+          <Image
+            src="/matrx/matrx-icon.svg"
+            width={20}
+            height={20}
+            alt=""
+            priority
+          />
+        </Link>
+
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <h1 className="truncate text-sm font-semibold sm:text-base">
+            {canvas.title}
+          </h1>
+          <Badge
+            variant="outline"
+            className="hidden shrink-0 capitalize sm:inline-flex"
+          >
+            {canvas.canvas_type.replace("-", " ")}
+          </Badge>
+          {canvas.has_scoring ? (
+            <Badge
+              variant="secondary"
+              className="hidden shrink-0 md:inline-flex"
+            >
+              <Trophy className="mr-1 h-3 w-3" aria-hidden="true" />
+              Scored
+            </Badge>
+          ) : null}
+        </div>
+
+        <CanvasSocialActions
+          canvasId={canvas.id}
+          shareToken={shareToken}
+          likeCount={canvas.like_count}
+          commentCount={canvas.comment_count}
+          forkCount={canvas.fork_count}
+        />
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label={`About this canvas by ${creatorName}`}
+              title="Canvas details"
+              className={cn(
+                PUBLIC_HEADER_ICON_BUTTON,
+                "flex shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-glass-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              )}
+            >
+              <Avatar className="h-7 w-7 border border-border">
+                <AvatarFallback className="bg-primary text-[10px] text-primary-foreground">
+                  {initials(canvas.creator_display_name)}
+                </AvatarFallback>
+              </Avatar>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            sideOffset={4}
+            className="max-h-[min(34rem,calc(100dvh-1rem))] w-[min(22rem,calc(100vw-1rem))] overflow-y-auto p-0"
+          >
+            <div className="flex items-center gap-3 border-b border-border p-4">
+              <Avatar className="h-10 w-10 border border-border">
+                <AvatarFallback className="bg-primary text-sm text-primary-foreground">
+                  {initials(canvas.creator_display_name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{creatorName}</p>
+                <p className="text-xs text-muted-foreground">
+                  Shared{" "}
+                  {formatDistanceToNow(new Date(canvas.created_at), {
+                    addSuffix: true,
+                  })}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 p-4">
+              {canvas.description ? (
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {canvas.description}
+                </p>
+              ) : null}
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-lg border border-border bg-muted/50 p-3">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                    Views
+                  </div>
+                  <p className="mt-1 text-lg font-semibold tabular-nums">
+                    {canvas.view_count.toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-border bg-muted/50 p-3">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Heart className="h-3.5 w-3.5" aria-hidden="true" />
+                    Likes
+                  </div>
+                  <p className="mt-1 text-lg font-semibold tabular-nums">
+                    {canvas.like_count.toLocaleString()}
+                  </p>
+                </div>
+                {canvas.has_scoring ? (
+                  <>
+                    <div className="rounded-lg border border-border bg-muted/50 p-3">
+                      <p className="text-xs text-muted-foreground">
+                        High score
+                      </p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums">
+                        {canvas.high_score ?? 0}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-border bg-muted/50 p-3">
+                      <p className="text-xs text-muted-foreground">Attempts</p>
+                      <p className="mt-1 text-lg font-semibold tabular-nums">
+                        {canvas.total_attempts.toLocaleString()}
+                      </p>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+
+              {canvas.tags.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {canvas.tags.map((tag) => (
+                    <Badge key={tag} variant="secondary">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              ) : null}
+
+              {canvas.has_scoring ? (
+                <div className="space-y-2 border-t border-border pt-4">
+                  <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+                    <Trophy
+                      className="h-4 w-4 text-primary"
+                      aria-hidden="true"
+                    />
+                    Leaderboard
+                  </h2>
+                  <CanvasLeaderboard canvasId={canvas.id} />
+                </div>
+              ) : null}
+            </div>
+          </PopoverContent>
+        </Popover>
+      </header>
+
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <PublicCanvasRenderer
+          content={{
+            type: canvas.canvas_type,
+            data: canvas.canvas_data,
+            metadata: {
+              title: canvas.title,
+              description: canvas.description,
+            },
+          }}
+        />
+      </div>
+    </section>
+  );
+}

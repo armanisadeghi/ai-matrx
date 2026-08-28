@@ -26,6 +26,14 @@ export interface EnsureArtifactInput {
   title: string;
   /** Raw payload the type's renderer consumes (markdown or JSON string). */
   content: string;
+  /**
+   * Structured (kind-IR) payload when the artifact's body is an OBJECT rather
+   * than a string. Persisted as `content.data` verbatim, so a diagram/quiz/
+   * comparison artifact materializes with its real value instead of being
+   * rejected for having no string content. Wins over `content` when both are
+   * present, exactly as in `canvasArtifactService.upsert`.
+   */
+  structured?: Record<string, unknown> | null;
   /** Real message.id — the chat source (kept for the historic call sites). */
   messageId?: string | null;
   conversationId?: string | null;
@@ -102,7 +110,10 @@ async function linkDomainRecord(
       artifactId: row.id,
       canvasType: input.canvasType,
       title: input.title,
-      rawContent: input.content || extractRowPayload(row),
+      rawContent:
+        input.content ||
+        (input.structured ? JSON.stringify(input.structured) : "") ||
+        extractRowPayload(row),
       source,
       sourceMessageId: source.system === "cx_message" ? source.id : undefined,
       conversationId: input.conversationId ?? null,
@@ -242,6 +253,7 @@ export async function ensureArtifactPersisted(
     type: input.canvasType,
     title: input.title,
     content: input.content,
+    structured: input.structured ?? null,
     metadata: input.metadata,
     conversationId: input.conversationId ?? null,
     sourceType: "model_direct",

@@ -59,9 +59,8 @@ import { CanvasBody, getDefaultTitle, titleToString } from "./CanvasBody";
 import { CanvasNavigation } from "./CanvasNavigation";
 import { CanvasPaneUserMenu } from "./CanvasPaneHeaderChrome";
 import { CanvasPanePutAwayToggle } from "./CanvasHeaderToggle";
-import { ensureArtifactPersisted } from "@/features/canvas/materialization/ensureArtifactPersisted";
+import { syncCanvasItemToCloud } from "@/features/canvas/materialization/syncCanvasItemToCloud";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
-import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { CanvasArtifactDebugPanel } from "@/features/canvas/components/CanvasArtifactDebugPanel";
 
 // CanvasShareSheet pulls in markdown utilities and image picker — keep it
@@ -175,60 +174,27 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
     }
     setIsSyncing(true);
     try {
-      let rawContent = typeof content.data === "string" ? content.data : "";
-      const existingArtifactId =
-        content.metadata?.canvasItemId ?? item.savedItemId;
-
-      if (!rawContent && isMaterializedArtifactId(existingArtifactId)) {
-        const row = await canvasArtifactService.getById(existingArtifactId!);
-        if (
-          row?.content &&
-          typeof row.content === "object" &&
-          "data" in row.content
-        ) {
-          const d = (row.content as { data?: unknown }).data;
-          rawContent = typeof d === "string" ? d : JSON.stringify(d ?? "");
-        }
-      }
-
-      if (!rawContent) {
-        toast.error(
-          "Nothing to persist — no card content on this session item.",
-        );
+      const outcome = await syncCanvasItemToCloud({ content, item, title });
+      if (!outcome.ok) {
+        toast.error(outcome.error);
         return;
       }
-
-      const result = await ensureArtifactPersisted({
-        canvasType: content.type,
-        title:
-          titleToString(content.metadata?.title) ||
-          getDefaultTitle(content.type),
-        content: rawContent,
-        messageId:
-          content.metadata?.messageId ?? content.metadata?.sourceMessageId,
-        conversationId: content.metadata?.conversationId,
-        artifactId: existingArtifactId,
-      });
-
-      if (result.ok && result.artifactId) {
-        dispatch(
-          markItemSynced({
-            sessionItemId: item.id,
-            artifactId: result.artifactId,
-            artifactDebug: {
-              steps: result.steps,
-              errors: result.errors,
-              ensuredAt: Date.now(),
-              wasCreated: result.wasCreated,
-            },
-          }),
-        );
-        toast.success(
-          result.wasCreated ? "Artifact created in cloud" : "Artifact verified",
-        );
-      } else {
-        toast.error(result.errors[0] ?? "Cloud sync failed");
-      }
+      const { result } = outcome;
+      dispatch(
+        markItemSynced({
+          sessionItemId: item.id,
+          artifactId: result.artifactId!,
+          artifactDebug: {
+            steps: result.steps,
+            errors: result.errors,
+            ensuredAt: Date.now(),
+            wasCreated: result.wasCreated,
+          },
+        }),
+      );
+      toast.success(
+        result.wasCreated ? "Artifact created in cloud" : "Artifact verified",
+      );
     } finally {
       setIsSyncing(false);
     }
