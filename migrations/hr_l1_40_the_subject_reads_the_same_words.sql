@@ -53,8 +53,3 @@ values ('hr', 'wf_pending', 'hr_l1_40_the_subject_reads_the_same_words.sql',
         array[]::text[],
         'The requester''s own list must carry the same human label and summary the decider gets.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_40_the_subject_reads_the_same_words.sql',
-        md5('hr_l1_40_the_subject_reads_the_same_words'), now(), 0)
-on conflict do nothing;

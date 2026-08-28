@@ -103,8 +103,3 @@ values ('hr', '_wf_display', 'hr_l1_41_a_pay_change_carries_its_proposal_flat.sq
         'Three sources, none of them the integrity hash. _wf_call_digest returns sha256 — the '
         || 'engine tamper check — and must never reach a slot a human reads.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_41_a_pay_change_carries_its_proposal_flat.sql',
-        md5('hr_l1_41_a_pay_change_carries_its_proposal_flat'), now(), 0)
-on conflict do nothing;
