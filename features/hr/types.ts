@@ -816,3 +816,153 @@ export type HrAuditedRow<T> = {
   isSelfAccess: boolean;
   auditId: string | null;
 };
+
+// ── The law portal (D25, 2026-08-28) ────────────────────────────────────────
+//
+// The org side of the employment-law library. The platform sets the baseline and
+// an org NEVER edits it; an org layers its own rules over it, more generously,
+// and the server is the one that decides whether a layer is lawful.
+//
+// Every field below is MAPPED off the wire in `service.ts`, never cast. Shapes
+// read live from `hr.law_portal_data` and `hr.validate_org_config` on 2026-08-28.
+
+/**
+ * Where a rule comes from. `url` is frequently a repo-relative research path
+ * rather than an http link, so a surface must not blindly render it as an anchor.
+ */
+export type HrLawCitation = {
+  authority: string | null;
+  title: string | null;
+  url: string | null;
+  /** e.g. `program_research` — how strong the source is, in the seeder's words. */
+  confidence: string | null;
+  retrieved_at: string | null;
+  verified_at: string | null;
+};
+
+/**
+ * What an organization may do to a rule class.
+ *
+ * - `no` — statutory content only. The org configures how it COMPLIES, never the law.
+ * - `more_generous_only` — the org may go beyond the floor, never beneath it.
+ * - `within_bounds` — the org chooses inside an envelope the statute defines.
+ */
+export type HrOrgConfigurability = "no" | "more_generous_only" | "within_bounds";
+
+export type HrLawRuleClass = {
+  id: string;
+  slug: string;
+  label: string;
+  description: string | null;
+  org_configurable: HrOrgConfigurability;
+  produces_money: boolean;
+  /** JSON Schema. Often nested; a surface must cope with not understanding it. */
+  parameter_schema: Record<string, unknown> | null;
+};
+
+/**
+ * 🚨 `advisory` NEVER COMPUTES MONEY. It is law we hold but have not verified, so
+ * it flags and warns and nothing else. Anything the mapper cannot read as exactly
+ * `active` is reported as `advisory`, because the failure that matters is calling
+ * unverified law binding — never the other way round.
+ */
+export type HrLawRuleStatus = "active" | "advisory";
+
+export type HrPlatformLawRule = {
+  id: string;
+  rule_class: string;
+  rule_class_label: string;
+  produces_money: boolean;
+  org_configurable: HrOrgConfigurability;
+  jurisdiction_key: string;
+  jurisdiction_name: string | null;
+  /** `federal` | `state` | `county` | `city` — the server's word, never inferred. */
+  jurisdiction_level: string | null;
+  effective_from: string | null;
+  effective_to: string | null;
+  status: HrLawRuleStatus;
+  basis: string | null;
+  citation: HrLawCitation | null;
+  parameters: Record<string, unknown>;
+  applicability: unknown;
+  /**
+   * The parameter keys inside THIS rule that nobody has verified. Non-empty means
+   * anything computed from those keys is pending verification, never authoritative.
+   */
+  unverified_keys: string[];
+  version: number | null;
+  /** True when this rule's jurisdiction is on one of the org's chains. */
+  applies_to_org: boolean;
+};
+
+/** One rule this organization authored. Layered over the baseline, never replacing it. */
+export type HrOrgLawRule = {
+  id: string;
+  rule_class: string;
+  rule_class_label: string;
+  jurisdiction_key: string;
+  jurisdiction_name: string | null;
+  effective_from: string | null;
+  effective_to: string | null;
+  status: HrLawRuleStatus;
+  basis: string | null;
+  citation: HrLawCitation | null;
+  parameters: Record<string, unknown>;
+  applicability: unknown;
+  version: number | null;
+};
+
+export type HrLawPortal = {
+  /** Where the employer actually operates, derived from its locations and establishments. */
+  org_jurisdiction_keys: string[];
+  /** Those keys expanded up their chains (city → county → state → US). */
+  chain_keys: string[];
+  classes: HrLawRuleClass[];
+  platform_rules: HrPlatformLawRule[];
+  org_rules: HrOrgLawRule[];
+};
+
+/**
+ * One thing the server found wrong (or worth saying) about a proposed org rule.
+ *
+ * 🚨 `message` IS WRITTEN FOR AN HR ADMIN AND IS RENDERED VERBATIM. It names the
+ * jurisdiction, what the law requires and what to do instead. Never summarize it,
+ * never replace it with a generic sentence, never clamp the value and save anyway.
+ */
+export type HrLawValidationFinding = {
+  code: string | null;
+  message: string;
+  field: string | null;
+  jurisdiction_key: string | null;
+  jurisdiction_name: string | null;
+  citation: HrLawCitation | null;
+  /** How many active employees sit in that jurisdiction today. Absent on warnings. */
+  affected_employees: number | null;
+  configured: unknown;
+  required: unknown;
+};
+
+export type HrLawValidation = {
+  ok: boolean | null;
+  violations: HrLawValidationFinding[];
+  warnings: HrLawValidationFinding[];
+};
+
+/** What the org rule editor sends to `hr_org_jurisdiction_rule_save`. */
+export type HrOrgLawRuleDraft = {
+  /** Present → editing that org rule. Absent → creating one. */
+  id?: string | null;
+  rule_class: string;
+  jurisdiction_key: string;
+  effective_from?: string | null;
+  effective_to?: string | null;
+  parameters: Record<string, unknown>;
+  basis?: string | null;
+};
+
+export type HrOrgLawRuleSaveAck = {
+  rule_id: string | null;
+  version: number | null;
+  /** What the server checked. Present on a granted save too — warnings included. */
+  validation: HrLawValidation | null;
+};

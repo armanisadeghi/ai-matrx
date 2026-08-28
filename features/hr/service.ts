@@ -30,6 +30,7 @@ import type {
   HrActivationSeedAck,
   HrAuditedPage,
   HrAuditedRow,
+  HrDenied,
   HrDirectoryFilter,
   HrDirectoryPage,
   HrEmployeeInviteAcceptAck,
@@ -37,10 +38,21 @@ import type {
   HrEmployeeProfile,
   HrEmploymentHistory,
   HrKnobIndex,
+  HrLawCitation,
+  HrLawPortal,
+  HrLawRuleClass,
+  HrLawRuleStatus,
+  HrLawValidation,
+  HrLawValidationFinding,
   HrMyContext,
+  HrOrgConfigurability,
+  HrOrgLawRule,
+  HrOrgLawRuleDraft,
+  HrOrgLawRuleSaveAck,
   HrOrgChart,
   HrPayGroupAssignmentAck,
   HrPendingChanges,
+  HrPlatformLawRule,
   HrRefusalEnvelope,
   HrResult,
   HrStructure,
@@ -1774,4 +1786,234 @@ export function clearHrKnob(args: {
     },
     { envelope: true, whatFailed: "Clearing this override" },
   );
+}
+
+// ── The law portal (D25) — three doors, all MAPPED off the wire ─────────────
+//
+// 🚨 A REFUSAL FROM THE SAVE DOOR CARRIES THE ANSWER, NOT JUST A "NO".
+// `unlawful_configuration` returns `validation.violations[]`, each with a sentence
+// written for an HR admin, the citation behind it, and how many employees it
+// affects. `callHrRaw` puts the whole envelope on `HrDenied.payload`, and
+// `readHrLawValidation` below is how a surface gets at it without a cast. Never
+// clamp a value the server refused — a refusal is a refusal.
+
+function readNumber(row: Record<string, unknown>, key: string): number | null {
+  const value = row[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function readObject(
+  row: Record<string, unknown>,
+  key: string,
+): Record<string, unknown> | null {
+  const value = row[key];
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function readRows(row: Record<string, unknown>, key: string): Record<string, unknown>[] {
+  const value = row[key];
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (entry): entry is Record<string, unknown> =>
+      typeof entry === "object" && entry !== null && !Array.isArray(entry),
+  );
+}
+
+function mapHrLawCitation(value: unknown): HrLawCitation | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  return {
+    authority: readText(row, "authority"),
+    title: readText(row, "title"),
+    url: readText(row, "url"),
+    confidence: readText(row, "confidence"),
+    retrieved_at: readText(row, "retrieved_at"),
+    verified_at: readText(row, "verified_at"),
+  };
+}
+
+/**
+ * Anything that is not exactly `active` is reported as `advisory`.
+ * Calling unverified law binding is the dangerous direction; the other way round
+ * only under-claims.
+ */
+function mapHrLawStatus(row: Record<string, unknown>): HrLawRuleStatus {
+  return readText(row, "status") === "active" ? "active" : "advisory";
+}
+
+function mapHrOrgConfigurable(row: Record<string, unknown>): HrOrgConfigurability {
+  const value = readText(row, "org_configurable");
+  return value === "more_generous_only" || value === "within_bounds" ? value : "no";
+}
+
+function mapHrLawRuleClass(row: Record<string, unknown>): HrLawRuleClass {
+  return {
+    id: readText(row, "id") ?? "",
+    slug: readText(row, "slug") ?? "",
+    label: readText(row, "label") ?? readText(row, "slug") ?? "",
+    description: readText(row, "description"),
+    org_configurable: mapHrOrgConfigurable(row),
+    produces_money: row.produces_money === true,
+    parameter_schema: readObject(row, "parameter_schema"),
+  };
+}
+
+function mapHrPlatformLawRule(row: Record<string, unknown>): HrPlatformLawRule {
+  return {
+    id: readText(row, "id") ?? "",
+    rule_class: readText(row, "rule_class") ?? "",
+    rule_class_label: readText(row, "rule_class_label") ?? readText(row, "rule_class") ?? "",
+    produces_money: row.produces_money === true,
+    org_configurable: mapHrOrgConfigurable(row),
+    jurisdiction_key: readText(row, "jurisdiction_key") ?? "",
+    jurisdiction_name: readText(row, "jurisdiction_name"),
+    jurisdiction_level: readText(row, "jurisdiction_level"),
+    effective_from: readText(row, "effective_from"),
+    effective_to: readText(row, "effective_to"),
+    status: mapHrLawStatus(row),
+    basis: readText(row, "basis"),
+    citation: mapHrLawCitation(row.citation),
+    parameters: readObject(row, "parameters") ?? {},
+    applicability: row.applicability ?? null,
+    unverified_keys: readTextArray(row, "unverified_keys"),
+    version: readNumber(row, "version"),
+    applies_to_org: row.applies_to_org === true,
+  };
+}
+
+function mapHrOrgLawRule(row: Record<string, unknown>): HrOrgLawRule {
+  return {
+    id: readText(row, "id") ?? "",
+    rule_class: readText(row, "rule_class") ?? "",
+    rule_class_label: readText(row, "rule_class_label") ?? readText(row, "rule_class") ?? "",
+    jurisdiction_key: readText(row, "jurisdiction_key") ?? "",
+    jurisdiction_name: readText(row, "jurisdiction_name"),
+    effective_from: readText(row, "effective_from"),
+    effective_to: readText(row, "effective_to"),
+    status: mapHrLawStatus(row),
+    basis: readText(row, "basis"),
+    citation: mapHrLawCitation(row.citation),
+    parameters: readObject(row, "parameters") ?? {},
+    applicability: row.applicability ?? null,
+    version: readNumber(row, "version"),
+  };
+}
+
+function mapHrLawFinding(row: Record<string, unknown>): HrLawValidationFinding {
+  return {
+    code: readText(row, "code"),
+    message:
+      readText(row, "message") ??
+      "The server refused this configuration and did not phrase a reason.",
+    field: readText(row, "field"),
+    jurisdiction_key: readText(row, "jurisdiction_key"),
+    jurisdiction_name: readText(row, "jurisdiction_name"),
+    citation: mapHrLawCitation(row.citation),
+    affected_employees: readNumber(row, "affected_employees"),
+    configured: row.configured ?? null,
+    required: row.required ?? null,
+  };
+}
+
+function mapHrLawValidation(value: unknown): HrLawValidation | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const row = value as Record<string, unknown>;
+  return {
+    ok: typeof row.ok === "boolean" ? row.ok : null,
+    violations: readRows(row, "violations").map(mapHrLawFinding),
+    warnings: readRows(row, "warnings").map(mapHrLawFinding),
+  };
+}
+
+/**
+ * The validation block off a refusal envelope, mapped.
+ *
+ * `HrDenied.payload` is the whole envelope, which is where `unlawful_configuration`
+ * and `warnings_unacknowledged` keep everything the person needs to read.
+ */
+export function readHrLawValidation(denied: HrDenied): HrLawValidation | null {
+  return mapHrLawValidation(denied.payload?.validation);
+}
+
+/**
+ * The org law portal (route `/hr/compliance/laws`).
+ *
+ * Refuses with `not_an_hr_admin` for anybody without HR-admin standing in this
+ * employer — rendered in place as the no-access state, never a permission wall.
+ */
+export async function fetchHrLawPortal(
+  organizationId: string,
+): Promise<HrResult<HrLawPortal>> {
+  const result = await callHrRaw(
+    "hr_law_portal_data",
+    { p_organization_id: organizationId },
+    { envelope: true, whatFailed: "The law portal" },
+  );
+  if (!result.ok) return result;
+  const row = result.data;
+  return {
+    ok: true,
+    data: {
+      org_jurisdiction_keys: readTextArray(row, "org_jurisdiction_keys"),
+      chain_keys: readTextArray(row, "chain_keys"),
+      classes: readRows(row, "classes").map(mapHrLawRuleClass),
+      platform_rules: readRows(row, "platform_rules").map(mapHrPlatformLawRule),
+      org_rules: readRows(row, "org_rules").map(mapHrOrgLawRule),
+    },
+  };
+}
+
+/**
+ * Add or edit ONE of this organization's own rules.
+ *
+ * `acceptWarnings` is only ever set by an explicit human "Save anyway" after the
+ * warnings have been read on screen — never pre-set, never remembered.
+ */
+export async function saveHrOrgLawRule(args: {
+  organizationId: string;
+  draft: HrOrgLawRuleDraft;
+  acceptWarnings?: boolean;
+}): Promise<HrResult<HrOrgLawRuleSaveAck>> {
+  const result = await callHrRaw(
+    "hr_org_jurisdiction_rule_save",
+    {
+      p_organization_id: args.organizationId,
+      p_payload: {
+        ...(args.draft.id ? { id: args.draft.id } : {}),
+        rule_class: args.draft.rule_class,
+        jurisdiction_key: args.draft.jurisdiction_key,
+        effective_from: args.draft.effective_from ?? null,
+        effective_to: args.draft.effective_to ?? null,
+        parameters: args.draft.parameters,
+        basis: args.draft.basis ?? null,
+      },
+      p_accept_warnings: args.acceptWarnings === true,
+    },
+    { envelope: true, whatFailed: "Saving this rule", write: true },
+  );
+  if (!result.ok) return result;
+  return {
+    ok: true,
+    data: {
+      rule_id: readText(result.data, "rule_id"),
+      version: readNumber(result.data, "version"),
+      validation: mapHrLawValidation(result.data.validation),
+    },
+  };
+}
+
+/** Retire one org rule. The statutory baseline underneath it is what takes over. */
+export async function retireHrOrgLawRule(args: {
+  organizationId: string;
+  ruleId: string;
+}): Promise<HrResult<{ rule_id: string | null }>> {
+  const result = await callHrRaw(
+    "hr_org_jurisdiction_rule_deactivate",
+    { p_organization_id: args.organizationId, p_rule_id: args.ruleId },
+    { envelope: true, whatFailed: "Retiring this rule", write: true },
+  );
+  if (!result.ok) return result;
+  return { ok: true, data: { rule_id: readText(result.data, "rule_id") } };
 }

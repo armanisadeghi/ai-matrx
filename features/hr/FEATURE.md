@@ -41,6 +41,11 @@ feature. There is no cross-employer HR view, in v1 or later.
   `HrHomeGrid` card grid, per-persona composition and queue cards are L9's; the
   `TODO(L9…)` in that file names the swap.
 - Section routes mount `HrShell` or `HrSubShell` from their own `layout.tsx`.
+- `app/(core)/hr/compliance/laws/page.tsx` — **route 85c, the org LAW PORTAL (D25)**.
+  The employment-law rules that reach this employer (platform baseline, read-only)
+  and the rules the org layers over them. `app/(core)/hr/compliance/page.tsx`
+  redirects the section root to it, closing the dead end the "Compliance" nav item
+  had been pointing at since the nav shipped.
 
 **Shell + primitives** (`features/hr/shared/`)
 
@@ -124,6 +129,9 @@ place. See `types.ts` for the full contract.
 | `HrEmptyOrg` renders a door, not the wizard                     | `features/hr/settings/activation/HrActivationWizard.tsx` does not exist yet (checked 2026-08-26), and a `next/dynamic` import of a missing module is a build error. The door links to `/hr/settings/employer`. **When the wizard lands, replace the `<Link>` with ONE `next/dynamic` edge behind the same `canActivate` condition** — one boundary, at the edge, conditionally rendered. |
 | Cancel takes a required reason via `TextInputDialog`            | `hr_pending_change_cancel` requires `p_reason`; browser prompts are banned. The dialog states, before the click, that nothing in the history is erased and that the cancellation is itself recorded.                                                                                                                                                                                     |
 | Assist surface names are string constants                       | The `matrx-user/hr*` surface **manifests** do not exist yet under `features/surfaces/manifests/`. `HR_ASSIST_SURFACES` holds the §3 names so there is one spelling to point at the manifests when that lane lands.                                                                                                                                                                       |
+| Law portal: an unreadable rule `status` maps to `advisory`      | `advisory` law flags and never computes pay, `active` binds. Reporting an unknown value as `active` would present unverified law as binding; the other direction only under-claims. So the mapper narrows to `active` on an exact match and to `advisory` otherwise (`mapHrLawStatus`).                                                                                                  |
+| Law portal: a nested `parameter_schema` gets a JSON field       | The shipped class schemas range from four scalar keys to nested objects with `$defs`/`$ref`. A generated form that silently dropped what it could not draw would write a rule the author did not describe, so `flatParameterFields` returns ALL fields or `null`, and `null` means the editor shows JSON and says why.                                                                   |
+| `/hr/compliance` redirects to the law portal                    | The "Compliance" nav item has resolved to `/hr/compliance` since the nav shipped and no route existed — a live 404. The section's first real surface is the law portal, so the root opens it through the builder. The lane that builds a Compliance landing surface replaces that file and adds its tab in `HrComplianceShell`.                                                        |
 | This lane declares **no** `agentRole` and binds no mandate      | HR runs no fixed AI worker on these surfaces yet, and inventing one to satisfy disclosure is forbidden. Assists chips are the platform's noticing lane, not agent disclosure — disclosure adds no visible page content, ever.                                                                                                                                                            |
 
 ---
@@ -139,6 +147,21 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-08-28 (D25)** — The org **law portal** shipped at `/hr/compliance/laws`:
+  the platform's employment-law baseline shown read-only and grouped by rule class,
+  with advisory rules visually distinct ("flags only, never computes pay"), a
+  pending-verification callout wherever a rule's `unverified_keys` is non-empty
+  (explicitly, for `pto-payout-at-termination` + `excludes`, that dependent payout
+  amounts are withheld rather than presented as a dollar figure), a toggle for the
+  rules that do NOT reach this employer, and the org's own more-generous rules with
+  add / edit / retire. A server refusal is rendered as the server wrote it —
+  `unlawful_configuration` shows the violation sentence, citation and affected
+  headcount and saves nothing; `warnings_unacknowledged` offers one explicit
+  "Save anyway". Doors: `hr_law_portal_data`, `hr_org_jurisdiction_rule_save`,
+  `hr_org_jurisdiction_rule_deactivate` (`features/hr/service.ts`, mapped field by
+  field). The platform rule LIBRARY stays superadmin-only in the admin portal and
+  has no door from this module.
+- **2026-08-28** — Added sealed jurisdiction-rule administration doors: platform law-status changes require a superadmin through the named RPC, while organization law-portal reads and writes remain capability-gated HR-admin operations.
 - **2026-08-27** — Self-service writes now preserve the audit basis for subject-owned changes,
   and successful acknowledgements are read from the server's field-keyed payload.
 - **2026-08-27** — HR now validates the browser session before its context door,

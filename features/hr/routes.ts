@@ -367,6 +367,17 @@ export function hrEngagementHref(org?: HrOrgRef): string {
 export function hrComplianceHref(org?: HrOrgRef): string {
   return hrUrl("/hr/compliance", org);
 }
+/**
+ * Route 85c — THE LAW PORTAL (D25, 2026-08-28). The employment-law rules that reach
+ * this employer, and the org's own rules layered over them.
+ *
+ * The platform rule library itself is a superadmin surface in the admin portal and
+ * has no builder here: an org never edits the baseline, so there is no door from
+ * this module to it.
+ */
+export function hrComplianceLawsHref(org?: HrOrgRef): string {
+  return hrUrl("/hr/compliance/laws", org);
+}
 /** Route 65 — THE one HR task inbox. HR never builds a second task store. */
 export function hrTasksHref(org?: HrOrgRef): string {
   return hrUrl("/hr/tasks", org);
