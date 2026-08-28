@@ -36,14 +36,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, Delete, X } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+import { KioskNumericKeypad, KioskPinDots } from "./KioskNumericKeypad";
 import type { PunchKind } from "@/features/hr/time/api/types";
 import { punchKindPresentation } from "@/features/hr/time/clock/punchVocabulary";
-
-const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"] as const;
 
 export interface KioskPinPadProps {
   punchKind: PunchKind;
@@ -132,65 +132,17 @@ export function KioskPinPad({
         />
       ) : (
         /* Masked, always. The count is the only feedback — the digits are never drawn. */
-        <div
-          className="flex min-h-12 items-center gap-4"
-          aria-label={`${pin.length} of ${pinLength} digits entered`}
-        >
-          {Array.from({ length: pinLength }, (_, index) => (
-            <span
-              key={index}
-              className={`size-5 rounded-full border-2 border-border ${
-                index < pin.length ? "bg-foreground" : "bg-transparent"
-              }`}
-            />
-          ))}
-        </div>
+        <KioskPinDots filled={pin.length} length={pinLength} />
       )}
 
       {step === "pin" && (
-      <div className="grid grid-cols-3 gap-4">
-        {KEYS.map((digit) => (
-          <Button
-            key={digit}
-            type="button"
-            variant="outline"
-            disabled={busy}
-            onClick={() => press(digit)}
-            className="size-24 text-4xl font-semibold tabular-nums"
-          >
-            {digit}
-          </Button>
-        ))}
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={busy}
-          onClick={onCancel}
-          aria-label="Cancel"
-          className="size-24"
-        >
-          <X className="size-9" />
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={busy}
-          onClick={() => press("0")}
-          className="size-24 text-4xl font-semibold tabular-nums"
-        >
-          0
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={busy || value.length === 0}
-          onClick={back}
-          aria-label="Delete last digit"
-          className="size-24"
-        >
-          <Delete className="size-9" />
-        </Button>
-      </div>
+        <KioskNumericKeypad
+          busy={busy}
+          canDelete={value.length > 0}
+          onPress={press}
+          onDelete={back}
+          onCancel={onCancel}
+        />
       )}
 
       {step === "number" && (

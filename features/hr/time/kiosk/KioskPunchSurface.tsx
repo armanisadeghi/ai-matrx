@@ -28,6 +28,7 @@ import { formatStampedTime } from "@/features/hr/time/clock/stampedTime";
 import { KioskFrame } from "./KioskFrame";
 import { KioskIdleScreen } from "./KioskIdleScreen";
 import { KioskPinPad } from "./KioskPinPad";
+import { KioskPinResetPad } from "./KioskPinResetPad";
 import {
   KioskConfirmationCard,
   KioskDisputeInstructions,
@@ -165,6 +166,24 @@ function KioskReadySurface({
           pinLength={config.pinLength}
           busy={false}
           onSubmit={punch.submit}
+          onCancel={punch.dismiss}
+        />,
+      );
+
+    /*
+     * 🚨 The accepted PIN was set by somebody else and is temporary. The punch is deliberately NOT
+     * written first: an administrator's PIN would have recorded a real punch, and the reset could
+     * then be walked away from — leaving the temporary secret live on somebody who thinks they are
+     * done. The reset comes first, and the punch continues with the PIN they choose.
+     */
+    case "must-reset":
+      return frame(
+        <KioskPinResetPad
+          employeeName={punch.view.employeeName}
+          pinLength={config.pinLength}
+          busy={false}
+          refusal={punch.view.refusal}
+          onSubmit={punch.submitNewPin}
           onCancel={punch.dismiss}
         />,
       );
