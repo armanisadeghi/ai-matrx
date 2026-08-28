@@ -359,7 +359,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
         className={`w-full ${isFullScreen ? "fixed inset-0 z-50 flex items-center justify-center p-4" : "py-6"}`}
       >
         <div
-          className={`max-w-6xl mx-auto ${isFullScreen ? "bg-textured rounded-2xl shadow-2xl h-full max-h-[95dvh] w-full flex flex-col overflow-hidden" : ""}`}
+          className={`@container max-w-6xl mx-auto ${isFullScreen ? "bg-textured rounded-2xl shadow-2xl h-full max-h-[95dvh] w-full flex flex-col overflow-hidden" : ""}`}
         >
           {/* Fullscreen Header */}
           {isFullScreen && (
@@ -385,7 +385,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
             <div className="p-4 sm:p-6 space-y-6">
               {/* Header Section */}
               <div className="bg-gradient-to-br from-red-100 via-orange-50 to-yellow-100 dark:from-red-950/40 dark:via-orange-950/30 dark:to-yellow-950/40 rounded-2xl p-4 sm:p-6 shadow-lg border-2 border-red-200 dark:border-red-800/50">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
+                <div className="flex flex-col gap-4 mb-6 @4xl:flex-row @4xl:items-start @4xl:justify-between">
                   <div className="flex items-start gap-4">
                     <div className="p-3 bg-red-500 dark:bg-red-600 rounded-xl shadow-md">
                       <HelpCircle className="h-8 w-8 text-white" />
@@ -403,31 +403,31 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
                   </div>
 
                   {!isFullScreen && (
-                    <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
+                    <div className="flex w-full flex-col items-stretch gap-2 @4xl:w-auto @4xl:flex-row @4xl:items-center">
                       <button
                         onClick={() => setIsImportModalOpen(true)}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-green-500 dark:bg-green-600 text-white text-sm font-semibold shadow-md hover:bg-green-600 dark:hover:bg-green-700 hover:shadow-lg transform hover:scale-105 transition-all sm:min-h-0 sm:w-auto sm:flex-none"
+                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-green-500 dark:bg-green-600 text-white text-sm font-semibold shadow-md hover:bg-green-600 dark:hover:bg-green-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
                       >
                         <Upload className="h-4 w-4" />
                         <span>Import to Tasks</span>
                       </button>
                       <button
                         onClick={handleOpenCanvas}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transform hover:scale-105 transition-all sm:min-h-0 sm:w-auto sm:flex-none"
+                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-purple-500 dark:bg-purple-600 text-white text-sm font-semibold shadow-md hover:bg-purple-600 dark:hover:bg-purple-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
                       >
                         <ExternalLink className="h-4 w-4" />
                         <span>Canvas</span>
                       </button>
                       <button
                         onClick={handlePrint}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-semibold shadow-md hover:bg-slate-600 dark:hover:bg-slate-700 hover:shadow-lg transform hover:scale-105 transition-all sm:min-h-0 sm:w-auto sm:flex-none"
+                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-slate-500 dark:bg-slate-600 text-white text-sm font-semibold shadow-md hover:bg-slate-600 dark:hover:bg-slate-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
                       >
                         <Printer className="h-4 w-4" />
                         <span>Print</span>
                       </button>
                       <button
                         onClick={() => setIsFullScreen(true)}
-                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-500 dark:bg-red-600 text-white text-sm font-semibold shadow-md hover:bg-red-600 dark:hover:bg-red-700 hover:shadow-lg transform hover:scale-105 transition-all sm:min-h-0 sm:w-auto sm:flex-none"
+                        className="flex min-h-11 w-full items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-500 dark:bg-red-600 text-white text-sm font-semibold shadow-md hover:bg-red-600 dark:hover:bg-red-700 hover:shadow-lg transition-all @4xl:min-h-0 @4xl:w-auto @4xl:flex-none"
                       >
                         <Maximize2 className="h-4 w-4" />
                         <span>Debug Mode</span>

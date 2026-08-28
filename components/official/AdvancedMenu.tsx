@@ -81,6 +81,7 @@ interface MenuItemsContentProps {
   actionStates: Record<string, DirectiveState>;
   onAction: (item: MenuItem) => void;
   getDirectiveState: (key: string) => DirectiveState;
+  mobile?: boolean;
 }
 
 const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
@@ -88,6 +89,7 @@ const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
   categorizeItems,
   onAction,
   getDirectiveState,
+  mobile = false,
 }) => (
   <>
     {Object.entries(groupedItems).map(([category, categoryItems], catIndex) => (
@@ -118,7 +120,8 @@ const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
                 }}
                 disabled={isDisabled}
                 className={cn(
-                  "w-full flex items-center gap-2.5 px-2 py-0 rounded-md min-h-[32px]",
+                  "flex w-full items-center gap-2.5 rounded-md px-2 py-0",
+                  mobile ? "min-h-11" : "min-h-8",
                   "text-left transition-all duration-150",
                   isDisabled
                     ? "opacity-50 cursor-not-allowed"
@@ -455,7 +458,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
 
           {/* Scrollable content — single scroll area, no nesting */}
           <div className="flex-1 overflow-y-auto overscroll-contain py-2 pb-safe">
-            <MenuItemsContent {...sharedItemProps} />
+            <MenuItemsContent {...sharedItemProps} mobile />
           </div>
         </DrawerContent>
       </Drawer>

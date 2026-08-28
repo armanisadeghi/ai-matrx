@@ -505,7 +505,7 @@ function ImageSplitSlide({
 
 function gradientText(from: string, to: string): React.CSSProperties {
   return {
-    background: `linear-gradient(120deg, ${from}, ${to})`,
+    backgroundImage: `linear-gradient(120deg, ${from}, ${to})`,
     WebkitBackgroundClip: "text",
     backgroundClip: "text",
     color: "transparent",

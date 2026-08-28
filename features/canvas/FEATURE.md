@@ -88,8 +88,8 @@ path updates the node's `STATE.md` in the same session.
 
 - `2026-08-27` — Fresh mobile certification raised canonical block icon actions to the 44px touch
   floor with tooltip-derived accessible names, repaired progress/troubleshooting action reflow, and
-  brought presentation, recipe, decision-tree, and timeline controls to the same mobile floor while
-  preserving their compact desktop sizing.
+  brought presentation, recipe, decision-tree, timeline-menu, and math controls to the same mobile
+  floor while preserving their compact desktop sizing.
 - `2026-08-27` — Diagram viewport fitting now uses the mounted React Flow instance's bounds helper,
   preserving subflow-aware measurements without static-helper console warnings.
 - `2026-08-27` — Quiz, comparison, presentation, research, resources, progress,

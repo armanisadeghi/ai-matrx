@@ -15,16 +15,16 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onReset, onBack, onNext, st
     return (
         <Card className="mt-4">
             <CardContent className="p-2">
-                <div className="flex justify-between items-center">
-                    <div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
                         <Link href="/education/subjects/quick-math">
-                            <Button variant="outline" size="sm" className="mr-2">All Lessons</Button>
+                            <Button variant="outline" size="sm" className="min-h-11 sm:min-h-8">All Lessons</Button>
                         </Link>
-                        <Button variant="outline" size="sm" onClick={onReset}>Reset</Button>
+                        <Button variant="outline" size="sm" onClick={onReset} className="min-h-11 sm:min-h-8">Reset</Button>
                     </div>
-                    <div>
-                        <Button variant="outline" size="sm" onClick={onBack} className="mr-2">Back</Button>
-                        <Button size="sm" onClick={onNext}>{!started ? 'Start Interactive' : 'Next'}</Button>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={onBack} className="min-h-11 sm:min-h-8">Back</Button>
+                        <Button size="sm" onClick={onNext} className="min-h-11 sm:min-h-8">{!started ? 'Start Interactive' : 'Next'}</Button>
                     </div>
                 </div>
             </CardContent>
