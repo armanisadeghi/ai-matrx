@@ -182,6 +182,31 @@ export function MyPaySurface() {
           <h2 className="text-sm font-semibold text-foreground">
             What you are paid today
           </h2>
+          {/*
+            🚨 THE REASON WHERE THE ACTION WOULD HAVE BEEN, NOT A DISABLED CONTROL.
+
+            §7.1's client law gives an `hr_only` field exactly three renderings, and
+            pay's is the third: read-only with "contact HR". Pay is `hr_only` with
+            NO org-loosening clause — unlike legal name, which an org may relax to
+            `self_request_approval` — so this is never-able, not not-yet.
+
+            SPEC-UI-IA §4.2 then decides the shape: an action the surface's law says
+            can NEVER be performed is ABSENT, with its reason rendered as a worded
+            sentence where the action would have been offered — because "a disabled
+            control implies the state could change; on a money law that implication
+            is itself the leak". So there is deliberately no edit affordance here to
+            click and be refused; SPEC-EMPLOYEES Route 3 states the whole surface is
+            "Read-only" in as many words.
+
+            The refusal itself is not fiction — `hr_self_update` rejects a pay key
+            naming it ("Amount can only be changed by HR.") for any caller that
+            reaches the door. This sentence is the same fact, said before somebody
+            goes looking for a control that correctly does not exist.
+          */}
+          <p className="text-xs text-muted-foreground">
+            Your pay is held by HR — it can only be changed by them, so there is
+            nothing to edit here. Ask HR if something looks wrong.
+          </p>
           {/* ONE CARD PER CONCURRENT COMPONENT. Never a combined figure. */}
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {(data?.current ?? []).map((row, index) => (
