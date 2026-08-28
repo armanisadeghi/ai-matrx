@@ -44014,6 +44014,10 @@ export type Database = {
           subject: string
         }[]
       }
+      leave_seal_door: {
+        Args: { p_mode?: string; p_proname: string }
+        Returns: undefined
+      }
       leave_span_hours: {
         Args: {
           p_day_parts?: Json
