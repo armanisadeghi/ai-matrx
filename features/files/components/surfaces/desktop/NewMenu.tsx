@@ -70,8 +70,7 @@ const AI_DOCUMENT_PROMPTS: ReadonlyArray<{
     key: "docx",
     label: "Word document",
     icon: FileText,
-    prompt:
-      "Create a Word document (.docx) for me.\n\nWhat it should cover: ",
+    prompt: "Create a Word document (.docx) for me.\n\nWhat it should cover: ",
   },
   {
     key: "pptx",
@@ -113,8 +112,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
             error,
           );
           toast.error("Chat is unavailable right now", {
-            description:
-              error instanceof Error ? error.message : String(error),
+            description: error instanceof Error ? error.message : String(error),
           });
         });
     },
@@ -130,9 +128,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
 
   // Menu uploads opt into instant Knowledge when the preference is on. Drag-drop
   // never sets this — the scheduled auto-Knowledge sweep still covers those.
-  const uploadOptions = triggerNow
-    ? { rag: { trigger_now: true } }
-    : undefined;
+  const uploadOptions = triggerNow ? { rag: { trigger_now: true } } : undefined;
 
   const handleUploadFiles = useCallback(
     async (files: File[]) => {

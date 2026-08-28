@@ -57,8 +57,8 @@ export function OnboardingEmptyState({
             <kbd className="rounded border bg-muted px-1.5 py-0.5 text-[10px] font-mono">
               ⌘V
             </kbd>
-            , or click upload to get started. Everything syncs instantly
-            across your devices.
+            , or click upload to get started. Everything syncs instantly across
+            your devices.
           </p>
         </div>
 
@@ -84,10 +84,7 @@ export function OnboardingEmptyState({
         {/* Reassurance trio — makes the blank slate feel productive */}
         <ul className="grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-3 pt-4">
           <li className="flex flex-col items-center gap-1.5 rounded-lg border bg-card p-3">
-            <Zap
-              className="h-5 w-5 text-amber-500"
-              aria-hidden="true"
-            />
+            <Zap className="h-5 w-5 text-amber-500" aria-hidden="true" />
             <span className="text-xs font-medium">Instant sync</span>
             <span className="text-[11px] text-muted-foreground leading-tight">
               Uploads appear across every session in real time.
@@ -104,10 +101,7 @@ export function OnboardingEmptyState({
             </span>
           </li>
           <li className="flex flex-col items-center gap-1.5 rounded-lg border bg-card p-3">
-            <Shield
-              className="h-5 w-5 text-sky-500"
-              aria-hidden="true"
-            />
+            <Shield className="h-5 w-5 text-sky-500" aria-hidden="true" />
             <span className="text-xs font-medium">Private by default</span>
             <span className="text-[11px] text-muted-foreground leading-tight">
               You choose who sees each file. Share via signed links.

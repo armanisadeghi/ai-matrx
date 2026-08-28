@@ -50,8 +50,7 @@ export interface FileUploadDropzoneProps {
   mode?: "overlay" | "inline";
   /** Children render inside the drop surface. */
   children?:
-    | React.ReactNode
-    | ((actions: FileUploadDropzoneActions) => React.ReactNode);
+    React.ReactNode | ((actions: FileUploadDropzoneActions) => React.ReactNode);
   className?: string;
   /** Fires the moment an upload batch STARTS (before any network completes).
    *  Hosts use it to open the context-assignment prompt while bytes move. */

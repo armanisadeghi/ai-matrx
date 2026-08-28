@@ -11,10 +11,7 @@ import { cn } from "@/lib/utils";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 
 export type FileAcquisitionPresentation =
-  | "menu"
-  | "buttons"
-  | "inline"
-  | "icons";
+  "menu" | "buttons" | "inline" | "icons";
 
 export interface FileAcquisitionActionsProps {
   onFiles: (files: File[]) => void | Promise<void>;
@@ -32,7 +29,9 @@ export interface FileAcquisitionActionsProps {
 }
 
 function errorText(failures: Array<{ name: string; error: string }>): string {
-  return failures.map((failure) => `${failure.name}: ${failure.error}`).join("; ");
+  return failures
+    .map((failure) => `${failure.name}: ${failure.error}`)
+    .join("; ");
 }
 
 export function FileAcquisitionActions({
@@ -69,7 +68,9 @@ export function FileAcquisitionActions({
     (files: File[]) => {
       if (!files.length) return;
       void Promise.resolve(onFiles(files)).catch((error: unknown) => {
-        onError?.(error instanceof Error ? error.message : "File import failed.");
+        onError?.(
+          error instanceof Error ? error.message : "File import failed.",
+        );
       });
     },
     [onError, onFiles],
@@ -221,7 +222,12 @@ export function FileAcquisitionActions({
 
   if (presentation === "inline") {
     return (
-      <div className={cn("flex flex-wrap items-center justify-center gap-1.5", className)}>
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-center gap-1.5",
+          className,
+        )}
+      >
         {actions.map((action) => {
           const Icon = action.icon;
           const busy = action.key === "google-drive" && googleBusy;
@@ -244,9 +250,11 @@ export function FileAcquisitionActions({
   }
 
   if (presentation === "icons") {
+    // The primary local-upload action stays closest to the user's thumb.
+    const iconActions = [...actions].reverse();
     return (
       <div className={cn("flex flex-col items-end gap-2", className)}>
-        {actions.map((action) => {
+        {iconActions.map((action) => {
           const Icon = action.icon;
           const busy = action.key === "google-drive" && googleBusy;
           return (

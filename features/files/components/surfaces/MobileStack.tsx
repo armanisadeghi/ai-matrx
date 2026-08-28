@@ -16,9 +16,8 @@
 
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ArrowUpFromLine,
   ChevronLeft,
   Download,
   FileSearch,
@@ -54,7 +53,7 @@ import {
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { FilePreview } from "@/features/files/components/core/FilePreview/FilePreview";
-import { FileUploadDropzone } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
+import { FileAcquisitionActions } from "@/features/files/components/core/FileAcquisition/FileAcquisitionActions";
 import {
   FileRowContextMenu,
   FolderRowContextMenu,
@@ -668,51 +667,26 @@ interface FloatingUploadActionProps {
 }
 
 function FloatingUploadAction({ parentFolderId }: FloatingUploadActionProps) {
-  const inputId = useId();
+  const handleFiles = useCallback(
+    async (files: File[]) => {
+      const { requestUpload } =
+        await import("@/features/files/upload/UploadGuardHost");
+      await requestUpload({
+        files,
+        parentFolderId,
+        visibility: "personal",
+      });
+    },
+    [parentFolderId],
+  );
+
   return (
     <div className="pointer-events-none absolute bottom-0 right-0 flex flex-col items-end gap-2 p-4 pb-safe">
-      <FileUploadDropzone
-        parentFolderId={parentFolderId}
-        mode="overlay"
-        className="pointer-events-auto w-0 h-0"
-        // Dropzone renders the overlay inside children absolutely — we only
-        // want the `open` picker; provide a minimal visible target using a
-        // label-for-button pattern is overkill here. Use the hook path: this
-        // compact mode relies on clicks via the invisible wrapper.
-      >
-        <span className="sr-only" id={inputId}>
-          Upload
-        </span>
-      </FileUploadDropzone>
-      {/* Simple "+" button that triggers the hidden OS upload input. */}
-      <button
-        type="button"
-        onClick={() => {
-          // Fallback: dispatch an input click via a transient element.
-          const input = document.createElement("input");
-          input.type = "file";
-          input.multiple = true;
-          input.addEventListener("change", async () => {
-            if (!input.files?.length) return;
-            const files = Array.from(input.files);
-            // Routes through the upload guard so the user gets the
-            // duplicate-detection pre-flight + dialog (same UX as
-            // the desktop drag-drop / FAB).
-            const { requestUpload } =
-              await import("@/features/files/upload/UploadGuardHost");
-            void requestUpload({
-              files,
-              parentFolderId,
-              visibility: "personal",
-            });
-          });
-          input.click();
-        }}
-        className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95"
-        aria-label="Upload file"
-      >
-        <ArrowUpFromLine className="h-5 w-5" aria-hidden="true" />
-      </button>
+      <FileAcquisitionActions
+        presentation="icons"
+        onFiles={handleFiles}
+        enableLocalFolder={false}
+      />
     </div>
   );
 }

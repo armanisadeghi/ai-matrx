@@ -14,12 +14,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  ExternalLink,
-  Settings2,
-  Share2,
-} from "lucide-react";
+import { ArrowLeft, ExternalLink, Settings2, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { navigateFilesFolderPath } from "@/features/files/utils/url-state";
