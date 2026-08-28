@@ -73,7 +73,9 @@ export async function applyScopeToInsertPayload(args: {
     if (scope === "organization") {
       if (organizationId && organizationId !== scopeId) {
         return NextResponse.json(
-          { error: "organization_id must match scopeId when scope=organization" },
+          {
+            error: "organization_id must match scopeId when scope=organization",
+          },
           { status: 400 },
         );
       }

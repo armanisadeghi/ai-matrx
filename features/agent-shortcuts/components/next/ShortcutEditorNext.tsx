@@ -14,9 +14,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAgentShortcutCrud } from "@/features/agent-shortcuts/hooks/useAgentShortcutCrud";
 import { selectShortcutById } from "@/features/agents/redux/agent-shortcuts/selectors";
 import { fetchFullShortcut } from "@/features/agents/redux/agent-shortcuts/thunks";
-import {
-  selectAllCategoriesArray,
-} from "@/features/agents/redux/agent-shortcut-categories/selectors";
+import { selectAllCategoriesArray } from "@/features/agents/redux/agent-shortcut-categories/selectors";
 import { fetchCategoriesForScope } from "@/features/agents/redux/agent-shortcut-categories/thunks";
 
 import { SurfacePicker } from "./SurfacePicker";
@@ -161,7 +159,9 @@ export function ShortcutEditorNext({
   useEffect(() => {
     if (!isNew) return;
     if (!agentName) return;
-    setForm((prev) => (prev.label.trim() ? prev : { ...prev, label: agentName }));
+    setForm((prev) =>
+      prev.label.trim() ? prev : { ...prev, label: agentName },
+    );
   }, [isNew, agentName]);
 
   const update = useCallback(
@@ -320,10 +320,7 @@ export function ShortcutEditorNext({
             />
           </Section>
 
-          <Section
-            title="Widget"
-            hint="How results are presented to the user."
-          >
+          <Section title="Widget" hint="How results are presented to the user.">
             <WidgetPicker
               value={form.displayMode}
               onChange={(next) => update("displayMode", next)}
@@ -465,7 +462,8 @@ type EditableShortcut = Omit<
   | "variableDefinitions"
   | "contextPolicies"
   | "agentId"
-> & SettingsFields;
+> &
+  SettingsFields;
 
 function freshDraft(): EditableShortcut {
   return {
@@ -558,7 +556,7 @@ function editableToFormData(form: EditableShortcut, agent: AgentDefinition) {
     agentName: agent.name,
     variableDefinitions: agent.variableDefinitions ?? [],
     contextPolicies: agent.contextPolicies ?? [],
-    resolvedId: form.useLatest ? agent.id : form.agentVersionId ?? agent.id,
+    resolvedId: form.useLatest ? agent.id : (form.agentVersionId ?? agent.id),
     isVersion: !form.useLatest && form.agentVersionId != null,
   };
 }

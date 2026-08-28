@@ -140,8 +140,7 @@ function menuItemToConfigFields(item: unknown): {
     hideReasoning: pickBool(o, false, "hide_reasoning"),
     hideToolResults: pickBool(o, false, "hide_tool_results"),
     responseDensity: (pickString(o, "response_density") ?? "comfortable") as
-      | "comfortable"
-      | "compact",
+      "comfortable" | "compact",
     showPreExecutionGate: pickBool(
       o,
       false,
@@ -300,7 +299,9 @@ export const buildAgentShortcutMenu = createAsyncThunk<
         const parsedVariableDefinitions = parseVariableDefinitions(
           item.agent?.variable_definitions,
         );
-        const parsedContextPolicies = parseContextPolicies(item.agent?.context_policies);
+        const parsedContextPolicies = parseContextPolicies(
+          item.agent?.context_policies,
+        );
 
         const shortcut: AgentShortcut = {
           id: item.id,
@@ -630,8 +631,7 @@ export const createShortcut = createAsyncThunk<
     id: "",
     // `null` is deliberate for global/org/project/task visibility. Only an
     // actually omitted value falls back to the current user.
-    userId:
-      shortcutData.userId === undefined ? userId : shortcutData.userId,
+    userId: shortcutData.userId === undefined ? userId : shortcutData.userId,
     createdAt: "",
     updatedAt: "",
   };
@@ -979,10 +979,7 @@ function shortcutToApiBody(
   if (patch.surfaceName !== undefined) out.surface_name = patch.surfaceName;
   if (patch.scopeMappings !== undefined)
     out.scope_mappings = patch.scopeMappings as unknown;
-  if (
-    patch.valueMappings !== undefined ||
-    patch.writePolicies !== undefined
-  ) {
+  if (patch.valueMappings !== undefined || patch.writePolicies !== undefined) {
     // Shared-column pack — see agentShortcutToUpdate for the same rule.
     if (
       patch.valueMappings === undefined ||
@@ -1109,7 +1106,8 @@ export const updateShortcut = createAsyncThunk<
   // valueMappings + writePolicies share ONE JSONB column — a one-sided patch
   // would clear the other half. Fill the missing half from the loaded record.
   if (
-    (patch.valueMappings !== undefined) !== (patch.writePolicies !== undefined)
+    (patch.valueMappings !== undefined) !==
+    (patch.writePolicies !== undefined)
   ) {
     if (!existing) {
       console.warn(
@@ -1521,7 +1519,8 @@ function unifiedMenuItemToShortcut(
   );
   const contextPolicies = parseContextPolicies(
     loose.agent_context_policies ??
-      (loose.agent as { context_policies?: unknown } | undefined)?.context_policies,
+      (loose.agent as { context_policies?: unknown } | undefined)
+        ?.context_policies,
   );
   const agentName =
     (loose.agent_name as string | undefined) ??

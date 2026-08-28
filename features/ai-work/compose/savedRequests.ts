@@ -46,8 +46,7 @@ import type { WorkDestinationId } from "./destinations";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 /** The one platform-seeded category that marks a shortcut row as a saved request. */
-export const SAVED_REQUEST_CATEGORY_ID =
-  "3f2d5c8a-1b47-4e6d-9c0f-7a5e2d13b904";
+export const SAVED_REQUEST_CATEGORY_ID = "3f2d5c8a-1b47-4e6d-9c0f-7a5e2d13b904";
 
 /**
  * Where a finished run should live. Applied as canonical association edges.
