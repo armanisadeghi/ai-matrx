@@ -96,8 +96,3 @@ begin
     raise exception 'hr_l1_26: refusal envelope missing';
   end if;
 end $verify$;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_26_wage_bearing_reason_required.sql',
-        md5('hr_l1_26_wage_bearing_reason_required'), now(), 0)
-on conflict do nothing;

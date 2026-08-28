@@ -51,8 +51,3 @@ begin
     raise exception 'hr_l1_27: refusal envelope lost';
   end if;
 end $verify$;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_27_reason_accepts_free_text.sql',
-        md5('hr_l1_27_reason_accepts_free_text'), now(), 0)
-on conflict do nothing;
