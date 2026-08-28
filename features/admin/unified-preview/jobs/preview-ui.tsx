@@ -12,7 +12,7 @@
  * the harvest's "🤖 / 🔀" shorthand renders as Bot / Workflow.
  */
 
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { Bot, CircleAlert, CircleCheck, TriangleAlert, Workflow } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
@@ -144,9 +144,16 @@ export function GroundingBadge({ grounding }: { grounding: GoalGrounding }) {
 export function HolderChip({
   at,
   className,
+  /**
+   * `false` renders a span instead of a button. Required wherever the chip sits
+   * INSIDE another button (the scoreboard's clickable rows) — a nested button is
+   * invalid HTML and fails hydration outright.
+   */
+  interactive = true,
 }: {
   at: JobAtAltitude;
   className?: string;
+  interactive?: boolean;
 }) {
   if (!at.holder_name) {
     return (
@@ -157,16 +164,24 @@ export function HolderChip({
   }
   const Icon: Record<HolderType, typeof Bot> = { agent: Bot, workflow: Workflow };
   const HolderIcon = at.holder_type ? Icon[at.holder_type] : Bot;
+  const Tag = interactive ? "button" : "span";
   return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        previewToast(`Would open the ${at.holder_type} “${at.holder_name}”.`);
-      }}
-      title={`Open ${at.holder_name}`}
+    <Tag
+      {...(interactive
+        ? {
+            type: "button" as const,
+            onClick: (e: MouseEvent) => {
+              e.stopPropagation();
+              previewToast(
+                `Would open the ${at.holder_type} “${at.holder_name}”.`,
+              );
+            },
+          }
+        : {})}
+      title={interactive ? `Open ${at.holder_name}` : at.holder_name}
       className={cn(
-        "inline-flex max-w-full items-center gap-1.5 rounded-md border border-border bg-card px-1.5 py-0.5 text-xs transition-colors hover:bg-accent",
+        "inline-flex max-w-full items-center gap-1.5 rounded-md border border-border bg-card px-1.5 py-0.5 text-xs transition-colors",
+        interactive && "hover:bg-accent",
         className,
       )}
     >
@@ -184,7 +199,7 @@ export function HolderChip({
           {at.version_policy}
         </span>
       ) : null}
-    </button>
+    </Tag>
   );
 }
 

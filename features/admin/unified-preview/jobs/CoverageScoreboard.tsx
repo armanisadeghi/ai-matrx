@@ -122,7 +122,7 @@ export function CoverageScoreboard({
                       {at.fallback_mandate_key ? (
                         <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
                           served by
-                          <HolderChip at={at} />
+                          <HolderChip at={at} interactive={false} />
                           via
                           <span className="font-mono">
                             {at.fallback_mandate_key}
