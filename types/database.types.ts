@@ -1087,7 +1087,9 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          holder_id: string | null
           holder_type: string
+          holder_version_id: string | null
           id: string
           is_enabled: boolean
           mandate_id: string
@@ -1109,7 +1111,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          holder_id?: string | null
           holder_type?: string
+          holder_version_id?: string | null
           id?: string
           is_enabled?: boolean
           mandate_id: string
@@ -1131,7 +1135,9 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          holder_id?: string | null
           holder_type?: string
+          holder_version_id?: string | null
           id?: string
           is_enabled?: boolean
           mandate_id?: string
