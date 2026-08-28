@@ -1300,6 +1300,57 @@ async def main():
         await conn.execute(
             "update hr.approval_authority set is_active=true where organization_id=$1", org)
 
+        # ==================== §2.2 THE `reporting_line` RUNG IS THE PRIMARY MANAGER CHAIN
+        # 🚨 NAME vs BODY, PINNED. `hr.reporting_line` is a SECONDARY-lines table by construction —
+        # its line_kind CHECK admits only dotted/functional/project/interim, so no primary line can
+        # ever be stored there — and it is empty platform-wide. If the rung read that table it could
+        # never fire, yet this suite resolves managers through it constantly. It does not read that
+        # table: it walks hr.manager_as_of over hr.position_assignment.manager_employment_id. The
+        # mechanism is sound and the NAME is what misleads; asserted here so the source can never
+        # drift to the table the name points at.
+        rec("§2.2 rung source", "🚨 the `reporting_line` rung walks the PRIMARY manager chain and never reads hr.reporting_line",
+            await conn.fetchval(
+                "select prosrc ~ 'manager_as_of' and prosrc !~ 'hr\.reporting_line' "
+                "from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='hr' and p.proname='wf_resolve_approvers'"))
+        rec("§2.2 rung source", "and hr.reporting_line cannot hold a primary line at all — its CHECK admits only secondary kinds",
+            await conn.fetchval(
+                "select bool_or(pg_get_constraintdef(k.oid) like '%line_kind%' "
+                "and pg_get_constraintdef(k.oid) not like '%primary%') "
+                "from pg_constraint k join pg_class t on t.oid=k.conrelid "
+                "join pg_namespace n on n.oid=t.relnamespace "
+                "where n.nspname='hr' and t.relname='reporting_line' and k.contype='c'"))
+        # and the behavioural half: empty that table's contribution entirely, empty the authority
+        # rung, and a manager is STILL produced — which is only possible from the primary chain.
+        await conn.execute(
+            "update hr.approval_authority set is_active=false where organization_id=$1 "
+            "and action_type='leave_approve'", org)
+        rl_lr = await conn.fetchval(
+            "insert into hr.leave_request (organization_id, employment_id, leave_policy_id, starts_on, "
+            "ends_on, requested_hours, state, engine_key, engine_version) "
+            "values ($1,$2,$3,current_date + 700, current_date + 700, 8,'submitted','proof','1') returning id",
+            org, people["alice"]["employment"], lp)
+        await as_user(people["alice"]["uid"])
+        rl_req = await j("select hr.wf_request('leave_request','hr_leave_request',$1,$2)", rl_lr, org)
+        await as_owner()
+        rl_step = await conn.fetchrow(
+            "select resolution_path, resolved_approver_ids from hr.workflow_step "
+            "where workflow_instance_id=$1 and state='active'", rl_req.get("instance_id"))
+        rec("§2.2 rung source", "🚨 with ZERO rows in hr.reporting_line the rung still resolves the subject's PRIMARY manager — the table is not its source",
+            await conn.fetchval("select count(*)=0 from hr.reporting_line")
+            and rl_step is not None
+            and rl_step["resolution_path"] == "reporting_line"
+            and list(rl_step["resolved_approver_ids"]) == [people["bob"]["employment"]],
+            f'path={rl_step["resolution_path"] if rl_step else None} '
+            f'approvers={list(rl_step["resolved_approver_ids"]) if rl_step else None}')
+        rec("§2.2 rung source", "and hr.can_approve's RULE 2b reads the SAME primary chain, so predicate and resolver cannot disagree about who a manager is",
+            await conn.fetchval(
+                "select prosrc ~ 'manager_chain' and prosrc !~ 'hr\.reporting_line' "
+                "from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='hr' and p.proname='can_approve'"))
+        await conn.execute(
+            "update hr.approval_authority set is_active=true where organization_id=$1", org)
+
         # ---- §1.4 rule 3: the sole proprietor. One person, top of the chart, no second actor.
         solo_org = await conn.fetchval(
             "insert into iam.organizations (name, slug, abbreviation) values "

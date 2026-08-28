@@ -250,6 +250,26 @@ as $function$ select hr.leave_policy_floors(p_organization_id, p_payload); $func
 
 grant execute on function public.hr_leave_policy_floors(uuid, jsonb) to authenticated;
 
+-- 🚨 THE DOOR SEAL (hr_l5_04). `grant ... to authenticated` does NOT remove the anon EXECUTE that
+-- Supabase's default privileges hand every new public function, and `revoke from public` does not
+-- either — anon holds its own explicit grant. Both revokes must be explicit and name anon. This
+-- lane shipped five SECURITY DEFINER doors, one a WRITE, executable by anon. Replaying this file
+-- re-seals rather than regressing.
+
+select hr.leave_seal_door('hr_leave_policy_floors');
+
+do $$
+declare v_anon text;
+begin
+  select string_agg(p.proname, ', ') into v_anon
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.proname in ('hr_leave_policy_floors')
+     and has_function_privilege('anon', p.oid, 'execute');
+  if v_anon is not null then
+    raise exception 'hr_l5_20: these doors are executable by anon: %', v_anon;
+  end if;
+end $$;
+
 do $$
 declare v_out jsonb;
 begin

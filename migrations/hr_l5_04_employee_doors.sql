@@ -621,11 +621,69 @@ create or replace function public.hr_leave_ledger_view(
 returns jsonb language sql security definer set search_path to 'public','hr'
 as $function$ select hr.leave_ledger_view(p_employment_id, p_leave_policy_id, p_as_of); $function$;
 
-grant execute on function public.hr_my_time_off(uuid) to authenticated;
-grant execute on function public.hr_leave_request_preview(uuid,uuid,date,date,jsonb) to authenticated;
-grant execute on function public.hr_leave_request_submit(uuid,uuid,date,date,jsonb,uuid,text,uuid,text) to authenticated;
-grant execute on function public.hr_leave_request_cancel(uuid,text,numeric) to authenticated;
-grant execute on function public.hr_leave_ledger_view(uuid,uuid,date) to authenticated;
+-- ===================================================================================
+-- 🚨 THE DOOR SEAL — `grant ... to authenticated` IS NOT ENOUGH, AND IT LOOKS LIKE IT IS.
+--
+-- Supabase ships DEFAULT PRIVILEGES that hand `anon` EXECUTE on every newly created function in
+-- `public`. So a door created here is reachable by an UNAUTHENTICATED caller the moment it exists,
+-- and adding `grant execute ... to authenticated` does nothing about it — it grants a second role
+-- and reports success. `revoke ... from public` does not fix it either: `anon` holds its own
+-- explicit grant, and revoking PUBLIC leaves that grant standing while also reporting success.
+-- **Both revokes have to be explicit, and they have to name `anon`.**
+--
+-- This lane shipped five SECURITY DEFINER doors — including a WRITE — executable by `anon`, and it
+-- was the SECOND such exposure in one session. It is not something to remember per door. Every
+-- door migration in this lane ends by calling this sealer, so a replay of any one of them
+-- re-seals rather than regressing.
+--
+-- `hr.leave_door_grant_audit()` (hr_l5_11) is the standing check and now fails on any
+-- anon-executable door.
+-- ===================================================================================
+
+create or replace function hr.leave_seal_door(p_proname text, p_mode text default 'client')
+returns void
+language plpgsql
+as $function$
+declare v_sig text; v_n integer := 0;
+begin
+  if p_mode not in ('client','engine') then
+    raise exception 'hr.leave_seal_door: mode is client or engine, not %', p_mode;
+  end if;
+  for v_sig in
+    select 'public.' || quote_ident(p.proname) || '(' ||
+           pg_get_function_identity_arguments(p.oid) || ')'
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and p.proname = p_proname
+  loop
+    -- PUBLIC and anon are revoked SEPARATELY and both by name. Neither implies the other.
+    execute format('revoke all on function %s from public', v_sig);
+    execute format('revoke all on function %s from anon', v_sig);
+    if p_mode = 'client' then
+      execute format('grant execute on function %s to authenticated', v_sig);
+    else
+      -- an engine path is unreachable from any session, authenticated or not
+      execute format('revoke all on function %s from authenticated', v_sig);
+      execute format('grant execute on function %s to service_role', v_sig);
+    end if;
+    v_n := v_n + 1;
+  end loop;
+  if v_n = 0 then
+    raise exception 'hr.leave_seal_door: no public function named % exists to seal', p_proname;
+  end if;
+end
+$function$;
+
+comment on function hr.leave_seal_door(text, text) is
+  'Seals a leave door against the Supabase default-privileges trap: a newly created public '
+  'function picks up anon EXECUTE, and neither `grant to authenticated` nor `revoke from public` '
+  'removes it — both revokes must be explicit and name anon. Every door migration in this lane '
+  'ends by calling this, so replaying any one of them re-seals instead of regressing.';
+
+select hr.leave_seal_door('hr_my_time_off');
+select hr.leave_seal_door('hr_leave_request_preview');
+select hr.leave_seal_door('hr_leave_request_submit');
+select hr.leave_seal_door('hr_leave_request_cancel');
+select hr.leave_seal_door('hr_leave_ledger_view');
 
 -- -----------------------------------------------------------------------------------
 -- 9. Self-proof
@@ -656,5 +714,16 @@ begin
   -- the unlimited sentence is the WORD, never a zero
   if hr._leave_sentence('{"unlimited":true}'::jsonb) <> 'Unlimited — requests still need approval.' then
     raise exception 'hr_l5_04: the unlimited sentence is wrong';
+  end if;
+
+  -- and NO door this file created may be reachable by an unauthenticated caller
+  select string_agg(p.proname, ', ') into v_missing
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public'
+     and p.proname in ('hr_my_time_off','hr_leave_request_preview','hr_leave_request_submit',
+                       'hr_leave_request_cancel','hr_leave_ledger_view')
+     and has_function_privilege('anon', p.oid, 'execute');
+  if v_missing is not null then
+    raise exception 'hr_l5_04: these doors are executable by anon: %', v_missing;
   end if;
 end $$;

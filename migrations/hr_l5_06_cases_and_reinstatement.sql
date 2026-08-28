@@ -247,7 +247,19 @@ set search_path to 'hr', 'public'
 as $function$
 declare
   c hr.leave_case%rowtype; v_used numeric := 0; v_from date; v_to date; v_weekly numeric;
+  v_rung jsonb;
 begin
+  -- §9.6 / §16: a protected absence is reachable by the person and by HR, and by nobody else.
+  -- 🚨 THIS CHECK LIVES HERE, IN THE FILE THAT CREATES THE FUNCTION. It was added later in
+  -- hr_l5_11, and replaying THIS file then silently restored the check-free body and re-opened a
+  -- Confidential-tier medical-leave read to every signed-in user. A fix that only exists in a
+  -- later migration is a fix that any replay can undo.
+  v_rung := hr._leave_case_rung(p_case_id);
+  if (v_rung ->> 'rung') = 'none' then
+    return jsonb_build_object('ok', false, 'granted', false, 'reason', v_rung ->> 'reason',
+      'detail','A protected absence is held by HR.');
+  end if;
+
   select * into c from hr.leave_case where id = p_case_id and deleted_at is null;
   if c.id is null then return jsonb_build_object('ok', false, 'reason','not_found'); end if;
 
@@ -278,7 +290,7 @@ begin
    order by pa.effective_from desc limit 1;
 
   return jsonb_build_object(
-    'ok', true, 'case_id', p_case_id, 'as_of', p_as_of,
+    'ok', true, 'granted', true, 'case_id', p_case_id, 'as_of', p_as_of,
     'measure', coalesce(c.entitlement_measure, 'calendar_year'),
     'window_from', v_from, 'window_to', v_to,
     'entitlement_hours', c.entitlement_hours,
@@ -514,15 +526,61 @@ create or replace function public.hr_leave_case_entitlement(p_case_id uuid, p_as
 returns jsonb language sql security definer set search_path to 'public','hr'
 as $function$ select hr.leave_case_entitlement(p_case_id, p_as_of); $function$;
 
+-- 🚨 The caller check lives in the WRAPPER, and it lives in THIS file. It was added in hr_l5_11;
+-- replaying this file restored the check-free version and re-granted it, so a ledger-writing door
+-- became callable by any signed-in user against any employment. Same lesson as the entitlement
+-- read above: fix at the source, or a replay undoes it.
 create or replace function public.hr_leave_reinstate_on_rehire(p_new_employment_id uuid)
-returns jsonb language sql security definer set search_path to 'public','hr'
-as $function$ select hr.leave_reinstate_on_rehire(p_new_employment_id); $function$;
+returns jsonb
+language plpgsql
+security definer
+set search_path to 'public','hr'
+as $function$
+declare v_org uuid; v_rung text;
+begin
+  select em.organization_id into v_org
+    from hr.employment em where em.id = p_new_employment_id and em.deleted_at is null;
+  if v_org is null then
+    return jsonb_build_object('granted', false, 'reason','not_found');
+  end if;
+  v_rung := hr._leave_admin_rung(v_org);
+  if v_rung not in ('hr_admin','hr_owner') then
+    return jsonb_build_object('granted', false, 'reason','not_an_hr_admin',
+      'detail','Reinstating a prior balance is an HR action — it writes to a leave ledger.');
+  end if;
+  return hr.leave_reinstate_on_rehire(p_new_employment_id);
+end
+$function$;
 
 grant execute on function public.hr_leave_case_open(uuid,text,text,date,numeric,text,date,boolean,uuid[],uuid) to authenticated;
 grant execute on function public.hr_leave_case_get(uuid) to authenticated;
 grant execute on function public.hr_leave_case_list(uuid) to authenticated;
 grant execute on function public.hr_leave_case_entitlement(uuid,date) to authenticated;
 grant execute on function public.hr_leave_reinstate_on_rehire(uuid) to authenticated;
+
+-- 🚨 THE DOOR SEAL (hr_l5_04). `grant ... to authenticated` does NOT remove the anon EXECUTE that
+-- Supabase's default privileges hand every new public function, and `revoke from public` does not
+-- either — anon holds its own explicit grant. Both revokes must be explicit and name anon. This
+-- lane shipped five SECURITY DEFINER doors, one a WRITE, executable by anon. Replaying this file
+-- re-seals rather than regressing.
+
+select hr.leave_seal_door('hr_leave_case_open');
+select hr.leave_seal_door('hr_leave_case_get');
+select hr.leave_seal_door('hr_leave_case_list');
+select hr.leave_seal_door('hr_leave_case_entitlement');
+select hr.leave_seal_door('hr_leave_reinstate_on_rehire');
+
+do $$
+declare v_anon text;
+begin
+  select string_agg(p.proname, ', ') into v_anon
+    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'public' and p.proname in ('hr_leave_case_open', 'hr_leave_case_get', 'hr_leave_case_list', 'hr_leave_case_entitlement')
+     and has_function_privilege('anon', p.oid, 'execute');
+  if v_anon is not null then
+    raise exception 'hr_l5_06: these doors are executable by anon: %', v_anon;
+  end if;
+end $$;
 
 -- -----------------------------------------------------------------------------------
 -- 7. Self-proof — including decision 2's restated §17 test 21
@@ -564,5 +622,12 @@ begin
   if not hr._leave_span_is_costless(
        '{"total_hours":0,"days":[{"basis":"no_standard_day","hours":0}]}'::jsonb) then
     raise exception 'hr_l5_06: a working day with no standard hours is not being caught';
+  end if;
+
+  -- Replaying this file must never leave a door in the lane worse than it found it.
+  if (select count(*) from hr.leave_door_grant_audit() where verdict like 'DEFECT%') > 0 then
+    raise exception 'hr_l5_06: replaying this file left a defective door: %',
+      (select string_agg(door || ' [' || verdict || ']', '; ')
+         from hr.leave_door_grant_audit() where verdict like 'DEFECT%');
   end if;
 end $$;

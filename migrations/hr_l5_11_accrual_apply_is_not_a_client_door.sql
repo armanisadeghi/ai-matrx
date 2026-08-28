@@ -107,6 +107,7 @@ as $function$
              pg_get_function_identity_arguments(p.oid) || ')' as door,
            p.proname,
            has_function_privilege('authenticated', p.oid, 'execute') as granted,
+           has_function_privilege('anon', p.oid, 'execute') as anon_granted,
            pg_get_functiondef(p.oid) as def
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
      where n.nspname = 'public'
@@ -124,6 +125,14 @@ as $function$
          case when full_def ~* '(auth\.uid|hr\.capability|_leave_viewer|_leave_admin_rung|_leave_case_rung)'
               then 'body' else 'nowhere' end,
          case
+           -- 🚨 ANON FIRST. Supabase's default privileges hand every new public function EXECUTE
+           -- to `anon`, and neither `grant to authenticated` nor `revoke from public` takes it
+           -- away — both revokes must be explicit and name anon. Five doors in this lane shipped
+           -- that way, one of them a WRITE, and the audit did not notice because it only ever
+           -- asked about `authenticated`. A check that cannot see the commonest exposure is worse
+           -- than no check, because it reports green.
+           when anon_granted
+             then 'DEFECT — executable by an UNAUTHENTICATED caller'
            when not granted then 'engine path — unreachable from a session'
            when full_def ~* '(auth\.uid|hr\.capability|_leave_viewer|_leave_admin_rung|_leave_case_rung)'
              then 'client door — checks its caller'
@@ -283,5 +292,22 @@ begin
    where verdict = 'engine path — unreachable from a session';
   if v_n = 0 then
     raise exception 'hr_l5_11: the accrual write path is still reachable from a session';
+  end if;
+
+  -- 🚨 THE ANON POSITIVE CONTROL. Grant anon EXECUTE on one door, prove the audit CATCHES it,
+  -- then put it back. A check nobody has ever seen fail is a check nobody should trust — and this
+  -- one already reported green through five anon-executable doors because it never asked.
+  execute 'grant execute on function public.hr_my_time_off(uuid) to anon';
+  select count(*) into v_n from hr.leave_door_grant_audit()
+   where verdict = 'DEFECT — executable by an UNAUTHENTICATED caller';
+  execute 'revoke all on function public.hr_my_time_off(uuid) from anon';
+  if v_n <> 1 then
+    raise exception 'hr_l5_11: the audit did not catch a deliberately anon-granted door (saw %)', v_n;
+  end if;
+
+  -- …and it must be clean again afterwards, or the control left the hole it was testing for
+  select count(*) into v_n from hr.leave_door_grant_audit() where verdict like 'DEFECT%';
+  if v_n > 0 then
+    raise exception 'hr_l5_11: the anon control did not clean up after itself';
   end if;
 end $$;
