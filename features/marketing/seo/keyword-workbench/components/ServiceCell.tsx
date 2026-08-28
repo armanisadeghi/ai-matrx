@@ -81,7 +81,11 @@ export function ServiceCell({
     : "Not placed on any offering yet. Click to place it.";
 
   return (
-    <span className="group/cell flex min-w-0 items-center gap-1" title={title}>
+    <span
+      className="group/cell flex min-w-0 items-center gap-1"
+      title={title}
+      onClick={(event) => event.stopPropagation()}
+    >
       <OfferingPicker
         siteId={siteId}
         services={services}
