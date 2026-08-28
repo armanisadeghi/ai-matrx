@@ -36,11 +36,20 @@
 
 import { useState } from "react";
 import { flushSync } from "react-dom";
-import { EyeOff, Network, ScanText, Trash2 } from "lucide-react";
+import {
+  EyeOff,
+  MoreHorizontal,
+  Network,
+  ScanText,
+  Trash2,
+} from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { ItemMenu } from "@/components/official/item/ItemMenu";
+import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
+import type { ItemMenuConfig } from "@/components/official/item/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import {
   extractAtBbox,
   promoteAnnotationToEntity,
@@ -58,6 +67,8 @@ export interface PdfRegionContextMenuProps {
   removeAnnotation: (annotationId: string) => Promise<void>;
   /** Sync the studio's selection to the right-clicked region. */
   onSelectAnnotation?: (annotationId: string) => void;
+  /** Selected region shown through the ordinary-touch mobile action drawer. */
+  selectedAnnotationId?: string | null;
   children: React.ReactNode;
 }
 
@@ -67,6 +78,7 @@ export function PdfRegionContextMenu({
   updateAnnotation,
   removeAnnotation,
   onSelectAnnotation,
+  selectedAnnotationId,
   children,
 }: PdfRegionContextMenuProps) {
   // The region under the last right-click, resolved at menu-open time.
@@ -129,7 +141,9 @@ export function PdfRegionContextMenu({
     try {
       await updateAnnotation(region.id, { redact: !region.redact });
       toast({
-        title: region.redact ? "Region unredacted" : "Region marked for redaction",
+        title: region.redact
+          ? "Region unredacted"
+          : "Region marked for redaction",
       });
     } catch (err) {
       toast({
@@ -160,52 +174,57 @@ export function PdfRegionContextMenu({
     }
   };
 
-  const extraSections: ContextMenuExtraSection[] = activeRegion
-    ? [
-        {
-          id: "pdf-region",
-          label: `Region — ${activeRegion.label}`,
-          anchor: "after-clipboard",
-          items: [
-            {
-              kind: "item",
-              id: "region-extract",
-              label: "Extract text here",
-              description: "Server-side extraction, copied to clipboard",
-              icon: ScanText,
-              onSelect: () => void handleExtract(activeRegion),
-            },
-            {
-              kind: "item",
-              id: "region-promote",
-              label: activeRegion.entity_id
-                ? "Promoted to entity"
-                : "Promote to entity",
-              icon: Network,
-              disabled: Boolean(activeRegion.entity_id),
-              onSelect: () => void handlePromote(activeRegion),
-            },
-            {
-              kind: "item",
-              id: "region-redact",
-              label: activeRegion.redact
-                ? "Remove redaction mark"
-                : "Mark for redaction",
-              icon: EyeOff,
-              onSelect: () => void handleToggleRedact(activeRegion),
-            },
-            {
-              kind: "item",
-              id: "region-delete",
-              label: "Delete region",
-              icon: Trash2,
-              destructive: true,
-              onSelect: () => void handleDelete(activeRegion),
-            },
-          ],
-        },
-      ]
+  const regionMenuConfig = (region: AnnotationOut): ItemMenuConfig => ({
+    header: { title: `Region — ${region.label}` },
+    sections: [
+      {
+        id: "pdf-region-actions",
+        items: [
+          {
+            id: "region-extract",
+            label: "Extract text here",
+            description: "Server-side extraction, copied to clipboard",
+            icon: ScanText,
+            onSelect: () => handleExtract(region),
+          },
+          {
+            id: "region-promote",
+            label: region.entity_id
+              ? "Promoted to entity"
+              : "Promote to entity",
+            icon: Network,
+            disabled: Boolean(region.entity_id),
+            onSelect: () => handlePromote(region),
+          },
+          {
+            id: "region-redact",
+            label: region.redact
+              ? "Remove redaction mark"
+              : "Mark for redaction",
+            icon: EyeOff,
+            onSelect: () => handleToggleRedact(region),
+          },
+          {
+            id: "region-delete",
+            label: "Delete region",
+            icon: Trash2,
+            tone: "destructive",
+            onSelect: () => handleDelete(region),
+          },
+        ],
+      },
+    ],
+  });
+
+  const extraSections = activeRegion
+    ? itemMenuConfigToExtraSections(regionMenuConfig(activeRegion))
     : [];
+
+  const selectedRegion = selectedAnnotationId
+    ? (annotations.find(
+        (annotation) => annotation.id === selectedAnnotationId,
+      ) ?? null)
+    : null;
 
   return (
     <NonEditableContextMenu
@@ -241,7 +260,24 @@ export function PdfRegionContextMenu({
     >
       {/* Real DOM element for the Radix asChild trigger — a component child
           would silently drop the trigger's cloned event handlers. */}
-      <div className="relative h-full w-full">{children}</div>
+      <div className="relative h-full w-full">
+        {children}
+        {selectedRegion ? (
+          <div className="absolute bottom-3 right-3 z-30 md:hidden">
+            <ItemMenu config={() => regionMenuConfig(selectedRegion)}>
+              <Button
+                type="button"
+                variant="secondary"
+                className="min-h-11 gap-2 rounded-full border border-border bg-card/95 px-4 shadow-lg backdrop-blur-sm"
+                aria-label="Region actions"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+                Region actions
+              </Button>
+            </ItemMenu>
+          </div>
+        ) : null}
+      </div>
     </NonEditableContextMenu>
   );
 }

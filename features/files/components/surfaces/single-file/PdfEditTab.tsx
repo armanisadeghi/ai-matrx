@@ -260,6 +260,7 @@ export function PdfEditTab({ fileId, className }: PdfEditTabProps) {
             updateAnnotation={updateAnnotation}
             removeAnnotation={removeAnnotation}
             onSelectAnnotation={handleSelectAnnotation}
+            selectedAnnotationId={selectedAnnotationId}
           >
             <AnnotatablePdfCanvas
               fileId={fileId}

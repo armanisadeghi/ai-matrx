@@ -29,6 +29,10 @@ const fileTabsBody = readFileSync(
   join(__dirname, "../../files/components/surfaces/FileTabsBody.tsx"),
   "utf8",
 );
+const regionContextMenu = readFileSync(
+  join(__dirname, "../components/RegionContextMenu.tsx"),
+  "utf8",
+);
 
 describe("PDF annotation surface responsive contract", () => {
   it("keeps tablet and mobile annotation controls at the 44px floor", () => {
@@ -55,6 +59,19 @@ describe("PDF annotation surface responsive contract", () => {
     expect(filePreview).toContain('capability.previewKind === "pdf"');
     expect(filePreview).toContain(
       "`/files/f/${encodeURIComponent(fileId)}/studio`",
+    );
+  });
+
+  it("keeps selected PDF region actions reachable through the mobile drawer", () => {
+    expect(studioShell).toContain(
+      "selectedAnnotationId={selectedAnnotationId}",
+    );
+    expect(pdfEditTab).toContain("selectedAnnotationId={selectedAnnotationId}");
+    expect(regionContextMenu).toContain('aria-label="Region actions"');
+    expect(regionContextMenu).toContain("<ItemMenu");
+    expect(regionContextMenu).toContain("min-h-11");
+    expect(regionContextMenu).toContain(
+      'className="absolute bottom-3 right-3 z-30 md:hidden"',
     );
   });
 });

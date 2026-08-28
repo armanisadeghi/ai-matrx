@@ -389,6 +389,7 @@ export function StudioShell({ fileId }: StudioShellProps) {
               updateAnnotation={updateAnnotation}
               removeAnnotation={removeAnnotation}
               onSelectAnnotation={handleSelectAnnotation}
+              selectedAnnotationId={selectedAnnotationId}
             >
               <AnnotatablePdfCanvas
                 fileId={fileId}
