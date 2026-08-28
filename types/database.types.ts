@@ -34252,6 +34252,36 @@ export type Database = {
           },
         ]
       }
+      notify_outsider_door_baseline: {
+        Row: {
+          anon_ok: boolean
+          function_name: string
+          id: string
+          identity_args: string
+          noted_on: string
+          reason: string
+          schema_name: string
+        }
+        Insert: {
+          anon_ok?: boolean
+          function_name: string
+          id?: string
+          identity_args: string
+          noted_on?: string
+          reason: string
+          schema_name: string
+        }
+        Update: {
+          anon_ok?: boolean
+          function_name?: string
+          id?: string
+          identity_args?: string
+          noted_on?: string
+          reason?: string
+          schema_name?: string
+        }
+        Relationships: []
+      }
       offer: {
         Row: {
           amount: number
@@ -44339,6 +44369,19 @@ export type Database = {
           problem: string
         }[]
       }
+      notify_outsider_doors_client_reachable: {
+        Args: never
+        Returns: {
+          anon_allowed: boolean
+          anon_can: boolean
+          authenticated_can: boolean
+          baselined: boolean
+          credentialed: boolean
+          identity_args: string
+          qname: string
+          verdict: string
+        }[]
+      }
       org_chart_as_of: {
         Args: { p_on: string; p_organization_id: string }
         Returns: {
@@ -47682,7 +47725,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
-          holder_id: string
+          holder_id: string | null
           holder_type: string
           holder_version_id: string | null
           id: string
@@ -47703,7 +47746,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
-          holder_id: string
+          holder_id?: string | null
           holder_type: string
           holder_version_id?: string | null
           id?: string
@@ -47724,7 +47767,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
-          holder_id?: string
+          holder_id?: string | null
           holder_type?: string
           holder_version_id?: string | null
           id?: string
