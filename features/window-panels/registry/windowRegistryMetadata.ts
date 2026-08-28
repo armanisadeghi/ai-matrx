@@ -486,6 +486,22 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "card",
   },
 
+  // ── Workflow run (the run that followed you off its page) ────────────────
+  // Ephemeral by construction, and for a second reason beyond the usual one:
+  // the run's PERMALINK (`/workflows/runs/{id}`) is what survives a reload,
+  // and restoring a float instead would put a run on top of whatever page the
+  // person happened to reload — see WorkflowRunWindow.tsx.
+  {
+    slug: "workflow-run-window",
+    overlayId: "workflowRunWindow",
+    kind: "window",
+    label: "Workflow Run",
+    defaultData: {},
+    ephemeral: true,
+    mobilePresentation: "card",
+    instanceMode: "multi",
+  },
+
   // ── Listen — "summarize for listening" player ────────────────────────────
   // Ephemeral by construction: the summary stream + live speech cannot be
   // restored on reload; the durable record is the run's own conversation.

@@ -764,6 +764,11 @@ const LiveRunWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/LiveRunWindow"),
   { ssr: false },
 );
+const WorkflowRunWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/workflows/WorkflowRunWindow"),
+  { ssr: false },
+);
 const ListenSummaryWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/listen/ListenSummaryWindow"),
   { ssr: false },
@@ -1928,6 +1933,9 @@ export default function OverlayController() {
     ),
     liveRunWindow: useAppSelector((s) =>
       selectOpenInstances(s, "liveRunWindow"),
+    ),
+    workflowRunWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "workflowRunWindow"),
     ),
     siteCommandRunWindow: useAppSelector((s) =>
       selectOpenInstances(s, "siteCommandRunWindow"),
@@ -5119,6 +5127,38 @@ export default function OverlayController() {
               typeof data?.height === "string"
                 ? data.height
                 : undefined
+            }
+          />
+        );
+      })}
+
+      {/* workflowRunWindow — multi-instance (one per run that outlived its page) */}
+      {instancesById.workflowRunWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const runId = typeof data?.runId === "string" ? data.runId : "";
+        // No run id means there is nothing to adopt, so no frame opens at all —
+        // validated here rather than inside the window, which would otherwise
+        // have to render an empty shell pretending to be a run.
+        if (!runId) return null;
+        return (
+          <WorkflowRunWindow
+            key={inst.instanceId}
+            windowInstanceId={
+              typeof data?.windowInstanceId === "string"
+                ? data.windowInstanceId
+                : inst.instanceId
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "workflowRunWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            runId={runId}
+            workflowName={
+              typeof data?.workflowName === "string" ? data.workflowName : null
             }
           />
         );

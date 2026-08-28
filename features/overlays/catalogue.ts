@@ -45,6 +45,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  workflowRunWindow: {
+    label: "Workflow Run",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   listenSummaryWindow: {
     label: "Listen",
     instanceMode: "singleton",

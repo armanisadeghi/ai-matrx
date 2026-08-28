@@ -34,6 +34,17 @@ export function humanizeToolName(raw: string): string {
  * something, never vanish from the feed.
  */
 const PHASE_COPY: Record<string, string> = {
+  // THE CLOSED LIVENESS VOCABULARY (`AgentStepPhase`, types/python-generated/
+  // workflow-events.ts). The server folds every agent-step label onto these
+  // seven before they reach the wire, so these are the phases a reader
+  // actually meets on a modern run; the looser labels below are older/other
+  // emitters and stay tolerated. `retrying` and `complete` are already spelled
+  // out further down — the set is covered, not duplicated.
+  preparing: "Getting ready",
+  streaming: "Writing it out",
+  tool: "Using a tool",
+  reasoning: "Reasoning",
+  finalizing: "Finishing up",
   processing: "Thinking it through",
   executing: "Running the step",
   analyzing: "Analyzing the material",

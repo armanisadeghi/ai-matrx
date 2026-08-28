@@ -56,6 +56,8 @@ import { useEffect, useMemo, useRef } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 
+import { useFloatingWorkflowRun } from "../../floating/useFloatingWorkflowRun";
+
 import {
   selectNodeAggregatePhases,
   selectRunEmissions,
@@ -242,6 +244,16 @@ export function RunStage({
    * section holds, because the slots are about to be declared and content
    * placed now would have to move; only a genuine ERROR degrades.
    */
+  /**
+   * 🚨 THE FLOATING LAW. This stage is the run's home while it is on screen —
+   * and the instant it is not, the run is handed to the floating window, which
+   * takes over the adoption so the stream never dies mid-flight. Without this
+   * one line, navigating away from a live run tore its transports down and the
+   * person got a spinner somewhere else and no way back. See
+   * `floating/useFloatingWorkflowRun.ts` for the handoff itself.
+   */
+  useFloatingWorkflowRun({ runId, workflowName });
+
   const schemaState = useResultSchema(definitionId);
   const schemaPending = schemaState.status === "loading";
   const schemaFailed = schemaState.status === "error";
