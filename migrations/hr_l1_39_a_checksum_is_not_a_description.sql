@@ -1,0 +1,18 @@
+-- hr_l1_39_a_checksum_is_not_a_description.sql
+--
+-- 🚨 RULED: THE INTEGRITY HASH AND THE HUMAN SUMMARY ARE DIFFERENT CONCEPTS AND MUST
+-- NEVER SHARE A SLOT. This corrects my own hr_l1_37.
+--
+-- EVERY digest_fn on hr.workflow_flow_type — leave, timecard, overtime and the whole-row
+-- default alike — gathers the target row's MATERIAL FIELDS and returns sha256 of them.
+-- That is the engine's tamper check: the old_digest/new_digest pair proving the row a
+-- decision was made about is the row being changed. It was never a description, and the
+-- word "digest" is the only thing that suggested otherwise. Wiring it into the slot a
+-- person reads put "dc8125…" on screen as the entire description of a leave request.
+--
+-- hr._wf_row_summary builds the OTHER thing, from the target row's own display fields.
+-- The hash keeps its job and never reaches a human-rendered slot; the contract row
+-- forbids _wf_call_digest in _wf_display by name.
+--
+-- Superseded in part by hr_l1_41 (pay changes carry their proposal flat). Applied live
+-- 2026-08-28 and ledgered. Definitions live in hr_l1_41's file where later revised.
