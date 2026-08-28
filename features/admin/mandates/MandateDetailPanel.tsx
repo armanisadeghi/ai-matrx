@@ -1500,11 +1500,17 @@ function MandateGoalBlock({
  * the provision KEY; this names what the key actually offers.
  */
 function MandateProvisionPanel({ row }: { row: MandateRow }) {
-  const provisionKey = parseMandateWave1(row.mandate).provisionKey;
-  const pinnedContext = parseMandateWave1(row.mandate).pinnedContext;
-  const [offer, setOffer] = useState<ProvisionOffer | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(Boolean(provisionKey));
+  const wave1 = parseMandateWave1(row.mandate);
+  const provisionKey = wave1.provisionKey;
+  const pinnedContext = wave1.pinnedContext;
+  // ONE settled slot, written only from async callbacks and stamped with the
+  // key it answers for. `loading` is DERIVED — setting it in the effect body
+  // is the cascading-render defect (react-hooks/set-state-in-effect).
+  const [settled, setSettled] = useState<{
+    key: string;
+    offer: ProvisionOffer | null;
+    error: string | null;
+  } | null>(null);
   // Open by default: the Provision IS the input declaration — you cannot judge
   // a Holder without seeing what the job hands it.
   const [open, setOpen] = useState(true);
@@ -1512,18 +1518,20 @@ function MandateProvisionPanel({ row }: { row: MandateRow }) {
   useEffect(() => {
     if (!provisionKey) return;
     let cancelled = false;
-    setLoading(true);
     fetchProvision(provisionKey)
       .then((result) => {
-        if (cancelled) return;
-        setOffer(result);
-        setError(null);
-        setLoading(false);
+        if (!cancelled) {
+          setSettled({ key: provisionKey, offer: result, error: null });
+        }
       })
       .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(describeError(err));
-        setLoading(false);
+        if (!cancelled) {
+          setSettled({
+            key: provisionKey,
+            offer: null,
+            error: describeError(err),
+          });
+        }
       });
     return () => {
       cancelled = true;
@@ -1531,6 +1539,11 @@ function MandateProvisionPanel({ row }: { row: MandateRow }) {
   }, [provisionKey]);
 
   if (!provisionKey) return null;
+
+  const current = settled?.key === provisionKey ? settled : null;
+  const loading = current === null;
+  const error = current?.error ?? null;
+  const offer = current?.offer ?? null;
 
   return (
     <Section
