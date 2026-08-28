@@ -198,6 +198,19 @@ async def main() -> None:  # noqa: C901
             )
         print(f"  leave_approve grant → {str(grant)[:160]}")
 
+        # The floor cards and the config validator are hr_admin doors, so the proof needs a real
+        # hr_admin token — not a privileged connection with no auth.uid(), which returns
+        # `granted:false` and would make every assertion below pass on None.
+        await conn.execute(
+            "do $$ begin perform hr.arm_write(); "
+            "insert into hr.role_assignment (employment_id, role_key, scope_kind, effective_from, "
+            "  is_active, reason, organization_id) "
+            f"select $tok${APPROVER}$tok$::uuid, 'hr_admin', 'org', current_date - 1, true, "
+            f"  'ZZZ L5 PROOF', $tok${ORG}$tok$::uuid "
+            " where not exists (select 1 from hr.role_assignment "
+            f"   where employment_id = $tok${APPROVER}$tok$::uuid and role_key = 'hr_admin' "
+            f"     and organization_id = $tok${ORG}$tok$::uuid and is_active); end $$;")
+
         # 🚨 hr.reporting_line is EMPTY PLATFORM-WIDE (0 rows in the whole database), so nothing
         # in HR can derive a manager from it — SPEC-LEAVE §11's team scope, the workflow
         # resolver's reporting_line fallback rung, and hr.manager_visibility_depth all walk an
@@ -582,6 +595,72 @@ async def main() -> None:  # noqa: C901
                       (sick.get("empty_statement") or "").startswith("Nobody matching this filter"),
                       str(sick.get("empty_statement")))
 
+
+        print("\n=== 15. §2.5 floor cards and the §2.6 dialog, on the org's OWN jurisdictions ===")
+        # The validator now derives the org's jurisdictions itself (establishments UNION the
+        # position chain), so this passes NO explicit keys — which is how the editor calls it.
+        adminv = await rpc("hr_leave_policy_validate",
+                           {"p_organization_id": ORG,
+                            "p_payload": {"statutory_basis_rule_class": "pto-carryover-legality",
+                                          "carryover_allowed": False}}, emp_token)
+        # Tomas is not an HR admin, so the twin must refuse him rather than leak the org's config.
+        check("the config validator refuses a non-admin",
+              isinstance(adminv, dict) and adminv.get("granted") is False, str(adminv)[:200])
+
+        floors = await rpc("hr_leave_policy_floors",
+                           {"p_organization_id": ORG, "p_payload": {}}, mgr_token)
+        check("the floors door opens for a real hr_admin over PostgREST",
+              isinstance(floors, dict) and floors.get("granted") is True, str(floors)[:300])
+        if not (isinstance(floors, dict) and floors.get("granted")):
+            floors = {"cards": [], "statutory_uses": [], "operating_jurisdictions": []}
+        ca = next((c for c in floors.get("cards", []) if c["jurisdiction_key"] == "US-CA"), None)
+        check("the org's operating jurisdictions are derived, not asked for",
+              set(floors.get("operating_jurisdictions", [])) >= {"US-CA", "US-CO"},
+              str(floors.get("operating_jurisdictions")))
+        check("California's floor card resolves real numbers", ca is not None and ca["fields"],
+              str(ca)[:300])
+        if ca:
+            byf = {f["field"]: f for f in ca["fields"]}
+            check("1 hour per 30 worked is locked at the floor",
+                  byf.get("accrual_per_units", {}).get("floor_value") == 30
+                  and byf["accrual_per_units"]["state"] == "locked_at_floor",
+                  str(byf.get("accrual_per_units")))
+            check("day-90 usability is locked, and is NOT the waiting period",
+                  byf.get("usable_after_days", {}).get("floor_value") == 90,
+                  str(byf.get("usable_after_days")))
+            check("every locked field carries the rule and citation behind it",
+                  all(f.get("rule_id") or f.get("parameter_key") for f in ca["fields"]),
+                  str(ca["fields"])[:300])
+            # 🚨 The key-grain control: CA's rule is ACTIVE and lists three cap keys as unverified.
+            # None of them may render as a locked floor.
+            caps = [f for f in ca["fields"]
+                    if f["field"] in ("carryover_cap", "annual_accrual_cap", "balance_cap")]
+            check("no cap the rule itself calls unverified is shown as a locked floor",
+                  all(f["state"] != "locked_at_floor" for f in caps), str(caps))
+            check("and no cap floor was invented from a null",
+                  all(f.get("floor_value") is not None for f in ca["fields"]
+                      if f["state"] == "locked_at_floor" and f.get("floor_value") is not None),
+                  str(caps))
+        uses = sorted({u["use"] for u in floors.get("statutory_uses", [])})
+        check("§2.4's mandated uses are SEEDED from the resolved rule",
+              uses == ["family_care", "own_illness", "safe_time"], str(uses))
+        check("and a statutory use is marked un-removable",
+              all(u["removable"] is False for u in floors.get("statutory_uses", [])),
+              str(floors.get("statutory_uses"))[:200])
+
+        # §2.6 end to end, with no explicit jurisdiction keys — the union does the work now.
+        live = await conn.fetchval(
+            "select hr.validate_org_config($1::uuid,'pto-carryover-legality',"
+            "  hr._leave_config_parameters('pto-carryover-legality','{\"carryover_allowed\":false}'::jsonb),"
+            "  null, current_date)", ORG)
+        live = json.loads(live)
+        check("the validator FIRES on the org's own jurisdictions with no keys passed",
+              live.get("ok") is False and live.get("violation_count", 0) > 0,
+              str(live)[:300])
+        check("and it checked more than one jurisdiction",
+              len(live.get("jurisdictions_checked", [])) > 1,
+              str(live.get("jurisdictions_checked")))
+
     finally:
         if "--keep" not in sys.argv and policy_id:
             print("\n=== cleanup ===")
@@ -593,6 +672,9 @@ async def main() -> None:  # noqa: C901
                 "end $$;")
             await conn.execute(
                 "alter table hr.leave_ledger enable trigger _zz_leave_ledger_no_delete")
+            await conn.execute(
+                "do $$ begin perform hr.arm_write(); "
+                "delete from hr.role_assignment where reason = 'ZZZ L5 PROOF'; end $$;")
 
             for tbl in ("leave_request", "leave_enrollment", "leave_policy"):
                 col = "id" if tbl == "leave_policy" else "leave_policy_id"
