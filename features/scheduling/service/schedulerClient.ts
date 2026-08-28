@@ -22,6 +22,9 @@ import type {
   RunNowResponse,
   RunResponse,
   ScannerStatusResponse,
+  SystemTaskListResponse,
+  SystemTaskPatchRequest,
+  SystemTaskResponse,
   TaskCreateRequest,
   TaskDetailResponse,
   TaskListResponse,
@@ -243,4 +246,36 @@ export function computeNextDueAt(
 
 export function getStatus(): Promise<ScannerStatusResponse> {
   return request<ScannerStatusResponse>("/scheduler/status", { method: "GET" });
+}
+
+// ── System jobs (admin, /scheduling/* prefix) ──────────────────────────────
+//
+// Recurring SERVER jobs (kind=tool) — the aidream `/scheduling/admin/*`
+// router, NOT `/scheduler/*`. Same base URL and Bearer auth; the server side
+// additionally admin-gates these routes. Enabling/disabling flips the task
+// AND its trigger together server-side, and the server REFUSES enabling a
+// task whose handler is not registered — that refusal must reach the admin
+// verbatim (the shared `request` helper already surfaces `detail`).
+
+export function listSystemTasks(): Promise<SystemTaskListResponse> {
+  return request<SystemTaskListResponse>("/scheduling/admin/system-tasks", {
+    method: "GET",
+  });
+}
+
+export function patchSystemTask(
+  taskId: string,
+  body: SystemTaskPatchRequest,
+): Promise<SystemTaskResponse> {
+  return request<SystemTaskResponse>(
+    `/scheduling/admin/system-tasks/${encodeURIComponent(taskId)}`,
+    { method: "PATCH", body: JSON.stringify(body) },
+  );
+}
+
+export function runSystemTaskNow(taskId: string): Promise<RunNowResponse> {
+  return request<RunNowResponse>(
+    `/scheduling/run-now/${encodeURIComponent(taskId)}`,
+    { method: "POST" },
+  );
 }

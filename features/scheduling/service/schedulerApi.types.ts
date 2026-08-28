@@ -267,6 +267,55 @@ export interface ScannerStatusResponse {
   error_message: string | null;
 }
 
+// ── System jobs (admin) ────────────────────────────────────────────────────
+//
+// Wire types for the aidream `/scheduling/admin/system-tasks` admin surface —
+// recurring SERVER jobs (kind=tool) controllable from the admin console.
+// The contract is deliberately defensive: aidream may return nulls for any
+// nested field, so consumers must not assume `trigger` / `last_run` exist.
+
+export interface SystemTaskTrigger {
+  id: string;
+  type: string;
+  config: Record<string, unknown>;
+  enabled: boolean;
+  next_due_at: string | null;
+}
+
+export interface SystemTaskLastRun {
+  status: string;
+  started_at: string | null;
+  finished_at: string | null;
+  error_message: string | null;
+}
+
+export interface SystemTaskResponse {
+  id: string;
+  title: string;
+  description: string | null;
+  tool_name: string;
+  enabled: boolean;
+  /** The tool exists but its handler is gated behind a pending approval. */
+  handler_gate_pending: boolean;
+  /** False = no handler is registered server-side; enabling will be refused. */
+  handler_registered: boolean;
+  trigger: SystemTaskTrigger | null;
+  last_run: SystemTaskLastRun | null;
+}
+
+export interface SystemTaskListResponse {
+  tasks: SystemTaskResponse[];
+}
+
+export interface SystemTaskPatchRequest {
+  enabled?: boolean;
+  trigger?: {
+    type?: string;
+    config?: Record<string, unknown>;
+  };
+  variables_args?: Record<string, unknown>;
+}
+
 // ── List query params ──────────────────────────────────────────────────────
 
 export interface ListTasksQuery {
