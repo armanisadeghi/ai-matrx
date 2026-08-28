@@ -1189,6 +1189,8 @@ export function fetchHrEmployeeByParty(args: {
 }): Promise<
   HrResult<{
     employee_id: string | null;
+    /** Added to the door by `hr_l1_24` — directory tier, like the rest of this payload. */
+    employee_number: string | null;
     display_name: string | null;
     directory_status: string | null;
     job_title: string | null;
@@ -1198,11 +1200,18 @@ export function fetchHrEmployeeByParty(args: {
     hire_date: string | null;
   }>
 > {
-  // verified aligned 2026-08-27 — the door SHIPPED and was called live against a real CRM
-  // party. It returned exactly {employee_id, display_name, directory_status, job_title,
-  // department, manager_employee_id, manager_name, hire_date} plus `granted`, which the
-  // envelope strips: a field-for-field match with the type below, in both directions.
-  // Directory tier only, as §4.5 requires — nothing confidential reaches a CRM surface.
+  // verified aligned 2026-08-27, RE-VERIFIED after `hr_l1_24` widened the door — called
+  // live against the probe org's party for EMP-00002 and it returned exactly
+  // {employee_id, employee_number, display_name, directory_status, job_title, department,
+  // manager_employee_id, manager_name, hire_date} plus `granted`, which the envelope
+  // strips: a field-for-field match with the type below, in both directions.
+  //
+  // 🚨 THE NOT-AN-EMPLOYEE BRANCH SENDS THE SAME KEYS, ALL NULL — which is what lets the
+  // card test `employee_id` alone and trust the rest. `hr_l1_24` added the new key to
+  // BOTH branches for exactly that reason.
+  //
+  // Directory tier only, as §4.5 requires — nothing confidential reaches a CRM surface,
+  // and the migration asserts that no confidential column ever enters this door.
   return callHrAligned(
     "hr_employee_by_party",
     { p_organization_id: args.organizationId, p_party_id: args.partyId },
