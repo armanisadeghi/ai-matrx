@@ -10,6 +10,9 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -107,6 +110,7 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
   const { open: openCanvas } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
 
   // Close fullscreen on ESC (desktop & mobile)
   useEffect(() => {
@@ -121,6 +125,46 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
   // ── Canvas ────────────────────────────────────────────────────────────────
   const handleCanvasOpen = () => {
     if (!canvasType || !canvasData) return;
+    const artifactId =
+      typeof canvasMetadata?.artifactId === "string"
+        ? canvasMetadata.artifactId
+        : undefined;
+    const def = getArtifactDef(canvasType);
+
+    if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+      const rawPayload =
+        typeof canvasData === "string"
+          ? canvasData
+          : (JSON.stringify(canvasData) ?? String(canvasData));
+      const messageId =
+        typeof canvasMetadata?.messageId === "string"
+          ? canvasMetadata.messageId
+          : typeof canvasMetadata?.sourceMessageId === "string"
+            ? canvasMetadata.sourceMessageId
+            : undefined;
+      const conversationId =
+        typeof canvasMetadata?.conversationId === "string"
+          ? canvasMetadata.conversationId
+          : undefined;
+      const artifactIndex =
+        typeof canvasMetadata?.artifactIndex === "number" &&
+        canvasMetadata.artifactIndex > 0
+          ? canvasMetadata.artifactIndex
+          : 1;
+
+      void openArtifact({
+        canvasType,
+        title,
+        content: rawPayload,
+        messageId,
+        conversationId,
+        artifactId,
+        artifactIndex,
+        metadata: canvasMetadata,
+      });
+      return;
+    }
+
     openCanvas({
       type: canvasType,
       data: canvasData,
