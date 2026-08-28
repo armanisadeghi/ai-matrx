@@ -10,10 +10,11 @@
  * legacy `node_inputs` start argument dies with them.
  *
  * WHY THE START VERB IS NOT `useWorkflowRunControls.startRun`: the surface
- * contract needs two things that hook does not carry — `input_sources` (THE
- * source=human invariant: only this human-facing path may stamp `human`) and
- * a 409 `inputs_required` outcome that must reach the FORM as a gap list,
- * not a toast. A start refused for want of an input is never a dead end.
+ * contract needs a 409 `inputs_required` outcome that must reach the FORM as
+ * a gap list, not a toast. A start refused for want of an input is never a
+ * dead end. The live RunWorkflowRequest does not yet accept `input_sources`,
+ * so this hook refuses human-stamped submissions until that generated
+ * contract lands; silently downgrading them to `caller` would be a lie.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -125,6 +126,13 @@ export function useServedRunStart(): ServedRunStart {
     ): Promise<ServedStartOutcome> => {
       setStarting(true);
       try {
+        if (Object.keys(submission.inputSources).length > 0) {
+          return {
+            status: "error",
+            message:
+              "This server cannot accept human-attributed workflow inputs yet.",
+          };
+        }
         const captured: { text: string | null } = { text: null };
         const path = "/workflows/{definition_id}/runs" as const;
         const config: ApiCallConfig<typeof path, "POST"> = {
@@ -133,9 +141,6 @@ export function useServedRunStart(): ServedRunStart {
           pathParams: { definition_id: definitionId },
           body: {
             inputs: submission.inputs,
-            // THE source=human invariant, client side: this form is the human
-            // path, so exactly the values a person typed are claimed `human`.
-            input_sources: submission.inputSources,
             mode: "inline",
           },
           stream: true,
