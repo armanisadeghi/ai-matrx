@@ -24,6 +24,9 @@ export default function DecisionTreeArtifact({
   taskId,
   artifactId,
   isStreamActive,
+  conversationId,
+  messageId,
+  blockIndex,
 }: ArtifactRendererProps) {
   const { state, loaded, save } = useArtifactState<
     DecisionTreeState & Record<string, unknown>
@@ -55,6 +58,10 @@ export default function DecisionTreeArtifact({
       <DecisionTreeBlock
         decisionTree={decisionTree}
         taskId={artifactDedupKey(taskId, artifactId)}
+        artifactId={artifactId}
+        conversationId={conversationId}
+        messageId={messageId}
+        blockIndex={blockIndex}
         initialState={state ?? undefined}
         onStateChange={save as (state: DecisionTreeState) => void}
       />

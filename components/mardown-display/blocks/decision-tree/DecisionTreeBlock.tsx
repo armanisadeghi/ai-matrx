@@ -27,6 +27,9 @@ import {
   Printer,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 
 export type DecisionNode = Omit<
@@ -55,6 +58,10 @@ export interface DecisionTreeState {
 interface DecisionTreeBlockProps {
   decisionTree: DecisionTreeData;
   taskId?: string; // Task ID for canvas deduplication
+  artifactId?: string;
+  conversationId?: string;
+  messageId?: string;
+  blockIndex?: number;
   /** Seed navigation/completion state from persisted storage (optional). */
   initialState?: DecisionTreeState;
   /** Called whenever the user changes interaction state (optional). */
@@ -95,6 +102,10 @@ const navBtnClass =
 const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
   decisionTree,
   taskId,
+  artifactId,
+  conversationId,
+  messageId,
+  blockIndex,
   initialState,
   onStateChange,
 }) => {
@@ -136,6 +147,33 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
   );
   const [showFullTree, setShowFullTree] = useState(false);
   const { open: openCanvas } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
+
+  const handleOpenCanvas = () => {
+    const def = getArtifactDef("decision-tree");
+
+    if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+      void openArtifact({
+        canvasType: "decision-tree",
+        title: decisionTree.title,
+        content: JSON.stringify(decisionTree),
+        conversationId,
+        messageId,
+        artifactId,
+        artifactIndex: blockIndex && blockIndex > 0 ? blockIndex : 1,
+      });
+      return;
+    }
+
+    openCanvas({
+      type: "decision-tree",
+      data: decisionTree,
+      metadata: {
+        title: decisionTree.title,
+        sourceTaskId: taskId,
+      },
+    });
+  };
 
   // Keep a stable ref to onStateChange so closures don't go stale.
   const onStateChangeRef = useRef(onStateChange);
@@ -582,16 +620,7 @@ const DecisionTreeBlock: React.FC<DecisionTreeBlockProps> = ({
                       <IconButton
                         icon={ExternalLink}
                         tooltip="Open Canvas"
-                        onClick={() =>
-                          openCanvas({
-                            type: "decision-tree",
-                            data: decisionTree,
-                            metadata: {
-                              title: decisionTree.title,
-                              sourceTaskId: taskId,
-                            },
-                          })
-                        }
+                        onClick={handleOpenCanvas}
                         size="sm"
                         className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
                       />
