@@ -32,6 +32,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -387,7 +388,15 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
             {ruleClass?.absence_semantics ?? "—"}
           </Field>
           <Field label="Organization">
-            {rule.organization_id ?? "platform"}
+            {rule.organization_id ? (
+              <EntityRef
+                token="organization"
+                id={rule.organization_id}
+                openInNewTab
+              />
+            ) : (
+              "Platform baseline"
+            )}
           </Field>
           {ruleClass?.description ? (
             <p className="mt-1 text-xs text-muted-foreground">
