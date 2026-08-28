@@ -49,6 +49,25 @@ describe("org chart — the withheld node (§4.2)", () => {
     expect(chart).not.toMatch(/opted_out\s*\?/);
   });
 
+  it("gives a withheld node NO PHOTO — a face identifies more than a name", () => {
+    /*
+      §5.2 gained the chart photo on 2026-08-28. The withheld node is the one
+      place that addition could undo the suppression it sits next to: the door
+      withholds somebody's NAME and a photo would hand back the identity anyway,
+      more completely than the name did.
+
+      Two locks, because one of them is somebody else's file. The door already
+      ties the photo to the name — `case when sup.nm is not null then
+      e.photo_file_id end` — and this component passes null again at the call
+      site, so a regression in either place still renders initials.
+    */
+    expect(chart).toContain(
+      "photoFileId={isWithheld(node) ? null : node.photo_file_id}",
+    );
+    // ...and the node itself refuses to render one for a withheld person.
+    expect(chart).toMatch(/props\.nameWithheld \? null : \(\s*<HrEmployeePhoto/);
+  });
+
   it("gives a withheld node NO profile door, in the canvas and the tray", () => {
     expect(chart).toContain("isWithheld(node)\n                          ? null");
     expect(chart).toContain("{props.href ? (");
