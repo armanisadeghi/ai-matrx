@@ -173,5 +173,7 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-08-28 — Repaired the DB-wide definer-grant guard's search-path-dependent grandfather
+  identity so scope RLS keeps authenticated EXECUTE on `iam.has_access` across unrelated DDL.
 - 2026-08-28 — Classified the bounded Supabase upstream-connect/reset-before-headers response as
   transport noise while preserving loud Postgres/PostgREST failures.
