@@ -5107,6 +5107,104 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hr/calc/leave-accrual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accrual for one enrollment through a date
+         * @description E-05. **Per-hours-worked accrual reads the TIMESHEET, not the pay period** (AR 1.8).
+         *
+         *     ``subject.type`` must be ``hr_leave_enrollment``. ``as_of`` is the EVENT date and doubles as
+         *     the entry's ``occurred_on``; ``parameters.through_date`` optionally pushes the accrual window
+         *     further out, which is how the offboarding run accrues through ``last_day_worked`` (§7 step 1).
+         *
+         *     A downward timesheet correction returns **200 with ``result.over_accrued`` true and nothing
+         *     posted** — the runner never posts a negative accrual, and HR decides with an explicit
+         *     adjustment (§6).
+         */
+        post: operations["hr_calc_leave_accrual"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/calc/carryover": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Plan-year carryover
+         * @description E-06. **Carryover legality clamps org config, and the clamp appears in ``clamps[]``.**
+         *
+         *     ``parameters.plan_year_end`` names the boundary; it defaults to ``as_of``. The closing year's
+         *     accrual runs FIRST (§3.4), then the balance is carried. Where forfeiture is unlawful in any
+         *     jurisdiction the employment touched that year, **the forfeiture is not written**: the full
+         *     balance carries, the clamp is recorded and a compliance exception opens.
+         */
+        post: operations["hr_calc_carryover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/accruals/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accrual run
+         * @description E-13. **Idempotent by construction as well as by header.**
+         *
+         *     The ledger is append-only and immutable — an error is a reversal entry, never an edit — and
+         *     every entry is keyed on its ``period_key``, so a re-run over an already-accrued window writes
+         *     nothing at all rather than relying on the header to save it.
+         */
+        post: operations["hr_accruals_run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hr/accruals/carryover/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Plan-year carryover run
+         * @description E-14. A statutory floor overriding org policy is counted in the report's
+         *     ``clamped_by_statute`` and recorded in each snapshot's ``clamps[]``.
+         */
+        post: operations["hr_accruals_carryover_run"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mcp-connections/{server_id}/oauth-tokens": {
         parameters: {
             query?: never;
@@ -16193,6 +16291,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mandates/coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mandate Coverage
+         * @description Green/orange/red for every live mandate, computed against live storage.
+         */
+        get: operations["mandate_coverage_mandates_coverage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent-testing/agents/{agent_id}/tests": {
         parameters: {
             query?: never;
@@ -17272,6 +17390,29 @@ export interface paths {
          *     sections ⇒ the workflow needs no inputs (one-click Run).
          */
         get: operations["get_run_form_workflows__definition_id__run_form_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/result-schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Result Schema
+         * @description The twin of /run-form (SPEC §2.4): what a run of this workflow
+         *     PROMISES to produce — its deliverables (output.* nodes, or terminal
+         *     kind-declaring nodes), each with kind + json_schema + is_primary — served
+         *     BEFORE any run exists so result surfaces reserve their kind silhouettes.
+         */
+        get: operations["get_result_schema_workflows__definition_id__result_schema_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -23622,6 +23763,86 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
+        };
+        /**
+         * AccrualRunRequest
+         * @description E-13's body, byte-for-byte against the frozen stub.
+         *
+         *     The stub types ``scope`` as a free object whose description enumerates the three shapes above;
+         *     it is modelled as a discriminated union here for the same reason ``RecomputeRequest.scope`` is
+         *     — a typed scope is the difference between a 422 naming the bad field and a run that quietly
+         *     fans out over the wrong population.
+         */
+        AccrualRunRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Through Date
+             * Format: date
+             * @description The EVENT date the run accrues through. Never now() (§1.6 law 1).
+             */
+            through_date: string;
+            /** Scope */
+            scope: components["schemas"]["AccrualScopeOrg"] | components["schemas"]["AccrualScopePolicy"] | components["schemas"]["AccrualScopeEmployment"];
+            /**
+             * Mode
+             * @default authoritative
+             * @enum {string}
+             */
+            mode?: "authoritative" | "prospective";
+        };
+        /**
+         * AccrualScopeEmployment
+         * @description Named employments only — the offboarding run's final accrual uses this (§7 step 1).
+         */
+        AccrualScopeEmployment: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "employment";
+            /** Employment Ids */
+            employment_ids: string[];
+        };
+        /**
+         * AccrualScopeOrg
+         * @description Every in-range enrollment in the organization.
+         */
+        AccrualScopeOrg: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "org";
+        };
+        /**
+         * AccrualScopePolicy
+         * @description Every in-range enrollment on one policy.
+         */
+        AccrualScopePolicy: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "leave_policy";
+            /**
+             * Leave Policy Id
+             * Format: uuid
+             */
+            leave_policy_id: string;
         };
         /** ActionEventFacts */
         ActionEventFacts: {
@@ -30549,6 +30770,25 @@ export interface components {
             task_cancelled: boolean;
         };
         /**
+         * CapDetail
+         * @description One cap and what was left of it. ``remaining`` is ``None`` when the cap is not set.
+         *
+         *     🚨 ``None`` here means *there is no such ceiling*, which is a completely different fact from
+         *     ``0`` (*the ceiling is reached*). §5's balance-honesty law is the reason the two are not
+         *     allowed to render the same.
+         */
+        CapDetail: {
+            /** Cap */
+            cap?: string | null;
+            /** Remaining */
+            remaining?: string | null;
+            /**
+             * Applied
+             * @default false
+             */
+            applied?: boolean;
+        };
+        /**
          * CaptureHealth
          * @description Capture-failure counter over the alarm window.
          */
@@ -30782,6 +31022,167 @@ export interface components {
              * @enum {string}
              */
             face?: "front" | "back";
+        };
+        /**
+         * CarryoverCalcResponse
+         * @description E-06's 200.
+         */
+        CarryoverCalcResponse: {
+            /**
+             * Snapshot Id
+             * Format: uuid
+             * @description ALWAYS present. Computing a consequential result without a snapshot is a defect.
+             */
+            snapshot_id: string;
+            /** Prospective */
+            prospective: boolean;
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Jurisdiction Key */
+            jurisdiction_key: string;
+            engine: components["schemas"]["EngineRef"];
+            /** Rules Applied */
+            rules_applied?: components["schemas"]["RuleApplied"][];
+            /** Flags */
+            flags?: components["schemas"]["CalcFlag"][];
+            /** Incomplete */
+            incomplete?: components["schemas"]["IncompleteFact"][];
+            /** Clamps */
+            clamps?: components["schemas"]["Clamp"][];
+            written?: components["schemas"]["WrittenRefs"];
+            result: components["schemas"]["CarryoverResult"];
+        };
+        /**
+         * CarryoverResult
+         * @description E-06's ``result`` — one enrollment's policy-year boundary.
+         *
+         *     ``carryover_hours_delta`` is **always 0**: the carryover row is the boundary marker and the
+         *     forfeiture row is the only thing that moves hours. Both are reported so §12 can render the
+         *     boundary as a row instead of a shrug.
+         */
+        CarryoverResult: {
+            /**
+             * Employment Id
+             * Format: uuid
+             */
+            employment_id: string;
+            /**
+             * Leave Policy Id
+             * Format: uuid
+             */
+            leave_policy_id: string;
+            /**
+             * Leave Enrollment Id
+             * Format: uuid
+             */
+            leave_enrollment_id: string;
+            /** Policy Name */
+            policy_name: string;
+            /** Policy Version */
+            policy_version: number;
+            /** Eligible */
+            eligible: boolean;
+            /** Skip Reason */
+            skip_reason?: string | null;
+            /** Skip Detail */
+            skip_detail?: string | null;
+            /**
+             * Plan Year End
+             * Format: date
+             */
+            plan_year_end: string;
+            /** Balance At Boundary */
+            balance_at_boundary?: string | null;
+            /** Carried Hours */
+            carried_hours?: string | null;
+            /** Forfeited Hours */
+            forfeited_hours?: string | null;
+            /**
+             * Carryover Hours Delta
+             * @default 0
+             */
+            carryover_hours_delta?: string;
+            /**
+             * Forfeiture Withheld As Unlawful
+             * @default false
+             */
+            forfeiture_withheld_as_unlawful?: boolean;
+            /**
+             * Expiry Withheld As Unlawful
+             * @default false
+             */
+            expiry_withheld_as_unlawful?: boolean;
+            /** Carryover Expires On */
+            carryover_expires_on?: string | null;
+            /**
+             * Expiry Warning Days Not Yet Wired
+             * @default []
+             */
+            expiry_warning_days_not_yet_wired?: number[];
+            /**
+             * Jurisdictions Considered
+             * @default []
+             */
+            jurisdictions_considered?: string[];
+            /**
+             * Jurisdictions Forbidding Forfeiture
+             * @default []
+             */
+            jurisdictions_forbidding_forfeiture?: string[];
+            /** Carryover Entry Id */
+            carryover_entry_id?: string | null;
+            /** Forfeiture Entry Id */
+            forfeiture_entry_id?: string | null;
+            /** Balance After */
+            balance_after?: string | null;
+            /** Occurred On */
+            occurred_on?: string | null;
+            /** Period Key */
+            period_key?: string | null;
+            /**
+             * Idempotent Noop
+             * @default false
+             */
+            idempotent_noop?: boolean;
+            /** Compliance Exception Id */
+            compliance_exception_id?: string | null;
+        };
+        /**
+         * CarryoverRunRequest
+         * @description E-14's body. ``plan_year_end`` is the closing year's LAST DAY, not the new year's first.
+         */
+        CarryoverRunRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Plan Year End
+             * Format: date
+             */
+            plan_year_end: string;
+            /** Scope */
+            scope: components["schemas"]["AccrualScopeOrg"] | components["schemas"]["AccrualScopePolicy"] | components["schemas"]["AccrualScopeEmployment"];
+            /**
+             * Mode
+             * @default authoritative
+             * @enum {string}
+             */
+            mode?: "authoritative" | "prospective";
         };
         /** CartesianPlan */
         CartesianPlan: {
@@ -46449,6 +46850,11 @@ export interface components {
             } | null;
             data?: components["schemas"]["JsonValue"] | null;
             /**
+             * Variants
+             * @default []
+             */
+            variants?: components["schemas"]["JsonValue"][];
+            /**
              * Edges
              * @default []
              */
@@ -47069,6 +47475,123 @@ export interface components {
          * @enum {string}
          */
         LeakRule: "any" | "object" | "bare_container" | "extra_allow" | "unbound_typevar" | "unknown_type" | "acknowledged_dynamic";
+        /**
+         * LeaveAccrualCalcResponse
+         * @description E-05's 200. ``snapshot_id`` is always present — computing without freezing is a defect.
+         */
+        LeaveAccrualCalcResponse: {
+            /**
+             * Snapshot Id
+             * Format: uuid
+             * @description ALWAYS present. Computing a consequential result without a snapshot is a defect.
+             */
+            snapshot_id: string;
+            /** Prospective */
+            prospective: boolean;
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Jurisdiction Key */
+            jurisdiction_key: string;
+            engine: components["schemas"]["EngineRef"];
+            /** Rules Applied */
+            rules_applied?: components["schemas"]["RuleApplied"][];
+            /** Flags */
+            flags?: components["schemas"]["CalcFlag"][];
+            /** Incomplete */
+            incomplete?: components["schemas"]["IncompleteFact"][];
+            /** Clamps */
+            clamps?: components["schemas"]["Clamp"][];
+            written?: components["schemas"]["WrittenRefs"];
+            result: components["schemas"]["LeaveAccrualResult"];
+        };
+        /**
+         * LeaveAccrualResult
+         * @description E-05's ``result`` — one enrollment's accrual through a date, with every intermediate.
+         *
+         *     The intermediates are not debug output. §3.5 requires an entry to be explainable from its
+         *     snapshot, and §12's ledger audit view renders exactly these numbers as the sentence behind a
+         *     balance. A result that showed only ``hours_posted`` would be a number with no door.
+         */
+        LeaveAccrualResult: {
+            /**
+             * Employment Id
+             * Format: uuid
+             */
+            employment_id: string;
+            /**
+             * Leave Policy Id
+             * Format: uuid
+             */
+            leave_policy_id: string;
+            /**
+             * Leave Enrollment Id
+             * Format: uuid
+             */
+            leave_enrollment_id: string;
+            /** Policy Name */
+            policy_name: string;
+            /** Accrual Method */
+            accrual_method: string;
+            /** Policy Version */
+            policy_version: number;
+            /** Eligible */
+            eligible: boolean;
+            /** Skip Reason */
+            skip_reason?: string | null;
+            /** Skip Detail */
+            skip_detail?: string | null;
+            /** Worked To Date */
+            worked_to_date?: string | null;
+            /** Accrual Rate */
+            accrual_rate?: string | null;
+            /** Accrual Per Units */
+            accrual_per_units?: string | null;
+            /** Earned To Date */
+            earned_to_date?: string | null;
+            /** Posted To Date */
+            posted_to_date?: string | null;
+            /** Toward Next Unit */
+            toward_next_unit?: string | null;
+            /**
+             * Over Accrued
+             * @default false
+             */
+            over_accrued?: boolean;
+            /** Raw Earned */
+            raw_earned?: string | null;
+            /**
+             * Statutory Clamp Applied
+             * @default false
+             */
+            statutory_clamp_applied?: boolean;
+            annual_cap?: components["schemas"]["CapDetail"];
+            balance_cap?: components["schemas"]["CapDetail"];
+            /**
+             * Hours Posted
+             * @default 0
+             */
+            hours_posted?: string;
+            /** Prior Balance */
+            prior_balance?: string | null;
+            /** Balance After */
+            balance_after?: string | null;
+            /** Occurred On */
+            occurred_on?: string | null;
+            /** Period Key */
+            period_key?: string | null;
+            /** Entry Id */
+            entry_id?: string | null;
+            /**
+             * Idempotent Noop
+             * @default false
+             */
+            idempotent_noop?: boolean;
+            /** Compliance Exception Id */
+            compliance_exception_id?: string | null;
+        };
         /** LegalDiagnosticResponse */
         LegalDiagnosticResponse: {
             [key: string]: components["schemas"]["JsonValue"];
@@ -48228,6 +48751,41 @@ export interface components {
             counts: {
                 [key: string]: number;
             };
+        };
+        /** MandateCoverageCounts */
+        MandateCoverageCounts: {
+            /** Green */
+            green: number;
+            /** Orange */
+            orange: number;
+            /** Red */
+            red: number;
+        };
+        /** MandateCoverageOrangeRow */
+        MandateCoverageOrangeRow: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Leader Key */
+            leader_key: string | null;
+            /** Reason */
+            reason: string;
+        };
+        /** MandateCoverageRedRow */
+        MandateCoverageRedRow: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Reason */
+            reason: string;
+        };
+        /** MandateCoverageResponse */
+        MandateCoverageResponse: {
+            counts: components["schemas"]["MandateCoverageCounts"];
+            /** Orange */
+            orange: components["schemas"]["MandateCoverageOrangeRow"][];
+            /** Red */
+            red: components["schemas"]["MandateCoverageRedRow"][];
+            /** Computed At */
+            computed_at: string;
         };
         /** MandateExemplarTestResults */
         MandateExemplarTestResults: {
@@ -59470,14 +60028,61 @@ export interface components {
             rules_restored?: number | null;
             detail?: components["schemas"]["JsonValue"] | null;
         };
+        /**
+         * ResultDeliverable
+         * @description One declared deliverable of a workflow (SPEC §2.2/§2.4): an output.*
+         *     node, or a terminal node declaring an output kind, with
+         *     ``node.data.deliverable: true|false`` overriding membership either way.
+         */
+        ResultDeliverable: {
+            /** Node Id */
+            node_id: string;
+            /** Title */
+            title: string;
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Json Schema */
+            json_schema?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Presentation
+             * @default panel
+             */
+            presentation?: string;
+            /**
+             * Is Primary
+             * @default false
+             */
+            is_primary?: boolean;
+        } & {
+            [key: string]: unknown;
+        };
         /** ResumeRunRequest */
         ResumeRunRequest: {
-            /** Checkpoint Id */
-            checkpoint_id: string;
+            /**
+             * Checkpoint Id
+             * @description The interrupt checkpoint to resume from. REQUIRED for an 'interrupted' run; omitted for an 'awaiting_input' run (a start-time park has no checkpoint — supply the missing values in `inputs` instead and execution starts fresh).
+             */
+            checkpoint_id?: string | null;
             /** Resume Value */
             resume_value?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Inputs
+             * @description Surface values supplied to an 'awaiting_input' run (INPUT-SURFACE.md): flat name → value. Provenance-stamped exactly like run start (input_sources, same source=human invariant).
+             */
+            inputs?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Input Sources
+             * @description Per-input provenance claims for `inputs` — same contract as run start.
+             */
+            input_sources?: {
+                [key: string]: "human" | "caller";
+            };
             /**
              * Initial Variables
              * @description Override the original run's initial_variables for the resumed leg. Leave None to inherit from the original run.
@@ -60226,7 +60831,9 @@ export interface components {
          * RunFormSchema
          * @description The form a non-technical user fills to start a run — generated, never
          *     hardcoded. Empty ``sections`` ⇒ the workflow needs no inputs (one-click
-         *     Run).
+         *     Run). ``inputs`` is THE compiled input surface (INPUT-SURFACE.md) —
+         *     additive beside the legacy ``sections``/``variables`` shapes, which the
+         *     studio keeps consuming until the 2.1 client migration.
          */
         RunFormSchema: {
             /** Definition Id */
@@ -60237,9 +60844,14 @@ export interface components {
             sections?: components["schemas"]["RunFormField"][];
             /**
              * Variables
-             * @description Declared run variables (Definition.variables). The studio renders one field per variable; values come back as RunWorkflowRequest.initial_variables.
+             * @description Declared run variables (Definition.variables). The studio renders one field per variable; values come back as RunWorkflowRequest.initial_variables. LEGACY — folded into ``inputs``; dies with the 2.1 client migration.
              */
             variables?: components["schemas"]["RunFormVariable"][];
+            /**
+             * Inputs
+             * @description THE compiled input surface: name-unique, kind-addressed, one sourcing rule each. Values come back as RunWorkflowRequest.inputs[name].
+             */
+            inputs?: components["schemas"]["ServedInput"][];
         } & {
             [key: string]: unknown;
         };
@@ -60470,6 +61082,26 @@ export interface components {
             created_at?: string | null;
         };
         /**
+         * RunResultSchema
+         * @description GET /workflows/{id}/result-schema — the twin of /run-form (SPEC §2.4):
+         *     what a run of this workflow PROMISES to produce, served BEFORE any run
+         *     exists so result surfaces can reserve their kind silhouettes.
+         */
+        RunResultSchema: {
+            /** Definition Id */
+            definition_id: string;
+            /** Version */
+            version: number;
+            /** Input Kind */
+            input_kind?: string | null;
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Deliverables */
+            deliverables?: components["schemas"]["ResultDeliverable"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * RunSuggestionsRequest
          * @description Body for POST /runs/{run_id}/suggestions (all fields optional).
          */
@@ -60576,9 +61208,19 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
-            /** Inputs */
+            /**
+             * Inputs
+             * @description THE input surface channel (INPUT-SURFACE.md): flat name → value against the workflow's compiled input surface (the union of its input nodes' fields + declared variables). Values are provenance-stamped 'caller' unless input_sources claims otherwise. Names not on the surface fall back to the LEGACY broadcast-to-entry-nodes behavior with a counted deprecation warning.
+             */
             inputs?: {
                 [key: string]: unknown;
+            };
+            /**
+             * Input Sources
+             * @description Per-input provenance claims for `inputs`. Default 'caller'. 'human' is accepted ONLY from the human-facing form path (a human-attached session) — a programmatic caller claiming it is REFUSED with error=human_provenance_forbidden, never normalized (THE source=human invariant). 'pinned'/'mandate'/'default' are server-stamped and can never be claimed.
+             */
+            input_sources?: {
+                [key: string]: "human" | "caller";
             };
             /**
              * Node Inputs
@@ -62212,6 +62854,78 @@ export interface components {
             estimated_cost_usd: string;
             /** Dropped */
             dropped?: string[];
+        };
+        /**
+         * ServedInput
+         * @description One entry of the SERVED compiled input surface (INPUT-SURFACE.md) —
+         *     name, kind, sourcing rule, named presentation variant, default. The one
+         *     declaration the run form, programmatic callers, mandate delivery, and
+         *     the workflow-as-tool schema all consume identically. ``pinned`` /
+         *     ``read_only`` mark values a mandate binding locks (rendered visible,
+         *     never editable).
+         */
+        ServedInput: {
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Sourcing
+             * @enum {string}
+             */
+            sourcing: "ask" | "require" | "optional";
+            /** Variant */
+            variant?: string | null;
+            /** Default */
+            default?: unknown;
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /**
+             * Help
+             * @default
+             */
+            help?: string;
+            /**
+             * Placeholder
+             * @default
+             */
+            placeholder?: string;
+            /** Options */
+            options?: string[];
+            /**
+             * Origin
+             * @default field
+             * @enum {string}
+             */
+            origin?: "field" | "variable";
+            /** Node Id */
+            node_id?: string | null;
+            /** Json Schema */
+            json_schema?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Required
+             * @default false
+             */
+            required?: boolean;
+            /**
+             * Pinned
+             * @default false
+             */
+            pinned?: boolean;
+            /**
+             * Read Only
+             * @default false
+             */
+            read_only?: boolean;
+            /** Pinned Value */
+            pinned_value?: unknown;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * ServiceLine
@@ -81897,6 +82611,150 @@ export interface operations {
             };
         };
     };
+    hr_calc_leave_accrual: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Idempotency-Key"?: string | null;
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalcRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeaveAccrualCalcResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_calc_carryover: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Idempotency-Key"?: string | null;
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalcRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarryoverCalcResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_accruals_run: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Idempotency-Key": string;
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccrualRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__hr__time__models__AsyncAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hr_accruals_carryover_run: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Idempotency-Key": string;
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CarryoverRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["aidream__services__hr__time__models__AsyncAccepted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     persist_tokens_mcp_connections__server_id__oauth_tokens_post: {
         parameters: {
             query?: never;
@@ -101127,6 +101985,38 @@ export interface operations {
             };
         };
     };
+    mandate_coverage_mandates_coverage_get: {
+        parameters: {
+            query?: {
+                /** @description Scope the counts to one owner (law 5: screams follow ownership). Omit for every live mandate. */
+                organization_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateCoverageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     run_agent_tests_agent_testing_agents__agent_id__tests_post: {
         parameters: {
             query?: never;
@@ -102827,6 +103717,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunFormSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_result_schema_workflows__definition_id__result_schema_get: {
+        parameters: {
+            query?: {
+                version_number?: number | null;
+            };
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunResultSchema"];
                 };
             };
             /** @description Validation Error */

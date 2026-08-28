@@ -13140,6 +13140,272 @@
         }
       }
     },
+    "/hr/calc/leave-accrual": {
+      "post": {
+        "tags": [
+          "HR",
+          "calc"
+        ],
+        "summary": "Accrual for one enrollment through a date",
+        "description": "E-05. **Per-hours-worked accrual reads the TIMESHEET, not the pay period** (AR 1.8).\n\n``subject.type`` must be ``hr_leave_enrollment``. ``as_of`` is the EVENT date and doubles as\nthe entry's ``occurred_on``; ``parameters.through_date`` optionally pushes the accrual window\nfurther out, which is how the offboarding run accrues through ``last_day_worked`` (§7 step 1).\n\nA downward timesheet correction returns **200 with ``result.over_accrued`` true and nothing\nposted** — the runner never posts a negative accrual, and HR decides with an explicit\nadjustment (§6).",
+        "operationId": "hr_calc_leave_accrual",
+        "parameters": [
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalcRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveAccrualCalcResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hr/calc/carryover": {
+      "post": {
+        "tags": [
+          "HR",
+          "calc"
+        ],
+        "summary": "Plan-year carryover",
+        "description": "E-06. **Carryover legality clamps org config, and the clamp appears in ``clamps[]``.**\n\n``parameters.plan_year_end`` names the boundary; it defaults to ``as_of``. The closing year's\naccrual runs FIRST (§3.4), then the balance is carried. Where forfeiture is unlawful in any\njurisdiction the employment touched that year, **the forfeiture is not written**: the full\nbalance carries, the clamp is recorded and a compliance exception opens.",
+        "operationId": "hr_calc_carryover",
+        "parameters": [
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CalcRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarryoverCalcResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hr/accruals/run": {
+      "post": {
+        "tags": [
+          "HR",
+          "accruals"
+        ],
+        "summary": "Accrual run",
+        "description": "E-13. **Idempotent by construction as well as by header.**\n\nThe ledger is append-only and immutable — an error is a reversal entry, never an edit — and\nevery entry is keyed on its ``period_key``, so a re-run over an already-accrued window writes\nnothing at all rather than relying on the header to save it.",
+        "operationId": "hr_accruals_run",
+        "parameters": [
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccrualRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__hr__time__models__AsyncAccepted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hr/accruals/carryover/run": {
+      "post": {
+        "tags": [
+          "HR",
+          "accruals"
+        ],
+        "summary": "Plan-year carryover run",
+        "description": "E-14. A statutory floor overriding org policy is counted in the report's\n``clamped_by_statute`` and recorded in each snapshot's ``clamps[]``.",
+        "operationId": "hr_accruals_carryover_run",
+        "parameters": [
+          {
+            "name": "X-Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Idempotency-Key"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarryoverRunRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aidream__services__hr__time__models__AsyncAccepted"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mcp-connections/{server_id}/oauth-tokens": {
       "post": {
         "tags": [
@@ -42033,6 +42299,58 @@
         }
       }
     },
+    "/mandates/coverage": {
+      "get": {
+        "tags": [
+          "Mandates Admin"
+        ],
+        "summary": "Mandate Coverage",
+        "description": "Green/orange/red for every live mandate, computed against live storage.",
+        "operationId": "mandate_coverage_mandates_coverage_get",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Scope the counts to one owner (law 5: screams follow ownership). Omit for every live mandate.",
+              "title": "Organization Id"
+            },
+            "description": "Scope the counts to one owner (law 5: screams follow ownership). Omit for every live mandate."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateCoverageResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/agent-testing/agents/{agent_id}/tests": {
       "post": {
         "tags": [
@@ -44613,6 +44931,65 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RunFormSchema"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/workflows/{definition_id}/result-schema": {
+      "get": {
+        "tags": [
+          "Workflow"
+        ],
+        "summary": "Get Result Schema",
+        "description": "The twin of /run-form (SPEC §2.4): what a run of this workflow\nPROMISES to produce — its deliverables (output.* nodes, or terminal\nkind-declaring nodes), each with kind + json_schema + is_primary — served\nBEFORE any run exists so result surfaces reserve their kind silhouettes.",
+        "operationId": "get_result_schema_workflows__definition_id__result_schema_get",
+        "parameters": [
+          {
+            "name": "definition_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Definition Id"
+            }
+          },
+          {
+            "name": "version_number",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunResultSchema"
                 }
               }
             }
@@ -62061,6 +62438,155 @@
         "title": "AcceptsInjectedScope",
         "description": "Fields the FE ``callApi`` may inject on every POST/PUT/PATCH body.\n\n``lib/api/call-api.ts::buildRequestBody`` always merges\n``organization_id`` / ``project_id`` / ``task_id`` from the active app\ncontext onto the JSON body. A request model with ``extra=\"forbid\"`` that\nomits these fields 422s with ``extra_forbidden`` the moment the user has\nan org selected — the entire class of failure behind the 2026-07-15\n``/skills/ingest`` incident.\n\n**Rule:** every FastAPI body model that sets ``extra=\"forbid\"`` MUST\ninherit this (or :class:`ScopedRequest`, which does). Guard:\n``scripts/check_request_accepts_org_scope.py``."
       },
+      "AccrualRunRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "through_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Through Date",
+            "description": "The EVENT date the run accrues through. Never now() (§1.6 law 1)."
+          },
+          "scope": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccrualScopeOrg"
+              },
+              {
+                "$ref": "#/components/schemas/AccrualScopePolicy"
+              },
+              {
+                "$ref": "#/components/schemas/AccrualScopeEmployment"
+              }
+            ],
+            "title": "Scope",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "employment": "#/components/schemas/AccrualScopeEmployment",
+                "leave_policy": "#/components/schemas/AccrualScopePolicy",
+                "org": "#/components/schemas/AccrualScopeOrg"
+              }
+            }
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "authoritative",
+              "prospective"
+            ],
+            "title": "Mode",
+            "default": "authoritative"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "through_date",
+          "scope"
+        ],
+        "title": "AccrualRunRequest",
+        "description": "E-13's body, byte-for-byte against the frozen stub.\n\nThe stub types ``scope`` as a free object whose description enumerates the three shapes above;\nit is modelled as a discriminated union here for the same reason ``RecomputeRequest.scope`` is\n— a typed scope is the difference between a 422 naming the bad field and a run that quietly\nfans out over the wrong population."
+      },
+      "AccrualScopeEmployment": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "employment",
+            "title": "Kind"
+          },
+          "employment_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Employment Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "employment_ids"
+        ],
+        "title": "AccrualScopeEmployment",
+        "description": "Named employments only — the offboarding run's final accrual uses this (§7 step 1)."
+      },
+      "AccrualScopeOrg": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "org",
+            "title": "Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "AccrualScopeOrg",
+        "description": "Every in-range enrollment in the organization."
+      },
+      "AccrualScopePolicy": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "leave_policy",
+            "title": "Kind"
+          },
+          "leave_policy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Leave Policy Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "leave_policy_id"
+        ],
+        "title": "AccrualScopePolicy",
+        "description": "Every in-range enrollment on one policy."
+      },
       "ActionEventFacts": {
         "properties": {
           "actor": {
@@ -78573,6 +79099,43 @@
         ],
         "title": "CancelRunResponse"
       },
+      "CapDetail": {
+        "properties": {
+          "cap": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cap"
+          },
+          "remaining": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining"
+          },
+          "applied": {
+            "type": "boolean",
+            "title": "Applied",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "CapDetail",
+        "description": "One cap and what was left of it. ``remaining`` is ``None`` when the cap is not set.\n\n🚨 ``None`` here means *there is no such ceiling*, which is a completely different fact from\n``0`` (*the ceiling is reached*). §5's balance-honesty law is the reason the two are not\nallowed to render the same."
+      },
       "CaptureHealth": {
         "properties": {
           "ok": {
@@ -79067,6 +79630,397 @@
           "card_id"
         ],
         "title": "CardImageRequest"
+      },
+      "CarryoverCalcResponse": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id",
+            "description": "ALWAYS present. Computing a consequential result without a snapshot is a defect."
+          },
+          "prospective": {
+            "type": "boolean",
+            "title": "Prospective"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "jurisdiction_key": {
+            "type": "string",
+            "title": "Jurisdiction Key"
+          },
+          "engine": {
+            "$ref": "#/components/schemas/EngineRef"
+          },
+          "rules_applied": {
+            "items": {
+              "$ref": "#/components/schemas/RuleApplied"
+            },
+            "type": "array",
+            "title": "Rules Applied"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/CalcFlag"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "incomplete": {
+            "items": {
+              "$ref": "#/components/schemas/IncompleteFact"
+            },
+            "type": "array",
+            "title": "Incomplete"
+          },
+          "clamps": {
+            "items": {
+              "$ref": "#/components/schemas/Clamp"
+            },
+            "type": "array",
+            "title": "Clamps"
+          },
+          "written": {
+            "$ref": "#/components/schemas/WrittenRefs"
+          },
+          "result": {
+            "$ref": "#/components/schemas/CarryoverResult"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "prospective",
+          "as_of",
+          "jurisdiction_key",
+          "engine",
+          "result"
+        ],
+        "title": "CarryoverCalcResponse",
+        "description": "E-06's 200."
+      },
+      "CarryoverResult": {
+        "properties": {
+          "employment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Employment Id"
+          },
+          "leave_policy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Leave Policy Id"
+          },
+          "leave_enrollment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Leave Enrollment Id"
+          },
+          "policy_name": {
+            "type": "string",
+            "title": "Policy Name"
+          },
+          "policy_version": {
+            "type": "integer",
+            "title": "Policy Version"
+          },
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "skip_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skip Reason"
+          },
+          "skip_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skip Detail"
+          },
+          "plan_year_end": {
+            "type": "string",
+            "format": "date",
+            "title": "Plan Year End"
+          },
+          "balance_at_boundary": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance At Boundary"
+          },
+          "carried_hours": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Carried Hours"
+          },
+          "forfeited_hours": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forfeited Hours"
+          },
+          "carryover_hours_delta": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Carryover Hours Delta",
+            "default": "0"
+          },
+          "forfeiture_withheld_as_unlawful": {
+            "type": "boolean",
+            "title": "Forfeiture Withheld As Unlawful",
+            "default": false
+          },
+          "expiry_withheld_as_unlawful": {
+            "type": "boolean",
+            "title": "Expiry Withheld As Unlawful",
+            "default": false
+          },
+          "carryover_expires_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Carryover Expires On"
+          },
+          "expiry_warning_days_not_yet_wired": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Expiry Warning Days Not Yet Wired",
+            "default": []
+          },
+          "jurisdictions_considered": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Jurisdictions Considered",
+            "default": []
+          },
+          "jurisdictions_forbidding_forfeiture": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Jurisdictions Forbidding Forfeiture",
+            "default": []
+          },
+          "carryover_entry_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Carryover Entry Id"
+          },
+          "forfeiture_entry_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forfeiture Entry Id"
+          },
+          "balance_after": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance After"
+          },
+          "occurred_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred On"
+          },
+          "period_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Key"
+          },
+          "idempotent_noop": {
+            "type": "boolean",
+            "title": "Idempotent Noop",
+            "default": false
+          },
+          "compliance_exception_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compliance Exception Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "employment_id",
+          "leave_policy_id",
+          "leave_enrollment_id",
+          "policy_name",
+          "policy_version",
+          "eligible",
+          "plan_year_end"
+        ],
+        "title": "CarryoverResult",
+        "description": "E-06's ``result`` — one enrollment's policy-year boundary.\n\n``carryover_hours_delta`` is **always 0**: the carryover row is the boundary marker and the\nforfeiture row is the only thing that moves hours. Both are reported so §12 can render the\nboundary as a row instead of a shrug."
+      },
+      "CarryoverRunRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "plan_year_end": {
+            "type": "string",
+            "format": "date",
+            "title": "Plan Year End"
+          },
+          "scope": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AccrualScopeOrg"
+              },
+              {
+                "$ref": "#/components/schemas/AccrualScopePolicy"
+              },
+              {
+                "$ref": "#/components/schemas/AccrualScopeEmployment"
+              }
+            ],
+            "title": "Scope",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "employment": "#/components/schemas/AccrualScopeEmployment",
+                "leave_policy": "#/components/schemas/AccrualScopePolicy",
+                "org": "#/components/schemas/AccrualScopeOrg"
+              }
+            }
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "authoritative",
+              "prospective"
+            ],
+            "title": "Mode",
+            "default": "authoritative"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "plan_year_end",
+          "scope"
+        ],
+        "title": "CarryoverRunRequest",
+        "description": "E-14's body. ``plan_year_end`` is the closing year's LAST DAY, not the new year's first."
       },
       "CartesianPlan": {
         "properties": {
@@ -119919,6 +120873,14 @@
               }
             ]
           },
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "array",
+            "title": "Variants",
+            "default": []
+          },
           "edges": {
             "items": {
               "$ref": "#/components/schemas/KindEdgeDescriptor"
@@ -122188,6 +123150,330 @@
         ],
         "title": "LeakRule",
         "description": "Why a branch of a contract is considered untyped."
+      },
+      "LeaveAccrualCalcResponse": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Snapshot Id",
+            "description": "ALWAYS present. Computing a consequential result without a snapshot is a defect."
+          },
+          "prospective": {
+            "type": "boolean",
+            "title": "Prospective"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "jurisdiction_key": {
+            "type": "string",
+            "title": "Jurisdiction Key"
+          },
+          "engine": {
+            "$ref": "#/components/schemas/EngineRef"
+          },
+          "rules_applied": {
+            "items": {
+              "$ref": "#/components/schemas/RuleApplied"
+            },
+            "type": "array",
+            "title": "Rules Applied"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/CalcFlag"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "incomplete": {
+            "items": {
+              "$ref": "#/components/schemas/IncompleteFact"
+            },
+            "type": "array",
+            "title": "Incomplete"
+          },
+          "clamps": {
+            "items": {
+              "$ref": "#/components/schemas/Clamp"
+            },
+            "type": "array",
+            "title": "Clamps"
+          },
+          "written": {
+            "$ref": "#/components/schemas/WrittenRefs"
+          },
+          "result": {
+            "$ref": "#/components/schemas/LeaveAccrualResult"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "prospective",
+          "as_of",
+          "jurisdiction_key",
+          "engine",
+          "result"
+        ],
+        "title": "LeaveAccrualCalcResponse",
+        "description": "E-05's 200. ``snapshot_id`` is always present — computing without freezing is a defect."
+      },
+      "LeaveAccrualResult": {
+        "properties": {
+          "employment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Employment Id"
+          },
+          "leave_policy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Leave Policy Id"
+          },
+          "leave_enrollment_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Leave Enrollment Id"
+          },
+          "policy_name": {
+            "type": "string",
+            "title": "Policy Name"
+          },
+          "accrual_method": {
+            "type": "string",
+            "title": "Accrual Method"
+          },
+          "policy_version": {
+            "type": "integer",
+            "title": "Policy Version"
+          },
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "skip_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skip Reason"
+          },
+          "skip_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skip Detail"
+          },
+          "worked_to_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Worked To Date"
+          },
+          "accrual_rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accrual Rate"
+          },
+          "accrual_per_units": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accrual Per Units"
+          },
+          "earned_to_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Earned To Date"
+          },
+          "posted_to_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Posted To Date"
+          },
+          "toward_next_unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Toward Next Unit"
+          },
+          "over_accrued": {
+            "type": "boolean",
+            "title": "Over Accrued",
+            "default": false
+          },
+          "raw_earned": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Raw Earned"
+          },
+          "statutory_clamp_applied": {
+            "type": "boolean",
+            "title": "Statutory Clamp Applied",
+            "default": false
+          },
+          "annual_cap": {
+            "$ref": "#/components/schemas/CapDetail"
+          },
+          "balance_cap": {
+            "$ref": "#/components/schemas/CapDetail"
+          },
+          "hours_posted": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Hours Posted",
+            "default": "0"
+          },
+          "prior_balance": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prior Balance"
+          },
+          "balance_after": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Balance After"
+          },
+          "occurred_on": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred On"
+          },
+          "period_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Key"
+          },
+          "entry_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry Id"
+          },
+          "idempotent_noop": {
+            "type": "boolean",
+            "title": "Idempotent Noop",
+            "default": false
+          },
+          "compliance_exception_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compliance Exception Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "employment_id",
+          "leave_policy_id",
+          "leave_enrollment_id",
+          "policy_name",
+          "accrual_method",
+          "policy_version",
+          "eligible"
+        ],
+        "title": "LeaveAccrualResult",
+        "description": "E-05's ``result`` — one enrollment's accrual through a date, with every intermediate.\n\nThe intermediates are not debug output. §3.5 requires an entry to be explainable from its\nsnapshot, and §12's ledger audit view renders exactly these numbers as the sentence behind a\nbalance. A result that showed only ``hours_posted`` would be a number with no door."
       },
       "LegalDiagnosticResponse": {
         "additionalProperties": {
@@ -125725,6 +127011,114 @@
           "counts"
         ],
         "title": "MandateCodeTruthReport"
+      },
+      "MandateCoverageCounts": {
+        "properties": {
+          "green": {
+            "type": "integer",
+            "title": "Green"
+          },
+          "orange": {
+            "type": "integer",
+            "title": "Orange"
+          },
+          "red": {
+            "type": "integer",
+            "title": "Red"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "green",
+          "orange",
+          "red"
+        ],
+        "title": "MandateCoverageCounts"
+      },
+      "MandateCoverageOrangeRow": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "leader_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Leader Key"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "leader_key",
+          "reason"
+        ],
+        "title": "MandateCoverageOrangeRow"
+      },
+      "MandateCoverageRedRow": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "reason"
+        ],
+        "title": "MandateCoverageRedRow"
+      },
+      "MandateCoverageResponse": {
+        "properties": {
+          "counts": {
+            "$ref": "#/components/schemas/MandateCoverageCounts"
+          },
+          "orange": {
+            "items": {
+              "$ref": "#/components/schemas/MandateCoverageOrangeRow"
+            },
+            "type": "array",
+            "title": "Orange"
+          },
+          "red": {
+            "items": {
+              "$ref": "#/components/schemas/MandateCoverageRedRow"
+            },
+            "type": "array",
+            "title": "Red"
+          },
+          "computed_at": {
+            "type": "string",
+            "title": "Computed At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "counts",
+          "orange",
+          "red",
+          "computed_at"
+        ],
+        "title": "MandateCoverageResponse"
       },
       "MandateExemplarTestResults": {
         "properties": {
@@ -152702,11 +154096,65 @@
         ],
         "title": "RestoreWriteResponse"
       },
+      "ResultDeliverable": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "json_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Json Schema"
+          },
+          "presentation": {
+            "type": "string",
+            "title": "Presentation",
+            "default": "panel"
+          },
+          "is_primary": {
+            "type": "boolean",
+            "title": "Is Primary",
+            "default": false
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "node_id",
+          "title"
+        ],
+        "title": "ResultDeliverable",
+        "description": "One declared deliverable of a workflow (SPEC §2.2/§2.4): an output.*\nnode, or a terminal node declaring an output kind, with\n``node.data.deliverable: true|false`` overriding membership either way."
+      },
       "ResumeRunRequest": {
         "properties": {
           "checkpoint_id": {
-            "type": "string",
-            "title": "Checkpoint Id"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checkpoint Id",
+            "description": "The interrupt checkpoint to resume from. REQUIRED for an 'interrupted' run; omitted for an 'awaiting_input' run (a start-time park has no checkpoint — supply the missing values in `inputs` instead and execution starts fresh)."
           },
           "resume_value": {
             "anyOf": [
@@ -152719,6 +154167,24 @@
               }
             ],
             "title": "Resume Value"
+          },
+          "inputs": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Inputs",
+            "description": "Surface values supplied to an 'awaiting_input' run (INPUT-SURFACE.md): flat name → value. Provenance-stamped exactly like run start (input_sources, same source=human invariant)."
+          },
+          "input_sources": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "human",
+                "caller"
+              ]
+            },
+            "type": "object",
+            "title": "Input Sources",
+            "description": "Per-input provenance claims for `inputs` — same contract as run start."
           },
           "initial_variables": {
             "anyOf": [
@@ -152764,9 +154230,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "checkpoint_id"
-        ],
         "title": "ResumeRunRequest"
       },
       "RetentionRunResult": {
@@ -154551,7 +156014,15 @@
             },
             "type": "array",
             "title": "Variables",
-            "description": "Declared run variables (Definition.variables). The studio renders one field per variable; values come back as RunWorkflowRequest.initial_variables."
+            "description": "Declared run variables (Definition.variables). The studio renders one field per variable; values come back as RunWorkflowRequest.initial_variables. LEGACY — folded into ``inputs``; dies with the 2.1 client migration."
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/ServedInput"
+            },
+            "type": "array",
+            "title": "Inputs",
+            "description": "THE compiled input surface: name-unique, kind-addressed, one sourcing rule each. Values come back as RunWorkflowRequest.inputs[name]."
           }
         },
         "additionalProperties": true,
@@ -154561,7 +156032,7 @@
           "version"
         ],
         "title": "RunFormSchema",
-        "description": "The form a non-technical user fills to start a run — generated, never\nhardcoded. Empty ``sections`` ⇒ the workflow needs no inputs (one-click\nRun)."
+        "description": "The form a non-technical user fills to start a run — generated, never\nhardcoded. Empty ``sections`` ⇒ the workflow needs no inputs (one-click\nRun). ``inputs`` is THE compiled input surface (INPUT-SURFACE.md) —\nadditive beside the legacy ``sections``/``variables`` shapes, which the\nstudio keeps consuming until the 2.1 client migration."
       },
       "RunFormVariable": {
         "properties": {
@@ -155228,6 +156699,55 @@
         ],
         "title": "RunResponse"
       },
+      "RunResultSchema": {
+        "properties": {
+          "definition_id": {
+            "type": "string",
+            "title": "Definition Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "input_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Kind"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "deliverables": {
+            "items": {
+              "$ref": "#/components/schemas/ResultDeliverable"
+            },
+            "type": "array",
+            "title": "Deliverables"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "definition_id",
+          "version"
+        ],
+        "title": "RunResultSchema",
+        "description": "GET /workflows/{id}/result-schema — the twin of /run-form (SPEC §2.4):\nwhat a run of this workflow PROMISES to produce, served BEFORE any run\nexists so result surfaces can reserve their kind silhouettes."
+      },
       "RunSuggestionsRequest": {
         "properties": {
           "organization_id": {
@@ -155478,7 +156998,20 @@
           "inputs": {
             "additionalProperties": true,
             "type": "object",
-            "title": "Inputs"
+            "title": "Inputs",
+            "description": "THE input surface channel (INPUT-SURFACE.md): flat name → value against the workflow's compiled input surface (the union of its input nodes' fields + declared variables). Values are provenance-stamped 'caller' unless input_sources claims otherwise. Names not on the surface fall back to the LEGACY broadcast-to-entry-nodes behavior with a counted deprecation warning."
+          },
+          "input_sources": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "human",
+                "caller"
+              ]
+            },
+            "type": "object",
+            "title": "Input Sources",
+            "description": "Per-input provenance claims for `inputs`. Default 'caller'. 'human' is accepted ONLY from the human-facing form path (a human-attached session) — a programmatic caller claiming it is REFUSED with error=human_provenance_forbidden, never normalized (THE source=human invariant). 'pinned'/'mandate'/'default' are server-stamped and can never be claimed."
           },
           "node_inputs": {
             "additionalProperties": {
@@ -159452,6 +160985,115 @@
           "estimated_cost_usd"
         ],
         "title": "SerpProspectingPreview"
+      },
+      "ServedInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "sourcing": {
+            "type": "string",
+            "enum": [
+              "ask",
+              "require",
+              "optional"
+            ],
+            "title": "Sourcing"
+          },
+          "variant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variant"
+          },
+          "default": {
+            "title": "Default"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": ""
+          },
+          "help": {
+            "type": "string",
+            "title": "Help",
+            "default": ""
+          },
+          "placeholder": {
+            "type": "string",
+            "title": "Placeholder",
+            "default": ""
+          },
+          "options": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Options"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "field",
+              "variable"
+            ],
+            "title": "Origin",
+            "default": "field"
+          },
+          "node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Node Id"
+          },
+          "json_schema": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Json Schema"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required",
+            "default": false
+          },
+          "pinned": {
+            "type": "boolean",
+            "title": "Pinned",
+            "default": false
+          },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "default": false
+          },
+          "pinned_value": {
+            "title": "Pinned Value"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "sourcing"
+        ],
+        "title": "ServedInput",
+        "description": "One entry of the SERVED compiled input surface (INPUT-SURFACE.md) —\nname, kind, sourcing rule, named presentation variant, default. The one\ndeclaration the run form, programmatic callers, mandate delivery, and\nthe workflow-as-tool schema all consume identically. ``pinned`` /\n``read_only`` mark values a mandate binding locks (rendered visible,\nnever editable)."
       },
       "ServiceLine": {
         "properties": {
