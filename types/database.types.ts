@@ -40455,6 +40455,7 @@ export type Database = {
       }
       verification_letter_request: {
         Row: {
+          as_of_date: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -40487,6 +40488,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          as_of_date?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -40519,6 +40521,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          as_of_date?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
