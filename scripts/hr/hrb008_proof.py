@@ -1726,6 +1726,27 @@ async def main():
             await conn.fetchval("select hr._wf_two_actor_action('timecard_approve')") is False
             and await conn.fetchval("select hr._wf_two_actor_action('pay_change_approve')") is True)
 
+        # ============ 🚨 THE DOOR IS CALLABLE AT ALL — the P0 guard, asserted where it bites
+        # hr_c4_25/26 each shipped a PL/pgSQL scope trap (a variable declared inside a nested
+        # declare/begin/exception block and read after it closed, which PL/pgSQL resolves as a
+        # COLUMN), and together they took hr.wf_request down for every caller across four lanes:
+        # 42703 "v_pf_any does not exist". BOTH migrations passed their own post-conditions, because
+        # those only grepped prosrc for text that was present and correct — text was never the
+        # problem. This suite caught it in seconds once it was RUN; the failure was not running it.
+        await as_owner()
+        rec("§4.2 the door", "🚨 hr.wf_request RETURNS AN ENVELOPE rather than raising — the guard that would have caught the P0 in seconds",
+            (lambda v: (v or {}).get("ok") is True)(
+                await j("select hr._wf_door_smoke()")),
+            json.dumps(await j("select hr._wf_door_smoke()"))[:160])
+        rec("§4.2 the door", "and its contract BANS the two spellings that caused it, enforced automatically",
+            await conn.fetchval(
+                "select must_not_contain @> array['declare v_pf_any','v_looked'] "
+                "from hr.function_contract where schema_name='hr' and function_name='wf_request' and is_active"))
+        rec("§4.2 the door", "no declared function contract anywhere in hr is currently broken",
+            await conn.fetchval("select count(*)=0 from hr.function_contracts_broken()"),
+            str(await conn.fetchval(
+                "select string_agg(schema_name||'.'||function_name, ', ') from hr.function_contracts_broken()")))
+
         # ================== §2.2 RD5 — AN UNMAPPED SUBJECT REFUSES, IT DOES NOT RAISE
         # 🚨 THE CONTROL FOR RECORDED DECISION 5, kept alive deliberately. hr._approval_subject
         # RAISES for a target table it cannot map, and hr.wf_request touches the subject at its very
