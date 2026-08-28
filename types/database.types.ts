@@ -31307,6 +31307,42 @@ export type Database = {
         }
         Relationships: []
       }
+      function_contract: {
+        Row: {
+          declared_at: string
+          function_name: string
+          home_migration: string
+          id: string
+          is_active: boolean
+          must_contain: string[]
+          must_not_contain: string[]
+          reason: string
+          schema_name: string
+        }
+        Insert: {
+          declared_at?: string
+          function_name: string
+          home_migration: string
+          id?: string
+          is_active?: boolean
+          must_contain?: string[]
+          must_not_contain?: string[]
+          reason: string
+          schema_name: string
+        }
+        Update: {
+          declared_at?: string
+          function_name?: string
+          home_migration?: string
+          id?: string
+          is_active?: boolean
+          must_contain?: string[]
+          must_not_contain?: string[]
+          reason?: string
+          schema_name?: string
+        }
+        Relationships: []
+      }
       holiday: {
         Row: {
           actual_on: string | null
@@ -43734,6 +43770,16 @@ export type Database = {
           delivery_state: string
           export_id: string
           failure_reason: string
+        }[]
+      }
+      function_contracts_broken: {
+        Args: never
+        Returns: {
+          clause: string
+          home_migration: string
+          missing_or_present: string
+          qname: string
+          reason: string
         }[]
       }
       grant_drift: {
