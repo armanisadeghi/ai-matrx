@@ -21,6 +21,9 @@ export default function ResourcesArtifact({
   taskId,
   artifactId,
   isStreamActive,
+  conversationId,
+  messageId,
+  blockIndex,
 }: ArtifactRendererProps) {
   const collection = useMemo(
     () =>
@@ -43,6 +46,10 @@ export default function ResourcesArtifact({
       <ResourceCollectionBlock
         collection={collection}
         taskId={artifactDedupKey(taskId, artifactId)}
+        artifactId={artifactId}
+        conversationId={conversationId}
+        messageId={messageId}
+        blockIndex={blockIndex}
       />
     </Suspense>
   );

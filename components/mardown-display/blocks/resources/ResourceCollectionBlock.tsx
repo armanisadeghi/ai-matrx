@@ -32,12 +32,19 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import { matchesSearch as matchesSearchScoring } from "@/utils/search-scoring";
 
 interface ResourceCollectionBlockProps {
   collection: ResourceCollectionData;
   taskId?: string;
+  artifactId?: string;
+  conversationId?: string;
+  messageId?: string;
+  blockIndex?: number;
 }
 
 const STAT_ITEMS = [
@@ -72,6 +79,10 @@ const TYPE_ICON_COLORS: Record<string, string> = {
 const ResourceCollectionBlock: React.FC<ResourceCollectionBlockProps> = ({
   collection,
   taskId,
+  artifactId,
+  conversationId,
+  messageId,
+  blockIndex,
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const blockContentRef = useRef<HTMLDivElement>(null);
@@ -105,6 +116,33 @@ const ResourceCollectionBlock: React.FC<ResourceCollectionBlockProps> = ({
       ),
   );
   const { open: openCanvas } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
+
+  const handleOpenCanvas = () => {
+    const def = getArtifactDef("resources");
+
+    if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+      void openArtifact({
+        canvasType: "resources",
+        title: collection.title,
+        content: JSON.stringify(collection),
+        conversationId,
+        messageId,
+        artifactId,
+        artifactIndex: blockIndex && blockIndex > 0 ? blockIndex : 1,
+      });
+      return;
+    }
+
+    openCanvas({
+      type: "resources",
+      data: collection,
+      metadata: {
+        title: collection.title,
+        sourceTaskId: taskId,
+      },
+    });
+  };
 
   // Get all unique types and difficulties
   const allTypes = useMemo(() => {
@@ -313,16 +351,7 @@ const ResourceCollectionBlock: React.FC<ResourceCollectionBlockProps> = ({
                       <IconButton
                         icon={ExternalLink}
                         tooltip="Open Canvas"
-                        onClick={() =>
-                          openCanvas({
-                            type: "resources",
-                            data: collection,
-                            metadata: {
-                              title: collection.title,
-                              sourceTaskId: taskId,
-                            },
-                          })
-                        }
+                        onClick={handleOpenCanvas}
                         size="sm"
                         className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
                       />
