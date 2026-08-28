@@ -133,23 +133,6 @@ export const deleteScopeType = createAsyncThunk(
   },
 );
 
-/**
- * Set a scope type's is_system flag (platform-global). Super-admin only — enforced by the
- * admin_set_scope_type_system RPC (the FE can't gate this; a non-super-admin gets a 403-ish
- * error which the caller surfaces as a toast). list_scope_types already returns is_system.
- */
-export const setScopeTypeSystem = createAsyncThunk(
-  "scopeTypes/setSystem",
-  async (params: { type_id: string; is_system: boolean }) => {
-    const { data, error } = await supabase.rpc("admin_set_scope_type_system", {
-      p_scope_type_id: params.type_id,
-      p_is_system: params.is_system,
-    });
-    if (error) throw error;
-    return data as ScopeType;
-  },
-);
-
 const scopeTypesSlice = createSlice({
   name: "scopeTypes",
   initialState,
@@ -193,9 +176,6 @@ const scopeTypesSlice = createSlice({
       .addCase(updateScopeType.fulfilled, (state, action) => {
         scopeTypesAdapter.upsertOne(state, action.payload);
       })
-      .addCase(setScopeTypeSystem.fulfilled, (state, action) => {
-        scopeTypesAdapter.upsertOne(state, action.payload);
-      })
       .addCase(deleteScopeType.fulfilled, (state, action) => {
         scopeTypesAdapter.removeOne(state, action.payload.id);
       });
@@ -236,14 +216,12 @@ export const selectScopeTypesError = (state: StateWithScopeTypes) =>
 // recompute (new array reference) on every call.
 export const selectScopeTypesByOrg = createSelector(
   [selectAllScopeTypes, (_state: StateWithScopeTypes, orgId: string) => orgId],
-  // is_system scope types are PLATFORM infrastructure (the "Environment" home for ambient
-  // items, etc.) — they live under a real org for FK reasons but must NOT appear in that
-  // org's normal scope management. They're managed via the admin surface, not here.
+  // Every scope type is an org dimension now. System Context moved to its own
+  // table in ctx_100 (2026-08-27), so there is no longer a second kind of scope
+  // type to filter out of an org's scope management.
   (types, orgId) => {
     if (!orgId) return EMPTY_SCOPE_TYPES;
-    const filtered = types.filter(
-      (t) => t.organization_id === orgId && !t.is_system,
-    );
+    const filtered = types.filter((t) => t.organization_id === orgId);
     return filtered.length > 0 ? filtered : EMPTY_SCOPE_TYPES;
   },
   { memoize: weakMapMemoize, argsMemoize: weakMapMemoize },
@@ -269,10 +247,7 @@ export const selectTopLevelScopeTypes = createSelector(
   [selectAllScopeTypes, (_state: StateWithScopeTypes, orgId: string) => orgId],
   (types, orgId) =>
     types.filter(
-      (t) =>
-        t.organization_id === orgId &&
-        t.parent_type_id === null &&
-        !t.is_system,
+      (t) => t.organization_id === orgId && t.parent_type_id === null,
     ),
 );
 
