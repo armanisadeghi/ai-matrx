@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P12",
   "runId": "20260828T162115Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-28T16:21:26.591Z",
-  "summary": "Added a bounded identity-and-state-aware direct interactive-root detector with focused classification tests.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-28T16:35:14.661Z",
+  "summary": "Certified P12 candidate preserved and queued for fast integration",
   "source": "20260828T162115Z.json",
-  "eventHash": "6ceaaa89db7ab5c336ef6614ff420ee1c7664b601c04b055caf57398f8ef5666"
+  "eventHash": "a4b8223458455d1eb0b2a1f8f561e583af1197a88ffc3086c6ed4ef56df6eb0e"
 }

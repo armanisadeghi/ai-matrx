@@ -1,46 +1,49 @@
 # P12 · Surface Values completeness
 
-Run: `20260818T161811Z`
+Run: `20260828T162115Z`
 
-Base: `e855e0e0788f4c9055a7eaf7f46ee0877486d9a9`
+Base: `c50b4cfbcb557c66dbc2d128caa574f3788b48b1`
 
-Scope: first-run full inventory (routes, registered overlays, readiness, runtime-provider and Locate evidence, plus direct dialog/drawer/tab candidate counts)
+Scope: structural novelty since the prior P12 artifact plus the periodic full inventory of route leaves, canonical overlays, manifest readiness, live providers, and direct dialog/drawer/sheet/tab roots.
 
 ## Outcome
 
-- Verified open surface units: **255**
-  - **150** registered overlay ids have no canonical Surface manifest.
-  - **105** declared surfaces have not earned verified readiness: 92 partial + 13 stub.
-- Product findings fixed: **0**. The declaration backlog requires per-surface data-meaning audits and bounded family batches; mass-generating manifests would violate the completeness law.
-- Patrol machinery fixed: **1**. `pnpm check:surface-overlays` now performs the missing overlay-id ↔ manifest comparison and prints the exact live backlog on every run.
-- Human decisions required: **1 existing product decision** — whether `/education/learn` stays intentionally non-emitting, receives a thin client identity shell, or becomes client-rendered. The thin client identity shell preserves server-rendered article content and is the lowest-risk option if agent reachability is required.
+- Verified open surface units: **374**
+  - **161** canonical overlay ids have no Surface manifest.
+  - **95** `(core)` route leaves are undeclared after canonical resolution and deliberate-unmapped handling.
+  - **118** declared surfaces have not earned verified readiness: 105 partial + 13 stub.
+- Product findings fixed: **1** — `keywordQuickAnswersWindow` appeared twice in the canonical overlay-id union. The duplicate identity was removed, leaving 189 total and 189 unique ids without changing runtime behavior.
+- Patrol machinery fixed: **1** — `pnpm check:surface-interactive-roots` now classifies direct canonical interaction roots by identity, explicit state, component role, action/size exclusions, and nearby provider evidence. Its output is explicitly an audit queue, never automatic findings. `check:surface-overlays` now also fails on duplicate canonical ids.
+- Product UI, runtime behavior, manifests, database, and schema changed: **none**.
+- Human decisions required: **1 existing product decision** — whether `/education/learn` remains intentionally non-emitting, gets a thin client identity shell while preserving server rendering, or becomes client-rendered.
 - Exceptions proposed or approved: **0**.
-- Certification: **CERTIFIED** for exact candidate `569247bedbe04ebaa55efbce82a19f5dd4d9c7b5`. The independent certifier confirmed the inventory counts, detector failure semantics, clean scoped checks, and no batch-caused type-check defect.
-- Delivery: certified candidate preserved at `refs/heads/patrol-runs/P12/20260818T161811Z` and integrated to `origin/main` with its ancestry intact. The permanent record remains `delivery_queued` until the serialized release lane supplies a release version and records `delivered`.
-- Integration reconciliation: concurrent main added `cloudBrowserWindow` after certification. The unchanged detector caught it immediately, moving live coverage from 174 ids / 149 undeclared to 175 ids / 150 undeclared before integration.
+- Certification: **CERTIFIED** for exact candidate `2470f82af0a2726af49786c4a25a8451282e7a76`. The independent certifier found no batch-caused defect.
+- Delivery: the certified candidate is preserved at `refs/heads/patrol-runs/P12/20260828T162115Z` and integrated to `origin/main` with its ancestry intact. The permanent record remains `delivery_queued` until the serialized release lane supplies a containing version.
 
-## Baseline diagnostics
+## Baseline and delta diagnostics
 
-- Worktree: clean detached automation checkout at the base SHA; dependencies installed locally with `pnpm install --offline --frozen-lockfile`.
-- `pnpm check:surface-drift`: PASS — 184 manifests, 4,402 values, 372 write targets, 6 client tools.
-- `pnpm check:surface-routes`: PASS — 556 `(core)` routes; 531 resolved, 25 deliberately unmapped, 0 undeclared.
-- `pnpm type-check`: baseline and post-change FAIL identically by class — 31 pre-existing errors across 14 files from the `context_slots` → `context_policies` migration plus unrelated education, flashcard, and SMS errors. No P12-owned file appeared in the diagnostics.
-- `pnpm check:doctrine`: PASS.
-- `pnpm check:reuse-index`: command PASS with an unrelated four-path stale-index warning; no changed P12 path is involved.
-- `pnpm check:migrations`: command PASS with two unrelated pre-existing drift warnings (`agx_config_normalization_matrx_actions_ui_gates.sql`, `crm_ui_surface_outreach_lists.sql`).
-- Managed preview: no machine-wide preview was running at baseline.
+- Isolation: the automation ran only in `/Users/armanisadeghi/.codex/worktrees/b923/matrx-frontend`; dependencies were installed locally with `pnpm install --offline --frozen-lockfile` and were never symlinked.
+- Worktree recovery: after certification, the isolated worktree was unexpectedly removed. It was recreated at the exact certified candidate and dependencies were reinstalled offline. The remote candidate and hash-chained authority record prevented code or evidence loss.
+- `pnpm type-check`: baseline and candidate both PASS with byte-identical output hash `414f6f5ac4bb546e075d4c8298e3f99977a43fa48cf878c4b806144a2ad00702`. An intermediate unsafe import-map inference was caught and repaired before candidacy.
+- `pnpm check:surface-drift`: PASS — 194 manifests, 4,751 values, 427 write targets, 6 client tools.
+- `pnpm check:surface-routes`: PASS — 703 `(core)` routes; 581 resolved, 27 deliberately unmapped, 95 undeclared.
+- `pnpm check:surface-overlays`: PASS — 189 total ids, 189 unique ids, 28 declared, 161 undeclared.
+- `pnpm check:surface-interactive-roots`: PASS — 7,752 tracked runtime TSX files, 764 canonical roots, 756 with explicit state, 502 subordinate or uncertain roots excluded, 254 independent audit candidates; 4 candidates have provider evidence and 250 do not.
+- Structural novelty since prior artifact `6947c913`: 148 new `(core)` route leaves and 63 new signature TSX/TS files; 24 enter the conservative direct-root audit queue.
+- `pnpm check:patrol-contracts`: the P12 prompt matches the canonical manifest. The command still reports unrelated fleet prompt/status drift and Fleet Health debt; those baseline failures are not P12 findings.
+- `pnpm check:migrations`: exits successfully but cannot compare the shared ledger without Supabase credentials. This batch has no database or migration change.
+- `pnpm check:reuse-index`: exits successfully with four unrelated stale paths.
+- Preview lease: another checkout owned the machine preview. No preview was reused and no visual certification was required because this batch changes no rendered or runtime product behavior.
 
 ## Independent certification
 
-- Verdict: **CERTIFIED** — no concrete batch-caused defect.
-- Counts reproduced independently: 174 unique overlay ids, 25 unique manifest claims, 149 missing, 0 phantom, 0 duplicate.
-- Mutation proof: an injected phantom claim failed and named `contextPreviewPanel`; an injected duplicate claim failed and named both conflicting surfaces. The real missing-only backlog exited successfully as designed.
-- Scoped ESLint, Prettier, `git diff --check`, `check:surface-drift`, and `check:surface-routes` passed.
-- Baseline and candidate type-check outputs were byte-identical: 31 diagnostics across the same 14 unrelated files, with no changed-path diagnostic.
-
-## Delivery degradation
-
-`pnpm patrol:delivery:check -- --head HEAD` is blocked by two report-only commits (`fe1ded5764f521f7f918ed04c8b5543a2f0cc2cd` and `d2d21a011e7391e00e2b18930fd39acab643599c`) whose messages include `Patrol-Id`, `Patrol-Run`, and `Patrol-Candidate` but omit the required `Patrol-Delivery: none|certified` trailer. Both commits change only this `.matrx` report, so this is not a product or certification defect. They are already on shared `origin/main`; rewriting shared history is unsafe. The serialized release lane must apply the canonical recovery for malformed historical patrol trailers before release certification can pass.
+- Verdict: **CERTIFIED** — exact candidate `2470f82af0a2726af49786c4a25a8451282e7a76`, certifier task `/root/p12_certifier`.
+- Focused Jest tests: 5/5 passed, covering controlled substantial dialogs, aliased tabs, provider evidence, fake/subordinate roots, action-dialog exclusion, and explicit state.
+- Scoped ESLint, Prettier, `git diff --check`, type-check, surface drift, route, overlay, and interactive-root checks passed.
+- Counts independently reproduced: 189 total overlay ids, 189 unique, 0 duplicates.
+- Mutation proof: reintroducing the removed duplicate made `check:surface-overlays` exit nonzero and name `keywordQuickAnswersWindow`; restoring the candidate returned the detector to clean.
+- Adversarial in-memory assertions confirmed aliased imports, fake primitives, explicit state, action/subordinate exclusion, and provider-present/provider-absent classification.
+- The certifier confirmed the scanner labels all 254 results as audit candidates rather than automatic findings.
 
 ## Inventory evidence
 
@@ -48,60 +51,53 @@ Scope: first-run full inventory (routes, registered overlays, readiness, runtime
 
 | Readiness | Count | Meaning                                                             |
 | --------- | ----: | ------------------------------------------------------------------- |
-| Verified  |    79 | Browser-earned contract evidence recorded                           |
-| Partial   |    92 | At least one declaration/emitter/Locate/mirror/browser item remains |
+| Verified  |    76 | Browser-earned contract evidence recorded                           |
+| Partial   |   105 | At least one declaration/emitter/Locate/mirror/browser item remains |
 | Stub      |    13 | Vocabulary only or no live emitter                                  |
-| Total     |   184 | Current code manifests                                              |
+| Total     |   194 | Current code manifests                                              |
 
-The 13 stubs are `agent-shortcuts`, `ai-work`, `ai-work-composer`, `ai-work-conversations`, `image-manager`, `vision-interview`, `artifacts`, `assists`, `reports`, `camera`, `vault`, `legal-ca-wc`, and `education-learn`. `/work/new` remains the highest-value stub because it already launches agents but still uses an ad-hoc `surfaceKey` instead of `runtime.surfaceName` and a typed live scope.
+Readiness counts are taken from `ALL_MANIFESTS`; green manifest drift proves internal declaration consistency, not live completeness.
 
-### Registered overlays
+### Canonical overlays
 
-- `OVERLAY_IDS`: 175 canonical ids after integration reconciliation; the exact certified candidate contained 174.
-- Manifests declaring `overlayId`: 25.
-- Undeclared overlay ids: **150** after `cloudBrowserWindow` joined the canonical union without a manifest; the exact certified candidate contained 149.
-- The static registry corroborates 160 interactive entries. Of those, **136** lack manifests: 102 windows, 23 widgets, 6 modals, and 5 sheets.
-- Fifteen controller ids are not in the static metadata registry. One (`contextPreviewPanel`) has a manifest; the other 14 remain in the declaration backlog.
+- Canonical ids: 189 total and 189 unique after removing the duplicate.
+- Manifests declaring an overlay id: 28.
+- Undeclared canonical ids: **161**.
+- A duplicate canonical id is now a hard detector failure; undeclared ids remain a printed C/R backlog until each surface earns a complete declaration.
 
-The complete exact backlog is the output of:
+The exact live backlog is emitted by:
 
 ```bash
 pnpm check:surface-overlays
 ```
 
-The detector reports missing declarations without failing because this is the active C/R campaign backlog. It fails only for an unambiguous phantom manifest overlay id or duplicate manifests claiming one overlay.
+### Undeclared routes
 
-### Direct interactive-surface candidates
+The 95 undeclared route leaves group into 55 HR routes, 18 workflow routes, 12 RAG routes, 6 tool/product-capture routes, 2 Google review routes, 1 launchpad route, and 1 trash route. These are inventory candidates until route resolution and host ownership are audited; they are not safe targets for mass-generated manifests.
 
-Static candidate inventory outside the canonical overlay comparison:
+### Direct interactive roots
 
-- 326 TSX files render a `Dialog` or `AlertDialog` root.
-- 115 TSX files render a `Drawer` or `Sheet` root.
-- 77 TSX files render a `Tabs` root.
-- 443 unique TSX files render at least one of those roots.
-- 259 TSX files mount a `SurfaceRuntimeProvider`.
-- 183 Locate anchors exist across 63 TSX files.
-
-These 443 files are a triage pool, not 443 verified findings: many are subordinate interactions inside an already-declared host surface. The next detector gap is to classify roots with independent identity/state while excluding wrappers and subordinate confirmations.
+The new conservative classifier found 254 independent audit candidates from 764 canonical roots. It excluded 502 subordinate or uncertain roots using component identity and action/size evidence. Only 4 candidates have a nearby `SurfaceRuntimeProvider`; absence is evidence to inspect ownership, not proof that the child requires a new manifest.
 
 ## Finding routes
 
 ### Standing-authority repair backlog
 
-1. Process undeclared overlay ids in bounded family batches (maximum 15 files), starting with persistent user-work windows whose data meaning is already explicit: code workspaces/editors, Cloud Files, Notes, Projects, Messages, transcription cleanup, and the Agent run/editor family.
-2. Each batch must add the canonical manifest, honest readiness, live provider, typed scope helper, Locate anchors, DB mirror sync, and browser proof. A manifest-only batch does not close a finding.
-3. Promote partial surfaces only from recorded Surface Context evidence: declared/live parity, no runtime-only keys, Locate behavior, and relevant state transitions.
+1. Audit undeclared overlay ids in coherent surface families, at no more than 15 files per certified batch. Complete identity, values, live provider, typed scopes, Locate anchors, readiness evidence, and any mirror contract together.
+2. Resolve the 95 route leaves against canonical hosts before declaring new surfaces. A route leaf may be an alias, a deliberate non-emitter, or an independent surface.
+3. Use the 254 direct-root candidates as a conservative review queue. Responsive Dialog/Drawer twins and nested action dialogs should resolve to their owner rather than acquire duplicate manifests.
+4. Promote partial or stub readiness only from recorded live evidence; manifest-only consistency is not closure.
 
 ### Missing evidence or machinery
 
-1. Direct dialog/drawer/tab discovery still needs an identity/state-aware classifier. Raw JSX counts cannot decide whether a child interaction deserves its own bound agents.
-2. The stale `check:registry` command named in the overlay/window documentation is not present in `package.json`; the overlay coverage detector does not depend on it.
-3. The existing canonical fleet handoff's “sole stub” statement is stale: current code has 13 stubs. This report and the permanent run record use live manifest evidence instead.
+1. The direct-root classifier still needs owner-level deduplication for responsive Drawer/Dialog twins.
+2. Route, overlay, manifest, and provider outputs remain separate evidence sets; correlating them by canonical owner would reduce repeated manual triage without turning candidates into findings.
+3. Supabase-backed checks remain unmeasured in this isolated environment, though this batch does not touch database state.
 
 ### Genuine human decision
 
-`matrx-user/education-learn` is entirely server-rendered for public SEO. The existing handoff presents three legitimate outcomes: remain non-emitting by design, add a thin client identity shell while keeping the article server-rendered, or convert the reader to a client component. No patrol agent may choose the product reachability tradeoff merely to clear the stub count.
+`matrx-user/education-learn` is a public, server-rendered reader. Three outcomes remain legitimate: keep it non-emitting, add a thin client identity shell while retaining server-rendered article content, or make the reader client-rendered. No prior approval was found, and the patrol does not choose that product reachability tradeoff.
 
 ## Recursive learning
 
-The route detector closed only one inventory axis. Comparing the canonical overlay-id union directly to manifest `overlayId` declarations is the smallest stable next axis; the new detector turned a 149-item blind spot into a repeatable, environment-free patrol input and caught a 150th item introduced concurrently before integration.
+Identity + explicit state + action/size evidence removed 502 subordinate or uncertain roots from the raw interaction inventory. The smallest next precision gain is owner-level deduplication of responsive Drawer/Dialog twins, followed by correlation of route, overlay, manifest, and provider evidence under one canonical owner.
