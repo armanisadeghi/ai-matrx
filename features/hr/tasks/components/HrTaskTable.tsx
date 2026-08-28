@@ -70,6 +70,24 @@ export function HrTaskTable({
                         ) : null}
                         <span className="truncate">{row.step_label ?? row.step_key}</span>
                     </div>
+                    {/*
+                        🚨 WHAT IT CHANGES, ON THE ROW. The queue's job is letting somebody
+                        triage without opening every item, and it listed a kind and a step
+                        and nothing about the thing being decided. One line, truncated —
+                        the panel carries the full before/after; this only has to stop the
+                        row from being a mystery.
+                    */}
+                    {row.change && row.change.length > 0 ? (
+                        <div className="truncate text-xs text-muted-foreground">
+                            {row.change
+                                .map((c) => `${c.label}: ${c.from ?? "—"} → ${c.to ?? "—"}`)
+                                .join(" · ")}
+                        </div>
+                    ) : row.digest ? (
+                        <div className="truncate text-xs text-muted-foreground">
+                            {row.digest}
+                        </div>
+                    ) : null}
                 </div>
             ),
         },

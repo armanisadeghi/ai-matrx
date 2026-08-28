@@ -23,6 +23,7 @@ import {
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import type {
     HrDecisionIntent,
+    HrInboxChange,
     HrInboxNotice,
     HrInstanceDetail,
     HrRefusal,
@@ -133,6 +134,31 @@ export function HrDecisionPanel({
     // field used to read "required to reject or return" on steps that required it to APPROVE, so
     // a verifier's first click was refused beside a label promising it would not be.
     const reasonRequiredToApprove = bool(activeStep, "requires_reason_on_approve");
+    /*
+      The change the door decorated this step with. Read off the step being decided —
+      `hr_wf_instance` merges `hr._wf_display` into every step, which is the one place
+      that decides whether this caller may be told. Parsed defensively rather than cast:
+      a decision surface must never render a diff it inferred, so an entry missing its
+      field name is DROPPED, not guessed at.
+    */
+    const shownStep = step ?? activeStep;
+    const stepChange: HrInboxChange[] = Array.isArray(shownStep?.change)
+        ? (shownStep.change as unknown[]).flatMap((raw) => {
+              if (!raw || typeof raw !== "object") return [];
+              const entry = raw as Record<string, unknown>;
+              const field = typeof entry.field === "string" ? entry.field : null;
+              if (!field) return [];
+              return [
+                  {
+                      field,
+                      label: typeof entry.label === "string" ? entry.label : field,
+                      from: typeof entry.from === "string" ? entry.from : null,
+                      to: typeof entry.to === "string" ? entry.to : null,
+                  },
+              ];
+          })
+        : [];
+    const stepDigest = str(shownStep, "digest");
     const openFailures = (detail?.failures ?? []).filter(
         (f) => f.state === "open" || f.state === "retrying",
     );
@@ -231,11 +257,65 @@ export function HrDecisionPanel({
                                     ? ` — ${str(instance, "state_reason")}`
                                     : ""}
                             </p>
-                            {str(instance, "target_token") ? (
-                                <p className="text-xs text-muted-foreground">
-                                    About {str(instance, "target_token")}{" "}
-                                    <span className="font-mono">{str(instance, "target_id")}</span>
+                            {/*
+                                🚨 WHAT THIS DECISION ACTUALLY CHANGES.
+                                A legal name change was APPROVED here on a screen showing a
+                                flow key, a table token and a bare uuid — the name itself
+                                appeared nowhere, though the server held it the whole time
+                                and returned it in the approve response. Somebody was asked
+                                to agree to something nobody had told them, and the surface
+                                gave them no way to know that.
+
+                                `hr._wf_display` now answers it, and the door decides who may
+                                be told: this renders nothing when the change is withheld,
+                                exactly as the subject line does.
+                            */}
+                            {stepChange.length > 0 ? (
+                                <dl className="mt-2 space-y-1 rounded-md border border-border bg-muted/40 px-3 py-2">
+                                    {stepChange.map((entry) => (
+                                        <div
+                                            key={entry.field}
+                                            className="flex flex-wrap items-baseline gap-x-2 text-sm"
+                                        >
+                                            <dt className="text-xs font-medium text-muted-foreground">
+                                                {entry.label}
+                                            </dt>
+                                            <dd className="flex flex-wrap items-baseline gap-x-2">
+                                                <span className="text-muted-foreground line-through">
+                                                    {entry.from ?? "Not provided"}
+                                                </span>
+                                                <span aria-hidden className="text-muted-foreground">
+                                                    →
+                                                </span>
+                                                <span className="font-medium text-foreground">
+                                                    {entry.to ?? "Not provided"}
+                                                </span>
+                                            </dd>
+                                        </div>
+                                    ))}
+                                </dl>
+                            ) : stepDigest ? (
+                                <p className="mt-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
+                                    {stepDigest}
                                 </p>
+                            ) : null}
+                            {/*
+                                The record's address, kept reachable but out of the sentence —
+                                a table token and a uuid are for whoever debugs this, not for
+                                the person deciding.
+                            */}
+                            {str(instance, "target_token") ? (
+                                <details className="mt-1">
+                                    <summary className="cursor-pointer text-xs text-muted-foreground">
+                                        Record reference
+                                    </summary>
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        {str(instance, "target_token")}{" "}
+                                        <span className="font-mono">
+                                            {str(instance, "target_id")}
+                                        </span>
+                                    </p>
+                                </details>
                             ) : null}
                         </header>
 

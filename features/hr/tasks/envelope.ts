@@ -247,6 +247,27 @@ function parseRow(rpc: string, source: Obj): HrInboxRow {
         subject_withheld: optBool(source, "subject_withheld"),
         target_token: optStr(source, "target_token"),
         target_id: optStr(source, "target_id"),
+        /*
+          🚨 THE CHANGE ITSELF. Parsed, not cast — a decision surface that renders a
+          fabricated diff is worse than one that renders none, so a malformed entry is
+          DROPPED rather than guessed at. `from`/`to` keep JSON null as null: "nothing on
+          file" and "not being told" are different facts, and the door distinguishes them.
+        */
+        change: Array.isArray(source.change)
+            ? source.change.filter(isObj).flatMap((entry) => {
+                  const field = optStr(entry, "field");
+                  if (!field) return [];
+                  return [
+                      {
+                          field,
+                          label: optStr(entry, "label") ?? field,
+                          from: optStr(entry, "from") ?? null,
+                          to: optStr(entry, "to") ?? null,
+                      },
+                  ];
+              })
+            : undefined,
+        digest: optStr(source, "digest"),
         allow_bulk_decide: optBool(source, "allow_bulk_decide"),
         requires_reason_on_approve: optBool(source, "requires_reason_on_approve"),
         allows_withdraw: optBool(source, "allows_withdraw"),
