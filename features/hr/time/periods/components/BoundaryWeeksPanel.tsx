@@ -34,14 +34,42 @@ export interface BoundaryWeeksPanelProps {
    * including the native HR mobile app, which will consume the same field.
    */
   boundaryNote?: string | null;
+  /**
+   * 🚨 Whether the boundary answer has been COMPUTED. `boundaryWorkweekIds` is written only by
+   * `hr.recompute_apply`, so on a period with no computed intervals an empty array means "nobody
+   * has looked" — and saying "no workweek straddles this period" from that is asserting a
+   * world-fact this panel does not have. Optional so the list read, which does not carry it,
+   * keeps its existing behaviour.
+   */
+  boundaryComputed?: boolean;
 }
 
 export function BoundaryWeeksPanel({
   boundaryWorkweekIds,
   boundaryNote,
+  boundaryComputed,
 }: BoundaryWeeksPanelProps) {
   // The client sentence is the fallback for the list read, which does not carry `boundary_note`.
   const sentence = boundaryNote ?? boundaryWeeksSentence(boundaryWorkweekIds);
+
+  // 🚨 NOT COMPUTED IS NOT THE SAME ANSWER AS NONE FOUND (hr_l3_92). When the server says the
+  // boundary question has not been asked of anything yet, this panel says exactly that instead of
+  // claiming every week is wholly inside the period. `undefined` keeps the old wording for the
+  // list read, which does not carry the flag.
+  if (!sentence && boundaryComputed === false) {
+    return (
+      <section className="rounded-lg border border-border bg-card p-4">
+        <h3 className="flex items-center gap-2 text-[13px] font-semibold text-foreground">
+          <CalendarRange className="h-4 w-4 text-muted-foreground" aria-hidden />
+          Boundary weeks
+        </h3>
+        <p className="mt-1.5 text-[12px] leading-relaxed text-muted-foreground">
+          No hours have been computed for this period yet, so whether any workweek straddles its
+          edges is not yet known. This answer appears once the recompute engine has run.
+        </p>
+      </section>
+    );
+  }
 
   // No straddling weeks is a real and common answer, and saying so is better than an absent panel
   // that leaves a reader wondering whether we checked.

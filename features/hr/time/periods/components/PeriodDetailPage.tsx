@@ -103,6 +103,8 @@ export function PeriodDetailPage({ payPeriodId }: { payPeriodId: string }) {
               boundaryWorkweekIds={period.boundaryWorkweekIds}
               /* Server-authored sentence; the panel falls back to its own only when absent. */
               boundaryNote={period.boundaryNote}
+              /* Whether the boundary question has been asked of anything yet (hr_l3_92). */
+              boundaryComputed={period.boundaryComputed}
             />
 
             {organizationId ? (

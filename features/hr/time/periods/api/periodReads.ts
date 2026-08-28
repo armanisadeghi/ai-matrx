@@ -231,6 +231,14 @@ export interface PayPeriodDetail extends PayPeriodRow {
    * workweek straddles the edges — and `null` means the panel says so, never that it invents one.
    */
   boundaryNote: string | null;
+  /**
+   * 🚨 WHETHER THE BOUNDARY ANSWER IS KNOWN, not just what it is. `boundaryWorkweekIds` is written
+   * ONLY by `hr.recompute_apply`, whose rule counts the distinct pay periods a workweek's CURRENT
+   * intervals land in. A period with no computed interval has had that question asked of nothing,
+   * so its empty array means "not computed" — NOT "none found". Without this flag the panel states
+   * "no workweek straddles this period" as a world-fact it has not computed (hr_l3_92).
+   */
+  boundaryComputed: boolean;
   /** The resolved `hr.time_and_attendance.allow_period_reopen`. Never assumed by the client. */
   reopenAllowed: boolean;
   /** 🚨 *"Reopening does NOT un-export and does NOT re-pay…"* — the server's wording, verbatim. */
@@ -356,6 +364,7 @@ export async function getPayPeriod(
   return {
     ...mapPayPeriodRow(raw),
     boundaryNote: strOrNull(r.boundaryNote),
+    boundaryComputed: r.boundaryComputed === true,
     // Defaults TRUE only because the platform default is true and the knob resolves server-side;
     // an explicit `false` from the server is always honoured.
     reopenAllowed: r.reopenAllowed !== false,
