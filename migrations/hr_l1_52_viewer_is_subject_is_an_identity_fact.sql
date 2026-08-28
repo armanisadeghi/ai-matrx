@@ -75,8 +75,3 @@ values ('hr', '_wf_display', 'hr_l1_52_viewer_is_subject_is_an_identity_fact.sql
         array['_wf_call_digest'],
         'viewer_is_subject is resolved by LOGIN LINKAGE, never by date-scoped employment.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_52_viewer_is_subject_is_an_identity_fact.sql',
-        md5('hr_l1_52_viewer_is_subject_is_an_identity_fact'), now(), 0)
-on conflict do nothing;
