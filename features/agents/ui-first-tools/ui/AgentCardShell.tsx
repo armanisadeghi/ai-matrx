@@ -73,13 +73,21 @@ export interface AgentCardShellProps {
   subtitle?: ReactNode;
   /** Top-right pill (e.g. batch "2 of 3"). */
   badge?: ReactNode;
+  /** Optional control beside the badge / dismiss action. */
+  headerAction?: ReactNode;
+  /** Keep the eyebrow and title in one compact header row when the title is short. */
+  titleInline?: boolean;
   /** Shows the dismiss × when provided. */
   onDismiss?: () => void;
   dismissLabel?: string;
   /** Action row, rendered in a muted footer band with a top border. */
   footer?: ReactNode;
+  /** Density override for the footer band. */
+  footerClassName?: string;
   /** Body content. When falsy, the body region is omitted entirely. */
   children?: ReactNode;
+  /** Density override for the body wrapper. */
+  contentClassName?: string;
   /** Dim + disable once resolved. */
   pending?: boolean;
   /** Bottom-edge slot (the countdown bar). */
@@ -95,10 +103,14 @@ export function AgentCardShell({
   title,
   subtitle,
   badge,
+  headerAction,
+  titleInline = false,
   onDismiss,
   dismissLabel = "Dismiss",
   footer,
+  footerClassName,
   children,
+  contentClassName,
   pending,
   bottomSlot,
   className,
@@ -137,18 +149,41 @@ export function AgentCardShell({
 
       {/* Pinned meta row: plain icon + eyebrow + badge + dismiss. Stays put so
           the dismiss × is always reachable while the question+answers scroll. */}
-      <div className="flex shrink-0 items-center gap-2 px-4 pt-3">
+      <div
+        className={cn(
+          "flex shrink-0 items-center gap-2",
+          titleInline ? "px-3 py-2" : "px-4 pt-3",
+        )}
+      >
         {Icon && (
           <Icon
             className={cn("size-[18px] shrink-0", ICON_TONE[tone])}
             strokeWidth={2.25}
           />
         )}
-        {eyebrow && (
+        {titleInline ? (
+          <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+            {eyebrow && (
+              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                {eyebrow}
+              </span>
+            )}
+            {eyebrow && title && (
+              <span aria-hidden="true" className="text-muted-foreground/50">
+                ·
+              </span>
+            )}
+            {title && (
+              <span className="min-w-0 text-sm font-semibold leading-snug text-foreground">
+                {title}
+              </span>
+            )}
+          </div>
+        ) : eyebrow ? (
           <div className="min-w-0 flex-1 truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {eyebrow}
           </div>
-        )}
+        ) : null}
         {badge && (
           <span
             className={cn(
@@ -159,13 +194,14 @@ export function AgentCardShell({
             {badge}
           </span>
         )}
+        {headerAction}
         {onDismiss && (
           <button
             type="button"
             onClick={onDismiss}
             className={cn(
-              "-mr-1 shrink-0 rounded-md p-1 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground",
-              !eyebrow && !badge && "ml-auto",
+              "-mr-1 grid min-h-11 min-w-11 shrink-0 place-items-center rounded-md text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground sm:min-h-6 sm:min-w-6",
+              !eyebrow && !badge && !title && "ml-auto",
             )}
             title={dismissLabel}
             aria-label={dismissLabel}
@@ -191,7 +227,7 @@ export function AgentCardShell({
         )}
       >
         {/* Title on its OWN full-width row — spans the entire card width. */}
-        {title && (
+        {!titleInline && title && (
           <div className="mt-1.5 whitespace-pre-wrap px-4 text-[15px] font-semibold leading-snug text-foreground">
             {title}
           </div>
@@ -201,11 +237,18 @@ export function AgentCardShell({
             {subtitle}
           </div>
         )}
-        {children ? <div className="px-4 pt-3">{children}</div> : null}
+        {children ? (
+          <div className={contentClassName ?? "px-4 pt-3"}>{children}</div>
+        ) : null}
       </div>
 
       {footer && (
-        <div className="shrink-0 border-t border-border/60 bg-muted/30 px-4 py-3">
+        <div
+          className={cn(
+            "shrink-0 border-t border-border/60 bg-muted/30",
+            footerClassName ?? "px-4 py-3",
+          )}
+        >
           {footer}
         </div>
       )}

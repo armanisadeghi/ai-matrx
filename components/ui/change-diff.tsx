@@ -68,7 +68,7 @@ function ChangeDiffRow({ field }: { field: ChangeFieldDiff }) {
           {field.label}
         </div>
         {isUpdate ? (
-          <div className="max-h-48 overflow-auto rounded-md border border-border/50">
+          <div className="rounded-md border border-border/50">
             <InlineTextDiff
               original={before.text}
               modified={after.text}
@@ -78,7 +78,7 @@ function ChangeDiffRow({ field }: { field: ChangeFieldDiff }) {
         ) : (
           <div
             className={cn(
-              "line-clamp-4 whitespace-pre-wrap text-[13px] leading-relaxed",
+              "whitespace-pre-wrap break-words text-[13px] leading-relaxed [overflow-wrap:anywhere]",
               after.empty ? "italic text-muted-foreground" : "text-foreground",
             )}
           >
@@ -90,16 +90,16 @@ function ChangeDiffRow({ field }: { field: ChangeFieldDiff }) {
   }
 
   return (
-    <div className="flex items-baseline gap-2 text-[13px]">
+    <div className="flex items-start gap-2 text-[13px]">
       <div className="w-20 shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
         {field.label}
       </div>
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+      <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-1.5">
         {hasBefore && (
           <>
             <span
               className={cn(
-                "truncate",
+                "min-w-0 break-words [overflow-wrap:anywhere]",
                 before.empty
                   ? "italic text-muted-foreground/60"
                   : "text-muted-foreground/70 line-through",
@@ -112,7 +112,7 @@ function ChangeDiffRow({ field }: { field: ChangeFieldDiff }) {
         )}
         <span
           className={cn(
-            "truncate font-medium",
+            "min-w-0 break-words font-medium [overflow-wrap:anywhere]",
             after.empty ? "italic text-muted-foreground" : "text-foreground",
           )}
         >

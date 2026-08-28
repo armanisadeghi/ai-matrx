@@ -101,11 +101,13 @@ This feature exists because:
   resolves it as a freeform reply. Reuses `AskBody` / `presentation` /
   `WriteInsteadBody` (exported from `<AskCard>`).
 - `<ApprovalCard ask={ask} />` (`ui/ApprovalCard.tsx`) — the agent-edit
-  approval surface. Renders an `ApprovalChange` (`ui/approval-types.ts`):
-  verb-tinted icon + "{Verb} {entity}" eyebrow + headline, a before→after
-  diff body, and one action row (Approve · Decline · Respond) plus an opt-in
-  "always approve {noun}". States the change **once** — no chip+context+question
-  triple. Producers emit `ApprovalChange`; the card is feature-agnostic.
+  approval surface. Renders an `ApprovalChange` (`ui/approval-types.ts`): a
+  compact one-line "{Verb} · {headline}" header, optional on-demand Details,
+  an unclipped before→after diff body, and a right-aligned compact action row
+  (Approve · Decline · Respond) plus an opt-in "always approve {noun}".
+  Touch layouts retain 44px action targets. States the change **once** — no
+  chip+context+question triple. Producers emit `ApprovalChange`; the card is
+  feature-agnostic.
 
 **Shared card primitives (one look across every inline agent card)**
 - `<AgentCardShell>` (`ui/AgentCardShell.tsx`) — the chrome both `<AskCard>` and
@@ -358,6 +360,14 @@ server-side; the same Realtime subscription updates the panel with no delegation
 ---
 
 ## Change Log
+
+- `2026-08-28` — **Approval questions are compact and never hide the proposed
+  value.** Approval cards now place the operation and field/title in one header
+  row, move explanatory prose behind an accessible Details control, and align a
+  finer action group to the right on desktop while retaining 44px touch targets.
+  `ChangeDiff` no longer line-clamps block additions or truncates inline values;
+  the card's existing single scroll region owns overflow, so every byte being
+  approved remains reviewable.
 
 - `2026-08-25` — **Every universal agent display mode can render pending approvals.** `AgentRunner` now mounts the canonical `PendingAsksZone` above its composer, matching `AgentConversationColumn`. This closes the flexible-panel deadlock where `apply_surface_write` correctly enqueued an `ApprovalCard` and paused the run, but the overlay had no ask renderer and remained on “Delegating apply_surface_write to client / Working…” forever. The shared card, resolver registry, and pending-ask Redux state are reused unchanged; no second approval path was added.
 - `2026-08-20` — **SMS authorization is actionable on iPhone.** The mobile ask

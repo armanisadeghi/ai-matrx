@@ -26,9 +26,12 @@ import {
   MessageSquarePlus,
   CornerDownLeft,
   ChevronUp,
+  ChevronDown,
+  Info,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { ChangeDiff } from "@/components/ui/change-diff";
 import { cn } from "@/lib/utils";
@@ -67,6 +70,7 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
   const [respondMode, setRespondMode] = useState(false);
   const [respondText, setRespondText] = useState("");
   const [minimized, setMinimized] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const change = ask.approval;
   // Defensive: an approval ask should always carry its change descriptor.
@@ -125,12 +129,12 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
           if ((e.metaKey || e.ctrlKey) && e.key === "Enter") sendRespond();
         }}
       />
-      <div className="mt-2 flex items-center gap-2">
+      <div className="mt-2 flex items-center justify-end gap-1.5">
         <Button
           size="sm"
           onClick={sendRespond}
           disabled={!respondText.trim()}
-          className="gap-1.5"
+          className="min-h-11 gap-1.5 sm:min-h-8"
         >
           <CornerDownLeft className="size-3.5" />
           Send
@@ -138,6 +142,7 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
         <Button
           size="sm"
           variant="ghost"
+          className="min-h-11 sm:min-h-8"
           onClick={() => {
             setRespondMode(false);
             setRespondText("");
@@ -149,42 +154,40 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
     </div>
   ) : (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <Button size="sm" onClick={approve} className="gap-1.5">
+      <div className="flex w-full items-center justify-end gap-1.5">
+        <Button
+          size="sm"
+          onClick={approve}
+          className="min-h-11 flex-1 gap-1.5 px-2.5 sm:min-h-8 sm:flex-none"
+        >
           <Check className="size-4" />
           Approve
         </Button>
-        <Button size="sm" variant="outline" onClick={decline}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={decline}
+          className="min-h-11 flex-1 px-2.5 sm:min-h-8 sm:flex-none"
+        >
           Decline
         </Button>
         <Button
           size="sm"
           variant="ghost"
           onClick={() => setRespondMode(true)}
-          className="ml-auto text-muted-foreground hover:text-foreground"
+          className="min-h-11 flex-1 px-2.5 text-muted-foreground hover:text-foreground sm:min-h-8 sm:flex-none"
         >
           Respond
         </Button>
       </div>
       {autoNoun && (
-        <button
-          type="button"
-          onClick={() => setRemember((v) => !v)}
-          className="flex w-fit items-center gap-2 rounded-md py-0.5 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
-          aria-pressed={remember}
-        >
-          <span
-            className={cn(
-              "grid size-4 place-items-center rounded-[5px] border transition-colors",
-              remember
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-background",
-            )}
-          >
-            {remember && <Check className="size-3" strokeWidth={3} />}
-          </span>
+        <label className="flex min-h-11 w-fit cursor-pointer items-center gap-2 rounded-md text-[12px] text-muted-foreground transition-colors hover:text-foreground sm:min-h-6">
+          <Checkbox
+            checked={remember}
+            onCheckedChange={(checked) => setRemember(checked === true)}
+          />
           Always approve {autoNoun} on this tile
-        </button>
+        </label>
       )}
     </div>
   );
@@ -211,16 +214,40 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
     <AgentCardShell
       tone={meta.tone}
       icon={meta.Icon}
-      eyebrow={eyebrow}
+      eyebrow={meta.label}
       title={headline}
+      titleInline
+      headerAction={
+        change.description ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => setDetailsOpen((open) => !open)}
+            className="min-h-11 shrink-0 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground sm:min-h-8"
+            aria-expanded={detailsOpen}
+          >
+            <Info className="size-3.5" />
+            Details
+            <ChevronDown
+              className={cn(
+                "size-3 transition-transform",
+                detailsOpen && "rotate-180",
+              )}
+            />
+          </Button>
+        ) : null
+      }
       onDismiss={() => setMinimized(true)}
       dismissLabel="Minimize — keep decision pending"
       pending={resolved}
       footer={footer}
+      footerClassName="px-3 py-2"
+      contentClassName="px-3 pb-2 pt-1"
       aria-label={`${eyebrow}: ${headline}`}
     >
-      {change.description ? (
-        <p className="mb-2 text-xs leading-relaxed text-muted-foreground">
+      {change.description && detailsOpen ? (
+        <p className="mb-2 rounded-md bg-muted/40 px-2.5 py-2 text-xs leading-relaxed text-muted-foreground">
           {change.description}
         </p>
       ) : null}

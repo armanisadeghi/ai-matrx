@@ -52,6 +52,23 @@ function ask(
 }
 
 const SAMPLES: PendingAsk[] = [
+  approvalAsk("a0", {
+    verb: "update",
+    entity: "proposed change",
+    title: "Agent description",
+    description:
+      "Badass Agent proposed this change. Replaces the agent's description — the prose shown in agent lists and the catalog explaining what this agent is for. Plain text, no markdown headings; a few sentences. Approval only stages it in the editor; you still review and save.",
+    fields: [
+      {
+        label: "Proposed value",
+        after:
+          "I'm the last set of eyes on every item that hits your intake dock.\n\n" +
+          "You hand me the photos — dim, dusty, shot in a hurry off the back of a pallet — and I turn them into a permanent, structured record. I work in JSON only, and I return exactly one analysis object per batch.\n\n" +
+          "Every detail remains visible here before you decide, including the final sentence that used to be hidden by the four-line clamp.",
+        block: true,
+      },
+    ],
+  }),
   approvalAsk("a1", {
     verb: "add",
     entity: "subtask",
