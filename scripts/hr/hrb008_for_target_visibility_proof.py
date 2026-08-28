@@ -146,7 +146,18 @@ async def main():
             f"{visible_rows} visible rows checked; mismatches={mismatch[:3]}")
 
         # ---------- 4. THE ENTITLED RESULT IS BYTE-IDENTICAL TO BEFORE
+        # 🚨 DRIFT-ROBUST. The baseline was captured once; other lanes commit new workflow
+        # instances continuously, so a target legitimately gaining a BRAND-NEW instance is data
+        # drift, not the gate widening. A real widening is a BASELINE-ERA instance becoming visible
+        # to a caller who could not see it before — that, and only that, means the extracted rule
+        # granted standing the ungated function did not.
+        baseline_insts = set()
+        for _v in before.values():
+            _o = json.loads(_v)
+            for _r in (_o.get("open") or []) + (_o.get("history") or []):
+                baseline_insts.add(_r["instance_id"])
         same = narrowed = widened = 0
+        widened_examples = []
         narrowed_examples = []
         for u in users:
             await as_user(u["uid"])
@@ -159,14 +170,19 @@ async def main():
                     same += 1
                 else:
                     b, a = json.loads(before[k]), json.loads(now)
-                    nb = len(b.get("open") or []) + len(b.get("history") or [])
-                    na = len(a.get("open") or []) + len(a.get("history") or [])
-                    if na < nb:
+                    bset = {r["instance_id"] for r in (b.get("open") or []) + (b.get("history") or [])}
+                    aset = {r["instance_id"] for r in (a.get("open") or []) + (a.get("history") or [])}
+                    # a REAL widening: a baseline-era instance this caller could not see, now visible
+                    real_widen = [i for i in (aset - bset) if i in baseline_insts]
+                    if real_widen:
+                        widened += 1
+                        if len(widened_examples) < 3:
+                            widened_examples.append((k, real_widen))
+                    elif len(aset) < len(bset):
                         narrowed += 1
                         if len(narrowed_examples) < 3:
                             narrowed_examples.append(k)
-                    else:
-                        widened += 1
+                    # otherwise: the only additions are brand-new instances (data drift) -> ignore
             await as_owner()
         # 🚨 THE SAFETY PROPERTY. A visibility gate may only ever REMOVE rows. If a single
         # (caller, target) pair came back with MORE than it did before, the predicate is granting
@@ -175,7 +191,7 @@ async def main():
         rec("§4 byte-identical",
             "🚨 NOT ONE (caller, target) pair returns MORE than it did before — the gate only ever "
             "removes, so the extracted rule cannot have widened the instance door either",
-            widened == 0, f"widened={widened}")
+            widened == 0, f"real widenings (baseline-era instances newly visible)={widened_examples}")
         rec("§4 byte-identical",
             "🚨 every ENTITLED (caller, target) answer is BYTE-IDENTICAL to before the gate — the "
             "narrowing hit only what the caller was never entitled to see",

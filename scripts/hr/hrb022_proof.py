@@ -35,7 +35,10 @@ DOORS = [
     "hr_wf_escalate", "hr_wf_reassign_step", "hr_wf_withdraw", "hr_wf_cancel", "hr_wf_resubmit",
     "hr_wf_record_result", "hr_wf_resolve_failure", "hr_wf_delegate",
 ]
-DEEP_LINK_RE = re.compile(r"^/hr/tasks/[0-9a-f-]{36}\?step=[0-9a-f-]{36}$")
+# the object route, optionally carrying the read reference `&notice=<uuid>` (hr_c4_47/48,
+# SPEC-NOTIFICATIONS §5.2 — the link carries a notice reference so following it stamps read).
+DEEP_LINK_RE = re.compile(
+    r"^/hr/tasks/[0-9a-f-]{36}\?step=[0-9a-f-]{36}(&notice=[0-9a-f-]{36})?$")
 DECORATED = ["title", "flow_label", "step_label", "subject_label",
              "allow_bulk_decide", "workspace_task_id", "notices"]
 
@@ -766,7 +769,7 @@ async def main():
             len(offenders) == 0, f"offenders={[o['proname'] for o in offenders]}")
 
         bad_links = [d for d in deep_links if not DEEP_LINK_RE.match(d)]
-        rec("G one inbox", "every deep_link the inbox returned points at /hr/tasks/<instance>?step=<step>",
+        rec("G one inbox", "every deep_link points at /hr/tasks/<instance>?step=<step>, optionally with the &notice read reference",
             len(deep_links) > 0 and not bad_links,
             f"{len(deep_links)} links checked, bad={bad_links[:3]}")
 
