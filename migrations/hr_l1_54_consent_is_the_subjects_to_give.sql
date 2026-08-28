@@ -58,33 +58,7 @@ E'-- 🚨 CONSENT IS AN IDENTITY FACT (hr_l1_52 / hr_c4_39). The old test was\n'
   execute v_new;
 end $mig$;
 
--- ── 2. The raise door: same NULL, and it skipped the write gate ────────────────────────────
-do $mig$
-declare v_def text; v_new text;
-begin
-  v_def := pg_get_functiondef('public.hr_verification_request_create(jsonb)'::regprocedure);
-  if position('SELF IS AN IDENTITY FACT' in v_def) > 0 then
-    raise notice 'hr_l1_54: raise door already fixed'; return;
-  end if;
-  v_new := replace(v_def,
-    'v_self := hr._l1_self_employment(v_uid, v_org, current_date) = v_employment;',
-E'-- 🚨 SELF IS AN IDENTITY FACT. As NULL this skipped `_l1_write_gate` entirely for any\n'
-||E'  -- caller with no current employment in the org, and then passed NULL to the audit''s\n'
-||E'  -- NOT NULL `is_self_access` — a crash standing in for a refusal.\n'
-||E'  v_self := v_uid is not null and hr._wf_login_of(v_employment) is not distinct from v_uid;');
-  if v_new = v_def then raise exception 'hr_l1_54: raise anchor not found'; end if;
-
-  -- The subject is told. The catalog event has existed since hr_l1_08 and nothing ever fired it.
-  v_new := replace(v_new,
-    E'  return jsonb_build_object(\'ok\', true, \'verification_letter_request_id\', v_id,',
-E'  if v_state = \'awaiting_consent\' then\n'
-||E'    perform hr._l1_notify_consent_requested(v_id);\n'
-||E'  end if;\n\n'
-||E'  return jsonb_build_object(\'ok\', true, \'verification_letter_request_id\', v_id,');
-  execute v_new;
-end $mig$;
-
--- ── 3. Telling the subject ─────────────────────────────────────────────────────────────────
+-- ── 2. Telling the subject (created FIRST: section 3 calls it) ─────────────────────────────────────────────────────────────────
 create or replace function hr._l1_notify_consent_requested(p_request_id uuid)
 returns integer
 language plpgsql security definer set search_path = public, hr
@@ -126,6 +100,32 @@ end
 $fn$;
 
 revoke all on function hr._l1_notify_consent_requested(uuid) from public;
+
+-- ── 3. The raise door: same NULL, and it skipped the write gate ────────────────────────────
+do $mig$
+declare v_def text; v_new text;
+begin
+  v_def := pg_get_functiondef('public.hr_verification_request_create(jsonb)'::regprocedure);
+  if position('SELF IS AN IDENTITY FACT' in v_def) > 0 then
+    raise notice 'hr_l1_54: raise door already fixed'; return;
+  end if;
+  v_new := replace(v_def,
+    'v_self := hr._l1_self_employment(v_uid, v_org, current_date) = v_employment;',
+E'-- 🚨 SELF IS AN IDENTITY FACT. As NULL this skipped `_l1_write_gate` entirely for any\n'
+||E'  -- caller with no current employment in the org, and then passed NULL to the audit''s\n'
+||E'  -- NOT NULL `is_self_access` — a crash standing in for a refusal.\n'
+||E'  v_self := v_uid is not null and hr._wf_login_of(v_employment) is not distinct from v_uid;');
+  if v_new = v_def then raise exception 'hr_l1_54: raise anchor not found'; end if;
+
+  -- The subject is told. The catalog event has existed since hr_l1_08 and nothing ever fired it.
+  v_new := replace(v_new,
+    E'  return jsonb_build_object(\'ok\', true, \'verification_letter_request_id\', v_id,',
+E'  if v_state = \'awaiting_consent\' then\n'
+||E'    perform hr._l1_notify_consent_requested(v_id);\n'
+||E'  end if;\n\n'
+||E'  return jsonb_build_object(\'ok\', true, \'verification_letter_request_id\', v_id,');
+  execute v_new;
+end $mig$;
 
 -- ── 4. The self-scoped read door that never existed ────────────────────────────────────────
 -- 🚨 WITHOUT THIS THE CONSENT STEP HAS NO PRODUCT PATH. Five verification doors existed and

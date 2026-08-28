@@ -40,6 +40,7 @@ import {
   HR_VERIFICATION_KIND_LABELS,
   HR_VERIFICATION_SOURCE_LABELS,
   HR_VERIFICATION_STATE_LABELS,
+  denialBasisOf,
   toVerificationState,
   type HrVerificationKind,
   type HrVerificationLetterRow,
@@ -143,13 +144,14 @@ export function VerificationsSurface() {
         <span className="min-w-0">
           <span className="block truncate text-sm font-medium text-foreground">
             {/*
-              🚨 "Not on record here" WAS A CLAIM WE HAD NOT EARNED. The door
-              projects `to_jsonb()` over `hr.verification_letter_request`, which
-              carries `employment_id` and NO `subject_name` — verified live
-              2026-08-27 against the row's actual keys. So this fallback fired on
-              every request in the queue and told the reader that a person who is
-              squarely on record is not. Absence of a name we never asked the
-              server for is not evidence about the person; say what we do know.
+              🚨 "Not on record here" WAS A CLAIM WE HAD NOT EARNED. This fallback
+              once fired on every row and told the reader that a person squarely on
+              record was not — absence of a name we never asked the server for is not
+              evidence about the person.
+              UPDATE 2026-08-28: the door now DOES project `subject_name` — read live
+              off `hr_confidential_list('hr_verification_letter_request', …)`, which
+              returned it populated. The fallback stays for the row that genuinely
+              lacks one, but it is no longer the normal case.
             */}
             {row.subject_name ?? "Employee on this request"}
           </span>
@@ -219,16 +221,20 @@ export function VerificationsSurface() {
     },
     {
       id: "denial",
-      accessorFn: (row) => row.denial_basis ?? "",
+      accessorFn: (row) => denialBasisOf(row) ?? "",
       header: "Denial basis",
       filter: "select",
       // The denial IS the record. It renders as a plain, readable fact.
-      cell: (row) =>
-        row.denial_basis ? (
-          <span className="text-sm text-muted-foreground">
-            {row.denial_basis.replace(/_/g, " ")}
-          </span>
-        ) : null,
+      // 🚨 IT READS `metadata.denial_basis`, WHICH IS WHERE THE DOOR PUTS IT. This used to
+      // read a top-level `denial_basis` that the row has never carried, so every denial —
+      // including "the employee did not consent", the one the reader most needs — showed a
+      // blank basis beside a bare "Denied".
+      cell: (row) => {
+        const basis = denialBasisOf(row);
+        return basis ? (
+          <span className="text-sm text-muted-foreground">{basis}</span>
+        ) : null;
+      },
     },
   ];
 

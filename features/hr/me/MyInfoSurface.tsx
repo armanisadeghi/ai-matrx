@@ -23,6 +23,7 @@
 "use client";
 
 import { EmployeeProfile } from "@/features/hr/people/profile/EmployeeProfile";
+import { MyVerificationConsents } from "@/features/hr/me/MyVerificationConsents";
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 
@@ -31,6 +32,18 @@ export function MyInfoSurface({ tab = "personal" }: { tab?: string }) {
 
   return (
     <HrPageState loading={isLoading} operation="Your record" variant="profile">
+      {/*
+        🚨 OUTSIDE THE `active` BRANCHES, AND OUTSIDE `HrPageState`'s employee gate, ON PURPOSE.
+        `active` comes from `hr_my_context()`, which resolves the employment through
+        `hr._l1_self_employment(uid, org, TODAY)` — DATE-SCOPED, and therefore NULL for a
+        PRE-START hire. A pre-start hire is precisely who gets asked to verify income (that is
+        when people apply for loans and apartments), so gating this on `active` would hide the
+        consent ask from the population it exists for. `hr_my_verification_consents` scopes
+        itself by login linkage and needs no employer context.
+        This is also the deep-link target of `hr.people.verification_consent_requested`, whose
+        catalog row points at `/hr/me` — the notice must land on something.
+      */}
+      <MyVerificationConsents />
       {active && !active.employee_id ? (
         // An org member who is not an employee here — an administrator, a
         // facilities user. A real, legitimate state, and NOT an empty profile.

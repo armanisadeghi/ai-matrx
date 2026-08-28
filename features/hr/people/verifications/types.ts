@@ -172,15 +172,42 @@ export type HrVerificationLetterRow = {
   generated_at?: string | null;
   delivered_at?: string | null;
   delivery_method?: string | null;
+  /**
+   * 🚨 NOT A COLUMN. `hr.verification_letter_request` has no `denial_basis`; the door
+   * projects `to_jsonb()` over the row, so the basis arrives at `metadata.denial_basis`.
+   * Reading it from here was always `undefined`, which is why a consent-withheld denial
+   * rendered as a bare "Denied" with an empty basis — the one denial whose reason the
+   * reader most needs. Use {@link denialBasisOf}, never this field.
+   *
+   * @deprecated read `metadata.denial_basis` via {@link denialBasisOf}
+   */
   denial_basis?: string | null;
   denial_note?: string | null;
   expires_at?: string | null;
+  /** Where the door actually puts the denial basis. */
+  metadata?: { denial_basis?: string | null } | null;
   letter_file_id?: string | null;
   /** The FROZEN assertion. Never re-derived, never edited. */
   snapshot?: Record<string, unknown> | null;
   /** Set when this row replaced an earlier request rather than editing it. */
   supersedes_request_id?: string | null;
 };
+
+/**
+ * The denial basis, read from where the door actually puts it, rendered with its own label.
+ *
+ * `consent_withheld` must read "The employee did not consent" and not "consent withheld" —
+ * a denial that says the subject declined is the single most important thing on this row,
+ * and a de-underscored token is not the sentence a person needs.
+ */
+export function denialBasisOf(row: HrVerificationLetterRow): string | null {
+  const raw = row.metadata?.denial_basis ?? row.denial_basis ?? null;
+  if (!raw) return null;
+  return (
+    HR_VERIFICATION_DENIAL_LABELS[raw as HrVerificationDenialBasis] ??
+    raw.replace(/_/g, " ")
+  );
+}
 
 /**
  * The two server refusals route 17 must render as STATES, not as error toasts.
