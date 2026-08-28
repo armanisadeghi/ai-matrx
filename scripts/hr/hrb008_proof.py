@@ -1493,6 +1493,105 @@ async def main():
         rec("§4.2 pre-flight", "and proposed by somebody who is NOT the approver, the very same request goes through — the refusal was always about reach",
             pf2.get("granted") is True, json.dumps(pf2)[:200])
 
+        # ============================ §1.4 RULE 3 — `require_second_actor` MEANS TWO ACTORS
+        # 🚨 One person took BOTH levels of a two-level approval and nothing refused it: the audit
+        # afterwards read as manager approval + executive approval, with nothing showing one human
+        # twice. A control that reads as a control and is not one is worse than no second step,
+        # because the second step is what everybody downstream trusts.
+        await as_owner()
+        ta_pa = await conn.fetchval(
+            "insert into hr.position_assignment (organization_id, employment_id, job_title_id, "
+            "department_id, location_id, worker_class, flsa_status, pay_basis, schedule_class, "
+            "effective_from, manager_employment_id) "
+            "values ($1,$2,$3,$4,$5,'employee','nonexempt','hourly','full_time',current_date - 90,$6) returning id",
+            act_org, act_emp2, act_jt, act_dept, act_loc, act_owner_emp)
+        # only Fay qualifies: she holds every founding authority in this org
+        await as_user(gil_uid)
+        ta_req = await j("select hr.wf_request('pay_change','hr_position_assignment',$1,$2)", ta_pa, act_org)
+        await as_owner()
+        ta_inst = ta_req.get("instance_id")
+        ta_step1 = await conn.fetchrow(
+            "select id, step_key, resolved_approver_ids from hr.workflow_step "
+            "where workflow_instance_id=$1 and state='active'", ta_inst)
+        rec("§1.4 two actors", "the two-level pay change opens and routes its first step to the only qualified holder",
+            ta_step1 is not None and act_owner_emp in list(ta_step1["resolved_approver_ids"]),
+            ta_step1["step_key"] if ta_step1 else None)
+        await as_user(act_uid)
+        ta_d1 = await j("select hr.wf_decide($1,'approved','First level.')", ta_step1["id"])
+        await as_owner()
+        rec("§1.4 two actors", "the first level is decided normally",
+            ta_d1.get("granted") is True, json.dumps(ta_d1)[:140])
+        ta_step2 = await conn.fetchrow(
+            "select id, step_key, state, state_reason, resolved_approver_ids, resolution_evidence "
+            "from hr.workflow_step where workflow_instance_id=$1 and step_key<>$2 "
+            "and state in ('active','unroutable','pending') order by step_order limit 1",
+            ta_inst, ta_step1["step_key"])
+        rec("§1.4 two actors", "🚨 the SECOND level is NOT offered to the person who took the first — the resolver strikes a prior decider, so there is nothing to click",
+            ta_step2 is not None
+            and act_owner_emp not in list(ta_step2["resolved_approver_ids"] or []),
+            f'step={ta_step2["step_key"] if ta_step2 else None} '
+            f'state={ta_step2["state"] if ta_step2 else None} '
+            f'approvers={list(ta_step2["resolved_approver_ids"] or []) if ta_step2 else None}')
+        rec("§1.4 two actors", "🚨 and it fails NAMED — `distinct_actor_required`, never silently satisfied",
+            await conn.fetchval(
+                "select count(*)=1 from hr.workflow_failure where workflow_instance_id=$1 "
+                "and failure_class='distinct_actor_required' and state='open'", ta_inst),
+            str(await conn.fetchval(
+                "select string_agg(failure_class,', ') from hr.workflow_failure "
+                "where workflow_instance_id=$1", ta_inst)))
+        rec("§1.4 two actors", "the strike is RECORDED, not silent — the evidence names who was dropped and why",
+            "is_prior_decider" in json.dumps(
+                json.loads(ta_step2["resolution_evidence"]) if ta_step2 else {}),
+            str(ta_step2["resolution_evidence"])[:160] if ta_step2 else None)
+        # ARM TWO: even reached directly, the door refuses
+        await conn.execute(
+            "update hr.workflow_step set state='active', resolved_approver_ids=array[$2]::uuid[], "
+            "resolved_user_ids=array[$3]::uuid[] where id=$1",
+            ta_step2["id"], act_owner_emp, act_uid)
+        await as_user(act_uid)
+        ta_d2 = await j("select hr.wf_decide($1,'approved','Second level, same person.')", ta_step2["id"])
+        await as_owner()
+        rec("§1.4 two actors", "🚨 ARM TWO: even handed the step directly, the decide door REFUSES the prior decider — one mechanism, enforced twice",
+            ta_d2.get("granted") is False
+            and ta_d2.get("reason") == "WF_DISTINCT_ACTOR_REQUIRED", json.dumps(ta_d2)[:200])
+        rec("§1.4 two actors", "and no second decision was written — the ledger never records the review that did not happen",
+            await conn.fetchval(
+                "select count(*)=1 from hr.workflow_decision where workflow_instance_id=$1", ta_inst))
+        # grant a genuine second actor and the chain completes with TWO distinct deciders
+        await conn.execute(
+            "insert into hr.approval_authority (organization_id, holder_kind, holder_id, action_type, "
+            "scope_kind, rank, effective_from) values ($1,'employment',$2,'pay_change_approve','org',5,current_date - 300)",
+            act_org, str((await conn.fetchrow(
+                "select id from hr.employment where organization_id=$1 and employee_id=$2",
+                act_org, gil_e))["id"]))
+        gil_emp = await conn.fetchval(
+            "select id from hr.employment where organization_id=$1 and employee_id=$2", act_org, gil_e)
+        await conn.execute("update hr.workflow_step set state='pending' where id=$1", ta_step2["id"])
+        await conn.execute("select hr.wf_activate_step($1)", ta_step2["id"])
+        ta_step2b = await conn.fetchrow(
+            "select id, resolved_approver_ids, resolved_user_ids, state from hr.workflow_step where id=$1",
+            ta_step2["id"])
+        rec("§1.4 two actors", "🚨 grant a genuine second actor and the SAME step routes to THEM — the block was never about the request",
+            ta_step2b["state"] == "active" and gil_emp in list(ta_step2b["resolved_approver_ids"]),
+            f'state={ta_step2b["state"]} approvers={list(ta_step2b["resolved_approver_ids"])}')
+        await as_user(gil_uid)
+        ta_d3 = await j("select hr.wf_decide($1,'approved','Second level, second person.')", ta_step2["id"])
+        await as_owner()
+        rec("§1.4 two actors", "🚨 and the chain completes with TWO DISTINCT deciders — a two-level review that actually happened",
+            ta_d3.get("granted") is True
+            and await conn.fetchval(
+                "select count(distinct actor_employment_id)=2 from hr.workflow_decision "
+                "where workflow_instance_id=$1", ta_inst),
+            json.dumps(ta_d3)[:140])
+        rec("§1.4 two actors", "the audit DISTINGUISHES the cases: two deciders here, and the sole-authority lane stamps its own basis when there is only one",
+            await conn.fetchval(
+                "select bool_and(approval_basis='authority') from hr.workflow_decision "
+                "where workflow_instance_id=$1", ta_inst))
+        # and auto_record is deliberately untouched
+        rec("§1.4 two actors", "auto_record's sole-proprietor carve-out is UNTOUCHED — it exists for exactly the opposite case and says so in the record",
+            await conn.fetchval("select hr._wf_two_actor_action('timecard_approve')") is False
+            and await conn.fetchval("select hr._wf_two_actor_action('pay_change_approve')") is True)
+
         # ================================================================= §4.2 DOOR GRANTS
         # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
         # GRANT, so hr_c4_07's door assertion would stay green on a surface reachable only because
