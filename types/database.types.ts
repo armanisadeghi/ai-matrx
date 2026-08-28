@@ -42823,9 +42823,22 @@ export type Database = {
         }
         Returns: Json
       }
+      _leave_admin_rung: {
+        Args: { p_organization_id: string }
+        Returns: string
+      }
       _leave_blackout_hits: {
         Args: { p_ends: string; p_rule: Json; p_starts: string }
         Returns: boolean
+      }
+      _leave_case_rung: { Args: { p_case_id: string }; Returns: Json }
+      _leave_config_parameters: {
+        Args: { p_class: string; p_policy: Json }
+        Returns: Json
+      }
+      _leave_jurisdiction_key_or_federal: {
+        Args: { p_employment_id: string }
+        Returns: string
       }
       _leave_lead_days: {
         Args: { p_key: string; p_organization_id?: string }
@@ -42889,6 +42902,7 @@ export type Database = {
         Returns: boolean
       }
       _leave_sentence: { Args: { p_fig: Json }; Returns: string }
+      _leave_span_is_costless: { Args: { p_span: Json }; Returns: boolean }
       _leave_viewer: { Args: { p_employment_id: string }; Returns: Json }
       _legality_envelope: {
         Args: { p_class: string; p_rules: Json }
@@ -43721,8 +43735,62 @@ export type Database = {
         }
         Returns: Json
       }
+      leave_adjust: {
+        Args: {
+          p_confirm_below_floor?: boolean
+          p_direction: string
+          p_employment_id: string
+          p_hours: number
+          p_leave_policy_id: string
+          p_note: string
+          p_reason_category: string
+        }
+        Returns: Json
+      }
+      leave_balances: {
+        Args: { p_filters?: Json; p_organization_id: string; p_scope?: string }
+        Returns: Json
+      }
+      leave_calendar: {
+        Args: {
+          p_filters?: Json
+          p_from: string
+          p_organization_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      leave_case_entitlement: {
+        Args: { p_as_of?: string; p_case_id: string }
+        Returns: Json
+      }
+      leave_case_get: { Args: { p_case_id: string }; Returns: Json }
+      leave_case_list: { Args: { p_organization_id: string }; Returns: Json }
+      leave_case_open: {
+        Args: {
+          p_case_kind: string
+          p_concurrent_policy_ids?: string[]
+          p_continuity: string
+          p_employment_id: string
+          p_entitlement_hours?: number
+          p_entitlement_measure?: string
+          p_expected_return_on?: string
+          p_leave_request_id?: string
+          p_runs_concurrent_with_pto?: boolean
+          p_starts_on: string
+        }
+        Returns: Json
+      }
       leave_day_hours: {
         Args: { p_date: string; p_employment_id: string }
+        Returns: Json
+      }
+      leave_enroll: {
+        Args: {
+          p_effective_from?: string
+          p_employment_ids: string[]
+          p_leave_policy_id: string
+        }
         Returns: Json
       }
       leave_enrollment_refresh: {
@@ -43772,12 +43840,29 @@ export type Database = {
         }
         Returns: Json
       }
+      leave_policy_list: { Args: { p_organization_id: string }; Returns: Json }
+      leave_policy_save: {
+        Args: {
+          p_accept_warnings?: boolean
+          p_organization_id: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
+      leave_policy_validate: {
+        Args: { p_organization_id: string; p_payload: Json }
+        Returns: Json
+      }
       leave_project_balance: {
         Args: {
           p_as_of: string
           p_employment_id: string
           p_leave_policy_id: string
         }
+        Returns: Json
+      }
+      leave_reinstate_on_rehire: {
+        Args: { p_new_employment_id: string }
         Returns: Json
       }
       leave_request_cancel: {
@@ -61272,12 +61357,114 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_leave_accrual_apply: {
+        Args: {
+          p_actor_employment_id?: string
+          p_actor_type?: string
+          p_actor_user_id?: string
+          p_amount?: number
+          p_calc?: Json
+          p_clamps?: Json
+          p_employment_id: string
+          p_engine_key?: string
+          p_engine_version?: string
+          p_entry_kind: string
+          p_exception?: Json
+          p_hours_delta: number
+          p_jurisdiction_key?: string
+          p_leave_policy_id: string
+          p_note?: string
+          p_occurred_on: string
+          p_period_key: string
+          p_prospective?: boolean
+          p_rate?: number
+          p_rule_version_ids?: string[]
+          p_snapshot_inputs?: Json
+          p_source_workweek_id?: string
+          p_subject_id?: string
+        }
+        Returns: Json
+      }
+      hr_leave_adjust: {
+        Args: {
+          p_confirm_below_floor?: boolean
+          p_direction: string
+          p_employment_id: string
+          p_hours: number
+          p_leave_policy_id: string
+          p_note: string
+          p_reason_category: string
+        }
+        Returns: Json
+      }
+      hr_leave_balances: {
+        Args: { p_filters?: Json; p_organization_id: string; p_scope?: string }
+        Returns: Json
+      }
+      hr_leave_calendar: {
+        Args: {
+          p_filters?: Json
+          p_from: string
+          p_organization_id: string
+          p_to: string
+        }
+        Returns: Json
+      }
+      hr_leave_case_entitlement: {
+        Args: { p_as_of?: string; p_case_id: string }
+        Returns: Json
+      }
+      hr_leave_case_get: { Args: { p_case_id: string }; Returns: Json }
+      hr_leave_case_list: { Args: { p_organization_id: string }; Returns: Json }
+      hr_leave_case_open: {
+        Args: {
+          p_case_kind: string
+          p_concurrent_policy_ids?: string[]
+          p_continuity: string
+          p_employment_id: string
+          p_entitlement_hours?: number
+          p_entitlement_measure?: string
+          p_expected_return_on?: string
+          p_leave_request_id?: string
+          p_runs_concurrent_with_pto?: boolean
+          p_starts_on: string
+        }
+        Returns: Json
+      }
+      hr_leave_enroll: {
+        Args: {
+          p_effective_from?: string
+          p_employment_ids: string[]
+          p_leave_policy_id: string
+        }
+        Returns: Json
+      }
       hr_leave_ledger_view: {
         Args: {
           p_as_of?: string
           p_employment_id: string
           p_leave_policy_id: string
         }
+        Returns: Json
+      }
+      hr_leave_policy_list: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      hr_leave_policy_save: {
+        Args: {
+          p_accept_warnings?: boolean
+          p_organization_id: string
+          p_payload: Json
+        }
+        Returns: Json
+      }
+      hr_leave_policy_validate: {
+        Args: { p_organization_id: string; p_payload: Json }
+        Returns: Json
+      }
+      hr_leave_reinstate_on_rehire: {
+        Args: { p_new_employment_id: string }
         Returns: Json
       }
       hr_leave_request_cancel: {

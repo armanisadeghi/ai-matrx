@@ -45,6 +45,7 @@ import { supabase } from "@/utils/supabase/client";
 import { HR_MOCK_ENABLED, type HrFixtureCase } from "@/features/hr/mock/transport";
 import type { HrRpcOptions } from "@/features/hr/time/api/rpc";
 import type { HrDenied, HrFailed, HrResult } from "@/features/hr/types";
+import type { Database } from "@/types/database.types";
 
 /**
  * The client-reachable RPC names, as a closed union so a typo is a compile error rather
@@ -56,7 +57,17 @@ export type HrLeaveRpcName =
   | "hr_leave_request_preview"
   | "hr_leave_request_submit"
   | "hr_leave_request_cancel"
-  | "hr_leave_ledger_view";
+  | "hr_leave_ledger_view"
+  | "hr_leave_policy_list"
+  | "hr_leave_policy_validate"
+  | "hr_leave_policy_save"
+  | "hr_leave_enroll"
+  | "hr_leave_balances"
+  | "hr_leave_calendar"
+  | "hr_leave_adjust";
+
+type HrLeaveRpcArgs<Rpc extends HrLeaveRpcName> =
+  Database["public"]["Functions"][Rpc]["Args"];
 
 /**
  * Keys whose VALUES are free-form or are evidence read back by their stored names, and so
@@ -155,28 +166,6 @@ interface PostgrestLikeError {
   details?: string | null;
 }
 
-interface RpcCallResult {
-  data: unknown;
-  error: PostgrestLikeError | null;
-}
-
-/**
- * 🚨 **THIS CAST IS TEMPORARY AND ITS REMOVAL IS THE DRIFT DETECTOR.**
- * `supabase.rpc()` is typed against `Database["public"]["Functions"]`. The five `hr_leave_*`
- * wrappers exist live but are not yet in the checked-in generated catalog, so without the
- * cast every call resolves to `never`. The moment `pnpm db-types` regenerates with them,
- * this block deletes and real argument typing returns. Do not widen it to hide a mismatch.
- */
-type RpcQuery = PromiseLike<RpcCallResult> & {
-  abortSignal: (signal: AbortSignal) => PromiseLike<RpcCallResult>;
-};
-
-interface UntypedRpcClient {
-  rpc: (fn: string, args: Record<string, unknown>) => RpcQuery;
-}
-
-const rpcClient = supabase as unknown as UntypedRpcClient;
-
 /** The mock lane has no leave fixtures yet — fail loudly rather than fall through to live. */
 function refuseMock(rpc: HrLeaveRpcName, mockCase: HrFixtureCase | undefined): never {
   throw new Error(
@@ -192,14 +181,14 @@ function refuseMock(rpc: HrLeaveRpcName, mockCase: HrFixtureCase | undefined): n
  * A refusal is DATA (`HrDenied`) and a breakage is `HrFailed`. Neither throws: SPEC-LEAVE's
  * surfaces render a refusal in place, and an exception would unmount the page instead.
  */
-export async function callHrLeaveRpc(
-  rpc: HrLeaveRpcName,
-  args: Record<string, unknown>,
+export async function callHrLeaveRpc<Rpc extends HrLeaveRpcName>(
+  rpc: Rpc,
+  args: HrLeaveRpcArgs<Rpc>,
   opts?: HrRpcOptions,
 ): Promise<HrResult<Record<string, unknown>>> {
   if (HR_MOCK_ENABLED) refuseMock(rpc, opts?.mockCase);
 
-  const query = rpcClient.rpc(rpc, args);
+  const query = supabase.rpc(rpc, args);
   let data: unknown;
   let error: PostgrestLikeError | null;
   try {

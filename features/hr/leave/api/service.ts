@@ -347,7 +347,7 @@ export async function fetchMyTimeOff(
 ): Promise<HrResult<MyTimeOff>> {
   const res = await callHrLeaveRpc(
     "hr_my_time_off",
-    { p_employment_id: args.employmentId ?? null },
+    { p_employment_id: args.employmentId ?? undefined },
     opts,
   );
   if (!res.ok) return res;
@@ -436,10 +436,10 @@ export async function submitLeaveRequest(
       p_starts_on: args.startsOn,
       p_ends_on: args.endsOn,
       p_day_parts: args.dayParts ?? [],
-      p_reason_category_id: args.reasonCategoryId ?? null,
-      p_reason_note: args.reasonNote ?? null,
-      p_leave_case_id: args.leaveCaseId ?? null,
-      p_idempotency_key: args.idempotencyKey ?? null,
+      p_reason_category_id: args.reasonCategoryId ?? undefined,
+      p_reason_note: args.reasonNote ?? undefined,
+      p_leave_case_id: args.leaveCaseId ?? undefined,
+      p_idempotency_key: args.idempotencyKey ?? undefined,
     },
     opts,
   );
@@ -474,8 +474,8 @@ export async function cancelLeaveRequest(
     "hr_leave_request_cancel",
     {
       p_request_id: args.requestId,
-      p_reason: args.reason ?? null,
-      p_hours: args.hours ?? null,
+      p_reason: args.reason ?? undefined,
+      p_hours: args.hours ?? undefined,
     },
     opts,
   );
@@ -502,7 +502,7 @@ export async function fetchLeaveLedger(
     {
       p_employment_id: args.employmentId,
       p_leave_policy_id: args.leavePolicyId,
-      p_as_of: args.asOf ?? null,
+      p_as_of: args.asOf ?? undefined,
     },
     opts,
   );
