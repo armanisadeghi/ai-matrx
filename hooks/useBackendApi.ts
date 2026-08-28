@@ -1,9 +1,9 @@
 /**
  * useBackendApi — Thin React hook wrapper for backend API calls.
  *
- * Reads the active backend URL from apiConfigSlice (single source of truth).
- * Supports all server environments: production, development, staging,
- * localhost, gpu, and custom.
+ * Resolves the requested service URL from apiConfigSlice (single source of
+ * truth). Defaults to aidream and can target independently configured services
+ * such as the standalone scraper in every supported environment.
  *
  * Legacy response-shaped adapter. Calls are transported by
  * lib/python-client::requestRaw so auth, request IDs, structured errors, and

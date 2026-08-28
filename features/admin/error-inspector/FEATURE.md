@@ -40,6 +40,12 @@ second symptom instead of deduping the incident.
   failures, `relation: scraper:<path>`) plus per-step "initialize site"
   failures read back from `web.site.initialization.errors`
   (`relation: initialize:<step>`). Source `marketing-crawler`, red.
+- **Web scraper panel** — `features/scraper/diagnostics/captureScraperError.ts`
+  catches domain failures represented by `success: false` rows inside an HTTP
+  200 NDJSON stream. Source `scraper`, red; retains `failure_reason`, endpoint,
+  URL, stage, stack, HTTP status, full stream, and raw evidence. HTTP/network
+  failures and typed stream errors remain owned by their existing adapters so
+  one incident produces one capture.
 
 - **Markdown delimiter guard** — `lib/markdown/delimiter-guard.ts`,
   `reportDelimiterViolations()`, called from the markdown renderers
@@ -317,6 +323,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-27 — **Web Scraper domain failures are visible and singular.** The scraper can return HTTP 200 while an individual result row carries `success: false`; `useScraperApi` previously converted that row into local panel state, bypassing every rejection-based capture adapter. The new `scraper` adapter records that domain failure with its full diagnostics while standing down for HTTP/network and typed stream errors already captured centrally. Focused tests pin all three boundaries; live verification produced exactly one red Error Inspector row for a controlled failed target.
 - 2026-08-25 — **Shell icon registry failures are structured and singular.** A rejected shell icon now arrives as `shell-navigation` with `SHELL_ICON_UNREGISTERED`, `relation=icon:<name>`, the `CircleHelp` recovery, and its stack. The production console adapter promotes the tagged error instead of also creating a generic `console-error` symptom; focused tests pin both the typed branch and the ordinary console fallback.
 - 2026-08-25 — **DB kind render failures persist once.** `DbKindComponentErrorBoundary` already emits the actionable `react-render` capture with `relation=kind:<slug>` and the component stack; its adjacent `console.error` crossed the production console adapter and created a second generic `console-error` symptom for the same throw. The mirror is removed while the structured capture, generic-viewer recovery, and author incident report remain intact; the focused boundary test asserts one structured capture and no boundary-owned console mirror.
 - 2026-08-24 — **Nested console errors retain their diagnostics, and structured Supabase failures persist once.** The global console serializer now walks arrays/objects, preserves nested `Error` name/message/stack/cause/custom fields, and terminates cycles, so the common `console.error(label, { err })` shape cannot degrade to `{}`. Working-document association failures already captured as `supabase-postgrest` no longer mirror through the console fallback; focused tests pin both the serializer and the deferred-edge incident.

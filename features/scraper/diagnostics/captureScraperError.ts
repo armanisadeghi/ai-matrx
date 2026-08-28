@@ -31,7 +31,7 @@ export function captureScraperError(
       name: error instanceof Error ? error.name : undefined,
       stack: diagnostics.stack,
       details: JSON.stringify({
-      operation: "unknown",
+        operation: "unknown",
         stage: diagnostics.stage,
         requestedUrl: diagnostics.received.requestedUrl,
         requestedUrls: diagnostics.received.requestedUrls,
