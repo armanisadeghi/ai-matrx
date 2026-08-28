@@ -1002,7 +1002,7 @@ async def main():
 
         # carol is the HR owner, so she holds payroll.read and may move the period
         await as_user(people["carol"]["uid"])
-        sub = await j("select hr.pay_period_transition($1,'submitted')", pp2)
+        sub = await j("select public.hr_pay_period_transition($1,'submitted')", pp2)
         sub_d = (sub or {}).get("data") or {}
         await as_owner()
         rec("§8.2 A→B submit", "an HR owner may submit the period at all — the product path is reachable",
@@ -1048,7 +1048,7 @@ async def main():
 
         # ---- L: the period cannot be approved while a row is still undecided, and it NAMES who
         await as_user(people["carol"]["uid"])
-        early = await j("select hr.pay_period_transition($1,'approved')", pp2)
+        early = await j("select public.hr_pay_period_transition($1,'approved')", pp2)
         early_d = (early or {}).get("details") or {}
         rec("§8.2 L completion", "🚨 the period REFUSES to approve while a timecard is not APPROVED — attested is not approved",
             (early or {}).get("ok") is False
@@ -1071,7 +1071,7 @@ async def main():
             str(await conn.fetchval(
                 "select string_agg(state, ', ') from hr.pay_period_employment where pay_period_id=$1", pp2)))
         await as_user(people["carol"]["uid"])
-        done = await j("select hr.pay_period_transition($1,'approved')", pp2)
+        done = await j("select public.hr_pay_period_transition($1,'approved')", pp2)
         await as_owner()
         rec("§8.2 L completion", "🚨 and with every row decided the PERIOD reaches approved — the chain runs end to end",
             (done or {}).get("ok") is True
@@ -1105,7 +1105,7 @@ async def main():
             "insert into hr.pay_period (organization_id, pay_group_id, period_start_on, period_end_on, "
             "sequence_number) values ($1,$2,current_date - 45, current_date - 31, 3) returning id", org, pg2)
         await as_user(people["carol"]["uid"])
-        sub3 = await j("select hr.pay_period_transition($1,'submitted')", pp3)
+        sub3 = await j("select public.hr_pay_period_transition($1,'submitted')", pp3)
         await as_owner()
         nr_ppe = await conn.fetchval(
             "select id from hr.pay_period_employment where pay_period_id=$1 and employment_id=$2",

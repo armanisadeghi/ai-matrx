@@ -15,6 +15,39 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D283 — `hr_wf_for_target` has no authorization gate at all, and returns another organization's workflow history (2026-08-28)
+
+`public.hr_wf_for_target(p_target_token, p_target_id)` → `hr.wf_for_target` filters on
+`(target_token, target_id)` and **nothing else**. No `auth.uid()`, no capability call, no
+organization predicate. The inner is already `SECURITY DEFINER`, so RLS is bypassed and there is
+nothing else standing in front of it.
+
+**Measured live** (rolled back), as a non-admin employment in an **unrelated** organization:
+
+```
+public.hr_wf_for_target('hr_position_assignment', <another org's assignment id>)
+  → granted: true
+  → history: [{"flow_key":"pay_change","state":"cancelled","instance_id":"54d3ec54-…"}]
+```
+
+So knowing a target uuid is sufficient to learn that org's workflow existence, flow kind, state and
+timestamps. Not enumerable (uuids are not guessable) but not gated either. Every other workflow door
+refuses the same caller by name — `WF_NOT_APPROVER`, `no_cancel_authority`, `not_the_requester`,
+`no_reassign_authority`, `not_the_assignee`, `no_authority_to_delegate`.
+
+**This predates the door conversion and is not caused by it** — the INVOKER wrapper never protected
+anything, because the inner was already `DEFINER`. But it is why `hr_c4_35` converted 11 of the 12
+doors and **stopped this one by name**: stamping `SECURITY DEFINER` on a door that authorizes nobody
+is the one shape that conversion can turn into a hole. Cost of the stop is exactly **one** grant —
+`hr.wf_for_target` calls no other `hr` function, so 52 of the campaign's 53 inner grants are still
+free to revoke.
+
+**Fix shape (needs a ruling, not a guess):** the natural gate is the same one `hr.wf_instance`
+already applies — resolve the caller's employments and require either an organization match or
+`workflow.view_queue` over the subject. That is a behaviour change for any caller relying on the
+current openness, so it belongs to whoever owns the target-page contract. Once gated, converting the
+door is mechanical and the last inner grant closes with it.
+
 ### D281 — `esign.envelope` is not in `hr._approval_subject`'s allowlist, so `signature_request` can never route (2026-08-28)
 
 `hrb011_proof.py` aborts at 106 assertions with:
