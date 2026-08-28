@@ -12,18 +12,42 @@ const PICKED: PickedGoogleDriveFile = {
 };
 
 function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
+  return {
+    ok: status >= 200 && status < 300,
     status,
-    headers: { "Content-Type": "application/json" },
-  });
+    json: async () => body,
+  } as Response;
+}
+
+function blobResponse(contents: string, type = ""): Response {
+  return {
+    ok: true,
+    status: 200,
+    blob: async () => new Blob([contents], { type }),
+  } as Response;
 }
 
 describe("Google Drive file materialization", () => {
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+    Reflect.deleteProperty(globalThis, "fetch");
+  });
+
+  function installFetchMock() {
+    const fetchMock = jest.fn<
+      ReturnType<typeof fetch>,
+      Parameters<typeof fetch>
+    >();
+    Object.defineProperty(globalThis, "fetch", {
+      configurable: true,
+      writable: true,
+      value: fetchMock,
+    });
+    return fetchMock;
+  }
 
   it("exports a selected Google Doc as an editable DOCX File", async () => {
-    const fetchMock = jest
-      .spyOn(globalThis, "fetch")
+    const fetchMock = installFetchMock()
       .mockResolvedValueOnce(
         jsonResponse({
           id: PICKED.id,
@@ -33,9 +57,7 @@ describe("Google Drive file materialization", () => {
           capabilities: { canDownload: true },
         }),
       )
-      .mockResolvedValueOnce(
-        new Response(new Blob(["docx-bytes"]), { status: 200 }),
-      );
+      .mockResolvedValueOnce(blobResponse("docx-bytes"));
 
     const file = await materializeGoogleDriveFile("picker-token", PICKED);
 
@@ -52,8 +74,7 @@ describe("Google Drive file materialization", () => {
       name: "Research.pdf",
       mimeType: "application/pdf",
     };
-    jest
-      .spyOn(globalThis, "fetch")
+    installFetchMock()
       .mockResolvedValueOnce(
         jsonResponse({
           id: pickedPdf.id,
@@ -62,11 +83,7 @@ describe("Google Drive file materialization", () => {
           capabilities: { canDownload: true },
         }),
       )
-      .mockResolvedValueOnce(
-        new Response(new Blob(["pdf-bytes"], { type: "application/pdf" }), {
-          status: 200,
-        }),
-      );
+      .mockResolvedValueOnce(blobResponse("pdf-bytes", "application/pdf"));
 
     const file = await materializeGoogleDriveFile("picker-token", pickedPdf);
 
@@ -81,8 +98,7 @@ describe("Google Drive file materialization", () => {
       name: "Survey",
       mimeType: "application/vnd.google-apps.form",
     };
-    jest
-      .spyOn(globalThis, "fetch")
+    installFetchMock()
       .mockResolvedValueOnce(
         jsonResponse({
           id: PICKED.id,
@@ -91,9 +107,7 @@ describe("Google Drive file materialization", () => {
           capabilities: { canDownload: true },
         }),
       )
-      .mockResolvedValueOnce(
-        new Response(new Blob(["docx-bytes"]), { status: 200 }),
-      )
+      .mockResolvedValueOnce(blobResponse("docx-bytes"))
       .mockResolvedValueOnce(
         jsonResponse({
           id: pickedForm.id,

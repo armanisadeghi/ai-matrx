@@ -204,9 +204,7 @@ const ScopeBatchImportWindow = lazyOverlay(
 );
 const KeywordQuickAnswersWindow = lazyOverlay(
   () =>
-    import(
-      "@/features/window-panels/windows/marketing/KeywordQuickAnswersWindow"
-    ),
+    import("@/features/window-panels/windows/marketing/KeywordQuickAnswersWindow"),
 );
 const AgentMemoryWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentMemoryWindow"),
@@ -656,9 +654,7 @@ const CharacterCounterWindow = lazyOverlay(
 );
 const StructuredValueWindow = lazyOverlay(
   () =>
-    import(
-      "@/features/window-panels/windows/structured-value/StructuredValueWindow"
-    ),
+    import("@/features/window-panels/windows/structured-value/StructuredValueWindow"),
   { ssr: false },
 );
 const ConvertToShapeWindow = lazyOverlay(
@@ -783,8 +779,7 @@ const LiveRunWindow = lazyOverlay(
   { ssr: false },
 );
 const WorkflowRunWindow = lazyOverlay(
-  () =>
-    import("@/features/window-panels/windows/workflows/WorkflowRunWindow"),
+  () => import("@/features/window-panels/windows/workflows/WorkflowRunWindow"),
   { ssr: false },
 );
 const ListenSummaryWindow = lazyOverlay(
@@ -1218,7 +1213,9 @@ export default function OverlayController() {
     agentSettingsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentSettingsWindow"),
     ),
-    mandateWindow: useAppSelector((s) => selectIsOverlayOpen(s, "mandateWindow")),
+    mandateWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "mandateWindow"),
+    ),
     aiVoiceWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "aiVoiceWindow"),
     ),
@@ -2399,17 +2396,13 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.keywordQuickAnswersWindow;
         const data = dataById.keywordQuickAnswersWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <KeywordQuickAnswersWindow
             isOpen
             onClose={() =>
-              dispatch(
-                closeOverlay({ overlayId: "keywordQuickAnswersWindow" }),
-              )
+              dispatch(closeOverlay({ overlayId: "keywordQuickAnswersWindow" }))
             }
             siteId={(data?.siteId as string | null) ?? null}
             siteLabel={(data?.siteLabel as string | null) ?? null}
@@ -2458,9 +2451,7 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "googleConnectWindow" }))
             }
             reason={typeof data?.reason === "string" ? data.reason : null}
-            mode={
-              data?.mode === "drive-import" ? "drive-import" : "workspace"
-            }
+            mode={data?.mode === "drive-import" ? "drive-import" : "workspace"}
             callbackGroupId={
               typeof data?.callbackGroupId === "string"
                 ? data.callbackGroupId
@@ -3025,14 +3016,14 @@ export default function OverlayController() {
       {(() => {
         const isOpen = isOpenById.mandateWindow;
         const data = dataById.mandateWindow as
-          | Record<string, unknown>
-          | null
-          | undefined;
+          Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
           <MandateWindow
             isOpen
-            onClose={() => dispatch(closeOverlay({ overlayId: "mandateWindow" }))}
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "mandateWindow" }))
+            }
             initialMandateKey={
               typeof data?.initialMandateKey === "string"
                 ? data.initialMandateKey
@@ -5245,9 +5236,7 @@ export default function OverlayController() {
             }
             value={data?.value}
             title={typeof data?.title === "string" ? data.title : null}
-            subtitle={
-              typeof data?.subtitle === "string" ? data.subtitle : null
-            }
+            subtitle={typeof data?.subtitle === "string" ? data.subtitle : null}
           />
         );
       })}

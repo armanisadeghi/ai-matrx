@@ -100,9 +100,7 @@ function GoogleConnectWindowBody({
     );
   }, [inventory.data]);
 
-  const canSend = Boolean(
-    connection?.scopes.includes(GOOGLE_SCOPE.gmailSend),
-  );
+  const canSend = Boolean(connection?.scopes.includes(GOOGLE_SCOPE.gmailSend));
 
   const files = useMemo(() => {
     const rows = inventory.data?.resources ?? [];
@@ -113,23 +111,20 @@ function GoogleConnectWindowBody({
     );
   }, [inventory.data]);
 
-  const run = useCallback(
-    async (key: string, work: () => Promise<void>) => {
-      setBusy(key);
-      try {
-        await work();
-      } catch (cause) {
-        if (isGoogleAuthorizationCancelled(cause)) {
-          toast.info("Google authorization cancelled");
-          return;
-        }
-        toast.error(extractErrorMessage(cause));
-      } finally {
-        setBusy(null);
+  const run = useCallback(async (key: string, work: () => Promise<void>) => {
+    setBusy(key);
+    try {
+      await work();
+    } catch (cause) {
+      if (isGoogleAuthorizationCancelled(cause)) {
+        toast.info("Google authorization cancelled");
+        return;
       }
-    },
-    [],
-  );
+      toast.error(extractErrorMessage(cause));
+    } finally {
+      setBusy(null);
+    }
+  }, []);
 
   const connect = () =>
     void run("connect", async () => {
@@ -173,7 +168,8 @@ function GoogleConnectWindowBody({
         const result = await materializeGoogleDriveFiles(accessToken, picked);
         if (!result.files.length) {
           throw new Error(
-            result.failures[0]?.error ?? "No selected Google Drive file could be imported.",
+            result.failures[0]?.error ??
+              "No selected Google Drive file could be imported.",
           );
         }
         emitGoogleConnectEvent(callbackGroupId, {

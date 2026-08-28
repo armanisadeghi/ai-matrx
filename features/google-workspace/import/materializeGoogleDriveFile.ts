@@ -46,10 +46,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function requiredString(
-  record: Record<string, unknown>,
-  key: string,
-): string {
+function requiredString(record: Record<string, unknown>, key: string): string {
   const value = record[key];
   if (typeof value !== "string" || !value.trim()) {
     throw new Error(`Google Drive returned an invalid ${key}.`);
@@ -70,7 +67,10 @@ function withExtension(name: string, extension: string): string {
   return safe.toLowerCase().endsWith(extension) ? safe : `${safe}${extension}`;
 }
 
-async function googleError(response: Response, fallback: string): Promise<Error> {
+async function googleError(
+  response: Response,
+  fallback: string,
+): Promise<Error> {
   let message = fallback;
   try {
     const payload: unknown = await response.json();
@@ -189,7 +189,9 @@ export async function materializeGoogleDriveFile(
 ): Promise<File> {
   const metadata = await readMetadata(accessToken, picked.id);
   if (metadata.id !== picked.id) {
-    throw new Error("Google Drive returned a different file than the one selected.");
+    throw new Error(
+      "Google Drive returned a different file than the one selected.",
+    );
   }
   const { blob, fileName } = await readContent(accessToken, metadata);
   const modified = metadata.modifiedTime
@@ -204,7 +206,10 @@ export async function materializeGoogleDriveFile(
 export async function materializeGoogleDriveFiles(
   accessToken: string,
   picked: readonly PickedGoogleDriveFile[],
-): Promise<{ files: File[]; failures: Array<{ name: string; error: string }> }> {
+): Promise<{
+  files: File[];
+  failures: Array<{ name: string; error: string }>;
+}> {
   const files: File[] = [];
   const failures: Array<{ name: string; error: string }> = [];
   // Deliberately sequential: a multi-select can contain large blobs, and

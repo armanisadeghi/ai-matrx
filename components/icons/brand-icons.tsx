@@ -2,19 +2,19 @@ import { forwardRef } from "react";
 import type { LucideIcon, LucideProps } from "lucide-react";
 import type { IconType, IconBaseProps } from "react-icons";
 import {
-    FaYoutube,
-    FaGithub,
-    FaXTwitter,
-    FaFacebook,
-    FaLinkedin,
-    FaInstagram,
-    FaPinterest,
-    FaTiktok,
-    FaChrome,
-    FaTrello,
-    FaGitlab,
-    FaGoogle,
-    FaGoogleDrive,
+  FaYoutube,
+  FaGithub,
+  FaXTwitter,
+  FaFacebook,
+  FaLinkedin,
+  FaInstagram,
+  FaPinterest,
+  FaTiktok,
+  FaChrome,
+  FaTrello,
+  FaGitlab,
+  FaGoogle,
+  FaGoogleDrive,
 } from "react-icons/fa6";
 import { SiFigma } from "react-icons/si";
 
@@ -30,16 +30,21 @@ import { SiFigma } from "react-icons/si";
  * rely on, add one line here — this is the single point of change for the whole class.
  */
 const asLucideIcon = (Icon: IconType, name: string): LucideIcon => {
-    const Shim = forwardRef<SVGSVGElement, LucideProps>(function BrandIcon(
-        // lucide-only props that react-icons doesn't understand are dropped so they
-        // don't leak onto the underlying <svg> as invalid attributes.
-        { size = 24, strokeWidth: _strokeWidth, absoluteStrokeWidth: _absoluteStrokeWidth, ...rest },
-        _ref,
-    ) {
-        return <Icon size={size} {...(rest as IconBaseProps)} />;
-    });
-    Shim.displayName = name;
-    return Shim as unknown as LucideIcon;
+  const Shim = forwardRef<SVGSVGElement, LucideProps>(function BrandIcon(
+    // lucide-only props that react-icons doesn't understand are dropped so they
+    // don't leak onto the underlying <svg> as invalid attributes.
+    {
+      size = 24,
+      strokeWidth: _strokeWidth,
+      absoluteStrokeWidth: _absoluteStrokeWidth,
+      ...rest
+    },
+    _ref,
+  ) {
+    return <Icon size={size} {...(rest as IconBaseProps)} />;
+  });
+  Shim.displayName = name;
+  return Shim as unknown as LucideIcon;
 };
 
 export const Youtube = asLucideIcon(FaYoutube, "Youtube");

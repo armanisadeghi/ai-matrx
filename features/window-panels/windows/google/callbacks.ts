@@ -11,8 +11,7 @@ export interface GoogleConnectWindowCloseEvent {
 }
 
 export type GoogleConnectWindowEvent =
-  | GoogleDriveImportedEvent
-  | GoogleConnectWindowCloseEvent;
+  GoogleDriveImportedEvent | GoogleConnectWindowCloseEvent;
 
 export interface GoogleConnectWindowHandlers {
   onDriveImported?: (event: GoogleDriveImportedEvent) => void;
