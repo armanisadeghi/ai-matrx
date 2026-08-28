@@ -1806,6 +1806,210 @@ async def main():
         rec("§2.2 RD5", "and the ACTOR column was NOT the one chosen — subject is whom the action is about, never who performed it",
             await conn.fetchval(SQL_SUBJECT_RULE))
 
+        # ============================ §2.2 ROUTING-TIME READ ENTITLEMENT (the ruling, hr_c4_33)
+        # 🚨 DIGEST WITHHOLDING GATED ON ENTITLEMENT TO THE STEP, NOT TO THE FIELD.
+        # `hr._wf_display`'s v_entitled is "are you on this step, or do you hold
+        # workflow.view_queue" — so being ASSIGNED the step WAS the entitlement, and an approver
+        # holding no `identity.read` was shown a Confidential home address because somebody routed
+        # it to them. Nothing leaked only because ROUTING CONVENTION happened to send address
+        # changes to an hr_admin, and that convention was written down as PROSE in a seed note.
+        # RULED: deciding requires seeing — never blind the decider — so a candidate who may not
+        # read the change is not a candidate, struck at ROUTING time and recorded.
+        # Falsified BOTH ways: over-tightening is this engine's recorded textbook defect.
+        await as_owner()
+        patches = await conn.fetch(
+            "select i.id, i.flow_key, coalesce(i.payload->>'token', i.target_token) tok, "
+            "       hr._wf_change_entitlement(i.id)::text ent, "
+            "       (select ds.tier from hr._door_spec(coalesce(i.payload->>'token', i.target_token)) ds) tier "
+            "  from hr.workflow_instance i where i.payload ? 'patch' order by i.created_at")
+        armed = [r for r in patches if r["tier"] is not None]
+        unarmed = [r for r in patches if r["tier"] is None]
+        rec("§2.2 entitlement",
+            "a field change on a table BEHIND A DOOR derives the read entitlement it requires",
+            bool(armed) and all(
+                r["ent"] and json.loads(r["ent"])["token"] == r["tok"]
+                and json.loads(r["ent"])["tier"] == r["tier"]
+                and json.loads(r["ent"])["caps"] and json.loads(r["ent"])["fields"]
+                for r in armed),
+            f"{len(armed)} armed: " + "; ".join(
+                f'{r["flow_key"]}/{r["tok"]}→{(json.loads(r["ent"]) or {}).get("caps") if r["ent"] else None}'
+                for r in armed[:3]))
+        # 🚨 THE NO-COLLATERAL-NARROWING HALF. A legal name lives on hr_employee, which has NO
+        # door — directory tier — so a name change requires nothing extra and routes exactly as it
+        # did yesterday. If this ever goes red the gate has started taxing flows it must not touch.
+        rec("§2.2 entitlement",
+            "🚨 a field change on a table with NO door derives NOTHING — a legal name change is not narrowed",
+            all(r["ent"] is None for r in unarmed),
+            f"{len(unarmed)} door-less patch flows: " + "; ".join(
+                f'{r["flow_key"]}/{r["tok"]}={r["ent"]}' for r in unarmed[:3]))
+        rec("§2.2 entitlement",
+            "and a flow that carries no patch at all is never taxed with a lookup it does not need",
+            await conn.fetchval(
+                "select count(*)=0 from hr.workflow_instance i "
+                "where not (i.payload ? 'patch') and hr._wf_change_entitlement(i.id) is not null"),
+            str(await conn.fetchval(
+                "select count(*) from hr.workflow_instance where not (payload ? 'patch')")) + " non-patch instances")
+
+        # 🚨 BYTE-IDENTICAL. An ordinary leave request's resolver envelope must not gain so much as
+        # a key — the evidence is emitted ONLY when the gate armed, precisely so this holds.
+        leave_keys = await conn.fetch(
+            "select st.id, hr.wf_resolve_approvers(st.id)::text out from hr.workflow_step st "
+            "join hr.workflow_instance i on i.id = st.workflow_instance_id "
+            "where i.flow_key = 'leave_request'")
+        rec("§2.2 entitlement",
+            "🚨 an ordinary leave request's routing envelope carries NO entitlement keys at all",
+            bool(leave_keys) and not [r for r in leave_keys
+                                      if "change_entitlement" in r["out"] or "not_entitled" in r["out"]],
+            f'{len(leave_keys)} leave steps re-resolved; '
+            f'{len([r for r in leave_keys if "change_entitlement" in r["out"]])} polluted')
+
+        # the entitlement test itself, in both fail-closed directions
+        ENT_PROBE = json.dumps({"token": "hr_employee_private",
+                                "row_id": "00000000-0000-0000-0000-000000000000"})
+        rec("§2.2 entitlement", "a login-less candidate can never see confidential change content",
+            (await conn.fetchval("select hr._wf_may_see_change(null, $1::jsonb)", ENT_PROBE)) is False)
+        rec("§2.2 entitlement",
+            "🚨 and an UNANSWERABLE door is a CLOSED door — hr._door_verdict raises P0002 for a row that is gone",
+            (await conn.fetchval(
+                "select hr._wf_may_see_change("
+                "  (select login_user_id from hr.employee where login_user_id is not null limit 1), $1::jsonb)",
+                ENT_PROBE)) is False)
+        rec("§2.2 entitlement", "and a null entitlement asks nothing of anybody — no flow is narrowed by default",
+            (await conn.fetchval(
+                "select hr._wf_may_see_change("
+                "  (select login_user_id from hr.employee where login_user_id is not null limit 1), null)")) is True)
+
+        # 🚨 ROUTING TIME AND READ TIME ASK THE SAME DOOR. If these two ever disagree, the engine
+        # would route somebody the read path then refuses — or withhold from somebody entitled.
+        if armed:
+            _ent = armed[0]["ent"]
+            _org = await conn.fetchval("select organization_id from hr.workflow_instance where id=$1",
+                                       armed[0]["id"])
+            agree = await conn.fetch(
+                "select e.login_user_id uid, "
+                "       hr._wf_may_see_change(e.login_user_id, $2::jsonb) route, "
+                "       coalesce((hr._door_verdict(e.login_user_id, $2::jsonb->>'token', "
+                "                 ($2::jsonb->>'row_id')::uuid, false)->>'allowed')::boolean,false) read "
+                "  from hr.employment em join hr.employee e on e.id = em.employee_id "
+                " where em.organization_id = $1 and em.deleted_at is null and e.login_user_id is not null",
+                _org, _ent)
+            rec("§2.2 entitlement",
+                "🚨 the ROUTING gate and the AUDITED READ door return the same verdict for every login in the org",
+                bool(agree) and all(r["route"] == r["read"] for r in agree),
+                f'{sum(1 for r in agree if r["route"])}/{len(agree)} entitled; '
+                f'{len([r for r in agree if r["route"] != r["read"]])} disagreements')
+
+        # ============ END TO END on a live Confidential change: struck, and still routed
+        step_armed = await conn.fetchval(
+            "select st.id from hr.workflow_step st join hr.workflow_instance i on i.id=st.workflow_instance_id "
+            "where hr._wf_change_entitlement(i.id) is not null "
+            "  and (hr.wf_resolve_approvers(st.id)->>'granted')::boolean order by st.created_at limit 1")
+        if step_armed:
+            _org2 = await conn.fetchval(
+                "select i.organization_id from hr.workflow_instance i "
+                "join hr.workflow_step st on st.workflow_instance_id=i.id where st.id=$1", step_armed)
+            _ent2 = await conn.fetchval(
+                "select hr._wf_change_entitlement(i.id)::text from hr.workflow_instance i "
+                "join hr.workflow_step st on st.workflow_instance_id=i.id where st.id=$1", step_armed)
+            _unent = await conn.fetchval(
+                "select em.id from hr.employment em join hr.employee e on e.id=em.employee_id "
+                " where em.organization_id=$1 and em.deleted_at is null and em.status='active' "
+                "   and e.login_user_id is not null "
+                "   and not hr._wf_may_see_change(e.login_user_id, $2::jsonb) limit 1",
+                _org2, _ent2)
+            base_out = await j("select hr.wf_resolve_approvers($1)", step_armed)
+            # 🚨 hr.approval_authority has NO privileged write path from outside a plpgsql body —
+            # SPEC-ACCESS law 2 — so the fixture arms and writes inside ONE block, exactly the way
+            # the engine does. The suite's own transaction rolls all of it back.
+            await conn.execute("create temp table hrb008_ent_probe(k text, v text) on commit drop")
+            await conn.execute(f"""
+                do $probe$
+                declare v_min int; v_keep uuid[];
+                begin
+                  select coalesce(array_agg((x)::uuid),'{{}}') into v_keep
+                    from jsonb_array_elements_text(hr.wf_resolve_approvers('{step_armed}'::uuid)->'candidates') x;
+                  select min(rank) into v_min from hr.approval_authority
+                   where organization_id='{_org2}'::uuid and is_active
+                     and action_type = (select sd.authority_action from hr.workflow_step st
+                                         join hr.workflow_step_definition sd on sd.id=st.step_definition_id
+                                        where st.id='{step_armed}'::uuid);
+                  perform hr.arm_write();
+                  insert into hr.approval_authority
+                    (organization_id, action_type, holder_kind, holder_id, scope_kind, rank,
+                     is_active, effective_from, source)
+                  select '{_org2}'::uuid, sd.authority_action, 'employment', '{_unent}', 'org',
+                         coalesce(v_min, 0), true, '2020-01-01'::date, 'assigned'
+                    from hr.workflow_step st join hr.workflow_step_definition sd on sd.id=st.step_definition_id
+                   where st.id='{step_armed}'::uuid;
+                  insert into hrb008_ent_probe
+                    values ('shared', hr.wf_resolve_approvers('{step_armed}'::uuid)::text),
+                           ('only',   hr.wf_resolve_approvers('{step_armed}'::uuid, v_keep)::text);
+                end $probe$;""")
+            shared = json.loads(await conn.fetchval(
+                "select v from hrb008_ent_probe where k='shared'"))
+            only = json.loads(await conn.fetchval("select v from hrb008_ent_probe where k='only'"))
+            rec("§2.2 entitlement",
+                "🚨 a CONFIDENTIAL field change NEVER routes to an approver who holds no read entitlement, "
+                "even when they hold the approval authority at the top rank",
+                str(_unent) not in json.dumps(shared.get("candidates") or []),
+                f'candidates={shared.get("candidates")}; the unentitled holder is {_unent}')
+            rec("§2.2 entitlement",
+                "and the skip is EVIDENCE, named like sole_authority — who, which door, which fields",
+                any(x.get("employment_id") == str(_unent)
+                    and x.get("why") == "not_entitled_to_change" and x.get("caps") and x.get("fields")
+                    for x in (shared.get("evidence") or {}).get("not_entitled") or []),
+                json.dumps((shared.get("evidence") or {}).get("not_entitled"))[:200])
+            rec("§2.2 entitlement",
+                "🚨 and the ENTITLED approver is still routed — the fallback chain climbed past the skip, "
+                "it did not collapse",
+                shared.get("granted") is True
+                and sorted(shared.get("candidates") or []) == sorted(base_out.get("candidates") or []),
+                f'before={base_out.get("candidates")} after={shared.get("candidates")}')
+            rec("§2.2 entitlement",
+                "🚨 with ONLY unentitled holders left, the step FAILS CLOSED to the HR admin queue — "
+                "and says approver_not_entitled, not the generic approver_ineligible",
+                only.get("granted") is False and only.get("reason") == "approver_not_entitled",
+                f'reason={only.get("reason")}')
+            rec("§2.2 entitlement",
+                "and the failure carries what the door wanted, so the queue can offer the right fix",
+                (only.get("evidence") or {}).get("change_entitlement") is not None
+                and (only.get("evidence") or {}).get("not_entitled"),
+                json.dumps((only.get("evidence") or {}).get("change_entitlement")))
+
+        # 🚨 THE CLASS AND THE CHECK MOVE TOGETHER — hr_c4_15 shipped a class the hardcoded CHECK
+        # still rejected, so the engine could NAME a failure it could not STORE. Proven by a real
+        # insert, not by reading the constraint.
+        rec("§3.1 vocabulary", "approver_not_entitled is a registered hr_workflow_failure_class",
+            await conn.fetchval(
+                "select count(*)=1 from platform.categories where dimension='hr_workflow_failure_class' "
+                "and slug='approver_not_entitled' and organization_id=$1 and deleted_at is null", SYS_ORG))
+        cls_ok, cls_err = False, None
+        sp_cls = conn.transaction()
+        await sp_cls.start()
+        try:
+            await conn.execute("""
+                do $c$ begin
+                  perform hr.arm_write();
+                  insert into hr.workflow_failure (organization_id, workflow_instance_id, failure_class, detail)
+                  select i.organization_id, i.id, 'approver_not_entitled', '{"probe":"hrb008"}'::jsonb
+                    from hr.workflow_instance i order by i.created_at limit 1;
+                end $c$;""")
+            cls_ok = True
+        except Exception as e:
+            cls_err = f"{getattr(e, 'sqlstate', None)}: {e}"
+        await sp_cls.rollback()
+        rec("§3.1 vocabulary",
+            "🚨 and hr.workflow_failure ACCEPTS a real row of that class — the CHECK moved in the same migration",
+            cls_ok, cls_err)
+
+        rec("§4.2 the door",
+            "the resolver's contract keeps BOTH halves — derive what the change needs, ask the audited door",
+            await conn.fetchval(
+                "select must_contain @> array['_wf_change_entitlement','_wf_may_see_change'] "
+                "and must_not_contain @> array['declare v_ent','declare v_unentitled'] "
+                "from hr.function_contract where schema_name='hr' "
+                "and function_name='wf_resolve_approvers' and home_migration='hr_c4_33' and is_active"))
+
         # ================================================================= §4.2 DOOR GRANTS
         # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
         # GRANT, so hr_c4_07's door assertion would stay green on a surface reachable only because
