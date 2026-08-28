@@ -370,7 +370,8 @@ export interface StarterPackSummary {
   industry_id: string | null;
   industry_name: string | null;
   /** True when the caller's org has opted into this pack's industry
-   *  (`iam.org_industries`) — those packs list first. */
+   * (`iam.org_industries`). This is entitlement context, not proof that every
+   * brand/site in the organization belongs to that industry. */
   org_match: boolean;
   industry_slug: string | null;
   /** Bumps on every content edit (D4) — the join key for "changed since you adopted". */

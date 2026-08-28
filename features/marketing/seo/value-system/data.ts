@@ -464,9 +464,10 @@ export const starterPackDetailQueryKey = (packId: string) =>
   ["seo", "starter-pack", packId] as const;
 
 /**
- * The catalog, ordered for THIS org: packs for an industry the org has opted
- * into (`iam.org_industries`) first, then ratified before proposed, then by
- * name. `org_match` is server truth, never re-derived here.
+ * The entitled catalog, ordered for THIS org: packs available through an
+ * industry the org has opted into (`iam.org_industries`) first, then ratified
+ * before proposed, then by name. `org_match` is entitlement context only; a
+ * site-level recommendation must additionally match `web.brand.industry`.
  */
 export async function getStarterPackCatalog(
   status?: string | null,

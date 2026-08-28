@@ -66,6 +66,7 @@ Invoke `surface-check` and run S1–S18 on the focused surface, fixing as you go
 - **The header owns destinations.** A second body-level row of route buttons fails the pass. Remove duplicate doors; put remaining destinations in the canonical header navigation/overflow or one compact menu that opens the canonical route/window.
 - **Summary cards stay summaries.** Multiple actions inside a KPI/status tile share one compact row or menu; vertically stacked full-width buttons fail unless choosing between those actions is the card's primary job.
 - **Clear and revert must tell the truth.** Exercise them against real data; zero mutations are never success, and when removing an override reveals a fallback, name its provenance and explain that the override was removed rather than implying the effective value became blank.
+- **Personalize at the named entity boundary.** In multi-brand, multi-site, or agency surfaces, an organization-level membership, entitlement, or default may grant access but never proves that every child record shares that classification. Trace the exact brand/site/record field before showing an automatic recommendation or claiming “your industry.”
 - Fix shared primitives when the defect originates there; do not patch every consumer independently.
 - Keep the boundary to this surface and the canonical primitives it directly depends on. Log unrelated repo defects instead of turning the session into a fleet-wide sweep.
 

@@ -14,9 +14,66 @@
  * none.
  */
 
-import type { ValueBandDef, ValueSummaryRow } from "./types";
+import type {
+  StarterPackSummary,
+  ValueBandDef,
+  ValueSummaryRow,
+} from "./types";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { PackProvenance, SiteGeoArea } from "./types";
+
+// ── Brand-scoped industry packs ─────────────────────────────────────────────
+
+const INDUSTRY_MATCH_STOP_WORDS = new Set([
+  "and",
+  "industry",
+  "service",
+  "services",
+]);
+
+function normalizedIndustryTokens(value: string): string[] {
+  return value
+    .normalize("NFKD")
+    .toLocaleLowerCase()
+    .replaceAll("&", " and ")
+    .replaceAll(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter((token) => token && !INDUSTRY_MATCH_STOP_WORDS.has(token));
+}
+
+/**
+ * True only when this BRAND'S authored industry identifies the pack's
+ * canonical industry. Organization-industry membership is an entitlement and
+ * must never personalize every client brand in an agency account.
+ */
+export function starterPackMatchesBrandIndustry(
+  pack: Pick<
+    StarterPackSummary,
+    "industry" | "industry_name" | "industry_slug"
+  >,
+  brandIndustry: string | null | undefined,
+): boolean {
+  if (!brandIndustry?.trim()) return false;
+
+  const brandTokens = normalizedIndustryTokens(brandIndustry);
+  if (brandTokens.length === 0) return false;
+
+  return [pack.industry_name, pack.industry, pack.industry_slug]
+    .filter((candidate): candidate is string => Boolean(candidate?.trim()))
+    .some((candidate) => {
+      const candidateTokens = normalizedIndustryTokens(candidate);
+      if (candidateTokens.join(" ") === brandTokens.join(" ")) return true;
+
+      // A specific authored phrase such as "electronics recycling" may name
+      // part of the longer canonical taxonomy label. One-word partial matches
+      // are deliberately refused: safety beats an automatic false claim.
+      return (
+        brandTokens.length >= 2 &&
+        brandTokens.every((token) => candidateTokens.includes(token))
+      );
+    });
+}
 
 // ── Service areas that were never told what they stand for ───────────────────
 

@@ -9,9 +9,10 @@
  * pack adopted yesterday still said "Adopt onto this site".
  *
  * Now three states on one URL, one job each:
- *   • NOT ADOPTED — pack cards, the org's own industries first (server-ordered
- *     by `org_match`), everything else under "Other industries". One primary
- *     action per pack: PREVIEW ON YOUR DATA.
+ *   • NOT ADOPTED — pack cards for this brand's authored industry first,
+ *     everything else under "Other industries". Organization industry
+ *     membership controls entitlement only. One primary action per pack:
+ *     PREVIEW ON YOUR DATA.
  *   • REVIEW (`?pack=<id>&review=1`, ./PackReview) — the pull-request screen:
  *     server-measured numbers on your own keywords, one sentence per item, a
  *     checkbox per item, select all / none, ONE write (`adopt_starter_pack`).
@@ -49,6 +50,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { useBrand } from "@/features/marketing/data/hooks";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
@@ -63,7 +65,13 @@ import {
   starterPackStatusQueryKey,
 } from "../data";
 import { geoAreasQueryKey } from "../rules/data";
-import { areaNeedsPlaces, incompleteAreasHref, packReviewHref, rulebookSourceHref } from "../lib";
+import {
+  areaNeedsPlaces,
+  incompleteAreasHref,
+  packReviewHref,
+  rulebookSourceHref,
+  starterPackMatchesBrandIndustry,
+} from "../lib";
 import type { StarterPackAdoption, StarterPackSummary } from "../types";
 import { PackReview } from "./PackReview";
 import { ReadyDefaultsBanner } from "./ReadyDefaultsBanner";
@@ -420,6 +428,7 @@ function PackSummaryPanel({
 
 export function StarterPackCatalog() {
   const { site, brandId } = useMarketingSite();
+  const brand = useBrand(brandId);
   const router = useRouter();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
@@ -522,9 +531,14 @@ export function StarterPackCatalog() {
   }
 
   // ── CATALOG ─────────────────────────────────────────────────────────────
-  const forYou = packs.filter((p) => p.org_match);
-  const others = packs.filter((p) => !p.org_match);
-  const orgHasIndustries = forYou.length > 0;
+  const brandIndustry = brand.data?.industry ?? null;
+  const forYou = packs.filter((pack) =>
+    starterPackMatchesBrandIndustry(pack, brandIndustry),
+  );
+  const others = packs.filter(
+    (pack) => !starterPackMatchesBrandIndustry(pack, brandIndustry),
+  );
+  const brandHasMatchingIndustry = forYou.length > 0;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -563,10 +577,10 @@ export function StarterPackCatalog() {
             <p className="p-3 text-xs text-muted-foreground">No industry packs exist yet.</p>
           ) : (
             <>
-              {orgHasIndustries ? (
+              {brandHasMatchingIndustry ? (
                 <>
                   <p className="px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    For your industry
+                    For this brand
                   </p>
                   {forYou.map((pack) => (
                     <PackCard
@@ -588,7 +602,7 @@ export function StarterPackCatalog() {
                           className={cn("size-3 transition-transform", othersOpen ? "rotate-180" : "")}
                           aria-hidden
                         />
-                        Other industries ({others.length})
+                        Other available industries ({others.length})
                       </button>
                       {othersOpen
                         ? others.map((pack) => (
@@ -608,14 +622,14 @@ export function StarterPackCatalog() {
                 <>
                   {organizationId ? (
                     <Link
-                      href={`/organizations/${organizationId}`}
+                      href={marketingRoutes.brand(brandId)}
                       className="flex items-start gap-2 rounded-md border border-dashed border-border bg-muted/30 px-2.5 py-2 text-[11px] leading-4 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                      title="Open your organization's settings and pick its industries"
+                      title="Open this brand and set its industry"
                     >
                       <Settings2 className="mt-px size-3 shrink-0" aria-hidden />
                       <span>
-                        Tell us your industry in your organization settings and the packs
-                        made for it list first here — and are offered to new sites automatically.
+                        Set this brand&apos;s industry in its profile and matching packs list
+                        first here — and can be offered to this brand&apos;s sites automatically.
                       </span>
                     </Link>
                   ) : null}

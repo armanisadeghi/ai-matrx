@@ -165,6 +165,11 @@ on `/features`. See `.claude/skills/module-landing-pages`.
 
 Agency-scale brand operations. The anchor entity is the **Brand** (`web.brand`) — a company an organization manages (their own, or an agency client's). A website is ONE brand property; social accounts and other presences are peers (`web.property`). Machine discovery writes candidates to `web.discovered_item`; humans promote them to confirmed `web.property` / `web.brand_asset` / `web.business_fact` — machine writes never touch confirmed truth. Below the brand layer sit the site verticals: canonical URLs, immutable snapshots, crawl sessions, run URL outcomes, durable run events, prioritized analysis, finding lifecycle evidence, screenshots, links, sharing, batch operations, and cost attribution.
 
+**Industry personalization is brand-scoped.** `iam.org_industries` grants an
+organization access to industry resources; it never proves every client brand
+belongs to that industry. Site-level pack recommendations require the current
+`web.brand.industry` to match the pack taxonomy.
+
 ## Entry points
 
 **The URL hierarchy is brand-first.** Canonical entity paths come ONLY from `features/marketing/lib/routes.ts` (`marketingRoutes`) — never hand-built.
@@ -597,6 +602,12 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-28 — Codex: **Industry packs no longer leak across agency brands.**
+  `iam.org_industries` remains organization-wide entitlement and catalog access,
+  but automatic site banners and “For this brand” grouping now require the
+  current `web.brand.industry` to match the pack. An unrelated client site can
+  no longer inherit the ITAD recommendation merely because the same organization
+  manages an ITAD brand.
 - 2026-08-28 — Codex: **Keyword Value rows expose the offering and clearing no
   longer lies.** The table reuses the canonical Offering picker and placement
   write on every row, keeps Decided by at the same compact width as the other

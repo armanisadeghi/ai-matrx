@@ -5,13 +5,14 @@
  *
  * P13 says the platform is opinionated from day one; Arman's ruling (R-B,
  * 2026-08-22) says the opinion is STAGED, never written behind the expert's
- * back: when a site's org has opted into an industry (iam.org_industries) that
- * has a ratified pack the site has not adopted, every Keyword Value screen
- * carries this one line to the review screen. Accept is one click there —
- * still day one — and nothing is forced: "Not now" hides it for this browser
- * and the packs screen still lists the pack.
+ * back: when the current BRAND'S authored industry matches a ratified pack the
+ * site has not adopted, every Keyword Value screen carries this one line to
+ * the review screen. Accept is one click there — still day one — and nothing
+ * is forced: "Not now" hides it for this browser and the packs screen still
+ * lists the pack.
  *
- * Catalog ordering (`org_match`) and the adopted state are server truth.
+ * `iam.org_industries` is organization-wide entitlement, not brand identity.
+ * It may make a pack readable, but it can never trigger this site-level claim.
  */
 
 import { useState } from "react";
@@ -19,13 +20,14 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { BadgeCheck, ChevronRight, X } from "lucide-react";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
+import { useBrand } from "@/features/marketing/data/hooks";
 import {
   getStarterPackAdoptions,
   getStarterPackCatalog,
   starterPackAdoptionsQueryKey,
   starterPackCatalogQueryKey,
 } from "../data";
-import { packReviewHref } from "../lib";
+import { packReviewHref, starterPackMatchesBrandIndustry } from "../lib";
 
 function dismissKey(siteId: string, packId: string) {
   return `seo-pack-ready-dismissed:${siteId}:${packId}`;
@@ -44,6 +46,7 @@ export function ReadyDefaultsBanner() {
   const { site, brandId } = useMarketingSite();
   const siteId = site.id;
   const organizationId = site.organization_id ?? null;
+  const brand = useBrand(brandId);
   const [dismissedNow, setDismissedNow] = useState<string | null>(null);
 
   const catalog = useQuery({
@@ -58,11 +61,11 @@ export function ReadyDefaultsBanner() {
     staleTime: 60_000,
   });
 
-  if (!catalog.data || !adoptions.data) return null;
+  if (!catalog.data || !adoptions.data || !brand.data) return null;
   const adoptedIds = new Set(adoptions.data.map((a) => a.pack_id));
   const ready = catalog.data.find(
     (p) =>
-      p.org_match &&
+      starterPackMatchesBrandIndustry(p, brand.data.industry) &&
       p.status === "ratified" &&
       !adoptedIds.has(p.id) &&
       dismissedNow !== p.id &&
