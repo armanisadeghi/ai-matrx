@@ -176,6 +176,10 @@ Never write a second URL heuristic; extend `recognizeOurFileUrl` or `shape.ts` i
 **Guard:** `result-fields/__tests__/shape-our-files.test.ts`. **Demo:** `/demos/tool-viz/result-fields`
 § "Our own files never render as a link" carries the exact live payload from the incident.
 
+**Demo fixtures never transmit.** Gallery media uses `result-fields/demo-fixtures.ts` data URLs;
+fake `file_id` values are banned because canonical media rendering resolves them through the live
+files service and turns an expected fixture miss into a structured production error.
+
 ### An agent_call hands back media as an IDENTITY
 
 aidream now declares a child agent's media on a canonical channel instead of
@@ -285,6 +289,8 @@ The consolidation (Phases 1–10) eliminated six legacy homes for tool UI:
 Historical planning and analysis docs from the pre-consolidation era have been archived at `docs/archive/tool-call-legacy/`.
 
 ## Change log
+
+- `2026-08-27` — codex: **Result-field media fixtures no longer call production.** The gallery's fake owned-file UUID was resolved through the canonical Files transport on every visit, producing deterministic `api-http/not_found` system errors. Its image regression now uses the non-transmitting `RESULT_MEDIA_DEMO_REF` data URL, guarded by `shape-our-files.test.ts` to remain media-shaped and carry no `file_id`.
 
 - `2026-08-27` — codex: **Result-field metadata hydrates deterministically.** `KeyValueGrid` formats counts with the fixed `en-US` locale, and the `/demos/tool-viz/result-fields` reading snapshot uses a fixed timestamp instead of module-level `Date.now()`. Guard: `result-fields/__tests__/key-value-grid-hydration.test.tsx`.
 - `2026-08-22` — codex: **MCP-tool admin timestamps hydrate deterministically.** The catalog, detail, and edit surfaces share `formatToolTimestamp`, which renders UTC text identically during SSR and browser hydration instead of calling locale-dependent `toLocaleString()` in render. Guard: `admin/mcp-tools/__tests__/format.test.ts`.

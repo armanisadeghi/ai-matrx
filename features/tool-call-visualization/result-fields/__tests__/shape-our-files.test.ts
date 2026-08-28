@@ -11,6 +11,7 @@
  */
 
 import { detectResultShape, coerceMediaRef } from "../shape";
+import { RESULT_MEDIA_DEMO_REF } from "../demo-fixtures";
 
 const USER_ID = "4cf62e4e-2679-484f-b652-034e697418df";
 const FILE_ID = "6feae31a-945b-4dcc-8fc0-2041bb76c6b1";
@@ -88,6 +89,14 @@ describe("our own file URLs never render as a link", () => {
 });
 
 describe("URLs that are NOT ours keep their link rendering", () => {
+  test("the gallery media fixture renders without a production file lookup", () => {
+    const shape = detectResultShape(RESULT_MEDIA_DEMO_REF);
+    expect(shape.kind).toBe("media");
+    if (shape.kind !== "media") return;
+    expect(shape.ref.file_id).toBeUndefined();
+    expect(shape.ref.url).toMatch(/^data:image\/svg\+xml,/);
+  });
+
   test("a third-party page URL stays a url", () => {
     expect(detectResultShape("https://www.socialynk.com/tiktok-algorithm").kind).toBe("url");
   });
