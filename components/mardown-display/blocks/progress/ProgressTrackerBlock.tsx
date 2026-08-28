@@ -110,7 +110,7 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
       void openArtifact({
         canvasType: "progress",
         title: tracker.title,
-        content: tracker.rawContent || JSON.stringify(tracker),
+        content: JSON.stringify(tracker),
         conversationId,
         messageId,
         artifactId,
