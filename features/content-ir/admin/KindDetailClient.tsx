@@ -84,6 +84,19 @@ const KindInputsTab = dynamic(
   },
 );
 
+const KindVariantsTab = dynamic(
+  () => import("@/features/content-ir/admin/KindVariantsTab"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center gap-2 py-10 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="text-sm">Loading variants</span>
+      </div>
+    ),
+  },
+);
+
 const TABS = [
   "preview",
   "code",
@@ -93,6 +106,7 @@ const TABS = [
   "gate",
   "schema",
   "inputs",
+  "variants",
 ] as const;
 type TabId = (typeof TABS)[number];
 const TAB_LABELS: Record<TabId, string> = {
@@ -104,6 +118,7 @@ const TAB_LABELS: Record<TabId, string> = {
   gate: "Gate",
   schema: "Schema",
   inputs: "Inputs",
+  variants: "Variants",
 };
 
 function isTabId(value: string | undefined): value is TabId {
@@ -292,6 +307,7 @@ export default function KindDetailClient({
               emittedJsonSchema={detail.emittedJsonSchema}
             />
           )}
+          {tab === "variants" && <KindVariantsTab detail={detail} />}
           {tab === "assets" && (
             <KindAssetsTab
               detail={detail}
