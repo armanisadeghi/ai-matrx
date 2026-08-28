@@ -15,9 +15,10 @@ interface MathProblemBlockProps {
     problemData: {
         math_problem: Omit<MathProblemProps, "id">;
     };
+    artifactId?: string;
 }
 
-const MathProblemBlock: React.FC<MathProblemBlockProps> = ({ problemData: initialProblemData }) => {
+const MathProblemBlock: React.FC<MathProblemBlockProps> = ({ problemData: initialProblemData, artifactId }) => {
     // State to handle uploaded problems
     const [problemData, setProblemData] = useState(initialProblemData);
     
@@ -75,6 +76,7 @@ const MathProblemBlock: React.FC<MathProblemBlockProps> = ({ problemData: initia
             canvasData={problemData}
             canvasMetadata={{
                 title: problem.title,
+                artifactId,
             }}
             onDownload={handleDownload}
             onUpload={handleUpload}
@@ -96,4 +98,3 @@ const MathProblemBlock: React.FC<MathProblemBlockProps> = ({ problemData: initia
 };
 
 export default MathProblemBlock;
-

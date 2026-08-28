@@ -34,6 +34,7 @@ export default function MathProblemArtifact({
   serverData,
   isStreamActive,
   mode,
+  artifactId,
 }: ArtifactRendererProps) {
   const payload = useMemo(
     () =>
@@ -62,5 +63,5 @@ export default function MathProblemArtifact({
   }
 
   // MathProblemBlock is dynamically imported with its own loading fallback.
-  return <MathProblemBlock problemData={payload as any} />;
+  return <MathProblemBlock problemData={payload as any} artifactId={artifactId} />;
 }
