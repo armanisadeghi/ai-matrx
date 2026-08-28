@@ -43297,6 +43297,10 @@ export type Database = {
         Returns: string
       }
       _wf_call_hook: { Args: { p_arg: string; p_fn: unknown }; Returns: Json }
+      _wf_change_digest: {
+        Args: { p_patch: Json; p_row_id: string; p_token: string }
+        Returns: Json
+      }
       _wf_close_instance: {
         Args: { p_instance: string; p_reason?: string; p_state: string }
         Returns: Json
@@ -43401,6 +43405,7 @@ export type Database = {
         Args: { p_outcome?: string; p_step: string }
         Returns: number
       }
+      _wf_value_text: { Args: { p_value: Json }; Returns: string }
       _workweek_dst: {
         Args: { p_end: string; p_start: string; p_tz: string }
         Returns: Json
@@ -62114,6 +62119,7 @@ export type Database = {
         Args: { p_instance_id: string; p_reason?: string }
         Returns: Json
       }
+      hr_zzz_f1_probe: { Args: { p_id: string }; Returns: Json }
       industry_assign_org: {
         Args: {
           p_actor?: string

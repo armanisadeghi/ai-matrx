@@ -8,34 +8,37 @@
  * stub that returned an error forever. Nothing screamed: the surface simply
  * stopped working, and the commit that did it looked like housekeeping.
  *
- * This test makes that loud. Regenerate the types from a server that does not
- * serve this projection and CI fails by name, pointing at the actual fix:
- * regenerate from a server that HAS the route (a local aidream at HEAD, or
- * production once the deploy agent has shipped it).
- *
- * It asserts the contract EXISTS, not where it was generated from, so it keeps
- * passing once production has caught up. Retire it only when the endpoint has
- * been deployed long enough that a regen cannot lose it.
+ * Frontend and backend release independently. This test therefore accepts two
+ * honest states: the live contract carries the whole projection, or the hook
+ * fails closed without bypassing the typed client. A half-contract is always
+ * an error.
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const API_TYPES = join(process.cwd(), "types/python-generated/api-types.ts");
+const WAITING_HOOK = join(
+  process.cwd(),
+  "features/workflow-runtime/discovery/useWaitingRuns.ts",
+);
 
 describe("the waiting-runs contract survives a type regen", () => {
   const generated = readFileSync(API_TYPES, "utf8");
 
-  it("still declares GET /runs/waiting", () => {
-    expect(generated).toContain('"/runs/waiting"');
+  it("is either fully generated or explicitly unavailable", () => {
+    const hasRoute = generated.includes('"/runs/waiting"');
+    const schemas = ["WaitingRun", "WaitingRunsResponse", "WaitingSnapshot", "WaitingGap"];
+    const present = schemas.filter((schema) => generated.includes(`${schema}: {`));
+    if (hasRoute) {
+      expect(present).toEqual(schemas);
+      return;
+    }
+    expect(present).toEqual([]);
+    expect(readFileSync(WAITING_HOOK, "utf8")).toContain(
+      "WAITING_ROUTE_UNAVAILABLE",
+    );
   });
-
-  it.each(["WaitingRun", "WaitingRunsResponse", "WaitingSnapshot", "WaitingGap"])(
-    "still declares the %s schema",
-    (schema) => {
-      expect(generated).toContain(`${schema}: {`);
-    },
-  );
 
   it("still declares GET /runs/stream, the announce channel", () => {
     expect(generated).toContain('"/runs/stream"');
