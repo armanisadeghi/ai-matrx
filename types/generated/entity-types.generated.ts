@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 596 active entity tokens. A token here is FK-valid for
+// 598 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -420,6 +420,8 @@ export type EntityTypeToken =
   | "podcast_race"
   | "processed_document"
   | "processed_document_page"
+  | "product_capture_file"
+  | "product_capture_item"
   | "project"
   | "purpose"
   | "quiz_session"
@@ -910,6 +912,7 @@ export type ComponentEntityToken =
   | "plan_node_artifact"
   | "plan_node_step"
   | "processed_document_page"
+  | "product_capture_file"
   | "redaction_mapping"
   | "research_analysis"
   | "research_content"
@@ -1390,6 +1393,8 @@ export type ScopeableEntityToken =
   | "podcast_race"
   | "processed_document"
   | "processed_document_page"
+  | "product_capture_file"
+  | "product_capture_item"
   | "project"
   | "purpose"
   | "quiz_session"
@@ -2081,6 +2086,8 @@ export const ENTITY_TYPE_METADATA = {
   "podcast_race": { token: "podcast_race", schema: "podcast", table: "pc_race", label: "Podcast Race Episode", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "processed_document": { token: "processed_document", schema: "docproc", table: "processed_documents", label: "Processed document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "processed_document_page": { token: "processed_document_page", schema: "docproc", table: "processed_document_pages", label: "Processed document page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "product_capture_file": { token: "product_capture_file", schema: "workbench", table: "product_capture_file", label: "Product Capture File", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "product_capture_item": { token: "product_capture_item", schema: "workbench", table: "product_capture_item", label: "Product Capture Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces", referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "purpose": { token: "purpose", schema: "platform", table: "purpose", label: "Purpose", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "quiz_session": { token: "quiz_session", schema: "education", table: "quiz_sessions", label: "Quiz Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
@@ -2681,6 +2688,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "podcast_race",
   "processed_document",
   "processed_document_page",
+  "product_capture_file",
+  "product_capture_item",
   "project",
   "purpose",
   "quiz_session",

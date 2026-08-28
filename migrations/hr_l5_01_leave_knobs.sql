@@ -46,85 +46,86 @@
 -- -----------------------------------------------------------------------------------
 
 insert into platform.feature_knob
-  (feature, key, value_type, default_value, unit, min_value, max_value, allowed_values,
+  (feature, key, value_type, value, default_value, unit, min_value, max_value, allowed_values,
    label, description, set_by, basis, review_due)
 values
-  ('hr.leave', 'who_is_out_shows_type', 'boolean', 'false'::jsonb, null, null, null, null,
+  ('hr.leave', 'who_is_out_shows_type', 'boolean', 'false'::jsonb, 'false'::jsonb, null, null, null, null,
    'Who-is-out shows the leave type',
    'When off (the default), a peer sees only that a colleague is out — never that the absence is sick leave. SPEC-LEAVE §10 disclosure ladder.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180),
 
-  ('hr.leave', 'day_hours_basis', 'enum', '"scheduled_shift"'::jsonb, null, null, null,
+  ('hr.leave', 'day_hours_basis', 'enum', '"scheduled_shift"'::jsonb, '"scheduled_shift"'::jsonb, null, null, null,
    '["scheduled_shift","fte_standard_day"]'::jsonb,
    'How a leave day converts to hours',
    'A published shift is the honest number and makes the schedule exclusion exact; the FTE standard day is the fallback when no shift exists. SPEC-LEAVE §4.1.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180),
 
-  ('hr.leave', 'holiday_inside_leave', 'enum', '"excluded"'::jsonb, null, null, null,
+  ('hr.leave', 'holiday_inside_leave', 'enum', '"excluded"'::jsonb, '"excluded"'::jsonb, null, null, null,
    '["excluded","counted"]'::jsonb,
    'Company holiday inside a leave span',
    'Excluded by default: a holiday inside a requested span consumes no balance and renders as an excluded day with the holiday name. SPEC-LEAVE §4.1.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180),
 
-  ('hr.leave', 'allow_retroactive_request', 'boolean', 'true'::jsonb, null, null, null, null,
+  ('hr.leave', 'allow_retroactive_request', 'boolean', 'true'::jsonb, 'true'::jsonb, null, null, null, null,
    'Allow requests for dates already past',
    'An illness gives no notice; a product that refuses to record a sick day after the fact forces the record to be wrong. SPEC-LEAVE §4.1.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180),
 
-  ('hr.leave', 'retroactive_request_max_days', 'integer', '30'::jsonb, 'days', 0, 365, null,
+  ('hr.leave', 'retroactive_request_max_days', 'integer', '30'::jsonb, '30'::jsonb, 'days', 0, 365, null,
    'How far back a retroactive request may reach',
    'Bounds the retroactive window when allow_retroactive_request is on. SPEC-LEAVE §4.1.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180),
 
-  ('hr.leave', 'balance_projection_horizon_days', 'integer', '365'::jsonb, 'days', 30, 1095, null,
+  ('hr.leave', 'balance_projection_horizon_days', 'integer', '365'::jsonb, '365'::jsonb, 'days', 30, 1095, null,
    'How far ahead a balance may be projected',
    'The projector runs accrual arithmetic forward to this horizon and no further; beyond it the answer is refused rather than invented. SPEC-LEAVE §5.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180),
 
-  ('hr.leave', 'carryover_expiry_warning_days', 'string', '"60,30,7"'::jsonb, 'days', null, null, null,
+  ('hr.leave', 'carryover_expiry_warning_days', 'string', '"60,30,7"'::jsonb, '"60,30,7"'::jsonb, 'days', null, null, null,
    'Carryover-expiry warning lead times',
    'Ordered, comma-separated days before an expiry at which hr.leave.balance_expiring fires. Read ONLY through hr._leave_lead_days — see decision 2 in hr_l5_01.',
    'agent', 'SPEC-LEAVE §15 platform default [60,30,7], rendered as CSV because the knob store admits no array', current_date + 180),
 
-  ('hr.leave', 'negative_balance_settlement', 'enum', '"write_off"'::jsonb, null, null, null,
+  ('hr.leave', 'negative_balance_settlement', 'enum', '"write_off"'::jsonb, '"write_off"'::jsonb, null, null, null,
    '["write_off","deduct_from_final_pay"]'::jsonb,
    'How a negative balance settles at termination',
    'write_off posts an adjustment to zero. deduct_from_final_pay is available only where the resolved jurisdiction permits a wage deduction AND a signed authorization exists — absent either, the control is absent, not disabled. SPEC-LEAVE §7 step 8.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180),
 
-  ('hr.leave', 'payout_requires_review', 'boolean', 'true'::jsonb, null, null, null, null,
+  ('hr.leave', 'payout_requires_review', 'boolean', 'true'::jsonb, 'true'::jsonb, null, null, null, null,
    'HR confirms a termination payout before export',
    'Puts an hr_admin confirmation between computation and the payroll export line. SPEC-LEAVE §7.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180),
 
-  ('hr.leave', 'case_certification_due_days', 'integer', '15'::jsonb, 'days', 1, 90, null,
+  ('hr.leave', 'case_certification_due_days', 'integer', '15'::jsonb, '15'::jsonb, 'days', 1, 90, null,
    'Days from case start until certification is due',
    'A PRODUCT DEFAULT, not a verified statutory deadline — v1 seeds no FMLA certification rule class, and the control says so. SPEC-LEAVE §9.3.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180),
 
-  ('hr.leave', 'case_return_reminder_days', 'string', '"14,3"'::jsonb, 'days', null, null, null,
+  ('hr.leave', 'case_return_reminder_days', 'string', '"14,3"'::jsonb, '"14,3"'::jsonb, 'days', null, null, null,
    'Case return-date reminder lead times',
    'Ordered, comma-separated days before an expected return at which hr.leave.case_return_due fires. Read ONLY through hr._leave_lead_days.',
    'agent', 'SPEC-LEAVE §15 platform default [14,3], rendered as CSV because the knob store admits no array', current_date + 180),
 
-  ('hr.leave', 'case_existence_visible_to_manager', 'boolean', 'true'::jsonb, null, null, null, null,
+  ('hr.leave', 'case_existence_visible_to_manager', 'boolean', 'true'::jsonb, 'true'::jsonb, null, null, null, null,
    'A manager may learn that a protected absence exists',
    'On: the calendar reads "Out — approved leave" and the queue reads "Linked to a leave managed by HR". Never the category, never the certification state, never a case door. Off: the calendar simply reads "Out". SPEC-LEAVE §9.6.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180),
 
-  ('hr.leave', 'ai_policy_qa_posture', 'enum', '"apply_final"'::jsonb, null, null, null,
+  ('hr.leave', 'ai_policy_qa_posture', 'enum', '"apply_final"'::jsonb, '"apply_final"'::jsonb, null, null, null,
    '["apply_final","recommend","review_and_comment","off"]'::jsonb,
    'Posture for grounded leave-policy Q&A',
    'The answer is read-only information with no side effect, so it renders directly. An org may override DOWNWARD only (toward more restriction). SPEC-LEAVE §14.1, §15 ceiling rule.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180),
 
-  ('hr.leave', 'ai_balance_query_posture', 'enum', '"apply_final"'::jsonb, null, null, null,
+  ('hr.leave', 'ai_balance_query_posture', 'enum', '"apply_final"'::jsonb, '"apply_final"'::jsonb, null, null, null,
    '["apply_final","recommend","review_and_comment","off"]'::jsonb,
    'Posture for natural-language balance questions',
    'The model returns a QUERY, never an answer; the answer that follows is arithmetic. Org override is downward only. SPEC-LEAVE §14.2.',
    'agent', 'SPEC-LEAVE §15 platform default', current_date + 180)
 on conflict (feature, key) do update
   set value_type     = excluded.value_type,
+      value          = coalesce(platform.feature_knob.value, excluded.value),
       default_value  = excluded.default_value,
       unit           = excluded.unit,
       min_value      = excluded.min_value,
