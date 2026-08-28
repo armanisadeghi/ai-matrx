@@ -40,6 +40,10 @@ function str(row: Row | undefined, key: string): string | null {
     return typeof value === "string" ? value : null;
 }
 
+function bool(row: Row | undefined, key: string): boolean {
+    return row?.[key] === true;
+}
+
 /**
  * The decision panel — `/hr/tasks/{instance}?step={step}`.
  *
@@ -123,6 +127,12 @@ export function HrDecisionPanel({
     const step = stepId ? steps.find((s) => s.id === stepId) : steps.find((s) => s.state === "active");
     const restricted = str(instance, "sensitivity_tier") === "restricted";
     const activeStep = step && step.state === "active" ? step : undefined;
+    // 🚨 THE LABEL IS THE DOOR'S ANSWER, NOT A SENTENCE SOMEBODY TYPED.
+    // `hr.wf_decide` refuses an empty reason on approval when EITHER the step definition or the
+    // flow type asks for one, and `hr._wf_display` now reports that disjunction per step. The
+    // field used to read "required to reject or return" on steps that required it to APPROVE, so
+    // a verifier's first click was refused beside a label promising it would not be.
+    const reasonRequiredToApprove = bool(activeStep, "requires_reason_on_approve");
     const openFailures = (detail?.failures ?? []).filter(
         (f) => f.state === "open" || f.state === "retrying",
     );
@@ -133,6 +143,11 @@ export function HrDecisionPanel({
         const decision = HR_DECISION_VERB[intent];
         if (HR_DECISION_REQUIRES_REASON.includes(decision) && reason.trim().length < 3) {
             toast.error("A rejection or return needs a reason — it is kept in the ledger.");
+            return;
+        }
+        // The step-level requirement, in the door's own words rather than a paraphrase.
+        if (decision === "approved" && reasonRequiredToApprove && reason.trim().length < 3) {
+            toast.error("This step requires a reason on approval — it is kept in the ledger.");
             return;
         }
         setBusy(true);
@@ -247,7 +262,11 @@ export function HrDecisionPanel({
                                 <Textarea
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
-                                    placeholder="Reason — required to reject or return, kept in the decision ledger"
+                                    placeholder={
+                                        reasonRequiredToApprove
+                                            ? "Reason — required for EVERY decision on this step, kept in the decision ledger"
+                                            : "Reason — required to reject or return, kept in the decision ledger"
+                                    }
                                     rows={3}
                                 />
                                 <div className="flex flex-wrap gap-2">
