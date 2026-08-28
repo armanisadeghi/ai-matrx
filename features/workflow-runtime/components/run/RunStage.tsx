@@ -225,7 +225,25 @@ export function RunStage({
   // which owns the dedupe.
   const status = useAppSelector(selectRunStatus(runId));
   const emissions = useAppSelector(selectRunEmissions(runId));
-  const declared = resultSchemaOrNull(useResultSchema(definitionId));
+  /**
+   * 🚨 LOADING IS NOT "NO PROMISE" — the distinction the page shift lives in.
+   *
+   * Found in the browser on the proving walk: reading this as a plain
+   * schema-or-null made the in-flight fetch look identical to an unreadable
+   * one, so a permalink opened by client-side navigation painted the DEGRADED
+   * shape first (every emission loose in the stream, plus the run-result card)
+   * and then RE-SORTED itself when the promise landed a moment later — each
+   * emission jumping out of the stream and into its slot under the reader.
+   * That is precisely the shift the reserved-slot contract exists to end.
+   *
+   * So the three states are kept apart: while it is LOADING the delivered
+   * section holds, because the slots are about to be declared and content
+   * placed now would have to move; only a genuine ERROR degrades.
+   */
+  const schemaState = useResultSchema(definitionId);
+  const schemaPending = schemaState.status === "loading";
+  const schemaFailed = schemaState.status === "error";
+  const declared = resultSchemaOrNull(schemaState);
   const { showcase, panel } = splitByPresentation(emissions);
   // An authored surface that already places a node's readout keeps it — the
   // author's layout is the intent, and rendering one shape twice on one screen
@@ -305,25 +323,27 @@ export function RunStage({
               settled by their own output or their claimed emission), then
               every emission no slot claimed. One component, so the dedupe is
               structural rather than a discipline. */}
-          <section className="space-y-2">
-            {declaredPanel.length > 0 || panel.length > 0 ? (
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Your deliverables
-              </h2>
-            ) : null}
-            <DeliveredStream
-              runId={runId}
-              declared={declaredPanel}
-              emissions={panel}
-            />
-          </section>
+          {schemaPending ? null : (
+            <section className="space-y-2">
+              {declaredPanel.length > 0 || panel.length > 0 ? (
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Your deliverables
+                </h2>
+              ) : null}
+              <DeliveredStream
+                runId={runId}
+                declared={declaredPanel}
+                emissions={panel}
+              />
+            </section>
+          )}
 
-          {/* THE DEGRADE. With no readable result schema there is no declared
+          {/* THE DEGRADE. With an UNREADABLE result schema there is no declared
               promise to reserve from, so the definition-derived shelf carries
               the producer steps exactly as it did before the contract — and it
               is suppressed entirely once the promise IS readable, because
               `DeliveredStream` is then already drawing those same nodes. */}
-          {declared === null ? (
+          {schemaFailed ? (
             <RunDeliverables runId={runId} deliverables={ownDeliverables} />
           ) : null}
 
@@ -331,7 +351,9 @@ export function RunStage({
               section is drawing those same terminal payloads. Rendering one
               shape twice on one screen is the duplication THE CANONICAL
               COMPONENT LAW exists to prevent. */}
-          {deliverables.length === 0 && declaredPanel.length === 0 ? (
+          {!schemaPending &&
+          deliverables.length === 0 &&
+          declaredPanel.length === 0 ? (
             <RunResultCard runId={runId} />
           ) : null}
         </div>

@@ -60,6 +60,17 @@ describe("the shipped run stage adopts the emission contract", () => {
     expect(source).toContain("splitByPresentation");
   });
 
+  it("keeps LOADING and ERROR apart, so an in-flight promise never paints the degrade", () => {
+    // Found in the browser: reading the schema as plain-or-null made a fetch
+    // in flight look identical to an unreadable one, so a client-side
+    // navigation painted every emission loose in the stream and then re-sorted
+    // them into their slots under the reader — the exact shift the reserved
+    // slots exist to end. Only a genuine error may degrade.
+    expect(source).toContain('schemaState.status === "loading"');
+    expect(source).toContain('schemaState.status === "error"');
+    expect(source).toMatch(/schemaFailed \? \(\s*<RunDeliverables/);
+  });
+
   it("no longer hand-rolls a second emissions section beside them", () => {
     // `RunEmissions` walked `run.emissions` with no knowledge of the declared
     // deliverables, which is exactly how one payload became two cards.
