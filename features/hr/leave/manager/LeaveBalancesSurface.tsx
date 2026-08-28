@@ -62,6 +62,7 @@ import { formatHours } from "../components/LeaveBalanceBlock";
 import { fetchLeaveBalances } from "./api/service";
 import type { LeaveBalanceList, LeaveBalanceRow } from "./api/types";
 import { LeaveAdjustDialog } from "./LeaveAdjustDialog";
+import { hrPageRefusalProps } from "./refusal";
 import { LeaveDeskShell } from "./LeaveDeskShell";
 import { leaveBalancesHref, leaveLedgerHrefFrom } from "./routes";
 
@@ -329,7 +330,7 @@ export function LeaveBalancesSurface() {
     >
       <HrPageState
         loading={loading}
-        error={error}
+        {...hrPageRefusalProps(error)}
         operation="Leave balances"
         onRetry={() => setReloadToken((n) => n + 1)}
         variant="table"

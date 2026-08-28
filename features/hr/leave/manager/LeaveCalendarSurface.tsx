@@ -67,6 +67,7 @@ import {
   weekLabel,
   WEEKDAY_LABELS,
 } from "./calendar-grid";
+import { hrPageRefusalProps } from "./refusal";
 import { LeaveDeskShell } from "./LeaveDeskShell";
 import { leaveCalendarHref } from "./routes";
 
@@ -252,7 +253,7 @@ export function LeaveCalendarSurface() {
     >
       <HrPageState
         loading={loading}
-        error={error}
+        {...hrPageRefusalProps(error)}
         operation="The who's-out calendar"
         onRetry={() => setReloadToken((n) => n + 1)}
         variant="cards"

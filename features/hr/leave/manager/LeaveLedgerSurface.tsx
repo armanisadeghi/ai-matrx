@@ -43,6 +43,7 @@ import {
   LeaveLedgerView,
   type LeaveLedgerFilter,
 } from "../components/LeaveLedgerView";
+import { hrPageRefusalProps } from "./refusal";
 import { LeaveDeskShell } from "./LeaveDeskShell";
 import { leaveBalancesHref, leaveLedgerHref, leaveQueueHref } from "./routes";
 
@@ -118,7 +119,7 @@ export function LeaveLedgerSurface({
     >
       <HrPageState
         loading={loading}
-        error={error}
+        {...hrPageRefusalProps(error)}
         operation="This leave ledger"
         onRetry={() => setReloadToken((n) => n + 1)}
         variant="table"
