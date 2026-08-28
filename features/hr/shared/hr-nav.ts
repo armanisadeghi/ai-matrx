@@ -93,6 +93,22 @@ type HrNavDef = {
       disabled item and not an explainer panel.
     */
     hiddenForWorkerClass?: readonly string[];
+    /*
+      🚨 A PER-CLASS DEFAULT THAT A PER-PERSON FACT CAN OVERRIDE.
+
+      Unlike `hiddenForWorkerClass` above, this is not a verdict — it is what is
+      true of a class *by default*. Leave is the one self-service surface with a
+      designed per-person exception: SPEC-LEAVE §2.8 lets HR enrol somebody
+      outside a policy's worker class deliberately, with a recorded reason, and
+      `hr_leave_enroll`'s override door creates exactly that person. A static
+      list cannot express her, and while it governed leave she could hold a
+      balance, file a request and have it approved without ever finding the page.
+
+      The flag can only ever REVEAL, never hide: an absent or false flag leaves
+      the class default exactly as it was, so no payload regression can strip a
+      menu that a class list was not already stripping.
+    */
+    hiddenForWorkerClassUnlessEnrolled?: readonly string[];
   };
 };
 
@@ -173,8 +189,10 @@ const NAV: HrNavDef[] = [
       label: "My Time Off",
       href: hrMeTimeOffHref,
       needsEmployment: true,
-      // The profile already drops this tab for these classes (T-L1-4).
-      hiddenForWorkerClass: NO_LEAVE_ACCRUAL,
+      // These classes do not accrue leave BY DEFAULT — but a §2.8 override
+      // enrolment is a real, reasoned, recorded exception, and the server tells
+      // us about it. Enrolment decides; class is only the default.
+      hiddenForWorkerClassUnlessEnrolled: NO_LEAVE_ACCRUAL,
     },
   },
   {
@@ -294,8 +312,22 @@ export function resolveHrNav(args: {
    * hides nothing — an unknown class must not silently strip somebody's nav.
    */
   workerClass?: string | null;
+  /**
+   * Does the viewer hold an ACTIVE leave enrolment today, from
+   * `hr_my_context().active.has_active_leave_enrolment`? Only `true` changes
+   * anything: it overrides the per-class default for leave. Absent, null or
+   * false leaves every class rule exactly as it was, so a stale payload can
+   * never strip a menu.
+   */
+  hasLeaveEnrolment?: boolean | null;
 }): HrNavResolution {
-  const { persona, employmentId, org, workerClass = null } = args;
+  const {
+    persona,
+    employmentId,
+    org,
+    workerClass = null,
+    hasLeaveEnrolment = null,
+  } = args;
   const held = new Set(args.capabilities);
   const isEmployee = persona === "employee";
 
@@ -314,6 +346,17 @@ export function resolveHrNav(args: {
       if (
         workerClass &&
         def.self.hiddenForWorkerClass?.includes(workerClass)
+      ) {
+        continue;
+      }
+      // The same absence rule, but overridable per person by a real enrolment.
+      // `!== true` is deliberate: only a positive answer reveals, so an absent
+      // or unreadable flag can never hide something the class list would have
+      // shown.
+      if (
+        workerClass &&
+        def.self.hiddenForWorkerClassUnlessEnrolled?.includes(workerClass) &&
+        hasLeaveEnrolment !== true
       ) {
         continue;
       }
