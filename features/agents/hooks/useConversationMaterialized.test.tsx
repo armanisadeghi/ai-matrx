@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
 import { useConversationMaterialized } from "./useConversationMaterialized";
 
@@ -28,6 +29,7 @@ function Probe({ conversationId }: { conversationId: string }) {
 describe("useConversationMaterialized", () => {
   let container: HTMLDivElement;
   let root: Root;
+  let currentUserId: string;
 
   beforeAll(() => {
     (
@@ -41,7 +43,10 @@ describe("useConversationMaterialized", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
-    mockedUseAppSelector.mockReturnValue("streaming");
+    currentUserId = "7dc43e0d-66f0-4e4d-880b-11753bd766ee";
+    mockedUseAppSelector.mockImplementation((selector) =>
+      selector === selectUserId ? currentUserId : "streaming",
+    );
   });
 
   afterEach(() => {
@@ -71,5 +76,39 @@ describe("useConversationMaterialized", () => {
       await Promise.resolve();
     });
     expect(container.textContent).toBe("ready");
+  });
+
+  it("does not reuse another authenticated user's materialization proof", async () => {
+    mockedWaitForConversationPersisted.mockResolvedValue(true);
+    const conversationId = "2c64fe35-262a-4ead-bbd1-cd120fd3f705";
+
+    await act(async () => {
+      root.render(<Probe conversationId={conversationId} />);
+      await Promise.resolve();
+    });
+    expect(container.textContent).toBe("ready");
+
+    mockedWaitForConversationPersisted.mockClear();
+    currentUserId = "a0255105-000f-4ee4-b10f-101545a31aac";
+    let resolveSecondUser: ((persisted: boolean) => void) | undefined;
+    mockedWaitForConversationPersisted.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveSecondUser = resolve;
+        }),
+    );
+
+    await act(async () => {
+      root.render(<Probe conversationId={conversationId} />);
+    });
+
+    expect(container.textContent).toBe("pending");
+    expect(mockedWaitForConversationPersisted).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveSecondUser?.(false);
+      await Promise.resolve();
+    });
+    expect(container.textContent).toBe("pending");
   });
 });

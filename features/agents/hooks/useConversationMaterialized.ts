@@ -33,11 +33,20 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
 
-/** Ids proven to have a committed `chat.conversation` row, for this page life. */
+/**
+ * User-scoped ids proven to have a readable committed `chat.conversation` row.
+ * A bare conversation id is unsafe: auth can switch without reloading this
+ * module, and the next user must never inherit the previous user's access proof.
+ */
 const materializedIds = new Set<string>();
+
+function materializedKey(userId: string, conversationId: string): string {
+  return `${userId}:${conversationId}`;
+}
 
 /**
  * The cache is a tiny external store rather than per-hook state, because SEVERAL
@@ -57,9 +66,10 @@ function subscribeToCache(onChange: () => void): () => void {
 }
 
 /** Record an id as real and wake every gate watching it. Idempotent. */
-function markMaterialized(conversationId: string): void {
-  if (materializedIds.has(conversationId)) return;
-  materializedIds.add(conversationId);
+function markMaterialized(userId: string, conversationId: string): void {
+  const key = materializedKey(userId, conversationId);
+  if (materializedIds.has(key)) return;
+  materializedIds.add(key);
   for (const listener of cacheListeners) listener();
 }
 
@@ -70,6 +80,7 @@ function markMaterialized(conversationId: string): void {
 export function useConversationMaterialized(
   conversationId: string | null | undefined,
 ): boolean {
+  const userId = useAppSelector(selectUserId);
   const status = useAppSelector((state) =>
     conversationId ? selectPrimaryRequest(conversationId)(state)?.status : undefined,
   );
@@ -82,12 +93,17 @@ export function useConversationMaterialized(
   // every other gate watching it, so none can strand on a stale `false`.
   const confirmedByCache = useSyncExternalStore(
     subscribeToCache,
-    () => (conversationId ? materializedIds.has(conversationId) : false),
+    () =>
+      userId && conversationId
+        ? materializedIds.has(materializedKey(userId, conversationId))
+        : false,
     () => false,
   );
 
   useEffect(() => {
-    if (!conversationId || materializedIds.has(conversationId)) return;
+    if (!userId || !conversationId) return;
+    const key = materializedKey(userId, conversationId);
+    if (materializedIds.has(key)) return;
     const controller = new AbortController();
     void waitForConversationPersisted(conversationId, {
       signal: controller.signal,
@@ -95,10 +111,10 @@ export function useConversationMaterialized(
       // stream keeps waiting because its first atomic commit is still pending.
       timeoutMs: shouldPoll ? undefined : 0,
     }).then((persisted) => {
-      if (persisted) markMaterialized(conversationId);
+      if (persisted) markMaterialized(userId, conversationId);
     });
     return () => controller.abort();
-  }, [conversationId, shouldPoll]);
+  }, [conversationId, shouldPoll, userId]);
 
   return confirmedByCache;
 }
