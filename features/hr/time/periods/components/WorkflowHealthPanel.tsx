@@ -85,7 +85,13 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
 
   // A failure at ANY health — the `awaiting`-with-an-open-failure case included.
   const withFailure = rows.filter((r) => r.failureClass !== null);
-  const notAttested = rows.filter(isNotAttestedTerminal);
+  // 🚨 THE SAME OR AS THE ROW BADGE, AND FOR THE SAME REASON. Counting only the flow terminal
+  // missed every row where the outcome had been projected onto the timecard but the instance was
+  // still marked active — which is the ordinary case after a sweep closes the step. The summary
+  // read zero while a row underneath it plainly said "Not attested".
+  const notAttested = rows.filter(
+    (r) => r.attestationOutcome === "not_attested" || isNotAttestedTerminal(r),
+  );
   // 🚨 The ruling's distinction, counted: a person who holds no login was never asked,
   // so they are not part of any "did not respond" total.
   const neverAskable = rows.filter((r) => r.attestationReason === "no_reach");
@@ -294,8 +300,14 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
                 </p>
               ) : null}
 
-              {/* The server's own note, when it added one beyond the outcome sentence. */}
-              {row.attestationNote && row.attestationNote !== outcome ? (
+              {/*
+                The server's own note, ONLY when the outcome sentence has not already said it.
+                🚨 This was an equality check, and it printed the whole note TWICE the moment the
+                outcome sentence started carrying it — the sentence is the note plus a manager
+                clause, so it is never EQUAL to the note and the "is this already shown?" test
+                silently inverted. Containment is the question actually being asked.
+              */}
+              {row.attestationNote && !outcome?.includes(row.attestationNote) ? (
                 <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                   {row.attestationNote}
                 </p>
