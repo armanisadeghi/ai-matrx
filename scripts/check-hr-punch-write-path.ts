@@ -272,6 +272,14 @@ const EXPECTED_CHECKS = [
   // the live db, so it fails CI after a hole is applied, not before; the pre-apply DDL guard that
   // would make creation impossible is boarded for Arman.
   "cross_schema_outsider_doors_baselined",
+  // hr_l3_108 — the MAKE-IT-IMPOSSIBLE layer above checks 33/35, ruled DATABASE-WIDE by Arman. A
+  // ddl_command_end event trigger (platform.enforce_definer_client_grants) strips client EXECUTE
+  // (PUBLIC/anon/authenticated) from any newly-created UNDECLARED SECURITY DEFINER function in every
+  // application schema, and re-revokes on an explicit GRANT — so the definer-grant hole cannot exist
+  // even for an instant. Every current definer is grandfathered so day one strips nothing; a new door
+  // declares itself in platform.client_callable_door and keeps its grant. This check asserts the
+  // trigger exists and is enabled, so it cannot be silently dropped, re-opening the class at birth.
+  "definer_grant_ddl_guard_installed",
 ] as const;
 
 interface ConformanceRow {
