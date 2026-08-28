@@ -13,6 +13,24 @@ describe("SMS notification consent contract", () => {
     expect(route).toContain("consent_type: consentType");
     expect(route).toContain("consent_version: SMS_CONSENT_VERSION");
     expect(route).toContain("disclosure: SMS_CONSENT_DISCLOSURE");
+    expect(route).toContain('.rpc("record_verified_sms_phone"');
+    expect(route).toContain('p_source: "twilio_verify"');
+  });
+
+  test("only a successful provider check reaches the verified contact writer", () => {
+    const route = source("app/api/sms/verify/route.ts");
+    const providerCheck = route.indexOf(
+      "await checkVerification(phoneNumber, code)",
+    );
+    const providerSuccessGuard = route.indexOf(
+      "if (!result.success)",
+      providerCheck,
+    );
+    const graphWrite = route.indexOf('.rpc("record_verified_sms_phone"');
+
+    expect(providerCheck).toBeGreaterThan(-1);
+    expect(providerSuccessGuard).toBeGreaterThan(providerCheck);
+    expect(graphWrite).toBeGreaterThan(providerSuccessGuard);
   });
 
   test("notification preferences require notification-purpose consent", () => {
@@ -36,7 +54,9 @@ describe("SMS notification consent contract", () => {
 
     // A non-marketing send resolves to the notification purpose, exactly as the
     // spine's enable gate (.eq("consent_type", "notifications")) does.
-    expect(sender).toContain("category === 'marketing' ? ['marketing'] : ['notifications']");
+    expect(sender).toContain(
+      "category === 'marketing' ? ['marketing'] : ['notifications']",
+    );
 
     // And the legacy account basis is gone: the consent query may not be handed a
     // basis array containing 'all', and a notification may never be authorized by a

@@ -137,6 +137,32 @@ export async function POST(request: NextRequest) {
           verification_channel: "sms",
         };
 
+        // Twilio has proved possession of this number. Record that proof in
+        // the one contact graph the notification resolver reads. This RPC is
+        // service-role-only: ordinary clients cannot mark a number verified.
+        const { error: contactGraphError } = await adminSupabase
+          .schema("communication")
+          .rpc("record_verified_sms_phone", {
+            p_user_id: user.id,
+            p_phone_number: phoneNumber,
+            p_verified_at: consentRecordedAt,
+            p_source: "twilio_verify",
+          });
+
+        if (contactGraphError) {
+          console.error(
+            "Failed to record verified phone in CRM contact graph:",
+            contactGraphError,
+          );
+          return NextResponse.json(
+            {
+              success: false,
+              msg: "Phone verified, but the verified contact could not be recorded",
+            },
+            { status: 500 },
+          );
+        }
+
         // One verification accepts the public disclosure for both account
         // transactions and the separately gated notification lane. Persisting
         // both purpose rows keeps legacy account SMS consent from silently

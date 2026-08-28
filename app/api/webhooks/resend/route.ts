@@ -157,10 +157,39 @@ async function handleEmailSent(data: ResendWebhookEventData) {
 
 /**
  * Handle email delivered event
+ *
+ * Stamps SPEC-NOTIFICATIONS §6.1 `delivered_at` on the notice this message came from. The pipe
+ * already existed and this handler was a stub, so `delivered_at` sat at 0/142 on email — the
+ * provider told us and nobody wrote it down.
+ *
+ * Matched on the FROZEN `provider_message_id` (our sender stores Resend's id there), so a webhook
+ * for mail this platform did not send matches nothing and returns 0 — a normal no-op, not an error.
+ * Idempotent by construction: a Svix redelivery never moves the recorded moment of delivery.
  */
 async function handleEmailDelivered(data: ResendWebhookEventData) {
-  console.log("Email delivered:", data.email_id);
-  // Update delivery status in database if needed
+  if (!data.email_id) {
+    console.warn("Resend email.delivered without an email_id; nothing to match on");
+    return;
+  }
+  try {
+    const supabase = createAdminClient();
+    const { data: stamped, error } = await supabase.schema("communication").rpc(
+      "record_provider_delivery",
+      {
+        p_provider_message_id: data.email_id,
+        p_delivered_at: new Date().toISOString(),
+        p_channel: "email",
+      },
+    );
+    if (error) {
+      console.error("record_provider_delivery failed:", error.message);
+      return;
+    }
+    // 0 is expected for mail sent outside the notification spine — not a failure.
+    console.log(`Email delivered: ${data.email_id} (notices stamped: ${stamped ?? 0})`);
+  } catch (err) {
+    console.error("record_provider_delivery threw:", err);
+  }
 }
 
 /**

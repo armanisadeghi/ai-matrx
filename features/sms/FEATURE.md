@@ -132,6 +132,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Change log
 
+- `2026-08-28` — Successful Twilio verification now records the verified mobile number in the shared CRM contact graph, and Resend delivery webhooks stamp the originating notification's first `delivered_at` evidence idempotently.
 - `2026-08-28` — Closed direct client execution of internal workforce-notification sender functions, preserving service-role delivery only, and brought the legacy non-spine sender onto the notification-purpose consent gate.
 - `2026-08-26` — Expanded the versioned opt-in contract and public carrier-review surfaces to name employer-to-employee workforce notifications, added the dedicated HR sender, and kept event-level SMS choices in the canonical Notifications settings.
 - `2026-08-18` — Added exact-action SMS authorization without narrowing the Mandate Holder: service-role-only atomic confirm/consume RPCs, recent AMR enforcement, 15-minute single-use receipts, authenticated chat deep links, a redacted approval card with email OTP re-authentication, and cold-resume support for durable pending calls. The existing `sms/assistant` context injection remains unchanged.

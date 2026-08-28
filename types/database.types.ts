@@ -12179,6 +12179,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _set_notification_outcome: {
+        Args: {
+          p_acted_at?: string
+          p_notification_id: string
+          p_outcome: string
+        }
+        Returns: boolean
+      }
       admit_pending_sms_command_turn: {
         Args: { p_inbound_message_id: string }
         Returns: string
@@ -12673,6 +12681,23 @@ export type Database = {
           p_outcome: string
         }
         Returns: boolean
+      }
+      record_provider_delivery: {
+        Args: {
+          p_channel?: string
+          p_delivered_at?: string
+          p_provider_message_id: string
+        }
+        Returns: number
+      }
+      record_verified_sms_phone: {
+        Args: {
+          p_phone_number: string
+          p_source?: string
+          p_user_id: string
+          p_verified_at?: string
+        }
+        Returns: Json
       }
       register_voice_call_interaction: {
         Args: {
@@ -17342,6 +17367,7 @@ export type Database = {
         Returns: string
       }
       name_key: { Args: { p_name: string }; Returns: string }
+      normalize_phone_e164: { Args: { p_phone: string }; Returns: string }
       resolve_recipient_jurisdiction: {
         Args: { p_medium_id: string }
         Returns: {
@@ -17351,6 +17377,23 @@ export type Database = {
         }[]
       }
       sweep_sending_health: { Args: { p_window?: string }; Returns: Json }
+      upsert_party_phone_contact: {
+        Args: {
+          p_actor_user_id?: string
+          p_evidence?: Json
+          p_organization_id: string
+          p_party_id: string
+          p_phone: string
+          p_purpose_code: string
+          p_source: string
+          p_verification_status: string
+          p_verified_at?: string
+        }
+        Returns: {
+          contact_medium_id: string
+          contact_point_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -43529,6 +43572,10 @@ export type Database = {
         Args: { p_actor?: string; p_note?: string; p_step: string }
         Returns: Json
       }
+      _wf_notice_outcome: {
+        Args: { p_outcome: string; p_step: string; p_user?: string }
+        Returns: number
+      }
       _wf_notify: {
         Args: {
           p_employment: string
@@ -51066,6 +51113,36 @@ export type Database = {
         }
         Relationships: []
       }
+      client_callable_door: {
+        Row: {
+          declared_at: string
+          declared_by: string | null
+          function_name: string
+          id: string
+          identity_args: string
+          reason: string
+          schema_name: string
+        }
+        Insert: {
+          declared_at?: string
+          declared_by?: string | null
+          function_name: string
+          id?: string
+          identity_args: string
+          reason: string
+          schema_name: string
+        }
+        Update: {
+          declared_at?: string
+          declared_by?: string | null
+          function_name?: string
+          id?: string
+          identity_args?: string
+          reason?: string
+          schema_name?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           body: string
@@ -51577,6 +51654,27 @@ export type Database = {
           occurred_at?: string
           rule?: string
           severity?: string
+        }
+        Relationships: []
+      }
+      definer_client_grant_grandfather: {
+        Row: {
+          function_name: string
+          identity_args: string
+          schema_name: string
+          snapshotted_at: string
+        }
+        Insert: {
+          function_name: string
+          identity_args: string
+          schema_name: string
+          snapshotted_at?: string
+        }
+        Update: {
+          function_name?: string
+          identity_args?: string
+          schema_name?: string
+          snapshotted_at?: string
         }
         Relationships: []
       }
@@ -55418,6 +55516,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      purpose_mandate_organization: {
+        Args: { p_unit_id: string }
+        Returns: string
       }
       reachability_ancestors: {
         Args: { p_id: string; p_type: string }

@@ -2,7 +2,6 @@
 
 Cross-repo Public Relations node: /Users/armanisadeghi/code/common-docs/systems/marketing/public-relations/STATE.md (verified truth + proposal in /Users/armanisadeghi/code/common-docs/projects/public-relations/PLAN.md, research in RESEARCH.md) — a journalist pitch is Lane B and media lists/journalist intelligence/coverage are ALREADY this system. Read it before building anything PR-shaped in ANY repo; do not fork `crm.party`, `agent.message_template`, or the send gate for it.
 
-
 **Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-08-27`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/STATE.md` — read it before touching this feature in ANY repo.
@@ -54,21 +53,21 @@ schema exists to prevent.
 
 ## Tables (schema `crm`, live 2026-07-27)
 
-| Table                  | Variant                      | Versioned | Holds                                                   |
-| ---------------------- | ---------------------------- | --------- | ------------------------------------------------------- |
-| `party`                | entity                       | ✅        | person or company; identity, curation, per-org stance   |
-| `contact_medium`       | entity                       | ❌        | one row per value per org; deliverability + suppression |
-| `party_contact_point`  | component of `party`         | ❌        | who uses a medium, purpose, validity                    |
-| `address`              | component of `party`         | ❌        | structured postal + geo                                 |
-| `affiliation`          | component of `party`         | ✅        | person ↔ company employment, with dates                 |
-| `interaction`          | component of `party`         | ❌        | calls/emails/meetings, planned AND completed            |
-| `outreach_list`        | entity                       | ✅        | a named audience or worked cold list                    |
-| `outreach_list_member` | component of `outreach_list` | ❌        | per-member state, attempts, dialer claim                |
-| `party_merge`          | component of `party`         | ❌        | the exact unmerge record                                |
-| `merge_candidate`      | component of `party`         | ❌        | duplicate suggestion (ordered pair, durable dismissal)  |
+| Table                  | Variant                      | Versioned | Holds                                                                                            |
+| ---------------------- | ---------------------------- | --------- | ------------------------------------------------------------------------------------------------ |
+| `party`                | entity                       | ✅        | person or company; identity, curation, per-org stance                                            |
+| `contact_medium`       | entity                       | ❌        | one row per value per org; deliverability + suppression                                          |
+| `party_contact_point`  | component of `party`         | ❌        | who uses a medium, purpose, validity                                                             |
+| `address`              | component of `party`         | ❌        | structured postal + geo                                                                          |
+| `affiliation`          | component of `party`         | ✅        | person ↔ company employment, with dates                                                          |
+| `interaction`          | component of `party`         | ❌        | calls/emails/meetings, planned AND completed                                                     |
+| `outreach_list`        | entity                       | ✅        | a named audience or worked cold list                                                             |
+| `outreach_list_member` | component of `outreach_list` | ❌        | per-member state, attempts, dialer claim                                                         |
+| `party_merge`          | component of `party`         | ❌        | the exact unmerge record                                                                         |
+| `merge_candidate`      | component of `party`         | ❌        | duplicate suggestion (ordered pair, durable dismissal)                                           |
 | `saved_view`           | entity                       | ✅        | a named, re-runnable CRM-list query (smart view); `list_key` says WHICH list (`parties`/`deals`) |
-| `deal`                 | entity                       | ✅        | money through a pipeline; stage-derived status, value, owner, expected close |
-| `deal_stage_event`     | component of `deal`          | ❌        | trigger-appended stage history — cycle time is derivable, never designed later |
+| `deal`                 | entity                       | ✅        | money through a pipeline; stage-derived status, value, owner, expected close                     |
+| `deal_stage_event`     | component of `deal`          | ❌        | trigger-appended stage history — cycle time is derivable, never designed later                   |
 
 `party_kind ('person','organization')` is the **only** closed set. Expert, lead,
 vendor, journalist, competitor, customer are **roles** — `platform.categories` rows in
@@ -229,18 +228,18 @@ admin map).
 The main app menu links to the route, opens the manager window, and opens
 person/company capture directly. All consume `features/crm/`:
 
-| File                                                | Role                                                                                                                                                  |
-| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `types.ts`                                          | Row aliases derived from `types/database.types.ts` (never hand-mirrored), joined embed shapes, closed vocabularies, `CRM_LIST_SCOPES`                 |
-| `service.ts`                                        | ALL crm reads/writes — direct `supabase.schema("crm")`, scope predicates (THE VIEW LAW), `normalizeMediumValue`, medium find-or-create, the RPC calls |
-| `hooks/usePartyList.ts` · `hooks/usePartyDetail.ts` | Query state + generation-guarded fetch                                                                                                                |
-| `components/CrmListPage.tsx`                        | List assembly on the canonical entity-list primitives (`MatrxDataTable` controlled, `BrowseScopeTabs`, `useListViewPrefs("crm-parties")`, `ItemMenu`) |
-| `components/PartyCreateForm.tsx`                    | Shared person/company capture core; used by `crmCreatePartyWindow` and writes optional email/phone through the canonical medium/contact-point flow. `initialName` prefills it from whatever the calling surface already had on screen |
+| File                                                | Role                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types.ts`                                          | Row aliases derived from `types/database.types.ts` (never hand-mirrored), joined embed shapes, closed vocabularies, `CRM_LIST_SCOPES`                                                                                                                                                                                                                                                                                      |
+| `service.ts`                                        | ALL crm reads/writes — direct `supabase.schema("crm")`, scope predicates (THE VIEW LAW), `normalizeMediumValue`, medium find-or-create, the RPC calls                                                                                                                                                                                                                                                                      |
+| `hooks/usePartyList.ts` · `hooks/usePartyDetail.ts` | Query state + generation-guarded fetch                                                                                                                                                                                                                                                                                                                                                                                     |
+| `components/CrmListPage.tsx`                        | List assembly on the canonical entity-list primitives (`MatrxDataTable` controlled, `BrowseScopeTabs`, `useListViewPrefs("crm-parties")`, `ItemMenu`)                                                                                                                                                                                                                                                                      |
+| `components/PartyCreateForm.tsx`                    | Shared person/company capture core; used by `crmCreatePartyWindow` and writes optional email/phone through the canonical medium/contact-point flow. `initialName` prefills it from whatever the calling surface already had on screen                                                                                                                                                                                      |
 | `routes.ts`                                         | **THE PREFILL DOOR.** `crmCreatePartyHref({kind, name})` → `/crm?create=person&name=…`; `CrmListPage` consumes the params once on the route mount, opens `crmCreatePartyWindow` prefilled, and strips them so a reload does not re-open it. Any surface naming somebody the CRM should hold links here — never a bare `/crm` index that makes the user re-type the name (first consumer: the Press Room's `JournalistRef`) |
-| `components/record/PartyRecordPage.tsx`             | The 360°: identity, contact, addresses, employment (both directions), activity, notes (`platform.comments`), Files/Tasks via `AssociationCardGrid`    |
-| `reachability.ts`                                   | **THE ONE suppression rule** — `contactPointBlockReason` + its labels. Channel-agnostic; the dialer and the record agent-surface both read it         |
-| `normalize.ts`                                      | The canonical `normalizeMediumValue` (re-exported by `service.ts`), split out so pure consumers can use it without the Supabase client                |
-| `agent-context/`                                    | `buildCrmListContextData` · `buildCrmRecordContextData` · `parseContactSelection` (+ its Jest tests) — see § Agent surfaces                           |
+| `components/record/PartyRecordPage.tsx`             | The 360°: identity, contact, addresses, employment (both directions), activity, notes (`platform.comments`), Files/Tasks via `AssociationCardGrid`                                                                                                                                                                                                                                                                         |
+| `reachability.ts`                                   | **THE ONE suppression rule** — `contactPointBlockReason` + its labels. Channel-agnostic; the dialer and the record agent-surface both read it                                                                                                                                                                                                                                                                              |
+| `normalize.ts`                                      | The canonical `normalizeMediumValue` (re-exported by `service.ts`), split out so pure consumers can use it without the Supabase client                                                                                                                                                                                                                                                                                     |
+| `agent-context/`                                    | `buildCrmListContextData` · `buildCrmRecordContextData` · `parseContactSelection` (+ its Jest tests) — see § Agent surfaces                                                                                                                                                                                                                                                                                                |
 
 **WindowPanels:** `crmManagerWindow` is the full scoped list route inside
 WindowPanel chrome; `crmCreatePartyWindow` is the compact create flow. Both are
@@ -386,11 +385,11 @@ Wizard: source (CSV/TSV/pasted text, Excel `.xlsx/.xls`, or vCard `.vcf/.vcard`)
   "N imported, M already existed and were updated instead of duplicated".
   The employer path used to hand-roll its own matching and had three blind spots,
   each of which forked a company we already had:
-  * no `name_key` canonicalization — "Acme  Inc" vs "Acme Inc" read as different;
-  * `record_class = 'contact'` only — the **1,396** `discovered` organizations
+  - no `name_key` canonicalization — "Acme Inc" vs "Acme Inc" read as different;
+  - `record_class = 'contact'` only — the **1,396** `discovered` organizations
     (SEO prospects, YouTube channels, media outlets) were invisible, so importing
     a company the platform had already found duplicated it;
-  * `canonical_id IS NULL` only — a merged-away company matched nothing and came
+  - `canonical_id IS NULL` only — a merged-away company matched nothing and came
     straight back as a new row.
 - **Employer cells** resolve the company once per distinct name and add
   a current+primary `crm.affiliation` (the mirror trigger fills the list's
@@ -613,7 +612,7 @@ Rules paid for once:
   `deal_pipeline`** — a top-level row is a pipeline, its children (parent_id)
   are the stages in `position` order (the `web_entity_type` nesting shape).
   Stage semantics ride category `metadata`: `{outcome: "won"|"lost",
-  probability: 0..100}`. A new pipeline or stage is a ROW, never a migration —
+probability: 0..100}`. A new pipeline or stage is a ROW, never a migration —
   Arman's roles-are-categories ruling applied to stages. `cat_list` was widened
   to return `metadata` (`migrations/cat_list_metadata.sql`) so the canonical
   category reader serves it; never read `platform.categories` directly.
@@ -818,6 +817,12 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-28 — **Verified workforce phone identity now converges on the contact graph.**
+  `crm.upsert_party_phone_contact` is the one idempotent writer used by HR phone-field triggers
+  and the service-role-only Twilio Verify callback. HR values arrive unverified; provider proof
+  upgrades the medium to `verified` and its contact point to `mobile` without weakening the SMS
+  resolver's verified-only rule or granting broad CRM outreach consent. Auth-backed phone points
+  now use `mobile` rather than the resolver-invisible `personal` purpose.
 - 2026-08-27 — **Every CRM record section can be copied without flattening its meaning.** Identity,
   contact methods, addresses, employment, activity, and notes expose the canonical human, agent,
   and JSON copy actions; activity and notes also provide body-free overview variants and per-item
@@ -889,18 +894,18 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
   `probability`), `deal_lost_reason`, `interaction.deal_id`,
   `saved_view.list_key`, the stage-authority triggers (status/closed_at
   derived; history appended; won → ONE dedupe-keyed `platform.outcome_event`
-  + forward-only party lifecycle), merge/unmerge/purge patched for
-  `primary_party_id`, `outcome_kind` widened with `deal_won`, `cat_list`
-  widened to return `metadata` — applied live + ledgered
-  (`crm_11_deals_pipelines.sql`, `cat_list_metadata.sql`), certified in-migration,
-  14-scenario DB smoke green. FE: `/crm/deals` (list + the repo's first kanban,
-  @dnd-kit) and `/crm/deals/[dealId]` (stage flow, facts, deal-bound timeline,
-  stage history, notes, tasks/files), `PartyDealsCard` on the party record
-  (doors both directions), `SavedViewBar`/saved-views service genericized over
-  a codec, `PartyNotes` generalized to `crm_deal`, `crm_deal` in the entity
-  registry / association targets / nav / admin map. aidream: generated models +
-  `crm_deal` agent_data seed (aliases deal/opportunity). Browser-verified live:
-  create → move → drag → won (outcome + lifecycle) → cleanup. See § Deals.
+  - forward-only party lifecycle), merge/unmerge/purge patched for
+    `primary_party_id`, `outcome_kind` widened with `deal_won`, `cat_list`
+    widened to return `metadata` — applied live + ledgered
+    (`crm_11_deals_pipelines.sql`, `cat_list_metadata.sql`), certified in-migration,
+    14-scenario DB smoke green. FE: `/crm/deals` (list + the repo's first kanban,
+    @dnd-kit) and `/crm/deals/[dealId]` (stage flow, facts, deal-bound timeline,
+    stage history, notes, tasks/files), `PartyDealsCard` on the party record
+    (doors both directions), `SavedViewBar`/saved-views service genericized over
+    a codec, `PartyNotes` generalized to `crm_deal`, `crm_deal` in the entity
+    registry / association targets / nav / admin map. aidream: generated models +
+    `crm_deal` agent_data seed (aliases deal/opportunity). Browser-verified live:
+    create → move → drag → won (outcome + lifecycle) → cleanup. See § Deals.
 - 2026-08-19 — **The party-resolver bypass is closed; this client no longer
   creates parties.** `createParty` (a raw `crm.party` insert) and the hand-rolled
   `findOrCreateCompanyByName` matcher are deleted. All three callers — the create
