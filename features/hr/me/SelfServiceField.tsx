@@ -72,7 +72,14 @@ export function SelfServiceField({
   policy: HrSelfServicePolicy;
   /** An open `profile_edit_request` / `address_change` on this field. */
   pending?: HrPendingFieldRequest | null;
-  onSave: (field: string, next: string) => Promise<void>;
+  /**
+   * 🚨 RESOLVES `false` WHEN THE WRITE DID NOT LAND, AND THE EDITOR THEN STAYS
+   * OPEN WITH THE TYPED VALUE IN IT. This used to return `void`, so the editor
+   * closed unconditionally — on a broken door the person watched their own
+   * typing disappear with nothing said. Losing what somebody typed is the one
+   * thing a form must never do on a failure it could see coming.
+   */
+  onSave: (field: string, next: string) => Promise<boolean>;
   saving?: boolean;
   className?: string;
 }) {
@@ -140,8 +147,8 @@ export function SelfServiceField({
             className="min-h-11 sm:min-h-8"
             disabled={saving}
             onClick={async () => {
-              await onSave(field, draft);
-              setEditing(false);
+              const landed = await onSave(field, draft);
+              if (landed) setEditing(false);
             }}
           >
             {policy === "request_approval" ? "Ask HR" : "Save"}

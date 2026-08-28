@@ -305,6 +305,40 @@ export function PersonalTab({
           <h3 className="text-sm font-semibold text-foreground">
             Yours to change
           </h3>
+          {/*
+            🚨 THE HOST REPORTS THE FAILURE, BECAUSE THE CONTROL CANNOT.
+            A transport-level error used to be announced only by a toast fired
+            from a field that unmounts itself in the same tick. When
+            `hr.wf_request` broke platform-wide, what a person saw was: the
+            editor closed, their typed value gone, the record unchanged, and
+            nothing on screen saying anything had failed.
+
+            This banner lives on the SECTION, which outlives every field inside
+            it, so the report survives the control that produced it. It states
+            what happened and stops — it does not tell anyone to try again,
+            because when a door is broken platform-wide that is advice this
+            surface has no way to stand behind.
+          */}
+          {selfUpdate.failure || selfUpdatePrivate.failure ? (
+            <div
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2"
+            >
+              <p className="text-sm font-medium text-foreground">
+                {selfUpdate.failure ?? selfUpdatePrivate.failure}
+              </p>
+              <button
+                type="button"
+                className="mt-1 text-[0.6875rem] text-muted-foreground underline underline-offset-2"
+                onClick={() => {
+                  selfUpdate.clearFailure();
+                  selfUpdatePrivate.clearFailure();
+                }}
+              >
+                Dismiss
+              </button>
+            </div>
+          ) : null}
           <SensitiveGrid>
             {SELF_SERVICE_FIELDS.map(({ field, source }) => {
               const bag = source === "confidential" ? priv : personal;

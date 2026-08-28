@@ -194,7 +194,32 @@ async function callHrRaw(
   args: Record<string, unknown>,
   options: { envelope: boolean; whatFailed: string },
 ): Promise<HrResult<Record<string, unknown>>> {
-  const { data, error } = await supabase.rpc(fn as never, args as never);
+  /*
+    🚨 THE TRANSPORT NEVER THROWS. IT RETURNS.
+    `supabase.rpc` normally resolves with `{data, error}`, but it REJECTS on a
+    network failure, an aborted request, or a response it cannot parse. A
+    rejection here escapes every caller's `await`, so the `setSaving(false)` and
+    the "did it work?" branch below it never run: the spinner sticks, the surface
+    is left mid-write, and NOTHING is rendered to the person — the failure is
+    silent by construction. Every other refusal on this path is data; a thrown
+    one must be too, or it is the only failure mode the UI cannot show.
+  */
+  let data: unknown = null;
+  let error: { code?: string; message?: string } | null = null;
+  try {
+    ({ data, error } = (await supabase.rpc(fn as never, args as never)) as {
+      data: unknown;
+      error: { code?: string; message?: string } | null;
+    });
+  } catch (thrown) {
+    return failed(
+      `${options.whatFailed} did not reach the server. ` +
+        (thrown instanceof Error && thrown.message.trim()
+          ? thrown.message
+          : "The request failed before a reply came back."),
+      null,
+    );
+  }
 
   if (error) {
     if (error.code === PG_INSUFFICIENT_PRIVILEGE) {

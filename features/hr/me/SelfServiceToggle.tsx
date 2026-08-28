@@ -48,7 +48,13 @@ export function SelfServiceToggle({
   /** What turning it ON actually does, in the person's own terms. */
   description: string;
   value: boolean;
-  onSave: (field: string, next: boolean) => Promise<void>;
+  /**
+   * Resolves `false` when the write did not land. This control does not need the
+   * answer — it clears `pending` either way and the refreshed prop snaps the
+   * switch back — but the host DOES: it renders the sentence saying why, which
+   * is the half a switch silently reverting can never explain on its own.
+   */
+  onSave: (field: string, next: boolean) => Promise<boolean>;
   saving?: boolean;
   className?: string;
 }) {

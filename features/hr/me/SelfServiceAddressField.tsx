@@ -88,7 +88,8 @@ export function SelfServiceAddressField({
   /** The stored address. Only rendered when there is NO pending request. */
   value: unknown;
   pending?: HrPendingFieldRequest | null;
-  onSave: (field: string, next: Record<string, string>) => Promise<void>;
+  /** Resolves `false` when the write did not land; the editor then keeps the typed address. */
+  onSave: (field: string, next: Record<string, string>) => Promise<boolean>;
   saving?: boolean;
   className?: string;
 }) {
@@ -164,8 +165,8 @@ export function SelfServiceAddressField({
               for (const [key, part] of Object.entries(draft)) {
                 if (part.trim()) next[key] = part.trim();
               }
-              await onSave(field, next);
-              setEditing(false);
+              const landed = await onSave(field, next);
+              if (landed) setEditing(false);
             }}
           >
             Ask HR

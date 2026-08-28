@@ -35,8 +35,25 @@ export type HrSelfUpdateState = {
   saving: boolean;
   /** Field keys the server refused, with WHY, kept for inline rendering. */
   rejected: { field: string; policy: string }[];
-  save: (field: string, value: unknown) => Promise<void>;
-  savePatch: (patch: Record<string, unknown>) => Promise<void>;
+  /*
+    🚨 THE FAILURE THE FIELD CANNOT RENDER, HELD BY THE HOST.
+    A transport-level failure (a 400 from a broken door, a dropped connection)
+    used to be announced ONLY as a toast, fired from a control that unmounts
+    itself in the same tick. When the door `hr.wf_request` broke platform-wide,
+    what a person saw was: the editor closed, the value they typed was gone, and
+    the record was unchanged — with nothing on screen saying so. A surface that
+    reports its errors only through the control that just disappeared has no way
+    to report the errors that matter most.
+
+    So the sentence lives HERE, in the hook the HOST owns, and the host renders
+    it. It survives the field unmounting, and it is cleared by the next
+    successful write rather than by a timer.
+  */
+  failure: string | null;
+  clearFailure: () => void;
+  /** `true` only when the write actually landed — the caller closes its editor on that. */
+  save: (field: string, value: unknown) => Promise<boolean>;
+  savePatch: (patch: Record<string, unknown>) => Promise<boolean>;
 };
 
 function listFields(fields: string[]): string {
@@ -57,10 +74,17 @@ export function useSelfUpdate(args: {
   const [rejected, setRejected] = useState<{ field: string; policy: string }[]>(
     [],
   );
+  const [failure, setFailure] = useState<string | null>(null);
+  const clearFailure = useCallback(() => setFailure(null), []);
 
   const savePatch = useCallback(
-    async (patch: Record<string, unknown>) => {
-      if (!employeeId) return;
+    async (patch: Record<string, unknown>): Promise<boolean> => {
+      if (!employeeId) {
+        // Not "nothing happened": there is no record to write to, and saying so
+        // beats a control that silently does nothing every time it is pressed.
+        setFailure("This record is not ready to take changes yet.");
+        return false;
+      }
       setSaving(true);
       const result = await updateHrSelf({ token, id: employeeId, patch });
       setSaving(false);
@@ -99,21 +123,31 @@ export function useSelfUpdate(args: {
                 `${listFields(unknownFields)} is not a field on your record.`,
               );
             }
-            toast.error(parts.join(" "));
-            return;
+            const sentence = parts.join(" ");
+            setFailure(sentence);
+            toast.error(sentence);
+            return false;
           }
         }
 
         // Anything else: the self lane itself refused — a terminated person, a
         // record that is not theirs, or an approval route that does not exist.
         // `request_not_opened` already names its fields in `detail`.
-        toast.error(
+        //
+        // 🚨 A `failed` RESULT IS A BROKEN DOOR, NOT A DECISION ABOUT THIS PERSON.
+        // It says WHAT HAPPENED and stops: the change was not saved, and the
+        // server did not accept the request. It does NOT tell them to try again
+        // or wait — when a door is broken platform-wide, "try again" is advice
+        // that cannot work, and a surface that offers it is guessing at a remedy
+        // it has no way to stand behind.
+        const sentence =
           result.kind === "denied"
             ? result.detail?.trim() ||
-                "That change is not something you can make here."
-            : result.message,
-        );
-        return;
+              "That change is not something you can make here."
+            : `${result.message} Your change was not saved.`;
+        setFailure(sentence);
+        toast.error(sentence);
+        return false;
       }
 
       const payload = result.data as unknown;
@@ -132,8 +166,10 @@ export function useSelfUpdate(args: {
             `${listFields(payload.unknown)} is not a field on your record.`,
           );
         }
-        toast.error(parts.join(" "));
-        return;
+        const sentence = parts.join(" ");
+        setFailure(sentence);
+        toast.error(sentence);
+        return false;
       }
 
       setRejected([]);
@@ -156,15 +192,19 @@ export function useSelfUpdate(args: {
         } else if (applied.length > 0) {
           toast.success(`${listFields(applied)} updated.`);
         }
+        setFailure(null);
         onApplied();
-        return;
+        return true;
       }
 
       // The door answered in a shape this app does not know. Say so rather
       // than claiming a save that may not have happened.
-      toast.error(
-        "The change came back in a shape this app does not understand. Reload and check whether it was saved.",
-      );
+      const unknownShape =
+        "The change came back in a shape this app does not understand. " +
+        "Whether it was saved is not known from here.";
+      setFailure(unknownShape);
+      toast.error(unknownShape);
+      return false;
     },
     [employeeId, token, onApplied],
   );
@@ -174,5 +214,5 @@ export function useSelfUpdate(args: {
     [savePatch],
   );
 
-  return { saving, rejected, save, savePatch };
+  return { saving, rejected, failure, clearFailure, save, savePatch };
 }
