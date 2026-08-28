@@ -29,10 +29,10 @@ import {
 } from "../provision-shapes";
 import { parseMandateContract, type MandateContract } from "../contract";
 import { mandateBindings, mandateDefinitions } from "@/lib/supabase/mandateStorage";
+import type { MandateBindingRow as MandateBindingRowDb, MandateDefinitionRow } from "@/lib/supabase/mandateStorage";
 
-export type MandateRowDb = Database["agent"]["Tables"]["mandate"]["Row"];
-export type MandateBindingRowDb =
-  Database["agent"]["Tables"]["mandate_binding"]["Row"];
+export type MandateRowDb = MandateDefinitionRow;
+export type { MandateBindingRowDb };
 
 export interface WorkspaceAgentInfo {
   id: string;

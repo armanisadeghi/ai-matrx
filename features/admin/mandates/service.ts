@@ -28,16 +28,21 @@ import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
 /** Mandate/exemplar rows are platform rows owned by the system org. */
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
-import { mandateBindings, mandateDefinitions } from "@/lib/supabase/mandateStorage";
+import {
+  mandateBindings,
+  mandateDefinitions,
+  holderOfBinding,
+  holderOfMandate,
+  type MandateBindingRow,
+  type MandateDefinitionRow,
+  type MandateDefinitionUpdate,
+} from "@/lib/supabase/mandateStorage";
 
 
 const MANDATE_CODE_TRUTH_CONNECT_TIMEOUT_MS = 60_000;
 
-export type MandateDefinitionRow =
-  Database["agent"]["Tables"]["mandate"]["Row"];
-export type MandateBindingRow = Database["agent"]["Tables"]["mandate_binding"]["Row"];
-export type MandateDefinitionUpdate =
-  Database["agent"]["Tables"]["mandate"]["Update"];
+export type { MandateBindingRow, MandateDefinitionRow, MandateDefinitionUpdate };
+
 
 export interface MandateAgentInfo {
   id: string;
@@ -115,13 +120,14 @@ export async function fetchMandateConsoleData(
   const agentIds = new Set<string>();
   const versionIds = new Set<string>();
   for (const mandate of mandates) {
-    if (mandate.default_agent_id) agentIds.add(mandate.default_agent_id);
-    if (mandate.default_agent_version_id)
-      versionIds.add(mandate.default_agent_version_id);
+    const holder = holderOfMandate(mandate);
+    if (holder.holderId) agentIds.add(holder.holderId);
+    if (holder.versionId) versionIds.add(holder.versionId);
   }
   for (const binding of bindings) {
-    if (binding.agent_id) agentIds.add(binding.agent_id);
-    if (binding.agent_version_id) versionIds.add(binding.agent_version_id);
+    const holder = holderOfBinding(binding);
+    if (holder.holderId) agentIds.add(holder.holderId);
+    if (holder.versionId) versionIds.add(holder.versionId);
   }
 
   const versionsById: Record<string, MandateVersionInfo> = {};
@@ -173,7 +179,7 @@ export async function fetchMandateConsoleData(
 
 export async function updateMandateDefinition(
   mandateId: string,
-  patch: Pick<
+  patch: Partial<Pick<
     MandateDefinitionUpdate,
     | "default_agent_id"
     | "default_agent_version_id"
@@ -184,7 +190,7 @@ export async function updateMandateDefinition(
     // The Mandate-level Context Policy gate. Gates only NARROW — see
     // agent.mandate.auto_context_disabled.
     | "auto_context_disabled"
-  >,
+  >>,
 ): Promise<MandateDefinitionRow> {
   const supabase = createClient();
   const { data, error } = await mandateDefinitions(supabase)

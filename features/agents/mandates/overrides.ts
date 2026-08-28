@@ -29,10 +29,16 @@ import type { Database } from "@/types/database.types";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { invalidateMandateCache } from "./service";
 import type { ConsumptionMap } from "./provision-shapes";
-import { mandateBindings, mandateDefinitions } from "@/lib/supabase/mandateStorage";
+import {
+  mandateBindings,
+  mandateDefinitions,
+  holderOfBinding,
+  holderOfMandate,
+  type MandateBindingRow,
+  type MandateDefinitionRow,
+} from "@/lib/supabase/mandateStorage";
 
-export type MandateDefinitionRow = Database["agent"]["Tables"]["mandate"]["Row"];
-export type MandateBindingRow = Database["agent"]["Tables"]["mandate_binding"]["Row"];
+export type { MandateBindingRow, MandateDefinitionRow };
 
 // The mandate's stored contract — `{required_variables,
 // required_context_policies, required_output_keys, spill_variables}`, seeded
@@ -96,11 +102,13 @@ export async function fetchMandateOverridesData(): Promise<MandateOverridesData>
   const agentIds = new Set<string>();
   const versionIds = new Set<string>();
   for (const mandate of mandates) {
-    if (mandate.default_agent_id) agentIds.add(mandate.default_agent_id);
-    if (mandate.default_agent_version_id) versionIds.add(mandate.default_agent_version_id);
+    const holder = holderOfMandate(mandate);
+    if (holder.holderId) agentIds.add(holder.holderId);
+    if (holder.versionId) versionIds.add(holder.versionId);
   }
   for (const binding of bindings) {
-    if (binding.agent_id) agentIds.add(binding.agent_id);
+    const holder = holderOfBinding(binding);
+    if (holder.holderId) agentIds.add(holder.holderId);
   }
 
   const versionAgentIds: Record<string, string> = {};
