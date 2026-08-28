@@ -35,6 +35,8 @@ import { toast } from "@/lib/toast";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { hrTimesheetHref } from "@/features/hr/routes";
 
+import { useHrContext } from "@/features/hr/shared/useHrContext";
+
 import { getPunchRegister } from "../api/service";
 import type { Paged, PunchRow } from "../api/types";
 import { formatLocalDate, formatStampedTimeWithZone, pluralize } from "../shared/format";
@@ -47,19 +49,29 @@ import {
   PUNCH_SOURCE_LABELS,
 } from "../shared/vocabulary";
 import { PunchCorrectionDialog, type PunchCorrectionMode } from "./PunchCorrectionDialog";
+import { PunchRegisterScopePicker } from "./PunchRegisterScopePicker";
 import { downloadPunchRegisterCsv, punchRegisterToCsv } from "./registerCsv";
 
 const DEFAULT_PAGE_SIZE = 50;
 
 export function PunchRegister({
   employmentId,
+  /**
+   * True when the caller asked for the whole employer rather than one person. The server takes
+   * EITHER `employment_ids` OR `organization_id` and refuses when given neither by name, so this
+   * page has to be able to send the second one — it previously could only ever send the first.
+   */
+  orgScope = false,
   /** A manager without punch-edit authority gets the read-only lane; so does an employee. */
   canEdit = true,
 }: {
   employmentId?: string | null;
+  orgScope?: boolean;
   canEdit?: boolean;
 }) {
   const mockCase = useHrMockCase();
+  const { active } = useHrContext();
+  const organizationId = orgScope ? (active?.organization_id ?? null) : null;
   const { prefs } = useListViewPrefs("hr-time-punches", { pageSize: DEFAULT_PAGE_SIZE });
   const [query, setQuery] = useState<MatrxDataTableQueryState>({
     page: 1,
@@ -79,6 +91,7 @@ export function PunchRegister({
       getPunchRegister(
         {
           employmentIds: employmentId ? [employmentId] : undefined,
+          organizationId: organizationId ?? undefined,
           /*
            * 🚨 No `includeVoided` — and that is stronger than passing `true`. The live register
            * ALWAYS returns voided punches, each carrying `voided_at` and its voiding punch. There
@@ -95,7 +108,7 @@ export function PunchRegister({
         },
         { mockCase, signal },
       ),
-    [employmentId, query, mockCase],
+    [employmentId, organizationId, query, mockCase],
   );
 
   const rows = register.data?.rows ?? [];

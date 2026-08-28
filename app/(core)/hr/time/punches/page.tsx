@@ -14,9 +14,9 @@ export const metadata = { title: "Punch register" };
 export default async function PunchRegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ employment?: string }>;
+  searchParams: Promise<{ employment?: string; scope?: string }>;
 }) {
-  const { employment } = await searchParams;
+  const { employment, scope } = await searchParams;
 
   return (
     <>
@@ -29,7 +29,7 @@ export default async function PunchRegisterPage({
             <div className="h-full animate-pulse bg-card/40" aria-label="Loading the register" />
           }
         >
-          <PunchRegister employmentId={employment ?? null} />
+          <PunchRegister employmentId={employment ?? null} orgScope={scope === "org"} />
         </Suspense>
       </div>
     </>
