@@ -2146,6 +2146,72 @@ async def main():
                 "from hr.function_contract where schema_name='hr' "
                 "and function_name='wf_resolve_approvers' and home_migration='hr_c4_33' and is_active"))
 
+        # ================== §2.5 THE SELF STEP IS A SELF STEP (timecard_attestation)
+        # 🚨 `allows_self = true` exists for exactly one v1 step class — employee self-attestation,
+        # "where the subject attesting to their own hours IS the point" (SPEC-WORKFLOW-ENGINE §2.5).
+        # It is expressed as resolver_kind=fixed_user + resolver_config employment_source=subject,
+        # and the resolver walks ARRAY[resolver_kind] for any non-`authority` kind — so the declared
+        # fallback_chain is never touched. Pinned here because TWO diagnoses read the declared chain
+        # in resolution_evidence as the path taken and concluded the self step was being routed
+        # through an approver chain. hr_c4_40 made the evidence say which rungs actually ran.
+        await as_owner()
+        att = await conn.fetch(
+            "select st.id step, i.subject_employment_id subj, "
+            "       (select e.login_user_id from hr.employment em join hr.employee e "
+            "          on e.id=em.employee_id where em.id=i.subject_employment_id) uid "
+            "  from hr.workflow_step st join hr.workflow_instance i on i.id=st.workflow_instance_id "
+            " where i.flow_key='timecard_attestation' and st.step_key='employee_attestation' "
+            " order by st.created_at")
+        subj_only, chain_walked, mgr_hits, withlogin, nologin = True, True, [], 0, 0
+        for a in att:
+            v = await j("select hr.wf_resolve_approvers($1)", a["step"])
+            ev = (v or {}).get("evidence") or {}
+            cands = [str(x) for x in (v.get("candidates") or [])]
+            if cands != [str(a["subj"])]:
+                subj_only = False
+            if ev.get("rungs_walked") != ["fixed_user"]:
+                chain_walked = False
+            mgr = await conn.fetchval("select hr.manager_as_of($1, current_date)", a["subj"])
+            if mgr and str(mgr) in cands:
+                mgr_hits.append(str(a["step"]))
+            if a["uid"] is None:
+                nologin += 1
+            else:
+                withlogin += 1
+        rec("§2.5 the self step",
+            "🚨 every timecard attestation resolves to THE SUBJECT and nobody else — the one v1 step "
+            "where attesting to your own hours IS the point",
+            bool(att) and subj_only, f"{len(att)} step(s); {withlogin} with a login, {nologin} without")
+        rec("§2.5 the self step",
+            "🚨 and it NEVER routes to the subject's manager — not on any of them",
+            not mgr_hits, f"manager appeared on: {mgr_hits}")
+        rec("§2.5 the self step",
+            "🚨 and it walks exactly ONE rung, `fixed_user` — it never climbs the approver chain the "
+            "definition happens to declare",
+            bool(att) and chain_walked,
+            str([(await j("select hr.wf_resolve_approvers($1)", a["step"])).get("evidence", {}).get("rungs_walked") for a in att]))
+        rec("§2.5 the self step",
+            "and the DECLARED chain is still recorded beside it, so config and trace are both legible",
+            bool(att) and all(
+                ((await j("select hr.wf_resolve_approvers($1)", a["step"])).get("evidence") or {}).get("fallback_chain")
+                for a in att))
+        # 🚨 THE LOGIN-LESS SUBJECT IS KEPT, NOT STRUCK — hr_c4_11's rule, pinned against regression.
+        nl = [a for a in att if a["uid"] is None]
+        if nl:
+            v = await j("select hr.wf_resolve_approvers($1)", nl[0]["step"])
+            ev = (v or {}).get("evidence") or {}
+            rec("§2.5 the self step",
+                "🚨 a LOGIN-LESS subject is still resolved to their own step — kept and RECORDED as "
+                "unreachable, never struck off and never handed to somebody else",
+                v.get("granted") is True
+                and [str(x) for x in (v.get("candidates") or [])] == [str(nl[0]["subj"])]
+                and any(x.get("why") == "no_login" for x in (ev.get("no_reach") or [])),
+                json.dumps(ev.get("no_reach"))[:220])
+            rec("§2.5 the self step",
+                "and nobody else is granted reach on it — resolving to a person with no surface must "
+                "not become resolving to a different person",
+                (v.get("user_ids") or []) == [], f"user_ids={v.get('user_ids')}")
+
         # ================================================================= §4.2 DOOR GRANTS
         # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
         # GRANT, so hr_c4_07's door assertion would stay green on a surface reachable only because
