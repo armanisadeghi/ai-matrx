@@ -23,14 +23,17 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { useApiAuth } from "./useApiAuth";
 import {
   selectAiApiVersion,
-  selectResolvedBaseUrl,
+  selectResolvedServiceBaseUrl,
 } from "@/lib/redux/slices/apiConfigSlice";
 import { applyAiApiVersion } from "@/lib/api/ai-api-version";
 import { requestRaw } from "@/lib/python-client";
+import type { ApiService } from "@/lib/api/service-routing";
 
-export function useBackendApi() {
+export function useBackendApi(service: ApiService = "aidream") {
   const { getHeaders, waitForAuth } = useApiAuth();
-  const backendUrl = useAppSelector(selectResolvedBaseUrl);
+  const backendUrl = useAppSelector((state) =>
+    selectResolvedServiceBaseUrl(state, service),
+  );
   const aiApiVersion = useAppSelector(selectAiApiVersion);
 
   // Version the AI runtime path centrally: covered AI surfaces (chat, manual,
@@ -59,6 +62,9 @@ export function useBackendApi() {
 
   const post = useCallback(
     async (endpoint: string, body: unknown, signal?: AbortSignal) => {
+      if (!backendUrl) {
+        throw new Error(`No ${service} API URL is configured.`);
+      }
       return requestRaw(
         resolvePath(endpoint),
         {
@@ -70,11 +76,14 @@ export function useBackendApi() {
         { baseUrlOverride: backendUrl, signal },
       );
     },
-    [backendUrl, resolvePath],
+    [backendUrl, resolvePath, service],
   );
 
   const get = useCallback(
     async (endpoint: string, signal?: AbortSignal) => {
+      if (!backendUrl) {
+        throw new Error(`No ${service} API URL is configured.`);
+      }
       return requestRaw(
         resolvePath(endpoint),
         {
@@ -84,11 +93,14 @@ export function useBackendApi() {
         { baseUrlOverride: backendUrl, signal },
       );
     },
-    [backendUrl, resolvePath],
+    [backendUrl, resolvePath, service],
   );
 
   const upload = useCallback(
     async (endpoint: string, formData: FormData, signal?: AbortSignal) => {
+      if (!backendUrl) {
+        throw new Error(`No ${service} API URL is configured.`);
+      }
       return requestRaw(
         resolvePath(endpoint),
         {
@@ -99,18 +111,21 @@ export function useBackendApi() {
         { baseUrlOverride: backendUrl, signal },
       );
     },
-    [backendUrl, resolvePath],
+    [backendUrl, resolvePath, service],
   );
 
   const customFetch = useCallback(
     async (endpoint: string, options: RequestInit = {}) => {
+      if (!backendUrl) {
+        throw new Error(`No ${service} API URL is configured.`);
+      }
       return requestRaw(resolvePath(endpoint), options, {
         baseUrlOverride: backendUrl,
         signal: options.signal ?? undefined,
         allowHttpError: true,
       });
     },
-    [backendUrl, resolvePath],
+    [backendUrl, resolvePath, service],
   );
 
   return useMemo(

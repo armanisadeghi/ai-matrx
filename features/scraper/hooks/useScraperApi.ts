@@ -29,6 +29,7 @@ import type {
   TypedStreamEvent,
 } from "@/lib/api/types";
 import { extractErrorMessage } from "@/utils/errors";
+import { captureScraperError } from "@/features/scraper/diagnostics/captureScraperError";
 import type {
   QuickScrapeRequest,
   SearchKeywordsRequest,
@@ -38,6 +39,11 @@ import type {
   SearchResult,
   SearchResultItem,
 } from "@/features/scraper/types/scraper-api";
+
+/** Standalone scraper service mounts the package router below `/api`. */
+export function scraperServiceEndpoint(endpoint: string): string {
+  return endpoint.startsWith("/api/") ? endpoint : `/api${endpoint}`;
+}
 
 // ============================================================================
 // Types
@@ -652,7 +658,7 @@ function mapToScraperResult(
 // ============================================================================
 
 export function useScraperApi(): UseScraperApiReturn {
-  const api = useBackendApi();
+  const api = useBackendApi("scraper");
 
   const [data, setData] = useState<ScraperResult | null>(null);
   const [rawData, setRawData] = useState<Record<string, unknown> | null>(null);
@@ -736,11 +742,8 @@ export function useScraperApi(): UseScraperApiReturn {
         // fire before that lands, so wait for an identity or the backend
         // rejects the call with auth_required.
         await api.waitForAuth();
-        const response = await api.post(
-          ENDPOINTS.scraper.quickScrape,
-          body,
-          signal,
-        );
+        const endpoint = scraperServiceEndpoint(ENDPOINTS.scraper.quickScrape);
+        const response = await api.post(endpoint, body, signal);
         httpSnapshot = captureHttpSnapshot(response);
         stage = "consumeScrapeStream";
         const { results, metadata } = await consumeScrapeStream(
@@ -769,19 +772,19 @@ export function useScraperApi(): UseScraperApiReturn {
         const msg = err instanceof Error ? err.message : "Failed to scrape URL";
         const firstResult = ctx.partialRef.results[0] ?? null;
         if (firstResult) setRawData(firstResult);
-        setErrorDiagnostics(
-          makeScraperDiagnostics(
-            "scrapeUrl",
-            stage,
-            err,
-            snapshotReceived(
-              ctx.streamEventLog,
-              ctx.partialRef,
-              ENDPOINTS.scraper.quickScrape,
-              { requestedUrl: url, http: httpSnapshot },
-            ),
+        const diagnostics = makeScraperDiagnostics(
+          "scrapeUrl",
+          stage,
+          err,
+          snapshotReceived(
+            ctx.streamEventLog,
+            ctx.partialRef,
+            scraperServiceEndpoint(ENDPOINTS.scraper.quickScrape),
+            { requestedUrl: url, http: httpSnapshot },
           ),
         );
+        setErrorDiagnostics(diagnostics);
+        captureScraperError(err, diagnostics);
         setError(
           `${msg} — failed at useScraperApi.scrapeUrl → ${stage} (see errorDiagnostics)`,
         );
@@ -823,7 +826,10 @@ export function useScraperApi(): UseScraperApiReturn {
         };
 
         await api.waitForAuth();
-        const response = await api.post(ENDPOINTS.scraper.quickScrape, body);
+        const response = await api.post(
+          scraperServiceEndpoint(ENDPOINTS.scraper.quickScrape),
+          body,
+        );
         const { results, metadata } = await consumeScrapeStream(
           response,
           onStatus,
@@ -895,7 +901,7 @@ export function useScraperApi(): UseScraperApiReturn {
         // rejects the call with auth_required.
         await api.waitForAuth();
         const response = await api.post(
-          ENDPOINTS.scraper.quickScrape,
+          scraperServiceEndpoint(ENDPOINTS.scraper.quickScrape),
           body,
           signal,
         );
@@ -929,22 +935,22 @@ export function useScraperApi(): UseScraperApiReturn {
         const firstResult = partialRef.results[0] ?? null;
         if (firstResult) setRawData(firstResult);
 
-        setErrorDiagnostics(
-          makeScraperDiagnostics(
-            "scrapeUrlRaw",
-            stage,
-            err,
-            snapshotReceived(
-              streamEventLog,
-              partialRef,
-              ENDPOINTS.scraper.quickScrape,
-              {
-                requestedUrl: url,
-                http: httpSnapshot,
-              },
-            ),
+        const diagnostics = makeScraperDiagnostics(
+          "scrapeUrlRaw",
+          stage,
+          err,
+          snapshotReceived(
+            streamEventLog,
+            partialRef,
+            scraperServiceEndpoint(ENDPOINTS.scraper.quickScrape),
+            {
+              requestedUrl: url,
+              http: httpSnapshot,
+            },
           ),
         );
+        setErrorDiagnostics(diagnostics);
+        captureScraperError(err, diagnostics);
         setError(
           `${msg} — failed at useScraperApi.scrapeUrlRaw → ${stage} (see diagnostics JSON below)`,
         );
@@ -1003,7 +1009,7 @@ export function useScraperApi(): UseScraperApiReturn {
         // rejects the call with auth_required.
         await api.waitForAuth();
         const response = await api.post(
-          ENDPOINTS.scraper.quickScrape,
+          scraperServiceEndpoint(ENDPOINTS.scraper.quickScrape),
           body,
           signal,
         );
@@ -1060,23 +1066,23 @@ export function useScraperApi(): UseScraperApiReturn {
             : undefined;
         const firstResult = ctx.partialRef.results[0] ?? null;
         if (firstResult) setRawData(firstResult);
-        setErrorDiagnostics(
-          makeScraperDiagnostics(
-            "scrapeUrls",
-            stage,
-            err,
-            snapshotReceived(
-              ctx.streamEventLog,
-              ctx.partialRef,
-              ENDPOINTS.scraper.quickScrape,
-              {
-                requestedUrls: [...urls],
-                failedResultIndex: failedIdx,
-                http: httpSnapshot,
-              },
-            ),
+        const diagnostics = makeScraperDiagnostics(
+          "scrapeUrls",
+          stage,
+          err,
+          snapshotReceived(
+            ctx.streamEventLog,
+            ctx.partialRef,
+            scraperServiceEndpoint(ENDPOINTS.scraper.quickScrape),
+            {
+              requestedUrls: [...urls],
+              failedResultIndex: failedIdx,
+              http: httpSnapshot,
+            },
           ),
         );
+        setErrorDiagnostics(diagnostics);
+        captureScraperError(err, diagnostics);
         setError(
           `${msg} — failed at useScraperApi.scrapeUrls → ${stage} (see errorDiagnostics)`,
         );
@@ -1116,7 +1122,7 @@ export function useScraperApi(): UseScraperApiReturn {
         // rejects the call with auth_required.
         await api.waitForAuth();
         const response = await api.post(
-          ENDPOINTS.scraper.search,
+          scraperServiceEndpoint(ENDPOINTS.scraper.search),
           request,
           signal,
         );
@@ -1163,22 +1169,22 @@ export function useScraperApi(): UseScraperApiReturn {
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Search failed";
-        setErrorDiagnostics(
-          makeScraperDiagnostics(
-            "search",
-            stage,
-            err,
-            snapshotReceived(
-              ctx.streamEventLog,
-              ctx.partialRef,
-              ENDPOINTS.scraper.search,
-              {
-                requestPayload: request,
-                http: httpSnapshot,
-              },
-            ),
+        const diagnostics = makeScraperDiagnostics(
+          "search",
+          stage,
+          err,
+          snapshotReceived(
+            ctx.streamEventLog,
+            ctx.partialRef,
+            scraperServiceEndpoint(ENDPOINTS.scraper.search),
+            {
+              requestPayload: request,
+              http: httpSnapshot,
+            },
           ),
         );
+        setErrorDiagnostics(diagnostics);
+        captureScraperError(err, diagnostics);
         setError(
           `${msg} — failed at useScraperApi.search → ${stage} (see errorDiagnostics)`,
         );
@@ -1217,7 +1223,7 @@ export function useScraperApi(): UseScraperApiReturn {
         // rejects the call with auth_required.
         await api.waitForAuth();
         const response = await api.post(
-          ENDPOINTS.scraper.searchAndScrape,
+          scraperServiceEndpoint(ENDPOINTS.scraper.searchAndScrape),
           request,
           signal,
         );
@@ -1275,23 +1281,23 @@ export function useScraperApi(): UseScraperApiReturn {
             : undefined;
         const firstResult = ctx.partialRef.results[0] ?? null;
         if (firstResult) setRawData(firstResult);
-        setErrorDiagnostics(
-          makeScraperDiagnostics(
-            "searchAndScrape",
-            stage,
-            err,
-            snapshotReceived(
-              ctx.streamEventLog,
-              ctx.partialRef,
-              ENDPOINTS.scraper.searchAndScrape,
-              {
-                requestPayload: request,
-                failedResultIndex: failedIdx,
-                http: httpSnapshot,
-              },
-            ),
+        const diagnostics = makeScraperDiagnostics(
+          "searchAndScrape",
+          stage,
+          err,
+          snapshotReceived(
+            ctx.streamEventLog,
+            ctx.partialRef,
+            scraperServiceEndpoint(ENDPOINTS.scraper.searchAndScrape),
+            {
+              requestPayload: request,
+              failedResultIndex: failedIdx,
+              http: httpSnapshot,
+            },
           ),
         );
+        setErrorDiagnostics(diagnostics);
+        captureScraperError(err, diagnostics);
         setError(
           `${msg} — failed at useScraperApi.searchAndScrape → ${stage} (see errorDiagnostics)`,
         );
@@ -1330,7 +1336,7 @@ export function useScraperApi(): UseScraperApiReturn {
         // rejects the call with auth_required.
         await api.waitForAuth();
         const response = await api.post(
-          ENDPOINTS.scraper.searchAndScrapeLimited,
+          scraperServiceEndpoint(ENDPOINTS.scraper.searchAndScrapeLimited),
           request,
           signal,
         );
@@ -1389,23 +1395,23 @@ export function useScraperApi(): UseScraperApiReturn {
             : undefined;
         const firstResult = ctx.partialRef.results[0] ?? null;
         if (firstResult) setRawData(firstResult);
-        setErrorDiagnostics(
-          makeScraperDiagnostics(
-            "searchAndScrapeLimited",
-            stage,
-            err,
-            snapshotReceived(
-              ctx.streamEventLog,
-              ctx.partialRef,
-              ENDPOINTS.scraper.searchAndScrapeLimited,
-              {
-                requestPayload: request,
-                failedResultIndex: failedIdx,
-                http: httpSnapshot,
-              },
-            ),
+        const diagnostics = makeScraperDiagnostics(
+          "searchAndScrapeLimited",
+          stage,
+          err,
+          snapshotReceived(
+            ctx.streamEventLog,
+            ctx.partialRef,
+            scraperServiceEndpoint(ENDPOINTS.scraper.searchAndScrapeLimited),
+            {
+              requestPayload: request,
+              failedResultIndex: failedIdx,
+              http: httpSnapshot,
+            },
           ),
         );
+        setErrorDiagnostics(diagnostics);
+        captureScraperError(err, diagnostics);
         setError(
           `${msg} — failed at useScraperApi.searchAndScrapeLimited → ${stage} (see errorDiagnostics)`,
         );

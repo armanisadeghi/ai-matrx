@@ -84,6 +84,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "org-resolution": "Org resolution fallback",
   "user-toast": "User-facing error toast",
   "marketing-crawler": "Marketing crawler",
+  scraper: "Web scraper failure",
   "redux-rejected": "Rejected action (thunk)",
   "content-ir": "Content IR parse/parity failure",
   "surface-writeback": "Surface writeback contract break",

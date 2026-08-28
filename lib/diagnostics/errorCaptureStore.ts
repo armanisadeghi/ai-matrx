@@ -130,6 +130,8 @@ export type CapturedErrorSource =
    * in the inspector with its status/step intact.
    */
   | "marketing-crawler"
+  /** A scraper NDJSON response completed but carried a failed/invalid page result. */
+  | "scraper"
   /** An RTK rejected thunk (action type ending in /rejected) — a real failure. */
   | "redux-rejected"
   /**
