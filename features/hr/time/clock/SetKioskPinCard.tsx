@@ -160,7 +160,7 @@ export function SetKioskPinCard({
         ) : (
           <p className="text-sm text-muted-foreground">
             This is what you type on a shared time clock tablet, along with your employee number.
-            Only you know it — nobody can look it up, so choose something you will remember.
+          Your PIN cannot be read back later, so choose something you will remember.
           </p>
         )}
       </div>

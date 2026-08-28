@@ -622,6 +622,8 @@ function mapKioskPersonSession(raw: unknown): KioskPersonSession {
     kioskSessionId: asText(r.kioskSessionId) ?? "",
     employmentId: asText(r.employmentId) ?? "",
     expiresAt: asText(r.expiresAt) ?? "",
+    // Absent reads as false: a tablet that cannot tell must not trap somebody in a reset loop.
+    mustReset: r.mustReset === true,
   };
 }
 
@@ -734,6 +736,30 @@ export function setEmploymentPin(
   return callHrTimeRpc(
     "hr_set_employment_pin",
     { p_employment_id: employmentId, p_pin: pin },
+    opts,
+  );
+}
+
+/**
+ * Replace a temporary PIN **at the tablet** — the door's self arm, authenticated by the
+ * person-bound kiosk session.
+ *
+ * 🚨 There is no employment argument by design. `auth.uid()` is null at a kiosk, so the session
+ * token IS the proof of identity: it exists only because `hr_kiosk_session_open` accepted this
+ * person's PIN moments ago, and the function reads the employment from the session. Accepting an
+ * employment id here would let any tablet reset any employee's PIN.
+ *
+ * 🚨 Refuses `pin_unchanged` when the new PIN equals the temporary one — clearing the flag while
+ * leaving the administrator's secret in place is the exact thing this reset exists to end.
+ */
+export function resetKioskPin(
+  sessionToken: string,
+  newPin: string,
+  opts?: HrRpcOptions,
+): Promise<{ employmentPinId?: string; auditId?: string; mustReset?: boolean }> {
+  return callHrTimeRpc(
+    "hr_kiosk_pin_reset",
+    { p_session_token: sessionToken, p_new_pin: newPin },
     opts,
   );
 }

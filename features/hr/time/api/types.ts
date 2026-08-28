@@ -994,6 +994,12 @@ export interface KioskPersonSession {
   kioskSessionId: string;
   employmentId: string;
   expiresAt: string;
+  /**
+   * 🚨 The PIN just accepted was set by somebody else and is TEMPORARY. The tablet is this
+   * person's only surface, so the tablet is where they replace it — see `hr_kiosk_pin_reset`.
+   * A PIN the subject chose themselves is never flagged.
+   */
+  mustReset: boolean;
 }
 
 export interface KioskDeviceRow {

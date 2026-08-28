@@ -90,6 +90,10 @@ export type HrTimeRpcName =
   // The kiosk PIN. Set by an HR writer OR by the subject themselves (the function enforces both),
   // which is why it is on the Time lane's door list and not only an admin one.
   | "hr_set_employment_pin"
+  // 🚨 The kiosk-session-authenticated SELF arm of the PIN door. anon-callable like every kiosk
+  // door: auth.uid() is null at a tablet, and the person-bound session token is the proof of
+  // identity (it exists only because this person's PIN was just accepted).
+  | "hr_kiosk_pin_reset"
   | "hr_kiosk_punch"
   // the one workflow door this lane uses — the decision RPC is the sole writer BY DESIGN
   | "hr_wf_decide"

@@ -52,6 +52,7 @@ import {
   closeKioskSession,
   kioskPunch,
   openKioskSession,
+  resetKioskPin,
 } from "@/features/hr/time/api/service";
 import type { KioskPunchResult, PunchKind } from "@/features/hr/time/api/types";
 import { mintPunchIntent, type PunchIntent } from "@/features/hr/time/clock/punchIntent";
@@ -71,6 +72,18 @@ export type KioskPunchView =
   | { kind: "identify"; punchKind: PunchKind }
   /** `hr_kiosk_session_open` in flight — the PIN-accept step. Visibly unfinished. */
   | { kind: "opening"; punchKind: PunchKind }
+  /**
+   * 🚨 The accepted PIN was set by somebody else and is temporary (`must_reset`). The person is
+   * already authenticated — the session is bound to them — and this is the only surface they have,
+   * so they replace it here before the punch goes through.
+   */
+  | {
+      kind: "must-reset";
+      punchKind: PunchKind;
+      employeeName: string | null;
+      /** The server's refusal from a rejected reset attempt, rendered verbatim. */
+      refusal: string | null;
+    }
   /**
    * 🚨 Lockout, owned by `hr_kiosk_session_open` (R3). The wording never reveals whether the
    * employee number or the PIN was the wrong one, nor whether either exists.
@@ -101,6 +114,11 @@ export interface KioskPunch {
    * component that the next person walks up to.
    */
   submit: (employeeNumber: string, pin: string) => void;
+  /**
+   * Replace the temporary PIN and then continue the punch with the NEW one — `hr_kiosk_punch`
+   * re-checks the PIN, and the old one stops verifying the instant the reset lands.
+   */
+  submitNewPin: (newPin: string) => void;
   /** The duplicate card's ONE door. Opens instructions; it never writes a second punch. */
   dispute: () => void;
   /** Back to idle from anywhere. The tablet must never sit on a person's name. */
@@ -126,6 +144,15 @@ export function useKioskPunch({
 }: UseKioskPunchInput): KioskPunch {
   const [view, setView] = useState<KioskPunchView>({ kind: "idle" });
   const [intent, setIntent] = useState<PunchIntent | null>(null);
+  /*
+   * The punch waiting on a forced PIN reset. 🚨 The employee NUMBER is held (it is an identifier the
+   * session already accepted); the PIN is NOT — the new one arrives as an argument and the old one
+   * is dead the moment the reset lands.
+   */
+  const [pendingReset, setPendingReset] = useState<{
+    intent: PunchIntent;
+    employeeNumber: string;
+  } | null>(null);
 
   // ── Auto-dismiss to idle at the server's configured seconds (L3-68) ─────────────────────────
   //
@@ -215,7 +242,23 @@ export function useKioskPunch({
 
     setView({ kind: "opening", punchKind: current.kind });
     try {
-      await openKioskSession(session.sessionToken, employeeNumber, pin, { mockCase });
+      const person = await openKioskSession(session.sessionToken, employeeNumber, pin, { mockCase });
+
+      /*
+       * 🚨 A temporary PIN stops here. The punch is NOT written first and reset afterwards: an
+       * administrator's PIN would then have recorded a real punch, and the reset could be walked
+       * away from — leaving the temporary secret live on a person who thinks they are done.
+       */
+      if (person.mustReset) {
+        setPendingReset({ intent: current, employeeNumber });
+        setView({
+          kind: "must-reset",
+          punchKind: current.kind,
+          employeeName: null,
+          refusal: null,
+        });
+        return;
+      }
     } catch (cause: unknown) {
       if (cause instanceof HrRpcError) {
         const reason = typeof cause.details.reason === "string" ? cause.details.reason : cause.code;
@@ -269,6 +312,34 @@ export function useKioskPunch({
       void identifyThenPunch(intent, employeeNumber.trim(), pin);
     },
 
+    submitNewPin: (newPin: string) => {
+      if (!pendingReset || view.kind !== "must-reset") return;
+      void (async () => {
+        setView({ kind: "opening", punchKind: pendingReset.intent.kind });
+        try {
+          await resetKioskPin(session.sessionToken, newPin, { mockCase });
+        } catch (cause: unknown) {
+          // The server's sentence, verbatim — "Choose a PIN different from the one you were given."
+          setView({
+            kind: "must-reset",
+            punchKind: pendingReset.intent.kind,
+            employeeName: null,
+            refusal:
+              cause instanceof HrRpcError
+                ? cause.userMessage
+                : "That did not work. Try again, or ask your manager.",
+          });
+          return;
+        }
+        /*
+         * The session is still bound to this person, but `hr_kiosk_punch` re-checks the PIN — and
+         * the temporary one no longer verifies. The punch continues with the PIN they just chose.
+         */
+        setPendingReset(null);
+        await send(pendingReset.intent, newPin);
+      })();
+    },
+
     dispute: () =>
       setView((current) =>
         current.kind === "duplicate" ? { kind: "disputing", result: current.result } : current,
@@ -276,6 +347,7 @@ export function useKioskPunch({
 
     dismiss: () => {
       setIntent(null);
+      setPendingReset(null);
       setView({ kind: "idle" });
     },
   };
