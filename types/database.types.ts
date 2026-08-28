@@ -43386,6 +43386,14 @@ export type Database = {
       _wf_project_step: { Args: { p_step: string }; Returns: number }
       _wf_revoke_step: { Args: { p_step: string }; Returns: number }
       _wf_route: { Args: { p_instance: string }; Returns: Json }
+      _wf_row_summary: {
+        Args: {
+          p_flow_key: string
+          p_target_id: string
+          p_target_token: string
+        }
+        Returns: string
+      }
       _wf_subject_may_self_act: {
         Args: {
           p_action_type: string
