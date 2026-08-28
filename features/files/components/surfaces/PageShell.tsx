@@ -957,7 +957,9 @@ function PageShellDesktop({
                             onUploaded={handleUploadedIds}
                             onOpenFile={handleOpenUploadedFile}
                           >
-                            <OnboardingEmptyState />
+                            {(acquisition) => (
+                              <OnboardingEmptyState acquisition={acquisition} />
+                            )}
                           </FileUploadDropzone>
                         ) : section === "starred" ? (
                           <EmptyState

@@ -16,52 +16,26 @@
 
 "use client";
 
-import { useCallback } from "react";
 import {
   Cloud,
   FolderPlus,
   Image as ImageIcon,
   Shield,
-  UploadCloud,
   Zap,
 } from "lucide-react";
+import { FileAcquisitionActions } from "@/features/files/components/core/FileAcquisition/FileAcquisitionActions";
+import type { FileUploadDropzoneActions } from "@/features/files/components/core/FileUploadDropzone/FileUploadDropzone";
 
 export interface OnboardingEmptyStateProps {
+  acquisition: FileUploadDropzoneActions;
   /** Callback for the "New folder" action. Phase 7 wires this up. */
   onCreateFolder?: () => void;
 }
 
 export function OnboardingEmptyState({
+  acquisition,
   onCreateFolder,
 }: OnboardingEmptyStateProps) {
-  const handleUpload = useCallback(() => {
-    // Trigger the nearest FileUploadDropzone's hidden input. The overlay
-    // wraps us, so we open a transient picker directly. This avoids
-    // tightly coupling the empty state to the outer dropzone's ref.
-    const input = document.createElement("input");
-    input.type = "file";
-    input.multiple = true;
-    input.addEventListener("change", () => {
-      if (!input.files?.length) return;
-      const dt = new DataTransfer();
-      for (const file of Array.from(input.files)) dt.items.add(file);
-      // Dispatch a synthesized drop on the overlay so the dropzone's
-      // onDrop handler picks them up.
-      const target = document.querySelector<HTMLElement>(
-        "[data-drop-active], [role='presentation']",
-      );
-      if (target) {
-        const event = new DragEvent("drop", {
-          bubbles: true,
-          cancelable: true,
-          dataTransfer: dt,
-        });
-        target.dispatchEvent(event);
-      }
-    });
-    input.click();
-  }, []);
-
   return (
     <div className="h-full w-full overflow-auto">
       <div className="mx-auto flex min-h-full max-w-2xl flex-col items-center justify-center gap-8 px-6 py-10 text-center">
@@ -90,14 +64,11 @@ export function OnboardingEmptyState({
 
         {/* Actions */}
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <button
-            type="button"
-            onClick={handleUpload}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 shadow-sm"
-          >
-            <UploadCloud className="h-4 w-4" aria-hidden="true" />
-            Upload files
-          </button>
+          <FileAcquisitionActions
+            presentation="buttons"
+            onFiles={acquisition.uploadFiles}
+            enableExistingFiles={false}
+          />
           {onCreateFolder ? (
             <button
               type="button"

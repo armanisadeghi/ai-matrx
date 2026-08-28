@@ -19,7 +19,6 @@ import {
   ExternalLink,
   Settings2,
   Share2,
-  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -48,7 +47,6 @@ import { FilterChips } from "./FilterChips";
 import type { FilterChipKey } from "./FilterChips";
 import { KindFilter } from "./KindFilter";
 import { ViewModeToggle } from "./ViewModeToggle";
-import { NewMenu } from "./NewMenu";
 import type { CloudFilesSection } from "./section";
 
 const SECTION_TITLES: Record<CloudFilesSection, string> = {
@@ -208,18 +206,6 @@ export function ContentHeader({
 
           {showActions ? (
             <div className="flex items-center gap-2">
-              <NewMenu parentFolderId={activeFolderId} />
-              <HeaderButton
-                onClick={() =>
-                  document
-                    .querySelector<HTMLInputElement>(
-                      'input[type="file"][multiple]',
-                    )
-                    ?.click()
-                }
-                label="Upload"
-                icon={<Upload className="h-4 w-4" />}
-              />
               {folder ? (
                 <HeaderButton
                   onClick={() => void handleOpenShareLink()}
