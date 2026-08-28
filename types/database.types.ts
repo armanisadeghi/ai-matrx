@@ -31338,8 +31338,10 @@ export type Database = {
           home_migration: string
           id: string
           is_active: boolean
+          must_be_definer: boolean | null
           must_contain: string[]
           must_not_contain: string[]
+          overloads_intended: boolean | null
           reason: string
           schema_name: string
         }
@@ -31349,8 +31351,10 @@ export type Database = {
           home_migration: string
           id?: string
           is_active?: boolean
+          must_be_definer?: boolean | null
           must_contain?: string[]
           must_not_contain?: string[]
+          overloads_intended?: boolean | null
           reason: string
           schema_name: string
         }
@@ -31360,8 +31364,10 @@ export type Database = {
           home_migration?: string
           id?: string
           is_active?: boolean
+          must_be_definer?: boolean | null
           must_contain?: string[]
           must_not_contain?: string[]
+          overloads_intended?: boolean | null
           reason?: string
           schema_name?: string
         }
@@ -43673,6 +43679,14 @@ export type Database = {
           eligible_on: string
           subject_id: string
           subject_token: string
+        }[]
+      }
+      doors_with_ambiguous_signatures: {
+        Args: never
+        Returns: {
+          door: string
+          signature_count: number
+          signatures: string
         }[]
       }
       earning_code_seed_org: {
@@ -61743,24 +61757,15 @@ export type Database = {
         }
         Returns: Json
       }
-      hr_leave_enroll:
-        | {
-            Args: {
-              p_effective_from?: string
-              p_employment_ids: string[]
-              p_leave_policy_id: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_effective_from?: string
-              p_employment_ids: string[]
-              p_leave_policy_id: string
-              p_override_reason?: string
-            }
-            Returns: Json
-          }
+      hr_leave_enroll: {
+        Args: {
+          p_effective_from?: string
+          p_employment_ids: string[]
+          p_leave_policy_id: string
+          p_override_reason?: string
+        }
+        Returns: Json
+      }
       hr_leave_ledger_export: {
         Args: {
           p_as_of?: string
@@ -62261,7 +62266,7 @@ export type Database = {
         }
       }
       inv_accept: {
-        Args: { p_token: string }
+        Args: { p_hr_half_handled?: boolean; p_token: string }
         Returns: {
           organization_id: string
           role: string
