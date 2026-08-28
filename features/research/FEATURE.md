@@ -43,6 +43,10 @@ endpoint map). **State** — feature-local Zustand (`state/topicStore.ts` via
   AI-proposed topic, editable keywords, and quota/settings, then use `researchStartDestination`
   only after the explicit Start Research action. The originating feature may link the returned
   topic, but it must not generate a Document or treat that topic as completed research.
+- **New-topic project selection uses `HierarchyCascade` + `useHierarchyReduxBridge`.** Organization
+  is explicit before the filtered project list; selecting it updates the app-wide active
+  organization and clears any project chosen under the previous organization. Never pass a hidden
+  active-org filter into the flat `ProjectPicker` on this intake.
 - **Clicking a navigation item must never spend money.** Document generation is explicit-only.
 - **Never hand-render a research stream.** `useResearchStream` adopts via `adoptForeignStream`;
   content renders from `activeRequests` off the exposed `requestId`. `startStream`'s optional
@@ -72,12 +76,12 @@ endpoint map). **State** — feature-local Zustand (`state/topicStore.ts` via
 - **`AuthorityTierBadge` is the ONE renderer for authority** — never hand-roll a score pill.
   Authority ≠ importance ≠ recency: three axes, never conflated.
 - **All generated content renders via `MarkdownStream`** (never `whitespace-pre-wrap`, never
-  wrapped in `prose`). The one exception is the *loaded* document, which uses `ReactMarkdown` to
+  wrapped in `prose`). The one exception is the _loaded_ document, which uses `ReactMarkdown` to
   keep heading-slug `#anchor` TOC links.
 - **Read `token_usage` ONLY through `@/lib/token-usage/normalize`** — it holds
   `{total, by_model}` and has never held flat `input_tokens` keys. Reading those made every cost
   render $0 on 100% of rows. Absent pricing stays **unknown** (`—`), never `$0`. Render every cost
-  via `<CostValue>` / `useCostDisplay`; never `toFixed(2)` a dollar figure in a research component.
+via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a research component.
 - **Editing scraped content backs up the original ONCE** — never overwrite an existing
   `rs_content.original_content`.
 - **`sourcesDiscoveredFromItems` is the one "sources discovered" formula.** Keep it in one
@@ -98,5 +102,7 @@ endpoint map). **State** — feature-local Zustand (`state/topicStore.ts` via
 
 ## Change log
 
+- 2026-08-28 — Replaced the new-topic wizard's hidden active-org project filter with the canonical
+  hierarchy picker and Surface-A bridge, making organization choice visible and globally active.
 - 2026-08-26 — Added the safe reviewed-intake return contract for cross-feature research starts;
   Content Plan now uses it instead of the deleted headless company-research hook.

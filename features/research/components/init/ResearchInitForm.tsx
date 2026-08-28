@@ -44,7 +44,9 @@ import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { ProjectPicker } from "@/features/projects/components/ProjectPicker";
+import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
+import { useHierarchyReduxBridge } from "@/features/agent-context/components/hierarchy-selection/useReduxBridge";
+import type { HierarchySelection } from "@/features/agent-context/components/hierarchy-selection/types";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { TemplatePicker } from "./TemplatePicker";
 import { AiReviewQuotaDialog } from "./AiReviewQuotaDialog";
@@ -70,9 +72,6 @@ import {
   createTag,
 } from "../../service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-// Org comes from the app's CANONICAL active-org context — never from the
-// selected project object (research-project decoupling).
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 // Durable draft state: the generic persisted wizard-draft primitive.
 import {
   patchWizardDraft,
@@ -1110,6 +1109,12 @@ export default function ResearchInitForm() {
   const searchParams = useSearchParams();
   const api = useResearchApi();
   const dispatch = useAppDispatch();
+  const { value: activeHierarchy, onChange: updateActiveHierarchy } =
+    useHierarchyReduxBridge();
+  // Research creation requires an explicit active organization. The hierarchy
+  // bridge is a Surface-A writer, so changing the organization in this form
+  // updates the app-wide active organization and clears stale descendants.
+  const activeOrgId = activeHierarchy.organizationId;
   const [, startTransition] = useTransition();
   const [showAdditionalInstructions, setShowAdditionalInstructions] = useState(
     Boolean(searchParams.get("instructions")),
@@ -1183,11 +1188,32 @@ export default function ResearchInitForm() {
     ) {
       setSelectedKeywords(d.selectedKeywords as string[]);
     }
-    if (!selectedProjectId && str(d.selectedProjectId)) {
+    if (
+      !selectedProjectId &&
+      str(d.selectedProjectId) &&
+      str(d.selectedOrganizationId) === activeOrgId
+    ) {
       setSelectedProjectId(str(d.selectedProjectId));
       setSelectedProjectName(str(d.selectedProjectName));
     }
-  }, [draft]);
+  }, [draft, activeOrgId]);
+
+  // A project selection belongs to the organization under which it was made.
+  // Header/user-menu org switches must not leave an invisible stale project
+  // attached to the pending topic.
+  const previousActiveOrgId = useRef(activeOrgId);
+  useEffect(() => {
+    const previous = previousActiveOrgId.current;
+    previousActiveOrgId.current = activeOrgId;
+    if (previous === activeOrgId || previous === null) return;
+    setSelectedProjectId(null);
+    setSelectedProjectName(null);
+    patchDraft({
+      selectedOrganizationId: activeOrgId,
+      selectedProjectId: null,
+      selectedProjectName: null,
+    });
+  }, [activeOrgId]);
 
   // ── AI state machine ──────────────────────────────────────────────────────
   const [aiPhase, setAiPhase] = useState<AiPhase>({ status: "idle" });
@@ -1221,8 +1247,34 @@ export default function ResearchInitForm() {
     });
   };
 
-  // ── Active organization — canonical app context, NEVER project-derived ───
-  const activeOrgId = useAppSelector(selectEffectiveOrganizationId);
+  const hierarchyValue: HierarchySelection = {
+    ...activeHierarchy,
+    projectId: selectedProjectId,
+    projectName: selectedProjectName,
+    taskId: null,
+    taskName: null,
+  };
+
+  const handleHierarchyChange = (next: HierarchySelection) => {
+    const organizationChanged =
+      next.organizationId !== activeHierarchy.organizationId;
+    const projectChanged = next.projectId !== selectedProjectId;
+
+    // This is the canonical Surface-A write. In particular, an organization
+    // choice here updates appContext.organization_id; it is not merely a local
+    // filter for the project list.
+    updateActiveHierarchy(next);
+
+    if (organizationChanged || projectChanged) {
+      setSelectedProjectId(next.projectId);
+      setSelectedProjectName(next.projectName);
+      patchDraft({
+        selectedOrganizationId: next.organizationId,
+        selectedProjectId: next.projectId,
+        selectedProjectName: next.projectName,
+      });
+    }
+  };
 
   // ── Navigation helpers ────────────────────────────────────────────────────
   const goToStep = (mode: Mode, step: number) => {
@@ -2336,20 +2388,13 @@ export default function ResearchInitForm() {
                       Optionally link this topic to a project.
                     </p>
                   </div>
-                  <ProjectPicker
-                    value={selectedProjectId}
-                    organizationId={activeOrgId}
-                    placeholder="No project"
-                    showCreateButton
+                  <HierarchyCascade
+                    levels={["organization", "scope", "project"]}
+                    value={hierarchyValue}
+                    onChange={handleHierarchyChange}
+                    layout="vertical"
+                    minRows={2}
                     className="max-w-md"
-                    onSelect={(id, name) => {
-                      setSelectedProjectId(id);
-                      setSelectedProjectName(name);
-                      patchDraft({
-                        selectedProjectId: id,
-                        selectedProjectName: name,
-                      });
-                    }}
                   />
                 </div>
               </div>
@@ -2393,20 +2438,13 @@ export default function ResearchInitForm() {
                 </p>
               </div>
 
-              <ProjectPicker
-                value={selectedProjectId}
-                organizationId={activeOrgId}
-                placeholder="No project"
-                showCreateButton
+              <HierarchyCascade
+                levels={["organization", "scope", "project"]}
+                value={hierarchyValue}
+                onChange={handleHierarchyChange}
+                layout="vertical"
+                minRows={2}
                 className="max-w-md"
-                onSelect={(id, name) => {
-                  setSelectedProjectId(id);
-                  setSelectedProjectName(name);
-                  patchDraft({
-                    selectedProjectId: id,
-                    selectedProjectName: name,
-                  });
-                }}
               />
             </div>
           </div>
