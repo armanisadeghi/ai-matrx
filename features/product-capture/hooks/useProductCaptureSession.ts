@@ -530,15 +530,19 @@ export function useProductCaptureSession(
     });
   }, []);
 
-  // Release preview URLs on unmount (uploads already ran their course).
+  // On unmount: flush any notes still inside the debounce window (closing
+  // the capture screen navigates away — an SPA route change fires no
+  // visibilitychange, so without this the last keystrokes would be lost),
+  // then release preview URLs (uploads already ran their course).
   useEffect(() => {
     const urls = previewUrlsRef.current;
     return () => {
+      if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
+      void flushNotes(currentItemRef.current);
       urls.forEach((url) => revokeTrackedObjectUrl(url));
       urls.clear();
-      if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
     };
-  }, []);
+  }, [flushNotes]);
 
   const uploadingCount = artifacts.filter(
     (a) => a.status === "uploading",

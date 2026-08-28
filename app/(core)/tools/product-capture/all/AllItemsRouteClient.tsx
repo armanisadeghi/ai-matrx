@@ -14,7 +14,6 @@ import { AllItemsTable } from "@/features/product-capture/components/AllItemsTab
 export function AllItemsHeader() {
   return (
     <ProductCaptureHeader
-      backHref="/tools/product-capture"
       title="Product Capture"
       right={
         <TapTargetButtonSolid

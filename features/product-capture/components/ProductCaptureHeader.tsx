@@ -2,10 +2,14 @@
 
 /**
  * ProductCaptureHeader — the ONE shell header for the product-capture manage
- * pages (`/tools/product-capture/all` and `.../item/[id]`). Left: back + a
- * small identity title; right: the page's contextual tap-buttons. The capture
- * surface itself renders no shell header (it is a full-screen overlay with
- * its own chrome).
+ * pages. Left: an optional back chevron + a small identity title; right: the
+ * page's contextual tap-buttons.
+ *
+ * `/all` passes NO backHref — it is the feature's hub / fallback page (the
+ * capture screen's close lands here), so a back chevron would only bounce
+ * between it and capture. `/item/[id]` passes `/tools/product-capture/all`,
+ * its structural parent. The capture surface itself renders no shell header
+ * (it is a full-screen overlay with its own chrome).
  */
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -16,7 +20,8 @@ export function ProductCaptureHeader({
   title,
   right,
 }: {
-  backHref: string;
+  /** Omit on hub pages — the chevron only renders when a structural parent exists. */
+  backHref?: string;
   title: string;
   right?: React.ReactNode;
 }) {
@@ -24,8 +29,8 @@ export function ProductCaptureHeader({
     <RouteHeader
       left={
         <div className="flex min-w-0 items-center">
-          <ChevronLeftTapButton href={backHref} ariaLabel="Back" />
-          <span className="truncate text-sm font-medium text-foreground">
+          {backHref && <ChevronLeftTapButton href={backHref} ariaLabel="Back" />}
+          <span className="truncate px-1 text-sm font-medium text-foreground">
             {title}
           </span>
         </div>

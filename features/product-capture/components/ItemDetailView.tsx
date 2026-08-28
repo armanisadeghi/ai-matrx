@@ -133,7 +133,11 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
     document.addEventListener("visibilitychange", onHide);
     return () => {
       document.removeEventListener("visibilitychange", onHide);
+      // Flush any notes still inside the debounce window — the Capture
+      // action navigates away and an SPA route change fires no
+      // visibilitychange, so without this the last keystrokes would be lost.
       if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
+      void flushNotes();
     };
   }, [flushNotes]);
 

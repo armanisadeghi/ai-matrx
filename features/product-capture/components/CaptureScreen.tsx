@@ -376,8 +376,12 @@ export function CaptureScreen({ initialItemId = null }: CaptureScreenProps) {
             variant="ghost"
             size="icon"
             className="h-10 w-10 shrink-0 rounded-full text-white hover:bg-white/10 hover:text-white"
-            onClick={() => router.back()}
-            aria-label="Close capture"
+            // Always land on the manage list — the capture overlay covers the
+            // whole shell, so `router.back()` here could dump the user on
+            // whatever page they happened to arrive from (or nowhere useful
+            // on a direct open). The list is the feature's normal page.
+            onClick={() => router.push("/tools/product-capture/all")}
+            aria-label="Close capture and open the item list"
           >
             <X className="h-5 w-5" />
           </Button>
