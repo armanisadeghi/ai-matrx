@@ -52,8 +52,27 @@ function denied(
   };
 }
 
-function failed(message: string, code?: string | null): HrResult<never> {
-  return { ok: false, kind: "failed", message, code: code ?? null };
+/*
+  🚨 THE HUMAN SENTENCE AND THE MACHINE'S WORDS ARE SEPARATE HERE TOO.
+  `HrFailed.message` promises "already phrased for a human, never a bare Postgres
+  code", and every call site below was building it by concatenating raw driver
+  text onto the end — the same defect fixed in the main transport, still live in
+  this mirror. A settings reader got "The employer profile could not be loaded.
+  permission denied for schema hr", which is both unreadable and a guess at the
+  cause: this branch does not know WHY, only that it did not arrive.
+*/
+function failed(
+  message: string,
+  code?: string | null,
+  technical?: string | null,
+): HrResult<never> {
+  return {
+    ok: false,
+    kind: "failed",
+    message,
+    code: code ?? null,
+    technical: technical?.trim() || null,
+  };
 }
 
 // ── Narrowers, so a mapper can be read at a glance ──────────────────────────
@@ -238,10 +257,9 @@ export async function fetchHrEmployerProfile(args: {
       return denied("no_standing", error.message ?? null);
     }
     return failed(
-      `The employer profile could not be loaded. ${
-        error.message?.trim() || "The database did not say why."
-      }`,
+      `The employer profile did not arrive.`,
       error.code ?? null,
+      error.message ?? null,
     );
   }
 
@@ -334,10 +352,9 @@ export async function fetchHrKnobMetadata(): Promise<HrResult<HrKnobMetadata[]>>
 
   if (error) {
     return failed(
-      `The configuration key descriptions could not be loaded. ${
-        error.message?.trim() || "The database did not say why."
-      }`,
+      `The configuration key descriptions did not arrive.`,
       error.code ?? null,
+      error.message ?? null,
     );
   }
 
@@ -421,18 +438,16 @@ export async function fetchHrCustomFieldRegistry(args: {
 
   if (definitionsResult.error) {
     return failed(
-      `The custom-field registry could not be loaded. ${
-        definitionsResult.error.message?.trim() || "The database did not say why."
-      }`,
+      `The custom-field registry did not arrive.`,
       definitionsResult.error.code ?? null,
+      definitionsResult.error.message ?? null,
     );
   }
   if (targetsResult.error) {
     return failed(
-      `The custom-field limits could not be loaded. ${
-        targetsResult.error.message?.trim() || "The database did not say why."
-      }`,
+      `The custom-field limits did not arrive.`,
       targetsResult.error.code ?? null,
+      targetsResult.error.message ?? null,
     );
   }
 
