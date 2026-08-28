@@ -58,12 +58,31 @@ export interface EmployeeSearchSelectProps {
    * is applied on top of the unconditional `contractor` exclusion, never instead of it.
    */
   punchEnabledWorkerClasses?: readonly HrWorkerClass[];
+  /**
+   * What the caller is picking a person FOR. The two purposes need different populations, and
+   * conflating them hides people from a surface that should show them.
+   *
+   * · `"punch"` (the default, route 34) — who may be PUNCHED FOR. `contractor` is excluded
+   *   unconditionally and the worker-class knob applies. Unchanged from the original behaviour.
+   * · `"evidence"` (route 30) — whose punches may be READ. 🚨 The punch gate is the WRONG gate
+   *   here: it answers "may this person clock in", and the register answers "what did this
+   *   person's clock record". A contractor has no punches, so excluding them does not protect
+   *   anything — it just makes a manager who types a real colleague's name get an empty result
+   *   and no reason, which on an evidence lane reads as "this person has no punches" rather than
+   *   "this person was never offered to you". Who may READ is the server's call, and
+   *   `hr_punch_register` already enforces it with `working_record.read`.
+   */
+  purpose?: "punch" | "evidence";
+  /** Overrides the default prompt. The two purposes are not asking the same question. */
+  label?: string;
   onSelect: (subject: PunchSubject) => void;
 }
 
 export function EmployeeSearchSelect({
   organizationId,
   punchEnabledWorkerClasses,
+  purpose = "punch",
+  label,
   onSelect,
 }: EmployeeSearchSelectProps) {
   const [query, setQuery] = useState("");
@@ -105,9 +124,16 @@ export function EmployeeSearchSelect({
         setRows(
           result.data.rows
             .filter((row) => row.employment_id !== null)
-            .filter((row) => !(row.worker_class && NEVER_PUNCHABLE.has(row.worker_class)))
+            // Both worker-class gates answer "may this person be punched for", so both are skipped
+            // when the caller is choosing whose RECORD to read. See `purpose` on the props.
             .filter(
               (row) =>
+                purpose === "evidence" ||
+                !(row.worker_class && NEVER_PUNCHABLE.has(row.worker_class)),
+            )
+            .filter(
+              (row) =>
+                purpose === "evidence" ||
                 !punchEnabledWorkerClasses ||
                 (row.worker_class !== null && punchEnabledWorkerClasses.includes(row.worker_class)),
             )
@@ -125,12 +151,12 @@ export function EmployeeSearchSelect({
       live = false;
       window.clearTimeout(timer);
     };
-  }, [organizationId, trimmed, active, punchEnabledWorkerClasses]);
+  }, [organizationId, trimmed, active, punchEnabledWorkerClasses, purpose]);
 
   return (
     <div className="flex flex-col gap-3">
       <label htmlFor="hr-punch-subject-search" className="text-sm font-medium text-foreground">
-        Who are you recording time for?
+        {label ?? "Who are you recording time for?"}
       </label>
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

@@ -99,18 +99,21 @@ export function NewVerificationRequestDialog({
 
     if (result.ok) {
       /*
-        🚨 THIS SAID "The employee has been asked for consent." NOTHING ASKS THEM.
-        `hr_verification_request_create` writes the row and touches no notification, no
-        workflow instance, and no task. There is also no read door for "requests awaiting
-        MY consent" and no surface on which the employee could answer, so the consent
-        step has no product path at all (reported to the coordinator as a build item —
-        it needs a self-scoped list door before it can be built).
-        Until that exists this states only what actually happened, and names the step
-        that is genuinely outstanding rather than claiming it was taken care of.
+        🚨 THE ASK IS REAL NOW, AND THIS SENTENCE HAD TO CHANGE TWICE.
+        It originally claimed "The employee has been asked for consent." while NOTHING
+        asked them: `hr_verification_request_create` wrote the row and touched no
+        notification, workflow or task, there was no read door for "requests awaiting MY
+        consent", and no surface to answer on. So it was cut back to state only what had
+        actually happened.
+        `hr_l1_54` built the missing half — the raise now fires
+        `hr.people.verification_consent_requested` (seeded since hr_l1_08 and never once
+        emitted) to the subject by login linkage, and `/hr/me` carries the surface where
+        they answer. The claim is true again, so it is made again. Understating is also a
+        kind of wrong: HR needs to know the ball is in the employee's court.
       */
       toast.success(
         needsConsent
-          ? "Request raised. It states income, so it cannot be generated until the employee's consent is recorded."
+          ? "Request raised. The employee has been asked for their consent; the letter cannot be generated until they answer."
           : "Request raised.",
       );
       onCreated();
@@ -185,15 +188,18 @@ export function NewVerificationRequestDialog({
               <p className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 {/*
-                  🚨 THE SENTENCE STAYS; THE CLAUSE "Raising this asks them for it" DID NOT.
-                  Raising notifies nobody — `hr_verification_request_create` writes the row
-                  and touches no notification, workflow, or task — and there is no surface
-                  where the employee could answer. The consent REQUIREMENT is real and must
-                  keep being stated here; the claim that raising performs the ask was not.
+                  🚨 "Raising this asks them for it" WAS REMOVED AS FALSE, AND IS BACK
+                  BECAUSE IT BECAME TRUE. When raising notified nobody and there was no
+                  surface to answer on, the clause was a lie and was cut. `hr_l1_54` made
+                  the ask real — the raise emits `hr.people.verification_consent_requested`
+                  to the subject, who answers on `/hr/me` — so the sentence describes what
+                  the button actually does again. If that emitter is ever removed, this
+                  clause goes with it.
                 */}
                 <span>
-                  Stating income needs the employee&apos;s consent. The letter
-                  cannot be generated until that consent is recorded.
+                  Stating income needs the employee&apos;s consent. Raising this
+                  asks them for it; the letter cannot be generated until they
+                  answer.
                 </span>
               </p>
             ) : null}

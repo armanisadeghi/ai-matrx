@@ -133,8 +133,31 @@ export function VerificationRowActions({
             Generate
           </Button>
           {needsConsent ? (
+            /*
+              🚨 THE SENTENCE IS PRIMARY; THE FIELD TOKEN LIVES BEHIND THE DISCLOSURE.
+              The target asks this state to NAME THE FIELD, and the obvious reading —
+              putting `employee_consent_at` in the visible line — trades a sentence a
+              human can act on for a column name they cannot. This is the same
+              machine-token-behind-details pattern as `HrRefusalNotice`'s "Refusal
+              reference" and `HrDecisionPanel`'s "Record reference": the person reads
+              why the button is dead, and anyone who needs the machine's word for it
+              opens one disclosure and gets exactly that, with no ambiguity about
+              which field the generation door is waiting on.
+
+              "Consent reference", NOT "Refusal reference" — awaiting consent is a
+              STATE, not a refusal, and the two must not share a label while holding
+              different things.
+            */
             <span className="text-xs text-muted-foreground">
               Waiting on the employee&apos;s consent to state income
+              <details className="mt-0.5">
+                <summary className="cursor-pointer text-xs text-muted-foreground">
+                  Consent reference
+                </summary>
+                <p className="mt-1 break-words font-mono text-xs text-muted-foreground">
+                  employee_consent_at · unset on this request
+                </p>
+              </details>
             </span>
           ) : null}
         </span>

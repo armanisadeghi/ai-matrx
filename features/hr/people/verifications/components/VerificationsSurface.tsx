@@ -113,11 +113,13 @@ export function VerificationsSurface() {
           return;
         case "awaiting_consent":
           // A STATE, not an error. Say who we are waiting on.
-          // 🚨 THIS ENDED "They have been asked." — AND NOTHING ASKS THEM. Raising a
-          // request notifies nobody, and there is no surface where the employee could
-          // answer. Saying it was done left HR waiting on a reply that could never come.
+          // 🚨 "They have been asked." WAS FALSE AND IS TRUE AGAIN. Raising once notified
+          // nobody and there was no surface to answer on, so the claim was cut back to
+          // "not recorded yet". `hr_l1_54` made the ask real — the raise emits
+          // `hr.people.verification_consent_requested` to the subject, who answers on
+          // `/hr/me` — so HR is told where the ball actually is.
           toast.message(
-            "This letter states income, so it waits on the employee's consent. Their consent has not been recorded yet.",
+            "This letter states income, so it waits on the employee's consent. They have been asked and have not answered yet.",
           );
           refresh();
           return;
