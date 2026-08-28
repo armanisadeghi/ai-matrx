@@ -28,11 +28,9 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import IconResolver from "@/components/official/icons/IconResolver";
 import { cn } from "@/lib/utils";
 
-import {
-  DeliveredStream,
-  type DeclaredDeliverable,
-  type RenderableEmission,
-} from "../../kind-emissions";
+import { DeliveredStream } from "../../kind-emissions/DeliveredStream";
+import type { RenderableEmission } from "../../kind-emissions/EmissionRender";
+import type { DeclaredDeliverable } from "../../kind-emissions/result-schema";
 
 import {
   InterruptCard,

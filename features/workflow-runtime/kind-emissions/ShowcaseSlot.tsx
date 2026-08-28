@@ -25,7 +25,7 @@
  */
 
 import React from "react";
-import { Sparkles } from "lucide-react";
+import { Presentation } from "lucide-react";
 
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
 import { cn } from "@/lib/utils";
@@ -82,7 +82,7 @@ export function ShowcaseSlot({
       className={cn("mx-auto w-full max-w-4xl", className)}
     >
       <header className="mb-2 flex items-center justify-center gap-1.5">
-        <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" />
+        <Presentation className="h-3.5 w-3.5 shrink-0 text-primary" />
         <h2 className="truncate text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </h2>

@@ -59,14 +59,16 @@ import {
   type RunStepPresentation,
 } from "../../components/run/node-presentation";
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
+import { splitByPresentation } from "../../kind-emissions/emission-routing";
 import {
   panelDeliverables,
-  resultSchemaOrNull,
   showcaseDeliverables,
-  splitByPresentation,
+} from "../../kind-emissions/result-schema";
+import {
+  resultSchemaOrNull,
   useResultSchema,
-  ShowcaseSlot,
-} from "../../kind-emissions";
+} from "../../kind-emissions/useResultSchema";
+import { ShowcaseSlot } from "../../kind-emissions/ShowcaseSlot";
 import { keepableDeliverables, liveNodeId } from "./sharp-model";
 import { SharpStatusBand } from "./SharpStatusBand";
 import { SharpPlanSpine } from "./SharpPlanSpine";

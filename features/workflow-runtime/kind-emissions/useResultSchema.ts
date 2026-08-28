@@ -27,13 +27,27 @@ export type ResultSchemaState =
   | { status: "ready"; schema: DeclaredResultSchema }
   | { status: "error"; message: string };
 
+/**
+ * The answer is stored WITH the id it answers, and a mismatch reads as
+ * "loading" during render. That is why there is no `setState({loading})` at the
+ * top of the effect: resetting state synchronously inside an effect costs a
+ * second render pass on every id change, and — worse — leaves one frame where
+ * the previous workflow's promise is on screen under the new workflow's name.
+ */
+interface Answered {
+  forId: string;
+  state: ResultSchemaState;
+}
+
 export function useResultSchema(definitionId: string): ResultSchemaState {
   const dispatch = useAppDispatch();
-  const [state, setState] = useState<ResultSchemaState>({ status: "loading" });
+  const [answered, setAnswered] = useState<Answered>({
+    forId: definitionId,
+    state: { status: "loading" },
+  });
 
   useEffect(() => {
     let live = true;
-    setState({ status: "loading" });
     void (async () => {
       const result = await dispatch(
         callApi({
@@ -43,22 +57,26 @@ export function useResultSchema(definitionId: string): ResultSchemaState {
         }),
       );
       if (!live) return;
-      if (result.error) {
-        setState({
-          status: "error",
-          message:
-            result.error.message || "Could not read what this workflow makes.",
-        });
-        return;
-      }
-      setState({ status: "ready", schema: parseResultSchema(result.data) });
+      setAnswered({
+        forId: definitionId,
+        state: result.error
+          ? {
+              status: "error",
+              message:
+                result.error.message ||
+                "Could not read what this workflow makes.",
+            }
+          : { status: "ready", schema: parseResultSchema(result.data) },
+      });
     })();
     return () => {
       live = false;
     };
   }, [dispatch, definitionId]);
 
-  return state;
+  return answered.forId === definitionId
+    ? answered.state
+    : { status: "loading" };
 }
 
 /** The schema when it is ready, else null — for the common read-or-degrade. */
