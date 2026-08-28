@@ -53,7 +53,11 @@ ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"            # Write Target Sandbox
 HR_ADMIN_USER = "87a6e699-3622-4869-8843-d0867456c0dd"  # admin@admin.com, hr_admin here
 EMPLOYER_PROFILE = "2ac6a8e9-08da-4a0a-a578-cbfcd0d7f6e1"
 
-GROUP_NAME = "R39 no_reach wording (fixture)"
+# 🚨 The window is in the NAME because `hr_pay_group_upsert` silently ignores
+# `first_period_start_on` when updating an existing group — it returns `{"ok": true}` and changes
+# nothing. A group's cadence is therefore fixed at creation, so a different window needs a
+# different group rather than an edit that reports success and does nothing.
+GROUP_NAME = "R39 no_reach wording Aug21 (fixture)"
 LEGAL_FIRST, LEGAL_LAST = "Zzz", "Noreach"
 JOB_TITLE = "6e2275c6-47a4-4b6a-9ff4-f48e8adeedb0"     # Operations Specialist
 LOCATION = "0ebbf294-2c02-4c0f-968f-fe780bf000ac"      # Sandbox HQ (US)
