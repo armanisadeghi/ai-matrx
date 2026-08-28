@@ -169,82 +169,81 @@ export function RunConfigOverrides({
       </div>
 
       <div className="flex flex-col gap-2.5 px-3 pb-3">
-        {orphanedKeys.length > 0 && (
-          <div className="flex flex-col gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
-            <span className="flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="h-3 w-3" />
-              Not supported by the selected model
-            </span>
-            {orphanedKeys.map((key) => (
-              <div key={key} className="flex items-center gap-2">
-                <span className="flex-1 truncate text-[11px] text-muted-foreground">
-                  {humanizeSettingKey(key)}
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    dispatch(resetOverride({ conversationId, key }))
-                  }
-                  title="Reset to agent default"
-                  className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <RotateCcw className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {rowsLoading ? (
-          <p className="text-[11px] text-muted-foreground">
-            Loading model settings…
-          </p>
-        ) : groups.length === 0 ? (
-          <p className="text-[11px] text-muted-foreground">
-            {effectiveModelId
-              ? "This model doesn't declare adjustable settings."
-              : "No model resolved for this conversation yet."}
-          </p>
-        ) : (
-          groups.map((group) => (
-            <div key={group.id} className="flex flex-col gap-2">
-              {group.label && (
-                <p className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
-                  {group.label}
-                </p>
-              )}
-              {group.rows.map((row) => (
-                <OverrideRow
-                  key={row.key}
-                  row={row}
-                  value={
-                    row.key in overrides
-                      ? overrides[row.key]
-                      : removals.includes(row.key)
-                        ? undefined
-                        : effectiveDefault(row.key, row.control)
-                  }
-                  isOverridden={row.key in overrides}
-                  isRemoved={removals.includes(row.key)}
-                  onChange={(v) => handleChange(row.key, row.control, v)}
-                  onReset={() =>
-                    dispatch(resetOverride({ conversationId, key: row.key }))
-                  }
-                />
+          {orphanedKeys.length > 0 && (
+            <div className="flex flex-col gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
+              <span className="flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="h-3 w-3" />
+                Not supported by the selected model
+              </span>
+              {orphanedKeys.map((key) => (
+                <div key={key} className="flex items-center gap-2">
+                  <span className="flex-1 truncate text-[11px] text-muted-foreground">
+                    {humanizeSettingKey(key)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      dispatch(resetOverride({ conversationId, key }))
+                    }
+                    title="Reset to agent default"
+                    className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </button>
+                </div>
               ))}
             </div>
-          ))
-        )}
+          )}
 
-        <p className="text-[10px] leading-snug text-muted-foreground">
-          Overrides apply to this conversation only. Resetting a value returns
-          it to the agent default.
-        </p>
+          {rowsLoading ? (
+            <p className="text-[11px] text-muted-foreground">
+              Loading model settings…
+            </p>
+          ) : groups.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground">
+              {effectiveModelId
+                ? "This model doesn't declare adjustable settings."
+                : "No model resolved for this conversation yet."}
+            </p>
+          ) : (
+            groups.map((group) => (
+              <div key={group.id} className="flex flex-col gap-2">
+                {group.label && (
+                  <p className="pt-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                    {group.label}
+                  </p>
+                )}
+                {group.rows.map((row) => (
+                  <OverrideRow
+                    key={row.key}
+                    row={row}
+                    value={
+                      row.key in overrides
+                        ? overrides[row.key]
+                        : removals.includes(row.key)
+                          ? undefined
+                          : effectiveDefault(row.key, row.control)
+                    }
+                    isOverridden={row.key in overrides}
+                    isRemoved={removals.includes(row.key)}
+                    onChange={(v) => handleChange(row.key, row.control, v)}
+                    onReset={() =>
+                      dispatch(resetOverride({ conversationId, key: row.key }))
+                    }
+                  />
+                ))}
+              </div>
+            ))
+          )}
+
+          <p className="text-[10px] leading-snug text-muted-foreground">
+            Overrides apply to this conversation only. Resetting a value
+            returns it to the agent default.
+          </p>
       </div>
     </div>
   );
 }
-
 function OverrideRow({
   row,
   value,

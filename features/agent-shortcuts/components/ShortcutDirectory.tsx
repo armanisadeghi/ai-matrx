@@ -67,7 +67,9 @@ import {
   shortcutDirectoryRowSummary,
 } from "../format";
 import { cn } from "@/lib/utils";
-import { MOBILE_TABLE } from "@/components/official/mobile-table/mobileTable";
+import {
+  MOBILE_TABLE,
+} from "@/components/official/mobile-table/mobileTable";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import {
   CONTEXT_MENU_ENTITY_KEY,
@@ -107,7 +109,6 @@ export interface ShortcutDirectoryProps {
   /** (core) route consumers render title + primary actions in the shell PageHeader instead — set true to suppress this component's own title/action row. */
   hideTitleBar?: boolean;
 }
-
 export function ShortcutDirectory({
   mode,
   title = "All Shortcuts",
@@ -832,157 +833,155 @@ export function ShortcutDirectory({
               resolveContextOnOpen={resolveMenuTarget}
               extraSections={menuSections}
             >
-              <Table className={MOBILE_TABLE}>
-                <TableHeader className="sticky top-0 bg-background z-10">
-                  <TableRow>
-                    <TableHead className="w-[260px] max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-background max-sm:whitespace-nowrap">
-                      ID
-                    </TableHead>
-                    <TableHead
-                      className="min-w-[200px] max-sm:whitespace-nowrap"
-                      onClick={() => handleSort("label")}
-                    >
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
-                        Label
-                        <ArrowUpDown className="h-3 w-3" />
-                        <SortIcon
-                          field="label"
-                          activeField={sortField}
-                          direction={sortDirection}
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="min-w-[140px] max-sm:whitespace-nowrap"
-                      onClick={() => handleSort("agent")}
-                    >
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
-                        Agent
-                        <SortIcon
-                          field="agent"
-                          activeField={sortField}
-                          direction={sortDirection}
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="min-w-[140px] max-sm:whitespace-nowrap"
-                      onClick={() => handleSort("scope")}
-                    >
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
-                        Scope
-                        <SortIcon
-                          field="scope"
-                          activeField={sortField}
-                          direction={sortDirection}
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="min-w-[120px] max-sm:whitespace-nowrap"
-                      onClick={() => handleSort("placement")}
-                    >
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
-                        Placement
-                        <SortIcon
-                          field="placement"
-                          activeField={sortField}
-                          direction={sortDirection}
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="min-w-[120px] max-sm:whitespace-nowrap"
-                      onClick={() => handleSort("category")}
-                    >
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
-                        Category
-                        <SortIcon
-                          field="category"
-                          activeField={sortField}
-                          direction={sortDirection}
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="min-w-[120px] max-sm:whitespace-nowrap"
-                      onClick={() => handleSort("surface")}
-                    >
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
-                        Surface
-                        <SortIcon
-                          field="surface"
-                          activeField={sortField}
-                          direction={sortDirection}
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="w-[100px] text-center"
-                      onClick={() => handleSort("status")}
-                    >
-                      <div className="flex items-center gap-1 cursor-pointer hover:text-primary justify-center">
-                        Status
-                        <SortIcon
-                          field="status"
-                          activeField={sortField}
-                          direction={sortDirection}
-                        />
-                      </div>
-                    </TableHead>
-                    <TableHead className="w-[80px]">Open</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {grouped.map((group) => (
-                    <React.Fragment key={group.key || "flat"}>
-                      {groupBy !== "none" && (
-                        <TableRow className="bg-muted/40 hover:bg-muted/40">
-                          <TableCell colSpan={9}>
-                            <div className="flex items-center font-semibold text-sm">
-                              {/* Grouping by agent made every header a raw
+            <Table className={MOBILE_TABLE}>
+              <TableHeader className="sticky top-0 bg-background z-10">
+                <TableRow>
+                  <TableHead className="w-[260px] max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-background max-sm:whitespace-nowrap">ID</TableHead>
+                  <TableHead
+                    className="min-w-[200px] max-sm:whitespace-nowrap"
+                    onClick={() => handleSort("label")}
+                  >
+                    <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
+                      Label
+                      <ArrowUpDown className="h-3 w-3" />
+                      <SortIcon
+                        field="label"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="min-w-[140px] max-sm:whitespace-nowrap"
+                    onClick={() => handleSort("agent")}
+                  >
+                    <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
+                      Agent
+                      <SortIcon
+                        field="agent"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="min-w-[140px] max-sm:whitespace-nowrap"
+                    onClick={() => handleSort("scope")}
+                  >
+                    <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
+                      Scope
+                      <SortIcon
+                        field="scope"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="min-w-[120px] max-sm:whitespace-nowrap"
+                    onClick={() => handleSort("placement")}
+                  >
+                    <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
+                      Placement
+                      <SortIcon
+                        field="placement"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="min-w-[120px] max-sm:whitespace-nowrap"
+                    onClick={() => handleSort("category")}
+                  >
+                    <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
+                      Category
+                      <SortIcon
+                        field="category"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="min-w-[120px] max-sm:whitespace-nowrap"
+                    onClick={() => handleSort("surface")}
+                  >
+                    <div className="flex items-center gap-1 cursor-pointer hover:text-primary">
+                      Surface
+                      <SortIcon
+                        field="surface"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="w-[100px] text-center"
+                    onClick={() => handleSort("status")}
+                  >
+                    <div className="flex items-center gap-1 cursor-pointer hover:text-primary justify-center">
+                      Status
+                      <SortIcon
+                        field="status"
+                        activeField={sortField}
+                        direction={sortDirection}
+                      />
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[80px]">Open</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {grouped.map((group) => (
+                  <React.Fragment key={group.key || "flat"}>
+                    {groupBy !== "none" && (
+                      <TableRow className="bg-muted/40 hover:bg-muted/40">
+                        <TableCell colSpan={9}>
+                          <div className="flex items-center font-semibold text-sm">
+                            {/* Grouping by agent made every header a raw
                                 unclickable UUID in admin mode (admin rows all
                                 carry `agentName: null`) — the very defect the
                                 cell below was just fixed for. */}
-                              {groupBy === "agent" && group.rows[0]?.agentId ? (
-                                <EntityRef
-                                  token="agent"
-                                  id={group.rows[0].agentId}
-                                  name={group.key}
-                                  href={resolveAgentUrl(
-                                    group.rows[0].agentId,
-                                    mode,
-                                  )}
-                                  showIcon={false}
-                                  className="font-semibold"
-                                />
-                              ) : (
-                                group.key
-                              )}
-                              <Badge variant="secondary" className="ml-2">
-                                {group.rows.length}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                      {group.rows.map(renderRow)}
-                    </React.Fragment>
-                  ))}
-                </TableBody>
-              </Table>
+                            {groupBy === "agent" && group.rows[0]?.agentId ? (
+                              <EntityRef
+                                token="agent"
+                                id={group.rows[0].agentId}
+                                name={group.key}
+                                href={resolveAgentUrl(
+                                  group.rows[0].agentId,
+                                  mode,
+                                )}
+                                showIcon={false}
+                                className="font-semibold"
+                              />
+                            ) : (
+                              group.key
+                            )}
+                            <Badge variant="secondary" className="ml-2">
+                              {group.rows.length}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {group.rows.map(renderRow)}
+                  </React.Fragment>
+                ))}
+              </TableBody>
+            </Table>
 
-              {!isLoading && filtered.length === 0 && (
-                <div className="text-center py-12">
-                  <MousePointerClick className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-50" />
-                  <p className="text-muted-foreground">No shortcuts found</p>
-                </div>
-              )}
-              {isLoading && filtered.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  Loading shortcuts...
-                </div>
-              )}
+            {!isLoading && filtered.length === 0 && (
+              <div className="text-center py-12">
+                <MousePointerClick className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-50" />
+                <p className="text-muted-foreground">No shortcuts found</p>
+              </div>
+            )}
+            {isLoading && filtered.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                Loading shortcuts...
+              </div>
+            )}
             </NonEditableContextMenu>
           </div>
         </div>
