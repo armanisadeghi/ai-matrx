@@ -10,8 +10,12 @@
  * deliberate binding silently evaporating while the caller was told the
  * platform default was in charge.
  *
- * The server refuses this loudly (aidream `services/mandates/service.py`,
- * `EXECUTABLE_HOLDER_TYPES`); the client must match that posture.
+ * Workflow Holders now EXECUTE — on the server (aidream
+ * `services/mandates/workflow_holder.py`). This browser-side resolver still
+ * cannot run one: its whole job is handing `POST /agents/{id}` an agent id, so
+ * it has no channel to start a workflow run. It must therefore keep refusing,
+ * and the refusal must name that real reason rather than claiming the feature
+ * does not exist.
  */
 
 import {
@@ -137,7 +141,9 @@ describe("holderNotExecutableMessage", () => {
     expect(message).toContain("your binding");
     expect(message).toContain("b1b1b1b1-0000-4000-8000-000000000000");
     expect(message).toContain("'workflow' Holder");
-    expect(message).toContain("NOT IMPLEMENTED");
+    expect(message).toContain("this browser path can only launch an agent");
+    // The refusal must not claim the capability is unbuilt — it ships.
+    expect(message).not.toContain("NOT IMPLEMENTED");
   });
 
   it("says which layer an organization binding came from", () => {
@@ -218,7 +224,9 @@ describe("resolveMandate — a workflow Holder REFUSES, loudly", () => {
     expect(message).toContain("your binding");
     expect(message).toContain("b3b3b3b3-0000-4000-8000-000000000000");
     expect(message).toContain("'workflow' Holder");
-    expect(message).toContain("NOT IMPLEMENTED");
+    expect(message).toContain("this browser path can only launch an agent");
+    // The refusal must not claim the capability is unbuilt — it ships.
+    expect(message).not.toContain("NOT IMPLEMENTED");
     // The whole point: the system default is NOT what came back.
     expect(message).not.toContain(SYSTEM_AGENT_ID);
   });
@@ -251,7 +259,7 @@ describe("resolveMandate — a workflow Holder REFUSES, loudly", () => {
       config_overrides: { model: "user-override-model" },
     };
     await expect(resolveMandate("workflow.contract_check")).rejects.toThrow(
-      /NOT IMPLEMENTED/,
+      /this browser path can only launch an agent/,
     );
   });
 
