@@ -84,15 +84,6 @@ export default function MobileTasksList({
     setShowQuickAdd(false);
   };
 
-  const handleTaskToggle = (
-    _projectId: string,
-    taskId: string,
-    e: React.MouseEvent,
-  ) => {
-    e.stopPropagation();
-    dispatch(toggleTaskCompleteThunk({ taskId }));
-  };
-
   const currentProjectName = activeProject
     ? projects.find((p) => p.id === activeProject)?.name
     : "All Tasks";
@@ -263,21 +254,17 @@ export default function MobileTasksList({
                   className="flex items-center gap-3 p-4 active:bg-muted/50 transition-colors cursor-pointer"
                 >
                   {/* Checkbox */}
-                  <button
-                    type="button"
-                    onClick={(e) =>
-                      handleTaskToggle(task.projectId, task.id, e)
+                  <Checkbox
+                    checked={task.completed}
+                    onClick={(e) => e.stopPropagation()}
+                    onCheckedChange={() =>
+                      dispatch(toggleTaskCompleteThunk({ taskId: task.id }))
                     }
-                    className="flex min-h-11 min-w-11 items-center justify-center"
+                    className="relative mx-[15px] after:absolute after:-inset-[15px] after:rounded-full after:content-['']"
                     aria-label={
                       task.completed ? "Mark incomplete" : "Mark complete"
                     }
-                  >
-                    <Checkbox
-                      checked={task.completed}
-                      className="pointer-events-none"
-                    />
-                  </button>
+                  />
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">

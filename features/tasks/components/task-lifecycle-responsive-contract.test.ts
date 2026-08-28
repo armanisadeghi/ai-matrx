@@ -60,6 +60,15 @@ describe("task lifecycle responsive contract", () => {
     );
   });
 
+  it("keeps the mobile completion control valid and touch-sized", () => {
+    const mobileList = source("mobile/MobileTasksList.tsx");
+
+    expect(mobileList).toContain("after:-inset-[15px]");
+    expect(mobileList).not.toContain(
+      'className="flex min-h-11 min-w-11 items-center justify-center"',
+    );
+  });
+
   it("keeps search on the project task list", () => {
     const projectTasks = projectSource("ProjectTaskList.tsx");
 
