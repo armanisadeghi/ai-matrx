@@ -22629,6 +22629,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/scheduling/admin/system-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Admin List System Tasks */
+        get: operations["admin_list_system_tasks_scheduling_admin_system_tasks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduling/admin/system-tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Admin Patch System Task
+         * @description Enable/disable (task + trigger flipped together, gate markers cleared on
+         *     enable), change cadence (next_due_at recomputed), or change parameters.
+         *     Enabling a task whose tool_name has no registered handler is refused.
+         */
+        patch: operations["admin_patch_system_task_scheduling_admin_system_tasks__task_id__patch"];
+        trace?: never;
+    };
     "/scheduling/admin/force-disable/{task_id}": {
         parameters: {
             query?: never;
@@ -66770,6 +66809,81 @@ export interface components {
             category?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /** SystemTaskItem */
+        SystemTaskItem: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description?: string | null;
+            /** Tool Name */
+            tool_name?: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** Handler Gate Pending */
+            handler_gate_pending: boolean;
+            /** Handler Registered */
+            handler_registered: boolean;
+            /** Variables Args */
+            variables_args?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            trigger?: components["schemas"]["SystemTaskTriggerInfo"] | null;
+            last_run?: components["schemas"]["SystemTaskLastRun"] | null;
+        };
+        /** SystemTaskLastRun */
+        SystemTaskLastRun: {
+            /** Id */
+            id: string;
+            /** Status */
+            status: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+        };
+        /** SystemTaskPatchRequest */
+        SystemTaskPatchRequest: {
+            /** Enabled */
+            enabled?: boolean | null;
+            trigger?: components["schemas"]["SystemTaskTriggerPatch"] | null;
+            /** Variables Args */
+            variables_args?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+        };
+        /** SystemTaskTriggerInfo */
+        SystemTaskTriggerInfo: {
+            /** Id */
+            id: string;
+            /** Type */
+            type: string;
+            /** Config */
+            config: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Enabled */
+            enabled: boolean;
+            /** Next Due At */
+            next_due_at?: string | null;
+        };
+        /** SystemTaskTriggerPatch */
+        SystemTaskTriggerPatch: {
+            /** Type */
+            type?: string | null;
+            /** Config */
+            config?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+        };
+        /** SystemTasksResponse */
+        SystemTasksResponse: {
+            /** Tasks */
+            tasks: components["schemas"]["SystemTaskItem"][];
         };
         /** TableCellBookmark */
         TableCellBookmark: {
@@ -112858,6 +112972,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__api__routers__scheduling__ScannerStatusResponse"];
+                };
+            };
+        };
+    };
+    admin_list_system_tasks_scheduling_admin_system_tasks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemTasksResponse"];
+                };
+            };
+        };
+    };
+    admin_patch_system_task_scheduling_admin_system_tasks__task_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SystemTaskPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemTaskItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

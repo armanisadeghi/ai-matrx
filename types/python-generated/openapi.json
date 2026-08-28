@@ -59242,6 +59242,80 @@
         }
       }
     },
+    "/scheduling/admin/system-tasks": {
+      "get": {
+        "tags": [
+          "Scheduling"
+        ],
+        "summary": "Admin List System Tasks",
+        "operationId": "admin_list_system_tasks_scheduling_admin_system_tasks_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemTasksResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scheduling/admin/system-tasks/{task_id}": {
+      "patch": {
+        "tags": [
+          "Scheduling"
+        ],
+        "summary": "Admin Patch System Task",
+        "description": "Enable/disable (task + trigger flipped together, gate markers cleared on\nenable), change cadence (next_due_at recomputed), or change parameters.\nEnabling a task whose tool_name has no registered handler is refused.",
+        "operationId": "admin_patch_system_task_scheduling_admin_system_tasks__task_id__patch",
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SystemTaskPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemTaskItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/scheduling/admin/force-disable/{task_id}": {
       "post": {
         "tags": [
@@ -170413,6 +170487,269 @@
         "type": "object",
         "title": "SystemInstructionInput",
         "description": "Structured system prompt on the chat/manual wire.\n\nMirrors ``SystemInstruction.from_value`` dict parsing — callers may send\neither a plain string or this object (agent-builder uses ``content`` +\n``include_date`` + ``intro`` / ``outro``). Downstream ``UnifiedConfig``\nnormalizes both shapes to ``SystemInstruction``."
+      },
+      "SystemTaskItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "tool_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Name"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "handler_gate_pending": {
+            "type": "boolean",
+            "title": "Handler Gate Pending"
+          },
+          "handler_registered": {
+            "type": "boolean",
+            "title": "Handler Registered"
+          },
+          "variables_args": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Variables Args"
+          },
+          "trigger": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SystemTaskTriggerInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_run": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SystemTaskLastRun"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "enabled",
+          "handler_gate_pending",
+          "handler_registered"
+        ],
+        "title": "SystemTaskItem"
+      },
+      "SystemTaskLastRun": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "SystemTaskLastRun"
+      },
+      "SystemTaskPatchRequest": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "trigger": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SystemTaskTriggerPatch"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "variables_args": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Variables Args"
+          }
+        },
+        "type": "object",
+        "title": "SystemTaskPatchRequest"
+      },
+      "SystemTaskTriggerInfo": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "config": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Config"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "next_due_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "config",
+          "enabled"
+        ],
+        "title": "SystemTaskTriggerInfo"
+      },
+      "SystemTaskTriggerPatch": {
+        "properties": {
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          }
+        },
+        "type": "object",
+        "title": "SystemTaskTriggerPatch"
+      },
+      "SystemTasksResponse": {
+        "properties": {
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/SystemTaskItem"
+            },
+            "type": "array",
+            "title": "Tasks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tasks"
+        ],
+        "title": "SystemTasksResponse"
       },
       "TableCellBookmark": {
         "properties": {
