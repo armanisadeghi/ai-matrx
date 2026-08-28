@@ -87,11 +87,10 @@ import {
   Loader2,
   Send,
   MoreHorizontal,
-  Sparkles,
+  BrainCircuit,
   RotateCcw,
   X,
   MessageCircle,
-  Bot,
   GitCompareArrows,
 } from "lucide-react";
 import { motion } from "motion/react";
@@ -1088,11 +1087,11 @@ export const ProTextarea = React.forwardRef<
                             PRO_TEXTAREA_AGENT_ACTIONS[actionId];
                           const icon =
                             actionId === "cleanup" ? (
-                              <Sparkles className="h-4 w-4 text-primary" />
+                              <BrainCircuit className="h-4 w-4 text-primary" />
                             ) : actionId === "help" ? (
                               <MessageCircle className="h-4 w-4 text-primary" />
                             ) : (
-                              <Bot className="h-4 w-4 text-primary" />
+                              <BrainCircuit className="h-4 w-4 text-primary" />
                             );
                           return (
                             <button
@@ -1348,7 +1347,7 @@ function AgentActionPopoverBody({
     <div className="flex flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <BrainCircuit className="h-3.5 w-3.5 text-primary" />
           {title}
           {isBusy && (
             <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-normal text-muted-foreground">
@@ -1392,7 +1391,7 @@ function AgentActionPopoverBody({
           ) : hasRun ? (
             <RotateCcw className="h-3.5 w-3.5" />
           ) : (
-            <Sparkles className="h-3.5 w-3.5" />
+            <BrainCircuit className="h-3.5 w-3.5" />
           )}
           {hasRun ? "Re-run" : "Run"}
         </button>
