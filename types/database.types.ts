@@ -43309,6 +43309,7 @@ export type Database = {
         Args: { p_patch: Json; p_row_id: string; p_token: string }
         Returns: Json
       }
+      _wf_change_entitlement: { Args: { p_instance: string }; Returns: Json }
       _wf_close_instance: {
         Args: { p_instance: string; p_reason?: string; p_state: string }
         Returns: Json
@@ -43361,6 +43362,10 @@ export type Database = {
       }
       _wf_join: { Args: { p_instance: string }; Returns: Json }
       _wf_login_of: { Args: { p_employment_id: string }; Returns: string }
+      _wf_may_see_change: {
+        Args: { p_entitlement: Json; p_user: string }
+        Returns: boolean
+      }
       _wf_not_attested: {
         Args: { p_actor?: string; p_note?: string; p_step: string }
         Returns: Json
