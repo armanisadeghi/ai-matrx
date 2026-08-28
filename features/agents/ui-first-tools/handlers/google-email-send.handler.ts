@@ -87,12 +87,16 @@ export const googleEmailSendHandler: ToolHandler<
 
     return {
       sent: true,
-      message_id: typeof data.message_id === "string" ? data.message_id : undefined,
+      message_id:
+        typeof data.message_id === "string" ? data.message_id : undefined,
       to: typeof data.to === "string" ? data.to : undefined,
       cc: Array.isArray(data.cc) ? (data.cc as string[]) : undefined,
       subject: typeof data.subject === "string" ? data.subject : undefined,
       edited: data.edited === true,
-      from_email: mailbox.accountEmail,
+      from_email:
+        typeof data.from_email === "string"
+          ? data.from_email
+          : mailbox.accountEmail,
     };
   },
 };

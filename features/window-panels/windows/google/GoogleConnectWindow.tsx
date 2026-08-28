@@ -18,11 +18,11 @@
 
 import { useCallback, useMemo, useState } from "react";
 import {
-  Check,
   ExternalLink,
   FileText,
   Loader2,
   Mail,
+  Plus,
   Table2,
 } from "lucide-react";
 import { GoogleDrive } from "@/components/icons/brand-icons";
@@ -44,6 +44,12 @@ import {
   useGoogleConnectionInventory,
 } from "@/features/marketing/google/hooks";
 import { registerSelectedGoogleFile } from "@/features/google-workspace/service";
+import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
+import {
+  eligibleGoogleConnections,
+  preferredGoogleConnectionId,
+  rememberGoogleConnection,
+} from "@/features/google-workspace/connection";
 import {
   pickGoogleDriveFiles,
   pickGoogleWorkspaceFile,
@@ -65,6 +71,7 @@ export interface GoogleConnectWindowProps {
   reason?: string | null;
   mode?: "workspace" | "drive-import";
   callbackGroupId?: string | null;
+  initialConnectionId?: string | null;
 }
 
 export function GoogleConnectWindow(props: GoogleConnectWindowProps) {
@@ -83,22 +90,29 @@ function GoogleConnectWindowBody({
   reason,
   mode = "workspace",
   callbackGroupId,
+  initialConnectionId,
 }: GoogleConnectWindowProps) {
   const google = useGoogleAPI();
   const connectGoogle = useConnectGoogle();
   const inventory = useGoogleConnectionInventory();
   const [busy, setBusy] = useState<string | null>(null);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<
+    string | null
+  >(() => initialConnectionId ?? preferredGoogleConnectionId("workspace"));
 
-  const connection = useMemo(() => {
-    const rows = inventory.data?.connections ?? [];
-    return (
-      rows.find(
-        (row) =>
-          row.health === "connected" &&
-          row.scopes.includes(GOOGLE_SCOPE.driveFile),
-      ) ?? null
-    );
-  }, [inventory.data]);
+  const connections = useMemo(
+    () =>
+      eligibleGoogleConnections(
+        inventory.data?.connections ?? [],
+        "workspace",
+        selectedConnectionId,
+      ),
+    [inventory.data?.connections, selectedConnectionId],
+  );
+  const connection =
+    connections.find((row) => row.id === selectedConnectionId) ??
+    connections[0] ??
+    null;
 
   const canSend = Boolean(connection?.scopes.includes(GOOGLE_SCOPE.gmailSend));
 
@@ -106,10 +120,16 @@ function GoogleConnectWindowBody({
     const rows = inventory.data?.resources ?? [];
     return rows.filter(
       (row) =>
-        row.resource_type === "google_document" ||
-        row.resource_type === "google_spreadsheet",
+        row.connection_id === connection?.id &&
+        (row.resource_type === "google_document" ||
+          row.resource_type === "google_spreadsheet"),
     );
-  }, [inventory.data]);
+  }, [connection?.id, inventory.data?.resources]);
+
+  const selectConnection = useCallback((connectionId: string) => {
+    setSelectedConnectionId(connectionId);
+    rememberGoogleConnection("workspace", connectionId);
+  }, []);
 
   const run = useCallback(async (key: string, work: () => Promise<void>) => {
     setBusy(key);
@@ -131,7 +151,11 @@ function GoogleConnectWindowBody({
       const code = await google.requestAuthorizationCode([
         ...GOOGLE_WORKSPACE_FILE_SCOPES,
       ]);
-      await connectGoogle.mutateAsync({ code, owner: { type: "user" } });
+      const result = await connectGoogle.mutateAsync({
+        code,
+        owner: { type: "user" },
+      });
+      selectConnection(result.connectionId);
       await inventory.refetch();
       toast.success("Google connected.");
     });
@@ -142,7 +166,12 @@ function GoogleConnectWindowBody({
         [...GOOGLE_WORKSPACE_SEND_SCOPES],
         connection?.account_email ?? undefined,
       );
-      await connectGoogle.mutateAsync({ code, owner: { type: "user" } });
+      const result = await connectGoogle.mutateAsync({
+        code,
+        owner: { type: "user" },
+      });
+      selectConnection(result.connectionId);
+      rememberGoogleConnection("gmail-send", result.connectionId);
       await inventory.refetch();
       toast.success("Email sending enabled.");
     });
@@ -245,12 +274,23 @@ function GoogleConnectWindowBody({
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2 text-sm text-foreground">
-              <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span className="truncate">
-                {connection.account_email ?? "Connected"}
-              </span>
-            </div>
+            <GoogleAccountSelect
+              connections={connections}
+              connectionId={connection.id}
+              onConnectionChange={selectConnection}
+              disabled={busy !== null}
+            />
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={connect}
+              disabled={busy !== null}
+              className="self-start"
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              {busy === "connect" ? "Connecting…" : "Add another account"}
+            </Button>
 
             <Button
               size="sm"

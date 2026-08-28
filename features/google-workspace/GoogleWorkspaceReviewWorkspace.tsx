@@ -65,6 +65,10 @@ import {
   isGoogleAuthorizationCancelled,
   useGoogleAPI,
 } from "@/providers/google-provider/GoogleApiProvider";
+import {
+  preferredGoogleConnectionId,
+  rememberGoogleConnection,
+} from "@/features/google-workspace/connection";
 
 type BusyAction =
   | "connect-files"
@@ -124,7 +128,7 @@ export function GoogleWorkspaceReviewWorkspace({
   const connectGoogle = useConnectGoogle();
   const disconnectGoogle = useDisconnectGoogle();
   const [activeConnectionId, setActiveConnectionId] = useState<string | null>(
-    null,
+    () => preferredGoogleConnectionId("workspace"),
   );
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(
     null,
@@ -167,6 +171,11 @@ export function GoogleWorkspaceReviewWorkspace({
     personalConnections.find(
       (connection) => connection.id === effectiveConnectionId,
     ) ?? null;
+
+  const selectWorkspaceConnection = (connectionId: string) => {
+    setActiveConnectionId(connectionId);
+    rememberGoogleConnection("workspace", connectionId);
+  };
   const selectedResources = useMemo(
     () =>
       (inventory.data?.resources ?? []).filter(
@@ -215,7 +224,7 @@ export function GoogleWorkspaceReviewWorkspace({
         code,
         owner: { type: "user" },
       });
-      setActiveConnectionId(result.connectionId);
+      selectWorkspaceConnection(result.connectionId);
       toast.success("Google Docs & Sheets access connected.");
     });
 
@@ -230,7 +239,8 @@ export function GoogleWorkspaceReviewWorkspace({
         code,
         owner: { type: "user" },
       });
-      setActiveConnectionId(result.connectionId);
+      selectWorkspaceConnection(result.connectionId);
+      rememberGoogleConnection("gmail-send", result.connectionId);
       toast.success("Reviewed Gmail sending is enabled.");
     });
   };
@@ -311,6 +321,7 @@ export function GoogleWorkspaceReviewWorkspace({
   const sendEmail = () => {
     if (!activeConnection || !emailConfirmed) return;
     void run("send-email", async () => {
+      rememberGoogleConnection("gmail-send", activeConnection.id);
       const messageId = await sendReviewedGmail({
         connectionId: activeConnection.id,
         to: emailTo,
@@ -435,7 +446,9 @@ export function GoogleWorkspaceReviewWorkspace({
                         <td className="px-4 py-2.5">
                           <button
                             type="button"
-                            onClick={() => setActiveConnectionId(connection.id)}
+                            onClick={() =>
+                              selectWorkspaceConnection(connection.id)
+                            }
                             className="max-w-64 truncate text-left font-medium hover:text-primary hover:underline"
                           >
                             {connectionName(connection)}
@@ -477,7 +490,9 @@ export function GoogleWorkspaceReviewWorkspace({
                             type="button"
                             size="sm"
                             variant={selected ? "secondary" : "ghost"}
-                            onClick={() => setActiveConnectionId(connection.id)}
+                            onClick={() =>
+                              selectWorkspaceConnection(connection.id)
+                            }
                           >
                             {selected ? "Selected" : "Manage"}
                           </Button>

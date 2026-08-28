@@ -22,8 +22,13 @@ import { ExternalLink, FileText, Loader2, Plus, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
-import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
+import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
+import {
+  eligibleGoogleConnections,
+  preferredGoogleConnectionId,
+  rememberGoogleConnection,
+} from "@/features/google-workspace/connection";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 
 export interface GoogleResourcePickerProps {
@@ -42,25 +47,33 @@ export function GoogleResourcePicker({
   const inventory = useGoogleConnectionInventory();
   const openConnect = useOpenGoogleConnectWindow();
   const [justAttached, setJustAttached] = useState<string[]>([]);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<
+    string | null
+  >(() => preferredGoogleConnectionId("workspace"));
 
-  const connected = useMemo(
+  const connections = useMemo(
     () =>
-      (inventory.data?.connections ?? []).some(
-        (row) =>
-          row.health === "connected" &&
-          row.scopes.includes(GOOGLE_SCOPE.driveFile),
+      eligibleGoogleConnections(
+        inventory.data?.connections ?? [],
+        "workspace",
+        selectedConnectionId,
       ),
-    [inventory.data],
+    [inventory.data?.connections, selectedConnectionId],
   );
+  const selectedConnection =
+    connections.find((row) => row.id === selectedConnectionId) ??
+    connections[0] ??
+    null;
 
   const files = useMemo(
     () =>
       (inventory.data?.resources ?? []).filter(
         (row) =>
-          row.resource_type === "google_document" ||
-          row.resource_type === "google_spreadsheet",
+          row.connection_id === selectedConnection?.id &&
+          (row.resource_type === "google_document" ||
+            row.resource_type === "google_spreadsheet"),
       ),
-    [inventory.data],
+    [inventory.data?.resources, selectedConnection?.id],
   );
 
   const attached = useMemo(
@@ -69,9 +82,17 @@ export function GoogleResourcePicker({
   );
 
   const connect = useCallback(() => {
-    openConnect({ reason: "to attach a Google file to this message" });
+    openConnect({
+      reason: "to attach a Google file to this message",
+      initialConnectionId: selectedConnection?.id,
+    });
     onBack();
-  }, [openConnect, onBack]);
+  }, [openConnect, onBack, selectedConnection?.id]);
+
+  const selectConnection = useCallback((connectionId: string) => {
+    setSelectedConnectionId(connectionId);
+    rememberGoogleConnection("workspace", connectionId);
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -82,7 +103,7 @@ export function GoogleResourcePicker({
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
           Checking your Google account…
         </div>
-      ) : !connected ? (
+      ) : !selectedConnection ? (
         // The pitch, not an error. This is the whole reason the row is offered
         // to people who have not connected anything.
         <div className="flex flex-col gap-2 px-3 py-4">
@@ -96,6 +117,12 @@ export function GoogleResourcePicker({
         </div>
       ) : (
         <div className="flex flex-col">
+          <GoogleAccountSelect
+            connections={connections}
+            connectionId={selectedConnection.id}
+            onConnectionChange={selectConnection}
+            className="border-b border-border px-3 py-3"
+          />
           {files.length === 0 ? (
             <div className="flex flex-col gap-2 px-3 py-4">
               <p className="text-xs text-muted-foreground">

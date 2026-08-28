@@ -42,7 +42,7 @@ through the `google` tool bundle:
 
 - **`google_workspace`** (server, aidream) — lists the user's selected Docs and
   Sheets, reads/appends a Doc, reads/writes a bounded Sheet range, and
-  *prepares* an email. It never sends.
+  _prepares_ an email. It never sends.
 - **`google_email_send`** (client-only) — `handlers/google-email-send.handler.ts`
   in `features/agents/ui-first-tools/` resolves the sending mailbox with
   `connection.ts`, then raises an `email_review` pending ask that
@@ -60,16 +60,17 @@ in principle. Preview every state at `/demos/agent-cards`.
 
 The ONE path any surface uses to push what the user is looking at into their own
 Drive. `sendContentToGoogleDoc(content, title)` and
-`sendRowsToGoogleSheet(rows, title)` resolve the connected account, create the
-file, and return a link. **No surface owns Google code of its own** — that is
-the whole point, and a second per-feature Google client would be a defect.
+`sendRowsToGoogleSheet(rows, title)` resolve the user's last eligible Workspace
+account choice, create the file, and return a link. **No surface owns Google
+code of its own** — that is the whole point, and a second per-feature Google
+client would be a defect.
 
 Two wires carry it almost everywhere:
 
-| Wire | Reaches |
-|---|---|
+| Wire                                                                         | Reaches                                                                                                                                      |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `components/content-actions/contentActionRegistry.ts` → "Send to Google Doc" | every `ContentActionBar` / `RichDocument` surface: the agent working-document panel, research outputs, transcripts, the Masterwork Record, … |
-| `components/agent-copy/ExportMenu.tsx` → optional `sheetRows` | every surface that already exports rows. `MatrxDataTable` passes it, so every canonical list page can send the view it is showing. |
+| `components/agent-copy/ExportMenu.tsx` → optional `sheetRows`                | every surface that already exports rows. `MatrxDataTable` passes it, so every canonical list page can send the view it is showing.           |
 
 The Sheet's columns come from `rowsToRecordsFromColumns`, which shares the CSV
 export's column selection and cell stringification — a user who downloads the
@@ -110,6 +111,12 @@ attachment it cannot open. Server half:
   and current browser Picker session. Selecting the account name or Manage
   action opens that account's controls; Add account starts the existing OAuth
   path.
+- **Account-scoped work never silently takes the first connection.** Distinct
+  Google identities remain explicit choices in Chat attachments, Picker,
+  Drive import, Workspace management, and reviewed Gmail sending. The browser
+  remembers separate Workspace and Gmail-send connection UUIDs only; tokens
+  remain memory-only or in aidream's vault. A missing/disconnected preference
+  falls back to an eligible account without hiding the selector.
 - File and email verification controls are collapsed under **Test the file
   connection** and **Test the email connection**. They prove the grants; they
   are not the page's primary account-management workflow.
@@ -134,6 +141,10 @@ attachment it cannot open. Server half:
 
 ## Change log
 
+- 2026-08-28: Replaced first-row Google account resolution with one reusable
+  identity selector and separate remembered Workspace/Gmail choices. Chat
+  attachments and Picker resources now stay scoped to the account shown;
+  Drive import, settings, exports, and reviewed Gmail reuse the same choices.
 - 2026-08-28: Added selected-file Google Drive import to the canonical Files
   acquisition control. Connected users see **Import from Google Drive**;
   unconnected users see **Connect Google Drive** in the same slot. Multi-select

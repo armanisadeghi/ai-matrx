@@ -33,6 +33,13 @@ import { EMPTY_ASK_RESPONSE } from "@/features/agents/ui-first-tools/tools/schem
 import { AgentCardShell } from "@/features/agents/ui-first-tools/ui/AgentCardShell";
 import { sendReviewedGmail } from "@/features/google-workspace/service";
 import { extractErrorMessage } from "@/utils/errors";
+import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
+import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
+import {
+  eligibleGoogleConnections,
+  preferredGoogleConnectionId,
+  rememberGoogleConnection,
+} from "@/features/google-workspace/connection";
 
 interface GmailReviewCardProps {
   ask: PendingAsk;
@@ -48,6 +55,7 @@ function parseAddressList(raw: string): string[] {
 export function GmailReviewCard({ ask }: GmailReviewCardProps) {
   const dispatch = useAppDispatch();
   const draft = ask.email;
+  const inventory = useGoogleConnectionInventory();
 
   const [to, setTo] = useState(draft?.to ?? "");
   const [cc, setCc] = useState((draft?.cc ?? []).join(", "));
@@ -55,6 +63,19 @@ export function GmailReviewCard({ ask }: GmailReviewCardProps) {
   const [body, setBody] = useState(draft?.body ?? "");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedConnectionId, setSelectedConnectionId] = useState<
+    string | null
+  >(() => draft?.connectionId ?? preferredGoogleConnectionId("gmail-send"));
+
+  const mailboxes = eligibleGoogleConnections(
+    inventory.data?.connections ?? [],
+    "gmail-send",
+    selectedConnectionId,
+  );
+  const selectedMailbox =
+    mailboxes.find((mailbox) => mailbox.id === selectedConnectionId) ??
+    mailboxes[0] ??
+    null;
 
   // Defensive: an email_review ask always carries its draft.
   if (!draft) return null;
@@ -65,7 +86,14 @@ export function GmailReviewCard({ ask }: GmailReviewCardProps) {
     cc !== draft.cc.join(", ") ||
     subject !== draft.subject ||
     body !== draft.body;
-  const canSend = to.trim().includes("@") && subject.trim() && body.trim();
+  const canSend = Boolean(
+    selectedMailbox && to.trim().includes("@") && subject.trim() && body.trim(),
+  );
+
+  function selectMailbox(connectionId: string) {
+    setSelectedConnectionId(connectionId);
+    rememberGoogleConnection("gmail-send", connectionId);
+  }
 
   function finish(response: Parameters<typeof resolveAskByCallId>[1]) {
     resolveAskByCallId(ask.callId, response);
@@ -78,14 +106,14 @@ export function GmailReviewCard({ ask }: GmailReviewCardProps) {
   }
 
   async function send() {
-    if (!draft || sending || !canSend) return;
+    if (!draft || !selectedMailbox || sending || !canSend) return;
     setSending(true);
     setError(null);
     const ccList = parseAddressList(cc);
     try {
       // The exact bytes on screen — not the agent's arguments.
       const messageId = await sendReviewedGmail({
-        connectionId: draft.connectionId,
+        connectionId: selectedMailbox.id,
         to: to.trim(),
         cc: ccList,
         subject,
@@ -100,6 +128,7 @@ export function GmailReviewCard({ ask }: GmailReviewCardProps) {
           cc: ccList,
           subject,
           edited,
+          from_email: selectedMailbox.account_email,
         },
       });
     } catch (cause) {
@@ -147,8 +176,8 @@ export function GmailReviewCard({ ask }: GmailReviewCardProps) {
       eyebrow="Review before sending"
       title={subject.trim() || "No subject"}
       subtitle={
-        draft.fromEmail
-          ? `From ${draft.fromEmail} — your connected Google account`
+        selectedMailbox?.account_email
+          ? `From ${selectedMailbox.account_email} — your connected Google account`
           : "From your connected Google account"
       }
       onDismiss={dismiss}
@@ -158,6 +187,19 @@ export function GmailReviewCard({ ask }: GmailReviewCardProps) {
       aria-label="Review the email before sending"
     >
       <div className="flex flex-col gap-3">
+        {selectedMailbox ? (
+          <GoogleAccountSelect
+            connections={mailboxes}
+            connectionId={selectedMailbox.id}
+            onConnectionChange={selectMailbox}
+            label="Send from"
+            disabled={sending || resolved}
+          />
+        ) : (
+          <p className="text-sm text-red-600 dark:text-red-400">
+            No connected Google account currently has Gmail sending access.
+          </p>
+        )}
         <div className="grid gap-1.5">
           <Label htmlFor={`gmail-to-${ask.callId}`}>To</Label>
           <Input

@@ -24,6 +24,8 @@ export interface OpenGoogleConnectOptions extends GoogleConnectWindowHandlers {
   reason?: string;
   /** Workspace keeps live Docs/Sheets; import returns ordinary browser Files. */
   mode?: "workspace" | "drive-import";
+  /** Seed the account chooser from the invoking Google surface. */
+  initialConnectionId?: string;
 }
 
 export interface GoogleConnectWindowHandle {
@@ -59,6 +61,7 @@ export function useOpenGoogleConnectWindow() {
           data: {
             reason: options?.reason ?? null,
             mode: options?.mode ?? "workspace",
+            initialConnectionId: options?.initialConnectionId ?? null,
             callbackGroupId: callbacks?.callbackGroupId ?? null,
           },
         }),

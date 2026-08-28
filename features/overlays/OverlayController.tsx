@@ -2452,6 +2452,11 @@ export default function OverlayController() {
             }
             reason={typeof data?.reason === "string" ? data.reason : null}
             mode={data?.mode === "drive-import" ? "drive-import" : "workspace"}
+            initialConnectionId={
+              typeof data?.initialConnectionId === "string"
+                ? data.initialConnectionId
+                : null
+            }
             callbackGroupId={
               typeof data?.callbackGroupId === "string"
                 ? data.callbackGroupId
