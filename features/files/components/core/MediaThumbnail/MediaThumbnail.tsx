@@ -36,7 +36,10 @@ import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import { getCached } from "@/features/files/hooks/blob-cache";
-import { getFilePreviewProfile } from "@/features/files/utils/file-types";
+import {
+  getFilePreviewProfile,
+  isBrowserRenderableImageMime,
+} from "@/features/files/utils/file-types";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
 import type { AssetVariant, CloudFile } from "@/features/files/types";
 
@@ -76,26 +79,35 @@ export interface MediaThumbnailProps {
 }
 
 /**
- * Best-effort pick of a small variant from an Asset envelope for grid
- * thumbnails. Only image variants belong in this list: `primary_url` and
- * `original` can point at source bytes (such as a PDF or archive), which
- * would cause an `<img>` request to fail. Returns null when no rendered
- * thumbnail exists so the caller can use its proper fallback.
+ * Best-effort pick of an image variant from an Asset envelope for grid
+ * thumbnails. Prefer the small canonical keys. When an older HEIC/HEIF has
+ * no baseline yet, the asset builder may select an existing browser-safe
+ * derived image as primary; accepting that keeps old masters visible without
+ * teaching this component provider-specific variant names.
  */
 function pickThumbnailVariant(
   asset: import("@/features/files/types").Asset | null,
+  primaryVariant: AssetVariant | null,
 ): AssetVariant | null {
   if (!asset) return null;
   const v = asset.variants;
-  return (
+  const thumbnail =
     v.thumbnail_url ??
     v.tiny_url ??
     v.thumbnail ??
     v.tiny ??
     v.card_url ??
     v.card ??
-    null
-  );
+    null;
+  if (thumbnail) return thumbnail;
+  if (
+    primaryVariant?.key !== "original" &&
+    primaryVariant?.mime_type != null &&
+    isBrowserRenderableImageMime(primaryVariant.mime_type)
+  ) {
+    return primaryVariant;
+  }
+  return null;
 }
 
 export function MediaThumbnail({
@@ -129,10 +141,14 @@ export function MediaThumbnail({
   // skip the round-trip.
   const isPublic = file.visibility === "public";
   const useAssetThumb = preferAssetThumbnail && (!backendThumb || !isPublic);
-  const { asset, error: assetError } = useFileAsset(
-    useAssetThumb ? file.id : null,
-  );
-  const assetVariant = useAssetThumb ? pickThumbnailVariant(asset) : null;
+  const {
+    asset,
+    primaryVariant,
+    error: assetError,
+  } = useFileAsset(useAssetThumb ? file.id : null);
+  const assetVariant = useAssetThumb
+    ? pickThumbnailVariant(asset, primaryVariant)
+    : null;
   const assetUrl = assetVariant
     ? (assetVariant.cdn_url ?? assetVariant.url)
     : null;

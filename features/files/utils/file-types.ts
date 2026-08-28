@@ -284,10 +284,9 @@ export const FILE_TYPES: readonly FileTypeEntry[] = [
     color: "text-amber-500",
     icon: PenTool,
   },
-  // HEIC / HEIF — Apple still uses these heavily. Browsers can render only on
-  // Safari natively; on Chrome/Firefox the `<img>` falls back to the icon
-  // automatically (image error → broken-icon UX). A backend conversion
-  // (Python P-9) is the right long-term fix.
+  // HEIC / HEIF — Apple still uses these heavily. The canonical asset
+  // pipeline emits an aspect-preserving JPEG `preview_url` plus universal
+  // thumbnail variants; clients never bind the source bytes to `<img>`.
   {
     extensions: ["heic"],
     mime: "image/heic",
@@ -2024,6 +2023,19 @@ export function isTextMime(mime: string): boolean {
 
 export function isImageMime(mime: string): boolean {
   return mime.startsWith("image/");
+}
+
+/** Image bytes evergreen browsers can decode directly through `<img>`. */
+export function isBrowserRenderableImageMime(mime: string): boolean {
+  return (
+    mime === "image/avif" ||
+    mime === "image/bmp" ||
+    mime === "image/gif" ||
+    mime === "image/jpeg" ||
+    mime === "image/png" ||
+    mime === "image/svg+xml" ||
+    mime === "image/webp"
+  );
 }
 
 export function isVideoMime(mime: string): boolean {

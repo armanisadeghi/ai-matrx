@@ -11,6 +11,7 @@
 
 export {
   isAudioMime,
+  isBrowserRenderableImageMime,
   isImageMime,
   isPdfMime,
   isTextMime,

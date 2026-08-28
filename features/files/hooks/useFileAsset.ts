@@ -34,7 +34,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { extractErrorMessage } from "@/utils/errors";
 // eslint-disable-next-line no-restricted-imports
-import type { Asset } from "@/features/files/types";
+import type { Asset, AssetVariant } from "@/features/files/types";
 
 // ─── Module-scoped fetch dedup + short cache ─────────────────────────────────
 //
@@ -125,10 +125,12 @@ export interface UseFileAssetOptions {
 
 export interface UseFileAssetResult {
   asset: Asset | null;
+  /** The concrete variant selected by `asset.primary_key`. */
+  primaryVariant: AssetVariant | null;
   /**
-   * Convenience accessor for `asset.primary_url`. Falls back to
-   * `asset.variants.original?.url` when the primary variant is missing
-   * a URL for any reason. `null` while loading / on error.
+   * Convenience accessor for the selected primary variant, preferring its
+   * permanent CDN URL when present. Falls back to the envelope shorthand
+   * only when the concrete variant is absent. `null` while loading / on error.
    */
   primaryUrl: string | null;
   isLoading: boolean;
@@ -178,11 +180,16 @@ export function useFileAsset(
     void doFetch();
   }, [fileId, enabled, doFetch]);
 
-  const primaryUrl =
-    asset?.primary_url ?? asset?.variants?.original?.url ?? null;
+  const primaryVariant = asset
+    ? (asset.variants[asset.primary_key] ?? asset.variants.original ?? null)
+    : null;
+  const primaryUrl = primaryVariant
+    ? (primaryVariant.cdn_url ?? primaryVariant.url)
+    : (asset?.primary_url ?? null);
 
   return {
     asset,
+    primaryVariant,
     primaryUrl,
     isLoading,
     error,

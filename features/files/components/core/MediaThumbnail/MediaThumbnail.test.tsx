@@ -66,6 +66,7 @@ describe("MediaThumbnail durable pixels", () => {
     mockUseFileSrc.mockReturnValue(null);
     mockUseFileAsset.mockReturnValue({
       asset: null,
+      primaryVariant: null,
       isLoading: false,
       error: null,
       refresh: jest.fn(),
@@ -100,6 +101,7 @@ describe("MediaThumbnail durable pixels", () => {
           },
         },
       },
+      primaryVariant: null,
       isLoading: false,
       error: null,
       refresh: jest.fn(),
@@ -107,6 +109,43 @@ describe("MediaThumbnail durable pixels", () => {
 
     act(() => {
       root.render(<MediaThumbnail file={privateImage} />);
+    });
+
+    expect(mockUseFileBlob).toHaveBeenCalledWith(THUMB_ID);
+    expect(container.querySelector("img")?.getAttribute("src")).toBe(
+      `blob:${THUMB_ID}`,
+    );
+  });
+
+  it("uses a browser-safe HEIC primary derivative when no thumbnail exists", () => {
+    const previewVariant = {
+      key: "gemini3_high",
+      file_id: THUMB_ID,
+      mime_type: "image/jpeg",
+      url: "https://server/vision-preview",
+      cdn_url: null,
+    };
+    mockUseFileAsset.mockReturnValue({
+      asset: {
+        primary_key: previewVariant.key,
+        variants: { [previewVariant.key]: previewVariant },
+      },
+      primaryVariant: previewVariant,
+      isLoading: false,
+      error: null,
+      refresh: jest.fn(),
+    });
+
+    act(() => {
+      root.render(
+        <MediaThumbnail
+          file={{
+            ...privateImage,
+            fileName: "Product.HEIC",
+            mimeType: "image/heic",
+          }}
+        />,
+      );
     });
 
     expect(mockUseFileBlob).toHaveBeenCalledWith(THUMB_ID);

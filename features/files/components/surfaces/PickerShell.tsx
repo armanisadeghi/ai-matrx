@@ -42,9 +42,10 @@ import {
 } from "@/features/files/redux/selectors";
 import { useFolderContents } from "@/features/files/hooks/useFolderContents";
 import { FileIcon } from "@/features/files/components/core/FileIcon/FileIcon";
+import { MediaThumbnail } from "@/features/files/components/core/MediaThumbnail/MediaThumbnail";
 import { FileMeta } from "@/features/files/components/core/FileMeta/FileMeta";
 import { FileBreadcrumbs } from "@/features/files/components/core/FileBreadcrumbs/FileBreadcrumbs";
-import { useFileAsset } from "@/features/files/hooks/useFileAsset";
+import type { CloudFile } from "@/features/files/types";
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -117,41 +118,28 @@ export function DrawerShell(props: PickerShellProps) {
 // ---------------------------------------------------------------------------
 
 interface PickerFileThumbnailProps {
-  fileId: string;
-  publicUrl: string | null;
-  mimeType: string | null;
-  fileName: string;
+  file: Pick<
+    CloudFile,
+    | "id"
+    | "fileName"
+    | "mimeType"
+    | "fileSize"
+    | "metadata"
+    | "publicUrl"
+    | "thumbnailUrl"
+    | "visibility"
+  >;
 }
 
-function PickerFileThumbnail({
-  fileId,
-  publicUrl,
-  mimeType,
-  fileName,
-}: PickerFileThumbnailProps) {
-  const isImage = mimeType?.startsWith("image/") ?? false;
-  // Use the asset endpoint (GET /files/{id}/asset) — same path FilePreview uses for images.
-  // It returns CDN URL for public files and signed-inline for private, in one call.
-  // Skip the fetch entirely if we already have publicUrl or it's not an image.
-  const { primaryUrl } = useFileAsset(
-    isImage && !publicUrl ? fileId : null,
-    {},
-  );
-  const src = isImage ? (publicUrl ?? primaryUrl) : null;
-
-  if (!src) {
-    return <FileIcon fileName={fileName} size={18} />;
-  }
-
+function PickerFileThumbnail({ file }: PickerFileThumbnailProps) {
   return (
-    <div className="h-10 w-10 rounded-md overflow-hidden shrink-0 bg-muted border border-border/50">
-      <img
-        src={src}
-        alt=""
-        className="h-full w-full object-cover"
-        draggable={false}
-      />
-    </div>
+    <MediaThumbnail
+      file={file}
+      iconSize={18}
+      className="h-10 w-10 shrink-0"
+      rounded="rounded-md border border-border/50"
+      allowSourceFallback={false}
+    />
   );
 }
 
@@ -292,12 +280,7 @@ function PickerBody({
                       selected && "bg-accent text-accent-foreground",
                     )}
                   >
-                    <PickerFileThumbnail
-                      fileId={file.id}
-                      publicUrl={file.publicUrl}
-                      mimeType={file.mimeType}
-                      fileName={file.fileName}
-                    />
+                    <PickerFileThumbnail file={file} />
                     <div className="flex-1 min-w-0">
                       <div className="truncate">{file.fileName}</div>
                       <FileMeta

@@ -22,10 +22,12 @@ import { buildPdfExtractorHref } from "@/features/pdf/surfaces/hrefs";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
+import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { getPreviewCapability } from "@/features/files/utils/preview-capabilities";
+import { isBrowserRenderableImageMime } from "@/features/files/utils/file-types";
 import { requestRename } from "@/features/files/components/core/RenameDialog/RenameHost";
 import { requestEdit } from "@/features/files/components/core/FileEditor/CloudFileEditorHost";
 import { getVirtualSource } from "@/features/files/virtual-sources/registry";
@@ -101,9 +103,11 @@ export function FilePreview({
   const fileMime = file?.mimeType ?? "";
   const useAssetForPreview =
     fileMime.startsWith("image/") || fileMime === "application/pdf";
-  const { asset, isLoading: assetLoading } = useFileAsset(
-    useAssetForPreview ? fileId : null,
-  );
+  const {
+    asset,
+    primaryVariant,
+    isLoading: assetLoading,
+  } = useFileAsset(useAssetForPreview ? fileId : null);
   const { result: resolvedUrl, status: resolvedStatus } = useFileAs(
     !useAssetForPreview && fileId ? { kind: "file_id", fileId } : null,
     { kind: "html_src" },
@@ -112,14 +116,41 @@ export function FilePreview({
   // Prefer a larger variant (hero / cover) when present, else the canonical
   // `primary_url`, else the original variant. Asset endpoint guarantees at
   // least `original`, so the third arm is a safety net.
-  const assetUrl =
-    asset?.variants?.hero_url?.url ??
-    asset?.variants?.cover_url?.url ??
-    asset?.primary_url ??
-    asset?.variants?.original?.url ??
-    null;
-  const url = useAssetForPreview ? assetUrl : resolvedUrl;
-  const loading = useAssetForPreview ? assetLoading : resolvedLoading;
+  const isImagePreview = fileMime.startsWith("image/");
+  const selectedImageVariant = isImagePreview
+    ? ([
+        asset?.variants?.hero_url,
+        asset?.variants?.cover_url,
+        primaryVariant,
+        asset?.variants?.original,
+      ].find(
+        (variant) =>
+          variant?.mime_type != null &&
+          isBrowserRenderableImageMime(variant.mime_type),
+      ) ?? null)
+    : null;
+  const privateImage = isImagePreview && file?.visibility !== "public";
+  const privateImageFileId = privateImage
+    ? (selectedImageVariant?.file_id ??
+      (!assetLoading && isBrowserRenderableImageMime(fileMime) ? fileId : null))
+    : null;
+  const authenticatedImage = useFileBlob(privateImageFileId);
+  const assetUrl = isImagePreview
+    ? selectedImageVariant
+      ? (selectedImageVariant.cdn_url ?? selectedImageVariant.url)
+      : (file?.publicUrl ?? null)
+    : (primaryVariant?.cdn_url ??
+      primaryVariant?.url ??
+      asset?.primary_url ??
+      null);
+  const url = useAssetForPreview
+    ? privateImage
+      ? authenticatedImage.url
+      : assetUrl
+    : resolvedUrl;
+  const loading = useAssetForPreview
+    ? assetLoading || Boolean(privateImageFileId && authenticatedImage.loading)
+    : resolvedLoading;
 
   const capability = useMemo(() => {
     if (!file) return null;
