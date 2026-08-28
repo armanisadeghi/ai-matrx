@@ -43927,6 +43927,11 @@ export type Database = {
         }
         Returns: Json
       }
+      jurisdiction_rule_set_status: {
+        Args: { p_new_status: string; p_reason?: string; p_rule_id: string }
+        Returns: Json
+      }
+      jurisdiction_rules_admin_data: { Args: never; Returns: Json }
       kiosk_device_list: { Args: { p_organization_id: string }; Returns: Json }
       kiosk_device_set_capture: {
         Args: {
@@ -43949,6 +43954,7 @@ export type Database = {
         }
         Returns: Json
       }
+      law_portal_data: { Args: { p_organization_id: string }; Returns: Json }
       leave_adjust: {
         Args: {
           p_confirm_below_floor?: boolean
@@ -44263,6 +44269,18 @@ export type Database = {
           location_id: string
           manager_employment_id: string
         }[]
+      }
+      org_jurisdiction_rule_deactivate: {
+        Args: { p_organization_id: string; p_rule_id: string }
+        Returns: Json
+      }
+      org_jurisdiction_rule_save: {
+        Args: {
+          p_accept_warnings?: boolean
+          p_organization_id: string
+          p_payload: Json
+        }
+        Returns: Json
       }
       ot_preapproval_wf_apply: {
         Args: { p_instance_id: string }
@@ -44655,6 +44673,10 @@ export type Database = {
       recompute_queue_complete: {
         Args: { p_error?: string; p_id: string; p_ok: boolean }
         Returns: boolean
+      }
+      refresh_current_positions_due: {
+        Args: { p_window?: string }
+        Returns: Json
       }
       resolve_rules: {
         Args: {
@@ -61610,6 +61632,11 @@ export type Database = {
       hr_incident_party_add: { Args: { p_payload: Json }; Returns: Json }
       hr_incident_status: { Args: { p_incident_id: string }; Returns: Json }
       hr_invite_accept: { Args: { p_token: string }; Returns: Json }
+      hr_jurisdiction_rule_set_status: {
+        Args: { p_new_status: string; p_reason?: string; p_rule_id: string }
+        Returns: Json
+      }
+      hr_jurisdiction_rules_admin_data: { Args: never; Returns: Json }
       hr_kiosk_authenticate: {
         Args: { p_device_id: string; p_device_secret: string }
         Returns: Json
@@ -61701,6 +61728,7 @@ export type Database = {
         }
         Returns: Json
       }
+      hr_law_portal_data: { Args: { p_organization_id: string }; Returns: Json }
       hr_leave_accrual_apply: {
         Args: {
           p_actor_employment_id?: string
@@ -61909,6 +61937,18 @@ export type Database = {
       hr_my_verification_consents: { Args: never; Returns: Json }
       hr_org_chart: {
         Args: { p_on?: string; p_organization_id: string }
+        Returns: Json
+      }
+      hr_org_jurisdiction_rule_deactivate: {
+        Args: { p_organization_id: string; p_rule_id: string }
+        Returns: Json
+      }
+      hr_org_jurisdiction_rule_save: {
+        Args: {
+          p_accept_warnings?: boolean
+          p_organization_id: string
+          p_payload: Json
+        }
         Returns: Json
       }
       hr_org_summary: { Args: { p_organization_id: string }; Returns: Json }
