@@ -81,16 +81,14 @@ export function SettingsSelect<T extends string = string>({
               key={opt.value}
               value={opt.value}
               disabled={opt.disabled}
+              // Outside ItemText via the prop — a description passed as a
+              // child ends up inside the closed trigger and gets clipped.
+              description={opt.description}
             >
               <span className="flex items-center gap-2">
                 {opt.icon && <opt.icon className="h-3.5 w-3.5" />}
                 <span>{opt.label}</span>
               </span>
-              {opt.description && (
-                <span className="block text-xs text-muted-foreground mt-0.5">
-                  {opt.description}
-                </span>
-              )}
             </SelectItem>
           ))}
         </SelectContent>
