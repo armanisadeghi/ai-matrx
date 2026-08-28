@@ -410,6 +410,66 @@ async def main() -> None:  # noqa: C901
         check("the control is meaningful — the same door grants his own record",
               isinstance(me, dict) and me.get("granted") is True, "his own read was refused too")
 
+        print("\n=== 11. THE UNLAWFUL-CONFIG REFUSAL (§2.6) ===")
+        # The client twin and the authoritative trigger now share ONE parameter mapping
+        # (hr._leave_config_parameters), so this checks the sentence the DIALOG will print.
+        ca = await conn.fetchval(
+            "select hr.validate_org_config($1::uuid, 'pto-carryover-legality', "
+            "  hr._leave_config_parameters('pto-carryover-legality', "
+            "    '{\"carryover_allowed\": false}'::jsonb), array['US-CA'], current_date)",
+            ORG,
+        )
+        ca = json.loads(ca)
+        v = (ca.get("violations") or [{}])[0]
+        check("a California use-it-or-lose-it policy is REFUSED", ca.get("ok") is False, str(ca)[:200])
+        check("the message is the canonical sentence, verbatim",
+              v.get("message", "").startswith("California does not allow a use-it-or-lose-it"),
+              v.get("message", "")[:160])
+        check("the refusal names how many employees it affects",
+              isinstance(v.get("affected_employees"), int), str(v.get("affected_employees")))
+        check("the refusal carries the rule id and version for the Why? disclosure",
+              bool(v.get("rule_id")) and bool(v.get("rule_version")), str(v)[:200])
+        # 🚨 Stated rather than asserted green: the citation URL points at one of OUR OWN program
+        # documents, not at a statute. §2.6 wants "citation.url as a real link", and a link to
+        # /projects/hr-domain/CAPABILITY-SCOPE.md is not a legal citation a customer can follow.
+        # Reported to the jurisdiction lane; not this lane's row to fix.
+        print(f"  NOTE citation.url = {v.get('citation', {}).get('url')} "
+              f"(authority: {v.get('citation', {}).get('authority')})")
+
+        print("\n=== 12. The lawfulness trigger is authoritative, and it agrees ===")
+        try:
+            await conn.execute(
+                "do $$ begin perform hr.arm_write(); "
+                "insert into hr.leave_policy (name, leave_kind, statutory_basis_rule_class, "
+                "  statutory_jurisdiction_id, accrual_method, accrual_rate, accrual_unit, "
+                "  carryover_allowed, organization_id) "
+                "select 'ZZZ L5 PROOF — unlawful CA vacation', 'vacation', 'pto-carryover-legality', "
+                "  j.id, 'per_pay_period', 3, 'pay_period', false, $tok$" + ORG + "$tok$::uuid "
+                "  from hr.jurisdiction j where j.key = 'US-CA'; end $$;"
+            )
+            check("the server trigger refuses an unlawful policy", False, "the insert was accepted")
+        except asyncpg.PostgresError as exc:
+            check("the server trigger refuses an unlawful policy, with the same sentence",
+                  "use-it-or-lose-it" in str(exc), str(exc)[:200])
+
+        print("\n=== 13. The who's-out calendar renders at the viewer's rung ===")
+        cal = await rpc(
+            "hr_leave_calendar",
+            {"p_organization_id": ORG, "p_from": (date.today() - timedelta(days=1)).isoformat(),
+             "p_to": (date.today() + timedelta(days=60)).isoformat(), "p_filters": {}},
+            emp_token,
+        )
+        check("the calendar is reachable as an ordinary employee",
+              isinstance(cal, dict) and cal.get("granted") is True, str(cal)[:300])
+        if isinstance(cal, dict) and cal.get("granted"):
+            mine = [x for x in cal.get("entries", []) if x.get("employment_id") == EMPLOYEE]
+            check("the employee's own approved leave appears on it", len(mine) >= 1,
+                  str(cal.get("entries"))[:300])
+            peers = [x for x in cal.get("entries", []) if x.get("viewer_rung") == "peer"]
+            check("a peer entry carries no hours and is not a door",
+                  all(x.get("hours") is None and x.get("href") is None for x in peers),
+                  str(peers)[:300])
+
     finally:
         if "--keep" not in sys.argv and policy_id:
             print("\n=== cleanup ===")
