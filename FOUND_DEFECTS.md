@@ -2556,3 +2556,18 @@ test has to drive the store rather than a captured `onEvent` callback. Not done 
 is a test-architecture decision, and doing it inside a repoint would hide whether the repoint or the
 rewrite moved the result. Only the stale `getMasterworkRunFields` mock key was updated (that export
 is gone).
+
+## Fixed in passing: the trigger surface was unreachable on every cold load — 2026-08-28
+
+Recorded because the CLASS is the point, not this instance. `useWorkflowTriggers.refresh` called
+`callApi` on mount without waiting for `appContext.organization_id`, which `callApi` requires and
+which hydrates from the session AFTER the first effect. `refresh` depended only on `definitionId`,
+so it never retried: `/workflows/<id>/triggers` showed "We couldn't check this workflow's schedules
+just now" permanently, with no door to the schedule editor at all. Confirmed it never reached the
+network (no cross-origin request recorded) while the same GET returned `200 []` by hand.
+
+This is the SECOND sighting of the identical race — `useServedRunForm` carries a 🚨 comment about
+it from earlier the same day. Fixed here the same way (depend on the org id, wait rather than
+fail), but any hook that calls `callApi` from a mount effect without that dependency has the same
+bug, and nothing enforces it. Worth a guard or a shared "call when sendable" primitive.
+

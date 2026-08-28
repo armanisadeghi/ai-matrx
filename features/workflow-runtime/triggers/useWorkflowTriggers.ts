@@ -14,7 +14,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { callApi, type ApiCallConfig } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 
@@ -80,6 +81,17 @@ export function useWorkflowTriggers(
   definitionId: string | null,
 ): WorkflowTriggersApi {
   const dispatch = useAppDispatch();
+  /**
+   * 🚨 THE HYDRATION RACE — the same one `useServedRunForm` documents, found
+   * again here on 2026-08-28. `callApi` requires `appContext.organization_id`
+   * and THROWS before it sends anything until that has hydrated from the
+   * session, which lands after this hook's first effect. `refresh` depends
+   * only on `definitionId`, so it never re-ran: every cold load of the trigger
+   * surface showed "We couldn't check this workflow's schedules just now"
+   * permanently, with no retry and no door to the editor at all. Depending on
+   * the org id re-runs the read the moment context arrives.
+   */
+  const organizationId = useAppSelector(selectOrganizationId);
   const [triggers, setTriggers] = useState<WorkflowTrigger[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -88,6 +100,7 @@ export function useWorkflowTriggers(
 
   const refresh = useCallback(async () => {
     if (!definitionId) return;
+    if (!organizationId) return; // not sendable yet — wait, never fail
     const config: ApiCallConfig<"/triggers", "GET"> = {
       path: "/triggers",
       method: "GET",
@@ -107,7 +120,7 @@ export function useWorkflowTriggers(
     setLoadError(null);
     setTriggers(parseTriggerList(result.data));
     setLoading(false);
-  }, [definitionId, dispatch]);
+  }, [definitionId, dispatch, organizationId]);
 
   useEffect(() => {
     setLoading(true);
