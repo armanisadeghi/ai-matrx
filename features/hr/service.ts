@@ -968,12 +968,42 @@ export function issueHrCorrectiveAction(
   );
 }
 
-export function createHrVerificationRequest(
-  payload: Record<string, unknown>,
-): Promise<HrResult<HrWriteAck>> {
+/**
+ * Raise a verification-letter request.
+ *
+ * 🚨 MAPPED FIELD BY FIELD, BECAUSE THE BAG LIED. This took
+ * `Record<string, unknown>` and forwarded whatever it was handed. The caller sent
+ * `subject_employment_id`; the door reads `employment_id`. Nothing checked, nothing
+ * errored, and `v_employment` came back null on every call — so `v_org` was null, the
+ * door answered `not_reachable`, and NO ROW HAS EVER BEEN CREATED FROM THIS FORM. An
+ * untyped payload at an RPC seam is a cast wearing a different hat: it compiles, and it
+ * proves nothing about the names on the other side.
+ *
+ * The door reads exactly six keys — anything else was being sent into a void:
+ * `includes_compensation` is DERIVED there from the kind (the door decides what a kind
+ * implies, not the form), and `subject_name_asserted` / `as_of_date` are not columns on
+ * this request at all.
+ */
+export function createHrVerificationRequest(args: {
+  employmentId: string | null;
+  requestSource: string;
+  verificationKind: string;
+  requesterName: string | null;
+  requesterOrganization: string | null;
+  requesterEmail: string | null;
+}): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
     "hr_verification_request_create",
-    { p_payload: payload },
+    {
+      p_payload: {
+        employment_id: args.employmentId,
+        request_source: args.requestSource,
+        verification_kind: args.verificationKind,
+        requester_name: args.requesterName,
+        requester_organization: args.requesterOrganization,
+        requester_email: args.requesterEmail,
+      },
+    },
     {
       envelope: true,
       whatFailed: "This verification request",

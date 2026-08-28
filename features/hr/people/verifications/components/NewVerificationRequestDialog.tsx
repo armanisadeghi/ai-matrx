@@ -37,7 +37,8 @@ import {
 import { toast } from "@/lib/toast";
 import { createHrVerificationRequest } from "@/features/hr/service";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
-import type { HrDenied, HrFailed } from "@/features/hr/types";
+import type { HrDenied, HrFailed, HrResult } from "@/features/hr/types";
+import { hrErrorSentence } from "@/features/hr/shared/HrStates";
 import { EmploymentPicker } from "@/features/hr/people/relations/components/EmploymentPicker";
 
 import {
@@ -76,6 +77,7 @@ export function NewVerificationRequestDialog({
   const [requesterEmail, setRequesterEmail] = useState("");
   const [asOf, setAsOf] = useState(today());
   const [saving, setSaving] = useState(false);
+  const [refusal, setRefusal] = useState<HrResult<unknown> | null>(null);
 
   const needsConsent = includesCompensation(kind);
   const canSave =
@@ -84,19 +86,14 @@ export function NewVerificationRequestDialog({
   async function save() {
     if (!canSave || !active) return;
     setSaving(true);
+    setRefusal(null);
     const result = await createHrVerificationRequest({
-      organization_id: active.organization_id,
-      request_source: source,
-      verification_kind: kind,
-      includes_compensation: needsConsent,
-      subject_employment_id: subjectEmploymentId,
-      // Deliberately allowed with no match: a request naming somebody who never
-      // worked here becomes a denial with a basis, and that denial IS the record.
-      subject_name_asserted: subjectName.trim() || null,
-      requester_name: requesterName.trim() || null,
-      requester_organization: requesterOrganization.trim() || null,
-      requester_email: requesterEmail.trim() || null,
-      as_of_date: asOf || null,
+      employmentId: subjectEmploymentId,
+      requestSource: source,
+      verificationKind: kind,
+      requesterName: requesterName.trim() || null,
+      requesterOrganization: requesterOrganization.trim() || null,
+      requesterEmail: requesterEmail.trim() || null,
     });
     setSaving(false);
 
@@ -109,7 +106,14 @@ export function NewVerificationRequestDialog({
       onCreated();
       return;
     }
-    onFailed(result);
+    /*
+      🚨 THE REFUSAL RENDERS WHERE THE PERSON IS LOOKING.
+      This called `onFailed`, which fired a toast — and the dialog stayed open,
+      unchanged, with the typed request still in it. A toast beside an open form
+      that looks exactly as it did before is a refusal nobody can act on. The
+      dialog is the host here: it survives, so it carries the sentence.
+    */
+    setRefusal(result);
   }
 
   return (
@@ -123,6 +127,14 @@ export function NewVerificationRequestDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {refusal && !refusal.ok ? (
+            <p
+              role="alert"
+              className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-foreground"
+            >
+              {hrErrorSentence(refusal, "Raising this request")}
+            </p>
+          ) : null}
           <div className="space-y-1.5">
             <Label htmlFor="ver-source">Who is asking</Label>
             <Select
