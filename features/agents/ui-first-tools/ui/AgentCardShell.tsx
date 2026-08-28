@@ -6,12 +6,12 @@
  *
  * One look, applied everywhere: a rounded-2xl elevated card, a tone-tinted top
  * accent, a compact header row (plain tinted icon + eyebrow + badge + dismiss ×)
- * with the title on its OWN full-width row below (so a long question spans the
- * whole card instead of being squeezed into a middle column), a subtitle, a body
- * slot, an optional muted footer band for the action row, and a bottom slot for a
- * countdown bar. `<AskCard>` and `<ApprovalCard>` both render through this, so they
- * share spacing, rounding, elevation, and hierarchy — the card just supplies its
- * header text, body, and actions.
+ * with the title on its OWN full-width row below by default (so a long question
+ * spans the whole card instead of being squeezed into a middle column), plus an
+ * opt-in inline-title header for compact approval labels. It also owns a subtitle,
+ * body slot, optional muted footer band, and bottom countdown slot. `<AskCard>` and
+ * `<ApprovalCard>` both render through this, so they share spacing, rounding,
+ * elevation, and hierarchy — each card supplies its own content and density.
  *
  * Scroll behavior (Arman, 2026-08-15): the QUESTION and the ANSWERS share ONE
  * scroll region — never two. The old design gave the title its own capped scroll
@@ -147,8 +147,8 @@ export function AgentCardShell({
         />
       )}
 
-      {/* Pinned meta row: plain icon + eyebrow + badge + dismiss. Stays put so
-          the dismiss × is always reachable while the question+answers scroll. */}
+      {/* Pinned meta row: plain icon + eyebrow + optional inline title/actions +
+          dismiss. It stays put while the question+answers scroll. */}
       <div
         className={cn(
           "flex shrink-0 items-center gap-2",

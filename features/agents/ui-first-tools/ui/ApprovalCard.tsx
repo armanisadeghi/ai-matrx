@@ -3,11 +3,11 @@
 /**
  * ApprovalCard — the agent-edit approval surface (kind:"approval").
  *
- * States the change ONCE: a verb-tinted header ("{Verb} {entity}" + the thing's
- * name), a before→after diff body (adds show new values), and one action row
- * (Approve · Decline · Respond) with an opt-in "always approve {noun}". Built on
- * the shared `<AgentCardShell>` + `<ChangeDiff>`, so it shares its look with every
- * other inline agent card and its diff with every other change surface.
+ * States the change ONCE: a compact "{Verb} · {title}" header, optional details,
+ * a fully reviewable before→after diff body, and one compact action row
+ * (Approve · Decline · Respond) with an opt-in "always approve {noun}". Built
+ * on the shared `<AgentCardShell>` + `<ChangeDiff>`, so it shares its look with
+ * every other inline agent card and its diff with every other change surface.
  *
  * Resolution mirrors <AskCard>: it routes through the same ask-resolver registry
  * + pendingAsks slice, so the war-room dispatcher's awaiting promise unblocks

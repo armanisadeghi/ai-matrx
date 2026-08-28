@@ -4,7 +4,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-12` (scratchpad + storage deleted; chat legacy owner cut)
+**Last updated:** `2026-08-28` (compact, fully reviewable approval questions)
 
 > Universal client-delegated tool layer + ambient context envelope for the
 > Next.js surface. Mirrors the matrx-extend Chrome extension's UI-first
