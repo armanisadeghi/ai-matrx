@@ -43,8 +43,18 @@ export function HrRefusalNotice({
                 */}
                 {refusal.reason || refusal.audit_id ? (
                     <details className="pt-0.5">
+                        {/*
+                            🚨 "Refusal reference", NOT "Record reference" — the two are
+                            inches apart on the decision surface and hold DIFFERENT things.
+                            `HrDecisionPanel`'s "Record reference" holds the record's
+                            address (`target_token` + `target_id`); this one holds the
+                            reason code and the audit id of the refusal itself. Naming both
+                            the same would promise a reader the same contents and hand them
+                            something else — a false label is worse than the vague one it
+                            replaced. Both now say exactly what is behind them.
+                        */}
                         <summary className="cursor-pointer text-xs text-muted-foreground">
-                            Reference
+                            Refusal reference
                         </summary>
                         <p className="mt-1 break-words font-mono text-xs text-muted-foreground">
                             {refusal.reason}
