@@ -661,6 +661,68 @@ async def main() -> None:  # noqa: C901
               len(live.get("jurisdictions_checked", [])) > 1,
               str(live.get("jurisdictions_checked")))
 
+
+        print("\n=== 16. Audited export and the ICS feed (§5.1, §10, §12) ===")
+        before = await conn.fetchval(
+            "select count(*) from hr.access_audit where organization_id=$1::uuid "
+            "  and action='export' and target_token like 'hr_leave%'", ORG)
+
+        exp = await rpc("hr_leave_balances_export",
+                        {"p_organization_id": ORG, "p_scope": "organization",
+                         "p_filters": {}}, mgr_token)
+        check("the balances export opens for a real hr_admin",
+              isinstance(exp, dict) and exp.get("exported") is True, str(exp)[:250])
+        check("it exports the SAME rows the list shows, and counts them",
+              isinstance(exp, dict) and exp.get("row_count") == len(exp.get("rows", [])),
+              str(exp.get("row_count")))
+
+        lexp = await rpc("hr_leave_ledger_export",
+                         {"p_employment_id": EMPLOYEE, "p_leave_policy_id": policy_id}, emp_token)
+        check("an employee can export their OWN ledger",
+              isinstance(lexp, dict) and lexp.get("exported") is True, str(lexp)[:250])
+
+        after = await conn.fetchval(
+            "select count(*) from hr.access_audit where organization_id=$1::uuid "
+            "  and action='export' and target_token like 'hr_leave%'", ORG)
+        check("every export wrote ONE audit row carrying its row count",
+              after == before + 2, f"{before} -> {after}")
+        rowcounts = await conn.fetch(
+            "select target_token, row_count, is_self_access from hr.access_audit "
+            " where organization_id=$1::uuid and action='export' and target_token like 'hr_leave%' "
+            " order by created_at desc limit 2", ORG)
+        check("the audit row records the row_count, not just that it happened",
+              all(r["row_count"] is not None for r in rowcounts),
+              str([dict(r) for r in rowcounts]))
+
+        ics = await rpc("hr_leave_calendar_ics",
+                        {"p_organization_id": ORG,
+                         "p_from": (date.today()-timedelta(days=30)).isoformat(),
+                         "p_to": (date.today()+timedelta(days=90)).isoformat(),
+                         "p_filters": {}}, mgr_token)
+        check("the ICS feed opens for a manager", isinstance(ics, dict) and ics.get("granted") is True,
+              str(ics)[:250])
+        if isinstance(ics, dict) and ics.get("granted"):
+            body = ics.get("body", "")
+            check("it is a well-formed calendar", body.startswith("BEGIN:VCALENDAR")
+                  and body.rstrip().endswith("END:VCALENDAR"), body[:120])
+            check("with one event per absence", body.count("BEGIN:VEVENT") == ics.get("event_count"),
+                  f"{body.count('BEGIN:VEVENT')} vs {ics.get('event_count')}")
+            # RFC 5545: DTEND is exclusive for all-day events, so a span ending the 14th ends the 15th
+            check("a one-day absence does not vanish (DTEND is exclusive)",
+                  "DTEND;VALUE=DATE:" in body, body[:300])
+
+        # 🚨 The control: a PEER must not be able to subscribe a feed of other people's absences.
+        peerics = await rpc("hr_leave_calendar_ics",
+                            {"p_organization_id": ORG,
+                             "p_from": (date.today()-timedelta(days=30)).isoformat(),
+                             "p_to": (date.today()+timedelta(days=90)).isoformat(),
+                             "p_filters": {}}, emp_token)
+        check("a peer is refused the subscription, in words",
+              isinstance(peerics, dict) and peerics.get("granted") is False
+              and peerics.get("reason") == "not_subscribable", str(peerics)[:250])
+        check("the control is meaningful — the same door granted the manager",
+              isinstance(ics, dict) and ics.get("granted") is True, "the manager was refused too")
+
     finally:
         if "--keep" not in sys.argv and policy_id:
             print("\n=== cleanup ===")
