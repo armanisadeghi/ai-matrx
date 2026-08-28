@@ -49,14 +49,26 @@ export const HR_SELF_SERVICE_DEFAULTS: Record<string, HrSelfServicePolicy> = {
   home_address: "request_approval",
   mailing_address: "request_approval",
 
-  // hr_only
-  legal_first_name: "hr_only",
-  legal_middle_name: "hr_only",
-  legal_last_name: "hr_only",
+  /*
+    🚨 THESE ARE `request_approval`, NOT `hr_only` — CORRECTED 2026-08-27 AGAINST THE
+    SEEDED `hr.field_policy` ROWS. The platform rows say `self_request_approval` with
+    `approver_action_type = 'profile_change_approve'`, and `hr_self_update` routes them
+    accordingly. This table said `hr_only`, which is the WRONG DIRECTION of wrong: it
+    rendered "contact HR" over a field the server would have accepted as a request, so
+    a person correcting a misspelled legal name was told to go and ask somebody instead
+    of asking through the form that exists for it.
+
+    A hint that is stricter than the boundary is not "safe" — it is a capability nobody
+    can reach, and it fails silently because the server is never asked.
+  */
+  legal_first_name: "request_approval",
+  legal_middle_name: "request_approval",
+  legal_last_name: "request_approval",
   legal_name_suffix: "hr_only",
-  date_of_birth: "hr_only",
-  work_permit_type: "hr_only",
-  work_authorization_expires_on: "hr_only",
+  // Seeded `self_request_approval` (profile_change_approve) — see the note above.
+  date_of_birth: "request_approval",
+  work_permit_type: "request_approval",
+  work_authorization_expires_on: "request_approval",
   ssn_last4: "hr_only",
   employee_number: "hr_only",
   hire_date: "hr_only",

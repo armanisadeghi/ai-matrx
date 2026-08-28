@@ -41,9 +41,23 @@ import type {
   HrProfilePrivate,
 } from "../../../types";
 import { formatFullDate } from "../../shared/HrStatusChip";
+/**
+ * What a person may edit on their own record, in the order they read it.
+ *
+ * `source` says which half of the payload carries the value — `personal` is the
+ * directory-tier block, `confidential` the confidential one — because §1.3 sends them
+ * separately and a field absent from its bag is not rendered at all.
+ *
+ * Deliberately NOT every self-writable column: `photo_file_id` needs an uploader
+ * rather than a text box, and `directory_opt_out` is a boolean with its own switch
+ * below. A text input over either would be a worse control than none.
+ */
 import { SsnField } from "../../identity/SsnField";
 import { SelfServiceToggle } from "@/features/hr/me/SelfServiceToggle";
 import { useSelfUpdate } from "@/features/hr/me/useSelfUpdate";
+import { SelfServiceField } from "@/features/hr/me/SelfServiceField";
+import { usePendingFieldRequests } from "@/features/hr/me/usePendingFieldRequests";
+import { HR_SELF_SERVICE_DEFAULTS } from "@/features/hr/me/selfServicePolicy";
 import { MoreSection } from "../MoreSection";
 import { PlatformAccessSection } from "../PlatformAccessSection";
 
@@ -79,6 +93,21 @@ const CONTACT_FIELDS: readonly HrFieldSpec<HrProfilePersonal>[] = [
   spec-driven row can only render "value or empty label". It gets its own row below,
   inside the same grid, so it still reads as one field among the others.
 */
+const SELF_SERVICE_FIELDS: readonly {
+  field: string;
+  source: "personal" | "confidential";
+}[] = [
+  { field: "preferred_first_name", source: "personal" },
+  { field: "preferred_last_name", source: "personal" },
+  { field: "pronouns", source: "personal" },
+  { field: "work_phone", source: "personal" },
+  { field: "personal_email", source: "confidential" },
+  { field: "personal_phone", source: "confidential" },
+  // `self_request_approval` — these render the pending state, not an instant save.
+  { field: "legal_first_name", source: "personal" },
+  { field: "legal_last_name", source: "personal" },
+];
+
 const PRIVATE_FIELDS: readonly HrFieldSpec<HrProfilePrivate>[] = [
   {
     name: "home_address_effective_from",
@@ -126,6 +155,12 @@ export function PersonalTab({
     employeeId: profile.header.employee_id,
     onApplied: () => onChanged?.(),
   });
+  /*
+    §7.2's open requests, keyed by field. `SelfServiceField` renders the REQUESTED
+    value for any field that has one — never the stored value as if nothing happened,
+    and never the new value as if HR had agreed.
+  */
+  const pending = usePendingFieldRequests(profile.header.employment_id ?? null);
 
   const expiryDays = daysUntil(priv?.work_authorization_expires_on);
   const expiringSoon = expiryDays !== null && expiryDays <= 90;
@@ -213,6 +248,51 @@ export function PersonalTab({
         `login_user_id` to, so §1.3's absence is decided on the wire, not here.
       */}
       <PlatformAccessSection profile={profile} />
+
+      {/*
+        🚨 SELF-SERVICE, AND THE REASON `SelfServiceField` EXISTS AT ALL.
+
+        It shipped complete — with §7.2's pending-request rule, the three render
+        states, and `hr_self_update` wired behind it — and was imported ONLY as a
+        type, so `/hr/me` was a read-only mirror of a record its owner could not
+        touch. This is the same shape that hid `SelfServiceToggle` and confused the
+        party card; a grep-guard test now fails the build on a fourth instance.
+
+        Which control each field gets is `HR_SELF_SERVICE_DEFAULTS`, reconciled today
+        against the seeded `hr.field_policy` rows. It is a RENDERING HINT and never a
+        decision: `hr_self_update` splits the patch itself, applies `self_free`
+        immediately, turns `self_request_approval` into one workflow request per
+        approver action, and REJECTS anything else NAMING EACH FIELD.
+      */}
+      {isSelf ? (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">
+            Yours to change
+          </h3>
+          <SensitiveGrid>
+            {SELF_SERVICE_FIELDS.map(({ field, source }) => {
+              const bag = source === "confidential" ? priv : personal;
+              // §1.3 still decides existence: a key the server did not send is not
+              // a field, so it is not rendered — the same gate as every other row.
+              if (!bag || !(field in bag)) return null;
+              const raw = (bag as Record<string, unknown>)[field];
+              return (
+                <SelfServiceField
+                  key={field}
+                  field={field}
+                  value={typeof raw === "string" ? raw : null}
+                  policy={
+                    HR_SELF_SERVICE_DEFAULTS[field] ?? "read_only"
+                  }
+                  pending={pending.byField[field] ?? null}
+                  saving={selfUpdate.saving}
+                  onSave={(name, next) => selfUpdate.save(name, next)}
+                />
+              );
+            })}
+          </SensitiveGrid>
+        </section>
+      ) : null}
 
       {/*
         🚨 THE PRIVACY SWITCH IS THE PERSON'S OWN, AND ONLY THEIRS.
