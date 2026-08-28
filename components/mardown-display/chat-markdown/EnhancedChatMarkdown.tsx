@@ -902,12 +902,13 @@ export const EnhancedChatMarkdownInternal: React.FC<
   // `lastReasoningBlockIndex` marked an ARBITRARY thinking trace as the live
   // one: whichever slot's index happened to collide with the last reasoning
   // block of the unrelated array streamed its tail while the genuinely current
-  // trace sat collapsed as "Thought process". Those paths pass
-  // `isLastReasoning: false` and carry the authoritative signal on the block
-  // itself (`isStreamingBlock`), so the animation follows the run, not an
-  // index coincidence.
+  // trace sat collapsed as "Thought process". Hence `isLastReasoning` defaults
+  // to FALSE and only the plain `processedBlocks` callsite opts in — every
+  // other path carries the authoritative signal on the block itself
+  // (`isStreamingBlock`), so the animation follows the run, never an index
+  // coincidence.
   const renderBlock = useCallback(
-    (block: RenderBlock, index: number, isLastReasoning?: boolean) => {
+    (block: RenderBlock, index: number, isLastReasoning = false) => {
       try {
         if (!block || typeof block !== "object") {
           console.warn("[MarkdownStream] Invalid block at index:", index);
@@ -925,9 +926,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
             messageId={messageId}
             requestId={requestId}
             taskId={taskId}
-            isLastReasoningBlock={
-              isLastReasoning ?? index === lastReasoningBlockIndex
-            }
+            isLastReasoningBlock={isLastReasoning}
             replaceBlockContent={replaceBlockContent}
             handleOpenEditor={handleOpenEditor}
           />
@@ -954,7 +953,6 @@ export const EnhancedChatMarkdownInternal: React.FC<
       onContentChange,
       messageId,
       taskId,
-      lastReasoningBlockIndex,
       replaceBlockContent,
       handleOpenEditor,
     ],
@@ -1093,14 +1091,13 @@ export const EnhancedChatMarkdownInternal: React.FC<
                 isStreamingBlock: isStreamingRb && j === lastReasoningIdx,
               } as RenderBlock,
               i * 1000 + j,
-              false,
             ),
           );
         }
       }
 
       const block = renderBlockToContentBlock(rb);
-      return renderBlock(block, i, false);
+      return renderBlock(block, i);
     }
     if (slot.kind === "tool") {
       return (
@@ -1136,7 +1133,6 @@ export const EnhancedChatMarkdownInternal: React.FC<
                 isStreamingBlock: isStreaming,
               } as RenderBlock,
               i,
-              false,
             )
           }
         />
@@ -1188,7 +1184,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         metadata: segment.metadata,
       };
       return expandTextBlocksInList([block]).map((expandedBlock, blockIdx) =>
-        renderBlock(expandedBlock, segIdx * 1000 + blockIdx, false),
+        renderBlock(expandedBlock, segIdx * 1000 + blockIdx),
       );
     }
     if (segment.type === "thinking") {
@@ -1207,11 +1203,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         }
       })();
       return thinkBlocks.map((block, blockIdx) =>
-        renderBlock(
-          { ...block, type: "reasoning" },
-          segIdx * 1000 + blockIdx,
-          false,
-        ),
+        renderBlock({ ...block, type: "reasoning" }, segIdx * 1000 + blockIdx),
       );
     }
     if (segment.type === "text") {
@@ -1230,7 +1222,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
         }
       })();
       return segBlocks.map((block, blockIdx) =>
-        renderBlock(block, segIdx * 1000 + blockIdx, false),
+        renderBlock(block, segIdx * 1000 + blockIdx),
       );
     }
     return null;
@@ -1279,7 +1271,11 @@ export const EnhancedChatMarkdownInternal: React.FC<
                   ),
                 )
               : processedBlocks.map((block, index) =>
-                  renderBlock(block, index),
+                  renderBlock(
+                    block,
+                    index,
+                    index === lastReasoningBlockIndex,
+                  ),
                 )}
         </div>
 
