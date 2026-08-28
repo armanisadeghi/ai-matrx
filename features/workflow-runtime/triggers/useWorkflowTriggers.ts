@@ -31,7 +31,8 @@ import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 export interface CreateTriggerArgs {
   definitionId: string;
   name: string;
-  kind: TriggerKind;
+  /** Event triggers are registered from watched tables, never authored here. */
+  kind: Exclude<TriggerKind, "event">;
   description?: string;
   /** Required for `cron`. A 5-field expression — build it with `toCron`. */
   cronExpression?: string;
