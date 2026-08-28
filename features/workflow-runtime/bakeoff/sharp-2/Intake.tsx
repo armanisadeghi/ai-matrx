@@ -2,41 +2,51 @@
 
 /**
  * Intake — the moment before the run. Collects the workflow's declared inputs
- * (the canonical `deriveRunForm` + `RunFormFieldControl` — never a second
+ * (the SERVED surface + the canonical `ServedFieldControl` — never a second
  * field renderer) and starts the run. The deliverables are already named on
  * the page (PromiseStrip) and the whole plan is already on the left; this is
  * just the one unmistakable action.
  */
 
-import { useState } from "react";
 import { Loader2, Play } from "lucide-react";
 
-import { RunFormFieldControl } from "../../components/RunFormFieldControl";
 import {
-  missingRequiredFields,
-  seedRunFormValues,
-  type RunFormSection,
-} from "../../surface/run-form";
+  EMPTY_SERVED_INPUTS,
+  ServedFieldControl,
+  ServedFormScream,
+  useServedInputKinds,
+  useServedInputValues,
+} from "../../served-form/ServedInputFields";
+import {
+  buildSubmission,
+  unsatisfiedServedInputs,
+  type ServedSubmission,
+} from "../../served-form/served-input";
+import type { ServedRunFormState } from "../../served-form/useServedRunForm";
 
 export function Intake({
   workflowName,
-  sections,
+  state,
   deliverableCount,
   stepCount,
   starting,
   onStart,
 }: {
   workflowName: string;
-  sections: RunFormSection[];
+  /** The served input surface, fetched by the page. */
+  state: ServedRunFormState;
   deliverableCount: number;
   stepCount: number;
   starting: boolean;
-  onStart: (nodeInputs: Record<string, Record<string, unknown>>) => void;
+  onStart: (submission: ServedSubmission) => void;
 }) {
-  const [values, setValues] = useState<Record<string, Record<string, unknown>>>(
-    () => seedRunFormValues(sections),
+  const inputs =
+    state.status === "ready" ? state.form.inputs : EMPTY_SERVED_INPUTS;
+  const { values, touched, setValue } = useServedInputValues(inputs);
+  const { kinds, error: kindError } = useServedInputKinds(inputs);
+  const missing = unsatisfiedServedInputs(inputs, values, touched).map(
+    (i) => i.label,
   );
-  const missing = missingRequiredFields(sections, values);
   const ready = missing.length === 0;
 
   return (
@@ -55,47 +65,55 @@ export function Intake({
       </header>
 
       <div className="space-y-4 p-4">
-        {sections.map((section) => (
-          <fieldset key={section.nodeId} className="space-y-2.5">
-            {sections.length > 1 ? (
-              <legend className="text-xs font-medium text-foreground">
-                {section.title}
-              </legend>
-            ) : null}
-            {section.fields.map((field) => (
-              <label key={field.key} className="block">
+        {state.status === "error" ? (
+          <ServedFormScream
+            title="Could not load what this workflow needs"
+            body={`${state.message} The run form is SERVED (GET /workflows/{id}/run-form) — without it there is nothing honest to ask for.`}
+          />
+        ) : null}
+        {state.status === "ready" && !state.form.surfaceServed ? (
+          <ServedFormScream
+            title="This backend serves no input surface"
+            body="The run-form response carried no `inputs` array, so the reachable server predates the compiled input surface."
+          />
+        ) : null}
+        {kindError ? (
+          <ServedFormScream title="Kind registry gap" body={kindError} />
+        ) : null}
+        {state.status === "loading" ? (
+          <>
+            <div className="h-9 animate-pulse rounded-md bg-muted/50" />
+            <div className="h-9 animate-pulse rounded-md bg-muted/30" />
+          </>
+        ) : (
+          <div className="space-y-2.5">
+            {inputs.map((input) => (
+              <label key={input.name} className="block">
                 <span className="text-xs text-muted-foreground">
-                  {field.label}
-                  {field.required ? " *" : ""}
+                  {input.label}
+                  {input.sourcing === "optional" ? "" : " *"}
                 </span>
-                <RunFormFieldControl
-                  field={field}
-                  value={values[section.nodeId]?.[field.key]}
-                  onChange={(v) =>
-                    setValues((prev) => ({
-                      ...prev,
-                      [section.nodeId]: {
-                        ...(prev[section.nodeId] ?? {}),
-                        [field.key]: v,
-                      },
-                    }))
-                  }
+                <ServedFieldControl
+                  input={input}
+                  kind={kinds[input.kind]}
+                  value={values[input.name]}
+                  onChange={(v) => setValue(input.name, v)}
                 />
-                {field.help ? (
+                {input.help ? (
                   <span className="mt-0.5 block text-[11px] text-muted-foreground">
-                    {field.help}
+                    {input.help}
                   </span>
                 ) : null}
               </label>
             ))}
-          </fieldset>
-        ))}
+          </div>
+        )}
 
         <div className="flex items-center gap-3 pt-1">
           <button
             type="button"
             disabled={starting || !ready}
-            onClick={() => onStart(values)}
+            onClick={() => onStart(buildSubmission(inputs, values, touched))}
             className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity disabled:opacity-50"
           >
             {starting ? (

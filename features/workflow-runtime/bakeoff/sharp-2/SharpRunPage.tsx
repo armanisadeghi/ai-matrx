@@ -15,7 +15,7 @@
  *
  * The presentation is new; the DATA layer is entirely canonical: adoption via
  * useWorkflowRun, selectors, InvocationBody / InterruptCard / RunErrorCard,
- * DbEmitRenderer, RunFormFieldControl, activity-copy. Only the focused step
+ * DbEmitRenderer, the served input surface, activity-copy. Only the focused step
  * is promoted to a streaming lane (the 12-lane budget); everything else rides
  * the tracked tier.
  */
@@ -34,7 +34,8 @@ import {
   fetchRunDefinitionId,
   fetchWorkflowDefinition,
 } from "../../surface/service";
-import { deriveRunForm } from "../../surface/run-form";
+import { useServedRunForm, useServedRunStarter } from "../../served-form/useServedRunForm";
+import type { ServedSubmission } from "../../served-form/served-input";
 import { useWorkflowRun } from "../../hooks/useWorkflowRun";
 import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
 import {
@@ -266,13 +267,15 @@ function ReadyPage({
     for (const step of steps) out[step.nodeId] = step.label;
     return out;
   }, [steps]);
-  const sections = useMemo(
-    () => deriveRunForm(loaded.definition),
-    [loaded.definition],
-  );
-
   const { ensureLane } = useWorkflowRun(runId);
+
+  // Lifecycle verbs (pause/resume/cancel) stay on the canonical controls; the
+  // START is the served one, because only it carries `input_sources`.
   const controls = useWorkflowRunControls();
+
+  // THE compiled input surface — served, never re-derived from the graph.
+  const served = useServedRunForm(loaded.definitionId);
+  const { start: startServedRun, starting } = useServedRunStarter();
 
   const phases = useAppSelector(selectNodeAggregatePhases(runId ?? "__none__"));
   const status = useAppSelector(selectRunStatus(runId ?? "__none__"));
@@ -329,13 +332,8 @@ function ReadyPage({
     );
   }, [wantsLane, runId, focusInvocation, ensureLane]);
 
-  const startRun = async (
-    nodeInputs: Record<string, Record<string, unknown>>,
-  ) => {
-    const newRunId = await controls.startRun({
-      definitionId: loaded.definitionId,
-      nodeInputs,
-    });
+  const startRun = async (submission: ServedSubmission) => {
+    const newRunId = await startServedRun(loaded.definitionId, submission);
     if (newRunId) {
       router.replace(
         `/workflows/bakeoff/sharp-2/${loaded.definitionId}?run=${newRunId}`,
@@ -457,11 +455,11 @@ function ReadyPage({
             ) : (
               <Intake
                 workflowName={loaded.name}
-                sections={sections}
+                state={served}
                 deliverableCount={deliverables.length}
                 stepCount={steps.length}
-                starting={controls.starting}
-                onStart={(nodeInputs) => void startRun(nodeInputs)}
+                starting={starting}
+                onStart={(submission) => void startRun(submission)}
               />
             )}
           </main>
