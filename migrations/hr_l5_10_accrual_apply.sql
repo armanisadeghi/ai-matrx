@@ -1,7 +1,14 @@
--- hr_l5_06_accrual_apply.sql — the ONE door the leave accrual engine writes through.
+-- hr_l5_10_accrual_apply.sql — the ONE door the leave accrual engine writes through.
 --
 -- Build lane L5 (HRB-017), SPEC-LEAVE §3. Applied live via the Supabase MCP and ledgered in
 -- public._schema_migrations; this file is the record, not the mechanism.
+--
+-- ⚠️ **Numbered 10, not 06 or 08.** This landed as `hr_l5_06_accrual_apply` and collided with the
+-- lane lead's `hr_l5_06_cases_and_reinstatement`; 07 and 08 were then each taken twice
+-- (`hr_l5_07_zero_hours_refusal` + `hr_l5_07_employee_door_acl`,
+-- `hr_l5_08_admin_case_door_acl`) and 09 by `hr_l5_09_ledger_request_state`. 10 is the first
+-- ordinal that is genuinely free — verified against `public._schema_migrations`, not assumed.
+-- The `hr_l5_06_accrual_apply.sql` ledger row was deleted when this one was written.
 --
 -- ## Why this wrapper exists at all
 --
@@ -71,10 +78,12 @@ create or replace function public.hr_leave_accrual_apply(
   set search_path to 'public', 'hr'
 as $function$
 declare
-  v_org  uuid;
-  v_exc  uuid;
-  v_snap uuid;
-  v_post jsonb;
+  v_org   uuid;
+  v_exc   uuid;
+  v_snap  uuid;
+  v_post  jsonb;
+  v_juris text;
+  v_snapin jsonb;
 begin
   select em.organization_id into v_org
     from hr.employment em
@@ -103,6 +112,27 @@ begin
       coalesce(p_exception -> 'org_config_ref', '{}'::jsonb));
   end if;
 
+  -- 🚨 `hr.calculation_snapshot.jurisdiction_key` is NOT NULL (verified live), and the engine
+  -- legitimately has no key when an employment has no stamped work location. Passing the null
+  -- through would be a 23502 on a wage-adjacent record. `hr._leave_jurisdiction_key_or_federal`
+  -- is the lane's canonical ladder — the stamped resolver, then the primary assignment's work
+  -- location, then the federal key — and it is the SAME ladder `hr.leave_ledger_post` walks, so
+  -- a snapshot written by either door names the same jurisdiction for the same person.
+  --
+  -- Its last rung returns 'US' silently, and a fallback nobody can see IS a fabricated
+  -- jurisdiction. So the fallback is stamped into the snapshot's own inputs: a reader can always
+  -- tell a resolved key from a substituted one.
+  v_juris  := p_jurisdiction_key;
+  v_snapin := coalesce(p_snapshot_inputs, '{}'::jsonb);
+  if v_juris is null then
+    v_juris := hr._leave_jurisdiction_key_or_federal(p_employment_id);
+    v_snapin := v_snapin || jsonb_build_object(
+      'jurisdiction_key_fallback', true,
+      'jurisdiction_key_fallback_reason',
+      'the accrual engine resolved no stamped jurisdiction for this employment; '
+      || 'hr._leave_jurisdiction_key_or_federal supplied ' || coalesce(v_juris, 'US'));
+  end if;
+
   -- NOTHING DUE. §3.4 step 5: a zero writes no LEDGER entry — a run that posts zero-hour rows
   -- makes the ledger unreadable. It does not follow that the calculation goes unrecorded: when a
   -- subject is named (the `/hr/calc/*` lane, which was asked a direct question and owes a
@@ -112,13 +142,12 @@ begin
   if p_hours_delta is null then
     if p_subject_id is not null then
       v_snap := hr.write_calculation_snapshot(
-        v_org, 'hr_leave_enrollment', p_subject_id, 'leave_accrual', p_jurisdiction_key,
+        v_org, 'hr_leave_enrollment', p_subject_id, 'leave_accrual', v_juris,
         p_occurred_on, coalesce(p_engine_key, 'accrual_engine'), coalesce(p_engine_version, '1'),
         jsonb_build_object('rule_version_ids',
                            to_jsonb(coalesce(p_rule_version_ids, '{}'::uuid[]))),
         '{}'::jsonb,
-        coalesce(p_snapshot_inputs, '{}'::jsonb)
-          || jsonb_build_object('entry_kind', p_entry_kind, 'period_key', p_period_key),
+        v_snapin || jsonb_build_object('entry_kind', p_entry_kind, 'period_key', p_period_key),
         jsonb_build_object('hours_delta', null::numeric, 'posted', false),
         coalesce(p_actor_type, 'automation'), p_actor_user_id, p_employment_id,
         coalesce(p_clamps, '[]'::jsonb), coalesce(p_prospective, false), null, null);
@@ -135,15 +164,14 @@ begin
       'hr_leave_enrollment',
       coalesce(p_subject_id, p_employment_id),
       'leave_accrual',
-      p_jurisdiction_key,
+      v_juris,
       p_occurred_on,
       coalesce(p_engine_key, 'accrual_engine'),
       coalesce(p_engine_version, '1'),
       jsonb_build_object('rule_version_ids',
                          to_jsonb(coalesce(p_rule_version_ids, '{}'::uuid[]))),
       '{}'::jsonb,
-      coalesce(p_snapshot_inputs, '{}'::jsonb)
-        || jsonb_build_object('entry_kind', p_entry_kind, 'period_key', p_period_key),
+      v_snapin || jsonb_build_object('entry_kind', p_entry_kind, 'period_key', p_period_key),
       jsonb_build_object('hours_delta', p_hours_delta),
       coalesce(p_actor_type, 'automation'),
       p_actor_user_id,
@@ -176,7 +204,7 @@ begin
     coalesce(p_actor_type, 'automation'),
     p_actor_employment_id, p_actor_user_id,
     p_period_key,
-    coalesce(p_snapshot_inputs, '{}'::jsonb),
+    v_snapin,
     coalesce(p_clamps, '[]'::jsonb));
 
   return coalesce(v_post, '{}'::jsonb)

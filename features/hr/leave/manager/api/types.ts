@@ -24,12 +24,12 @@ import type { LeaveFigures } from "../../api/types";
 // ── shared ───────────────────────────────────────────────────────────────────
 
 /**
- * `hr.jurisdiction_rule.citation`, VERBATIM.
+ * `hr.jurisdiction_rule.citation`.
  *
- * 🚨 NOT KEY-MAPPED (see `rpc.ts` → `OPAQUE_VALUE_KEYS`): it is evidence read back by its
- * stored names. The four fields declared here are single-word in storage and so are spelled
- * identically either way; `verified_at` / `verified_by` / `retrieved_at` are deliberately not
- * declared, because reading them would depend on a mapping this lane refuses to apply.
+ * Only the four SINGLE-WORD fields are declared. The shared transport camelizes response keys,
+ * so `verified_at` / `verified_by` / `retrieved_at` would arrive under a spelling that is not
+ * the one they are stored under; the fields below are spelled identically either way, which
+ * makes this the only part of the citation that can be read without depending on the mapping.
  *
  * `confidence` is live data worth showing: rows currently in the platform carry
  * `program_research` and `unverified`, and an admin reading a refusal is entitled to know
@@ -117,15 +117,18 @@ export interface LeavePolicyList {
 /**
  * The action that FIXES a violation, composed by `hr.leave_policy_validate` itself.
  *
- * `set` is the engine's own patch and is NOT key-mapped — its keys are `hr.leave_policy`
- * COLUMN names (`carryover_allowed`, `accrual_per_units`, `usable_after_days`), which is
- * exactly the spelling the save payload uses. Camelizing it would produce a patch the save
- * door ignores.
+ * `set` is the engine's own patch. Its keys are `hr.leave_policy` COLUMN names in storage
+ * (`carryover_allowed`, `accrual_per_units`, `usable_after_days`) and arrive CAMELIZED through
+ * the shared transport — which is the editor's own field spelling, so the patch applies to
+ * form state directly and the snake_case names are re-created when the save payload is built.
+ *
+ * `focusField` is a VALUE, not a key, so it stays `'carryover_cap'`.
  */
 export interface LeaveViolationFix {
   label: string | null;
-  /** A `hr.leave_policy` column name — the field the dialog focuses. */
+  /** A `hr.leave_policy` COLUMN name — the field the dialog focuses. Never camelized. */
   focusField: string | null;
+  /** Camel-keyed patch, ready to merge into the editor's form state. */
   set: Record<string, unknown> | null;
 }
 
@@ -143,7 +146,11 @@ export interface LeaveConfigViolation {
   /** Absent on the sick-leave-floor branches. Never faked. */
   ruleVersion: string | null;
   field: string | null;
-  /** Evidence, unmapped. */
+  /**
+   * The engine's own evidence — what the org configured, and what the rule requires. Rendered
+   * as data in the "Why?" disclosure, never turned into a sentence here: the sentence is
+   * `message`, and it already names the lawful alternative.
+   */
   configured: unknown;
   required: unknown;
   citation: LeaveRuleCitation | null;
@@ -167,7 +174,7 @@ export interface LeavePolicyValidation {
   warnings: LeaveConfigViolation[];
   advisoryRulesConsulted: string[];
   jurisdictionsChecked: string[];
-  /** The exact parameters the twin sent to `hr.validate_org_config`. Evidence, unmapped. */
+  /** The exact parameters the twin sent to `hr.validate_org_config`. Evidence, rendered as data. */
   parametersSent: unknown;
 }
 

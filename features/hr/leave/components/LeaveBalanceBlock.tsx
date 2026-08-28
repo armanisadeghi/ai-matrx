@@ -135,11 +135,13 @@ export interface LeaveBalanceBlockProps {
  * worse — a wrong-rows table under a figure the person is trying to reconcile. It points at
  * their request list instead, which is where those hours actually live.
  *
- * 🚨 `USED` AND `APPROVED UPCOMING` SHARE ONE DOOR, AND THE CHIP SAYS SO.
- * Both are sums over `usage`/`reversal` entries split by the STATE OF THE REQUEST that caused
- * them — and `hr.leave_ledger_view` does not return the request state on an entry. A client
- * filter that split them would be inventing the split. So both open the ledger filtered to
- * time used and returned, and the ledger's own filter chip states exactly what it filtered.
+ * 🚨 `USED` AND `APPROVED UPCOMING` NOW HAVE SEPARATE DOORS.
+ * They used to share one, because `hr.leave_ledger_view` did not return the request state and
+ * splitting them client-side would have been inventing the split. The door now returns
+ * `counts_toward` per entry, computed server-side, so each figure opens its own rows. The
+ * ledger's filter chip states what was filtered and — because the mark and the figure disagree
+ * on one branch — deliberately does not claim to be the figure's exact working. The whole
+ * divergence is written out in `LeaveLedgerView`'s filter comment.
  */
 export function LeaveBalanceBlock({
   figures,
@@ -231,13 +233,13 @@ export function LeaveBalanceBlock({
             label="Used (taken)"
             value={figures.usedTaken}
             definition="Time already taken."
-            href={ledgerHref ? withFilter(ledgerHref, "used") : null}
+            href={ledgerHref ? withFilter(ledgerHref, "used_taken") : null}
           />
           <Figure
             label="Approved upcoming"
             value={figures.approvedUpcoming}
             definition="Granted, not yet taken."
-            href={ledgerHref ? withFilter(ledgerHref, "used") : null}
+            href={ledgerHref ? withFilter(ledgerHref, "approved_upcoming") : null}
           />
           <Figure
             label="Pending approval"

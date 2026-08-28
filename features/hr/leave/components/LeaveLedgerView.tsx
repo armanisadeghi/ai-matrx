@@ -48,15 +48,32 @@ import type { LeaveLedgerEntry, LeaveLedgerView as LeaveLedger } from "../api/ty
 import { LeaveBalanceBlock, formatHours } from "./LeaveBalanceBlock";
 
 /**
- * The filters a figure's door can ask for.
+ * The filters a figure's door can ask for. §5: *"Every figure is a door to the ledger rows
+ * that produced it."*
  *
- * 🚨 EACH ONE REPRODUCES A SERVER SUM EXACTLY, OR IT DOES NOT EXIST.
- * `added` is `hr.leave_figures`' own `accrued_to_date` predicate, key for key. `used` is its
- * `usage`/`reversal` selection — but NOT the taken-vs-upcoming split, because that split is
- * made on the REQUEST's state and `hr.leave_ledger_view` does not return it. Splitting it
- * here would be inventing a number, so the chip states what was actually filtered instead.
+ * 🚨 `used_taken` AND `approved_upcoming` FILTER ON THE SERVER'S OWN `counts_toward` MARK,
+ * AND THE CLIENT DOES NOT RE-DERIVE THE SPLIT. `hr.leave_ledger_view` computes
+ * `counts_toward` per entry; reproducing that predicate here from `request_state` +
+ * `request_ends_on` would be a second implementation of the split, and the two would drift the
+ * first time either side changed.
+ *
+ * ⚠️ **AND THE MARK IS NOT IDENTICAL TO THE FIGURE — ONE BRANCH DIVERGES, MEASURED
+ * 2026-08-27 against both live bodies.** `hr.leave_figures` sums:
+ *   used_taken        = request state in ('taken','partially_taken')
+ *   approved_upcoming = state 'approved' AND ends_on >= current_date
+ * so an **approved request whose end date has already passed and which has not been marked
+ * taken yet is in NEITHER figure**. `hr.leave_ledger_view` marks that same entry
+ * `counts_toward = 'used_taken'` (its third branch, `when v_r.request_state = 'approved' then
+ * 'used_taken'`). Filtering on the mark therefore shows a row the "Used (taken)" NUMBER does
+ * not contain.
+ *
+ * That is a server-side question and it is reported to the lane that owns the door — it is
+ * deliberately NOT patched here, because a client that quietly hid the row would make the
+ * disagreement invisible on the one screen built to expose disagreements. The chip below says
+ * what was actually filtered — the server's mark — and never claims to be the figure's exact
+ * working.
  */
-export type LeaveLedgerFilter = "all" | "added" | "used";
+export type LeaveLedgerFilter = "all" | "added" | "used_taken" | "approved_upcoming";
 
 const ADDED_KINDS: ReadonlySet<string> = new Set([
   "accrual",
@@ -68,7 +85,8 @@ const ADDED_KINDS: ReadonlySet<string> = new Set([
 const FILTER_LABEL: Record<LeaveLedgerFilter, string> = {
   all: "Every entry",
   added: "Time added",
-  used: "Time used and returned",
+  used_taken: "Time taken",
+  approved_upcoming: "Approved, not yet taken",
 };
 
 /** What the chip tells the reader was actually applied — never a vaguer claim than the truth. */
@@ -76,18 +94,21 @@ const FILTER_EXPLANATION: Record<LeaveLedgerFilter, string> = {
   all: "Showing every entry on this policy.",
   added:
     "Showing accruals, carry-overs, opening balances, reinstatements and additions made by hand — the entries behind “Accrued to date”.",
-  used: "Showing time used and time returned. Taken and approved-upcoming time are not separated here, because the ledger does not record which request state each entry belongs to.",
+  used_taken:
+    "Showing the entries the server marks as time taken, and any time returned against them.",
+  approved_upcoming:
+    "Showing the entries the server marks as approved and not yet taken, and any time returned against them.",
 };
 
 function matchesFilter(entry: LeaveLedgerEntry, filter: LeaveLedgerFilter): boolean {
   if (filter === "all") return true;
-  const kind = entry.entryKind;
-  if (kind === null) return false;
   if (filter === "added") {
+    const kind = entry.entryKind;
+    if (kind === null) return false;
     if (ADDED_KINDS.has(kind)) return true;
     return kind === "adjustment" && entry.hoursDelta !== null && entry.hoursDelta > 0;
   }
-  return kind === "usage" || kind === "reversal";
+  return entry.countsToward === filter;
 }
 
 function signedHours(value: number | null): string | null {

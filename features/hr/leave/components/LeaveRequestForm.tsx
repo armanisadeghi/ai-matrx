@@ -223,10 +223,23 @@ export function LeaveRequestForm({
     return `${offender.date} is not a multiple of this policy's ${incrementMinutes}-minute booking increment.`;
   }, [dayParts, incrementMinutes]);
 
+  /*
+    🚨 THE FREE WEEK, CAUGHT BEFORE THE BUTTON. `hr.leave_request_preview` returns
+    `submittable: false` with a `blocker` sentence when the span would cost ZERO hours for a
+    dishonest reason — no published shift on those days AND no `standard_hours_per_week` on
+    the position — and the SUBMIT door refuses the same span in the same words. Letting the
+    person press the button to learn that is the avoidable failure this closes.
+
+    `null` (an older door that does not send the field) does NOT block: the submit door is
+    still the authority, and blocking on not-knowing would lock out every valid request.
+  */
+  const blockedBySpan = shownPreview?.submittable === false;
+
   const canSubmit =
     !!policyId &&
     datesValid &&
     !submitting &&
+    !blockedBySpan &&
     incrementProblem === null &&
     (!reasonRequired || reasonCategoryId !== "");
 
@@ -535,6 +548,23 @@ export function LeaveRequestForm({
               <p className="text-xs text-muted-foreground">
                 {shownPreview.projection.projectionNote}
               </p>
+            ) : null}
+
+            {/*
+              The server's own wording, VERBATIM — it names what is missing (no shift, no
+              standard hours) and what to do about it, which a generic "cannot submit" does not.
+            */}
+            {shownPreview.blocker ? (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-destructive bg-destructive/10 p-3"
+              >
+                <AlertTriangle
+                  className="mt-0.5 h-4 w-4 shrink-0 text-destructive"
+                  aria-hidden
+                />
+                <p className="text-sm text-destructive/90">{shownPreview.blocker}</p>
+              </div>
             ) : null}
 
             {shownPreview.documentationRequired === true ? (

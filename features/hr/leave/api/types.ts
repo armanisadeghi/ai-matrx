@@ -34,6 +34,15 @@ export type LeaveRequestState =
 /** `hr._leave_viewer` — `self` files requests; `delegated` reads only. */
 export type LeaveViewerRung = "self" | "delegated";
 
+/**
+ * Which §5 figure the server says a `usage`/`reversal` entry belongs to. `null` on every
+ * other entry kind — and on a `usage` entry whose request is denied, cancelled or still
+ * submitted.
+ *
+ * 🚨 IT IS THE SERVER'S MARK, NOT A REPRODUCTION OF THE FIGURE — SEE `LeaveLedgerView`.
+ */
+export type LeaveCountsToward = "used_taken" | "approved_upcoming";
+
 // ── hr.leave_figures ─────────────────────────────────────────────────────────
 
 /**
@@ -231,6 +240,14 @@ export interface LeaveRequestPreview {
   mandatedUses: string[];
   documentationRequired: boolean | null;
   documentationRequiredAfterDays: number | null;
+  /**
+   * False when the span would cost ZERO hours for a dishonest reason — no published shift AND
+   * no `standard_hours_per_week` on the position, i.e. a free week. The submit door refuses
+   * the same span, so the form must say so before the person presses the button.
+   */
+  submittable: boolean | null;
+  /** The refusal in the submit door's own words. Null whenever `submittable`. Verbatim. */
+  blocker: string | null;
 }
 
 // ── writes ───────────────────────────────────────────────────────────────────
@@ -271,6 +288,15 @@ export interface LeaveLedgerEntry {
   balanceAfter: number | null;
   runningSum: number | null;
   source: LeaveLedgerSource | null;
+
+  // ── the figure's own address, added to the door 2026-08-27 ──
+  /** The state of the request that caused this entry. Null on every non-request entry. */
+  requestState: LeaveRequestState | null;
+  requestStartsOn: string | null;
+  requestEndsOn: string | null;
+  /** The server's mark. See `LeaveLedgerView`'s filter comment before trusting it as a sum. */
+  countsToward: LeaveCountsToward | null;
+
   reversesEntryId: string | null;
   /** The `hr.calculation_snapshot` behind this entry. Null → no rule door exists. */
   snapshotId: string | null;

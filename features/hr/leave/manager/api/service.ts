@@ -1,7 +1,18 @@
 /**
  * features/hr/leave/manager/api/service.ts — the typed service surface for the leave DESK.
  *
- * 🚨 **MAPPED, NEVER CAST.** `callHrLeaveDeskRpc` hands back `Record<string, unknown>`. Every
+ * "Desk" is the HR/manager half of Leave & PTO: the policy editor, the enrollment roster, the
+ * org/team balance list, the who's-out calendar and the balance adjustment. The employee half
+ * (`hr_my_time_off`, `hr_leave_request_*`, `hr_leave_ledger_view`) lives in
+ * `features/hr/leave/api/service.ts` and is IMPORTED by these surfaces, never re-implemented.
+ *
+ * 🚨 **THERE IS ONE TRANSPORT, AND IT IS `../../api/rpc`.** This module opened life with its
+ * own copy of `callHrLeaveRpc` because that module's name union was closed to five names; the
+ * union now carries all twelve and is generically typed against
+ * `Database["public"]["Functions"]`, so the copy was deleted rather than left as a second door.
+ * Two modules reaching the same RPCs two ways is the bug this feature's own headers name.
+ *
+ * 🚨 **MAPPED, NEVER CAST.** `callHrLeaveRpc` hands back `Record<string, unknown>`. Every
  * function here runs a FIELD-BY-FIELD mapper against the live envelope (read 2026-08-27 from
  * `pg_get_functiondef`). A `data as LeavePolicyList` cast compiles against a hopeful type and
  * proves nothing: wherever the shape differs the field arrives `undefined` and the surface
@@ -23,7 +34,7 @@ import type { HrRpcOptions } from "@/features/hr/time/api/rpc";
 import type { HrDenied, HrResult } from "@/features/hr/types";
 import type { LeaveFigures } from "../../api/types";
 
-import { callHrLeaveDeskRpc } from "./rpc";
+import { callHrLeaveRpc } from "../../api/rpc";
 import type {
   LeaveAdjustRefusal,
   LeaveAdjustResult,
@@ -185,7 +196,7 @@ export async function fetchLeavePolicies(
   organizationId: string,
   opts?: HrRpcOptions,
 ): Promise<HrResult<LeavePolicyList>> {
-  const res = await callHrLeaveDeskRpc(
+  const res = await callHrLeaveRpc(
     "hr_leave_policy_list",
     { p_organization_id: organizationId },
     opts,
@@ -208,8 +219,12 @@ export async function fetchLeavePolicies(
 // ── validation ───────────────────────────────────────────────────────────────
 
 /**
- * The citation, read by its STORED names (it is not key-mapped — see `rpc.ts`). Only the
- * single-word fields are declared, so this mapping is spelling-independent.
+ * The citation from `hr.jurisdiction_rule.citation`.
+ *
+ * Only the four SINGLE-WORD fields are declared, which is deliberate: the shared transport
+ * camelizes response keys, and `verified_at` / `verified_by` / `retrieved_at` would therefore
+ * arrive under a spelling that is not the one they are stored under. Reading only the
+ * spelling-independent fields is how this mapping cannot silently drift.
  */
 function toCitation(raw: unknown): LeaveRuleCitation | null {
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return null;
@@ -233,11 +248,16 @@ function toFix(raw: unknown): LeaveViolationFix | null {
   return {
     label,
     focusField,
-    // `set` is NOT key-mapped: its keys are `hr.leave_policy` column names, which is exactly
-    // the spelling `hr_leave_policy_save` reads.
-    set: r.set !== null && typeof r.set === "object" && !Array.isArray(r.set)
-      ? (r.set as Record<string, unknown>)
-      : null,
+    // 🚨 `set` ARRIVES CAMELIZED, AND THAT IS WHAT THE FORM WANTS. The engine writes
+    // `{"carryover_allowed": true}` / `{"accrual_rate": …, "accrual_per_units": …}`; the shared
+    // transport maps those keys, so what lands here is `{carryoverAllowed}` /
+    // `{accrualRate, accrualPerUnits}` — exactly the editor's own field names. The snake_case
+    // spelling is re-created on the way back out, where the save payload is built.
+    // `focusField`'s VALUE stays `'carryover_cap'`: values are never mapped, only keys.
+    set:
+      r.set !== null && typeof r.set === "object" && !Array.isArray(r.set)
+        ? (r.set as Record<string, unknown>)
+        : null,
   };
 }
 
@@ -288,7 +308,7 @@ export async function validateLeavePolicy(
   args: { organizationId: string; payload: Record<string, unknown> },
   opts?: HrRpcOptions,
 ): Promise<HrResult<LeavePolicyValidation>> {
-  const res = await callHrLeaveDeskRpc(
+  const res = await callHrLeaveRpc(
     "hr_leave_policy_validate",
     { p_organization_id: args.organizationId, p_payload: args.payload },
     opts,
@@ -342,7 +362,7 @@ export async function saveLeavePolicy(
   },
   opts?: HrRpcOptions,
 ): Promise<HrResult<LeavePolicySaved>> {
-  const res = await callHrLeaveDeskRpc(
+  const res = await callHrLeaveRpc(
     "hr_leave_policy_save",
     {
       p_organization_id: args.organizationId,
@@ -384,7 +404,7 @@ export async function enrollInLeavePolicy(
   args: { leavePolicyId: string; employmentIds: string[]; effectiveFrom?: string | null },
   opts?: HrRpcOptions,
 ): Promise<HrResult<LeaveEnrollResult>> {
-  const res = await callHrLeaveDeskRpc(
+  const res = await callHrLeaveRpc(
     "hr_leave_enroll",
     {
       p_leave_policy_id: args.leavePolicyId,
@@ -439,7 +459,7 @@ export async function fetchLeaveBalances(
   if (args.leavePolicyId) filters.leave_policy_id = args.leavePolicyId;
   if (args.negativeOnly) filters.negative_only = true;
 
-  const res = await callHrLeaveDeskRpc(
+  const res = await callHrLeaveRpc(
     "hr_leave_balances",
     {
       p_organization_id: args.organizationId,
@@ -493,7 +513,7 @@ export async function fetchLeaveCalendar(
   args: { organizationId: string; from: string; to: string },
   opts?: HrRpcOptions,
 ): Promise<HrResult<LeaveCalendar>> {
-  const res = await callHrLeaveDeskRpc(
+  const res = await callHrLeaveRpc(
     "hr_leave_calendar",
     {
       p_organization_id: args.organizationId,
@@ -549,7 +569,7 @@ export async function adjustLeaveBalance(
   },
   opts?: HrRpcOptions,
 ): Promise<HrResult<LeaveAdjustResult>> {
-  const res = await callHrLeaveDeskRpc(
+  const res = await callHrLeaveRpc(
     "hr_leave_adjust",
     {
       p_employment_id: args.employmentId,

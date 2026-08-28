@@ -31,6 +31,7 @@ import type { HrRpcOptions } from "@/features/hr/time/api/rpc";
 import { callHrLeaveRpc } from "./rpc";
 import type {
   LeaveBlackoutRule,
+  LeaveCountsToward,
   LeaveCancelResult,
   LeaveConflictCheck,
   LeaveConflictFinding,
@@ -110,6 +111,10 @@ function requestState(value: unknown): LeaveRequestState | null {
 
 function viewerRung(value: unknown): LeaveViewerRung | null {
   return value === "self" || value === "delegated" ? value : null;
+}
+
+function countsToward(value: unknown): LeaveCountsToward | null {
+  return value === "used_taken" || value === "approved_upcoming" ? value : null;
 }
 
 // ── hr.leave_figures ─────────────────────────────────────────────────────────
@@ -321,6 +326,10 @@ function toLedgerEntry(raw: unknown): LeaveLedgerEntry | null {
     balanceAfter: num(r.balanceAfter),
     runningSum: num(r.runningSum),
     source: toLedgerSource(r.source),
+    requestState: requestState(r.requestState),
+    requestStartsOn: str(r.requestStartsOn),
+    requestEndsOn: str(r.requestEndsOn),
+    countsToward: countsToward(r.countsToward),
     reversesEntryId: str(r.reversesEntryId),
     snapshotId: str(r.snapshotId),
     unexplained: r.unexplained === true,
@@ -403,6 +412,13 @@ export async function previewLeaveRequest(
       mandatedUses: strList(r.mandatedUses),
       documentationRequired: bool(r.documentationRequired),
       documentationRequiredAfterDays: num(r.documentationRequiredAfterDays),
+      /*
+        `submittable` is `not hr._leave_span_is_costless(span)` — always a boolean from the
+        live door. `null` here means an older door that does not send it, and the safe reading
+        of not-knowing is "do not block", because the submit door is still the authority.
+      */
+      submittable: bool(r.submittable),
+      blocker: str(r.blocker),
     },
   };
 }

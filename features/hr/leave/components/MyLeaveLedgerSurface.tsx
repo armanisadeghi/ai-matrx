@@ -28,8 +28,11 @@ import { fetchLeaveLedger } from "../api/service";
 import type { LeaveLedgerView as LeaveLedger } from "../api/types";
 import { LeaveLedgerView, type LeaveLedgerFilter } from "./LeaveLedgerView";
 
+/** The `?show=` a §5 figure's door carries. Anything unrecognised falls back to everything. */
 function readFilter(value: string | null): LeaveLedgerFilter {
-  return value === "added" || value === "used" ? value : "all";
+  return value === "added" || value === "used_taken" || value === "approved_upcoming"
+    ? value
+    : "all";
 }
 
 export function MyLeaveLedgerSurface({ policyId }: { policyId: string }) {
