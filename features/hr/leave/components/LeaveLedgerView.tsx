@@ -57,21 +57,24 @@ import { LeaveBalanceBlock, formatHours } from "./LeaveBalanceBlock";
  * `request_ends_on` would be a second implementation of the split, and the two would drift the
  * first time either side changed.
  *
- * ⚠️ **AND THE MARK IS NOT IDENTICAL TO THE FIGURE — ONE BRANCH DIVERGES, MEASURED
- * 2026-08-27 against both live bodies.** `hr.leave_figures` sums:
- *   used_taken        = request state in ('taken','partially_taken')
- *   approved_upcoming = state 'approved' AND ends_on >= current_date
- * so an **approved request whose end date has already passed and which has not been marked
- * taken yet is in NEITHER figure**. `hr.leave_ledger_view` marks that same entry
- * `counts_toward = 'used_taken'` (its third branch, `when v_r.request_state = 'approved' then
- * 'used_taken'`). Filtering on the mark therefore shows a row the "Used (taken)" NUMBER does
- * not contain.
+ * THE MARK AND THE FIGURE DESCRIBE THE SAME SET, and that took a fix to be true.
+ * Measured 2026-08-27 against both live bodies, they disagreed on one branch: an **approved
+ * request whose end date had passed and which was not yet marked `taken`** was in NEITHER
+ * figure, while the ledger view marked it `counts_toward = 'used_taken'` — so this door showed
+ * a row the "Used (taken)" NUMBER did not contain. Reported rather than patched here, because
+ * a client that quietly hid the row would have made the disagreement invisible on the one
+ * screen built to expose disagreements, and re-deriving the predicate would only have
+ * relocated the drift.
  *
- * That is a server-side question and it is reported to the lane that owns the door — it is
- * deliberately NOT patched here, because a client that quietly hid the row would make the
- * disagreement invisible on the one screen built to expose disagreements. The chip below says
- * what was actually filtered — the server's mark — and never claims to be the figure's exact
- * working.
+ * The lane ruled for the identity (`hr_l5_12`, verified live): the `usage` entry is written at
+ * APPROVAL (§1.2 encumbrance), so those hours have already left the balance — counting them
+ * nowhere broke §5's identity and fired the divergence banner at employees, correctly and
+ * uselessly, while calling them "upcoming" would be a lie about a week that is over.
+ * `hr.leave_figures.used_taken` is now
+ * `state in ('taken','partially_taken') OR (state = 'approved' AND ends_on < current_date)`,
+ * exhaustive with `approved_upcoming` over every approved request. The migration's self-proof
+ * re-reads BOTH `prosrc`s and fails if either side is edited alone, so the two cannot silently
+ * part again. (An amendment to SPEC-LEAVE §5's "Used (taken)" wording is owed by that lane.)
  */
 export type LeaveLedgerFilter = "all" | "added" | "used_taken" | "approved_upcoming";
 
@@ -95,9 +98,9 @@ const FILTER_EXPLANATION: Record<LeaveLedgerFilter, string> = {
   added:
     "Showing accruals, carry-overs, opening balances, reinstatements and additions made by hand — the entries behind “Accrued to date”.",
   used_taken:
-    "Showing the entries the server marks as time taken, and any time returned against them.",
+    "Showing the entries behind “Used (taken)” — time already taken, plus approved time whose last day has passed, and any time returned against them.",
   approved_upcoming:
-    "Showing the entries the server marks as approved and not yet taken, and any time returned against them.",
+    "Showing the entries behind “Approved upcoming” — approved time whose last day is still ahead, and any time returned against it.",
 };
 
 function matchesFilter(entry: LeaveLedgerEntry, filter: LeaveLedgerFilter): boolean {

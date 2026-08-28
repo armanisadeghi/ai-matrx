@@ -53,7 +53,19 @@ and every change ever made to a balance (§12). Manager and HR surfaces (`/hr/le
     `hr.leave_day_hours` decide what a day costs and whether it is excluded — never
     `hours === 0`. No hardcoded policy: every limit, increment, cap and floor arrives in the
     envelope because the knobs are read server-side.
-12. 🚨 **No second inbox.** `/hr/tasks` is THE inbox; the workflow engine projects leave
+12. 🚨 **`counts_toward` IS the figure's row set — verified live 2026-08-27, and it is the
+    server's to compute.** Since `hr_l5_12`, `hr.leave_ledger_view`'s per-entry
+    `counts_toward` mark and `hr.leave_figures`' `used_taken` / `approved_upcoming` predicates
+    describe the same set (`used_taken` = `state in ('taken','partially_taken') OR (state =
+    'approved' AND ends_on < current_date)`), exhaustive over every approved request — which is
+    what makes `identity_holds` mean anything. The migration's self-proof re-reads both
+    `prosrc`s and fails if either side is edited alone. **Never re-derive the split on the
+    client** from `request_state` + `request_ends_on`: that is a second implementation, and it
+    is how the two would part again. (This law exists because they HAD parted — a past-dated
+    approved request was in neither figure while the ledger marked it `used_taken`, found by
+    comparing the door against the number rather than against a description of it. An amendment
+    to SPEC-LEAVE §5's "Used (taken)" wording is owed by the SQL lane.)
+13. 🚨 **No second inbox.** `/hr/tasks` is THE inbox; the workflow engine projects leave
     approval steps into it. This feature declares a flow type and never builds a queue.
 
 ---
@@ -88,7 +100,7 @@ Envelopes verified live against `pg_get_functiondef` on `brsgrqvjdzwihsvnfqkf`, 
 | `hr_leave_request_preview(...)` | `{granted, span, breakdown_sentence, figures, projection, policy_name, increment_minutes, mandated_uses, documentation_required, documentation_required_after_days, submittable, blocker}` | `span.days[]` = `{date, hours, basis, excluded?, label?, partial?}`. `submittable:false` + a verbatim `blocker` sentence = the free-week refusal, in the submit door's own words |
 | `hr_leave_request_submit(...)` | `{granted, leave_request_id, workflow_instance_id, state, requested_hours, conflict_check, workflow, rejected_at_intake}` | `conflict_check` is inserted as `{}` and re-read after `hr.wf_submit` — an empty object is normal |
 | `hr_leave_request_cancel(...)` | `{granted, outcome, workflow[, workflow_instance_id]}` | `withdrawn` \| `cancellation_requested`; refuses `already_taken` / `not_cancellable` |
-| `hr_leave_ledger_view(...)` | `{granted, entries[], figures, sentence, running_balance_ok, divergence_at_entry_id, unexplained_entry_count, entry_count}` | `amount`/`rate` excluded in the SQL by construction. Entries also carry `request_state`, `request_starts_on`, `request_ends_on`, `counts_toward` — read the ⚠️ under Known gaps before treating `counts_toward` as the figure |
+| `hr_leave_ledger_view(...)` | `{granted, entries[], figures, sentence, running_balance_ok, divergence_at_entry_id, unexplained_entry_count, entry_count}` | `amount`/`rate` excluded in the SQL by construction. Entries also carry `request_state`, `request_starts_on`, `request_ends_on`, `counts_toward` |
 
 🚨 **This lane's refusal dialect is `granted`, not `ok`.** None of the five doors returns an
 `ok` key or an `error` object. A transport testing `ok` reads every refusal as a success and
@@ -158,14 +170,6 @@ divergence banner.
   already applies both — a holiday and a rest day come back as excluded days with their label —
   so the *cost* is honest; the picker itself is still a plain range.
 - **Who's-out overlay** (§4.1 data) — `/hr/leave/calendar` (§10) is the other agent's surface.
-- ⚠️ **`counts_toward` and the figures disagree on one branch** (measured 2026-08-27 against
-  both live bodies). `hr.leave_figures` puts an **approved request whose `ends_on` has passed
-  and which is not yet `taken`** into NEITHER figure; `hr.leave_ledger_view` marks that same
-  entry `counts_toward = 'used_taken'`. So the "Used (taken)" door can show a row the "Used
-  (taken)" NUMBER does not contain. Reported to the lane that owns the door. **Deliberately not
-  patched client-side** — a client that quietly hid the row would make the disagreement
-  invisible on the one screen built to expose disagreements. The filter chip says what was
-  actually filtered (the server's mark) and never claims to be the figure's exact working.
 - **`hrMeTimeOffPolicyHref` belongs in `features/hr/routes.ts`** and should be lifted there by
   whoever next owns that file.
 - **Mock fixtures.** The RPC lane ships none; `NEXT_PUBLIC_HR_MOCK=1` fails loudly rather than
@@ -184,4 +188,11 @@ divergence banner.
   upcoming" separate doors (they shared one before); `submittable` / `blocker` on the preview
   stop a costless free-week span at the form instead of at submit. Both mapped from the live
   bodies rather than from the description — which is how the `counts_toward` branch that
-  disagrees with `hr.leave_figures` was found (see Known gaps).
+  disagreed with `hr.leave_figures` was found.
+- **2026-08-27** — The lane ruled for the identity and fixed `hr.leave_figures` (`hr_l5_12`):
+  a past-dated approved request now counts toward `used_taken` on BOTH sides, so the door and
+  the number are the same set. Re-verified live against both `prosrc`s and against the
+  migration's self-proof; the Known-gap entry is retired and the property is now LAW 12. No
+  client change was needed — the filter and the two separate figure doors were correct as
+  built; only the comments that asserted the divergence were rewritten, since a stale comment
+  claiming a disagreement that no longer exists is the same defect as a stale doc.

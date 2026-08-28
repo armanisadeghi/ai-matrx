@@ -39,7 +39,9 @@ export type LeaveViewerRung = "self" | "delegated";
  * other entry kind — and on a `usage` entry whose request is denied, cancelled or still
  * submitted.
  *
- * 🚨 IT IS THE SERVER'S MARK, NOT A REPRODUCTION OF THE FIGURE — SEE `LeaveLedgerView`.
+ * It is the server's mark and the client never re-derives it. Since `hr_l5_12` the mark and
+ * `hr.leave_figures`' two predicates describe the SAME set, and the migration's own self-proof
+ * fails if either side is edited without the other.
  */
 export type LeaveCountsToward = "used_taken" | "approved_upcoming";
 
