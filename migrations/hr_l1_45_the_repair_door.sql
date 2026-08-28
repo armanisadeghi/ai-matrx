@@ -69,8 +69,3 @@ begin
 end $fn$;
 
 grant execute on function public.hr_employee_grant_missing_membership(uuid) to authenticated;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_45_the_repair_door.sql',
-        md5('hr_l1_45_the_repair_door'), now(), 0)
-on conflict do nothing;

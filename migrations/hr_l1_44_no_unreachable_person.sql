@@ -87,8 +87,3 @@ values ('public', 'hr_employee_create', 'hr_l1_44_no_unreachable_person.sql',
         || 'without the guard it manufactures a person who can sign in, is on the roster, and '
         || 'has no door left to reach HR — hr_employee_invite refuses them as already signing in.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_44_no_unreachable_person.sql',
-        md5('hr_l1_44_no_unreachable_person'), now(), 0)
-on conflict do nothing;
