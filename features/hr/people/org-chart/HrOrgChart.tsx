@@ -71,6 +71,7 @@ import type {
 } from "../../types";
 import { formatFullDate } from "../shared/HrStatusChip";
 import { HrWorkerClassChip } from "../shared/HrWorkerClassChip";
+import { HrEmployeePhoto } from "../../shared/HrEmployeePhoto";
 import { downloadOrgChartCsv, orgChartExportName } from "./orgChartExport";
 import {
   LEVEL_GAP_Y,
@@ -450,6 +451,9 @@ export function HrOrgChart() {
                       department={node.department}
                       workerClass={node.worker_class}
                       nameWithheld={isWithheld(node)}
+                      // Belt and braces: the door already nulls this for a
+                      // withheld node, and a face is not a thing to leak twice.
+                      photoFileId={isWithheld(node) ? null : node.photo_file_id}
                       statementAuthored={withheldLabel(node).authored}
                       // No door for a withheld node — see `ChartNode.href`.
                       href={
@@ -596,6 +600,25 @@ function ChartNode(props: {
   /** True when `name` is a disclosure statement rather than somebody's name. */
   nameWithheld: boolean;
   /**
+   * 🚨 THE CURRENT DIRECTORY PHOTO — AND NULL FOR A WITHHELD NODE.
+   *
+   * SPEC-EMPLOYEES §5.2 (amended 2026-08-28) names the photo on the chart: the
+   * chart is Directory-tier data and SPEC-ACCESS §3.1's directory contract
+   * already discloses the photo, so rendering it adds no disclosure.
+   *
+   * It is deliberately NOT as-of scoped. §5.2's as-of applies to POSITION facts —
+   * who reported to whom on a date — and a photo identifies the PERSON, not the
+   * date; showing a historical chart with today's faces is correct, and there is
+   * no photo history to show even if it were not.
+   *
+   * The door already ties this to the name (`case when sup.nm is not null then
+   * e.photo_file_id end`), so a withheld node arrives with none. This is passed
+   * null again at the call site anyway: a face identifies somebody far more than
+   * a name does, and this is the one node where that must not happen twice by
+   * accident.
+   */
+  photoFileId: string | null;
+  /**
    * True when the statement is the ORGANIZATION'S OWN WORDS. False when it is this
    * app's fallback, which must be styled so it cannot be read as the employer's.
    */
@@ -625,6 +648,15 @@ function ChartNode(props: {
       }}
     >
       <div className="flex min-w-0 items-center gap-1">
+        {/* Absent on a withheld node — see `photoFileId`. */}
+        {props.nameWithheld ? null : (
+          <HrEmployeePhoto
+            photoFileId={props.photoFileId}
+            name={props.name}
+            className="h-7 w-7"
+            textClassName="text-[0.625rem]"
+          />
+        )}
         {props.href ? (
           <Link
             href={props.href}
