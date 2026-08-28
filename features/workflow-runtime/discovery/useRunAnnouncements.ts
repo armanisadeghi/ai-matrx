@@ -101,7 +101,9 @@ export function useRunAnnouncements(handlers: RunAnnouncementHandlers): void {
         // Read the token from the store at connect time, never from this
         // effect's closure — a refresh between reconnects must reach the wire.
         const fresh = selectAccessToken(store.getState());
-        return fresh ? { Authorization: `Bearer ${fresh}` } : {};
+        const headers: Record<string, string> = {};
+        if (fresh) headers.Authorization = `Bearer ${fresh}`;
+        return headers;
       });
     }
 

@@ -19,13 +19,6 @@
  * Pure — no React, no Redux, no fetch.
  */
 
-import type { components } from "@/types/python-generated/api-types";
-
-/** The wire rows, straight from the generated OpenAPI schema — never mirrored. */
-export type WaitingRunWire = components["schemas"]["WaitingRun"];
-export type WaitingSnapshotWire = components["schemas"]["WaitingSnapshot"];
-export type WaitingGapWire = components["schemas"]["WaitingGap"];
-
 /** One missing input on an `awaiting_input` park. */
 export interface WaitingGap {
   name: string;
