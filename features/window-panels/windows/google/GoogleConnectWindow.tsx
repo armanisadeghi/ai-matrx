@@ -25,11 +25,15 @@ import {
   Mail,
   Table2,
 } from "lucide-react";
+import { GoogleDrive } from "@/components/icons/brand-icons";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
-import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
+import {
+  isGoogleAuthorizationCancelled,
+  useGoogleAPI,
+} from "@/providers/google-provider/GoogleApiProvider";
 import {
   GOOGLE_WORKSPACE_FILE_SCOPES,
   GOOGLE_WORKSPACE_SEND_SCOPES,
@@ -40,9 +44,14 @@ import {
   useGoogleConnectionInventory,
 } from "@/features/marketing/google/hooks";
 import { registerSelectedGoogleFile } from "@/features/google-workspace/service";
-import { pickGoogleWorkspaceFile } from "@/lib/googlePicker";
+import {
+  pickGoogleDriveFiles,
+  pickGoogleWorkspaceFile,
+} from "@/lib/googlePicker";
 import type { SelectedGoogleFile } from "@/features/google-workspace/types";
 import { extractErrorMessage } from "@/utils/errors";
+import { materializeGoogleDriveFiles } from "@/features/google-workspace/import/materializeGoogleDriveFile";
+import { emitGoogleConnectEvent } from "./callbacks";
 
 const WINDOW_ID = "google-connect-window";
 const OVERLAY_ID = "googleConnectWindow" as const;
@@ -54,6 +63,8 @@ export interface GoogleConnectWindowProps {
   onFilesPicked?: (files: SelectedGoogleFile[]) => void;
   /** Optional one-line reason, e.g. "to attach a doc to this message". */
   reason?: string | null;
+  mode?: "workspace" | "drive-import";
+  callbackGroupId?: string | null;
 }
 
 export function GoogleConnectWindow(props: GoogleConnectWindowProps) {
@@ -70,6 +81,8 @@ function GoogleConnectWindowBody({
   onClose,
   onFilesPicked,
   reason,
+  mode = "workspace",
+  callbackGroupId,
 }: GoogleConnectWindowProps) {
   const google = useGoogleAPI();
   const connectGoogle = useConnectGoogle();
@@ -106,6 +119,10 @@ function GoogleConnectWindowBody({
       try {
         await work();
       } catch (cause) {
+        if (isGoogleAuthorizationCancelled(cause)) {
+          toast.info("Google authorization cancelled");
+          return;
+        }
         toast.error(extractErrorMessage(cause));
       } finally {
         setBusy(null);
@@ -135,6 +152,11 @@ function GoogleConnectWindowBody({
       toast.success("Email sending enabled.");
     });
 
+  const closeWindow = () => {
+    emitGoogleConnectEvent(callbackGroupId, { type: "window-close" });
+    onClose();
+  };
+
   const chooseFile = () =>
     void run("pick", async () => {
       if (!connection) return;
@@ -144,6 +166,28 @@ function GoogleConnectWindowBody({
       );
       if (!accessToken) {
         throw new Error("Google did not grant access to choose a file.");
+      }
+      if (mode === "drive-import") {
+        const picked = await pickGoogleDriveFiles(accessToken);
+        if (!picked?.length) return;
+        const result = await materializeGoogleDriveFiles(accessToken, picked);
+        if (!result.files.length) {
+          throw new Error(
+            result.failures[0]?.error ?? "No selected Google Drive file could be imported.",
+          );
+        }
+        emitGoogleConnectEvent(callbackGroupId, {
+          type: "drive-imported",
+          files: result.files,
+          failures: result.failures,
+        });
+        toast.success(
+          result.files.length === 1
+            ? `${result.files[0]?.name ?? "Google Drive file"} is ready to import.`
+            : `${result.files.length} Google Drive files are ready to import.`,
+        );
+        onClose();
+        return;
       }
       const picked = await pickGoogleWorkspaceFile(accessToken);
       if (!picked) return;
@@ -160,11 +204,15 @@ function GoogleConnectWindowBody({
     <WindowPanel
       id={WINDOW_ID}
       overlayId={OVERLAY_ID}
-      onClose={onClose}
+      onClose={closeWindow}
       titleNode={
         <span className="flex items-center gap-1.5">
-          <FileText className="h-3.5 w-3.5 text-primary" />
-          Google
+          {mode === "drive-import" ? (
+            <GoogleDrive className="h-3.5 w-3.5 text-primary" />
+          ) : (
+            <FileText className="h-3.5 w-3.5 text-primary" />
+          )}
+          {mode === "drive-import" ? "Import from Google Drive" : "Google"}
         </span>
       }
       width={420}
@@ -188,7 +236,9 @@ function GoogleConnectWindowBody({
             <p className="text-sm text-foreground">
               {reason
                 ? `Connect Google ${reason}.`
-                : "Connect Google and AI Matrx can work with the docs and sheets you choose."}{" "}
+                : mode === "drive-import"
+                  ? "Connect Google to import the Drive files you choose."
+                  : "Connect Google and AI Matrx can work with the docs and sheets you choose."}{" "}
               <span className="text-muted-foreground">
                 Nothing else in your Drive.
               </span>
@@ -212,10 +262,16 @@ function GoogleConnectWindowBody({
               onClick={chooseFile}
               disabled={busy === "pick"}
             >
-              {busy === "pick" ? "Opening Google…" : "Choose a Doc or Sheet"}
+              {busy === "pick"
+                ? mode === "drive-import"
+                  ? "Importing from Google…"
+                  : "Opening Google…"
+                : mode === "drive-import"
+                  ? "Choose files to import"
+                  : "Choose a Doc or Sheet"}
             </Button>
 
-            {files.length ? (
+            {mode === "workspace" && files.length ? (
               <div className="overflow-hidden rounded-md border border-border">
                 {files.map((file) => {
                   const isSheet = file.resource_type === "google_spreadsheet";
@@ -251,14 +307,14 @@ function GoogleConnectWindowBody({
                   );
                 })}
               </div>
-            ) : (
+            ) : mode === "workspace" ? (
               <p className="text-xs text-muted-foreground">
                 No files chosen yet. Pick one and it stays available to you and
                 your agents.
               </p>
             )}
 
-            {!canSend ? (
+            {mode === "workspace" && !canSend ? (
               <div className="flex flex-col gap-1.5 rounded-md border border-border bg-muted/30 p-2.5">
                 <div className="flex items-center gap-1.5 text-sm text-foreground">
                   <Mail className="h-4 w-4 text-sky-600 dark:text-sky-400" />

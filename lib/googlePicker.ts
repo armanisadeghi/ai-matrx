@@ -1,4 +1,14 @@
-/** Minimal typed Google Picker loader for explicit Doc/Sheet selection. */
+/**
+ * Canonical typed Google Picker loader.
+ *
+ * Two deliberate modes share this one implementation:
+ * - Workspace mode selects one Doc/Sheet for live Google operations.
+ * - Drive-import mode selects one or more non-folder files whose bytes will be
+ *   copied into Matrx Files.
+ *
+ * Both stay inside the per-file `drive.file` permission. No mode lists Drive
+ * through our own API or broadens OAuth scope.
+ */
 
 const PICKER_SCRIPT = "https://apis.google.com/js/api.js";
 const DOCUMENT_MIME_TYPE = "application/vnd.google-apps.document";
@@ -19,6 +29,7 @@ interface GooglePickerInstance {
 interface GooglePickerBuilder {
   addView(view: GooglePickerView): GooglePickerBuilder;
   build(): GooglePickerInstance;
+  enableFeature(value: string): GooglePickerBuilder;
   setAppId(value: string): GooglePickerBuilder;
   setCallback(callback: (data: unknown) => void): GooglePickerBuilder;
   setDeveloperKey(value: string): GooglePickerBuilder;
@@ -31,6 +42,7 @@ export interface GooglePickerNamespace {
   DocsView: new (viewId: string) => GooglePickerView;
   PickerBuilder: new () => GooglePickerBuilder;
   DocsViewMode: { LIST: string };
+  Feature: { MULTISELECT_ENABLED: string };
   ViewId: { DOCS: string };
 }
 
@@ -46,11 +58,15 @@ export interface GooglePlatformApi {
   ): void;
 }
 
-export interface PickedGoogleFile {
+export interface PickedGoogleDriveFile {
   id: string;
   name: string;
-  mimeType: typeof DOCUMENT_MIME_TYPE | typeof SPREADSHEET_MIME_TYPE;
+  mimeType: string;
   url: string | null;
+}
+
+export interface PickedGoogleFile extends PickedGoogleDriveFile {
+  mimeType: typeof DOCUMENT_MIME_TYPE | typeof SPREADSHEET_MIME_TYPE;
 }
 
 export interface GooglePickerOptions {
@@ -108,23 +124,24 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parsePickedFile(data: unknown): PickedGoogleFile | null | undefined {
+function parsePickedFiles(
+  data: unknown,
+): PickedGoogleDriveFile[] | null | undefined {
   if (!isRecord(data)) return undefined;
   const record = data;
   const action = textField(record, "action");
   if (action === "cancel") return null;
   if (action !== "picked" || !Array.isArray(record.docs)) return undefined;
-  const first = record.docs[0];
-  if (!isRecord(first)) return undefined;
-  const document = first;
-  const id = textField(document, "id");
-  const name = textField(document, "name");
-  const mimeType = textField(document, "mimeType");
-  if (!id || !name) return undefined;
-  if (mimeType !== DOCUMENT_MIME_TYPE && mimeType !== SPREADSHEET_MIME_TYPE) {
-    throw new Error("Choose a Google Doc or Google Sheet.");
+  const picked: PickedGoogleDriveFile[] = [];
+  for (const candidate of record.docs) {
+    if (!isRecord(candidate)) continue;
+    const id = textField(candidate, "id");
+    const name = textField(candidate, "name");
+    const mimeType = textField(candidate, "mimeType");
+    if (!id || !name || !mimeType) continue;
+    picked.push({ id, name, mimeType, url: textField(candidate, "url") });
   }
-  return { id, name, mimeType, url: textField(document, "url") };
+  return picked.length > 0 ? picked : undefined;
 }
 
 function projectNumber(clientId: string): string {
@@ -163,13 +180,70 @@ export async function pickGoogleWorkspaceFile(
       .addView(view)
       .setCallback((data) => {
         try {
-          const result = parsePickedFile(data);
-          if (result !== undefined) resolve(result);
+          const result = parsePickedFiles(data);
+          if (result === null) {
+            resolve(null);
+            return;
+          }
+          const first = result?.[0];
+          if (!first) return;
+          if (
+            first.mimeType !== DOCUMENT_MIME_TYPE &&
+            first.mimeType !== SPREADSHEET_MIME_TYPE
+          ) {
+            throw new Error("Choose a Google Doc or Google Sheet.");
+          }
+          resolve({ ...first, mimeType: first.mimeType });
         } catch (error: unknown) {
           reject(
             error instanceof Error
               ? error
               : new Error("File selection failed."),
+          );
+        }
+      })
+      .build();
+    instance.setVisible(true);
+  });
+}
+
+/**
+ * Let the user explicitly share ordinary Drive files with AI Matrx for import.
+ * Folders cannot be selected. Unsupported Google-native types are rejected by
+ * the materializer with an actionable explanation after selection.
+ */
+export async function pickGoogleDriveFiles(
+  accessToken: string,
+): Promise<PickedGoogleDriveFile[] | null> {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  if (!apiKey || !clientId) {
+    throw new Error("Google Picker is not configured on this deployment.");
+  }
+  const picker = await loadPickerNamespace();
+  const view = new picker.DocsView(picker.ViewId.DOCS)
+    .setIncludeFolders(false)
+    .setSelectFolderEnabled(false)
+    .setMode(picker.DocsViewMode.LIST);
+
+  return new Promise<PickedGoogleDriveFile[] | null>((resolve, reject) => {
+    const instance = new picker.PickerBuilder()
+      .setAppId(projectNumber(clientId))
+      .setDeveloperKey(apiKey)
+      .setOAuthToken(accessToken)
+      .setOrigin(window.location.origin)
+      .setTitle("Choose files to import")
+      .enableFeature(picker.Feature.MULTISELECT_ENABLED)
+      .addView(view)
+      .setCallback((data) => {
+        try {
+          const result = parsePickedFiles(data);
+          if (result !== undefined) resolve(result);
+        } catch (error: unknown) {
+          reject(
+            error instanceof Error
+              ? error
+              : new Error("Google Drive selection failed."),
           );
         }
       })

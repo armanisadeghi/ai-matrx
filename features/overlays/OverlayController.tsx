@@ -2458,6 +2458,14 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "googleConnectWindow" }))
             }
             reason={typeof data?.reason === "string" ? data.reason : null}
+            mode={
+              data?.mode === "drive-import" ? "drive-import" : "workspace"
+            }
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
           />
         );
       })()}

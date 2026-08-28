@@ -14,6 +14,7 @@ import {
     FaTrello,
     FaGitlab,
     FaGoogle,
+    FaGoogleDrive,
 } from "react-icons/fa6";
 import { SiFigma } from "react-icons/si";
 
@@ -54,3 +55,4 @@ export const Trello = asLucideIcon(FaTrello, "Trello");
 export const Gitlab = asLucideIcon(FaGitlab, "Gitlab");
 export const Figma = asLucideIcon(SiFigma, "Figma");
 export const Google = asLucideIcon(FaGoogle, "Google");
+export const GoogleDrive = asLucideIcon(FaGoogleDrive, "GoogleDrive");
