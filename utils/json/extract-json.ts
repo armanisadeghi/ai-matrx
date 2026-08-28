@@ -12,6 +12,7 @@ import {
   computeClosingSequence,
   type FencedBlock,
 } from "./json-structural";
+import JSON5 from "json5";
 
 // =============================================================================
 // Public Types
@@ -76,7 +77,14 @@ function tryRepairAndParse(
   const result2 = tryParse(repaired);
   if (result2 !== undefined) return { value: result2, repaired: true };
 
-  return undefined;
+  // Model-generated "JSON" frequently arrives as JSON5: single-quoted
+  // strings, unquoted keys, or comments. Keep this at the one shared repair
+  // boundary so every structured-output consumer gets the same recovery.
+  try {
+    return { value: JSON5.parse(text), repaired: true };
+  } catch {
+    return undefined;
+  }
 }
 
 function classifyValue(value: unknown): JsonValueType {

@@ -39,7 +39,7 @@ for await (const chunk of stream) {
 const { data } = scanner.finalize(); // optional final pass
 ```
 
-`scanText` / `TextScanner` accept JSON in any form — fenced (```` ```json...``` ````), bare (`{...}` / `[...]`), or whole-string. Detection is order-preserving and you can have many JSON values in one input. Non-JSON prose is returned untouched in `text`.
+`scanText` / `TextScanner` accept JSON in any form — fenced (` ```json...``` `), bare (`{...}` / `[...]`), or whole-string. Detection is order-preserving and you can have many JSON values in one input. Non-JSON prose is returned untouched in `text`.
 
 ---
 
@@ -58,8 +58,8 @@ await processStream({
   // ... other args
   jsonExtraction: {
     enabled: true,
-    fuzzyOnFinalize: true,  // bare blocks + whole-string on final pass
-    maxResults: 5,          // optional cap
+    fuzzyOnFinalize: true, // bare blocks + whole-string on final pass
+    maxResults: 5, // optional cap
   },
 });
 ```
@@ -97,7 +97,11 @@ const isComplete = useAppSelector(selectJsonExtractionComplete(requestId));
 Import directly from `@/utils/json`:
 
 ```ts
-import { extractAllJson, extractFirstJson, extractFirstObject } from "@/utils/json";
+import {
+  extractAllJson,
+  extractFirstJson,
+  extractFirstObject,
+} from "@/utils/json";
 
 // Get all JSON from a markdown string
 const results = extractAllJson(markdownText, { allowFuzzy: true });
@@ -110,7 +114,9 @@ if (first) {
 
 // Quick boolean check
 import { containsJson } from "@/utils/json";
-if (containsJson(text)) { /* ... */ }
+if (containsJson(text)) {
+  /* ... */
+}
 ```
 
 ### Streaming without Redux (standalone component)
@@ -132,7 +138,7 @@ append(chunk);
 finalize();
 
 // Read results:
-state.results.forEach(r => console.log(r.value));
+state.results.forEach((r) => console.log(r.value));
 ```
 
 Or use the class directly for non-React contexts:
@@ -150,20 +156,20 @@ const final = tracker.finalize();
 
 ## ExtractionOptions Reference
 
-| Option | Default | Effect |
-|--------|---------|--------|
-| `isStreaming` | `false` | When `true`, runs the streaming auto-closer so trailing partial JSON still parses (used by `StreamingJsonTracker` and `TextScanner`) |
-| `allowFuzzy` | `false` | Enables bare-block detection (raw `{...}`/`[...]`), inline scanning, and whole-string fallback. Defaulted to `true` by the higher-level `scanText` façade |
-| `repairEnabled` | `true` | Fix trailing commas, Python `True`/`False`/`None` |
-| `maxResults` | `Infinity` | Cap the number of extracted values |
+| Option          | Default    | Effect                                                                                                                                                    |
+| --------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `isStreaming`   | `false`    | When `true`, runs the streaming auto-closer so trailing partial JSON still parses (used by `StreamingJsonTracker` and `TextScanner`)                      |
+| `allowFuzzy`    | `false`    | Enables bare-block detection (raw `{...}`/`[...]`), inline scanning, and whole-string fallback. Defaulted to `true` by the higher-level `scanText` façade |
+| `repairEnabled` | `true`     | Fix trailing commas, Python `True`/`False`/`None`, and JSON5-style model output (single quotes, unquoted keys, comments)                                  |
+| `maxResults`    | `Infinity` | Cap the number of extracted values                                                                                                                        |
 
 ### ScanOptions Reference (high-level façade)
 
-| Option | Default | Effect |
-|--------|---------|--------|
-| `allowBare` | `true` | Detect bare JSON in addition to fenced blocks. Set to `false` to restrict to fenced output |
-| `repairEnabled` | `true` | Same as above |
-| `maxResults` | `Infinity` | Same as above |
+| Option          | Default    | Effect                                                                                     |
+| --------------- | ---------- | ------------------------------------------------------------------------------------------ |
+| `allowBare`     | `true`     | Detect bare JSON in addition to fenced blocks. Set to `false` to restrict to fenced output |
+| `repairEnabled` | `true`     | Same as above                                                                              |
+| `maxResults`    | `Infinity` | Same as above                                                                              |
 
 ---
 
@@ -172,24 +178,33 @@ const final = tracker.finalize();
 ### Step 1: Replace the import
 
 Old:
+
 ```ts
 import { extractJsonFromText } from "@/features/agents/utils/json-extraction";
-import { extractJsonBlock, extractNonJsonContent } from "@/features/prompts/utils/json-extraction";
+import {
+  extractJsonBlock,
+  extractNonJsonContent,
+} from "@/features/prompts/utils/json-extraction";
 ```
 
 New:
+
 ```ts
-import { extractFirstJson, extractAllJson, findAllFencedBlocks } from "@/utils/json";
+import {
+  extractFirstJson,
+  extractAllJson,
+  findAllFencedBlocks,
+} from "@/utils/json";
 ```
 
 ### Step 2: Swap the call
 
-| Old call | New equivalent |
-|----------|----------------|
-| `extractJsonFromText(text)` → `{ success, data }` | `extractFirstJson(text)` → `{ value, isComplete, ... }` or `null` |
-| `extractJsonBlock(text)` → raw string | `findAllFencedBlocks(text)[0]?.content` |
+| Old call                                            | New equivalent                                                           |
+| --------------------------------------------------- | ------------------------------------------------------------------------ |
+| `extractJsonFromText(text)` → `{ success, data }`   | `extractFirstJson(text)` → `{ value, isComplete, ... }` or `null`        |
+| `extractJsonBlock(text)` → raw string               | `findAllFencedBlocks(text)[0]?.content`                                  |
 | `extractNonJsonContent(text)` → `{ before, after }` | Use `findAllFencedBlocks(text)` and slice around `fenceStart`/`fenceEnd` |
-| `parsePartialJson(text)` (progressive) | `extractAllJson(text, { isStreaming: true })` |
+| `parsePartialJson(text)` (progressive)              | `extractAllJson(text, { isStreaming: true })`                            |
 
 ### Step 3: Keep your domain logic separate
 

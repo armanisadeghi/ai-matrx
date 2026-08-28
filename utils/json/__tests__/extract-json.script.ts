@@ -176,6 +176,18 @@ section("extractAllJson — repair");
   assert((results[0].value as any).value === null, "None -> null");
 }
 
+{
+  const text =
+    "```json\n{name: 'Agent helper', goals: ['research',], /* generated note */}\n```";
+  const results = extractAllJson(text);
+  assert(results.length === 1, "JSON5 model output repaired");
+  assert(results[0].repairApplied === true, "JSON5 repair flagged");
+  assert(
+    (results[0].value as any).name === "Agent helper",
+    "JSON5 object value preserved",
+  );
+}
+
 section("extractAllJson — streaming mode");
 
 {
