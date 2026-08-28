@@ -72896,6 +72896,28 @@
             ],
             "title": "Agent Version Id"
           },
+          "holder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Id"
+          },
+          "holder_version_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Holder Version Id"
+          },
           "use_latest": {
             "type": "boolean",
             "title": "Use Latest"

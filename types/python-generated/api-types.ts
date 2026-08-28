@@ -28184,6 +28184,10 @@ export interface components {
             agent_id?: string | null;
             /** Agent Version Id */
             agent_version_id?: string | null;
+            /** Holder Id */
+            holder_id?: string | null;
+            /** Holder Version Id */
+            holder_version_id?: string | null;
             /** Use Latest */
             use_latest: boolean;
             /** Config Overrides */
