@@ -13100,6 +13100,7 @@ export type Database = {
           sample_data: Json | null
           updated_at: string
           updated_by: string | null
+          variants: Json
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
@@ -13124,6 +13125,7 @@ export type Database = {
           sample_data?: Json | null
           updated_at?: string
           updated_by?: string | null
+          variants?: Json
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -13148,6 +13150,7 @@ export type Database = {
           sample_data?: Json | null
           updated_at?: string
           updated_by?: string | null
+          variants?: Json
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -43861,9 +43864,9 @@ export type Database = {
         Args: never
         Returns: {
           consequence: string
-          declared_in: string
+          declared_by: string
           event_key: string
-          exists_live: boolean
+          is_declared: boolean
         }[]
       }
       leave_policy_list: { Args: { p_organization_id: string }; Returns: Json }

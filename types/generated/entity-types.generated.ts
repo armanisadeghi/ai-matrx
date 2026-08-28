@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 598 active entity tokens. A token here is FK-valid for
+// 602 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -374,6 +374,9 @@ export type EntityTypeToken =
   | "library_doc"
   | "mandate"
   | "mandate_binding"
+  | "mandate_binding_new"
+  | "mandate_definition_new"
+  | "mandate_treatment_new"
   | "marketing_initiative"
   | "masterwork_corpus_item"
   | "masterwork_run"
@@ -423,6 +426,7 @@ export type EntityTypeToken =
   | "product_capture_file"
   | "product_capture_item"
   | "project"
+  | "provision_new"
   | "purpose"
   | "quiz_session"
   | "rag_ingest_run"
@@ -1347,6 +1351,9 @@ export type ScopeableEntityToken =
   | "library_doc"
   | "mandate"
   | "mandate_binding"
+  | "mandate_binding_new"
+  | "mandate_definition_new"
+  | "mandate_treatment_new"
   | "marketing_initiative"
   | "masterwork_corpus_item"
   | "masterwork_run"
@@ -1396,6 +1403,7 @@ export type ScopeableEntityToken =
   | "product_capture_file"
   | "product_capture_item"
   | "project"
+  | "provision_new"
   | "purpose"
   | "quiz_session"
   | "rag_ingest_run"
@@ -1675,6 +1683,8 @@ export type ListedEntityToken =
   | "learn_doc"
   | "mandate"
   | "mandate_binding"
+  | "mandate_binding_new"
+  | "mandate_definition_new"
   | "marketing_initiative"
   | "ops_proof_check"
   | "ops_proof_scenario"
@@ -2040,6 +2050,9 @@ export const ENTITY_TYPE_METADATA = {
   "library_doc": { token: "library_doc", schema: "rag", table: "library_docs", label: "Library Document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "mandate": { token: "mandate", schema: "agent", table: "mandate", label: "Mandate", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "mandate_binding": { token: "mandate_binding", schema: "agent", table: "mandate_binding", label: "Mandate Binding", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "mandate_binding_new": { token: "mandate_binding_new", schema: "mandate", table: "binding", label: "Mandate Binding (new)", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "mandate_definition_new": { token: "mandate_definition_new", schema: "mandate", table: "definition", label: "Mandate Definition (new)", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "mandate_treatment_new": { token: "mandate_treatment_new", schema: "mandate", table: "treatment", label: "Mandate Treatment (new)", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "marketing_initiative": { token: "marketing_initiative", schema: "marketing", table: "initiative", label: "Initiative", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "masterwork_corpus_item": { token: "masterwork_corpus_item", schema: "platform", table: "masterwork_corpus_item", label: "Masterwork Corpus Piece", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "masterwork_run": { token: "masterwork_run", schema: "platform", table: "masterwork_run", label: "Masterwork Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Masterwork", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2089,6 +2102,7 @@ export const ENTITY_TYPE_METADATA = {
   "product_capture_file": { token: "product_capture_file", schema: "workbench", table: "product_capture_file", label: "Product Capture File", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "product_capture_item": { token: "product_capture_item", schema: "workbench", table: "product_capture_item", label: "Product Capture Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces", referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
+  "provision_new": { token: "provision_new", schema: "mandate", table: "provision", label: "Mandate Provision (new)", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "purpose": { token: "purpose", schema: "platform", table: "purpose", label: "Purpose", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "quiz_session": { token: "quiz_session", schema: "education", table: "quiz_sessions", label: "Quiz Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
   "rag_ingest_run": { token: "rag_ingest_run", schema: "rag", table: "ingest_run", label: "Ingest Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2642,6 +2656,9 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "library_doc",
   "mandate",
   "mandate_binding",
+  "mandate_binding_new",
+  "mandate_definition_new",
+  "mandate_treatment_new",
   "marketing_initiative",
   "masterwork_corpus_item",
   "masterwork_run",
@@ -2691,6 +2708,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "product_capture_file",
   "product_capture_item",
   "project",
+  "provision_new",
   "purpose",
   "quiz_session",
   "rag_ingest_run",
