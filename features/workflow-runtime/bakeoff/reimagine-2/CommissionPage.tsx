@@ -17,7 +17,7 @@
  * PRESENTATION ONLY — every byte of data flows through the canonical
  * workflow-runtime layer (adoptWorkflowRun via useWorkflowRun, the memoized
  * selectors, InvocationBody, DbEmitRenderer, activity-copy, run-status,
- * deriveRunForm + RunFormFieldControl, useWorkflowRunControls).
+ * the served input surface + ServedFieldControl, useWorkflowRunControls).
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -45,12 +45,22 @@ import {
   fetchWorkflowDefinition,
 } from "../../surface/service";
 import {
-  deriveRunForm,
-  missingRequiredFields,
-  seedRunFormValues,
-  type RunFormSection,
-} from "../../surface/run-form";
-import { RunFormFieldControl } from "../../components/RunFormFieldControl";
+  EMPTY_SERVED_INPUTS,
+  ServedFieldControl,
+  ServedFormScream,
+  useServedInputKinds,
+  useServedInputValues,
+} from "../../served-form/ServedInputFields";
+import {
+  buildSubmission,
+  unsatisfiedServedInputs,
+  type ServedSubmission,
+} from "../../served-form/served-input";
+import {
+  useServedRunForm,
+  useServedRunStarter,
+  type ServedRunFormState,
+} from "../../served-form/useServedRunForm";
 import {
   deliverableSteps,
   describeWorkflowSteps,
@@ -186,7 +196,10 @@ export function CommissionPage({ definitionId }: { definitionId: string }) {
   const focusStep = visibleSteps.find((s) => s.nodeId === focusNodeId) ?? null;
 
   // ── Controls ───────────────────────────────────────────────────────────
-  const { startRun, cancel, starting } = useWorkflowRunControls();
+  const { cancel } = useWorkflowRunControls();
+  // THE compiled input surface — served, never re-derived from the graph.
+  const served = useServedRunForm(definitionId);
+  const { start: startServedRun, starting } = useServedRunStarter();
 
   if (defState === "loading" || (runParam && runProbe === "probing")) {
     return (
@@ -317,13 +330,14 @@ export function CommissionPage({ definitionId }: { definitionId: string }) {
             {runId === null ? (
               <IntakeBrief
                 workflow={workflow!}
+                state={served}
                 deliverables={deliverables}
                 starting={starting}
-                onStart={async (nodeInputs) => {
-                  const newRunId = await startRun({
+                onStart={async (submission) => {
+                  const newRunId = await startServedRun(
                     definitionId,
-                    nodeInputs,
-                  });
+                    submission,
+                  );
                   if (newRunId) {
                     router.replace(`${BASE}/${definitionId}?run=${newRunId}`);
                   }
@@ -419,25 +433,25 @@ function DeliveryVerdict({
  */
 function IntakeBrief({
   workflow,
+  state,
   deliverables,
   starting,
   onStart,
 }: {
   workflow: LoadedWorkflow;
+  /** The served input surface, fetched by the page. */
+  state: ServedRunFormState;
   deliverables: RunStepPresentation[];
   starting: boolean;
-  onStart: (
-    nodeInputs: Record<string, Record<string, unknown>>,
-  ) => Promise<void>;
+  onStart: (submission: ServedSubmission) => Promise<void>;
 }) {
-  const sections: RunFormSection[] = useMemo(
-    () => deriveRunForm(workflow.definition),
-    [workflow],
+  const inputs =
+    state.status === "ready" ? state.form.inputs : EMPTY_SERVED_INPUTS;
+  const { values, touched, setValue } = useServedInputValues(inputs);
+  const { kinds, error: kindError } = useServedInputKinds(inputs);
+  const missing = unsatisfiedServedInputs(inputs, values, touched).map(
+    (i) => i.label,
   );
-  const [values, setValues] = useState<Record<string, Record<string, unknown>>>(
-    () => seedRunFormValues(sections),
-  );
-  const missing = missingRequiredFields(sections, values);
   const promiseNames = deliverables.map((s) =>
     s.outputKind ? humanizeKind(s.outputKind) : s.label,
   );
@@ -460,42 +474,55 @@ function IntakeBrief({
         </div>
       </header>
 
-      {sections.length > 0 ? (
-        <div className="mt-4 space-y-4">
-          {sections.map((section) => (
-            <fieldset key={section.nodeId} className="space-y-2.5">
-              <legend className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {section.title}
-              </legend>
-              {section.fields.map((field) => (
-                <label key={field.key} className="block">
-                  <span className="text-sm text-foreground">
-                    {field.label}
-                    {field.required ? (
-                      <span className="text-destructive"> *</span>
-                    ) : null}
-                  </span>
-                  {field.help ? (
-                    <span className="block text-xs text-muted-foreground">
-                      {field.help}
-                    </span>
-                  ) : null}
-                  <RunFormFieldControl
-                    field={field}
-                    value={values[section.nodeId]?.[field.key]}
-                    onChange={(v) =>
-                      setValues((prev) => ({
-                        ...prev,
-                        [section.nodeId]: {
-                          ...prev[section.nodeId],
-                          [field.key]: v,
-                        },
-                      }))
-                    }
-                  />
-                </label>
-              ))}
-            </fieldset>
+      {state.status === "error" ? (
+        <div className="mt-4">
+          <ServedFormScream
+            title="Could not load what this commission needs"
+            body={`${state.message} The brief is SERVED (GET /workflows/{id}/run-form) — without it there is nothing honest to ask for.`}
+          />
+        </div>
+      ) : null}
+      {state.status === "ready" && !state.form.surfaceServed ? (
+        <div className="mt-4">
+          <ServedFormScream
+            title="This backend serves no input surface"
+            body="The run-form response carried no `inputs` array, so the reachable server predates the compiled input surface."
+          />
+        </div>
+      ) : null}
+      {kindError ? (
+        <div className="mt-4">
+          <ServedFormScream title="Kind registry gap" body={kindError} />
+        </div>
+      ) : null}
+
+      {state.status === "loading" ? (
+        <div className="mt-4 space-y-2">
+          <div className="h-9 animate-pulse rounded-md bg-muted/50" />
+          <div className="h-9 animate-pulse rounded-md bg-muted/30" />
+        </div>
+      ) : inputs.length > 0 ? (
+        <div className="mt-4 space-y-2.5">
+          {inputs.map((input) => (
+            <label key={input.name} className="block">
+              <span className="text-sm text-foreground">
+                {input.label}
+                {input.sourcing === "optional" ? null : (
+                  <span className="text-destructive"> *</span>
+                )}
+              </span>
+              {input.help ? (
+                <span className="block text-xs text-muted-foreground">
+                  {input.help}
+                </span>
+              ) : null}
+              <ServedFieldControl
+                input={input}
+                kind={kinds[input.kind]}
+                value={values[input.name]}
+                onChange={(v) => setValue(input.name, v)}
+              />
+            </label>
           ))}
         </div>
       ) : (
@@ -508,7 +535,7 @@ function IntakeBrief({
         <button
           type="button"
           disabled={starting || missing.length > 0}
-          onClick={() => void onStart(values)}
+          onClick={() => void onStart(buildSubmission(inputs, values, touched))}
           className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           <Play className="h-4 w-4" />
