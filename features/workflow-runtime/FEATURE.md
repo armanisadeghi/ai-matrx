@@ -43,6 +43,7 @@ that is the exit-test surface.
 | Hooks | `hooks/useWorkflowRun.ts`, `hooks/useWorkflowRunControls.ts` | Adoption is refcounted per runId (two watchers share one adapter). Controls are the ONLY lifecycle verbs — start/pause/resume/cancel/answer-interrupt/retry/skip via `callApi`. |
 | **THE LIVE RUN EXPERIENCE** | `components/run/RunStage.tsx` | The surface a person actually watches, composed like the podcast studio: hero + promise → journey rail + activity feed → authored readouts → deliverables. Hoists the authored progress rails into the always-visible journey (`hideProgressRails`) and renders the failure/interrupt cards itself (`hideRunStatusCards`), so nothing is drawn twice. Falls back to `deriveDefaultSurfaceConfig` when a workflow has no authored surface. |
 | **The catalog** | `browse/` → `app/(core)/workflows/all/page.tsx` | `/workflows/all` on the CANONICAL entity-list shell (`lib/entity-list`) — not a bespoke grid. Config in `browse/listConfig.tsx`; rows from `public.wfx_list_scoped` read DIRECT via supabase-js (`browse/service.ts`), never through the Python server. Table-first with every column sorting AND filtering server-side, card + dense views, Mine / My Orgs / Shared / Public with true server counts, relevance-ranked search. ONE `ItemMenuConfig` builder (`browse/workflowActionRegistry.tsx`) feeds the table kebab, the card kebab, the dense-row kebab and right-click, so the three-drifting-action-lists failure that hit agents cannot happen here. |
+| **Discovery — the inbox + the runs lists** | `discovery/` → `app/(core)/workflows/{waiting,runs}/page.tsx`, `app/(core)/workflows/[id]/runs/page.tsx` | Census #38/#39. `/workflows/waiting` is THE "waiting on you" inbox over `GET /runs/waiting` — `interrupted` AND `awaiting_input` in one list (a surface listing one and not the other is wrong), every row opening its run. `/workflows/runs` + `/workflows/[id]/runs` are the runs lists over `GET /runs`, on the canonical `MatrxDataTable` over ONE bounded page. 🚨 **ONE announce subscription for all of them**: `useRunAnnouncements` refcounts a module-singleton `startAnnounceChannel` over `GET /runs/stream`, so four mounted surfaces share one socket — and **never Supabase Realtime**, since `workflow.run` is not in the publication (a Postgres-Changes subscription there delivers nothing and reports no error). Frames are ephemeral with no replay, so a listed run's status patches in place while anything else refetches, and every reconnect refetches the snapshot to close the hole. 🚨 **The inbox never answers anything** — a row opens the RUN, where `InterruptCard` and the resumable start form already live; a second answer form here would be a second renderer of the same question. Pure halves (`waiting.ts`, `runs.ts`) are tested; `waiting.ts`'s generated-schema aliases + `__tests__/waiting-contract.test.ts` are the tripwires that make a type regen against a stale production loud instead of silent. |
 | **The front door** | `app/(core)/workflows/page.tsx` → `features/auth/components/module-landing/landings/WorkflowsLanding.tsx` | `/workflows` is the PUBLIC marketing page for the product (module-landing-pages doctrine): a guest never hits a login wall, a signed-in visitor is redirected to `/workflows/all`. Built on the shared `<ModuleLanding>` — no hero clone — and registered in `MODULE_LANDING_DIRECTORY`, which is what puts it on `/features` and now, via `app/sitemap.xml/route.ts`, in the sitemap. The old placeholder's destination-preserving login bounce survives as the landing's `signInDestination` (`loginHref('/workflows/all')`). |
 | Catalog RPCs | `migrations/wfx_list_scoped.sql` | `wfx_list_scoped` / `wfx_list_scope_counts` / `wfx_list_facets` / `wfx_bucket_matches`, hand-written from the template in `lib/list-scope/FEATURE.md`. Owner column is `created_by` (agents use `user_id`); `iam.permissions.resource_type` is `'workflow'`. Relevance comes from `public.mtx_search_score` — the GENERIC scorer, not a fourth copy of `agx_search_score`: it reproduces agx's tiers exactly on the shared parity fixture (12/12 MATCH), with the per-feature extras passed as `p_extra_300` / `p_extra_100` arrays. |
 | **Sharing — the card** | `migrations/wfx_card.sql`, `migrations/wfx_duplicate.sql` | Workflows use the AGENT sharing model verbatim (Arman, 2026-08-20): **anything you can view, you may duplicate and run.** `workflow.card` is a view over the definition — the public face — gated by `card_visibility`, which is INDEPENDENT of the body's `visibility`. `wfx_duplicate_definition` / `wfx_duplicate_version` mirror `agx_duplicate_agent` / `agx_duplicate_version`, including the `iam.has_access_for(..., 'viewer')` gate; they carry no `p_as_system` because workflows have no builtin tier. The card is a PROJECTION of the workflow, not a second entity — `platform._enforce_entity_is_table` forbids registering a view as an entity, so there is **no card-only per-person grant**; broadcast reach is `card_visibility`. |
@@ -142,12 +143,11 @@ that is the exit-test surface.
   schedule, the timezone, or the default inputs. Changing any of those today
   means removing the trigger and making a new one (and for a webhook, minting a
   new secret). Widening that PATCH is the fix, and it is a server change.
-- **There is no per-workflow run-history surface.** `/workflows/runs/[runId]` opens ONE run, so
-  the catalog's Runs column is a plain count rather than a door: pointing "4 runs" at the single
-  most recent run would land the user somewhere the number did not promise. The Last run cell
-  beside it IS a real door to a real record, and the row menu carries "Open the last run". A
-  proper `/workflows/[id]/runs` list is the fix, and it is the one thing on this surface that
-  THE DOOR LAW still wants.
+- **The runs lists read ONE bounded page (100 rows) and sort/filter it locally.** `GET /runs`
+  has no server-side sort, filter or total, so the canonical table's column controls act on the
+  page it was given, not on the corpus. Correct for a discovery surface people scan; wrong the
+  day somebody needs run #400. The fix is a scoped runs RPC on the entity-list shell's contract,
+  and it is a server + SQL change, not a client one.
 - **`workflow.v_definition_catalog` no longer has a consumer.** The view existed so the old
   catalog could read step/run counts without shipping the `nodes`/`edges` jsonb;
   `wfx_list_scoped` computes the same facts from the same lateral, with scoping and filtering the
@@ -155,6 +155,24 @@ that is the exit-test surface.
   artifact with no runtime consumer is a decision for Arman, not something an agent retires.
 
 ## Change Log
+
+- 2026-08-28 — **Discovery exists as a surface (census #38/#39, Volley 6).** `discovery/`:
+  `/workflows/waiting` is THE "waiting on you" inbox over `GET /runs/waiting` — `interrupted`
+  and `awaiting_input` in ONE list, every row opening its run; `/workflows/runs` and
+  `/workflows/[id]/runs` are the runs lists over `GET /runs`. All three are live off ONE shared
+  `GET /runs/stream` subscription (`useRunAnnouncements` refcounts a module singleton — four
+  mounted surfaces, one socket), never Supabase Realtime: `workflow.run` is not in the
+  publication, so a Postgres-Changes subscription there delivers nothing and reports no error.
+  A status change on a listed run patches in place; anything else refetches, because an
+  ephemeral frame carries no row. The catalog's Runs count is finally a door, and the catalog
+  header carries the inbox badge — **silent at zero**, since a permanent "0 waiting" chip
+  trains people to stop seeing it. 🚨 **The inbox never answers anything**: a row opens the RUN,
+  where the interrupt card and the resumable start form already live. `awaiting_input` was in
+  the status union but in neither vocabulary map, so every surface that met one drew the idle
+  circle — fixed in `run-status.tsx`. Two tripwires guard the fresh `/runs/waiting` contract
+  against a type regen run against a not-yet-deployed production (it happened twice during this
+  build, and the second time the hook was stubbed out to compile): generated-schema aliases in
+  `discovery/waiting.ts` and `__tests__/waiting-contract.test.ts`.
 
 - 2026-08-28 — **The shipped run surface adopted the three proven contracts (Volley 5).**
   `RunStartForm` renders through `ServedRunForm` whenever `/run-form` serves a real input
