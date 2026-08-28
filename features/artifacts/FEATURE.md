@@ -40,3 +40,8 @@ directory must not get wrong.
 
 **Keep-docs-live:** a change to the discovery index's identity, ownership, or route surface updates
 the node's `STATE.md` in the same session.
+
+## Change log
+
+- 2026-08-27 — Bounded the dedicated library detail host for diagram workspace rendering so the
+  canonical full-height renderer receives a non-zero viewport.

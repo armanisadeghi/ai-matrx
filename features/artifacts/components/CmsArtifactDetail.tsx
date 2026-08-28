@@ -77,7 +77,7 @@ function CanvasItemPreview({ canvasItemId }: { canvasItemId: string }) {
   const data = contentObj?.data ?? contentObj;
   const metadata = contentObj?.metadata;
 
-  return (
+  const renderer = (
     <ArtifactRender
       canvasType={canvasType}
       mode="canvas"
@@ -86,6 +86,16 @@ function CanvasItemPreview({ canvasItemId }: { canvasItemId: string }) {
       artifactId={row.id}
     />
   );
+
+  // The diagram's canonical workspace renderer intentionally fills its host.
+  // The library detail card is not itself a bounded workspace, so give only
+  // that renderer a real viewport instead of allowing React Flow to mount at
+  // zero height.
+  return canvasType === "diagram" ? (
+    <div className="h-[70dvh] min-h-[420px] max-h-[720px] sm:min-h-[480px]">
+      {renderer}
+    </div>
+  ) : renderer;
 }
 
 const STATUS_VARIANT: Record<
