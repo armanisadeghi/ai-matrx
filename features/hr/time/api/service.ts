@@ -17,6 +17,9 @@
 
 "use client";
 
+import { supabase } from "@/utils/supabase/client";
+import { readAllRows } from "@/lib/supabase/readAllRows";
+
 import { callHrTimeRpc, type HrRpcOptions } from "./rpc";
 import {
   fromLivePeriodGrid,
@@ -300,13 +303,73 @@ export function correctPunches(
   punchIds: string[],
   newValues: Record<string, unknown>,
   reason: string,
+  /**
+   * The `hr_punch_correction_reason` category (hr_l3_97). §4.1 requires a reason FROM THE TAXONOMY
+   * *plus* free text, so the dialog requires this for a new correction. It stays OPTIONAL on this
+   * signature because the door defaults it to null and existing callers must keep working; the door
+   * refuses a category from any other dimension by name.
+   */
+  reasonCategoryId?: string | null,
   opts?: HrRpcOptions,
 ): Promise<PunchCorrectionResult> {
   return callHrTimeRpc<unknown>(
     "hr_punch_correct",
-    { p_punch_ids: punchIds, p_new_values: newValues, p_reason: reason },
+    {
+      p_punch_ids: punchIds,
+      p_new_values: newValues,
+      p_reason: reason,
+      p_category: reasonCategoryId ?? null,
+    },
     opts,
   ).then(fromLivePunchCorrection);
+}
+
+/** The dimension `hr.punch.entered_reason_category_id` points into (`platform.categories`). */
+export const PUNCH_CORRECTION_REASON_DIMENSION = "hr_punch_correction_reason";
+
+export interface PunchCorrectionReason {
+  id: string;
+  slug: string;
+  name: string;
+  position: number | null;
+}
+
+/**
+ * The §4.1 reason select's options.
+ *
+ * ♻️ Deliberately the SAME shape the Leave lane already uses for its own reason select, and
+ * legitimate for the same reason it documents: `hr.punch.entered_reason_category_id` is a foreign
+ * key into `platform.categories`, and `platform` IS exposed to PostgREST (unlike `hr`). The rows are
+ * system rows in the globally-readable system org. No `hr_*` door lists them.
+ *
+ * 🚨 `readAllRows`, not a bare `.select()`, because this list is treated as COMPLETE — a bare select
+ * caps at 1000 rows silently, and a reason quietly missing from the menu is a correction a manager
+ * cannot file honestly.
+ */
+export async function fetchPunchCorrectionReasons(): Promise<PunchCorrectionReason[]> {
+  const rows = await readAllRows<{
+    id: string;
+    slug: string | null;
+    name: string | null;
+    position: number | null;
+  }>(
+    ({ from, to }) =>
+      supabase
+        .schema("platform")
+        .from("categories")
+        .select("id, slug, name, position", { count: "exact" })
+        .eq("dimension", PUNCH_CORRECTION_REASON_DIMENSION)
+        .is("deleted_at", null)
+        .order("position", { ascending: true })
+        .range(from, to),
+    { label: "hr-punch-correction-reasons" },
+  );
+
+  return rows.flatMap((row) => {
+    const { slug, name } = row;
+    if (typeof slug !== "string" || typeof name !== "string") return [];
+    return [{ id: row.id, slug, name, position: row.position }];
+  });
 }
 
 /** Void with no replacement — the duplicate-punch case. */

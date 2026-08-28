@@ -36391,6 +36391,7 @@ export type Database = {
           device_reported_at: string | null
           employment_id: string
           entered_reason: string | null
+          entered_reason_category_id: string | null
           geo_accuracy_m: number | null
           geo_lat: number | null
           geo_lng: number | null
@@ -36436,6 +36437,7 @@ export type Database = {
           device_reported_at?: string | null
           employment_id: string
           entered_reason?: string | null
+          entered_reason_category_id?: string | null
           geo_accuracy_m?: number | null
           geo_lat?: number | null
           geo_lng?: number | null
@@ -36481,6 +36483,7 @@ export type Database = {
           device_reported_at?: string | null
           employment_id?: string
           entered_reason?: string | null
+          entered_reason_category_id?: string | null
           geo_accuracy_m?: number | null
           geo_lat?: number | null
           geo_lng?: number | null
@@ -44536,7 +44539,12 @@ export type Database = {
         }[]
       }
       punch_correct: {
-        Args: { p_new_values: Json; p_punch_ids: string[]; p_reason: string }
+        Args: {
+          p_category?: string
+          p_new_values: Json
+          p_punch_ids: string[]
+          p_reason: string
+        }
         Returns: Json
       }
       punch_edit_notify_debt: { Args: never; Returns: Json }
@@ -61940,7 +61948,12 @@ export type Database = {
       hr_pending_changes: { Args: { p_employment_id: string }; Returns: Json }
       hr_position_change: { Args: { p_payload: Json }; Returns: Json }
       hr_punch_correct: {
-        Args: { p_new_values: Json; p_punch_ids: string[]; p_reason: string }
+        Args: {
+          p_category?: string
+          p_new_values: Json
+          p_punch_ids: string[]
+          p_reason: string
+        }
         Returns: Json
       }
       hr_punch_record: {

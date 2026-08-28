@@ -266,6 +266,7 @@ shaped so that page is one line: `<KioskDevicesPanel source={...} />`.
 
 ## Change Log
 
+- 2026-08-28 — Punch corrections require a system-owned `hr_punch_correction_reason` category plus free text; the same taxonomy validates post-lock adjustments, and the chosen category persists on replacement punches.
 - 2026-08-27 — Temporary kiosk PINs now force a masked, two-entry reset on the authenticated
   device session, sharing one numeric keypad with the initial identification flow.
 - 2026-08-27 — Rule-snapshot evidence windows now reveal minimized, hidden, or off-screen state on

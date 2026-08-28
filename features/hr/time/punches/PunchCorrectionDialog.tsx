@@ -25,7 +25,7 @@
  * if the server refuses anyway, `RefusalNotice` offers the adjustment lane instead of an error.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BellRing, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 
-import { correctPunches, voidPunch, type PunchCorrectionResult } from "../api/service";
+import {
+  correctPunches,
+  fetchPunchCorrectionReasons,
+  voidPunch,
+  type PunchCorrectionReason,
+  type PunchCorrectionResult,
+} from "../api/service";
 import type { PunchRow } from "../api/types";
 import { formatStampedTimeWithZone, pluralize } from "../shared/format";
 import { RefusalNotice } from "../shared/RefusalNotice";
@@ -73,6 +79,9 @@ export function PunchCorrectionDialog({
   onCommitted: () => void;
 }) {
   const [reason, setReason] = useState("");
+  const [categoryId, setCategoryId] = useState("");
+  const [reasons, setReasons] = useState<PunchCorrectionReason[]>([]);
+  const [reasonsError, setReasonsError] = useState<Error | null>(null);
   const [replacementTime, setReplacementTime] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -80,6 +89,27 @@ export function PunchCorrectionDialog({
 
   const bulk = punches.length > 1;
   const reasonOk = reason.trim().length >= MIN_REASON_LENGTH;
+  /*
+   * 🚨 §4.1 REQUIRES BOTH HALVES: "a REQUIRED reason from the reason taxonomy PLUS free text".
+   * The door defaults the category to null so older callers keep working, so requiring it for a NEW
+   * correction is this dialog's job. A void is a different door with no category.
+   */
+  const categoryOk = mode === "void" || categoryId !== "";
+
+  useEffect(() => {
+    if (!open || mode === "void") return;
+    let live = true;
+    void fetchPunchCorrectionReasons()
+      .then((rows) => {
+        if (live) setReasons(rows);
+      })
+      .catch((caught: unknown) => {
+        if (live) setReasonsError(caught instanceof Error ? caught : new Error(String(caught)));
+      });
+    return () => {
+      live = false;
+    };
+  }, [open, mode]);
 
   async function commit() {
     setBusy(true);
@@ -94,6 +124,7 @@ export function PunchCorrectionDialog({
               // punch it voids — the client never sends what it thinks the old value was.
               replacementTime ? { occurred_at_local_time: replacementTime } : {},
               reason.trim(),
+              categoryId || null,
               { mockCase },
             );
       setResult(outcome);
@@ -110,6 +141,7 @@ export function PunchCorrectionDialog({
 
   function close() {
     setReason("");
+    setCategoryId("");
     setReplacementTime("");
     setResult(null);
     setError(null);
@@ -201,6 +233,38 @@ export function PunchCorrectionDialog({
               </div>
             ) : null}
 
+            {mode === "correct" ? (
+              <div className="space-y-1.5">
+                <label htmlFor="punch-reason-category" className="block text-sm font-medium">
+                  What kind of correction is this? This is required.
+                </label>
+                {reasonsError ? (
+                  <p className="text-xs text-destructive">
+                    The list of reasons could not be loaded, so this correction cannot be filed yet.
+                  </p>
+                ) : (
+                  <select
+                    id="punch-reason-category"
+                    className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    value={categoryId}
+                    onChange={(event) => setCategoryId(event.target.value)}
+                  >
+                    <option value="">Choose one…</option>
+                    {reasons.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {/*
+                  "Other" is a real choice, not a loophole: the free text below is mandatory either
+                  way, so a manager whose reason fits none of the listed kinds records what actually
+                  happened instead of picking the nearest false one.
+                */}
+              </div>
+            ) : null}
+
             <div className="space-y-1.5">
               <label htmlFor="punch-reason" className="block text-sm font-medium">
                 Why? This is required.
@@ -233,7 +297,7 @@ export function PunchCorrectionDialog({
               <Button type="button" variant="ghost" onClick={close}>
                 Cancel
               </Button>
-              <Button type="button" disabled={busy || !reasonOk} onClick={() => void commit()}>
+              <Button type="button" disabled={busy || !reasonOk || !categoryOk} onClick={() => void commit()}>
                 {mode === "void" ? "Void it" : "Record the correction"}
               </Button>
             </>
