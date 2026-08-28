@@ -29,7 +29,6 @@ import {
   useReactFlow,
   useNodesInitialized,
   useStore,
-  getNodesBounds,
   getViewportForBounds,
   NodeResizer,
   applyNodeChanges,
@@ -859,8 +858,13 @@ const DiagramFlow: React.FC<{
   editing = false,
   onDiagramChange,
 }) => {
-  const { fitView, setViewport, getNodes, getEdges, screenToFlowPosition } =
-    useReactFlow();
+  const {
+    setViewport,
+    getNodes,
+    getEdges,
+    getNodesBounds,
+    screenToFlowPosition,
+  } = useReactFlow();
   const nodesInitialized = useNodesInitialized();
   const hasAutoLayoutApplied = useRef(false);
   const autoLayoutFrameRef = useRef<number | null>(null);

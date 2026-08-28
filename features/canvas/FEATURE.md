@@ -86,6 +86,8 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-08-27` — Diagram viewport fitting now uses the mounted React Flow instance's bounds helper,
+  preserving subflow-aware measurements without static-helper console warnings.
 - `2026-08-27` — Quiz, comparison, presentation, research, resources, progress,
   troubleshooting, recipe, decision-tree, diagram, and both generic block wrappers now open
   materialized artifacts through `useOpenArtifactInCanvas`; inline blocks without a persisted id
