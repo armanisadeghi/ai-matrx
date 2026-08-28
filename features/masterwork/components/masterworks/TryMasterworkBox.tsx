@@ -18,7 +18,11 @@
 //
 // So the plumbing is now 100% canonical, and the ONLY thing this file owns is
 // the Masterwork framing around it:
-//   * `useWorkflowRunControls().startRun` — the one typed start path.
+//   * `useServedRunForm` / `useServedRunStart` — THE compiled input surface
+//     (`GET /workflows/{id}/run-form`) and the one start verb that carries
+//     `input_sources`. This box IS a human-facing start path, so exactly the
+//     values the Expert typed travel stamped `human`; nothing it leaves alone
+//     is re-sent, and the server lands its own declared defaults.
 //   * `useWorkflowRun(runId)`             — THE Run Stream Adapter: replay on
 //     mount (a refresh rejoins exactly where it was), live SSE + poller, and
 //     per-node streaming lanes fed through the canonical accumulator.
@@ -41,7 +45,6 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 
 import { useWorkflowRun } from "@/features/workflow-runtime/hooks/useWorkflowRun";
-import { useWorkflowRunControls } from "@/features/workflow-runtime/hooks/useWorkflowRunControls";
 import {
   selectNodeAggregate,
   selectNodeAggregatePhases,
@@ -57,8 +60,23 @@ import {
   deliverableSteps,
   type RunStepPresentation,
 } from "@/features/workflow-runtime/components/run/node-presentation";
-import { RunFormFieldControl } from "@/features/workflow-runtime/components/RunFormFieldControl";
-import type { RunFormField } from "@/features/workflow-runtime/surface/run-form";
+import {
+  EMPTY_SERVED_INPUTS,
+  ServedFieldControl,
+  ServedFormScream,
+  useServedInputKinds,
+  useServedInputValues,
+} from "@/features/workflow-runtime/served-form/ServedInputFields";
+import {
+  buildSubmission,
+  parseServedInput,
+  unsatisfiedServedInputs,
+  type ServedInput,
+} from "@/features/workflow-runtime/served-form/served-input";
+import {
+  useServedRunForm,
+  useServedRunStart,
+} from "@/features/workflow-runtime/served-form/useServedRunForm";
 import {
   explainRunFailure,
   type RunFailureExplanation,
@@ -66,7 +84,6 @@ import {
 
 import {
   getMasterworkDefinition,
-  getMasterworkRunFields,
   getMasterworkRunVerdict,
 } from "../../service";
 
@@ -100,6 +117,45 @@ function forgetRun(masterworkId: string): void {
   } catch {
     /* see rememberRun */
   }
+}
+
+/**
+ * THE FALLBACK INTAKE — used only when the served surface declares nothing.
+ *
+ * The Understudy (and any hand-authored workflow) has no declared inputs to
+ * read, and a box with no fields cannot be run. These two are expressed as
+ * SERVED inputs so there is still exactly one field renderer, one gate law and
+ * one submission shape in this file; what they are not is a declaration, which
+ * is why every element they render carries `data-masterwork-intake="fallback"`.
+ */
+function buildFallbackInputs(
+  isEdit: boolean,
+  fieldLabels: string[] | undefined,
+): ServedInput[] {
+  const raw: Record<string, unknown>[] = [
+    {
+      name: isEdit ? "document" : "job_brief",
+      kind: "text",
+      sourcing: "require",
+      label:
+        fieldLabels?.[0] ?? (isEdit ? "The text to check" : "What you want made"),
+      json_schema: { type: "string" },
+    },
+    ...(isEdit
+      ? [
+          {
+            name: "notes",
+            kind: "text",
+            sourcing: "optional",
+            label: fieldLabels?.[1] ?? "Facts that must not change",
+            json_schema: { type: "string" },
+          },
+        ]
+      : []),
+  ];
+  return raw
+    .map(parseServedInput)
+    .filter((i): i is ServedInput => i !== null);
 }
 
 export function TryMasterworkBox({
@@ -144,11 +200,8 @@ export function TryMasterworkBox({
    */
   onCompare?: (candidateText: string) => void;
 }) {
-  const { startRun, starting } = useWorkflowRunControls();
   const isEdit = masterworkKind !== "generate";
 
-  const [askFields, setAskFields] = useState<RunFormField[] | null>(null);
-  const [values, setValues] = useState<Record<string, unknown>>({});
   const [steps, setSteps] = useState<RunStepPresentation[]>([]);
   const [runId, setRunId] = useState<string | null>(() => recallRun(masterworkId));
   const [failure, setFailure] = useState<RunFailureExplanation | null>(null);
@@ -159,17 +212,18 @@ export function TryMasterworkBox({
   // ── THE ONE ADOPTION. Replay + live SSE + lanes, all of it. ──────────────
   useWorkflowRun(runId);
 
+  // ── THE COMPILED INPUT SURFACE, and the start verb that stamps it ────────
+  const served = useServedRunForm(masterworkId);
+  const { starting, start: startServedRun } = useServedRunStart();
+
   const runStatus = useAppSelector(selectRunStatus(runId ?? ""));
   const phases = useAppSelector(selectNodeAggregatePhases(runId ?? ""));
   const terminal = runStatus !== null && TERMINAL_RUN_STATUSES.has(runStatus);
   const running = runId !== null && !terminal;
 
-  // ── The definition: the fields to ask for, and the steps to show ────────
+  // ── The definition: the steps to show. The FIELDS are served. ───────────
   useEffect(() => {
     let alive = true;
-    void getMasterworkRunFields(masterworkId).then((f) => {
-      if (alive && f.length) setAskFields(f);
-    });
     void getMasterworkDefinition(masterworkId).then((def) => {
       if (alive && def) setSteps(describeWorkflowSteps(def));
     });
@@ -223,43 +277,31 @@ export function TryMasterworkBox({
   }, [runId, terminal, runStatus, onRunFinished, whatItRuns]);
 
   // ── The fields, and starting ────────────────────────────────────────────
-  const fields: RunFormField[] =
-    askFields ??
-    [
-      {
-        key: isEdit ? "document" : "job_brief",
-        label: fieldLabels?.[0] ?? (isEdit ? "The text to check" : "What you want made"),
-        type: "long_text" as const,
-        required: true,
-        options: [],
-        help: "",
-        placeholder: "",
-        defaultValue: null,
-      },
-      ...(isEdit
-        ? [
-            {
-              key: "notes",
-              label: fieldLabels?.[1] ?? "Facts that must not change",
-              type: "long_text" as const,
-              required: false,
-              options: [],
-              help: "",
-              placeholder: "",
-              defaultValue: null,
-            },
-          ]
-        : []),
-    ];
-  const setField = (key: string, value: unknown) =>
-    setValues((prev) => ({ ...prev, [key]: value }));
+  // The DECLARED surface wins. The hand-authored pair below is the fallback
+  // for a Masterwork whose definition declares no inputs at all (the
+  // Understudy, and any hand-authored workflow) — marked
+  // `data-masterwork-intake="fallback"` so it is never mistaken, in a DOM or
+  // in a test, for something the builder designed.
+  const fallbackInputs = useMemo(
+    () => buildFallbackInputs(isEdit, fieldLabels),
+    [isEdit, fieldLabels],
+  );
+  const declared =
+    served.status === "ready" ? served.form.inputs : EMPTY_SERVED_INPUTS;
+  const usingFallback = declared.length === 0;
+  const inputs: readonly ServedInput[] = usingFallback
+    ? fallbackInputs
+    : declared;
+
+  const { values, touched, setValue } = useServedInputValues(inputs);
+  const { kinds, error: kindError } = useServedInputKinds(inputs);
 
   const start = useCallback(async () => {
-    const isBlank = (v: unknown) =>
-      v === undefined || v === null || (typeof v === "string" && !v.trim());
-    const missing = fields.find((f) => f.required && isBlank(values[f.key]));
-    if (missing) {
-      toast.error(`${missing.label.split("(")[0].trim()} — fill this in first.`);
+    const gaps = unsatisfiedServedInputs(inputs, values, touched);
+    if (gaps.length > 0) {
+      toast.error(
+        `${gaps[0].label.split("(")[0].trim()} — fill this in first.`,
+      );
       return;
     }
     setFailure(null);
@@ -267,31 +309,34 @@ export function TryMasterworkBox({
     forgetRun(masterworkId);
     setRunId(null);
 
-    // AN UNTOUCHED OPTIONAL FIELD IS OMITTED, NEVER SENT AS "" (2026-08-26).
+    // AN UNTOUCHED FIELD IS OMITTED, NEVER SENT AS "" (2026-08-26).
     // Sending "" for everything is fine for free text and FATAL for a choice:
     // the engine validates the value against the option list, and "" is not on
     // it — so a designed dropdown the person simply left alone killed the run
     // at its first step with `length: '' is not one of [...]`. Caught by
-    // running a real build end to end, not by reading the code. An optional
-    // field the person did not fill has no value to send; the step's own
-    // default applies.
-    const nodeInputs = {
-      ask: Object.fromEntries(
-        fields
-          .filter((f) => {
-            const v = values[f.key];
-            const blank =
-              v === undefined || v === null || (typeof v === "string" && !v.trim());
-            return f.required || !blank;
-          })
-          .map((f) => [f.key, values[f.key] ?? ""]),
-      ),
-    };
-    const newRunId = await startRun({ definitionId: masterworkId, nodeInputs });
-    if (!newRunId) return; // startRun already explained itself
-    rememberRun(masterworkId, newRunId);
-    setRunId(newRunId);
-  }, [fields, values, masterworkId, startRun]);
+    // running a real build end to end, not by reading the code. That is now
+    // the surface's own law, not a rule this box keeps for itself:
+    // `buildSubmission` sends exactly what a person typed, and the server
+    // lands its own declared default for everything else.
+    const outcome = await startServedRun(
+      masterworkId,
+      buildSubmission(inputs, values, touched),
+    );
+    if (outcome.status === "gaps") {
+      toast.error(
+        outcome.gaps.length > 0
+          ? `Still needed: ${outcome.gaps.map((g) => g.label).join(", ")}.`
+          : outcome.message,
+      );
+      return;
+    }
+    if (outcome.status === "error") {
+      toast.error(outcome.message);
+      return;
+    }
+    rememberRun(masterworkId, outcome.runId);
+    setRunId(outcome.runId);
+  }, [inputs, values, touched, masterworkId, startServedRun]);
 
   // The Audition judges the WORK, so it wants the deliverable when there is a
   // separable one (generate) and the ruling when the work and the reasoning
@@ -310,24 +355,45 @@ export function TryMasterworkBox({
 
   return (
     <div className="space-y-3">
+      {/* ── LOUD: a surface that could not be read, or was never served ─── */}
+      {served.status === "error" ? (
+        <ServedFormScream
+          title="Could not read what this asks for"
+          body={`${served.message} The fields below are the fallback pair, not this Masterwork's own declared inputs — what the builder designed is not being asked for.`}
+        />
+      ) : served.status === "ready" && !served.form.surfaceServed ? (
+        <ServedFormScream
+          title="This backend serves no input surface"
+          body="The run-form response carried no `inputs` array, so the reachable server predates the compiled input surface. The fields below are the fallback pair — point at a server that serves it."
+        />
+      ) : null}
+      {kindError ? (
+        <ServedFormScream title="Kind registry gap" body={kindError} />
+      ) : null}
+
       {/* ── The builder's own fields ────────────────────────────────────── */}
-      {fields.map((f) => (
-        <div key={f.key} className="space-y-1">
+      {inputs.map((input) => (
+        <div
+          key={input.name}
+          className="space-y-1"
+          {...(usingFallback ? { "data-masterwork-intake": "fallback" } : {})}
+        >
           <label className="text-xs font-medium text-foreground">
-            {f.label}
-            {f.required ? null : (
+            {input.label}
+            {input.sourcing === "optional" ? (
               <span className="ml-1 font-normal text-muted-foreground">
                 (optional)
               </span>
-            )}
+            ) : null}
           </label>
-          <RunFormFieldControl
-            field={f}
-            value={values[f.key] ?? f.defaultValue ?? ""}
-            onChange={(v) => setField(f.key, v)}
+          <ServedFieldControl
+            input={input}
+            kind={kinds[input.kind]}
+            value={values[input.name]}
+            onChange={(v) => setValue(input.name, v)}
           />
-          {f.help ? (
-            <p className="text-[11px] text-muted-foreground">{f.help}</p>
+          {input.help ? (
+            <p className="text-[11px] text-muted-foreground">{input.help}</p>
           ) : null}
         </div>
       ))}

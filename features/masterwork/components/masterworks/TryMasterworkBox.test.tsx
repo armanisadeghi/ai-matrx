@@ -46,7 +46,7 @@ jest.mock("@/features/rich-document/RichDocument", () => ({
 }));
 
 jest.mock("../../service", () => ({
-  getMasterworkRunFields: () => Promise.resolve([]),
+  getMasterworkDefinition: () => Promise.resolve(null),
   getMasterworkRunVerdict: (...args: unknown[]) =>
     getMasterworkRunVerdict(...args),
 }));

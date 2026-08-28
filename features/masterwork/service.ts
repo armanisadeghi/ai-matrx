@@ -1,4 +1,3 @@
-import { deriveRunForm, type RunFormField } from "@/features/workflow-runtime/surface/run-form";
 import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
 import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
@@ -709,27 +708,12 @@ export async function setMasterworkReleased(opts: {
 }
 
 /**
- * The inputs a Masterwork actually wants, read off its OWN definition.
- *
- * Arman, 2026-08-21, staring at a bare "Try it now" box: "Whichever agent did
- * this was building something. Whatever it was building, HE KNOWS WHAT HIS
- * INPUT NEEDS TO BE. So why isn't that here?" It always was — every Build
- * writes an `io.user_input` node with titled, labelled fields.
- *
- * 2026-08-25 — this used to hand-parse that node into a bespoke shape that
- * carried only key/label/required, so placeholders, help text and choice
- * options (all of which the node contract has always supported) were dropped
- * on the floor. It now goes through `deriveRunForm`, THE parser every other
- * run surface uses, and callers render with `RunFormFieldControl`. One
- * parser, one renderer — a second one drifts the moment either gains a type.
- *
- * Returns [] when the definition has no legible `io.user_input` node.
- */
-/**
  * The Masterwork's definition, for the surfaces that describe its STEPS
- * (`describeWorkflowSteps`) as well as its inputs. One read, both answers —
- * the run box needs the step list to show progress and the deliverable step
- * to render the result.
+ * (`describeWorkflowSteps`). Its INPUTS are NOT read from here: the run box
+ * asks `GET /workflows/{id}/run-form` for the compiled input surface, which is
+ * the same declaration every other run surface asks for. This used to hand a
+ * caller `deriveRunForm`'s `io.user_input` fields as well — a second, narrower
+ * answer that could not see an input declared anywhere else in the graph.
  */
 export async function getMasterworkDefinition(
   masterworkId: string,
@@ -745,21 +729,4 @@ export async function getMasterworkDefinition(
     nodes: (data.nodes ?? []) as never[],
     edges: (data.edges ?? []) as never[],
   };
-}
-
-export async function getMasterworkRunFields(
-  masterworkId: string,
-): Promise<RunFormField[]> {
-  const { data, error } = await supabase
-    .schema("workflow")
-    .from("definition")
-    .select("nodes,edges")
-    .eq("id", masterworkId)
-    .maybeSingle();
-  if (error || !data) return [];
-  const sections = deriveRunForm({
-    nodes: (data.nodes ?? []) as never,
-    edges: (data.edges ?? []) as never,
-  });
-  return sections.flatMap((section) => section.fields);
 }

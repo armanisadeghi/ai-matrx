@@ -2536,3 +2536,23 @@ the same key` errors (`34f968c7-23b1-4311-959e-5a58e83f474d`,
 the rules or service-areas lists — it is another component mounted on this page
 (shell/nav or a panel). Found while wiring the v3 context menu (KI-025);
 unrelated to that work, so logged rather than chased.
+
+## `TryMasterworkBox.test.tsx` has been dead since the run adapter was renamed — 2026-08-28
+
+The suite's single test fails on `main` (it is in neither CI gate — `test:workflow-runtime` nor
+`test:content-ir` — so nothing caught it). Three independent reasons, found while repointing the
+try-box onto the served input surface:
+
+1. It mocks `@/lib/redux/hooks` with `useAppDispatch` only, so the component's `useAppSelector`
+   (and now `useAppStore`, reached through `ProTextarea`) is `undefined` at render.
+2. It mocks the thunk module `.../thunks/attach-workflow-run`, but `useWorkflowRun` has since moved
+   to `redux/adopt-workflow-run.thunk` — so `attachedOnEvent` is never captured and the test drives
+   nothing. The module-level adoption registry in `useWorkflowRun` then leaks a handle without
+   `stop()` into the next test.
+3. jsdom has no `ResizeObserver`, which the real input control needs.
+
+(1) and (3) are stubs; (2) is a rewrite — terminal state now arrives through the runs slice, so the
+test has to drive the store rather than a captured `onEvent` callback. Not done here: rewriting it
+is a test-architecture decision, and doing it inside a repoint would hide whether the repoint or the
+rewrite moved the result. Only the stale `getMasterworkRunFields` mock key was updated (that export
+is gone).
