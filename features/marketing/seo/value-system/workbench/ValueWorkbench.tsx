@@ -48,8 +48,8 @@
  * The ORDER is now the ruling, and every future addition to this page has to
  * earn its place in it:
  *
- *   1. ONE header line          — title, domain, window. A window is a fact,
- *                                 so it is a chip, not a sentence.
+ *   1. THE CANONICAL HEADER     — site identity and destinations. The body
+ *                                 never repeats them as a route-button row.
  *   2. THE KPI BAND             — ./ValueKpiBand. Four numbers, biggest type
  *                                 on the page, every one of them a door.
  *   3. THE VERDICT             — one sentence, under the numbers it explains.
@@ -72,8 +72,9 @@
  * to the reader on their second visit).
  *
  * NOTHING WAS CULLED. Rulings, the ruling session, receipts, the level editor,
- * packs, the guidelines door and the facet registry are all still exactly one
- * click away, under the same names.
+ * and packs stay in their canonical homes. Supporting destinations stay in the
+ * canonical site header; the computation explanation is a compact contextual
+ * control in By level, and the admin facet registry stays on its admin surface.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -165,7 +166,6 @@ import {
   useKeywordMenuSection,
 } from "@/features/marketing/seo/keyword/keyword-actions";
 import { KeywordMeaningSuggestions } from "@/features/marketing/seo/value-system/suggestions/KeywordMeaningSuggestions";
-import { ValueDoors } from "../ValueDoors";
 import { BandScoreboard } from "./BandScoreboard";
 import { ValueKpiBand } from "./ValueKpiBand";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -1035,23 +1035,6 @@ export function ValueWorkbench() {
       does (topics, rules, packs) and what a 50-row page wants.
     */}
       <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto overscroll-contain bg-textured px-3 pb-3 sm:px-4 sm:pb-4">
-        {/* The shared EntityModeHeader already owns site identity and the
-          canonical Scores mode control. These are page tools, not a second
-          title bar. */}
-        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-          <ValueDoors brandId={brandId} siteId={siteId} />
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-8 gap-1.5 text-xs"
-            onClick={() => setMeaningOpen((open) => !open)}
-          >
-            <BookOpenText className="h-3.5 w-3.5" />
-            How value is computed
-          </Button>
-        </div>
-
         {/* THE KPI BAND — first, always. The numbers a person came for, and the
           only block on this page allowed to be the biggest thing on it. */}
         {summary.isError ? (
@@ -1214,6 +1197,16 @@ export function ValueWorkbench() {
                 >
                   provisional
                 </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 gap-1 px-1.5 text-[11px] max-lg:h-11"
+                  onClick={() => setMeaningOpen((open) => !open)}
+                >
+                  <BookOpenText className="h-3.5 w-3.5" />
+                  How value works
+                </Button>
                 {bandFilter ? (
                   <button
                     type="button"

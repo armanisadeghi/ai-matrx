@@ -32,12 +32,13 @@
 import {
   ArrowDownRight,
   ArrowUpRight,
+  BadgePlus,
   BrainCircuit,
   Gavel,
   Minus,
-  Sparkle,
 } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCount } from "@/features/marketing/search-console/types";
 import { formatPct, type Delta, type ValueKpis } from "../lib";
@@ -58,7 +59,7 @@ function DeltaTag({ delta, label }: { delta: Delta; label: string }) {
       : delta.dir === "down"
         ? ArrowDownRight
         : delta.dir === "new"
-          ? Sparkle
+          ? BadgePlus
           : Minus;
   return (
     <span
@@ -128,7 +129,9 @@ function Tile({
           <span className="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             {label}
           </span>
-          {delta ? <DeltaTag delta={delta} label={deltaLabel ?? label} /> : null}
+          {delta ? (
+            <DeltaTag delta={delta} label={deltaLabel ?? label} />
+          ) : null}
         </p>
         <p className="mt-0.5 flex items-baseline gap-1">
           <span
@@ -253,23 +256,29 @@ export function ValueKpiBand({
             // stays live behind it; the ruling session takes the page over and
             // asks everything about one keyword. Most of this queue is cleared
             // by the first, not the second.
-            <div className="flex w-full flex-col gap-1">
-              <button
+            <div className="grid w-full grid-cols-2 gap-1">
+              <Button
                 type="button"
                 onClick={onQuickAnswers}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-warning/60 bg-warning/10 px-2 py-1 text-[11px] font-semibold text-warning transition-colors hover:bg-warning/20"
+                size="sm"
+                variant="outline"
+                className="h-7 min-w-0 gap-1 border-warning/60 bg-warning/10 px-1.5 text-[10px] font-semibold text-warning hover:bg-warning/20 max-lg:h-11"
+                title="Answer one dimension for five keywords in a floating panel"
               >
                 <BrainCircuit className="h-3 w-3" />
-                Answer five at once
-              </button>
-              <button
+                Answer 5
+              </Button>
+              <Button
                 type="button"
                 onClick={onStartSession}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-warning hover:text-warning"
+                size="sm"
+                variant="outline"
+                className="h-7 min-w-0 gap-1 px-1.5 text-[10px] font-medium text-muted-foreground hover:border-warning hover:text-warning max-lg:h-11"
+                title="Open the one-keyword-at-a-time ruling session"
               >
                 <Gavel className="h-3 w-3" />
-                Or rule one at a time
-              </button>
+                Rule one
+              </Button>
             </div>
           ) : null
         }

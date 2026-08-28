@@ -46,6 +46,7 @@ Read [`references/readiness-gate.md`](./references/readiness-gate.md) before the
 3. Invoke `browser:control-in-app-browser` and use the isolated in-app Browser for routine localhost work.
 4. Authenticate yourself with the repository's pre-authorized `DEV_LOGIN_TOKEN` or `AI_ADMIN_USERNAME` / `AI_ADMIN_PASSWORD` flow. Never ask Arman to log in, provide credentials, click through setup, or perform routine verification.
 5. Inspect the real surface before editing: desktop state, current behavior, console, feature docs, manifest/readiness/last check, and exact-route review feedback.
+6. **Run the first-screen gate at 1280×800.** If a table, editor, list, or other primary workspace is only a token strip at the bottom—or starts below the fold—remove the obstruction before lower-priority polish. Browser visibility is not a pause.
 
 Never print credentials or tokens. Keep the managed preview running so Arman can inspect it; close only the Browser tabs or groups you created when they are no longer needed.
 
@@ -62,6 +63,8 @@ Invoke `surface-check` and run S1–S18 on the focused surface, fixing as you go
 - If the route is a real agent-aware surface, invoke the consolidated `surface-authoring` lifecycle and earn honest readiness.
 - Invoke `context-menu-v3` for the full menu contract; Surface Check S6 is the verifier, not the implementation body.
 - Apply `.claude/ui-skills/shared/application-ui-copy-and-hierarchy.md` across the visible page. Remove duplicated titles, generic introductory prose, decorative hero spacing, and other obvious app-as-article habits without deleting consequential meaning.
+- **The header owns destinations.** A second body-level row of route buttons fails the pass. Remove duplicate doors; put remaining destinations in the canonical header navigation/overflow or one compact menu that opens the canonical route/window.
+- **Summary cards stay summaries.** Multiple actions inside a KPI/status tile share one compact row or menu; vertically stacked full-width buttons fail unless choosing between those actions is the card's primary job.
 - Fix shared primitives when the defect originates there; do not patch every consumer independently.
 - Keep the boundary to this surface and the canonical primitives it directly depends on. Log unrelated repo defects instead of turning the session into a fleet-wide sweep.
 

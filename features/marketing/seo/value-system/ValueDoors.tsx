@@ -3,7 +3,8 @@
 /**
  * Doors that belong to the Keyword Value family but sit outside its own
  * sub-nav (`site-subviews.ts` lists the surfaces that ARE this section) —
- * rendered on every one of its routes so they can't be lost.
+ * rendered only on supporting routes that do not already expose the same
+ * destinations in the canonical site header.
  *
  *  • BUSINESS GUIDELINES — its real sub-view is `value:guidelines`; this is a
  *    shortcut so the door reaches it from anywhere in the family, not a

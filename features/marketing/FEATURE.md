@@ -597,6 +597,15 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-28 — Codex: **Keyword Value gives the first screen back to the
+  keyword work.** The duplicate body-level destination row is gone: normal
+  destinations remain in the canonical site header, the admin facet registry
+  remains on its admin surface, and the computation explanation is one compact
+  contextual control in the existing By level header. The Unvalued KPI keeps
+  both workflows but presents Answer 5 and Rule one in one compact action row
+  instead of two stacked full-width buttons. Desktop density is restored while
+  tablet and phone actions retain the 44px touch floor.
+
 - 2026-08-28 — Codex: **Page Workspace supporting-keyword actions stay
   reachable on phones.** Long keyword chips now wrap their text and metadata
   while keeping the three-button action group together inside the viewport;

@@ -30,9 +30,11 @@ This is the pre-handoff gate for `live-ui-iteration`. It does not replace `surfa
 ## Visual and responsive proof
 
 - Desktop: 1280×800, top edge visible, real primary workflow exercised.
+- When the route's primary job is a table, editor, list, or workspace, its controls and useful content are materially visible above the fold—not reduced to a token strip at the bottom.
 - Mobile: 375×812 after reload, no horizontal overflow, trapped scroll, clipped controls, hover-only actions, or targets below 44pt.
 - Light and dark themes on the touched states.
 - No duplicated page title, faux body hero, generic intro prose, nested chrome, or low-information space blocking the work area.
+- No second body-level route-button row when canonical header navigation/overflow exists; no vertically stacked full-width actions inside a summary tile.
 - Loading, empty, error, disabled, and long-running states are truthful wherever the surface can enter them.
 
 ## Runtime health
