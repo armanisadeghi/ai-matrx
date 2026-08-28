@@ -51,6 +51,9 @@ async def main():
         v = await conn.fetchval(q, *a)
         return json.loads(v) if isinstance(v, str) else v
 
+    SQL_SUBJECT_RULE = (
+        "select prosrc ~ 'when ''hr\\.asset_assignment''\\s+then ''employment_id''' and prosrc !~ 'then ''assigned_by_employment_id''' and prosrc ~ 'NEVER WHO PERFORMED IT' from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='hr' and p.proname='_approval_subject'"
+    )
     try:
         # ================================================================= FIXTURES
         await as_owner()
@@ -1776,13 +1779,14 @@ async def main():
                 "select prosrc ~ 'approval_subject_unmapped' from pg_proc p "
                 "join pg_namespace n on n.oid=p.pronamespace "
                 "where n.nspname='hr' and p.proname='wf_resolve_approvers'"))
-        # 🚨 EVERY ACTIVE FLOW'S TARGET MAPS, WITH ONE NAMED EXCEPTION THAT IS AWAITING A RULING.
-        # `hr.asset_assignment` carries TWO FKs into hr.employment — `employment_id` and
-        # `assigned_by_employment_id` — which is the coordinator's explicit "more than one → STOP"
-        # case, so it was not guessed at. It is named here rather than hidden behind a green tick:
-        # this goes red the moment a DIFFERENT target starts raising, and it goes red again once the
-        # ruling lands and the exception should be removed. Meanwhile the flow fails CLOSED at the
-        # door (asserted above), so nothing silently stalls.
+        # 🚨 EVERY ACTIVE FLOW'S TARGET MAPS — the exception list is now EMPTY, by deletion.
+        # `hr.asset_assignment` was the last one held open, because it carries TWO employment FKs
+        # (`employment_id` and `assigned_by_employment_id`). RULED 2026-08-28: `employment_id`, on
+        # the test now recorded in the allowlist itself — THE SUBJECT IS WHOM THE ACTION IS ABOUT,
+        # NEVER WHO PERFORMED IT. An actor column can never be a subject, because
+        # never-approve-yourself tests the SUBJECT and authority resolves over the SUBJECT's chain;
+        # point one at the issuer and the person who handed out a laptop becomes the person whose
+        # recovery is approved, judged by their manager.
         unmapped = []
         for _tok in await conn.fetch(
                 "select distinct target_token from hr.workflow_flow_type "
@@ -1797,10 +1801,10 @@ async def main():
             except Exception:
                 unmapped.append(_tok["target_token"])
             await sp_map.rollback()
-        rec("§2.2 RD5", "🚨 every ACTIVE flow's target maps, except the ONE awaiting a ruling — named, not hidden",
-            unmapped == ["hr_asset_assignment"],
-            f"unmapped={unmapped} (expected exactly ['hr_asset_assignment'] — two candidate "
-            f"employment columns, so it is the coordinator's call, not a coin flip)")
+        rec("§2.2 RD5", "🚨 EVERY active flow's target maps — no registered flow can raise on its own subject, and no exception is left to name",
+            unmapped == [], f"unmapped={unmapped}")
+        rec("§2.2 RD5", "and the ACTOR column was NOT the one chosen — subject is whom the action is about, never who performed it",
+            await conn.fetchval(SQL_SUBJECT_RULE))
 
         # ================================================================= §4.2 DOOR GRANTS
         # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
