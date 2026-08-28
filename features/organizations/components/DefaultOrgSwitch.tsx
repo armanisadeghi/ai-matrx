@@ -36,10 +36,25 @@ export function DefaultOrgSwitch({ className }: { className?: string }) {
           Set as my default
         </p>
         <p className="truncate text-[11px] text-muted-foreground">
+          {/*
+            🚨 THIS LINE IS ABOUT STARTUP, NOT ABOUT NOW — and it used to be the
+            ONLY sentence in the whole menu that named an organization. A user who
+            had switched away still read "Titanium loads at startup", concluded
+            Titanium was in effect, and reported the switcher as broken; that
+            happened five times across three rounds. The switcher was writing
+            correctly the whole time. The menu simply never said, in words, which
+            org was ACTIVE — the active row carried a check mark and an accent
+            colour and nothing readable.
+
+            So this says "next time" explicitly, and `UserMenuOrgSection` now states
+            the working org above the list. A control whose only sentence describes
+            a DIFFERENT fact than the one the reader is looking for is a lie by
+            omission, even when every value in it is true.
+          */}
           {disabled
             ? "Select an organization first"
             : checked
-              ? `${activeOrgName ?? "This organization"} loads at startup`
+              ? `Next startup opens ${activeOrgName ?? "this organization"}`
               : "Auto-select this at startup"}
         </p>
       </div>

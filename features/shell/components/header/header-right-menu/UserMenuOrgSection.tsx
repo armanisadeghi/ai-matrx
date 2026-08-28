@@ -20,6 +20,7 @@ export default function UserMenuOrgSection() {
   const isMounted = useIsMounted();
   const {
     activeOrgId,
+    activeOrgName,
     promptForOrg,
     organizations,
     loading,
@@ -50,6 +51,31 @@ export default function UserMenuOrgSection() {
         </p>
       ) : (
         <>
+          {/*
+            🚨 THE MENU NOW SAYS, IN WORDS, WHICH ORG IS ACTIVE.
+
+            It never did. The active row carried a check mark and an accent colour
+            — visual only — while `DefaultOrgSwitch` below it printed the only
+            sentence in the menu that named an organization, and that sentence is
+            about STARTUP. So a user who switched away from their default still
+            read "Titanium loads at startup", concluded the switch had not taken,
+            and reported the switcher broken. That happened five times across three
+            rounds; the switcher was writing correctly every time.
+
+            A colour is not an answer to "which one am I in". This is.
+          */}
+          {activeOrgId ? (
+            <p className="px-3 pb-1 text-[11px] text-muted-foreground">
+              Working in{" "}
+              <span className="font-medium text-foreground">
+                {activeOrgName ?? "the selected organization"}
+              </span>
+            </p>
+          ) : (
+            <p className="px-3 pb-1 text-[11px] text-destructive">
+              No organization selected — pick one below.
+            </p>
+          )}
           {organizations.map((org) => {
             const isActive = org.id === activeOrgId;
             return (
