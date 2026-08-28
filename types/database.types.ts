@@ -14194,7 +14194,6 @@ export type Database = {
           description: string
           icon: string
           id: string
-          is_system: boolean
           label_plural: string
           label_singular: string
           max_assignments_per_entity: number | null
@@ -14215,7 +14214,6 @@ export type Database = {
           description?: string
           icon?: string
           id?: string
-          is_system?: boolean
           label_plural: string
           label_singular: string
           max_assignments_per_entity?: number | null
@@ -14236,7 +14234,6 @@ export type Database = {
           description?: string
           icon?: string
           id?: string
-          is_system?: boolean
           label_plural?: string
           label_singular?: string
           max_assignments_per_entity?: number | null
@@ -57178,10 +57175,6 @@ export type Database = {
       admin_set_entity_type_preview: {
         Args: { p_allow: boolean; p_token: string }
         Returns: boolean
-      }
-      admin_set_scope_type_system: {
-        Args: { p_is_system: boolean; p_scope_type_id: string }
-        Returns: Json
       }
       admin_set_share_policy: {
         Args: {
