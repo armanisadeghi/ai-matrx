@@ -1,10 +1,14 @@
 # Product Capture — FEATURE.md
 
-**Status:** Built (v1). Route: `/tools/product-capture` (`(core)`, nav "Product Capture"). Mobile-first, full-screen capture surface for warehouse-style photographing of products ahead of eBay-listing categorization.
+**Status:** Built (v2). Routes: `/tools/product-capture` (capture), `/tools/product-capture/all` (manage list), `/tools/product-capture/item/[id]` (view mode) — `(core)`, nav "Product Capture". Mobile-first capture surface for warehouse-style photographing of products ahead of eBay-listing categorization.
 
 ## What it is
 
-One immersive camera screen (modeled on the PDF scanner's `CaptureView`) where a worker moves through physical products fast:
+**Capture** (`/tools/product-capture`): one immersive FULL-SCREEN camera surface (modeled on the PDF scanner's `CaptureView`) where a worker moves through physical products fast. The preview fills the whole screen (`viewport-crop`); the shutter still captures the FULL sensor frame — nothing framed is ever lost. Controls overlay the frame on gradient scrims; an Eye toggle hides every control (except itself and honesty chips — recording timer, QR confirmation) for an unobstructed view. `?item=<id>` opens capture mode on an existing item.
+
+**Manage** (`/tools/product-capture/all`): every org item newest-first on the canonical `MatrxDataTable` (thumbnail, code, media counts, notes, status, captured time; URL-durable query state; complete reads via `readAllRows`). Row click / Eye → view mode; Camera → capture mode on that item; Trash → soft delete.
+
+**View mode** (`/tools/product-capture/item/[id]`): manage the item's media (delete files, add photos/videos from the device), edit SKU + notes (same guarded autosave), jump back into capture on it.
 
 - **Mode 1 — rapid:** shoot any number of photos, tap **Next** → the next capture starts a fresh item.
 - **Mode 2 — QR auto-switch:** the ScanLine toggle watches the live preview (`useQrAutoScan` → `lib/qr/decode.ts`, 250 ms tick); a scanned code closes the current item and opens a new one carrying the code as its product id (an untouched current item just takes the code). Toggle persists in localStorage.
@@ -30,16 +34,21 @@ Item writes are version-guarded CAS (`utils/supabase/guardedUpdate`, retry-once)
 ```
 features/product-capture/
   types.ts              row + UI types (Database["workbench"] projections)
-  service.ts            direct-Supabase CRUD, guarded item writes
-  uploads.ts            the ONE cloud boundary (fileHandler.upload + linkFile)
-  hooks/useProductCaptureSession.ts   session engine (items, artifacts, notes, voice)
+  service.ts            direct-Supabase CRUD, guarded item writes, complete org reads (readAllRows)
+  uploads.ts            the ONE cloud boundary (fileHandler.upload + linkFile + removeItemFile)
+  hooks/useProductCaptureSession.ts   session engine (items, artifacts, notes, voice; initialItemId deep link)
   hooks/useQrAutoScan.ts              decode tick over the live <video>
-  components/CaptureScreen.tsx        the full-screen surface (lease, shutter, video, QR, bars)
+  components/CaptureScreen.tsx        the full-screen surface (viewport-crop preview, full-frame shutter, overlay controls, hide toggle)
   components/NotesPanel.tsx           quick-access textarea (caret-to-end contract)
   components/VoiceNoteButton.tsx      useSimpleRecorder wrapper
-  components/ItemsSheet.tsx           review drawer (Drawer, CaptureThumb, ConfirmDialog)
-app/(core)/tools/product-capture/     page (SSR auth gate) + layout (metadata "PC") + ssr:false client boundary
-app/(core)/tools/product-capture/admin/  FeatureAdminPage map — add every new route/component here
+  components/ItemsSheet.tsx           in-capture review drawer (Drawer, CaptureThumb, ConfirmDialog)
+  components/ProductCaptureHeader.tsx shared RouteHeader (back + title + actions) for the manage pages
+  components/AllItemsTable.tsx        MatrxDataTable over listAllItems/listAllFiles
+  components/ItemDetailView.tsx       view mode (media grid, add/delete files, SKU/notes autosave)
+app/(core)/tools/product-capture/          capture page (SSR auth gate, ?item= deep link) + layout (metadata "PC") + ssr:false client boundary
+app/(core)/tools/product-capture/all/      manage list (PageHeader + AllItemsTable)
+app/(core)/tools/product-capture/item/[id]/  view mode
+app/(core)/tools/product-capture/admin/    FeatureAdminPage map — add every new route/component here
 ```
 
 Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPreview` / `capturePhotoFromVideo` canvas path / `startVideoRecording`), `lib/qr/decode.ts` (THE decoder), `useSimpleRecorder` + `toAudioFile` + `transcribeCloudFile` (the audio invariants: captureLock, shared mic, one controller), `fileHandler`, `CaptureThumb`/`InlineMediaRef`, `guardedUpdate`, `ConfirmDialog`, Drawer, `@/lib/toast`. ONE `ssr:false` boundary at the route client (Fragmentation Law); everything beneath is static.
@@ -54,4 +63,5 @@ Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPrevi
 
 ## Change log
 
+- 2026-08-28 — v2 (Arman's round-1 feedback): full-screen capture (viewport-crop preview + FULL-SENSOR shutter — deliberate non-WYSIWYG, ratified), overlay controls on gradient scrims, hide-controls Eye toggle (recording/QR chips stay), `/all` manage table (MatrxDataTable, readAllRows-complete org reads), `/item/[id]` view mode (media grid + add/delete files + SKU/notes autosave), `?item=` capture deep link, shared `ProductCaptureHeader`, `removeItemFile` chokepoint. type-check/eslint/scroll-chain green.
 - 2026-08-28 — v1: DB pair created live (certified), capture surface (Mode 1 + QR Mode 2, photo/video, SKU, notes, voice notes w/ background transcription), review drawer, nav entry + `PackagePlus` shell icon, `PRODUCT_CAPTURES` folder convention. type-check green.

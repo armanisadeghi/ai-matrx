@@ -9,7 +9,15 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Camera, FileAudio, Loader2, Trash2, Video } from "lucide-react";
+import Link from "next/link";
+import {
+  Camera,
+  FileAudio,
+  Loader2,
+  TableProperties,
+  Trash2,
+  Video,
+} from "lucide-react";
 
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 
@@ -103,7 +111,15 @@ export function ItemsSheet({
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="max-h-[85dvh]">
           <DrawerHeader className="pb-1">
-            <DrawerTitle>Captured items</DrawerTitle>
+            <div className="flex items-center justify-between gap-2">
+              <DrawerTitle>Captured items</DrawerTitle>
+              <Button asChild variant="outline" size="sm" className="h-8">
+                <Link href="/tools/product-capture/all">
+                  <TableProperties className="mr-1.5 h-3.5 w-3.5" />
+                  View all
+                </Link>
+              </Button>
+            </div>
             <DrawerDescription>
               Tap an item to keep adding to it.
             </DrawerDescription>

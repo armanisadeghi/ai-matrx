@@ -1,0 +1,318 @@
+"use client";
+
+/**
+ * AllItemsTable — the manage page's table over EVERY capture item of the org,
+ * newest first, on the canonical `MatrxDataTable` (every column sorts AND
+ * filters; URL-durable query state).
+ *
+ * Row click / the Eye action opens VIEW mode (`/tools/product-capture/item/
+ * [id]` — manage images, edit code/notes); the Camera action opens CAPTURE
+ * mode (`/tools/product-capture?item=<id>` — keep shooting onto the item).
+ * Delete soft-deletes the row; uploaded files stay in the org's file tree.
+ *
+ * Reads are complete by contract (`listAllItems`/`listAllFiles` page through
+ * `readAllRows`) — a management list silently capped at 1000 rows would hide
+ * real inventory.
+ */
+
+import React, { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Camera, Eye, FileAudio, Loader2, Trash2, Video } from "lucide-react";
+
+import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
+import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
+import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { toast } from "@/lib/toast";
+
+import type { CaptureItem } from "../types";
+import { deleteItem, listAllFiles, listAllItems } from "../service";
+
+interface ItemTableRow {
+  id: string;
+  code: string | null;
+  codeSource: string | null;
+  notes: string;
+  status: CaptureItem["status"];
+  createdAt: string;
+  photoCount: number;
+  videoCount: number;
+  audioCount: number;
+  firstPhotoFileId: string | null;
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  captured: "Captured",
+  processed: "Processed",
+};
+
+function formatWhen(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export function AllItemsTable() {
+  const router = useRouter();
+  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+
+  const [rows, setRows] = useState<ItemTableRow[] | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<ItemTableRow | null>(null);
+
+  const load = useCallback(async () => {
+    if (!organizationId) return;
+    try {
+      const [items, filesByItem] = await Promise.all([
+        listAllItems(organizationId),
+        listAllFiles(organizationId),
+      ]);
+      setRows(
+        items.map((item) => {
+          const files = filesByItem.get(item.id) ?? [];
+          return {
+            id: item.id,
+            code: item.code,
+            codeSource: item.codeSource,
+            notes: item.notes,
+            status: item.status,
+            createdAt: item.createdAt,
+            photoCount: files.filter((f) => f.kind === "photo").length,
+            videoCount: files.filter((f) => f.kind === "video").length,
+            audioCount: files.filter((f) => f.kind === "audio").length,
+            firstPhotoFileId:
+              files.find((f) => f.kind === "photo")?.fileId ?? null,
+          };
+        }),
+      );
+    } catch (err) {
+      console.error("[product-capture] items load failed", err);
+      toast.error("Could not load the capture items.");
+      setRows([]);
+    }
+  }, [organizationId]);
+
+  useEffect(() => {
+    // Deferred a tick so the effect never sets state synchronously.
+    const timer = setTimeout(() => void load(), 0);
+    return () => clearTimeout(timer);
+  }, [load]);
+
+  const openView = useCallback(
+    (row: ItemTableRow) => {
+      router.push(`/tools/product-capture/item/${row.id}`);
+    },
+    [router],
+  );
+
+  const openCapture = useCallback(
+    (row: ItemTableRow) => {
+      router.push(`/tools/product-capture?item=${row.id}`);
+    },
+    [router],
+  );
+
+  const remove = useCallback(async (row: ItemTableRow) => {
+    try {
+      await deleteItem(row.id);
+      setRows((prev) => prev?.filter((r) => r.id !== row.id) ?? prev);
+    } catch (err) {
+      console.error("[product-capture] delete failed", err);
+      toast.error("Could not delete the item.");
+    }
+  }, []);
+
+  const columns: MatrxColumnDef<ItemTableRow>[] = [
+    {
+      id: "thumb",
+      header: "",
+      sortable: false,
+      filter: false,
+      cell: (row) => (
+        <div className="h-12 w-12 overflow-hidden rounded-md bg-muted">
+          {row.firstPhotoFileId ? (
+            <CaptureThumb
+              fileId={row.firstPhotoFileId}
+              alt={row.code ?? "Captured item"}
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <Camera className="h-4 w-4 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "code",
+      accessorFn: (row) => row.code ?? "",
+      header: "Product #",
+      cell: (row) =>
+        row.code ? (
+          <span className="font-medium">{row.code}</span>
+        ) : (
+          <span className="text-muted-foreground">No code</span>
+        ),
+    },
+    {
+      id: "photoCount",
+      accessorKey: "photoCount",
+      header: "Photos",
+      cell: (row) => (
+        <span className="tabular-nums">{row.photoCount}</span>
+      ),
+    },
+    {
+      id: "videoCount",
+      accessorKey: "videoCount",
+      header: "Videos",
+      cell: (row) =>
+        row.videoCount > 0 ? (
+          <span className="flex items-center gap-1 tabular-nums">
+            <Video className="h-3.5 w-3.5 text-muted-foreground" />
+            {row.videoCount}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      id: "audioCount",
+      accessorKey: "audioCount",
+      header: "Voice notes",
+      cell: (row) =>
+        row.audioCount > 0 ? (
+          <span className="flex items-center gap-1 tabular-nums">
+            <FileAudio className="h-3.5 w-3.5 text-muted-foreground" />
+            {row.audioCount}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      id: "notes",
+      accessorKey: "notes",
+      header: "Notes",
+      cell: (row) =>
+        row.notes ? (
+          <span className="block max-w-64 truncate text-muted-foreground">
+            {row.notes}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      id: "status",
+      accessorKey: "status",
+      header: "Status",
+      filter: "select",
+      filterOptions: Object.entries(STATUS_LABELS).map(([value, label]) => ({
+        value,
+        label,
+      })),
+      cell: (row) => STATUS_LABELS[row.status] ?? row.status,
+    },
+    {
+      id: "createdAt",
+      accessorKey: "createdAt",
+      header: "Captured",
+      cell: (row) => (
+        <span className="whitespace-nowrap text-muted-foreground">
+          {formatWhen(row.createdAt)}
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <MatrxDataTable<ItemTableRow>
+        data={rows ?? []}
+        columns={columns}
+        getRowId={(row) => row.id}
+        isLoading={rows === null}
+        urlState={{
+          id: "product-capture-items",
+          defaultSort: { id: "createdAt", direction: "desc" },
+        }}
+        toolbar={{
+          search: true,
+          searchPlaceholder: "Search code or notes…",
+        }}
+        onRowOpen={openView}
+        rowActions={(row) => (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="View item"
+              onClick={(e) => {
+                e.stopPropagation();
+                openView(row);
+              }}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Capture more photos"
+              onClick={(e) => {
+                e.stopPropagation();
+                openCapture(row);
+              }}
+            >
+              <Camera className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground"
+              aria-label="Delete item"
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmDelete(row);
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      />
+      {organizationId === null && (
+        <div className="flex justify-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmDelete !== null}
+        onOpenChange={(o) => {
+          if (!o) setConfirmDelete(null);
+        }}
+        title="Delete this item?"
+        description={
+          confirmDelete?.code
+            ? `“${confirmDelete.code}” is removed from the capture list. Uploaded files stay in your organization's file tree.`
+            : "The item is removed from the capture list. Uploaded files stay in your organization's file tree."
+        }
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (confirmDelete) void remove(confirmDelete);
+          setConfirmDelete(null);
+        }}
+      />
+    </div>
+  );
+}

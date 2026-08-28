@@ -46,6 +46,22 @@ const PRODUCT_CAPTURE_ADMIN_MAP: FeatureAdminMap = {
       ],
     },
     {
+      url: "/tools/product-capture/all",
+      label: "Manage list",
+      description:
+        "Every org item newest-first on the canonical MatrxDataTable (complete reads via readAllRows); rows open view mode, actions open capture mode or delete.",
+      filePath: "app/(core)/tools/product-capture/all/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/tools/product-capture/item/[id]",
+      label: "Item view mode",
+      description:
+        "Manage one item's media (delete / add photos+videos), edit SKU + notes (guarded autosave), jump back into capture mode.",
+      filePath: "app/(core)/tools/product-capture/item/[id]/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/tools/product-capture/admin",
       label: "Admin map (this page)",
       description: "Admin index of every product-capture resource.",
@@ -95,6 +111,27 @@ const PRODUCT_CAPTURE_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/product-capture/hooks/useQrAutoScan.ts",
       description:
         "250 ms decode tick over the live preview via lib/qr/decode with repeat-cooldown dedupe.",
+      status: "Live",
+    },
+    {
+      name: "ProductCaptureHeader",
+      filePath: "features/product-capture/components/ProductCaptureHeader.tsx",
+      description:
+        "Shared RouteHeader (back + title + actions) for the manage pages.",
+      status: "Live",
+    },
+    {
+      name: "AllItemsTable",
+      filePath: "features/product-capture/components/AllItemsTable.tsx",
+      description:
+        "The manage table: MatrxDataTable over listAllItems/listAllFiles with View / Capture / Delete row actions.",
+      status: "Live",
+    },
+    {
+      name: "ItemDetailView",
+      filePath: "features/product-capture/components/ItemDetailView.tsx",
+      description:
+        "View mode: media grid with add/delete, SKU + notes autosave, Capture hand-off.",
       status: "Live",
     },
   ],

@@ -17,7 +17,7 @@ import { fileHandler } from "@/features/files/handler/handler";
 import type { NormalizedFile } from "@/features/files/handler/types";
 
 import type { CaptureItem, ProductCaptureFileKind } from "./types";
-import { linkFile } from "./service";
+import { linkFile, listItemFiles, unlinkFile } from "./service";
 import type { CaptureFile } from "./types";
 
 export interface UploadItemFileResult {
@@ -63,4 +63,24 @@ export async function uploadItemFile(args: {
     kind,
   });
   return { uploaded, link };
+}
+
+/**
+ * Delete one of an item's files for good: unlink the row and hard-delete the
+ * cloud file (the link row also cascades if the file row goes first). Pass
+ * `linkId` when the caller already holds the link row; otherwise it is looked
+ * up from the item.
+ */
+export async function removeItemFile(args: {
+  itemId: string;
+  fileId: string;
+  linkId?: string;
+}): Promise<void> {
+  let linkId = args.linkId;
+  if (!linkId) {
+    const files = await listItemFiles(args.itemId);
+    linkId = files.find((f) => f.fileId === args.fileId)?.id;
+  }
+  if (linkId) await unlinkFile(linkId);
+  await fileHandler.remove(args.fileId, { hard: true });
 }

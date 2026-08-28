@@ -16,6 +16,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { readAllRows } from "@/lib/supabase/readAllRows";
 import { folderForProductCaptureItem } from "@/features/files/utils/folder-conventions";
 
 import type {
@@ -138,6 +139,50 @@ export async function listRecentItems(
     .limit(limit);
   if (error) throw error;
   return ((data ?? []) as ItemRow[]).map(toItem);
+}
+
+/** EVERY item of the org, newest first — the manage page's read. Complete by
+ *  contract (`readAllRows`): the list drives management decisions, and a
+ *  silent 1000-row cap would hide real items. */
+export async function listAllItems(
+  organizationId: string,
+): Promise<CaptureItem[]> {
+  const rows = await readAllRows<ItemRow>(
+    ({ from, to }) =>
+      items()
+        .select(ITEM_COLUMNS, { count: "exact" })
+        .eq("organization_id", organizationId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "workbench.product_capture_item" },
+  );
+  return rows.map(toItem);
+}
+
+/** EVERY file link of the org (for the manage page's counts + thumbnails),
+ *  grouped by item. Complete by contract, same reason as `listAllItems`. */
+export async function listAllFiles(
+  organizationId: string,
+): Promise<Map<string, CaptureFile[]>> {
+  const rows = await readAllRows<FileRow>(
+    ({ from, to }) =>
+      files()
+        .select(FILE_COLUMNS, { count: "exact" })
+        .eq("organization_id", organizationId)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "workbench.product_capture_file" },
+  );
+  const map = new Map<string, CaptureFile[]>();
+  for (const row of rows) {
+    const list = map.get(row.item_id) ?? [];
+    list.push(toFile(row));
+    map.set(row.item_id, list);
+  }
+  return map;
 }
 
 type ItemPatch = Partial<
