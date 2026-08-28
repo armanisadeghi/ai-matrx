@@ -1,5 +1,5 @@
 ---
-status: blocked
+status: active
 updated: 2026-08-27
 repos: [matrx-frontend]
 scope: tail
@@ -34,6 +34,13 @@ its `canvas_items` row — instead of each one pushing its own private copy into
   [features/artifacts/FEATURE.md](../../features/artifacts/FEATURE.md)
 - Dev server: `pnpm preview:start` (port 3001, ONE machine-wide). Login: `/api/dev-login?token=$DEV_LOGIN_TOKEN&next=/artifacts`
 - Review queue: `b8b0091f-0cbf-49f4-bc83-cefe28224ef4` (`submitted`).
+
+## Remaining work
+
+- Repair and fresh-Browser certify the mobile action layouts exposed by the completed opener pass:
+  progress and troubleshooting controls currently collapse into character-wrapped vertical strips.
+- Bring the tested renderers' icon-only controls to the mobile touch floor with accessible names,
+  prioritizing each renderer's own Canvas control and preserving desktop density.
 
 ## EXEMPT — do not touch, these are correct
 
