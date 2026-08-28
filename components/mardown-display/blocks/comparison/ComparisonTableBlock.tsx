@@ -32,6 +32,9 @@ import {
   BarChart3,
 } from "lucide-react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
+import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 
 export type ComparisonCriterion = Omit<
@@ -60,6 +63,10 @@ export interface ComparisonTableState {
 interface ComparisonTableBlockProps {
   comparison: ComparisonTableData;
   taskId?: string; // Task ID for canvas deduplication
+  artifactId?: string;
+  conversationId?: string;
+  messageId?: string;
+  blockIndex?: number;
   /** Seed interaction state (sort, hidden columns, scores) from persisted state (optional). */
   initialState?: ComparisonTableState;
   /** Called whenever the user changes persisted interaction state (optional). */
@@ -78,6 +85,10 @@ const navBtnClass =
 const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
   comparison,
   taskId,
+  artifactId,
+  conversationId,
+  messageId,
+  blockIndex,
   initialState,
   onStateChange,
 }) => {
@@ -114,6 +125,33 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
   const [highlightedItem, setHighlightedItem] = useState<string | null>(null);
   const [showScores, setShowScores] = useState(initialState?.showScores ?? false);
   const { open: openCanvas } = useCanvas();
+  const { openArtifact } = useOpenArtifactInCanvas();
+
+  const handleOpenCanvas = () => {
+    const def = getArtifactDef("comparison");
+
+    if (def?.materializable && isMaterializedArtifactId(artifactId)) {
+      void openArtifact({
+        canvasType: "comparison",
+        title: comparison.title,
+        content: JSON.stringify(comparison),
+        conversationId,
+        messageId,
+        artifactId,
+        artifactIndex: blockIndex && blockIndex > 0 ? blockIndex : 1,
+      });
+      return;
+    }
+
+    openCanvas({
+      type: "comparison",
+      data: comparison,
+      metadata: {
+        title: comparison.title,
+        sourceTaskId: taskId,
+      },
+    });
+  };
 
   // Keep a stable ref to onStateChange so closures don't go stale / loop renders.
   const onStateChangeRef = useRef(onStateChange);
@@ -564,16 +602,7 @@ const ComparisonTableBlock: React.FC<ComparisonTableBlockProps> = ({
                       <IconButton
                         icon={ExternalLink}
                         tooltip="Open Canvas"
-                        onClick={() =>
-                          openCanvas({
-                            type: "comparison",
-                            data: comparison,
-                            metadata: {
-                              title: comparison.title,
-                              sourceTaskId: taskId,
-                            },
-                          })
-                        }
+                        onClick={handleOpenCanvas}
                         size="sm"
                         className="bg-purple-500 dark:bg-purple-600 text-white hover:bg-purple-600 dark:hover:bg-purple-700"
                       />

@@ -22,6 +22,9 @@ export default function ComparisonArtifact({
   taskId,
   artifactId,
   isStreamActive,
+  conversationId,
+  messageId,
+  blockIndex,
 }: ArtifactRendererProps) {
   const { state, loaded, save } = useArtifactState<
     ComparisonTableState & Record<string, unknown>
@@ -53,6 +56,10 @@ export default function ComparisonArtifact({
       <ComparisonTableBlock
         comparison={comparison}
         taskId={artifactDedupKey(taskId, artifactId)}
+        artifactId={artifactId}
+        conversationId={conversationId}
+        messageId={messageId}
+        blockIndex={blockIndex}
         initialState={state ?? undefined}
         onStateChange={save as (state: ComparisonTableState) => void}
       />
