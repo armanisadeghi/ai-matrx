@@ -93,12 +93,13 @@ export function HrShell({
     capabilities: all,
     employmentId,
     org: orgRef,
-    // So the menu stops offering a contractor surfaces the server refuses her.
-    workerClass: active?.worker_class ?? null,
-    // ...and so a §2.8 override enrolment is not hidden by that same class rule.
-    // Leave is the one surface with a designed per-person exception; this is the
-    // server's answer about it, not a client guess (hr_l5_30).
-    hasLeaveEnrolment: active?.has_active_leave_enrolment ?? null,
+    /*
+      The whole payload, once. Every per-person rule — the worker class, and the
+      §2.8 override enrolment that is leave's designed per-person exception
+      (hr_l5_30) — is derived from this INSIDE the resolver, so the two callers
+      cannot disagree about which rules they applied.
+    */
+    active,
   });
 
   const navItems: RouteNavItem[] = nav.items.map((item) => ({

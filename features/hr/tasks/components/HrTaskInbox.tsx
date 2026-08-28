@@ -355,14 +355,23 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                     >
                         <ul className="divide-y divide-border rounded-lg border border-border bg-card">
                             {inbox.waiting_on_others.map((row) => (
-                                <li key={row.instance_id} className="flex items-center gap-3 p-3 text-sm">
-                                    <Link
-                                        href={`/hr/tasks/${row.instance_id}`}
-                                        className="truncate font-medium hover:underline"
-                                    >
-                                        {row.flow_key}
-                                    </Link>
-                                    <span className="text-muted-foreground">{row.state}</span>
+                                <li key={row.instance_id} className="flex items-start gap-3 p-3 text-sm">
+                                    <div className="min-w-0 flex-1">
+                                        <Link
+                                            href={`/hr/tasks/${row.instance_id}`}
+                                            className="block truncate font-medium hover:underline"
+                                        >
+                                            {/* Their own request, in the words the approver
+                                                reads. The raw key was the only thing here. */}
+                                            {row.flow_label ?? row.flow_key}
+                                        </Link>
+                                        {row.summary ? (
+                                            <div className="truncate text-xs text-muted-foreground">
+                                                {row.summary}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                    <span className="shrink-0 text-muted-foreground">{row.state}</span>
                                 </li>
                             ))}
                         </ul>

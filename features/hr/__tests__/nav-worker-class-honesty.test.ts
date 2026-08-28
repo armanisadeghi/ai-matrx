@@ -27,7 +27,9 @@ const base = {
 };
 
 const keysFor = (workerClass: string | null) =>
-  resolveHrNav({ ...base, workerClass }).items.map((i) => i.key);
+  resolveHrNav({ ...base, active: { worker_class: workerClass } as never }).items.map(
+    (i) => i.key,
+  );
 
 describe("self-service nav is honest about worker class", () => {
   it("offers an employee the time, schedule and leave surfaces", () => {

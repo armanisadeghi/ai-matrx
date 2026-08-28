@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 import type { HrCapability, HrPersona } from "../constants";
+import type { HrActiveEmployer } from "../types";
 import {
   hrAssetsHref,
   hrComplianceHref,
@@ -307,27 +308,28 @@ export function resolveHrNav(args: {
   capabilities: string[];
   employmentId: string | null;
   org: HrOrgRef;
-  /**
-   * The viewer's own worker class today, from `hr_my_context().active`. `null`
-   * hides nothing — an unknown class must not silently strip somebody's nav.
-   */
-  workerClass?: string | null;
-  /**
-   * Does the viewer hold an ACTIVE leave enrolment today, from
-   * `hr_my_context().active.has_active_leave_enrolment`? Only `true` changes
-   * anything: it overrides the per-class default for leave. Absent, null or
-   * false leaves every class rule exactly as it was, so a stale payload can
-   * never strip a menu.
-   */
-  hasLeaveEnrolment?: boolean | null;
+  /*
+    🚨 THE WHOLE CONTEXT, NOT A LIST OF FLAGS — AND REQUIRED, SO IT CANNOT BE
+    FORGOTTEN.
+
+    Every per-person honesty rule below is DERIVED from this payload here, once.
+    It used to arrive as separate optional flags (`workerClass`, then
+    `hasLeaveEnrolment`), and the two call sites of this one resolver diverged
+    TWICE: each time a flag was added, the second caller kept rendering the
+    unfiltered menu, and each fix opened its mirror. Optional honesty arguments
+    do that by construction — the safe default that protects the caller who
+    passes nothing is exactly what makes the omission silent.
+
+    `active` is a required KEY with a nullable VALUE: a caller with no employer
+    must say so explicitly, and cannot simply leave the argument out. A null
+    payload hides NOTHING, because an unknown person must never have their menu
+    silently stripped.
+  */
+  active: HrActiveEmployer | null;
 }): HrNavResolution {
-  const {
-    persona,
-    employmentId,
-    org,
-    workerClass = null,
-    hasLeaveEnrolment = null,
-  } = args;
+  const { persona, employmentId, org, active } = args;
+  const workerClass = active?.worker_class ?? null;
+  const hasLeaveEnrolment = active?.has_active_leave_enrolment ?? null;
   const held = new Set(args.capabilities);
   const isEmployee = persona === "employee";
 

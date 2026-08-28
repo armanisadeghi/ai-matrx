@@ -314,6 +314,11 @@ export function parseInbox(source: Obj): HrInbox {
         waiting_on_others: objects(rpc, source, "waiting_on_others").map((r) => ({
             instance_id: str(rpc, r, "instance_id"),
             flow_key: str(rpc, r, "flow_key"),
+            // Optional at the seam: the door sends them, and a payload that predates
+            // hr_l1_40 simply falls back to the key rather than throwing at a person
+            // trying to look at their own requests.
+            flow_label: optStr(r, "flow_label"),
+            summary: optStr(r, "summary"),
             state: str(rpc, r, "state"),
             submitted_at: optStr(r, "submitted_at") ?? null,
         })),

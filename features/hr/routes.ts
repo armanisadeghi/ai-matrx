@@ -70,8 +70,17 @@ export function hrMeHref(org?: HrOrgRef): string {
  * itself rather than to `/hr/people/<id>/<tab>` — a route a plain employee has
  * no standing to read. `personal` is the default and carries no parameter.
  */
-export function hrMeTabHref(segment: string, org?: HrOrgRef): string {
-  return hrUrl("/hr/me", org, segment && segment !== "personal" ? { tab: segment } : undefined);
+export function hrMeTabHref(
+  segment: string,
+  org?: HrOrgRef,
+  /** `assignment` opens one position-assignment row in place, and is new-tab-able —
+      the self-surface twin of `hrEmployeeHref`'s option of the same name. */
+  options: { assignment?: string | null } = {},
+): string {
+  return hrUrl("/hr/me", org, {
+    ...(segment && segment !== "personal" ? { tab: segment } : {}),
+    assignment: options.assignment,
+  });
 }
 /** Route 3 — my compensation. Never accepts an employeeId; self only. */
 export function hrMePayHref(org?: HrOrgRef): string {

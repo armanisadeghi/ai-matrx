@@ -135,6 +135,17 @@ export type HrAutoApplyingRow = {
 export type HrWaitingRow = {
     instance_id: string;
     flow_key: string;
+    /**
+     * 🚨 THE SAME WORDS THE DECIDER SEES. This list is the person's OWN filed
+     * requests, and it carried only the raw flow key — so they read
+     * `leave_request` about their own leave while the approver read "Leave
+     * request · 18 Sep – 19 Sep 2026 · 8 hours". A rendering fix that lands on
+     * one side of a transaction leaves the subject knowing less about their own
+     * request than the stranger deciding it.
+     */
+    flow_label?: string | null;
+    /** The target row's human summary — dates, hours, policy — same source as the queue. */
+    summary?: string | null;
     state: string;
     submitted_at: string | null;
 };

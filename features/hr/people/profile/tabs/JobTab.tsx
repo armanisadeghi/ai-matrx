@@ -28,6 +28,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowRightLeft, ExternalLink, Pencil } from "lucide-react";
 
 import DataRowWindow from "@/components/official/matrx-data-table/DataRowWindow.dynamic";
@@ -37,7 +38,12 @@ import { cn } from "@/lib/utils";
 
 import { HrError, HrLoading } from "../../../shared/HrStates";
 import { PendingChangesPanel } from "../../../shared/PendingChangesPanel";
-import { hrStructureFocusHref, type HrOrgRef } from "../../../routes";
+import {
+  hrEmployeeHref,
+  hrMeTabHref,
+  hrStructureFocusHref,
+  type HrOrgRef,
+} from "../../../routes";
 import type { HrEmployeeProfile } from "../../../types";
 import { formatFullDate, formatRecordedAt } from "../../shared/HrStatusChip";
 import { HrWorkerClassChip } from "../../shared/HrWorkerClassChip";
@@ -347,6 +353,14 @@ function AssignmentRow({
   employeeId: string;
   onOpen: () => void;
 }) {
+  /*
+    Which surface this row is rendered on. `EmployeeProfile` is ONE component with
+    THREE viewers and resolves `viewer` server-side, so nothing in this render
+    chain is told whether it is `/hr/me` or `/hr/people/[id]` — the path is the
+    only signal that reaches here, and it is the right one anyway: the link should
+    stay on the surface it was clicked from.
+  */
+  const selfSurface = (usePathname() ?? "").startsWith("/hr/me");
   const effectiveFrom = readString(row, "effective_from");
   const effectiveTo = readString(row, "effective_to");
   const isFuture = Boolean(
@@ -434,7 +448,19 @@ function AssignmentRow({
           {assignmentId ? (
             <Button asChild size="sm" variant="ghost" className="min-h-11 sm:min-h-8">
               <Link
-                href={`/hr/people/${employeeId}/job?assignment=${assignmentId}`}
+                /*
+                  🚨 BUILT, NOT HAND-ASSEMBLED — routes.ts says so at the top of the
+                  file, and this template literal was the counter-example: it dropped
+                  the employer entirely (landing the person on "Which employer?") and
+                  hard-coded the HR-facing path, so on the SELF surface it sent
+                  somebody out of the one place they are entitled to be. Same class
+                  as the two dropped-org doors and the tab bar, in a third spot.
+                */
+                href={
+                  selfSurface
+                    ? hrMeTabHref("job", org, { assignment: assignmentId })
+                    : hrEmployeeHref(employeeId, "job", { org, assignment: assignmentId })
+                }
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Open this assignment in a new tab"

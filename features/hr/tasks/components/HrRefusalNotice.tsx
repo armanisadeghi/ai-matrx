@@ -32,10 +32,26 @@ export function HrRefusalNotice({
                 <p className="text-sm text-muted-foreground">
                     {refusal.detail ?? "The system gave no reason, which is itself a defect."}
                 </p>
-                <p className="font-mono text-xs text-muted-foreground">
-                    {refusal.reason}
-                    {refusal.audit_id ? ` · recorded as ${refusal.audit_id}` : ""}
-                </p>
+                {/*
+                    🚨 THE MACHINE TOKEN GOES IN THE DISCLOSURE, NOT THE BODY.
+                    `WF_TARGET_CHANGED` was printed as visible body text, two inches
+                    below a disclosure built for exactly this kind of thing. The
+                    sentence above already says what happened in words; the token and
+                    the audit id are for whoever has to trace it afterwards, and
+                    putting them in the flow of the message makes a refusal look like
+                    a crash to the person it is explaining something to.
+                */}
+                {refusal.reason || refusal.audit_id ? (
+                    <details className="pt-0.5">
+                        <summary className="cursor-pointer text-xs text-muted-foreground">
+                            Reference
+                        </summary>
+                        <p className="mt-1 break-words font-mono text-xs text-muted-foreground">
+                            {refusal.reason}
+                            {refusal.audit_id ? ` · recorded as ${refusal.audit_id}` : ""}
+                        </p>
+                    </details>
+                ) : null}
             </div>
         </div>
     );

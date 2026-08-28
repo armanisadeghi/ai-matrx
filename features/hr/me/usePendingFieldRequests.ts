@@ -33,12 +33,39 @@ function stringify(value: unknown): string | null {
   if (typeof value === "number" || typeof value === "boolean") {
     return String(value);
   }
-  // An address is an object. Render the lines a person recognises rather than
-  // JSON — a pending value nobody can read is not a pending value.
+  /*
+    An address is an object. Render the lines a person recognises rather than
+    JSON — a pending value nobody can read is not a pending value.
+
+    🚨 AND IN THE ORDER AN ENVELOPE IS WRITTEN. This used to take
+    `Object.values()`, which walks whatever key order the payload happened to
+    arrive in, so the SUBJECT saw their own requested address jumbled — "Portland,
+    118 Harbour Way, OR, USA, 97204" — a few keystrokes from the stored one that
+    rendered correctly, while the DECIDER saw it properly ordered because the fix
+    landed on that surface first. Known parts lead, in envelope order; anything
+    unrecognised keeps its own order and follows, so an unexpected key is never
+    silently dropped.
+  */
   if (typeof value === "object") {
-    const parts = Object.values(value as Record<string, unknown>)
-      .filter((v) => typeof v === "string" && v.trim())
-      .map((v) => String(v).trim());
+    const source = value as Record<string, unknown>;
+    const ORDER = [
+      "line1", "line2", "line3", "street",
+      "city", "locality", "region", "state",
+      "postal_code", "postcode", "zip", "country",
+    ];
+    const seen = new Set<string>();
+    const parts: string[] = [];
+    for (const key of ORDER) {
+      const v = source[key];
+      if (typeof v === "string" && v.trim()) {
+        parts.push(v.trim());
+        seen.add(key);
+      }
+    }
+    for (const [key, v] of Object.entries(source)) {
+      if (seen.has(key)) continue;
+      if (typeof v === "string" && v.trim()) parts.push(v.trim());
+    }
     return parts.length > 0 ? parts.join(", ") : null;
   }
   return null;

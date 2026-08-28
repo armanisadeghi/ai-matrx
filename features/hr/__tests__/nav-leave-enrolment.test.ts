@@ -33,8 +33,17 @@ const base = {
   org: { slug: "acme" } as never,
 };
 
+// The resolver takes the whole context payload, so the tests build one too —
+// exercising the same seam the product does rather than a flag list that no
+// caller uses any more.
 const keysFor = (workerClass: string | null, hasLeaveEnrolment?: boolean | null) =>
-  resolveHrNav({ ...base, workerClass, hasLeaveEnrolment }).items.map((i) => i.key);
+  resolveHrNav({
+    ...base,
+    active: {
+      worker_class: workerClass,
+      has_active_leave_enrolment: hasLeaveEnrolment ?? null,
+    } as never,
+  }).items.map((i) => i.key);
 
 describe("My Time Off follows enrolment, not worker class", () => {
   it("shows leave to a contractor holding a §2.8 override enrolment", () => {
