@@ -211,7 +211,7 @@ const Slideshow = (
                     type="button"
                     aria-label="Theme / template"
                     title="Theme / template"
-                    className="flex h-11 items-center gap-1.5 rounded-md border border-border bg-card/70 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground sm:h-7"
+                    className="flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-md border border-border bg-card/70 px-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground sm:h-7 sm:min-w-0"
                   >
                     <Palette className="h-3.5 w-3.5" style={{ color: effectiveTheme.primaryColor }} />
                     <span className="hidden capitalize sm:inline">

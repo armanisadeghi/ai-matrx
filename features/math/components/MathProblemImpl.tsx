@@ -104,10 +104,15 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
         setDisplayedContent((prev) => [...prev, content]);
     };
 
-    const rebuildContent = () => {
+    const rebuildContent = (
+        renderStage = stage,
+        renderSubStage = subStage,
+        renderSolutionIndex = currentSolutionIndex,
+        renderStepIndex = currentStepIndex,
+    ) => {
         setDisplayedContent([]);
 
-        if (stage === "overview") {
+        if (renderStage === "overview") {
             addContent(
                 <div key="overview" className="space-y-3">
                     <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/30 dark:to-purple-950/30 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800">
@@ -140,8 +145,8 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
             return;
         }
 
-        if (stage === "intro" || stage === "solution") {
-            if (stage === "intro") {
+        if (renderStage === "intro" || renderStage === "solution") {
+            if (renderStage === "intro") {
                 addContent(
                     <div key="intro" className="bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
                         <p className="text-sm text-blue-900 dark:text-blue-100 leading-relaxed">
@@ -167,10 +172,10 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
             );
         }
 
-        if (stage === "solution") {
-            const currentSolution = solutions[currentSolutionIndex];
+        if (renderStage === "solution") {
+            const currentSolution = solutions[renderSolutionIndex];
             addContent(
-                <div key={`task-${currentSolutionIndex}`} className="bg-indigo-50/50 dark:bg-indigo-950/20 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800">
+                <div key={`task-${renderSolutionIndex}`} className="bg-indigo-50/50 dark:bg-indigo-950/20 rounded-lg p-3 border border-indigo-200 dark:border-indigo-800">
                     <div className="text-xs uppercase font-bold text-indigo-700 dark:text-indigo-400 mb-1">Approach</div>
                     <p className="text-sm text-indigo-900 dark:text-indigo-100">
                         <InlineMathText text={currentSolution.task} />
@@ -178,9 +183,9 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
                 </div>
             );
 
-            if (subStage === "steps") {
+            if (renderSubStage === "steps") {
                 // Safety check: ensure we don't exceed array bounds
-                const maxStepIndex = Math.min(currentStepIndex, currentSolution.steps.length - 1);
+                const maxStepIndex = Math.min(renderStepIndex, currentSolution.steps.length - 1);
                 for (let i = 0; i <= maxStepIndex; i++) {
                     const step = currentSolution.steps[i];
                     if (step) {
@@ -210,7 +215,7 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
                         }[stepColor];
                         
                         addContent(
-                            <div key={`step-${currentSolutionIndex}-${i}`} className="relative">
+                            <div key={`step-${renderSolutionIndex}-${i}`} className="relative">
                                 {/* Step separator line */}
                                 {i > 0 && (
                                     <div className="h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-700 to-transparent mb-2" />
@@ -235,9 +240,9 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
                         );
                     }
                 }
-            } else if (subStage === "solutionAnswer") {
+            } else if (renderSubStage === "solutionAnswer") {
                 addContent(
-                    <div key={`final-answer-${currentSolutionIndex}`} className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-xl p-4 border-2 border-green-300 dark:border-green-700">
+                    <div key={`final-answer-${renderSolutionIndex}`} className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-xl p-4 border-2 border-green-300 dark:border-green-700">
                         <div className="flex items-center gap-2 mb-2">
                             <div className="w-1.5 h-6 bg-gradient-to-b from-green-500 to-emerald-500 rounded-full" />
                             <h3 className="text-sm font-bold text-green-900 dark:text-green-100">Final Answer</h3>
@@ -247,15 +252,15 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
                         </div>
                     </div>
                 );
-            } else if (subStage === "transition" && currentSolution.transitionText) {
+            } else if (renderSubStage === "transition" && currentSolution.transitionText) {
                 addContent(
-                    <div key={`transition-${currentSolutionIndex}`} className="bg-violet-50/50 dark:bg-violet-950/20 rounded-lg p-3 border border-violet-200 dark:border-violet-800">
+                    <div key={`transition-${renderSolutionIndex}`} className="bg-violet-50/50 dark:bg-violet-950/20 rounded-lg p-3 border border-violet-200 dark:border-violet-800">
                         <p className="text-sm text-violet-900 dark:text-violet-100 italic">
                             <InlineMathText text={currentSolution.transitionText} />
                         </p>
                     </div>
                 );
-            } else if (subStage === "finalStatement") {
+            } else if (renderSubStage === "finalStatement") {
                 addContent(
                     <div key="final-statement" className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/30 dark:to-cyan-950/30 rounded-xl p-4 border-2 border-teal-300 dark:border-teal-700">
                         <div className="flex items-center gap-2 mb-2">
@@ -274,15 +279,15 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
     const nextStep = () => {
         if (stage === "overview") {
             setStage("intro");
-            setTimeout(() => rebuildContent(), 0);
+            rebuildContent("intro", subStage, currentSolutionIndex, currentStepIndex);
         } else if (stage === "intro") {
             setStage("solution");
             setSubStage("steps");
             setCurrentStepIndex(0);
             setIsNewSolution(true);
             setIsFinalSolution(isLastSolution());
-            setIsFinalStep(isLastStep());
-            setTimeout(() => rebuildContent(), 0);
+            setIsFinalStep(isLastStep(currentSolutionIndex, 0));
+            rebuildContent("solution", "steps", currentSolutionIndex, 0);
         } else if (stage === "solution") {
             if (isNewSolution) {
                 setIsNewSolution(false);
@@ -292,15 +297,15 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
                     const nextStep = currentStepIndex + 1;
                     setCurrentStepIndex(nextStep);
                     setIsFinalStep(isLastStep(currentSolutionIndex, nextStep));
-                    rebuildContent();
+                    rebuildContent(stage, subStage, currentSolutionIndex, nextStep);
                 } else {
                     setSubStage("solutionAnswer");
-                    rebuildContent();
+                    rebuildContent(stage, "solutionAnswer", currentSolutionIndex, currentStepIndex);
                 }
             } else if (subStage === "solutionAnswer") {
                 if (hasTransitionText()) {
                     setSubStage("transition");
-                    rebuildContent();
+                    rebuildContent(stage, "transition", currentSolutionIndex, currentStepIndex);
                 } else if (!isFinalSolution) {
                     const nextSolution = currentSolutionIndex + 1;
                     setCurrentSolutionIndex(nextSolution);
@@ -309,10 +314,10 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
                     setIsFinalSolution(isLastSolution(nextSolution));
                     setIsFinalStep(false);
                     setSubStage("steps");
-                    rebuildContent();
+                    rebuildContent(stage, "steps", nextSolution, 0);
                 } else {
                     setSubStage("finalStatement");
-                    rebuildContent();
+                    rebuildContent(stage, "finalStatement", currentSolutionIndex, currentStepIndex);
                 }
             } else if (subStage === "transition") {
                 if (!isFinalSolution) {
@@ -323,10 +328,10 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
                     setIsFinalSolution(isLastSolution(nextSolution));
                     setIsFinalStep(false);
                     setSubStage("steps");
-                    rebuildContent();
+                    rebuildContent(stage, "steps", nextSolution, 0);
                 } else {
                     setSubStage("finalStatement");
-                    rebuildContent();
+                    rebuildContent(stage, "finalStatement", currentSolutionIndex, currentStepIndex);
                 }
             } else if (subStage === "finalStatement") {
                 setShowCongratulations(true);
@@ -337,13 +342,13 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
     const previousStep = () => {
         if (stage === "intro") {
             setStage("overview");
-            rebuildContent();
+            rebuildContent("overview", subStage, currentSolutionIndex, currentStepIndex);
         } else if (stage === "solution") {
             if (subStage === "steps") {
                 if (currentStepIndex > 0) {
                     setCurrentStepIndex(currentStepIndex - 1);
                     setIsFinalStep(false);
-                    rebuildContent();
+                    rebuildContent(stage, subStage, currentSolutionIndex, currentStepIndex - 1);
                 } else {
                     setStage("intro");
                     setCurrentSolutionIndex(0);
@@ -351,23 +356,24 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
                     setIsNewSolution(true);
                     setIsFinalSolution(false);
                     setIsFinalStep(false);
-                    rebuildContent();
+                    rebuildContent("intro", "steps", 0, -1);
                 }
             } else if (subStage === "solutionAnswer") {
                 setSubStage("steps");
                 setCurrentStepIndex(solutions[currentSolutionIndex].steps.length - 1);
                 setIsFinalStep(true);
-                rebuildContent();
+                rebuildContent(stage, "steps", currentSolutionIndex, solutions[currentSolutionIndex].steps.length - 1);
             } else if (subStage === "transition") {
                 setSubStage("solutionAnswer");
-                rebuildContent();
+                rebuildContent(stage, "solutionAnswer", currentSolutionIndex, currentStepIndex);
             } else if (subStage === "finalStatement") {
                 if (hasTransitionText()) {
                     setSubStage("transition");
+                    rebuildContent(stage, "transition", currentSolutionIndex, currentStepIndex);
                 } else {
                     setSubStage("solutionAnswer");
+                    rebuildContent(stage, "solutionAnswer", currentSolutionIndex, currentStepIndex);
                 }
-                rebuildContent();
             }
         }
     };
@@ -381,8 +387,7 @@ const MathProblemImpl: React.FC<MathProblemProps> = ({
         setIsFinalSolution(false);
         setIsFinalStep(false);
         setShowCongratulations(false);
-        // Rebuild content after state updates
-        setTimeout(() => rebuildContent(), 0);
+        rebuildContent("overview", "steps", 0, -1);
     };
 
     if (showCongratulations) {
