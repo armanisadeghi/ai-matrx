@@ -94,13 +94,15 @@ export async function materializeMessageArtifacts(
     .from("message")
     .select("content")
     .eq("id", params.messageId)
-    .single();
+    .maybeSingle();
 
-  if (error) {
+  if (error || data === null) {
     return {
       materializedCount: 0,
       rewrittenContent: null,
-      errors: [`canonical source read failed: ${error.message}`],
+      errors: [
+        `canonical source read failed: ${error?.message ?? "message row not found"}`,
+      ],
     };
   }
 

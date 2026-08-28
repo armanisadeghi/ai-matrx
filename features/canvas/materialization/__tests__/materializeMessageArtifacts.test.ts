@@ -1,5 +1,5 @@
-const single = jest.fn();
-const eq = jest.fn(() => ({ single }));
+const maybeSingle = jest.fn();
+const eq = jest.fn(() => ({ maybeSingle }));
 const select = jest.fn(() => ({ eq }));
 const from = jest.fn(() => ({ select }));
 const schema = jest.fn(() => ({ from }));
@@ -30,7 +30,10 @@ describe("materializeMessageArtifacts", () => {
       { type: "tool_call", id: "call-owned-by-row", name: "lookup" },
       { type: "text", text: "<artifact>persisted</artifact>" },
     ];
-    single.mockResolvedValue({ data: { content: canonicalContent }, error: null });
+    maybeSingle.mockResolvedValue({
+      data: { content: canonicalContent },
+      error: null,
+    });
 
     await materializeMessageArtifacts({
       messageId: "message-1",
@@ -47,7 +50,7 @@ describe("materializeMessageArtifacts", () => {
   });
 
   it("does not create canvas rows when canonical source content cannot be read", async () => {
-    single.mockResolvedValue({
+    maybeSingle.mockResolvedValue({
       data: null,
       error: { message: "source unavailable" },
     });
@@ -63,6 +66,24 @@ describe("materializeMessageArtifacts", () => {
       materializedCount: 0,
       rewrittenContent: null,
       errors: ["canonical source read failed: source unavailable"],
+    });
+  });
+
+  it("treats an absent canonical row as a normal materialization abort", async () => {
+    maybeSingle.mockResolvedValue({ data: null, error: null });
+
+    const result = await materializeMessageArtifacts({
+      messageId: "rolled-back-message",
+      conversationId: "conversation-1",
+      content: [{ type: "text", text: "<artifact>untrusted</artifact>" }],
+    });
+
+    expect(maybeSingle).toHaveBeenCalledTimes(1);
+    expect(materializeBlocks).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      materializedCount: 0,
+      rewrittenContent: null,
+      errors: ["canonical source read failed: message row not found"],
     });
   });
 });
