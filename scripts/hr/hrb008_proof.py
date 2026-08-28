@@ -1726,6 +1726,52 @@ async def main():
             await conn.fetchval("select hr._wf_two_actor_action('timecard_approve')") is False
             and await conn.fetchval("select hr._wf_two_actor_action('pay_change_approve')") is True)
 
+        # ================== §2.2 RD5 — AN UNMAPPED SUBJECT REFUSES, IT DOES NOT RAISE
+        # 🚨 THE CONTROL FOR RECORDED DECISION 5, kept alive deliberately. hr._approval_subject
+        # RAISES for a target table it cannot map, and hr.wf_request touches the subject at its very
+        # first step — so an unguarded door threw an exception out of the RPC, past the
+        # refusal-envelope law, for any registered flow whose target was off that allowlist. That is
+        # what hr_c4_21's pre-flight silently reintroduced and hr_c4_25/26 closed.
+        # Falsified against a table that is NOT a flow target and never will be, so the next
+        # allowlist entry cannot quietly delete the control the way mapping esign.envelope did.
+        await as_owner()
+        rd5_raises = False
+        sp_rd5 = conn.transaction()
+        await sp_rd5.start()
+        try:
+            await conn.fetchval("select hr._approval_subject('hr.jurisdiction', gen_random_uuid())")
+        except Exception as e:
+            rd5_raises = getattr(e, "sqlstate", None) == "22023"
+        await sp_rd5.rollback()
+        rec("§2.2 RD5", "hr._approval_subject still REFUSES an unmapped target by name — the guarantee has a live control",
+            rd5_raises)
+        rec("§2.2 RD5", "🚨 and the DOOR turns that raise into a refusal ENVELOPE, at both the subject lookup and the pre-flight",
+            await conn.fetchval(
+                "select (select count(*) from regexp_matches(prosrc,'approval_subject_unmapped','g')) >= 2 "
+                "from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='hr' and p.proname='wf_request'"))
+        rec("§2.2 RD5", "and the resolver's own RECORDED DECISION 5 is still there — all three layers tell one story",
+            await conn.fetchval(
+                "select prosrc ~ 'approval_subject_unmapped' from pg_proc p "
+                "join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='hr' and p.proname='wf_resolve_approvers'"))
+        rec("§2.2 RD5", "🚨 every ACTIVE flow's target now maps — no registered flow can raise on its own subject",
+            await conn.fetchval(
+                "select count(*)=0 from ("
+                "  select distinct hr._wf_target_table(target_token) t from hr.workflow_flow_type "
+                "   where deleted_at is null and is_active) x "
+                "where x.t is not null and x.t not in ("
+                "  'hr.employment','hr.employee','hr.employee_private','hr.emergency_contact',"
+                "  'hr.leave_request','hr.pay_period_employment','hr.time_adjustment','hr.shift',"
+                "  'hr.shift_claim','hr.availability','hr.compensation','hr.position_assignment',"
+                "  'hr.corrective_action','hr.separation','hr.training_assignment','hr.checklist_item',"
+                "  'hr.requisition','hr.offer','hr.background_check','hr.tax_withholding','hr.schedule',"
+                "  'esign.envelope','hr.overtime_preapproval')"),
+            str(await conn.fetchval(
+                "select string_agg(distinct target_token, ', ') from hr.workflow_flow_type "
+                "where deleted_at is null and is_active "
+                "and hr._wf_target_table(target_token) = 'hr.asset_assignment'")))
+
         # ================================================================= §4.2 DOOR GRANTS
         # 🚨 `has_function_privilege('authenticated', …)` ANSWERS TRUE THROUGH THE `PUBLIC` DEFAULT
         # GRANT, so hr_c4_07's door assertion would stay green on a surface reachable only because
