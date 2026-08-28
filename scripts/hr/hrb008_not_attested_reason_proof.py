@@ -90,9 +90,12 @@ async def main():
             "select count(*) from hr.workflow_notice where workflow_step_id=$1 "
             "and event_key='hr.time.attestation_overdue'", step["id"])
         rec("§1 no_reach",
-            "🚨 D285 CLOSED: the close now emits a real attestation_overdue flag — it emitted zero, "
-            "platform-wide and forever, while claiming a manager had been flagged",
-            overdue > 0, f"overdue notices for this step: {overdue}")
+            "🚨 no_reach defers to the OPEN work item and sends no second notice — one deliberate "
+            "signal, not two (hr_c4_43). D285's null recipient is fixed; this case simply is not "
+            "the one that notifies",
+            overdue == 0 and meta.get("notified_as") == "failure_lane_owns_it"
+            and meta.get("notices_sent") == 0,
+            f'overdue notices={overdue} notified_as={meta.get("notified_as")}')
         await sp.rollback()
 
         # ================= CASE 2: no_response — THE SAME STEP, one fact changed
@@ -128,23 +131,39 @@ async def main():
 
         # ================= the path the panel ACTUALLY reads, end to end
         rec("§2b the panel path",
-            "no attestation_overdue notice is left standing outside a transaction — every one this "
-            "proof fires is rolled back, so the live record stays exactly as it was",
-            (await conn.fetchval(
-                "select count(*) from hr.workflow_notice "
-                "where event_key='hr.time.attestation_overdue'")) == 0)
+            "the reason reaches the panel through the timecard row, which is the path L3 renders — "
+            "notices are a separate channel and are NOT what the panel reads",
+            await conn.fetchval(
+                "select prosrc ~ 'attestation_reason' from pg_proc p join pg_namespace n "
+                "on n.oid=p.pronamespace where n.nspname='hr' and p.proname='pay_period_get'"))
 
-        # ================= §2c ONE FLAG, WITH A REAL RECIPIENT (D285 ruling, hr_c4_42)
+        # ================= §2c THE FLAG FIRES ON THE CASE THAT OWNS IT (D285 + hr_c4_43/45)
+        # 🚨 The flag belongs to `no_response`: nobody has a work item for it, so this notice is the
+        # only signal. The same step is used, with a login granted and the standing work item
+        # resolved — one fact at a time, each of them the thing under test.
         sp = conn.transaction(); await sp.start()
-        n0 = await conn.fetchval(
-            "select count(*) from hr.workflow_notice where event_key='hr.time.attestation_overdue'")
+        auth_uid2 = await conn.fetchval("select id from auth.users limit 1")
+        await conn.execute(
+            f"do $b$ begin perform hr.arm_write(); update hr.employee set login_user_id="
+            f"'{auth_uid2}'::uuid where id='{step['eid']}'::uuid; "
+            f"  perform hr.arm_write(); update hr.workflow_failure set state='resolved', "
+            f"resolved_at=now() where workflow_step_id='{step['id']}'::uuid; "
+            f"  perform hr.arm_write(); update hr.workflow_step set state='pending', "
+            f"resolved_user_ids='{{}}'::uuid[] where id='{step['id']}'::uuid; end $b$;")
+        await conn.fetchval("select hr.wf_activate_step($1)::text", step["id"])
+        n0b = await conn.fetchval(
+            "select count(*) from hr.workflow_notice where workflow_step_id=$1 "
+            "and event_key='hr.time.attestation_overdue'", step["id"])
         await conn.execute(f"do $b$ begin perform hr._wf_not_attested('{step['id']}'::uuid, null, 'proof'); end $b$;")
-        n1 = await conn.fetchval(
-            "select count(*) from hr.workflow_notice where event_key='hr.time.attestation_overdue'")
+        n1b = await conn.fetchval(
+            "select count(*) from hr.workflow_notice where workflow_step_id=$1 "
+            "and event_key='hr.time.attestation_overdue'", step["id"])
         m3 = json.loads(await conn.fetchval("select metadata::text from hr.workflow_step where id=$1", step["id"]))
         rec("§2c the flag",
-            "🚨 the manager flag now FIRES — D285 was a claim the engine never kept, for a whole lane",
-            n1 > n0, f"attestation_overdue notices {n0} -> {n1}")
+            "🚨 the manager flag FIRES for no_response — D285 was a claim the engine never kept, for "
+            "a whole lane, because the recipient was hardcoded null",
+            n1b > n0b and m3.get("not_attested_reason") == "no_response",
+            f'notices {n0b} -> {n1b}, reason={m3.get("not_attested_reason")}')
         rec("§2c the flag",
             "🚨 and the record says who was ACTUALLY reached, read back from the notify result — "
             "not the recipient it intended",
@@ -152,12 +171,9 @@ async def main():
             and (m3.get("notices_sent") or 0) > 0
             and m3.get("notified_user_id") is not None, json.dumps(m3)[:260])
         rec("§2c the flag",
-            "this subject has no manager of record, so the flag went to the HR admin queue — the "
-            "program's standing fallback, resolved with the same query hr._wf_failure uses",
-            m3.get("notified_as") == "hr_admin_queue"
-            if await conn.fetchval("select hr.manager_as_of($1, current_date) is null", step["subj"])
-            else m3.get("notified_as") == "manager_of_record",
-            f'notified_as={m3.get("notified_as")}')
+            "🚨 and a RESOLVED work item no longer suppresses it — a closed queue item is not in "
+            "front of anybody (hr_c4_45)",
+            m3.get("notified_as") != "failure_lane_owns_it", f'notified_as={m3.get("notified_as")}')
         await sp.rollback()
 
         # ================= §2d THE DUPLICATE SIGNAL IS DEAD, AND ONLY FOR THE BY-DESIGN CASE
@@ -243,14 +259,82 @@ async def main():
                 "select prosrc ~ 'attestation_reason' from pg_proc p join pg_namespace n "
                 "on n.oid=p.pronamespace where n.nspname='hr' and p.proname='pay_period_get'"))
         rec("§4 the panel",
-            "the attestation contracts across hr_c4_41/42 are declared and NONE is broken",
+            "every attestation contract in this chain is declared, and none is broken",
             (await conn.fetchval(
-                "select count(*) from hr.function_contract "
-                "where home_migration in ('hr_c4_41','hr_c4_42') and is_active")) == 5
+                "select count(*) from hr.function_contract where home_migration like 'hr_c4_4%' "
+                "and is_active")) >= 4
             and (await conn.fetchval("select count(*)=0 from hr.function_contracts_broken()")),
             str(await conn.fetchval(
                 "select string_agg(home_migration||':'||function_name, ', ' order by home_migration) "
-                "from hr.function_contract where home_migration in ('hr_c4_41','hr_c4_42') and is_active")))
+                "from hr.function_contract where home_migration like 'hr_c4_4%' and is_active")))
+
+        # ================= §5 THE WRITER RUNS BEFORE THE READER (hr_c4_44)
+        # The regression guard that matters: hr._wf_close_step triggers _wf_apply, which READS the
+        # step's close evidence. With the close written first, the reader ran before the writer and a
+        # coalesce handed the panel the BLAMING case for a login-less employee. This asserts the END
+        # of the chain — what the panel is actually handed — not the middle.
+        sp = conn.transaction(); await sp.start()
+        ppe = await conn.fetchval(
+            "select i.target_id from hr.workflow_instance i "
+            "join hr.workflow_step ws on ws.workflow_instance_id = i.id where ws.id = $1", step["id"])
+        await conn.execute(f"do $b$ begin perform hr._wf_not_attested('{step['id']}'::uuid, null, 'proof'); end $b$;")
+        panel = await conn.fetchrow(
+            "select metadata->>'attestation_reason' r, metadata->>'attestation_note' n "
+            "  from hr.pay_period_employment where id = $1", ppe)
+        truth = await conn.fetchval(
+            "select metadata->>'not_attested_reason' from hr.workflow_step where id=$1", step["id"])
+        rec("§5 writer first",
+            "the PANEL is handed the same reason the STEP recorded — the reader used to run first "
+            "and receive nothing at all",
+            panel["r"] == truth == "no_reach", f'panel={panel["r"]} step={truth}')
+        rec("§5 writer first",
+            "and the note does NOT blame a person nobody could ask",
+            "nobody asked, and they did not decline" in (panel["n"] or "")
+            and "no action from the employee" not in (panel["n"] or ""),
+            (panel["n"] or "")[:200])
+        await sp.rollback()
+        rec("§5 writer first",
+            "the blaming default is BANNED — an absent reason is named `unrecorded`, never guessed",
+            await conn.fetchval(
+                "select prosrc not like '%coalesce(v_reason, ''no_response'')%' "
+                "and prosrc like '%''unrecorded''%' "
+                "from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='hr' and p.proname='timecard_wf_apply'"))
+        rec("§5 writer first",
+            "and no derived attestation_reason anywhere disagrees with the evidence it copies",
+            await conn.fetchval(
+                "select count(*)=0 from hr.workflow_step ws "
+                "join hr.workflow_instance i on i.id=ws.workflow_instance_id "
+                "join hr.pay_period_employment ppe on ppe.id=i.target_id "
+                "where i.flow_key='timecard_attestation' and ws.metadata ? 'not_attested_reason' "
+                "and ppe.metadata->>'attestation_reason' is distinct from "
+                "    ws.metadata->>'not_attested_reason'"))
+
+        # ================= §6 the sweep acts NOW; never-asked is not `awaiting`
+        rec("§6 as-of now",
+            "the sweep checks the actor's standing AS OF NOW — as-of period_end left 12 of 64 pay "
+            "periods unsweepable by anybody, forever, because every payroll.read holder is recent",
+            await conn.fetchval(
+                "select prosrc like '%''payroll.read'', null, current_date%' from pg_proc p "
+                "join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='hr' and p.proname='timecard_attestation_sweep'"))
+        owner_uid = await conn.fetchval(
+            "select e.login_user_id from hr.role_assignment ra "
+            "join hr.employment em on em.id=ra.employment_id join hr.employee e on e.id=em.employee_id "
+            "where ra.role_key='hr_owner' and ra.is_active and e.login_user_id is not null limit 1")
+        total_pp = await conn.fetchval("select count(*) from hr.pay_period")
+        sweepable = await conn.fetchval(
+            "select count(*) from hr.pay_period pp "
+            "where hr.capability($1,'payroll.read',null,current_date)", owner_uid)
+        rec("§6 as-of now", "so every pay period is sweepable by a current payroll.read holder",
+            sweepable == total_pp and total_pp > 0, f"{sweepable}/{total_pp}")
+        rec("§6 as-of now",
+            "and a row whose live step can reach NOBODY reads `unreachable`, not `awaiting` — the "
+            "client renders awaiting as \"Somebody has been asked and the flow is alive\"",
+            await conn.fetchval(
+                "select prosrc like '%''unreachable''%' and prosrc like '%resolved_user_ids%' "
+                "from pg_proc p join pg_namespace n on n.oid=p.pronamespace "
+                "where n.nspname='hr' and p.proname='pay_period_get'"))
     except SystemExit:
         pass
     except Exception as exc:
