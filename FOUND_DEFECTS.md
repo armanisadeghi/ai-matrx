@@ -15,6 +15,45 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D285 — the attestation "flagged to the manager" notification has never fired, platform-wide (2026-08-28)
+
+`hr._wf_not_attested` closes an overdue attestation and then calls:
+
+```sql
+perform hr._wf_notify(inst.id, p_step, 'hr.time.attestation_overdue',
+                      'timeout_warning', null, v_emp, jsonb_build_object(... 'flagged_to','manager' ...));
+```
+
+It passes **`p_user => null`**, and `hr._wf_notify`'s first line is
+`if p_user is null then return 0; end if;`. So the call is a no-op.
+
+**Measured live:** `select count(*) from hr.workflow_notice where event_key = 'hr.time.attestation_overdue'`
+→ **0**, platform-wide, ever. Driving a real close creates three notices, all of them
+`hr.workflow.failure_raised` from the instance-close path — none from this call.
+
+So two records claim something the engine does not do: the notify payload says
+`flagged_to: manager`, and `hr.timecard_wf_apply` writes onto the timecard *"The step was closed as
+not_attested and **flagged to the manager**."* Nobody is flagged.
+
+**Mine** — the call was written in `hr_c4_15` RD 2, which correctly unified the two close paths onto
+one transition and carried this argument list over without checking that the recipient resolved.
+
+**Why it is filed rather than fixed:** the fix requires deciding **who** the recipient is, and that
+is a design call, not a repair. `p_employment` is currently the **subject's** own employment, not a
+manager's — so the intent is already muddled. Candidates: the manager of record; the HR admin queue
+when there is no manager; or both. Note that **neither** live attestation subject has a manager at
+all (`hr.manager_as_of(...) → null`), so a manager-only recipient would still deliver nothing for
+them.
+
+**Related, and worth the coordinator's eye:** the close *does* already raise a
+`unactionable_no_reach` workflow failure on the instance-close path for the no-reach case — visible
+in the HR admin queue. Ruling C(i) was rejected on the grounds that a blocking failure would
+manufacture standing noise; that noise may already exist by another route.
+
+**Not blocking `hr_c4_41`:** the L3 panel reads the reason from `hr.pay_period_get` →
+`ppe.metadata.attestation_reason`, which is wired and proven. The notification payload was extended
+too and will carry the reason the moment a recipient is decided.
+
 ### D281 — `esign.envelope` is not in `hr._approval_subject`'s allowlist, so `signature_request` can never route (2026-08-28)
 
 `hrb011_proof.py` aborts at 106 assertions with:
