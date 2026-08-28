@@ -63,8 +63,3 @@ values ('public', 'hr_self_update', 'hr_l1_48_a_typo_is_not_a_protected_field.sq
         || 'labelled. Without it the door asserts HR holds fields that are on no table, and a '
         || 'misspelling is indistinguishable from a real refusal.')
 on conflict do nothing;
-
-insert into public._schema_migrations (source, filename, checksum, applied_at, duration_ms)
-values ('matrx-frontend', 'hr_l1_48_a_typo_is_not_a_protected_field.sql',
-        md5('hr_l1_48_a_typo_is_not_a_protected_field'), now(), 0)
-on conflict do nothing;
