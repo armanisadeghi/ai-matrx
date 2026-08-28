@@ -468,6 +468,16 @@ function MatrxDataTableCore<T>({
     setScrollHintRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
     setScrollHintLeft(el.scrollLeft > 2);
   }, []);
+  const scrollTableHorizontally = (direction: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({
+      left:
+        (direction === "right" ? 1 : -1) *
+        Math.max(Math.round(el.clientWidth * 0.72), 240),
+      behavior: "smooth",
+    });
+  };
   useEffect(() => {
     updateScrollHint();
     window.addEventListener("resize", updateScrollHint);
@@ -1295,142 +1305,148 @@ function MatrxDataTableCore<T>({
           </div>
         ) : null}
 
-        {/* Table */}
-        <div className="relative min-h-0 flex-1">
-          {mobileCards ? (
+        {/* Table + footer are one compact unit. Keeping them in the same flex
+          child prevents the root gap from becoming a dead strip between the
+          final row and pagination. */}
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="relative min-h-0 flex-1">
+            {mobileCards ? (
+              <div
+                aria-busy={isLoading || isFetching}
+                className={cn(
+                  "flex h-full min-h-0 flex-col gap-2 overflow-y-auto rounded-md border border-border bg-card p-2",
+                  mobileCardsClass,
+                )}
+              >
+                {isFetching && !isLoading ? (
+                  <div
+                    role="status"
+                    className="h-0.5 shrink-0 overflow-hidden rounded-full bg-primary/15"
+                  >
+                    <div className="h-full w-full animate-pulse bg-primary" />
+                    <span className="sr-only">Refreshing table data</span>
+                  </div>
+                ) : null}
+                {isLoading ? (
+                  Array.from({ length: 4 }).map((_, index) => (
+                    <Skeleton
+                      key={`mobile-card-sk-${index}`}
+                      className="h-52 w-full shrink-0 rounded-lg"
+                    />
+                  ))
+                ) : paginated.length === 0 ? (
+                  <div className="flex min-h-48 flex-1 items-center justify-center px-4 py-12 text-center">
+                    <div className="flex max-w-sm flex-col items-center gap-2">
+                      {emptyState?.icon}
+                      <p className="text-sm font-medium text-foreground">
+                        {emptyState?.title ?? "No rows"}
+                      </p>
+                      {emptyState?.description ? (
+                        <p className="text-xs text-muted-foreground">
+                          {emptyState.description}
+                        </p>
+                      ) : null}
+                      {emptyState?.action}
+                    </div>
+                  </div>
+                ) : (
+                  paginated.map((row, index) => {
+                    const id = getRowId(row);
+                    const displayRow = applyRowEdits(row, edits[id]);
+                    const selectable =
+                      selection?.isRowSelectable?.(row) ?? Boolean(selection);
+                    return (
+                      <Fragment key={id}>
+                        {mobileCards(displayRow, index, {
+                          selected: selectedIdSet.has(id),
+                          selectable,
+                          onSelectedChange: (nextSelected) => {
+                            if (
+                              !selection ||
+                              !selectable ||
+                              nextSelected === selectedIdSet.has(id)
+                            ) {
+                              return;
+                            }
+                            const next = new Set(selectedIdSet);
+                            if (nextSelected) next.add(id);
+                            else next.delete(id);
+                            setSelectedIds(next);
+                          },
+                          actions:
+                            showRowCopy || rowActions ? (
+                              <div
+                                className="inline-flex items-center gap-1"
+                                onClick={(event) => event.stopPropagation()}
+                              >
+                                {showRowCopy && copy ? (
+                                  <CopyButtons
+                                    size="xs"
+                                    label={copy.label}
+                                    human={() => copy.humanRow(displayRow)}
+                                    json={() =>
+                                      copy.agentRow
+                                        ? copy.agentRow(displayRow)
+                                        : displayRow
+                                    }
+                                    agent={() =>
+                                      buildRowAgentInput(copy, displayRow)
+                                    }
+                                  />
+                                ) : null}
+                                {rowActions?.(row, {
+                                  closeDetail: () => setSelectedId(null),
+                                  openDetail: () => openDetail(row),
+                                  openWindow: () => openWindow(row),
+                                  closeWindow,
+                                })}
+                              </div>
+                            ) : null,
+                        })}
+                      </Fragment>
+                    );
+                  })
+                )}
+              </div>
+            ) : null}
             <div
+              ref={scrollRef}
+              data-matrx-table-scroll
+              onScroll={updateScrollHint}
               aria-busy={isLoading || isFetching}
               className={cn(
-                "flex h-full min-h-0 flex-col gap-2 overflow-y-auto rounded-md border border-border bg-card p-2",
-                mobileCardsClass,
+                "relative h-full w-full overflow-auto rounded-md border border-border bg-card",
+                mobileCards && tableWithCardsClass,
+                tableClassName,
               )}
             >
+              {hierarchy && draggedRow ? (
+                <HierarchyRootDropTarget
+                  label={
+                    hierarchy.rootDropLabel ??
+                    "Drop here to move to the top level"
+                  }
+                  draggedLabel={
+                    hierarchy.itemLabel?.(draggedRow) ?? "Moving row"
+                  }
+                />
+              ) : null}
+              {hierarchy && draggedRowId ? (
+                <HierarchyDragIndicatorLayer
+                  scrollRef={scrollRef}
+                  resolve={resolveHierarchyMove}
+                />
+              ) : null}
               {isFetching && !isLoading ? (
                 <div
                   role="status"
-                  className="h-0.5 shrink-0 overflow-hidden rounded-full bg-primary/15"
+                  className="sticky left-0 top-0 z-20 h-0.5 w-full overflow-hidden bg-primary/15"
                 >
                   <div className="h-full w-full animate-pulse bg-primary" />
                   <span className="sr-only">Refreshing table data</span>
                 </div>
               ) : null}
-              {isLoading ? (
-                Array.from({ length: 4 }).map((_, index) => (
-                  <Skeleton
-                    key={`mobile-card-sk-${index}`}
-                    className="h-52 w-full shrink-0 rounded-lg"
-                  />
-                ))
-              ) : paginated.length === 0 ? (
-                <div className="flex min-h-48 flex-1 items-center justify-center px-4 py-12 text-center">
-                  <div className="flex max-w-sm flex-col items-center gap-2">
-                    {emptyState?.icon}
-                    <p className="text-sm font-medium text-foreground">
-                      {emptyState?.title ?? "No rows"}
-                    </p>
-                    {emptyState?.description ? (
-                      <p className="text-xs text-muted-foreground">
-                        {emptyState.description}
-                      </p>
-                    ) : null}
-                    {emptyState?.action}
-                  </div>
-                </div>
-              ) : (
-                paginated.map((row, index) => {
-                  const id = getRowId(row);
-                  const displayRow = applyRowEdits(row, edits[id]);
-                  const selectable =
-                    selection?.isRowSelectable?.(row) ?? Boolean(selection);
-                  return (
-                    <Fragment key={id}>
-                      {mobileCards(displayRow, index, {
-                        selected: selectedIdSet.has(id),
-                        selectable,
-                        onSelectedChange: (nextSelected) => {
-                          if (
-                            !selection ||
-                            !selectable ||
-                            nextSelected === selectedIdSet.has(id)
-                          ) {
-                            return;
-                          }
-                          const next = new Set(selectedIdSet);
-                          if (nextSelected) next.add(id);
-                          else next.delete(id);
-                          setSelectedIds(next);
-                        },
-                        actions:
-                          showRowCopy || rowActions ? (
-                            <div
-                              className="inline-flex items-center gap-1"
-                              onClick={(event) => event.stopPropagation()}
-                            >
-                              {showRowCopy && copy ? (
-                                <CopyButtons
-                                  size="xs"
-                                  label={copy.label}
-                                  human={() => copy.humanRow(displayRow)}
-                                  json={() =>
-                                    copy.agentRow
-                                      ? copy.agentRow(displayRow)
-                                      : displayRow
-                                  }
-                                  agent={() =>
-                                    buildRowAgentInput(copy, displayRow)
-                                  }
-                                />
-                              ) : null}
-                              {rowActions?.(row, {
-                                closeDetail: () => setSelectedId(null),
-                                openDetail: () => openDetail(row),
-                                openWindow: () => openWindow(row),
-                                closeWindow,
-                              })}
-                            </div>
-                          ) : null,
-                      })}
-                    </Fragment>
-                  );
-                })
-              )}
-            </div>
-          ) : null}
-          <div
-            ref={scrollRef}
-            onScroll={updateScrollHint}
-            aria-busy={isLoading || isFetching}
-            className={cn(
-              "relative h-full w-full overflow-auto rounded-md border border-border bg-card",
-              mobileCards && tableWithCardsClass,
-              tableClassName,
-            )}
-          >
-            {hierarchy && draggedRow ? (
-              <HierarchyRootDropTarget
-                label={
-                  hierarchy.rootDropLabel ??
-                  "Drop here to move to the top level"
-                }
-                draggedLabel={hierarchy.itemLabel?.(draggedRow) ?? "Moving row"}
-              />
-            ) : null}
-            {hierarchy && draggedRowId ? (
-              <HierarchyDragIndicatorLayer
-                scrollRef={scrollRef}
-                resolve={resolveHierarchyMove}
-              />
-            ) : null}
-            {isFetching && !isLoading ? (
-              <div
-                role="status"
-                className="sticky left-0 top-0 z-20 h-0.5 w-full overflow-hidden bg-primary/15"
-              >
-                <div className="h-full w-full animate-pulse bg-primary" />
-                <span className="sr-only">Refreshing table data</span>
-              </div>
-            ) : null}
-            {/* Below `sm` the table sizes to its CONTENT (w-max + max-w-none — a
+              {/* Below `sm` the table sizes to its CONTENT (w-max + max-w-none — a
             global `table { max-width: 100% }` otherwise clamps it and silently
             kills the scroll) so the container scrolls horizontally instead of
             crushing every column into an unreadable wrap. Cells go nowrap and
@@ -1444,396 +1460,403 @@ function MatrxDataTableCore<T>({
             scroller — the frozen column then sticks to the table's scrollport
             (which itself moves) and never freezes. Utilities outrank the
             `@layer base` rule and restore real table layout. */}
-            <table className="table w-max min-w-full max-w-none caption-bottom overflow-visible text-sm sm:w-full sm:min-w-0 sm:max-w-full">
-              <thead className="sticky top-0 z-10 border-b border-border bg-muted/90 shadow-[0_1px_0_0_var(--border)] backdrop-blur-sm">
-                <tr>
-                  {selection ? (
-                    <th className="h-9 w-9 px-2 text-left align-middle">
-                      <Checkbox
-                        className={CHECKBOX_TAP_AREA}
-                        checked={
-                          allOnPageSelected
-                            ? true
-                            : someOnPageSelected
-                              ? "indeterminate"
-                              : false
-                        }
-                        disabled={selectableRows.length === 0}
-                        onCheckedChange={toggleAllOnPage}
-                        aria-label={
-                          allOnPageSelected
-                            ? "Clear selection on this page"
-                            : "Select every row on this page"
-                        }
-                      />
-                    </th>
-                  ) : null}
-                  {visibleColumns.map((col, colIdx) => {
-                    const id = columnId(col);
-                    const meta = filterMeta.get(id);
-                    const isSorted = sort?.id === id;
-                    return (
-                      <th
-                        key={id}
-                        aria-sort={
-                          isSorted
-                            ? sort?.direction === "asc"
-                              ? "ascending"
-                              : "descending"
-                            : undefined
-                        }
-                        className={cn(
-                          "h-9 text-left align-middle max-sm:whitespace-nowrap",
-                          // ICON COLUMN (MatrxColumnDef.compact): a 40px star
-                          // column cannot honor `width: 40` while paying 16px of
-                          // padding for a 14px glyph.
-                          col.compact ? "px-1" : "px-2",
-                          // An intentional mobile column set (see
-                          // MatrxColumnDef.mobileHidden). CSS, not a JS
-                          // breakpoint — no hydration mismatch, and the column
-                          // stays sortable/filterable from the toolbar.
-                          col.mobileHidden && "max-sm:hidden",
-                          // bg-inherit picks up the thead's translucent bg-muted/90
-                          // but NOT its backdrop-filter — re-apply the blur so
-                          // scrolled-under header text can't ghost through.
-                          mobileScroll &&
-                            colIdx === 0 &&
-                            "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-inherit max-sm:backdrop-blur-sm",
-                          // Consumer widths are desktop tuning: applied from `sm`
-                          // up via a CSS var, so mobile stays content-sized
-                          // (nowrap + a hard width would bleed into the next cell).
-                          col.width !== undefined &&
-                            "sm:w-[var(--matrx-col-w)]",
-                          col.headerClassName,
-                          col.align === "center" && "text-center",
-                          col.align === "right" && "text-right",
-                        )}
-                        style={columnWidthVar(col.width)}
-                      >
-                        <ColumnHeaderCell
-                          label={col.header}
-                          labelText={
-                            typeof col.header === "string" ? col.header : id
+              <table className="table w-max min-w-full max-w-none caption-bottom overflow-visible text-sm sm:w-full sm:min-w-0 sm:max-w-full">
+                <thead className="sticky top-0 z-10 border-b border-border bg-muted/90 shadow-[0_1px_0_0_var(--border)] backdrop-blur-sm">
+                  <tr>
+                    {selection ? (
+                      <th className="h-9 w-9 px-2 text-left align-middle">
+                        <Checkbox
+                          className={CHECKBOX_TAP_AREA}
+                          checked={
+                            allOnPageSelected
+                              ? true
+                              : someOnPageSelected
+                                ? "indeterminate"
+                                : false
                           }
-                          sortable={col.sortable !== false}
-                          isSorted={Boolean(isSorted)}
-                          sortDirection={sort?.direction ?? "asc"}
-                          onSortAsc={() => setSort({ id, direction: "asc" })}
-                          onSortDesc={() => setSort({ id, direction: "desc" })}
-                          onClearSort={() => setSort(null)}
-                          onHeaderSortClick={() => {
-                            if (!isSorted) {
-                              setSort({ id, direction: "asc" });
-                              return;
-                            }
-                            if (sort?.direction === "asc") {
-                              setSort({ id, direction: "desc" });
-                              return;
-                            }
-                            setSort(null);
-                          }}
-                          filterKind={meta?.kind ?? null}
-                          filterValue={columnFilters[id]}
-                          onFilterChange={(next) => setColumnFilter(id, next)}
-                          selectOptions={meta?.options}
-                          selectSingle={col.filterSingle}
-                          align={col.align}
-                          compact={col.compact}
+                          disabled={selectableRows.length === 0}
+                          onCheckedChange={toggleAllOnPage}
+                          aria-label={
+                            allOnPageSelected
+                              ? "Clear selection on this page"
+                              : "Select every row on this page"
+                          }
                         />
                       </th>
-                    );
-                  })}
-                  {showActionsCol && (
-                    <th className="h-9 w-28 px-2 text-right align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      Actions
-                    </th>
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  Array.from({ length: 6 }).map((_, i) => (
-                    <tr key={`sk-${i}`} className="border-b border-border/60">
-                      {selection ? (
-                        <td className="px-2 py-2">
-                          <Skeleton className="h-3.5 w-3.5" />
-                        </td>
-                      ) : null}
-                      {visibleColumns.map((col) => (
-                        <td
-                          key={columnId(col)}
+                    ) : null}
+                    {visibleColumns.map((col, colIdx) => {
+                      const id = columnId(col);
+                      const meta = filterMeta.get(id);
+                      const isSorted = sort?.id === id;
+                      return (
+                        <th
+                          key={id}
+                          aria-sort={
+                            isSorted
+                              ? sort?.direction === "asc"
+                                ? "ascending"
+                                : "descending"
+                              : undefined
+                          }
                           className={cn(
-                            "py-2",
+                            "h-9 text-left align-middle max-sm:whitespace-nowrap",
+                            // ICON COLUMN (MatrxColumnDef.compact): a 40px star
+                            // column cannot honor `width: 40` while paying 16px of
+                            // padding for a 14px glyph.
                             col.compact ? "px-1" : "px-2",
+                            // An intentional mobile column set (see
+                            // MatrxColumnDef.mobileHidden). CSS, not a JS
+                            // breakpoint — no hydration mismatch, and the column
+                            // stays sortable/filterable from the toolbar.
                             col.mobileHidden && "max-sm:hidden",
+                            // bg-inherit picks up the thead's translucent bg-muted/90
+                            // but NOT its backdrop-filter — re-apply the blur so
+                            // scrolled-under header text can't ghost through.
+                            mobileScroll &&
+                              colIdx === 0 &&
+                              "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-inherit max-sm:backdrop-blur-sm",
+                            // Consumer widths are desktop tuning: applied from `sm`
+                            // up via a CSS var, so mobile stays content-sized
+                            // (nowrap + a hard width would bleed into the next cell).
+                            col.width !== undefined &&
+                              "sm:w-[var(--matrx-col-w)]",
+                            col.headerClassName,
+                            col.align === "center" && "text-center",
+                            col.align === "right" && "text-right",
                           )}
+                          style={columnWidthVar(col.width)}
                         >
-                          <Skeleton className="h-5 w-full" />
-                        </td>
-                      ))}
-                      {showActionsCol && (
-                        <td className="px-2 py-2">
-                          <Skeleton className="ml-auto h-5 w-10" />
-                        </td>
-                      )}
-                    </tr>
-                  ))
-                ) : paginated.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={
-                        visibleColumns.length +
-                        leadingCols +
-                        (showActionsCol ? 1 : 0)
-                      }
-                      className="px-4 py-12 text-center"
-                    >
-                      <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
-                        {emptyState?.icon}
-                        <p className="text-sm font-medium text-foreground">
-                          {emptyState?.title ?? "No rows"}
-                        </p>
-                        {emptyState?.description ? (
-                          <p className="text-xs text-muted-foreground">
-                            {emptyState.description}
-                          </p>
-                        ) : null}
-                        {emptyState?.action}
-                      </div>
-                    </td>
+                          <ColumnHeaderCell
+                            label={col.header}
+                            labelText={
+                              typeof col.header === "string" ? col.header : id
+                            }
+                            sortable={col.sortable !== false}
+                            isSorted={Boolean(isSorted)}
+                            sortDirection={sort?.direction ?? "asc"}
+                            onSortAsc={() => setSort({ id, direction: "asc" })}
+                            onSortDesc={() =>
+                              setSort({ id, direction: "desc" })
+                            }
+                            onClearSort={() => setSort(null)}
+                            onHeaderSortClick={() => {
+                              if (!isSorted) {
+                                setSort({ id, direction: "asc" });
+                                return;
+                              }
+                              if (sort?.direction === "asc") {
+                                setSort({ id, direction: "desc" });
+                                return;
+                              }
+                              setSort(null);
+                            }}
+                            filterKind={meta?.kind ?? null}
+                            filterValue={columnFilters[id]}
+                            onFilterChange={(next) => setColumnFilter(id, next)}
+                            selectOptions={meta?.options}
+                            selectSingle={col.filterSingle}
+                            align={col.align}
+                            compact={col.compact}
+                          />
+                        </th>
+                      );
+                    })}
+                    {showActionsCol && (
+                      <th className="h-9 w-28 px-2 text-right align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Actions
+                      </th>
+                    )}
                   </tr>
-                ) : (
-                  paginated.map((row, index) => {
-                    const id = getRowId(row);
-                    const isSelected = selectedId === id;
-                    const rowEdits = edits[id];
-                    const displayRow = applyRowEdits(row, rowEdits);
-                    const isChecked = selectedIdSet.has(id);
-                    const rowNode = (
-                      <tr
-                        key={id}
-                        data-row-id={id}
-                        data-state={isSelected ? "selected" : undefined}
-                        onClick={(e) => {
-                          // A click that started on a real link (the D112 title
-                          // anchor, an FK cell link) must not ALSO fire the
-                          // row-open — the anchor owns that navigation.
-                          if ((e.target as HTMLElement).closest("a")) return;
-                          openRow(row);
-                        }}
-                        className={cn(
-                          // bg-card is a visual no-op (the container is bg-card) but
-                          // gives the frozen first cell an OPAQUE background to
-                          // inherit, so horizontally-scrolled content never shows
-                          // through it. The translucent tints (zebra/hover) would
-                          // let it bleed, so they are desktop-only.
-                          "border-b border-border/60 bg-card transition-colors",
-                          (detailEnabled || Boolean(onRowOpen)) &&
-                            "cursor-pointer sm:hover:bg-muted/50",
-                          isSelected && "bg-muted",
-                          isChecked && "bg-primary/5",
-                          draggedRowId === id && "opacity-40",
-                          zebra &&
-                            index % 2 === 1 &&
-                            !isSelected &&
-                            !isChecked &&
-                            "sm:bg-muted/20",
-                        )}
-                      >
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <tr key={`sk-${i}`} className="border-b border-border/60">
                         {selection ? (
-                          <td
-                            className="px-2 py-1.5 align-middle lg:py-0.5"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Checkbox
-                              className={CHECKBOX_TAP_AREA}
-                              checked={isChecked}
-                              disabled={
-                                !(selection.isRowSelectable?.(row) ?? true)
-                              }
-                              aria-label={`Select this ${selectionNoun}`}
-                              // Radix hands the checkbox's own click through here;
-                              // shift-range needs the native event's modifier, so
-                              // the row toggles from onClick, not onCheckedChange.
-                              onClick={(e) =>
-                                toggleRowSelected(index, e.shiftKey)
-                              }
-                            />
+                          <td className="px-2 py-2">
+                            <Skeleton className="h-3.5 w-3.5" />
                           </td>
                         ) : null}
-                        {visibleColumns.map((col, colIdx) => {
-                          const field = col.accessorKey
-                            ? String(col.accessorKey)
-                            : columnId(col);
-                          const display = renderCell(displayRow, col, index);
-                          const editable = Boolean(
-                            editEnabled &&
-                            col.editable &&
-                            (col.editableIf?.(row) ?? true),
-                          );
-                          const dirty = Boolean(rowEdits && field in rowEdits);
-                          const cellHref = col.href?.(row) ?? undefined;
-                          return (
-                            <td
-                              key={columnId(col)}
-                              className={cn(
-                                "py-1.5 align-middle lg:py-0.5",
-                                col.compact ? "px-1" : "px-2",
-                                // nowrap (NOT truncate — truncate clips the cell and
-                                // defeats w-max, killing the horizontal scroll).
-                                "max-sm:whitespace-nowrap",
-                                col.mobileHidden && "max-sm:hidden",
-                                mobileScroll &&
-                                  colIdx === 0 &&
-                                  "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit",
-                                col.width !== undefined &&
-                                  "sm:w-[var(--matrx-col-w)] sm:max-w-[var(--matrx-col-w)]",
-                                col.className,
-                                col.align === "center" && "text-center",
-                                col.align === "right" && "text-right",
-                              )}
-                              style={columnWidthVar(col.width)}
-                            >
-                              <div
-                                className={cn(
-                                  colIdx === 0 &&
-                                    hierarchy &&
-                                    "flex min-w-0 items-center",
-                                )}
-                              >
-                                {colIdx === 0 && hierarchy ? (
-                                  <HierarchyDragHandle
-                                    id={id}
-                                    label={hierarchy.itemLabel?.(row) ?? "row"}
-                                    disabled={
-                                      !(hierarchy.canReparent?.(row) ?? true)
-                                    }
-                                  />
-                                ) : null}
-                                <div className="min-w-0 flex-1">
-                                  {editable && col.editable ? (
-                                    <EditableTableCell
-                                      value={
-                                        rowEdits && field in rowEdits
-                                          ? rowEdits[field]
-                                          : getCellValue(row, col)
-                                      }
-                                      editType={col.editable}
-                                      editOptions={col.editOptions}
-                                      display={display}
-                                      dirty={dirty}
-                                      onCommit={(next) =>
-                                        commitCell(id, field, next)
-                                      }
-                                      href={cellHref}
-                                      editTrigger={col.editTrigger}
-                                    />
-                                  ) : cellHref ? (
-                                    <Link
-                                      href={cellHref}
-                                      onClick={(e) => e.stopPropagation()}
-                                      className="block w-full min-w-0 rounded outline-none  focus-visible:ring-2 focus-visible:ring-ring"
-                                    >
-                                      {display}
-                                    </Link>
-                                  ) : (
-                                    display
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                          );
-                        })}
+                        {visibleColumns.map((col) => (
+                          <td
+                            key={columnId(col)}
+                            className={cn(
+                              "py-2",
+                              col.compact ? "px-1" : "px-2",
+                              col.mobileHidden && "max-sm:hidden",
+                            )}
+                          >
+                            <Skeleton className="h-5 w-full" />
+                          </td>
+                        ))}
                         {showActionsCol && (
-                          <td className="px-2 py-1.5 text-right align-middle lg:py-0.5">
-                            <div
-                              className="inline-flex items-center justify-end gap-0.5"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {showRowCopy && copy ? (
-                                <CopyButtons
-                                  size="xs"
-                                  label={copy.label}
-                                  human={() => copy.humanRow(displayRow)}
-                                  json={() =>
-                                    copy.agentRow
-                                      ? copy.agentRow(displayRow)
-                                      : displayRow
-                                  }
-                                  agent={() =>
-                                    buildRowAgentInput(copy, displayRow)
-                                  }
-                                />
-                              ) : null}
-                              {rowActions?.(row, {
-                                closeDetail: () => setSelectedId(null),
-                                openDetail: () => openDetail(row),
-                                openWindow: () => openWindow(row),
-                                closeWindow,
-                              })}
-                              {windowEnabled ? (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-11 w-11 text-muted-foreground hover:text-foreground lg:h-5 lg:w-5 [&_svg]:size-3"
-                                  aria-label={
-                                    opensWindowOnRowClick
-                                      ? "Open in side panel"
-                                      : "Open in window"
-                                  }
-                                  title={
-                                    opensWindowOnRowClick
-                                      ? "Open in side panel"
-                                      : "Open in window"
-                                  }
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (opensWindowOnRowClick) {
-                                      openDetail(row);
-                                    } else {
-                                      openWindow(row);
-                                    }
-                                  }}
-                                >
-                                  {opensWindowOnRowClick ? (
-                                    <PanelRightOpen className="h-3.5 w-3.5" />
-                                  ) : (
-                                    <PanelRight className="h-3.5 w-3.5" />
-                                  )}
-                                </Button>
-                              ) : null}
-                            </div>
+                          <td className="px-2 py-2">
+                            <Skeleton className="ml-auto h-5 w-10" />
                           </td>
                         )}
                       </tr>
-                    );
-                    // The seam that keeps a surface from forking the table for a
-                    // right-click menu / drag handle / drop target. The wrapper
-                    // must emit the <tr> unchanged (Radix `asChild` does).
-                    const wrappedRow = rowWrapper
-                      ? rowWrapper(row, rowNode)
-                      : rowNode;
-                    return hierarchy ? (
-                      <HierarchyDroppableRow
-                        key={id}
-                        id={id}
-                        disabled={!canDropOn(row)}
+                    ))
+                  ) : paginated.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={
+                          visibleColumns.length +
+                          leadingCols +
+                          (showActionsCol ? 1 : 0)
+                        }
+                        className="px-4 py-12 text-center"
                       >
-                        {wrappedRow}
-                      </HierarchyDroppableRow>
-                    ) : (
-                      <Fragment key={id}>{wrappedRow}</Fragment>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-          {/* THE OFF-SCREEN COLUMNS MUST BE DISCOVERABLE — at EVERY width.
-            Edge fades over the scroll container (siblings, so they don't
-            scroll away), each carrying a chevron, shown from the MEASURED
-            overflow rather than a breakpoint.
+                        <div className="mx-auto flex max-w-sm flex-col items-center gap-2">
+                          {emptyState?.icon}
+                          <p className="text-sm font-medium text-foreground">
+                            {emptyState?.title ?? "No rows"}
+                          </p>
+                          {emptyState?.description ? (
+                            <p className="text-xs text-muted-foreground">
+                              {emptyState.description}
+                            </p>
+                          ) : null}
+                          {emptyState?.action}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginated.map((row, index) => {
+                      const id = getRowId(row);
+                      const isSelected = selectedId === id;
+                      const rowEdits = edits[id];
+                      const displayRow = applyRowEdits(row, rowEdits);
+                      const isChecked = selectedIdSet.has(id);
+                      const rowNode = (
+                        <tr
+                          key={id}
+                          data-row-id={id}
+                          data-state={isSelected ? "selected" : undefined}
+                          onClick={(e) => {
+                            // A click that started on a real link (the D112 title
+                            // anchor, an FK cell link) must not ALSO fire the
+                            // row-open — the anchor owns that navigation.
+                            if ((e.target as HTMLElement).closest("a")) return;
+                            openRow(row);
+                          }}
+                          className={cn(
+                            // bg-card is a visual no-op (the container is bg-card) but
+                            // gives the frozen first cell an OPAQUE background to
+                            // inherit, so horizontally-scrolled content never shows
+                            // through it. The translucent tints (zebra/hover) would
+                            // let it bleed, so they are desktop-only.
+                            "border-b border-border/60 bg-card transition-colors",
+                            (detailEnabled || Boolean(onRowOpen)) &&
+                              "cursor-pointer sm:hover:bg-muted/50",
+                            isSelected && "bg-muted",
+                            isChecked && "bg-primary/5",
+                            draggedRowId === id && "opacity-40",
+                            zebra &&
+                              index % 2 === 1 &&
+                              !isSelected &&
+                              !isChecked &&
+                              "sm:bg-muted/20",
+                          )}
+                        >
+                          {selection ? (
+                            <td
+                              className="px-2 py-1.5 align-middle lg:py-0.5"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Checkbox
+                                className={CHECKBOX_TAP_AREA}
+                                checked={isChecked}
+                                disabled={
+                                  !(selection.isRowSelectable?.(row) ?? true)
+                                }
+                                aria-label={`Select this ${selectionNoun}`}
+                                // Radix hands the checkbox's own click through here;
+                                // shift-range needs the native event's modifier, so
+                                // the row toggles from onClick, not onCheckedChange.
+                                onClick={(e) =>
+                                  toggleRowSelected(index, e.shiftKey)
+                                }
+                              />
+                            </td>
+                          ) : null}
+                          {visibleColumns.map((col, colIdx) => {
+                            const field = col.accessorKey
+                              ? String(col.accessorKey)
+                              : columnId(col);
+                            const display = renderCell(displayRow, col, index);
+                            const editable = Boolean(
+                              editEnabled &&
+                              col.editable &&
+                              (col.editableIf?.(row) ?? true),
+                            );
+                            const dirty = Boolean(
+                              rowEdits && field in rowEdits,
+                            );
+                            const cellHref = col.href?.(row) ?? undefined;
+                            return (
+                              <td
+                                key={columnId(col)}
+                                className={cn(
+                                  "py-1.5 align-middle lg:py-0.5",
+                                  col.compact ? "px-1" : "px-2",
+                                  // nowrap (NOT truncate — truncate clips the cell and
+                                  // defeats w-max, killing the horizontal scroll).
+                                  "max-sm:whitespace-nowrap",
+                                  col.mobileHidden && "max-sm:hidden",
+                                  mobileScroll &&
+                                    colIdx === 0 &&
+                                    "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit",
+                                  col.width !== undefined &&
+                                    "sm:w-[var(--matrx-col-w)] sm:max-w-[var(--matrx-col-w)]",
+                                  col.className,
+                                  col.align === "center" && "text-center",
+                                  col.align === "right" && "text-right",
+                                )}
+                                style={columnWidthVar(col.width)}
+                              >
+                                <div
+                                  className={cn(
+                                    colIdx === 0 &&
+                                      hierarchy &&
+                                      "flex min-w-0 items-center",
+                                  )}
+                                >
+                                  {colIdx === 0 && hierarchy ? (
+                                    <HierarchyDragHandle
+                                      id={id}
+                                      label={
+                                        hierarchy.itemLabel?.(row) ?? "row"
+                                      }
+                                      disabled={
+                                        !(hierarchy.canReparent?.(row) ?? true)
+                                      }
+                                    />
+                                  ) : null}
+                                  <div className="min-w-0 flex-1">
+                                    {editable && col.editable ? (
+                                      <EditableTableCell
+                                        value={
+                                          rowEdits && field in rowEdits
+                                            ? rowEdits[field]
+                                            : getCellValue(row, col)
+                                        }
+                                        editType={col.editable}
+                                        editOptions={col.editOptions}
+                                        display={display}
+                                        dirty={dirty}
+                                        onCommit={(next) =>
+                                          commitCell(id, field, next)
+                                        }
+                                        href={cellHref}
+                                        editTrigger={col.editTrigger}
+                                      />
+                                    ) : cellHref ? (
+                                      <Link
+                                        href={cellHref}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="block w-full min-w-0 rounded outline-none  focus-visible:ring-2 focus-visible:ring-ring"
+                                      >
+                                        {display}
+                                      </Link>
+                                    ) : (
+                                      display
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                            );
+                          })}
+                          {showActionsCol && (
+                            <td className="px-2 py-1.5 text-right align-middle lg:py-0.5">
+                              <div
+                                className="inline-flex items-center justify-end gap-0.5"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {showRowCopy && copy ? (
+                                  <CopyButtons
+                                    size="xs"
+                                    label={copy.label}
+                                    human={() => copy.humanRow(displayRow)}
+                                    json={() =>
+                                      copy.agentRow
+                                        ? copy.agentRow(displayRow)
+                                        : displayRow
+                                    }
+                                    agent={() =>
+                                      buildRowAgentInput(copy, displayRow)
+                                    }
+                                  />
+                                ) : null}
+                                {rowActions?.(row, {
+                                  closeDetail: () => setSelectedId(null),
+                                  openDetail: () => openDetail(row),
+                                  openWindow: () => openWindow(row),
+                                  closeWindow,
+                                })}
+                                {windowEnabled ? (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-11 w-11 text-muted-foreground hover:text-foreground lg:h-5 lg:w-5 [&_svg]:size-3"
+                                    aria-label={
+                                      opensWindowOnRowClick
+                                        ? "Open in side panel"
+                                        : "Open in window"
+                                    }
+                                    title={
+                                      opensWindowOnRowClick
+                                        ? "Open in side panel"
+                                        : "Open in window"
+                                    }
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (opensWindowOnRowClick) {
+                                        openDetail(row);
+                                      } else {
+                                        openWindow(row);
+                                      }
+                                    }}
+                                  >
+                                    {opensWindowOnRowClick ? (
+                                      <PanelRightOpen className="h-3.5 w-3.5" />
+                                    ) : (
+                                      <PanelRight className="h-3.5 w-3.5" />
+                                    )}
+                                  </Button>
+                                ) : null}
+                              </div>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                      // The seam that keeps a surface from forking the table for a
+                      // right-click menu / drag handle / drop target. The wrapper
+                      // must emit the <tr> unchanged (Radix `asChild` does).
+                      const wrappedRow = rowWrapper
+                        ? rowWrapper(row, rowNode)
+                        : rowNode;
+                      return hierarchy ? (
+                        <HierarchyDroppableRow
+                          key={id}
+                          id={id}
+                          disabled={!canDropOn(row)}
+                        >
+                          {wrappedRow}
+                        </HierarchyDroppableRow>
+                      ) : (
+                        <Fragment key={id}>{wrappedRow}</Fragment>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {/* THE OFF-SCREEN COLUMNS MUST BE DISCOVERABLE — at EVERY width.
+            These measured, glass edge controls remain fixed over the scroll
+            viewport while the table moves beneath them. They are real 44px
+            tap targets, not decorative hints, and move one readable section
+            at a time without replacing native mouse/touch scrolling.
 
             This used to be `sm:hidden` and gated on `mobileScroll`, which is
             false whenever `selection` is on. Measured 2026-08-25 on Search
@@ -1843,55 +1866,54 @@ function MatrxDataTableCore<T>({
             closed. A desktop viewport is not a promise that everything fits.
             `mobile="plain"` still opts out of the frozen identity column; it
             does not opt out of knowing there is more to read. */}
-          {scrollHintLeft ? (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 left-0 z-30 flex w-10 items-center justify-start rounded-l-md bg-gradient-to-r from-card via-card/60 to-transparent pl-0.5"
-            >
-              <ChevronLeft className="h-4 w-4 text-muted-foreground/70" />
-            </div>
-          ) : null}
-          {scrollHintRight ? (
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 right-0 z-30 flex w-10 items-center justify-end rounded-r-md bg-gradient-to-l from-card via-card/60 to-transparent pr-0.5"
-            >
-              <ChevronRight className="h-4 w-4 text-muted-foreground/70" />
+            {scrollHintLeft ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Scroll table left"
+                title="More columns to the left"
+                data-matrx-table-scroll-control="left"
+                className="absolute left-1.5 top-1/2 z-30 h-11 w-11 -translate-y-1/2 rounded-full border border-glass-edge bg-glass p-0 text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass hover:bg-glass-hover active:bg-glass-active"
+                onClick={() => scrollTableHorizontally("left")}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+            ) : null}
+            {scrollHintRight ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Scroll table right"
+                title="More columns to the right"
+                data-matrx-table-scroll-control="right"
+                className="absolute right-1.5 top-1/2 z-30 h-11 w-11 -translate-y-1/2 rounded-full border border-glass-edge bg-glass p-0 text-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass hover:bg-glass-hover active:bg-glass-active"
+                onClick={() => scrollTableHorizontally("right")}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            ) : null}
+          </div>
+
+          {defaultPageSize !== 0 && totalItems > 0 ? (
+            <div className="shrink-0">
+              <GenericTablePagination
+                totalItems={totalItems}
+                itemsPerPage={effectivePageSize}
+                currentPage={safePage}
+                onPageChange={setPage}
+                onItemsPerPageChange={(n) => {
+                  setPageSize(n);
+                  if (!controlledQuery) setPage(1);
+                }}
+                pageSizeOptions={pageSizeOptions}
+                compact
+                hideEntriesInfo={false}
+              />
             </div>
           ) : null}
         </div>
-
-        {/* Said in words too — a gradient is a hint, not an answer, and a
-          reader who cannot see the Score column does not know to look for it.
-          In flow, under the table, so it never covers a row. */}
-        {scrollHintRight || scrollHintLeft ? (
-          <p className="shrink-0 px-0.5 text-[10px] text-muted-foreground">
-            More columns off-{scrollHintRight && !scrollHintLeft
-              ? "screen to the right"
-              : scrollHintLeft && !scrollHintRight
-                ? "screen to the left"
-                : "screen either side"}{" "}
-            — scroll the table sideways to read them.
-          </p>
-        ) : null}
-
-        {defaultPageSize !== 0 && totalItems > 0 ? (
-          <div className="shrink-0">
-            <GenericTablePagination
-              totalItems={totalItems}
-              itemsPerPage={effectivePageSize}
-              currentPage={safePage}
-              onPageChange={setPage}
-              onItemsPerPageChange={(n) => {
-                setPageSize(n);
-                if (!controlledQuery) setPage(1);
-              }}
-              pageSizeOptions={pageSizeOptions}
-              compact
-              hideEntriesInfo={false}
-            />
-          </div>
-        ) : null}
 
         {detailEnabled && selectedRow ? (
           <SidePanelSurface

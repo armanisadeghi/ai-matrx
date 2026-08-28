@@ -122,12 +122,15 @@ horizontally; the **first column freezes** (`max-sm:sticky left-0`, opaque
 `bg-card` inherit) so every row stays identifiable. Desktop rendering is
 untouched.
 
-🚨 **The scroll affordance is NOT mobile-only, and no prop turns it off.** Edge
-fades + chevrons (both sides) and a sentence under the table ("More columns
-off-screen…") render from the **measured** overflow at every width — a
-`ResizeObserver` on the container and the table keeps it honest when a sidebar
-or panel changes the width without a window resize. It used to be `sm:hidden`
-AND gated on the frozen-column flag, which is false whenever `selection` is on:
+🚨 **The scroll affordance is NOT mobile-only, and no prop turns it off.** Round
+44px glass chevrons float at the overflowing edge (both sides as applicable),
+are real buttons that move one readable section per tap, and render from the
+**measured** overflow at every width — a `ResizeObserver` on the container and
+the table keeps them honest when a sidebar or panel changes the width without a
+window resize. There is no instructional footer sentence: the controls make the
+action self-evident without spending a row on chrome. The affordance used to be
+`sm:hidden` AND gated on the frozen-column flag, which is false whenever
+`selection` is on:
 Search Console → Queries at 1362px put 1,662px of table in a 1,284px container
 with Position, Score and Level entirely off the right edge and nothing on
 screen saying so. A desktop viewport is not a promise that everything fits.
@@ -273,6 +276,17 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-28 — **The table footer is one exact compact row, and horizontal
+  overflow is actionable instead of narrated.** Removed the in-flow "More
+  columns off-screen" sentence, grouped the table and paginator so the root
+  spacing cannot create a dead strip between them, and tightened compact
+  pagination to 44px on touch widths / 32px on desktop with zero outer padding.
+  Touch targets remain 44px while their visible button chrome is inset to 32px,
+  keeping the controls easy to tap without the inflated Tesla/tablet look.
+  Replaced the full-height decorative edge fades with round semantic-token glass
+  buttons that scroll 72% of the visible table width and appear on whichever
+  measured edge still has hidden columns.
 
 - 2026-08-26 — **Off-screen columns are discoverable at EVERY width, and a
   checkbox is never inflated to the touch floor.** (1) The horizontal-scroll
