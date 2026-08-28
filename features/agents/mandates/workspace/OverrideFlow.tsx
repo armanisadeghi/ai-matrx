@@ -78,6 +78,8 @@ import {
 import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
+import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
+import { useServedRunForm } from "@/features/workflow-runtime/served-form/useServedRunForm";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { compareStoredContract } from "../contract-compare";
 import { missingOutputKeys, fetchAgentOutputSchemas } from "../output-contract";
@@ -327,17 +329,17 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
   const holderChosen =
     holderKind === "workflow" ? Boolean(workflowId) : Boolean(effectiveAgentId);
   const mapProblems =
-    data.offer && holderKind === "agent" && holderChosen
+    data.offer && holderChosen
       ? consumptionMapProblems(data.offer, draftMap)
       : [];
   const canSave =
     holderChosen &&
     !busy &&
-    (holderKind === "workflow"
-      ? // No client pre-flight exists for a workflow Holder — the server's
-        // gate is the judge, and it is allowed to say no.
-        true
-      : verdict.passed && mapProblems.length === 0);
+    mapProblems.length === 0 &&
+    // A workflow Holder has no client-side capability pre-flight: the bind
+    // gate compiles the graph and is the only judge. It is allowed to say no,
+    // and when it does its words go on the page.
+    (holderKind === "workflow" || verdict.passed);
 
   async function save() {
     setBusy(true);
@@ -356,12 +358,7 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
                 useLatest,
               },
         hasProvision: Boolean(data.provisionKey),
-        // A workflow Holder is delivered its inputs by NAME onto the compiled
-        // input surface; there is no per-target mapping editor for it yet, so
-        // the map is left empty and the server applies its default rule (every
-        // guaranteed offered value must land on the surface) — and says so
-        // verbatim when it cannot.
-        consumptionMap: holderKind === "workflow" ? {} : draftMap,
+        consumptionMap: draftMap,
         capturedOverrides:
           captured === undefined
             ? undefined
@@ -571,7 +568,34 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
       ) : null}
 
       {/* Step 3 — Map values (provisioned mandates only; legacy skips it
-          STRUCTURALLY — the wire carries no map for them) */}
+          STRUCTURALLY — the wire carries no map for them). A WORKFLOW Holder
+          maps onto its compiled input surface; an AGENT onto its declared
+          variables and context policies. Same rows, same wire shape — the
+          server checks exactly this map either way. */}
+      {holderKind === "workflow" && workflowId && data.offer ? (
+        <StepBlock index={3} title="Map the offered values">
+          <WorkflowMappingStep
+            data={data}
+            workflowId={workflowId}
+            value={draftMap}
+            onChange={setDraftMap}
+            disabled={busy}
+          />
+          {mapProblems.length > 0 ? (
+            <ul className="mt-2 space-y-1">
+              {mapProblems.map((problem) => (
+                <li
+                  key={problem}
+                  className="flex items-start gap-1.5 text-[12px] text-destructive"
+                >
+                  <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                  {problem}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </StepBlock>
+      ) : null}
       {effectiveAgentId && verdict.passed && data.offer ? (
         <StepBlock index={3} title="Map the offered values">
           <MappingStep
@@ -910,6 +934,119 @@ function MappingStep({
     [payload],
   );
 
+  if (!payload.isReady) {
+    return <p className="text-[12px] text-muted-foreground">Loading the agent&apos;s inputs…</p>;
+  }
+  if (targets.length === 0) {
+    return (
+      <p className="text-[12px] text-muted-foreground">
+        This agent declares no variables or context policies — it runs on the
+        job&apos;s user text alone. Nothing to map.
+      </p>
+    );
+  }
+  return (
+    <MappingRows
+      data={data}
+      targets={targets}
+      contextKeys={contextKeys}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+    />
+  );
+}
+
+/**
+ * THE WORKFLOW's mapping rows. The targets are the workflow's ONE compiled
+ * input surface, served by `GET /workflows/{id}/run-form` — never derived from
+ * the definition here. That surface is exactly what the server's bind gate
+ * checks the consumption map against (`bindings.py::_check_target`), so the
+ * rows an author fills in ARE the thing that is validated.
+ */
+function WorkflowMappingStep({
+  data,
+  workflowId,
+  value,
+  onChange,
+  disabled,
+}: {
+  data: MandateWorkspaceData;
+  workflowId: string;
+  value: ConsumptionMap;
+  onChange: (next: ConsumptionMap) => void;
+  disabled: boolean;
+}) {
+  const form = useServedRunForm(workflowId);
+
+  if (form.status === "loading") {
+    return (
+      <p className="text-[12px] text-muted-foreground">
+        Loading the workflow&apos;s inputs…
+      </p>
+    );
+  }
+  if (form.status === "error") {
+    return (
+      <p className="flex items-start gap-1.5 text-[12px] text-destructive">
+        <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+        The workflow&apos;s inputs could not be read: {form.message}
+      </p>
+    );
+  }
+  if (!form.form.surfaceServed) {
+    return (
+      <p className="flex items-start gap-1.5 text-[12px] text-destructive">
+        <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+        The server answered without a compiled input surface, so there is
+        nothing honest to map onto. Point at a server that serves it.
+      </p>
+    );
+  }
+  const targets = form.form.inputs.map((input) => ({
+    name: input.name,
+    label: input.label || input.name,
+    description: input.help || undefined,
+    required: input.sourcing !== "optional",
+  }));
+  if (targets.length === 0) {
+    return (
+      <p className="text-[12px] text-muted-foreground">
+        This workflow declares no inputs — nothing to map.
+      </p>
+    );
+  }
+  return (
+    <MappingRows
+      data={data}
+      targets={targets}
+      // A workflow input surface has no context channel — every value lands
+      // on a named input.
+      contextKeys={EMPTY_CONTEXT_KEYS}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+    />
+  );
+}
+
+const EMPTY_CONTEXT_KEYS: ReadonlySet<string> = new Set<string>();
+
+function MappingRows({
+  data,
+  targets,
+  contextKeys,
+  value,
+  onChange,
+  disabled,
+}: {
+  data: MandateWorkspaceData;
+  targets: BindingTarget[];
+  contextKeys: ReadonlySet<string>;
+  value: ConsumptionMap;
+  onChange: (next: ConsumptionMap) => void;
+  disabled: boolean;
+}) {
   const offer = data.offer;
   if (!offer) return null;
 
@@ -945,18 +1082,6 @@ function MappingStep({
     if (!current) return;
     onChange({ ...value, [targetName]: { ...current, ...patch } });
   };
-
-  if (!payload.isReady) {
-    return <p className="text-[12px] text-muted-foreground">Loading the agent's inputs…</p>;
-  }
-  if (targets.length === 0) {
-    return (
-      <p className="text-[12px] text-muted-foreground">
-        This agent declares no variables or context policies — it runs on the
-        job's user text alone. Nothing to map.
-      </p>
-    );
-  }
 
   return (
     <div className="space-y-2">
