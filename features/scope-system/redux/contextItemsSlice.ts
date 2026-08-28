@@ -20,6 +20,8 @@ import type {
   ContextItemStatus,
 } from "@/features/agent-context/types";
 
+export type SystemItemClass = "ambient" | "curated" | "dataset";
+
 export type {
   ContextValueType,
   ContextFetchHint,
@@ -66,6 +68,11 @@ export interface ContextItem {
    * features/scopes/utils/referenceSource.ts.
    */
   reference_source?: ReferenceSource | null;
+  /**
+   * Set ONLY on System Context Items (see `listSystemContextItems`): which of
+   * the three kinds of platform truth this is. Absent on org scope items.
+   */
+  system_item_class?: SystemItemClass;
 }
 
 const adapter = createEntityAdapter<ContextItem>({
@@ -102,6 +109,56 @@ export const listScopeTypeItems = createAsyncThunk(
       scopeTypeId,
       items: items.map((i) => ({ ...i, scope_type_id: scopeTypeId })),
     };
+  },
+);
+
+/**
+ * The pseudo scope-type id under which SYSTEM Context Items are cached.
+ *
+ * System Context is the platform's third context source (what is simply TRUE)
+ * and has NO scope dimension — its items live in `context.system_context_item`,
+ * not on a scope type. They are cached here under a sentinel so every existing
+ * consumer (the picker, `selectItemsByType`, `selectItemsLoadedForType`) works
+ * unchanged. A binding to one of these carries `scope_type_id: null` — never
+ * this sentinel, which is a client-side cache key only.
+ */
+export const SYSTEM_ITEMS_KEY = "__system__";
+
+/**
+ * Every ACTIVE System Context Item, readable by any signed-in user (the rows
+ * are `visibility='public'` in the global-readable Matrx System org). These are
+ * bindable exactly like scope items: `resolve_full_context` emits them into
+ * `cell_values` keyed by the SAME `context_item_id` the binding stores.
+ */
+export const listSystemContextItems = createAsyncThunk(
+  "contextItems/listSystem",
+  async () => {
+    const { data, error } = await contextDb(supabase)
+      .from("system_context_item")
+      .select(
+        "id, key, display_name, description, item_class, value_type, sensitivity, sort_order",
+      )
+      .eq("is_active", true)
+      .is("deleted_at", null)
+      .order("sort_order", { ascending: true })
+      .order("key", { ascending: true });
+    if (error) throw error;
+    const items: ContextItem[] = (data ?? []).map((r) => ({
+      id: r.id,
+      scope_type_id: SYSTEM_ITEMS_KEY,
+      key: r.key,
+      display_name: r.display_name,
+      description: r.description ?? "",
+      category: null,
+      value_type: r.value_type as ContextValueType,
+      fetch_hint: "always" as ContextFetchHint,
+      sensitivity: r.sensitivity as ContextSensitivity,
+      status: "active",
+      tags: [],
+      sort_order: r.sort_order ?? 0,
+      system_item_class: r.item_class as SystemItemClass,
+    }));
+    return { scopeTypeId: SYSTEM_ITEMS_KEY, items };
   },
 );
 
@@ -239,6 +296,18 @@ const slice = createSlice({
       .addCase(listScopeTypeItems.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message ?? "Failed to load fields";
+      })
+      .addCase(listSystemContextItems.fulfilled, (state, action) => {
+        state.loading = false;
+        adapter.upsertMany(state, action.payload.items);
+        if (!state.loadedTypes.includes(action.payload.scopeTypeId)) {
+          state.loadedTypes.push(action.payload.scopeTypeId);
+        }
+      })
+      .addCase(listSystemContextItems.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          action.error.message ?? "Failed to load system context items";
       })
       .addCase(createContextItem.fulfilled, (state, action) => {
         adapter.upsertOne(state, action.payload);

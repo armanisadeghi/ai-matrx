@@ -3,9 +3,9 @@
 /**
  * ScopeBatchImportBody
  *
- * Shortcut for batch-creating agent Variables and Context Policies from a scope
- * type's context items — org → scope type → per-item opt-in checkboxes, with
- * an "add all" per column. Every created Variable/Context Policy is bound to its
+ * Shortcut for batch-creating agent Variables and Context Policies from a set
+ * of context items — pick a SOURCE (System platform truths, or an org's scope
+ * type), then per-item opt-in checkboxes with an "add all" per column. Every created Variable/Context Policy is bound to its
  * source item via the same shapes `AgentContextPoliciesManager` and
  * `ContextItemBindingEditor` already produce for a single manual bind
  * (see `features/agents/utils/context-item-policy-mapping.ts`), so a batch-created
@@ -44,8 +44,10 @@ import {
 } from "@/features/agent-context/redux/scope/scopeTypesSlice";
 import {
   listScopeTypeItems,
+  listSystemContextItems,
   selectItemsByType,
   selectItemsLoadedForType,
+  SYSTEM_ITEMS_KEY,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import {
   selectAgentContextPolicies,
@@ -109,24 +111,34 @@ export function ScopeBatchImportBody({
   const [orgIdChoice, setOrgIdChoice] = useState("");
   const orgId = orgIdChoice || activeOrgId || "";
 
+  // Which source supplies the items to batch from. System items are platform
+  // truths (no org, no scope type); Scope items belong to a scope type.
+  const [source, setSource] = useState<"system" | "scope">("system");
+  const isSystem = source === "system";
   const [scopeTypeId, setScopeTypeId] = useState("");
+  // The cache key the item selectors use — System items live under a sentinel.
+  const itemsKey = isSystem ? SYSTEM_ITEMS_KEY : scopeTypeId;
 
   const typesLoaded = useAppSelector((s) =>
     orgId ? selectScopeTypesLoadedForOrg(s, orgId) : false,
   );
   const scopeTypes = useAppSelector((s) => selectScopeTypesByOrg(s, orgId));
   const itemsLoaded = useAppSelector((s) =>
-    scopeTypeId ? selectItemsLoadedForType(s, scopeTypeId) : false,
+    itemsKey ? selectItemsLoadedForType(s, itemsKey) : false,
   );
-  const items = useAppSelector((s) => selectItemsByType(s, scopeTypeId));
+  const items = useAppSelector((s) => selectItemsByType(s, itemsKey));
 
   useEffect(() => {
-    if (orgId && !typesLoaded) dispatch(fetchScopeTypes(orgId));
-  }, [orgId, typesLoaded, dispatch]);
+    if (!isSystem && orgId && !typesLoaded) dispatch(fetchScopeTypes(orgId));
+  }, [isSystem, orgId, typesLoaded, dispatch]);
 
   useEffect(() => {
-    if (scopeTypeId && !itemsLoaded) dispatch(listScopeTypeItems(scopeTypeId));
-  }, [scopeTypeId, itemsLoaded, dispatch]);
+    if (isSystem) {
+      if (!itemsLoaded) dispatch(listSystemContextItems());
+    } else if (scopeTypeId && !itemsLoaded) {
+      dispatch(listScopeTypeItems(scopeTypeId));
+    }
+  }, [isSystem, scopeTypeId, itemsLoaded, dispatch]);
 
   const rawVariables = useAppSelector((s) =>
     selectAgentVariableDefinitions(s, agentId),
@@ -165,12 +177,12 @@ export function ScopeBatchImportBody({
   const [accessEdits, setAccessEdits] = useState<
     Record<string, AgentEditAccess>
   >({});
-  // A different scope type means a different item set — start the picks over.
+  // A different source/scope type means a different item set — start over.
   // Render-time reset (not an effect) per the React "adjusting state when a
   // prop changes" pattern — avoids the extra cascading-render commit.
-  const [selectionScopeTypeId, setSelectionScopeTypeId] = useState(scopeTypeId);
-  if (scopeTypeId !== selectionScopeTypeId) {
-    setSelectionScopeTypeId(scopeTypeId);
+  const [selectionScopeTypeId, setSelectionScopeTypeId] = useState(itemsKey);
+  if (itemsKey !== selectionScopeTypeId) {
+    setSelectionScopeTypeId(itemsKey);
     setSelection({});
     setAccessEdits({});
   }
@@ -368,7 +380,26 @@ export function ScopeBatchImportBody({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <div className="grid grid-cols-2 gap-3 p-4 pb-3 shrink-0 border-b border-border">
+      <div className="grid grid-cols-3 gap-3 p-4 pb-3 shrink-0 border-b border-border">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Source</Label>
+          <Select
+            value={source}
+            onValueChange={(v) => {
+              setSource(v as "system" | "scope");
+              setScopeTypeId("");
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="system">System</SelectItem>
+              <SelectItem value="scope">Scope</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Organization</Label>
           <Select
@@ -377,9 +408,12 @@ export function ScopeBatchImportBody({
               setOrgIdChoice(v);
               setScopeTypeId("");
             }}
+            disabled={isSystem}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Choose an organization…" />
+              <SelectValue
+                placeholder={isSystem ? "—" : "Choose an organization…"}
+              />
             </SelectTrigger>
             <SelectContent>
               {orgs.map((o) => (
@@ -397,12 +431,16 @@ export function ScopeBatchImportBody({
           <Select
             value={scopeTypeId}
             onValueChange={setScopeTypeId}
-            disabled={!orgId}
+            disabled={isSystem || !orgId}
           >
             <SelectTrigger>
               <SelectValue
                 placeholder={
-                  !orgId ? "Pick an organization first" : "Choose a scope type…"
+                  isSystem
+                    ? "—"
+                    : !orgId
+                      ? "Pick an organization first"
+                      : "Choose a scope type…"
                 }
               />
             </SelectTrigger>
@@ -417,7 +455,7 @@ export function ScopeBatchImportBody({
         </div>
       </div>
 
-      {!scopeTypeId ? (
+      {!isSystem && !scopeTypeId ? (
         <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground text-center">
           Pick an organization and scope type to see its context items.
         </div>
@@ -427,7 +465,9 @@ export function ScopeBatchImportBody({
         </div>
       ) : items.length === 0 ? (
         <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground text-center">
-          This scope type has no context items yet.
+          {isSystem
+            ? "No system context items are defined yet."
+            : "This scope type has no context items yet."}
         </div>
       ) : (
         <ScrollArea className="flex-1 min-h-0">

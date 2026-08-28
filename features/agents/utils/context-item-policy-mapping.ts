@@ -10,7 +10,10 @@ import {
   applyAgentEditAccess,
   type AgentEditAccess,
 } from "@/features/agents/utils/agent-edit-access";
-import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
+import {
+  SYSTEM_ITEMS_KEY,
+  type ContextItem,
+} from "@/features/scope-system/redux/contextItemsSlice";
 import type {
   ContextObjectType,
   ContextPolicy,
@@ -56,6 +59,19 @@ export function uniquifyKey(base: string, taken: Set<string>): string {
   return `${base}_${n}`;
 }
 
+/**
+ * The scope type id a BINDING should carry for `item`.
+ *
+ * A System Context Item has no scope type — it is cached client-side under the
+ * `SYSTEM_ITEMS_KEY` sentinel so one set of selectors serves both sources, and
+ * that sentinel must NEVER reach a stored binding. Returns "" for System items,
+ * which is exactly what marks a binding as System-sourced on the way back in.
+ * (Resolution never needs it either: bindings resolve by `context_item_id`.)
+ */
+function bindingScopeTypeId(item: ContextItem): string {
+  return item.scope_type_id === SYSTEM_ITEMS_KEY ? "" : item.scope_type_id;
+}
+
 /** Builds a `ContextPolicy` bound to `item` via `source.kind = "ctx_item"`. */
 export function buildContextPolicyFromItem(
   item: ContextItem,
@@ -76,7 +92,7 @@ export function buildContextPolicyFromItem(
     source: {
       kind: "ctx_item",
       id: item.id,
-      scope_type_id: item.scope_type_id,
+      scope_type_id: bindingScopeTypeId(item),
       item_key: item.key,
       on_missing: opts?.onMissing ?? "empty",
     },
@@ -98,7 +114,7 @@ export function buildVariableFromItem(
     helpText: item.description || undefined,
     binding: {
       contextItemId: item.id,
-      scopeTypeId: item.scope_type_id,
+      scopeTypeId: bindingScopeTypeId(item),
       itemKey: item.key,
       onMissing: opts?.onMissing ?? "empty",
     },
