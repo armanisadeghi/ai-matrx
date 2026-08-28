@@ -17,7 +17,7 @@
  *
  * Data layer is 100% canonical: adoptWorkflowRun (via useWorkflowRun),
  * workflowRuns selectors, InvocationBody, DbEmitRenderer, activity-copy,
- * deriveRunForm, useWorkflowRunControls. Presentation only lives here.
+ * the served input surface, useWorkflowRunControls. Presentation only lives here.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -56,7 +56,7 @@ import {
   listRecentRuns,
   type RecentRunSummary,
 } from "../../surface/service";
-import { deriveRunForm } from "../../surface/run-form";
+import { useServedRunForm, useServedRunStarter } from "../../served-form/useServedRunForm";
 import {
   deliverableSteps,
   describeWorkflowSteps,
@@ -448,9 +448,9 @@ function IntakeBody({
   recentRuns: RecentRunSummary[];
   onOpened: (runId: string) => void;
 }) {
-  const controls = useWorkflowRunControls();
+  const served = useServedRunForm(definitionId);
+  const { start: startServedRun, starting } = useServedRunStarter();
   const steps = useMemo(() => describeWorkflowSteps(definition), [definition]);
-  const sections = useMemo(() => deriveRunForm(definition), [definition]);
 
   return (
     <div className="space-y-4">
@@ -470,15 +470,13 @@ function IntakeBody({
         <div>
           <IntakeCard
             workflowName={name}
-            sections={sections}
+            state={served}
             recentRuns={recentRuns}
-            starting={controls.starting}
-            onStart={(nodeInputs) => {
-              void controls
-                .startRun({ definitionId, nodeInputs })
-                .then((newRunId) => {
-                  if (newRunId) onOpened(newRunId);
-                });
+            starting={starting}
+            onStart={(submission) => {
+              void startServedRun(definitionId, submission).then((newRunId) => {
+                if (newRunId) onOpened(newRunId);
+              });
             }}
             onOpenRun={onOpened}
           />

@@ -30,7 +30,6 @@ import { ElapsedTime } from "@/components/official-candidate/elapsed-time/Elapse
 
 import { RunStatusChip } from "../../run-status";
 import { useWorkflowRun } from "../../hooks/useWorkflowRun";
-import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
 import {
   selectRunActivity,
   selectRunCostTotal,
@@ -44,7 +43,11 @@ import {
   humanizeKind,
   type RunStepPresentation,
 } from "../../components/run/node-presentation";
-import { deriveRunForm } from "../../surface/run-form";
+import type { ServedSubmission } from "../../served-form/served-input";
+import {
+  useServedRunForm,
+  useServedRunStarter,
+} from "../../served-form/useServedRunForm";
 import { fetchWorkflowDefinition } from "../../surface/service";
 import { TERMINAL_RUN_STATUSES } from "../../types";
 import type { WorkflowDefinitionLike } from "../../trigger-points";
@@ -164,7 +167,10 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
   // refresh mid-run resumes exactly where it was.
   const runId = searchParams.get("run");
   const { ensureLane } = useWorkflowRun(runId);
-  const { startRun, starting } = useWorkflowRunControls();
+
+  // THE compiled input surface — served, never re-derived from the graph.
+  const served = useServedRunForm(definitionId);
+  const { start: startServedRun, starting } = useServedRunStarter();
 
   const run = useAppSelector(selectRunState(runId ?? ""));
   const activity = useAppSelector(selectRunActivity(runId ?? ""));
@@ -218,9 +224,9 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
     finalsIds.has(view.step.nodeId),
   );
 
-  const handleStart = (nodeInputs: Record<string, Record<string, unknown>>) => {
+  const handleStart = (submission: ServedSubmission) => {
     if (!ready) return;
-    void startRun({ definitionId: ready.id, nodeInputs }).then((newRunId) => {
+    void startServedRun(ready.id, submission).then((newRunId) => {
       if (newRunId) {
         router.replace(`${pathname}?run=${newRunId}`, { scroll: false });
       }
@@ -378,7 +384,7 @@ export function RefineRunPage({ definitionId }: { definitionId: string }) {
                   </>
                 ) : (
                   <IntakePanel
-                    sections={ready ? deriveRunForm(ready.definition) : []}
+                    state={served}
                     starting={starting}
                     deliverableNames={deliverableSteps(steps).map((step) =>
                       humanizeKind(step.outputKind ?? step.label),
