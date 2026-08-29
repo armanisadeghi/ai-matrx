@@ -38,7 +38,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 - [ ] P4 | `.matrx/patrol-reports/light-dark-integrity-exception-review.md` | 48 active files / 102 raw-token lines remain proposed fixed-palette exceptions after the 2026-08-18 reconciliation; none is approved, old PromptExecutionDebugPanel resolved by deletion, and three newly reviewable surfaces were added; exact candidate `86fe855c6` fixes parked/stale Next build-copy scanning and is independently certified | detector-fixed-certified; verified-open | 2026-08-18
 - [x] P4 | `features/applet/**` (ModernGlass.tsx, StyledComponents.tsx) | moot — the whole applet/app-builder feature was deleted 2026-08-13 (Arman); both files are gone | resolved-by-deletion | 2026-08-13
 - [x] P7 | see `.matrx/patrol-reports/no-browser-dialogs.md` | prior manual findings were resolved before the 2026-08-13 patrol by canonical `confirm({...})` and `TextInputDialog` replacements in `460ff2dcc`; the full scope-aware detector is clean in `v0.4.561` | resolved-before-run | 2026-08-13
-- [ ] P8 | see `.matrx/patrol-reports/real-loading-states.md` | structural-novelty pass repaired 19 callsites across 17 files in two independently certified batches; 68 mapping/skeleton cases remain open with exact missing evidence | fixed-certified-integrated; backlog-open; no-human-approval | 2026-08-17
+- [ ] P8 | see `.matrx/patrol-reports/real-loading-states.md` | structural-novelty pass repaired 19 callsites across 17 files in two independently certified and delivered batches; 68 mapping/skeleton cases remain open with exact missing evidence | fixed-certified-delivered; backlog-open; no-human-approval | 2026-08-29
 
 ## Cleared
 

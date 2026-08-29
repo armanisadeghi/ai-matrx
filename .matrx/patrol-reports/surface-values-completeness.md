@@ -6,6 +6,8 @@ Base: `c50b4cfbcb557c66dbc2d128caa574f3788b48b1`
 
 Scope: structural novelty since the prior P12 artifact plus the periodic full inventory of route leaves, canonical overlays, manifest readiness, live providers, and direct dialog/drawer/sheet/tab roots.
 
+Run classification: **inventory/machinery**, not a product Surface completion. No live Surface UI was enhanced in this run.
+
 ## Outcome
 
 - Verified open surface units: **374**
@@ -18,7 +20,7 @@ Scope: structural novelty since the prior P12 artifact plus the periodic full in
 - Human decisions required: **1 existing product decision** — whether `/education/learn` remains intentionally non-emitting, gets a thin client identity shell while preserving server rendering, or becomes client-rendered.
 - Exceptions proposed or approved: **0**.
 - Certification: **CERTIFIED** for exact candidate `2470f82af0a2726af49786c4a25a8451282e7a76`. The independent certifier found no batch-caused defect.
-- Delivery: the certified candidate is preserved at `refs/heads/patrol-runs/P12/20260828T162115Z` and integrated to `origin/main` with its ancestry intact. The permanent record remains `delivery_queued` until the serialized release lane supplies a containing version.
+- Delivery: **DELIVERED** — the certified candidate is preserved at `refs/heads/patrol-runs/P12/20260828T162115Z`, is an ancestor of release commit `e1968d0a6e`, and shipped successfully in `v0.4.1392`. Later releases continue to contain it; no redundant release is required.
 
 ## Baseline and delta diagnostics
 
@@ -101,3 +103,5 @@ The new conservative classifier found 254 independent audit candidates from 764 
 ## Recursive learning
 
 Identity + explicit state + action/size evidence removed 502 subordinate or uncertain roots from the raw interaction inventory. The smallest next precision gain is owner-level deduplication of responsive Drawer/Dialog twins, followed by correlation of route, overlay, manifest, and provider evidence under one canonical owner.
+
+User-facing acceptance must distinguish inventory from completion. Future product-completion runs select one ranked Surface family, complete its full contract end to end, and report the exact live URL plus the interaction path that exposes the changed Surface. A detector-only run is labeled **inventory/machinery** and must not imply that a live Surface was enhanced.

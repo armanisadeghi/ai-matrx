@@ -89,6 +89,25 @@
       },
       "previousEventHash": "e63a93cd7d7369650c326901a17c4f7e7ea58041a5122adf697d55cc07eee9cf",
       "eventHash": "95bfc2eb0a9754086c6119c7b75aff6ce9c623c801b071a482bee794bb67fdea"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-29T14:17:19.362Z",
+      "actor": "/root/fleet-health-retry",
+      "summary": "DELIVERED: exact certified follow-up candidate is on origin/main and first shipped in v0.4.763.",
+      "evidence": [
+        "candidate 78cac960bd795942b590b9240449856235818a5e is an ancestor of release commit b991fe64159e846f5303edc8fd690d8eb3be7cf2",
+        "release commit b991fe64159e846f5303edc8fd690d8eb3be7cf2 is an ancestor of origin/main"
+      ],
+      "delivery": {
+        "candidateSha": "78cac960bd795942b590b9240449856235818a5e",
+        "preservedRef": "refs/heads/patrol-runs/P8/ff48b527-3733-47e8-9f33-1dc4e326cfe2",
+        "integratedSha": "b991fe64159e846f5303edc8fd690d8eb3be7cf2",
+        "release": "v0.4.763"
+      },
+      "previousEventHash": "95bfc2eb0a9754086c6119c7b75aff6ce9c623c801b071a482bee794bb67fdea",
+      "eventHash": "829f000842ec08a0651eac71eac1a9ea0103c2d95bdd54dfa89dd68bcd6350aa"
     }
   ]
 }
