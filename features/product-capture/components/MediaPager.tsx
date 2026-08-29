@@ -15,7 +15,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { ChevronLeft, ChevronRight, Trash2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
@@ -50,6 +50,7 @@ export function MediaPager({
   initialIndex,
   onClose,
   onDelete,
+  onEdit,
 }: {
   media: PagerMedia[];
   initialIndex: number;
@@ -57,6 +58,9 @@ export function MediaPager({
   /** When provided, the Delete control shows; the pager advances (or closes
    *  when the last file goes) — the caller owns the actual removal. */
   onDelete?: (item: PagerMedia) => void;
+  /** When provided, PHOTO slides show an Edit control (instant crop/rotate
+   *  via the capture-camera ImageEditSheet); the caller owns the editor. */
+  onEdit?: (item: PagerMedia) => void;
 }) {
   const [[index, direction], setPage] = useState<[number, number]>([
     Math.min(Math.max(initialIndex, 0), Math.max(media.length - 1, 0)),
@@ -117,19 +121,34 @@ export function MediaPager({
         <span className="rounded-full bg-black/50 px-3 py-1 text-sm tabular-nums text-white/90">
           {index + 1} / {count}
         </span>
-        {onDelete ? (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full text-white hover:bg-white/10 hover:text-white"
-            onClick={() => onDelete(current)}
-            aria-label="Delete this file"
-          >
-            <Trash2 className="h-5 w-5" />
-          </Button>
-        ) : (
-          <span className="h-10 w-10" aria-hidden />
-        )}
+        <span className="flex items-center gap-1">
+          {/* Edit needs local pixels (previewUrl); persisted-only slides
+              hide it rather than dead-ending. */}
+          {onEdit && current.kind === "photo" && current.previewUrl ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full text-white hover:bg-white/10 hover:text-white"
+              onClick={() => onEdit(current)}
+              aria-label="Edit this photo"
+            >
+              <Pencil className="h-5 w-5" />
+            </Button>
+          ) : null}
+          {onDelete ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full text-white hover:bg-white/10 hover:text-white"
+              onClick={() => onDelete(current)}
+              aria-label="Delete this file"
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          ) : (
+            <span className="h-10 w-10" aria-hidden />
+          )}
+        </span>
       </div>
 
       {/* Stage */}

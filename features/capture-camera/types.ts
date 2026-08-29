@@ -23,6 +23,27 @@ export type CaptureCameraMode = "photo" | "video";
 /** Timer options genuinely supported (a countdown before the shutter). */
 export type CaptureTimerSetting = 0 | 3 | 10;
 
+/** Output aspect for photo capture (center-cropped from the full sensor). */
+export type CaptureAspect = "full" | "4:3" | "1:1" | "16:9";
+
+/**
+ * THE CLOUD LAW of this package: cloud integration is WHAT the system does,
+ * not an optional add-on. Every `CameraCapture` REQUIRES this port — the
+ * type system refuses a camera with no cloud. How the host fulfills it
+ * (fileHandler, a client SDK, a domain uploader) is injected; that it is
+ * fulfilled is not negotiable.
+ */
+export interface CaptureCloudPort {
+  /** Content of the bottom-left recents thumbnail (latest cloud/session
+   *  media). Null renders the placeholder — the button still opens the
+   *  library. */
+  recentsThumb: React.ReactNode;
+  /** Opens the host's cloud media library (tiled gallery). */
+  onOpenLibrary: () => void;
+  /** Persists an edited image produced by the edit sheet. */
+  onSaveEdited: (blob: Blob, suggestedName: string) => void;
+}
+
 /**
  * The engine port — everything the chrome needs from the host's camera
  * runtime. The host owns lease acquisition/release, capture and recording;
@@ -35,8 +56,10 @@ export interface CaptureCameraEngine {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   /** Camera unavailable: permission denied or unsupported. */
   blocked: null | { reason: "permission-denied" | "not-supported" };
-  /** Take a photo NOW (any timer countdown already elapsed). */
-  onCapturePhoto: () => void;
+  /** Take a photo NOW (any timer countdown already elapsed). The chrome's
+   *  current aspect setting rides along; the host center-crops the full
+   *  sensor frame to it ("full" = untouched). */
+  onCapturePhoto: (opts?: { aspect?: CaptureAspect }) => void;
   /** Start / stop video recording. */
   onStartRecording: () => void;
   onStopRecording: () => void;
@@ -81,6 +104,9 @@ export interface CaptureCameraSlots {
   modeRowTrailing?: React.ReactNode;
   /** Extra tiles appended to the options grid. */
   optionTiles?: CaptureOptionTile[];
+  /** Extra entries in the mode row after UPLOAD (e.g. SCAN). Selecting one
+   *  is an immediate host action — the chrome keeps its current mode. */
+  extraModes?: { id: string; label: string; onSelect: () => void }[];
   /** Free overlays rendered above everything (sheets, pagers). */
   overlays?: React.ReactNode;
 }

@@ -20,10 +20,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 interface ExtendedCapabilities extends MediaTrackCapabilities {
   torch?: boolean;
   zoom?: { min: number; max: number; step?: number };
+  exposureCompensation?: { min: number; max: number; step?: number };
 }
 interface ExtendedSettings extends MediaTrackSettings {
   torch?: boolean;
   zoom?: number;
+  exposureCompensation?: number;
 }
 
 const ZOOM_LADDER = [0.5, 1, 2, 4, 8];
@@ -36,11 +38,17 @@ export interface TrackControls {
   zoomOptions: number[];
   zoom: number;
   setZoom: (factor: number) => void;
+  /** Exposure compensation — only when the hardware reports a range. */
+  exposureSupported: boolean;
+  exposure: number;
+  exposureRange: { min: number; max: number; step: number } | null;
+  setExposure: (value: number) => void;
 }
 
 export function useTrackControls(stream: MediaStream | null): TrackControls {
   const [torchOn, setTorchOn] = useState(false);
   const [zoom, setZoomState] = useState(1);
+  const [exposure, setExposureState] = useState(0);
   // Capabilities can be empty until the track is fully live; re-read once on
   // stream change and again on a short delayed tick (iOS reports late).
   const [caps, setCaps] = useState<ExtendedCapabilities | null>(null);
@@ -58,6 +66,8 @@ export function useTrackControls(stream: MediaStream | null): TrackControls {
         setCaps(track.getCapabilities() as ExtendedCapabilities);
         const settings = track.getSettings() as ExtendedSettings;
         if (typeof settings.zoom === "number") setZoomState(settings.zoom);
+        if (typeof settings.exposureCompensation === "number")
+          setExposureState(settings.exposureCompensation);
       } catch {
         setCaps(null);
       }
@@ -109,5 +119,47 @@ export function useTrackControls(stream: MediaStream | null): TrackControls {
     [track, caps],
   );
 
-  return { torchSupported, torchOn, toggleTorch, zoomOptions, zoom, setZoom };
+  const exposureCaps = caps?.exposureCompensation;
+  const exposureRange =
+    exposureCaps && exposureCaps.max > exposureCaps.min
+      ? {
+          min: exposureCaps.min,
+          max: exposureCaps.max,
+          step: exposureCaps.step && exposureCaps.step > 0 ? exposureCaps.step : 0.5,
+        }
+      : null;
+
+  const setExposure = useCallback(
+    (value: number) => {
+      if (!track || !exposureRange) return;
+      const clamped = Math.min(
+        exposureRange.max,
+        Math.max(exposureRange.min, value),
+      );
+      track
+        .applyConstraints({
+          advanced: [
+            { exposureCompensation: clamped } as MediaTrackConstraintSet,
+          ],
+        })
+        .then(() => setExposureState(clamped))
+        .catch((err: unknown) => {
+          console.error("[capture-camera] exposure failed", err);
+        });
+    },
+    [track, exposureRange],
+  );
+
+  return {
+    torchSupported,
+    torchOn,
+    toggleTorch,
+    zoomOptions,
+    zoom,
+    setZoom,
+    exposureSupported: exposureRange !== null,
+    exposure,
+    exposureRange,
+    setExposure,
+  };
 }

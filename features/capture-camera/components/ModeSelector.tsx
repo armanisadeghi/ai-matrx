@@ -21,6 +21,9 @@ export interface ModeSelectorProps {
   /** Locks mode switching (while recording). */
   modeDisabled?: boolean;
   uploadDisabled?: boolean;
+  /** Host-injected extra entries after UPLOAD (e.g. SCAN) — immediate
+   *  actions, never the active mode. */
+  extraModes?: { id: string; label: string; onSelect: () => void }[];
 }
 
 const LABEL_BASE =
@@ -32,6 +35,7 @@ export function ModeSelector({
   onUpload,
   modeDisabled = false,
   uploadDisabled = false,
+  extraModes = [],
 }: ModeSelectorProps) {
   return (
     <div
@@ -74,6 +78,18 @@ export function ModeSelector({
       >
         Upload
       </button>
+      {extraModes.map((extra) => (
+        <button
+          key={extra.id}
+          type="button"
+          aria-label={extra.label}
+          disabled={modeDisabled}
+          onClick={extra.onSelect}
+          className={cn(LABEL_BASE, "text-white active:text-[#FFCC00]")}
+        >
+          {extra.label}
+        </button>
+      ))}
     </div>
   );
 }
