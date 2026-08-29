@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "2026-08-29T161426Z",
-  "state": "discovered",
-  "updatedAt": "2026-08-29T16:14:36.541Z",
-  "summary": "P11 structural-novelty scan found five redundant avatar-clearance hacks in canonical PageHeader center content",
+  "state": "fixing",
+  "updatedAt": "2026-08-29T16:16:09.084Z",
+  "summary": "Removed five redundant PageHeader avatar-clearance paddings and hardened the canonical detector",
   "source": "2026-08-29T161426Z.json",
-  "eventHash": "6575dcd7c77b7c5e91b49be67ce97007309793b006dd3f4efe8e14d2499bd17f"
+  "eventHash": "4a55b81b92c48f7501a09264185f0301d87b2142cb0d8fb9ec0e4b3cee3fab74"
 }

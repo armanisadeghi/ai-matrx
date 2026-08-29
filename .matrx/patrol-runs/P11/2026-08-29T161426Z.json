@@ -20,6 +20,19 @@
       ],
       "previousEventHash": null,
       "eventHash": "6575dcd7c77b7c5e91b49be67ce97007309793b006dd3f4efe8e14d2499bd17f"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-29T16:16:09.084Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Removed five redundant PageHeader avatar-clearance paddings and hardened the canonical detector",
+      "evidence": [
+        "Batch touches five route leaves plus scripts/check-page-headers.ts; no shared runtime primitive or route behavior changes",
+        "Detector now reports pr-12/pr-14 inside core PageHeader blocks and supports a core-only patrol scope"
+      ],
+      "previousEventHash": "6575dcd7c77b7c5e91b49be67ce97007309793b006dd3f4efe8e14d2499bd17f",
+      "eventHash": "4a55b81b92c48f7501a09264185f0301d87b2142cb0d8fb9ec0e4b3cee3fab74"
     }
   ]
 }
