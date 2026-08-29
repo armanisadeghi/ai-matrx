@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 650 active entity tokens. A token here is FK-valid for
+// 651 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -399,6 +399,7 @@ export type EntityTypeToken =
   | "hr_workflow_step"
   | "hr_workflow_step_definition"
   | "hr_workweek"
+  | "iam_api_key"
   | "industry_curator"
   | "interview_document_revision"
   | "interview_hole"
@@ -1461,6 +1462,7 @@ export type ScopeableEntityToken =
   | "hr_workflow_step"
   | "hr_workflow_step_definition"
   | "hr_workweek"
+  | "iam_api_key"
   | "industry_curator"
   | "interview_document_revision"
   | "interview_hole"
@@ -1816,6 +1818,7 @@ export type ListedEntityToken =
   | "hr_workflow_definition"
   | "hr_workflow_flow_type"
   | "hr_workflow_instance"
+  | "iam_api_key"
   | "interview_session"
   | "learn_doc"
   | "mandate"
@@ -2210,6 +2213,7 @@ export const ENTITY_TYPE_METADATA = {
   "hr_workflow_step": { token: "hr_workflow_step", schema: "hr", table: "workflow_step", label: "HR Workflow Step", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_workflow_step_definition": { token: "hr_workflow_step_definition", schema: "hr", table: "workflow_step_definition", label: "HR Workflow Step Definition", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hr_workweek": { token: "hr_workweek", schema: "hr", table: "workweek", label: "Workweek", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "iam_api_key": { token: "iam_api_key", schema: "iam", table: "api_keys", label: "API Key", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "industry_curator": { token: "industry_curator", schema: "iam", table: "industry_curators", label: "Industry Curator", baseTier: 2, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "interview_document_revision": { token: "interview_document_revision", schema: "interview", table: "document_revision", label: "Interview Document Revision", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "interview_hole": { token: "interview_hole", schema: "interview", table: "hole", label: "Interview Adversary Hole", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2864,6 +2868,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hr_workflow_step",
   "hr_workflow_step_definition",
   "hr_workweek",
+  "iam_api_key",
   "industry_curator",
   "interview_document_revision",
   "interview_hole",

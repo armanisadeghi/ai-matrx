@@ -5303,6 +5303,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mcp-connections/{server_id}/woocommerce/products-query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Woocommerce Products Query
+         * @description Return at most one product through the fixed read-only ability.
+         */
+        post: operations["woocommerce_products_query_mcp_connections__server_id__woocommerce_products_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mcp-connections/{server_id}/oauth-tokens": {
         parameters: {
             query?: never;
@@ -73720,6 +73740,36 @@ export interface components {
             /** Completed At */
             completed_at?: string | null;
         };
+        /**
+         * WooCommerceProductQueryResult
+         * @description Provider-formatted result from one fixed, one-product catalog query.
+         */
+        WooCommerceProductQueryResult: {
+            /** Server Id */
+            server_id: string;
+            /** Products */
+            products: string;
+            /**
+             * Ability Name
+             * @default woocommerce/products-query
+             */
+            ability_name?: string;
+            /**
+             * Tool Name
+             * @default mcp-adapter-execute-ability
+             */
+            tool_name?: string;
+            /**
+             * Page
+             * @default 1
+             */
+            page?: number;
+            /**
+             * Per Page
+             * @default 1
+             */
+            per_page?: number;
+        };
         /** WorkbookInputPart */
         WorkbookInputPart: {
             /** Metadata */
@@ -84566,6 +84616,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GrafanaDashboardSearchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    woocommerce_products_query_mcp_connections__server_id__woocommerce_products_query_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WooCommerceProductQueryResult"];
                 };
             };
             /** @description Validation Error */

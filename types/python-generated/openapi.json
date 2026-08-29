@@ -13659,6 +13659,49 @@
         }
       }
     },
+    "/mcp-connections/{server_id}/woocommerce/products-query": {
+      "post": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Woocommerce Products Query",
+        "description": "Return at most one product through the fixed read-only ability.",
+        "operationId": "woocommerce_products_query_mcp_connections__server_id__woocommerce_products_query_post",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WooCommerceProductQueryResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mcp-connections/{server_id}/oauth-tokens": {
       "post": {
         "tags": [
@@ -188181,6 +188224,45 @@
         ],
         "title": "WireReplayStepOut",
         "description": "One ARM of a Level-1 wire replay (`hindsight.replay_step`, C-16).\n\nArms of one replay share `replay_group_id`; the control arm (empty `delta`)\nis the baseline every candidate's verdict is read against, so a client must\nrender the group, never a single row."
+      },
+      "WooCommerceProductQueryResult": {
+        "properties": {
+          "server_id": {
+            "type": "string",
+            "title": "Server Id"
+          },
+          "products": {
+            "type": "string",
+            "title": "Products"
+          },
+          "ability_name": {
+            "type": "string",
+            "title": "Ability Name",
+            "default": "woocommerce/products-query"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "default": "mcp-adapter-execute-ability"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "default": 1
+          },
+          "per_page": {
+            "type": "integer",
+            "title": "Per Page",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_id",
+          "products"
+        ],
+        "title": "WooCommerceProductQueryResult",
+        "description": "Provider-formatted result from one fixed, one-product catalog query."
       },
       "WorkbookInputPart": {
         "properties": {
