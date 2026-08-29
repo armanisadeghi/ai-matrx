@@ -19,7 +19,7 @@ export async function fetchFeatureKnobs(): Promise<FeatureKnob[]> {
     .schema("platform")
     .from("feature_knob")
     .select(
-      "feature, key, value, default_value, value_type, unit, min_value, max_value, allowed_values, label, description, set_by, basis, review_due",
+      "feature, key, value, default_value, value_type, unit, min_value, max_value, allowed_values, label, description, set_by, basis, review_due, overridable_by, override_direction, bound_value",
     )
     .order("feature")
     .order("key");
