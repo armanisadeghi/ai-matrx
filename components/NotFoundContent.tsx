@@ -125,7 +125,7 @@ export function NotFoundContent({
             Go back
           </Button>
           <Button asChild size="sm" variant="outline">
-            <Link href="/dashboard">
+            <Link href="/dashboard" data-tap-target>
               <Home className="mr-1.5 h-4 w-4" aria-hidden />
               AI Matrx home
             </Link>
