@@ -2,7 +2,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
-import { refreshMcpConnection } from "@/features/agents/services/mcp-connections.service";
+import { refreshMcpCatalog } from "@/features/agents/services/mcp-connections.service";
 
 type Tables = Database["public"]["Tables"];
 type ToolTables = Database["tool"]["Tables"];
@@ -193,9 +193,9 @@ export function formatRelativeAge(seconds: number | null): string {
 }
 
 export async function refreshServer(serverId: string): Promise<void> {
-  // Server-side OAuth refresh in aidream (vault Phase 4) — the browser never
-  // touches a token.
-  await refreshMcpConnection(serverId);
+  // Server-wide catalog discovery is distinct from refreshing one user's
+  // Vault-backed OAuth token. No-auth servers never synthesize a connection.
+  await refreshMcpCatalog(serverId);
 }
 
 export interface McpTestResult {

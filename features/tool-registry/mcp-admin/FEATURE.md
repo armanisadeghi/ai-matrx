@@ -20,6 +20,10 @@ guidance. Missing endpoint discovery and stdio's unsupported network probe use
 an informational toast; only a probe that actually reaches the network and
 fails uses an error toast and enters structured error capture.
 
+**Refresh sync is server catalog reconciliation, never OAuth refresh.** It
+calls `POST /api/mcp-connections/{server_id}/catalog-refresh`; public no-auth
+servers do not need or create `tool.mcp_user_conn` or Vault rows.
+
 `AddMcpServerDialog` is the one authoring surface: a three-step wizard
 (identity → transport & auth → review) whose Provision button calls the
 `provision_mcp_server` RPC, inserting the server, an `mcp.<slug>` executor, a
@@ -80,6 +84,8 @@ an agent must never assume one has run.
   per-user Connections page.
 
 ## Change Log
+
+- **2026-08-29** — Routed Refresh sync to server-wide catalog reconciliation; no-auth MCP servers no longer fail on a missing Vault-backed user connection.
 
 - **2026-08-29** — Missing OAuth-discovered endpoints and stdio probe skips are
   informational connection-test outcomes; real HTTP/network failures remain

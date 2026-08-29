@@ -69,6 +69,15 @@ export interface McpConnectionSummary {
   last_error: string | null;
 }
 
+export interface McpCatalogRefreshResult {
+  server_id: string;
+  server_slug: string;
+  inserted: string[];
+  updated: string[];
+  deactivated: string[];
+  duration_ms: number;
+}
+
 interface WireTool {
   name: string;
   description?: string;
@@ -120,6 +129,15 @@ export function refreshMcpConnection(
   serverId: string,
 ): Promise<McpConnectionSummary> {
   return mcpFetch(`/${encodeURIComponent(serverId)}/refresh`, {
+    method: "POST",
+  });
+}
+
+/** Server-wide tool catalog sync; never creates a user connection or secret. */
+export function refreshMcpCatalog(
+  serverId: string,
+): Promise<McpCatalogRefreshResult> {
+  return mcpFetch(`/${encodeURIComponent(serverId)}/catalog-refresh`, {
     method: "POST",
   });
 }
