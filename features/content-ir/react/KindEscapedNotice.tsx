@@ -57,7 +57,8 @@ export function KindEscapedNotice({
 
   useEffect(() => {
     if (!slug || !registered) return;
-    const key = `${slug}:${first?.path ?? ""}`;
+    const firstPath = first?.path;
+    const key = `${slug}:${firstPath === undefined ? "" : firstPath}`;
     if (screamed.has(key)) return;
     screamed.add(key);
     captureError({

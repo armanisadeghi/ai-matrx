@@ -104,16 +104,18 @@ export function collectKindProblems(
       });
     }
     problems.push(...residueProblems(root.residue, ""));
-    for (const [pathKey, node] of Object.entries(envelope.nodeIndex ?? {})) {
-      if (node.kindState === "raw" && node.kind) {
-        problems.push({
-          code: "nested_degraded_raw",
-          message: `Nested "${node.kind}" at ${pathKey} failed validation and degraded to plain data.`,
-          path: pathKey,
-          severity: "error",
-        });
+    if (envelope.nodeIndex) {
+      for (const [pathKey, node] of Object.entries(envelope.nodeIndex)) {
+        if (node.kindState === "raw" && node.kind) {
+          problems.push({
+            code: "nested_degraded_raw",
+            message: `Nested "${node.kind}" at ${pathKey} failed validation and degraded to plain data.`,
+            path: pathKey,
+            severity: "error",
+          });
+        }
+        problems.push(...residueProblems(node.residue, pathKey));
       }
-      problems.push(...residueProblems(node.residue, pathKey));
     }
   }
 

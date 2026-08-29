@@ -31,6 +31,21 @@ async function getSupabase() {
 type KindDefinitionRow =
   Database["content_ir"]["Tables"]["kind_definition"]["Row"];
 type KindEdgeRow = Database["content_ir"]["Tables"]["kind_edge"]["Row"];
+type KindDefinitionReadRow = Pick<
+  KindDefinitionRow,
+  | "id"
+  | "kind"
+  | "label"
+  | "data"
+  | "is_active"
+  | "metadata"
+  | "emitted_json_schema"
+  | "is_contract_artifact"
+>;
+type KindEdgeReadRow = Pick<
+  KindEdgeRow,
+  "parent_definition_id" | "field_name" | "child_definition_id" | "position"
+>;
 
 export class KindTablesError extends Error {
   constructor(message: string) {
@@ -274,9 +289,9 @@ export async function listKindSchemasFromTables(): Promise<BlockSchemaRegistry> 
   // PostgREST silently caps a bare select at 1000 rows, and kind_definition
   // crossed 1000 rows in 2026-08 — which kinds fell off was arbitrary heap
   // order, i.e. "shape rendering is random" (the crack-#1 outage).
-  let defRows: KindDefProjection[];
+  let defRows: KindDefinitionReadRow[];
   try {
-    defRows = (await readAllRows(
+    defRows = await readAllRows<KindDefinitionReadRow>(
       ({ from, to }) =>
         supabase
           .schema("content_ir")
@@ -286,16 +301,16 @@ export async function listKindSchemasFromTables(): Promise<BlockSchemaRegistry> 
           .order("id", { ascending: true })
           .range(from, to),
       { label: "content_ir.kind_definition" },
-    )) as unknown as KindDefProjection[];
+    );
   } catch (error) {
     throw new KindTablesError(
       `Failed to list kind_definition: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 
-  let edgeRows: KindEdgeProjection[];
+  let edgeRows: KindEdgeReadRow[];
   try {
-    edgeRows = (await readAllRows(
+    edgeRows = await readAllRows<KindEdgeReadRow>(
       ({ from, to }) =>
         supabase
           .schema("content_ir")
@@ -307,7 +322,7 @@ export async function listKindSchemasFromTables(): Promise<BlockSchemaRegistry> 
           .order("id", { ascending: true })
           .range(from, to),
       { label: "content_ir.kind_edge" },
-    )) as unknown as KindEdgeProjection[];
+    );
   } catch (error) {
     throw new KindTablesError(
       `Failed to list kind_edge: ${error instanceof Error ? error.message : String(error)}`,
