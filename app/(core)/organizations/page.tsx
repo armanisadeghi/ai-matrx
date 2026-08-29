@@ -510,6 +510,7 @@ export default function OrganizationsPage() {
                   data-surface-value="search_query"
                 >
                   <ProInput
+                    enableCleanup={false}
                     aria-label="Search organizations"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}

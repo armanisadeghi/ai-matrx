@@ -135,6 +135,7 @@ export default function TagManager() {
           Name
         </label>
         <ProInput
+          enableCleanup={false}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Tag name..."

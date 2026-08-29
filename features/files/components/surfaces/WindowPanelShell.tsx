@@ -236,6 +236,7 @@ function SearchTab({ onOpenBrowse }: { onOpenBrowse: () => void }) {
           </p>
         </div>
         <ProInput
+          enableCleanup={false}
           autoFocus
           type="search"
           value={query}

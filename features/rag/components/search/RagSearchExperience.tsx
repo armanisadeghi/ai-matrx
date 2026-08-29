@@ -1162,6 +1162,7 @@ function SearchTab({
             contextData={contextData}
           >
             <ProInput
+              enableCleanup={false}
               ref={queryInputRef}
               wrapperClassName="flex-1"
               startIcon={<SearchIcon className="h-4 w-4" />}

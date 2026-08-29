@@ -782,7 +782,6 @@ export function AiVisibilityWorkspace({
             autoGrow
             minHeight={compactComposer ? 48 : 72}
             maxHeight={compactComposer ? 96 : 144}
-            enableCleanup={false}
             enableTextStats={false}
           />
           <div className="grid grid-cols-2 gap-2">

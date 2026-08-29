@@ -382,6 +382,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
                   Manual route
                 </Label>
                 <ProInput
+                  enableCleanup={false}
                   id={`manual-route-${conversationId}`}
                   value={settings.manualEndpointOverride ?? ""}
                   onChange={(event) =>
@@ -404,6 +405,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
                   Global manual route
                 </Label>
                 <ProInput
+                  enableCleanup={false}
                   id={`global-manual-route-${conversationId}`}
                   value={globalManualOverride}
                   onChange={(event) =>
@@ -426,6 +428,7 @@ export function RunSettingsEditor({ conversationId }: RunSettingsEditorProps) {
                   API version
                 </Label>
                 <ProInput
+                  enableCleanup={false}
                   id={`api-version-${conversationId}`}
                   value={apiVersion ?? ""}
                   onChange={(event) => dispatch(setApiVersion(event.target.value))}

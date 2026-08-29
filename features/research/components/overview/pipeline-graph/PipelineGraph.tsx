@@ -1324,6 +1324,7 @@ function KeywordForm({
   return (
     <div className="space-y-3 p-4">
       <ProInput
+        enableCleanup={false}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Enter a keyword…"

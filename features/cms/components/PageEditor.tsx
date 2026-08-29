@@ -1089,6 +1089,7 @@ export default function PageEditor({
                         Keywords
                       </label>
                       <ProInput
+                        enableCleanup={false}
                         value={metaKeywords}
                         onChange={(e) => setMetaKeywords(e.target.value)}
                         placeholder="keyword1, keyword2, keyword3"

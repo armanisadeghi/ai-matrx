@@ -84,6 +84,7 @@ export function DocumentSearchBar({
       {/* No wrapping <form> — ProInput owns submit (Enter + send tap) and the
           mic controls must never be implicit form submit buttons. */}
       <ProInput
+        enableCleanup={false}
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         placeholder="Find in this document…"

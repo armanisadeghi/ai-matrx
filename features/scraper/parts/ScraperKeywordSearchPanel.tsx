@@ -53,6 +53,7 @@ export function ScraperKeywordSearchPageBody({
             </Label>
             <ProInput
               id="keywords"
+              enableCleanup={false}
               placeholder="Enter keywords..."
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
@@ -186,6 +187,7 @@ export function ScraperKeywordSearchCompactControls({
             Keywords
           </Label>
           <ProInput
+            enableCleanup={false}
             placeholder="Search…"
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}

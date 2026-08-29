@@ -283,6 +283,7 @@ export default function ShapeOwnerEditor({
               <Label htmlFor="shape-label">Display name</Label>
               <ProInput
                 id="shape-label"
+                enableCleanup={false}
                 value={label}
                 enableVoice={false}
                 showCopyButton={false}

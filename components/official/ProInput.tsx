@@ -11,8 +11,8 @@
  * - **Voice input** — mic toggle with live streaming transcription, audio-level
  *   glow, and a recording-protection modal that warns before unmount while a
  *   recording or transcription is in flight.
- * - **"…" actions menu** — a hover-revealed right-side menu hosting Copy (and
- *   the natural home for future actions). It floats over the text (no reserved
+ * - **"…" actions menu** — a hover-revealed right-side menu hosting Copy and
+ *   AI cleanup. It floats over the text (no reserved
  *   right gutter) and only appears while the mouse is over the field — never
  *   from focus alone — so it stays out of the way while typing.
  * - **Submit button** — opt-in via `onSubmit`. Renders a transparent Send
@@ -66,7 +66,7 @@
 "use client";
 
 import React, { useCallback, useState, useRef, useEffect, useId } from "react";
-import { Check, Copy, Loader2 } from "lucide-react";
+import { BrainCircuit, Check, Copy, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { useMicField } from "@/features/audio/hooks/useMicField";
 import { cn } from "@/lib/utils";
@@ -95,6 +95,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toast } from "@/lib/toast";
+import { supabase } from "@/utils/supabase/client";
+import { CLEANUP_SURFACE_NAME } from "@/features/transcription-cleanup/hooks/useAiPostProcess";
+import { useSurfaceAgentRoles } from "@/features/surfaces/hooks/useSurfaceConfig";
+import type { SessionContextItem } from "@/features/transcript-studio/types";
+import { useProTextareaAgentAction } from "./useProTextareaAgentAction";
+import { ProTextAgentActionPopoverBody } from "./ProTextAgentActionPopoverBody";
 /** Real HTMLInputElement with optional expando methods set by ProInput. */
 export interface ProInputElement extends HTMLInputElement {
   requestClose?: () => void;
@@ -113,6 +120,16 @@ export interface ProInputProps extends React.InputHTMLAttributes<HTMLInputElemen
   protectTranscription?: boolean;
   /** Show the Copy action inside the "…" menu. Default: true. */
   showCopyButton?: boolean;
+  /**
+   * AI "Clean up" action in the "…" menu. ON by default for single-line
+   * human-authored text. Set false for search/query, URL, keyword/tag, and
+   * other machine-significant values.
+   */
+  enableCleanup?: boolean;
+  /** Override the cleanup agent resolved from the shared cleanup surface. */
+  cleanupAgentId?: string | null;
+  /** Optional context blocks delivered to the cleanup agent. */
+  cleanupContextItems?: SessionContextItem[];
   /**
    * Voice input + mic device picker. Default true. Set false for search bars,
    * filters, and any field where Enter must submit a form — mic controls inside
@@ -187,6 +204,9 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       onRequestClose,
       protectTranscription = true,
       showCopyButton = true,
+      enableCleanup = true,
+      cleanupAgentId,
+      cleanupContextItems,
       enableVoice = true,
       onSubmit,
       submitDisabled,
@@ -212,11 +232,40 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const inputId = idProp ?? (floatingLabel ? generatedId : undefined);
     const [hasCopied, setHasCopied] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [menuMode, setMenuMode] = useState<"menu" | "cleanup">("menu");
+    const [selectedCleanupAgent, setSelectedCleanupAgent] = useState<
+      string | null
+    >(null);
+    const [selectedCleanupAgentName, setSelectedCleanupAgentName] = useState<
+      string | null
+    >(null);
     const [isFocused, setIsFocused] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const [isAudioAvailable, setIsAudioAvailable] = useState(true);
     const internalRef = useRef<HTMLInputElement>(null);
     const inputRef = (ref as React.RefObject<HTMLInputElement>) || internalRef;
+    const cleanupAction = useProTextareaAgentAction();
+    const cleanupSurfaceRoles = useSurfaceAgentRoles(CLEANUP_SURFACE_NAME);
+    const cleanupSurfaceAgentId =
+      cleanupSurfaceRoles.roles.clean?.effectiveAgentId ?? null;
+
+    useEffect(() => {
+      if (menuMode !== "cleanup" || !selectedCleanupAgent) return undefined;
+      let cancelled = false;
+      void (async () => {
+        const { data } = await supabase
+          .schema("agent")
+          .from("definition")
+          .select("name")
+          .is("deleted_at", null)
+          .eq("id", selectedCleanupAgent)
+          .maybeSingle();
+        if (!cancelled) setSelectedCleanupAgentName(data?.name ?? null);
+      })();
+      return () => {
+        cancelled = true;
+      };
+    }, [menuMode, selectedCleanupAgent]);
 
     useEffect(() => {
       if (!enableVoice) return;
@@ -295,6 +344,68 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       }
     };
 
+    const handleMenuOpenChange = useCallback(
+      (open: boolean) => {
+        setMenuOpen(open);
+        if (!open) {
+          setMenuMode("menu");
+          setSelectedCleanupAgent(null);
+          setSelectedCleanupAgentName(null);
+          cleanupAction.reset();
+        }
+      },
+      [cleanupAction],
+    );
+
+    const openCleanup = useCallback(() => {
+      const text = inputRef.current?.value ?? String(value ?? "");
+      if (!text.trim()) {
+        toast.info("Add some text before cleaning it up");
+        return;
+      }
+      cleanupAction.reset();
+      setSelectedCleanupAgent(cleanupAgentId ?? cleanupSurfaceAgentId);
+      setSelectedCleanupAgentName(null);
+      setMenuMode("cleanup");
+    }, [cleanupAction, cleanupAgentId, cleanupSurfaceAgentId, value]);
+
+    const runCleanup = useCallback(() => {
+      const text = inputRef.current?.value ?? String(value ?? "");
+      if (!text.trim()) {
+        toast.info("Add some text before cleaning it up");
+        return;
+      }
+      if (!selectedCleanupAgent) {
+        toast.info("Choose a cleanup agent first");
+        return;
+      }
+      void cleanupAction.run(
+        text,
+        selectedCleanupAgent,
+        cleanupContextItems ?? [],
+        {
+          applicationScope: {
+            content: text,
+            selection: "",
+            text_before: "",
+            text_after: "",
+          },
+        },
+      );
+    }, [cleanupAction, cleanupContextItems, selectedCleanupAgent, value]);
+
+    const applyCleanup = useCallback(() => {
+      const cleaned = cleanupAction.result.replace(/\s+/g, " ").trim();
+      if (!cleaned) return;
+      pushToInput(cleaned);
+      setMenuOpen(false);
+      setMenuMode("menu");
+      setSelectedCleanupAgent(null);
+      setSelectedCleanupAgentName(null);
+      cleanupAction.reset();
+      toast.success("Cleaned text applied");
+    }, [cleanupAction, pushToInput]);
+
     const handleClear = useCallback(() => {
       if (onClear) {
         onClear();
@@ -365,7 +476,8 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       !isAudioAvailable || disabled || (isTranscribing && !isRecording);
     const showMic = enableVoice && isAudioAvailable;
     const showClear = clearable && hasContent;
-    const showMenu = !disabled && showCopyButton;
+    const cleanupEligible = type === "text" && enableCleanup;
+    const showMenu = !disabled && (showCopyButton || cleanupEligible);
     const rightPadding = rightPaddingClass(!!onSubmit, showClear);
 
     const isInvalid =
@@ -469,7 +581,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
             )}
 
             {showMenu && (
-              <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+              <Popover open={menuOpen} onOpenChange={handleMenuOpenChange}>
                 <PopoverTrigger asChild>
                   {hasCopied ? (
                     <CheckTapButton
@@ -501,24 +613,65 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
                   align="end"
                   side="bottom"
                   sideOffset={6}
-                  className="w-48 p-1"
+                  className={menuMode === "menu" ? "w-48 p-1" : "w-80 p-0"}
                   onOpenAutoFocus={(e) => e.preventDefault()}
                 >
-                  <div className="flex flex-col p-1">
-                    {showCopyButton && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          void handleCopy();
-                          setMenuOpen(false);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                      >
-                        <Copy className="h-4 w-4" />
-                        Copy
-                      </button>
-                    )}
-                  </div>
+                  {menuMode === "menu" ? (
+                    <div className="flex flex-col p-1">
+                      {showCopyButton && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleCopy();
+                            setMenuOpen(false);
+                          }}
+                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <Copy className="h-4 w-4" />
+                          Copy
+                        </button>
+                      )}
+                      {showCopyButton && cleanupEligible && (
+                        <div className="my-1 h-px bg-border" role="separator" />
+                      )}
+                      {cleanupEligible && (
+                        <button
+                          type="button"
+                          onClick={openCleanup}
+                          className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                        >
+                          <BrainCircuit className="h-4 w-4 text-primary" />
+                          Clean up
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <ProTextAgentActionPopoverBody
+                      title="Clean up"
+                      phase={cleanupAction.phase}
+                      isBusy={cleanupAction.isBusy}
+                      isThinking={cleanupAction.isThinking}
+                      result={cleanupAction.result}
+                      error={cleanupAction.error}
+                      agentName={selectedCleanupAgentName}
+                      onSelectAgent={(agentId) => {
+                        setSelectedCleanupAgent(agentId);
+                        setSelectedCleanupAgentName(null);
+                      }}
+                      onRun={runCleanup}
+                      canRun={
+                        Boolean(selectedCleanupAgent) && !cleanupAction.isBusy
+                      }
+                      onApply={applyCleanup}
+                      onBack={() => {
+                        setMenuMode("menu");
+                        setSelectedCleanupAgent(null);
+                        setSelectedCleanupAgentName(null);
+                        cleanupAction.reset();
+                      }}
+                      onCancel={() => setMenuOpen(false)}
+                    />
+                  )}
                 </PopoverContent>
               </Popover>
             )}

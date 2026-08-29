@@ -82,6 +82,8 @@ import { Field } from '@/components/official/Field';
   onRequestClose={() => {}}
 
   showCopyButton={true}                     // Copy item in the "…" menu
+  enableCleanup={true}                      // false for search/URL/tag/config values
+  cleanupAgentId={null}                     // defaults to shared cleanup role
 
   onSubmit={() => {}}
   submitDisabled={false}
@@ -101,7 +103,7 @@ import { Field } from '@/components/official/Field';
     <ComponentDisplayWrapper
       component={component}
       code={code}
-      description="Tier-2 canonical single-line input. Streaming voice, a hover-revealed '…' menu (Copy, extensible), submit, floating label, and protection modal. Hover-only controls float over the text and auto-hide while typing."
+      description="Tier-2 canonical single-line input. Streaming voice, AI cleanup with copyable streamed results, a hover-revealed '…' menu, submit, floating label, and protection modal. Cleanup defaults on for human-authored text and is explicitly excluded from search, URLs, tags, and configuration values."
     >
       <div className="w-full max-w-3xl space-y-8">
         <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground space-y-1">
@@ -205,6 +207,7 @@ import { Field } from '@/components/official/Field';
           code={`<ProInput
   value={q}
   onChange={(e) => setQ(e.target.value)}
+  enableCleanup={false}
   onSubmit={() => { search(q); setQ(""); }}
   submitOnEnter
   placeholder="Search…"
@@ -213,6 +216,7 @@ import { Field } from '@/components/official/Field';
           <ProInput
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            enableCleanup={false}
             onSubmit={() => {
               toast.success("Search sent", { description: search });
               setSearch("");
@@ -308,11 +312,12 @@ import { Field } from '@/components/official/Field';
 
         <Variant
           title="8. Minimal (no menu — voice only)"
-          features={["showCopyButton={false}"]}
+          features={["showCopyButton={false}", "enableCleanup={false}"]}
           code={`<ProInput
   value={v}
   onChange={(e) => setV(e.target.value)}
   showCopyButton={false}    // empties the menu → "…" is hidden
+  enableCleanup={false}
   placeholder="Mic only."
 />`}
         >
@@ -320,6 +325,7 @@ import { Field } from '@/components/official/Field';
             value={minimal}
             onChange={(e) => setMinimal(e.target.value)}
             showCopyButton={false}
+            enableCleanup={false}
             placeholder="Mic only — the … menu is hidden."
           />
         </Variant>

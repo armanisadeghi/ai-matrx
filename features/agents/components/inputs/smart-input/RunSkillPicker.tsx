@@ -234,6 +234,7 @@ export function RunSkillPicker({
         title="Add skills to this run — merged into included on top of the agent's tiers."
       >
         <ProInput
+          enableCleanup={false}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search skills to add…"

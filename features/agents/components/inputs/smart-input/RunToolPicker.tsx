@@ -315,6 +315,7 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
             title="Add tools to this run — on top of the agent's own tools."
           >
             <ProInput
+              enableCleanup={false}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search tools to add…"

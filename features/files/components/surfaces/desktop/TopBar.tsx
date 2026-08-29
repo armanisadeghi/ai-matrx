@@ -40,6 +40,7 @@ export function TopBar({
     >
       <NewMenu parentFolderId={parentFolderId} />
       <ProInput
+        enableCleanup={false}
         type="text"
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}

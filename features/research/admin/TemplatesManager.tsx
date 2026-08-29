@@ -405,6 +405,7 @@ export function TemplatesManager() {
         <label className="text-sm font-medium">Keyword Templates</label>
         <div className="flex gap-2">
           <ProInput
+            enableCleanup={false}
             value={keywordInput}
             onChange={(e) => setKeywordInput(e.target.value)}
             placeholder="Add keyword..."
@@ -444,6 +445,7 @@ export function TemplatesManager() {
         <label className="text-sm font-medium">Default Tags</label>
         <div className="flex gap-2">
           <ProInput
+            enableCleanup={false}
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             placeholder="Add tag..."
@@ -545,6 +547,7 @@ export function TemplatesManager() {
       <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-card/50">
         <div className="relative flex-1 max-w-sm">
           <ProInput
+            enableCleanup={false}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search templates..."

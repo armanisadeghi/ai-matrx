@@ -44,10 +44,11 @@ input text + context reach it, in priority order:
 2. **Name heuristic** — first variable named like `transcribed_text`,
    `transcript`, `content`, `text`, `input`, ….
 3. **Single variable** — an agent with exactly one variable gets the text.
-4. **`user_input` fallback** — the text becomes the user message.
+4. **Refuse** — if no declared variable can receive the text, the run fails
+   loudly; machine content never falls through to `user_input`.
 The active mapping is shown under each dropdown (`input → <target>`).
 
-**Clean default via surface roles** — no hardcoded agent ids. The `clean`
+**Clean default via surface roles.** The `clean`
 role on `matrx-user/transcripts-cleanup` (manifest `agentRoles` →
 `ui_surface_agent_role` + `ui_surface_agent_pref`) seeds the Clean dropdown
 through `useSurfaceAgentRoles(CLEANUP_SURFACE_NAME)`, resolved
@@ -55,7 +56,10 @@ platform → org → user (provenance caption under the dropdown). "Set as my
 default" / "Your default · Reset" beside the dropdown write/clear the
 user-tier selection (`setForMe` / `clearForMe`). A session's persisted agent
 always wins over the role default; with no agent at all, Clean refuses with
-a toast.
+a toast. **The current platform default is a raw `defaultAgentId`, not a
+`mandateKey`;** the manifest owns that connection while the prompt/model live
+only in `agent.definition`. This is an explicit mandate-migration gap, not a
+claim that the component defines an agent.
 
 **Context items** are first-class: each block in the sidebar is
 `{id, key, label, value}` (key slugified from the title — name a block
@@ -78,6 +82,12 @@ behavior); otherwise items ride as ad-hoc context entries.
 Voice-pad + agent-execution Redux, `MicrophoneIconButton`, `ContentActionBar`,
 `AgentListDropdown`, `NotesAPI`, `stripThinkingStreaming`, `useIsMobile`,
 `studioService` (consumed, never forked).
+
+`ProTextarea` and `ProInput` reuse this same `clean` surface role and
+`useAiPostProcess` execution path. Cleanup is default-on for human-authored
+text; hosts explicitly disable it for JSON, search/query, URL/endpoint,
+keyword/tag, and machine-identifier fields. `ProInput` collapses Apply output
+to one line; both controls keep the streamed result copyable before Apply.
 
 ## Invariants
 
@@ -169,6 +179,19 @@ Auto-run: raw-source slots fire simultaneously with Clean (mic completion +
 manual Clean Up); clean-source slots fire when the cleaned result lands.
 
 ## Change Log
+
+- 2026-08-29 — **Cleanup propagated to canonical single-line text without
+  propagating it into machine values.** `ProInput` now reuses the same cleanup
+  role, stream, result-copy view, and explicit Apply flow as `ProTextarea`;
+  human-authored names/titles inherit it while 22 search, URL/endpoint,
+  API-version, keyword/tag, and machine-label sites opt out. The authenticated
+  AI Visibility buyer question also inherits cleanup; the anonymous public
+  tool stays excluded because agent execution requires an authenticated run.
+  A live title run exposed plain planning text from cleanup agent v10; v11
+  keeps the prompt/contract intact, moves to Gemini 3.7 Flash with thoughts
+  disabled, and passed both a one-line title and structured transcript-list
+  run before the component canary (copy exact, single-line Apply, 44px mobile,
+  zero browser errors).
 
 - 2026-08-18 — **THE USER-INPUT LAW fix: no more silent user_input fallback in `useAiPostProcess`.** When no declared agent variable matched the transcript (no transcript-shaped name, no single-variable target), the hook silently dumped the whole transcript into `user_input` (`setUserInputText`). That was an explicit bypass of the law — a document is never prose in the composer. The fallback branch is deleted; `process()` now throws a descriptive error naming the missing-variable misconfiguration (surfaced via the existing `error` state), leaving variable-matching (name heuristic + single-variable fallback) intact.
 

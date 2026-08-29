@@ -623,6 +623,7 @@ export function ScraperFloatingWorkspace({
             <div className="p-2 border-b border-border bg-card/50 shrink-0 space-y-1.5">
               <ProInput
                 ref={urlInputRef}
+                enableCleanup={false}
                 type="url"
                 placeholder="https://…"
                 value={url}
@@ -671,6 +672,7 @@ export function ScraperFloatingWorkspace({
             <div className="p-2 border-b border-border bg-card/50 shrink-0 space-y-1.5">
               <ProInput
                 ref={keywordInputRef}
+                enableCleanup={false}
                 placeholder="Keyword…"
                 value={keyword}
                 onChange={(e) => setKeyword(e.target.value)}
