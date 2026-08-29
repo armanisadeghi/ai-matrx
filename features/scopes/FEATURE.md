@@ -44,7 +44,8 @@ this directory.
 - `service/` — `scopesService.ts` (the `context.*` chokepoint), `associationsService.ts` +
   `associationGuards.ts` + `associationHelpers.ts` + `associationEdges.ts` +
   `associationCandidates.ts`, `categoriesService.ts`, `entityTitles.ts`, `entityRows.ts`,
-  `favoritesService.ts`, `rpcResult.ts`.
+  `favoritesService.ts` + `favoritesCore.ts` (the client-injectable `ues_get_bulk` half —
+  server-side readers use it; together the two are the sole `ues_*` chokepoint), `rpcResult.ts`.
 - `redux/` — `scopesSlice.ts` (the canonical tree + `associationsByKey` + `entityScopesByKey` +
   `categoriesByDimension` + `contextItemsByTypeId`, the lazy per-scope-type item catalogs fed by
   `ensureScopeTypeItems`), `contextValuesSlice.ts` (high-churn values sidecar; writes echo through
@@ -175,6 +176,12 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-08-29 — Associations-extraction W0 prereqs: `AttachedItemsSheet` title resolution
+  repointed onto the unit's `service/entityTitles.ts` (sharing's `accessSummary.fetchEntityTitles`
+  copy is dedup-flagged for the sharing node); in-unit `cn` imports unified on `@/utils/cn`;
+  new `service/favoritesCore.ts` — the client-injectable `ues_get_bulk` implementation —
+  closes the one bare `ues_*` caller outside this service directory
+  (`features/ai-work/service/providerConversation.ts`, a server-component reader).
 - 2026-08-29 — `conversation_files` now authorizes the actual `chat.conversation`
   row through `can_view_chat_conversation`; it never routes a chat UUID through
   the legacy `conversation` entity token registered to `public.cx_conversation`.

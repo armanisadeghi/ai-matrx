@@ -50,7 +50,7 @@ import {
 import type { DocumentRow } from "@/features/data-tables/types";
 import type { Visibility } from "@/features/files/types";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn";
 
 export interface CaptureAttachResult {
   ok: boolean;

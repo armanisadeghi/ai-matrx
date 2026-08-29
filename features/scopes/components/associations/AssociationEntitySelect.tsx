@@ -50,7 +50,7 @@ import {
 import { EditableLabel } from "@/components/official/item/EditableLabel";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn";
 
 export interface AssociationEntitySelectItem {
   id: string;

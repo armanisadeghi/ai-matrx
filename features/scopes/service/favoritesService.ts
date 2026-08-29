@@ -6,8 +6,10 @@
 // Mirrors `associationsService`: the client has NO direct grant on the
 // `platform` schema, so every read/write goes through the four PUBLIC
 // SECURITY-DEFINER RPCs (`ues_set` / `ues_list` / `ues_get_bulk` / `ues_touch`)
-// — and every call to those RPCs goes through THIS file. No other file calls
-// them. Methods always return a `ScopesRpcResult` and NEVER throw.
+// — and every call to those RPCs goes through THIS file or its
+// client-injectable sibling `favoritesCore.ts` (the server-safe
+// `ues_get_bulk` implementation this file's `getBulk` delegates to). No other
+// file calls them. Methods always return a `ScopesRpcResult` and NEVER throw.
 //
 // Scope: unlike associations (org-gated), per-user state is gated on
 // `auth.uid()` INSIDE each RPC — these are the user's own flags on an entity,
@@ -26,6 +28,7 @@ import {
   ok,
 } from "@/features/scopes/service/rpcResult";
 import type { ScopesRpcResult, UserEntityState } from "@/features/scopes/types";
+import { uesGetBulk } from "@/features/scopes/service/favoritesCore";
 
 /** The three boolean dimensions of per-user state, as accepted by `ues_list`. */
 export type UserStateKind = "favorite" | "pinned" | "hidden";
@@ -39,15 +42,6 @@ interface UesListRow {
   is_hidden: boolean;
   last_viewed_at: string | null;
   updated_at: string;
-}
-
-// Raw `ues_get_bulk` row — scoped to one known `entity_type` (not echoed back).
-interface UesBulkRow {
-  entity_id: string;
-  is_favorite: boolean;
-  is_pinned: boolean;
-  is_hidden: boolean;
-  last_viewed_at: string | null;
 }
 
 function toState(row: UesListRow): UserEntityState {
@@ -162,28 +156,12 @@ export const favoritesService = {
   ): Promise<ScopesRpcResult<{ items: UserEntityState[] }>> {
     try {
       requireUserId();
-      const ids = Array.from(new Set(entityIds));
-      const { data, error } = await supabase.rpc("ues_get_bulk", {
-        p_entity_type: entityType,
-        p_entity_ids: ids,
-      });
-      if (error) return err(...mapPgErrorPair(error));
-      const rows = (Array.isArray(data) ? data : []) as UesBulkRow[];
-      // `ues_get_bulk` doesn't echo entity_type (it's a query input) — stamp
-      // it back so callers get the same `UserEntityState` shape as `list`.
-      return ok({
-        items: rows.map((r) => ({
-          entityType,
-          entityId: r.entity_id,
-          isFavorite: r.is_favorite,
-          isPinned: r.is_pinned,
-          isHidden: r.is_hidden,
-          lastViewedAt: r.last_viewed_at ?? null,
-        })),
-      });
     } catch (e) {
       return { ok: false, error: mapPgError(e) };
     }
+    // The RPC call + row mapping live in the client-injectable core so
+    // SERVER-side readers share ONE implementation (see favoritesCore.ts).
+    return uesGetBulk(supabase, entityType, entityIds);
   },
 
   // ──────────────────────────────────────────────────────────────────

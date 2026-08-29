@@ -4,12 +4,13 @@
 // missing. The card showed "2 attached" and then swallowed the click, so there
 // was no way to find out WHICH two.
 //
-// Titles are resolved LIVE via `entity_titles` rather than read off the
-// association edge's stored label: the edge label is a snapshot from attach
-// time and goes stale the moment the target is renamed (and many existing edges
-// have no label at all). Ids the viewer cannot read are omitted by the RPC, so
-// they resolve through the access gate (`UnresolvedEntityRef`) instead of this
-// surface guessing why.
+// Titles are resolved LIVE through the unit's own resolver
+// (`service/entityTitles.ts` — session cache + `reference_search_candidates`)
+// rather than read off the association edge's stored label: the edge label is
+// a snapshot from attach time and goes stale the moment the target is renamed
+// (and many existing edges have no label at all). Ids the viewer cannot read
+// are omitted by the RPC, so they resolve through the access gate
+// (`UnresolvedEntityRef`) instead of this surface guessing why.
 //
 // Adaptive through the ONE AssociationWindow shell: a NON-BLOCKING draggable
 // WindowPanel on desktop and a non-modal card on mobile.
@@ -30,7 +31,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAccessStates } from "@/features/access-gate/hooks/useAccessStates";
 import { UnresolvedEntityRef } from "@/features/access-gate/components/UnresolvedEntityRef";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { fetchEntityTitles } from "@/features/sharing/service/accessSummary";
+import { fetchEntityTitles } from "@/features/scopes/service/entityTitles";
 import type { ContainerLink } from "@/features/scopes/hooks/useContainerLinks";
 import type { PrimaryEntity } from "@/features/scopes/components/associations/PrimaryEntityContext";
 import { cn } from "@/utils/cn";

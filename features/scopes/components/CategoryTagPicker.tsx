@@ -51,7 +51,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";

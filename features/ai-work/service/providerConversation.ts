@@ -1,5 +1,6 @@
 import type { Tables } from "@/types/database.types";
 import { createClient } from "@/utils/supabase/server";
+import { uesGetBulk } from "@/features/scopes/service/favoritesCore";
 import {
   normalizeProviderMessage,
   PROVIDER_MESSAGE_COLUMNS,
@@ -116,12 +117,13 @@ export async function readProviderConversation(
 
   // The favorite comes from the store that is written, not from the row. A
   // failed read renders "No" rather than blocking the page — the same loud
-  // degrade `applyFavoritesFromUes` uses on the list side.
-  const favoriteResult = await supabase.rpc("ues_get_bulk", {
-    p_entity_type: "conversation",
-    p_entity_ids: [conversationId],
-  });
-  if (favoriteResult.error) {
+  // degrade `applyFavoritesFromUes` uses on the list side. Read through the
+  // favorites chokepoint's injectable core (`ues_*` RPCs are never called
+  // bare outside features/scopes/service/ — W0-P3).
+  const favoriteResult = await uesGetBulk(supabase, "conversation", [
+    conversationId,
+  ]);
+  if (!favoriteResult.ok) {
     console.error(
       "[providerConversation] favorite read failed — rendering favorite unset",
       favoriteResult.error,
@@ -129,7 +131,9 @@ export async function readProviderConversation(
   }
   const conversation: ProviderConversation = {
     ...conversationResult.data,
-    is_favorite: (favoriteResult.data ?? []).some((row) => row.is_favorite),
+    is_favorite: favoriteResult.ok
+      ? favoriteResult.data.items.some((item) => item.isFavorite)
+      : false,
   };
 
   if (!isProviderSourceApp(conversation.source_app)) {

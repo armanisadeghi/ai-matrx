@@ -174,6 +174,12 @@ export async function fetchAccessSummary(
  * owning table. Never render a denormalized association label instead — it goes
  * stale the moment the target is renamed. Ids the caller cannot view are
  * omitted by the RPC rather than leaked.
+ *
+ * DEDUP FLAG (associations W0-P1, 2026-08-29): this is sharing's own copy of a
+ * title resolver; the scopes unit has the canonical cached one at
+ * `features/scopes/service/entityTitles.ts` (which `AttachedItemsSheet` now
+ * uses). The sharing node owns converging this copy onto that resolver (or a
+ * shared home) — do not add new consumers here.
  */
 export async function fetchEntityTitles(
   entityType: EntityTypeToken,
