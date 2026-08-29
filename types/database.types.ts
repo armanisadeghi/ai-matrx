@@ -55227,6 +55227,15 @@ export type Database = {
         Args: { p_target_token: string }
         Returns: Json
       }
+      definer_guard_revoke_notice: {
+        Args: {
+          p_identity_args: string
+          p_name: string
+          p_schema: string
+          p_signature: string
+        }
+        Returns: string
+      }
       demote_custom_field_index: {
         Args: { p_definition_id: string }
         Returns: Json
