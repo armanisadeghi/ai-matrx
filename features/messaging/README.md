@@ -1,5 +1,7 @@
 # Direct Messaging System
 
+Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/communications/messaging/HANDOFF.md — read it before touching this feature in ANY repo (this feature is slated to be replaced by the `@ai-matrx/messaging` package; its hardening is a named extraction input).
+
 Real-time user-to-user messaging for AI Matrx using Supabase Realtime.
 
 ## Features
