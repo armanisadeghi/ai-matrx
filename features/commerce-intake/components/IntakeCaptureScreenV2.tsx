@@ -348,16 +348,13 @@ export function IntakeCaptureScreenV2({
         }}
         slots={{
           topBarCenter: (
-            <div className="min-w-0 text-center">
-              <p className="truncate text-sm font-semibold text-white">
-                {itemLabel}
-              </p>
-              <p className="text-[11px] text-white/70">
-                {photoCount === 0
-                  ? "No photos yet"
-                  : `${photoCount} photo${photoCount === 1 ? "" : "s"}`}
-              </p>
-            </div>
+            <p className="truncate text-center text-[13px] font-semibold text-white">
+              {itemLabel}
+              <span className="font-normal text-white/60">
+                {" · "}
+                {photoCount} photo{photoCount === 1 ? "" : "s"}
+              </span>
+            </p>
           ),
           topBarTrailing: (
             <button
@@ -390,36 +387,40 @@ export function IntakeCaptureScreenV2({
             ) : null
           ) : null,
           optionTiles: commerceTiles,
+          // The filmstrip floats OVER the feed (aboveBar) — it costs the
+          // bottom bar zero height (Arman, 2026-08-29: the bar was eating
+          // the viewfinder).
+          aboveBar:
+            artifacts.length > 0 ? (
+              <div className="flex items-center gap-1 overflow-x-auto">
+                {artifacts.slice(-12).map((artifact) => (
+                  <button
+                    key={artifact.localId}
+                    type="button"
+                    onClick={() => setPreviewArtifact(artifact)}
+                    aria-label="View capture"
+                    className={cn(
+                      "relative h-11 w-8 shrink-0 overflow-hidden rounded bg-black/40 shadow ring-1 ring-white/20",
+                      artifact.isDelineator &&
+                        "ring-2 ring-inset ring-amber-400",
+                    )}
+                  >
+                    <ArtifactThumb artifact={artifact} />
+                    {artifact.status === "uploading" && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        <Loader2 className="h-3 w-3 animate-spin text-white" />
+                      </span>
+                    )}
+                    {artifact.status === "error" && (
+                      <span className="absolute inset-0 rounded ring-2 ring-inset ring-red-500" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            ) : null,
           aboveModeSelector: (
             <>
-              {artifacts.length > 0 && (
-                <div className="flex items-center gap-1.5 overflow-x-auto py-2">
-                  {artifacts.slice(-12).map((artifact) => (
-                    <button
-                      key={artifact.localId}
-                      type="button"
-                      onClick={() => setPreviewArtifact(artifact)}
-                      aria-label="View capture"
-                      className={cn(
-                        "relative h-12 w-9 shrink-0 overflow-hidden rounded bg-white/10",
-                        artifact.isDelineator &&
-                          "ring-2 ring-inset ring-amber-400",
-                      )}
-                    >
-                      <ArtifactThumb artifact={artifact} />
-                      {artifact.status === "uploading" && (
-                        <span className="absolute inset-0 flex items-center justify-center bg-black/40">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
-                        </span>
-                      )}
-                      {artifact.status === "error" && (
-                        <span className="absolute inset-0 rounded ring-2 ring-inset ring-red-500" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <div className="flex items-center gap-2 py-1.5">
+              <div className="flex items-center gap-1.5 py-1">
                 {qrMode && (
                   <SerialQuickEntry
                     key={currentAsset?.id ?? "none"}
@@ -430,7 +431,7 @@ export function IntakeCaptureScreenV2({
                   variant="ghost"
                   size="sm"
                   className={cn(
-                    "h-10 shrink-0 rounded-full px-3 text-white/90 hover:bg-white/20 hover:text-white",
+                    "h-9 shrink-0 rounded-full px-3 text-white/90 hover:bg-white/20 hover:text-white",
                     session.notes.trim() !== "" ? "bg-white/20" : "bg-white/10",
                     !qrMode && "flex-1",
                   )}
@@ -446,37 +447,36 @@ export function IntakeCaptureScreenV2({
                     host.recording || session.organizationId === null
                   }
                 />
-              </div>
-              {instantMode && qrMode && (
-                <div className="px-2 pb-1">
+                {instantMode && qrMode && (
                   <Button
-                    className="h-11 w-full rounded-full"
+                    className="h-9 shrink-0 rounded-full px-3"
                     onClick={onProcess}
                     disabled={
                       currentAsset === null ||
                       host.recording ||
                       (session.uploadingCount > 0 && !instant.storedResult)
                     }
+                    aria-label="Process this item with AI"
                   >
                     {instant.isRunning || instant.restoring ? (
-                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <BrainCircuit className="mr-1.5 h-4 w-4" />
+                      <BrainCircuit className="h-4 w-4" />
                     )}
-                    {instant.isRunning
-                      ? "Analyzing…"
-                      : instant.storedResult
-                        ? "View analysis"
-                        : session.uploadingCount > 0
-                          ? "Waiting for uploads…"
-                          : "Process item"}
+                    <span className="ml-1">
+                      {instant.isRunning
+                        ? "Analyzing…"
+                        : instant.storedResult
+                          ? "View"
+                          : "Process"}
+                    </span>
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
               {(session.uploadingCount > 0 || session.errorCount > 0) && (
-                <p className="pb-1 text-center text-[11px] text-white/60">
+                <p className="pb-0.5 text-center text-[10px] leading-tight text-white/60">
                   {session.uploadingCount > 0 &&
-                    `Saving ${session.uploadingCount} file${session.uploadingCount === 1 ? "" : "s"} in the background… `}
+                    `Saving ${session.uploadingCount} file${session.uploadingCount === 1 ? "" : "s"}… `}
                   {session.errorCount > 0 && (
                     <span className="text-red-400">
                       {session.errorCount} upload
@@ -491,24 +491,24 @@ export function IntakeCaptureScreenV2({
           modeRowTrailing: qrMode ? (
             <Button
               size="sm"
-              className="h-9 whitespace-nowrap rounded-full px-3"
+              className="h-8 whitespace-nowrap rounded-full px-2.5 text-xs"
               onClick={session.nextItem}
               disabled={currentAsset === null || host.recording}
             >
-              <PackagePlus className="mr-1 h-4 w-4" />
+              <PackagePlus className="mr-1 h-3.5 w-3.5" />
               Next
             </Button>
           ) : (
             <Button
               size="sm"
               variant="secondary"
-              className="h-9 whitespace-nowrap rounded-full px-3"
+              className="h-8 whitespace-nowrap rounded-full px-2.5 text-xs"
               onClick={() =>
                 host.capturePhotoWith({ fileNamePrefix: "delineator" })
               }
               disabled={host.recording || host.cameraBlocked}
             >
-              <Scissors className="mr-1 h-4 w-4" />
+              <Scissors className="mr-1 h-3.5 w-3.5" />
               Break
             </Button>
           ),
@@ -524,7 +524,7 @@ export function IntakeCaptureScreenV2({
                 aria-label={controlsHidden ? "Show controls" : "Hide controls"}
                 aria-pressed={controlsHidden}
                 className={cn(
-                  "absolute right-3 top-20 z-40 mt-safe flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors",
+                  "absolute right-2 top-[52px] z-40 mt-safe flex h-10 w-10 items-center justify-center rounded-full text-white transition-colors",
                   controlsHidden
                     ? "bg-black/50 hover:bg-black/70"
                     : "bg-white/10 hover:bg-white/20",
@@ -681,7 +681,7 @@ function SerialQuickEntry({ onCommit }: { onCommit: (value: string) => void }) {
       autoCapitalize="characters"
       autoCorrect="off"
       spellCheck={false}
-      className="h-10 min-w-0 flex-1 rounded-full border border-white/15 bg-white/5 px-4 text-base text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
+      className="h-9 min-w-0 flex-1 rounded-full border border-white/15 bg-white/5 px-3.5 text-base text-white placeholder:text-white/40 focus:border-white/40 focus:outline-none"
     />
   );
 }
