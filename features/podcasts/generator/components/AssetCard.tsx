@@ -34,7 +34,11 @@ import type { MediaExtraAction } from "@/features/files/blocks/actions";
 import type { ImageBlock, VideoBlock } from "@/features/files/blocks/types";
 import { podcastMediaRef } from "../media";
 import type { MediaSlot } from "../types";
-import { AssetActionsMenu, type AssetRegenerateOpts } from "./AssetActionsMenu";
+import {
+  AssetActionsMenu,
+  confirmAssetRegenerate,
+  type AssetRegenerateOpts,
+} from "./AssetActionsMenu";
 
 interface AssetCardProps {
   slot: MediaSlot;
@@ -85,7 +89,13 @@ export function AssetCard({
       label: busy ? "Regenerating…" : "Regenerate",
       icon: RefreshCw,
       disabled: busy,
-      onClick: () => onRegenerate({ modelAlias: defaultAlias }),
+      // THE DESTRUCTIVE/EXPENSIVE CLICK LAW: this slot already holds a finished
+      // asset, so a regenerate both destroys it and pays for a new generation.
+      onClick: async () => {
+        if (!(await confirmAssetRegenerate(slot.kind, { replacesExisting: true })))
+          return;
+        onRegenerate({ modelAlias: defaultAlias });
+      },
     });
     // Per-model regenerate when multiple internal models exist — kept flat
     // (one row per model) so the canonical menu stays a single level.
@@ -97,7 +107,15 @@ export function AssetCard({
           label: `Regenerate · Model ${i + 1}`,
           icon: Layers,
           disabled: busy,
-          onClick: () => onRegenerate({ modelAlias: alias }),
+          onClick: async () => {
+            if (
+              !(await confirmAssetRegenerate(slot.kind, {
+                replacesExisting: true,
+              }))
+            )
+              return;
+            onRegenerate({ modelAlias: alias });
+          },
         });
       }
     }

@@ -20,11 +20,40 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { RunAssetKind } from "@/features/podcasts/studio/runs/run-types";
 
 export interface AssetRegenerateOpts {
   modelAlias?: string;
   customPrompt?: string;
+}
+
+/**
+ * THE DESTRUCTIVE/EXPENSIVE CLICK LAW: a regenerate is BOTH destructive (the
+ * image/clip in this slot is replaced by the new one) and expensive (a fresh
+ * paid server-side AI generation). Shared by the "…" menu here and by the
+ * canonical media menu's fold-in actions on `AssetCard`, so both tell the same
+ * truth. Not used on the edit-description path — `TextInputDialog` already
+ * stops there and carries the consequence in its own description text; a
+ * second prompt would be double-prompting.
+ */
+export async function confirmAssetRegenerate(
+  kind: RunAssetKind,
+  { replacesExisting }: { replacesExisting: boolean },
+): Promise<boolean> {
+  const noun = kind === "video" ? "clip" : "image";
+  return replacesExisting
+    ? confirm({
+        title: `Replace this ${noun}?`,
+        description: `The ${noun} in this slot is thrown away and replaced by a newly generated one — the current one is not kept and there is no version to go back to. Generating the new ${noun} runs a paid AI model on the server and takes up to a minute or two.`,
+        confirmLabel: `Replace ${noun}`,
+        variant: "destructive",
+      })
+    : confirm({
+        title: `Generate this ${noun} again?`,
+        description: `Starts a fresh server-side AI generation for this slot, which costs real money and takes up to a minute or two. Anything already running for this slot is superseded by the new attempt.`,
+        confirmLabel: "Generate again",
+      });
 }
 
 interface AssetActionsMenuProps {
@@ -35,6 +64,13 @@ interface AssetActionsMenuProps {
   currentPrompt: string;
   busy: boolean;
   onRegenerate: (opts: AssetRegenerateOpts) => void;
+  /**
+   * True when this slot already holds a finished asset that a regenerate would
+   * overwrite — drives which consequence the confirmation names. Today the
+   * menu only mounts on non-done slots (the canonical media menu owns a done
+   * one), so it defaults to false.
+   */
+  replacesExisting?: boolean;
 }
 
 export function AssetActionsMenu({
@@ -44,6 +80,7 @@ export function AssetActionsMenu({
   currentPrompt,
   busy,
   onRegenerate,
+  replacesExisting = false,
 }: AssetActionsMenuProps) {
   const [editOpen, setEditOpen] = useState(false);
   // The model that historically made this slot (slot N → model N+1) when in
@@ -66,7 +103,11 @@ export function AssetActionsMenu({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuItem
-            onClick={() => onRegenerate({ modelAlias: defaultAlias })}
+            onClick={async () => {
+              if (!(await confirmAssetRegenerate(kind, { replacesExisting })))
+                return;
+              onRegenerate({ modelAlias: defaultAlias });
+            }}
             disabled={busy}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
@@ -82,9 +123,15 @@ export function AssetActionsMenu({
                 {Array.from({ length: modelCount }, (_, i) => (
                   <DropdownMenuItem
                     key={i}
-                    onClick={() =>
-                      onRegenerate({ modelAlias: `model_${i + 1}` })
-                    }
+                    onClick={async () => {
+                      if (
+                        !(await confirmAssetRegenerate(kind, {
+                          replacesExisting,
+                        }))
+                      )
+                        return;
+                      onRegenerate({ modelAlias: `model_${i + 1}` });
+                    }}
                     disabled={busy}
                   >
                     Model {i + 1}
@@ -109,7 +156,13 @@ export function AssetActionsMenu({
         open={editOpen}
         onOpenChange={setEditOpen}
         title={`Edit ${noun} description`}
-        description={`Regenerate this ${noun} from a new description.`}
+        // The consequence lives HERE rather than behind a second confirm — this
+        // dialog is already the stop, and double-prompting is its own defect.
+        description={
+          replacesExisting
+            ? `Regenerates this ${noun} from a new description. The ${noun} in this slot is thrown away and replaced, and a new paid AI generation runs on the server (up to a minute or two).`
+            : `Regenerates this ${noun} from a new description. This starts a new paid AI generation on the server (up to a minute or two).`
+        }
         placeholder={`Describe the ${noun}…`}
         defaultValue={currentPrompt}
         multiline

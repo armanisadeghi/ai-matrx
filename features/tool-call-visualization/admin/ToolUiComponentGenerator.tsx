@@ -44,6 +44,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { supabase } from "@/utils/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -1427,7 +1428,18 @@ export function ToolUiComponentGenerator({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
+                  // THE DESTRUCTIVE/EXPENSIVE CLICK LAW: the component on
+                  // screen has been generated but not saved — resetting the
+                  // step throws it away for good.
+                  onClick={async () => {
+                    const ok = await confirm({
+                      title: "Discard the generated component?",
+                      description:
+                        "The component that was just generated has not been saved. Going back to regenerate discards its code and you will have to generate it again.",
+                      confirmLabel: "Discard and regenerate",
+                      variant: "destructive",
+                    });
+                    if (!ok) return;
                     setStep("select-data");
                     agent.reset();
                   }}
