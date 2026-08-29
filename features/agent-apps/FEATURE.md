@@ -2,7 +2,7 @@
 
 **Status:** `🟢 green-light for prompt_apps deletion` — 61/61 prompt_apps rows migrated to `aga_apps`. Public dual-path resolver in `/p/[slug]` prefers agent path. User-facing route family mirrors `/agents/[id]`: `/agent-apps`, `/agent-apps/new`, `/agent-apps/[id]` (overview), `/agent-apps/[id]/code`, `/agent-apps/[id]/settings`, `/agent-apps/[id]/versions`, `/agent-apps/[id]/v/[version]`, `/agent-apps/[id]/run`, `/agent-apps/templates`. List page is Redux-driven (consumer namespace + memoized selectors) with 7 filter dimensions and 8 sort options including agent-name. AutoCreate AI flow, admin tabs (Dashboard/Apps/Categories/Executions/Analytics/Rate Limits), `/agents/[id]/apps`, and `/org/[slug]/agent-apps` placeholder all live. Redux thunks wired to real Supabase queries. See [MIGRATION-STATUS.md](MIGRATION-STATUS.md) for the full ledger and remaining manual smoke checklist.
 **Tier:** `1`
-**Last updated:** `2026-08-28`
+**Last updated:** `2026-08-29`
 
 ---
 
@@ -171,6 +171,8 @@ and admin/user route families are live. Remaining migration work is tracked in:
 ---
 
 ## Change log
+
+- `2026-08-29` — **The authenticated renderer preserves the full public-app contract.** `AgentAppRenderer` now forwards `app_kind`, `shared_context_policies`, and `search_tsv` when projecting an authenticated app into `PublicAgentApp`; the whole-file TypeScript disable is removed.
 
 - `2026-08-28` — **Agent binding now uses the same canonical picker as the Chat header.** The compact Agent App binding control delegates to `AgentListDropdown`, preserving its small trigger while gaining the complete Redux-backed inventory, ownership tabs, search, sort, favorites, category/tag filters, reset, origin badges, and detail doors. It no longer maintains a second `Command`-based roster.
 

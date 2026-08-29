@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useDispatchThunk } from "@/lib/redux/hooks";
 import { hierarchyService } from "../service/hierarchyService";
 import type {
   HierarchyNode,
@@ -13,7 +13,6 @@ import type {
 import {
   invalidateAndRefetchNavTree,
   invalidateAndRefetchFullContext,
-  invalidateAndRefetchAll,
 } from "@/features/agent-context/redux/hierarchyThunks";
 import {
   upsertOrgWithLevel,
@@ -38,6 +37,23 @@ const KEYS = {
   ancestors: (type: string, id: string) =>
     ["hierarchy-ancestors", type, id] as const,
 };
+
+type UpdateEntityParams =
+  | {
+      type: "organization";
+      id: string;
+      data: Parameters<typeof hierarchyService.updateOrganization>[1];
+    }
+  | {
+      type: "project";
+      id: string;
+      data: Parameters<typeof hierarchyService.updateProject>[1];
+    }
+  | {
+      type: "task";
+      id: string;
+      data: Parameters<typeof hierarchyService.updateTask>[1];
+    };
 
 // ─── Full tree (legacy HierarchyNode shape) ────
 
@@ -64,7 +80,10 @@ export function useUserOrganizations() {
 export function useOrgProjects(orgId: string | null) {
   return useQuery({
     queryKey: KEYS.projects(`org-${orgId ?? ""}`),
-    queryFn: () => hierarchyService.fetchProjects({ orgId: orgId! }),
+    queryFn: () => {
+      if (!orgId) throw new Error("Organization is required to load projects");
+      return hierarchyService.fetchProjects({ orgId });
+    },
     enabled: !!orgId,
   });
 }
@@ -74,7 +93,10 @@ export function useOrgProjects(orgId: string | null) {
 export function useProjectTasks(projectId: string | null) {
   return useQuery({
     queryKey: KEYS.tasks(projectId ?? ""),
-    queryFn: () => hierarchyService.fetchProjectTasks(projectId!),
+    queryFn: () => {
+      if (!projectId) throw new Error("Project is required to load tasks");
+      return hierarchyService.fetchProjectTasks(projectId);
+    },
     enabled: !!projectId,
   });
 }
@@ -84,7 +106,10 @@ export function useProjectTasks(projectId: string | null) {
 export function useAncestors(type: HierarchyNodeType, id: string | null) {
   return useQuery({
     queryKey: KEYS.ancestors(type, id ?? ""),
-    queryFn: () => hierarchyService.resolveAncestors(type, id!),
+    queryFn: () => {
+      if (!id) throw new Error("Entity is required to load ancestors");
+      return hierarchyService.resolveAncestors(type, id);
+    },
     enabled: !!id && type !== "user",
     staleTime: 5 * 60 * 1000,
   });
@@ -94,20 +119,20 @@ export function useAncestors(type: HierarchyNodeType, id: string | null) {
 
 function useInvalidateAll() {
   const qc = useQueryClient();
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   return useCallback(() => {
     qc.invalidateQueries({ queryKey: KEYS.tree() });
-    dispatch(invalidateAndRefetchNavTree() as any);
-  }, [qc, dispatch]);
+    dispatchThunk(invalidateAndRefetchNavTree());
+  }, [qc, dispatchThunk]);
 }
 
 function useInvalidateAfterTaskMutation() {
   const qc = useQueryClient();
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   return useCallback(() => {
     qc.invalidateQueries({ queryKey: KEYS.tree() });
-    dispatch(invalidateAndRefetchFullContext() as any);
-  }, [qc, dispatch]);
+    dispatchThunk(invalidateAndRefetchFullContext());
+  }, [qc, dispatchThunk]);
 }
 
 // ─── Mutations ──────────────────────────────────────────────────────
@@ -115,6 +140,7 @@ function useInvalidateAfterTaskMutation() {
 export function useCreateOrganization() {
   const qc = useQueryClient();
   const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   return useMutation({
     mutationFn: (data: { name: string; slug: string; description?: string }) =>
       hierarchyService.createOrganization(data),
@@ -138,7 +164,7 @@ export function useCreateOrganization() {
       );
       // Also refresh the full context so the sidebar picks up the new org
       qc.invalidateQueries({ queryKey: KEYS.tree() });
-      dispatch(invalidateAndRefetchFullContext() as any);
+      dispatchThunk(invalidateAndRefetchFullContext());
       // The mutation hands back the row; the toast used to drop it, leaving a
       // brand-new org the user had to go find. Same for project/task below.
       toast.success("Organization created", {
@@ -155,6 +181,7 @@ export function useCreateOrganization() {
 export function useCreateProject() {
   const qc = useQueryClient();
   const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   return useMutation({
     mutationFn: (data: {
       name: string;
@@ -187,7 +214,7 @@ export function useCreateProject() {
       );
       // Refresh full context to pick up the new project in the hierarchy
       qc.invalidateQueries({ queryKey: KEYS.tree() });
-      dispatch(invalidateAndRefetchFullContext() as any);
+      dispatchThunk(invalidateAndRefetchFullContext());
       toast.success("Project created", {
         action: toastDoor("project", proj.id),
       });
@@ -256,22 +283,18 @@ export function useCreateTask() {
 }
 
 export function useUpdateEntity() {
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (params: {
-      type: HierarchyNodeType;
-      id: string;
-      data: Record<string, unknown>;
-    }) => {
+    mutationFn: (params: UpdateEntityParams) => {
       const { type, id, data } = params;
       switch (type) {
         case "organization":
-          return hierarchyService.updateOrganization(id, data as any);
+          return hierarchyService.updateOrganization(id, data);
         case "project":
-          return hierarchyService.updateProject(id, data as any);
+          return hierarchyService.updateProject(id, data);
         case "task":
-          return hierarchyService.updateTask(id, data as any);
+          return hierarchyService.updateTask(id, data);
         default:
           throw new Error(`Cannot update type: ${type}`);
       }
@@ -279,7 +302,7 @@ export function useUpdateEntity() {
     onSuccess: (_result, params) => {
       // For updates, invalidate the full context to ensure consistency
       qc.invalidateQueries({ queryKey: KEYS.tree() });
-      dispatch(invalidateAndRefetchFullContext() as any);
+      dispatchThunk(invalidateAndRefetchFullContext());
       toast.success("Updated successfully");
     },
     onError: (err: Error) =>
@@ -289,6 +312,7 @@ export function useUpdateEntity() {
 
 export function useDeleteEntity() {
   const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (params: { type: HierarchyNodeType; id: string }) => {
@@ -314,7 +338,7 @@ export function useDeleteEntity() {
         dispatch(removeOrgFromSlice(params.id));
       }
       qc.invalidateQueries({ queryKey: KEYS.tree() });
-      dispatch(invalidateAndRefetchFullContext() as any);
+      dispatchThunk(invalidateAndRefetchFullContext());
       toast.success("Deleted successfully");
     },
     onError: (err: Error) =>
@@ -324,7 +348,7 @@ export function useDeleteEntity() {
 
 export function useMoveProject() {
   const qc = useQueryClient();
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   return useMutation({
     mutationFn: (params: {
       projectId: string;
@@ -332,7 +356,7 @@ export function useMoveProject() {
     }) => hierarchyService.moveProject(params.projectId, params.target),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.tree() });
-      dispatch(invalidateAndRefetchFullContext() as any);
+      dispatchThunk(invalidateAndRefetchFullContext());
       toast.success("Project moved");
     },
     onError: (err: Error) =>
@@ -342,7 +366,7 @@ export function useMoveProject() {
 
 export function useMoveTask() {
   const qc = useQueryClient();
-  const dispatch = useAppDispatch();
+  const dispatchThunk = useDispatchThunk();
   return useMutation({
     mutationFn: (params: {
       taskId: string;
@@ -350,7 +374,7 @@ export function useMoveTask() {
     }) => hierarchyService.moveTask(params.taskId, params.target),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.tree() });
-      dispatch(invalidateAndRefetchFullContext() as any);
+      dispatchThunk(invalidateAndRefetchFullContext());
       toast.success("Task moved");
     },
     onError: (err: Error) =>

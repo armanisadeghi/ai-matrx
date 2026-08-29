@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 "use client";
 
 import { AgentAppPublicRenderer } from "./AgentAppPublicRenderer";
@@ -28,6 +26,9 @@ export function AgentAppRenderer({
     agent_id: app.agent_id,
     agent_version_id: app.agent_version_id,
     use_latest: app.use_latest,
+    app_kind: app.app_kind,
+    shared_context_policies: app.shared_context_policies,
+    search_tsv: app.search_tsv,
     tagline: app.tagline,
     description: app.description,
     category: app.category,
