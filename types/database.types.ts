@@ -59370,16 +59370,6 @@ export type Database = {
         }
         Returns: Json
       }
-      knob_rung_lock_set: {
-        Args: {
-          p_feature: string
-          p_key: string
-          p_locked_kinds: string[]
-          p_note?: string
-          p_organization_id: string
-        }
-        Returns: Json
-      }
       lifecycle_archive_candidates: {
         Args: {
           p_entity_token: string
