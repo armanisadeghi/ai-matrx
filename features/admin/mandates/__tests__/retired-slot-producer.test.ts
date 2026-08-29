@@ -22,8 +22,9 @@ describe("retired Mandate producer contract", () => {
       .map(source)
       .join("\n");
 
-    expect(runtimeSource).toContain('.from("mandate")');
-    expect(runtimeSource).toContain('.from("mandate_binding")');
+    // Post-1W canonical tables: mandate.definition / mandate.binding.
+    expect(runtimeSource).toContain('schema("mandate").from("definition")');
+    expect(runtimeSource).toContain('schema("mandate").from("binding")');
     expect(runtimeSource).toContain('path: "/mandates/');
     expect(runtimeSource).not.toMatch(/agent\.slot_(?:definition|binding)/);
     expect(runtimeSource).not.toMatch(/\.from\("slot_(?:definition|binding)"\)/);

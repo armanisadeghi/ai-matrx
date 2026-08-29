@@ -85,6 +85,7 @@ import {
   SYSTEM_AGENT_BASE,
   USER_AGENT_BASE,
   agentHref,
+  resolveDriftRemedy,
   type MandateRow,
 } from "./mandate-health";
 import {
@@ -207,10 +208,17 @@ function DriftPanel({
   }, [agentId]);
 
   const pinnedNumber = row.pinnedVersionNumber;
-  // Newest SAVED snapshot — what an explicit rebind can actually point at. The
-  // master counter (row.latestVersion) and the newest saved row agree in
-  // practice; the saved row is what the update writes.
+  // Newest SAVED snapshot — what an explicit rebind can actually point at.
+  // NOT the same fact as the master counter (row.latestVersion): the counter
+  // bumps on every save while snapshots exist only for saved versions, so the
+  // live definition can be AHEAD of every snapshot (the v8/v8-while-v9-exists
+  // bug — see resolveDriftRemedy).
   const latestSaved = versions?.[0] ?? null;
+  const remedy = resolveDriftRemedy(
+    row.latestVersion,
+    latestSaved?.versionNumber ?? null,
+    pinnedNumber,
+  );
   const pinnedInfo =
     versions?.find((v) => v.versionNumber === pinnedNumber) ?? null;
 
@@ -353,48 +361,65 @@ function DriftPanel({
           </div>
           <div className="mt-0.5 flex items-baseline gap-1.5">
             <span className="text-lg font-semibold leading-none">
-              v{latestSaved?.versionNumber ?? row.latestVersion ?? "?"}
+              v{remedy.newestNumber ?? "?"}
             </span>
+            {remedy.liveAheadOfSaved ? (
+              <Badge variant="outline" className="h-4 px-1 text-[9px]">
+                live, unsnapshotted
+              </Badge>
+            ) : null}
           </div>
-          {latestSaved?.name && (
-            <div className="mt-1 truncate text-[11px] text-muted-foreground">
-              {latestSaved.name}
+          {remedy.liveAheadOfSaved ? (
+            <div className="mt-1 text-[11px] text-muted-foreground">
+              Not saved as a snapshot — only &quot;Track latest&quot; runs it.
             </div>
+          ) : (
+            latestSaved?.name && (
+              <div className="mt-1 truncate text-[11px] text-muted-foreground">
+                {latestSaved.name}
+              </div>
+            )
           )}
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
-        <Button
-          size="sm"
-          className="h-7 gap-1 text-xs"
-          disabled={busy !== null || !latestSaved}
-          onClick={() => void updateToLatest("pin")}
-        >
-          {busy === "pin" ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Pin className="h-3 w-3" />
-          )}
-          Update to v{latestSaved?.versionNumber ?? row.latestVersion}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 gap-1 text-xs"
-          onClick={() => setDiffOpen((v) => !v)}
-        >
-          <GitCompareArrows className="h-3 w-3" />
-          {diffOpen ? "Hide changes" : "See what changed"}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 gap-1 text-xs"
-          onClick={onTest}
-        >
-          Test old vs new first
-        </Button>
+        {remedy.pinUpdateHelps ? (
+          <Button
+            size="sm"
+            className="h-7 gap-1 text-xs"
+            disabled={busy !== null || !latestSaved}
+            onClick={() => void updateToLatest("pin")}
+          >
+            {busy === "pin" ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <Pin className="h-3 w-3" />
+            )}
+            Update to v{latestSaved?.versionNumber}
+          </Button>
+        ) : null}
+        {remedy.pinUpdateHelps ? (
+          <>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1 text-xs"
+              onClick={() => setDiffOpen((v) => !v)}
+            >
+              <GitCompareArrows className="h-3 w-3" />
+              {diffOpen ? "Hide changes" : "See what changed"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1 text-xs"
+              onClick={onTest}
+            >
+              Test old vs new first
+            </Button>
+          </>
+        ) : null}
         <Button
           size="sm"
           variant="ghost"

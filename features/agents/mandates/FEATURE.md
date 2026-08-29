@@ -255,6 +255,21 @@ commit time.
 
 ## Change Log
 
+- 2026-08-29 — **The triad is the page, and mandates are user-creatable.** The workspace
+  (route + window, same component) now leads with INPUT → GOAL → OUTPUT
+  (`workspace/TriadSections.tsx`): the goal reads from `mandate.definition.goal` (its ONE
+  home post-1W), edits in place through `PATCH /mandates/{key}/goal` (grounding → 'H',
+  permanent — the boot sync only refreshes 'A' goals), and carries a plain-words grounding
+  badge; INPUT shows the Provision's offer, or the row's `draft_inputs` descriptions
+  (editable, `PATCH /mandates/{key}/draft-inputs`), or the honest "user text only" state.
+  `/agents/mandates/new` (`authoring/NewMandatePage.tsx`) creates a mandate before its
+  intelligence exists — descriptive inputs, the goal, an output kind + free-text
+  constraints — via `POST /mandates` (origin='user'; the server key validator's message
+  renders verbatim). Two automation slots (`authoring/AutomationButton.tsx`) run mandates
+  BY KEY (`authoring/constants.ts`: `mandates.goal_writer`, `mandates.kind_converter`) and
+  render honestly disabled naming the key until those mandates exist. The window host
+  links "Open full page".
+
 - 2026-08-29 — **The Mandate browse RPC follows the completed 1W storage cutover.** `mnd_list_scoped` now reads `mandate.definition` / `mandate.provision` / `mandate.binding`, derives latest from a null Holder version, and ignores non-Agent bindings in its Agent-shaped result instead of querying the graveyarded `agent.mandate_binding`. A source-contract test refuses every retired table and Holder-column name.
 
 - 2026-08-28 — **You can RUN the mandate you are looking at.** The workspace stated the

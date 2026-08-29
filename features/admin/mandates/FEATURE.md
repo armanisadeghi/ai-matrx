@@ -91,6 +91,16 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
+- 2026-08-29 — **Drift panel stops lying about "newest"** (`resolveDriftRemedy` in
+  `mandate-health.ts`). The agent master counter bumps on every save but snapshots exist
+  only for saved versions, so the live definition can be AHEAD of every snapshot — the
+  panel showed "current v8 / newest v8" under a "newer version exists" banner (live case
+  `agent_factory.structure_builder`, master v9 / newest saved v8 / pin v8) and offered
+  "Update to v8". Newest is now max(master, newest saved), an unsnapshotted live version
+  is labeled as such, and the pin-update/diff/test buttons render only when a newer
+  SNAPSHOT than the pin exists — "Track latest" is the one honest remedy otherwise.
+  Test: `__tests__/drift-remedy.test.ts` pins the real case.
+
 - 2026-08-29 — Contract chips no longer use a fixed 20px height. Wrapped
   output-kind, required-output-key, and input-variable badges now grow with
   their content, keeping every line inside the colored background and row.

@@ -10,8 +10,9 @@
 // scope list — a shell concern, not a workspace one).
 //
 // ORDER OF IMPORTANCE (the vision, verbatim doctrine in ../FEATURE.md):
-//   §1 Understand the mandate — goal · the Provision (all offered values) ·
-//      the required output kind. THE CORE.
+//   §1 THE TRIAD — INPUT → GOAL → OUTPUT (TriadSections.tsx). Arman: "INPUT ->
+//      Charge (Goal) -> Output. The UI should show this clearly and since the
+//      goal lives ONLY HERE, it needs to be easy to read and quickly edit."
 //   §2 How the system meets it now — the effective Holder, its version
 //      binding (latest vs pinned + DRIFT), view it / duplicate it.
 //   §3 Organization context — one line, collapsed. This surface is PERSONAL;
@@ -24,15 +25,13 @@
 // No prose paragraphs. Sections state facts; the data does the talking.
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
-  ArrowRight,
   Building2,
   ChevronDown,
   CircleCheck,
   Copy,
-  Lock,
-  MessageSquareText,
-  Package,
+  Expand,
   ShieldCheck,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -44,9 +43,13 @@ import { useUserOrganizations } from "@/features/organizations/hooks";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { MandateResolutionRibbon } from "../components/MandateResolutionRibbon";
-import { ProvisionOfferList } from "../components/ProvisionOfferList";
-import { useMandateGoal } from "../useMandateGoal";
 import { MandateNotesPanel } from "../components/MandateNotesPanel";
+import {
+  TriadFlowMark,
+  TriadGoalSection,
+  TriadInputSection,
+  TriadOutputSection,
+} from "./TriadSections";
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
 import { splitMandateKey } from "../mandate-key";
 import {
@@ -202,12 +205,29 @@ export function MandateWorkspace({
               </Badge>
             ) : null}
           </div>
-          <code className="block font-mono text-[11.5px] text-muted-foreground/80">
-            {data.mandate.mandate_key}
-          </code>
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="block font-mono text-[11.5px] text-muted-foreground/80">
+              {data.mandate.mandate_key}
+            </code>
+            {host === "window" ? (
+              <Link
+                href={`/agents/mandates/${encodeURIComponent(data.mandate.mandate_key)}`}
+                className="inline-flex items-center gap-1 text-[11.5px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                <Expand className="h-3 w-3" />
+                Open full page
+              </Link>
+            ) : null}
+          </div>
         </header>
 
-        <JobSection data={data} />
+        {/* THE TRIAD — INPUT → GOAL → OUTPUT, the mandate's own order. */}
+        <TriadInputSection data={data} onChanged={refresh} />
+        <TriadFlowMark />
+        <TriadGoalSection data={data} onChanged={refresh} />
+        <TriadFlowMark />
+        <TriadOutputSection data={data} />
+
         <FulfillmentSection data={data} resolution={resolution} onChanged={refresh} />
 
         {/* Run it — the workspace's own run affordance, super-admin gated
@@ -244,133 +264,6 @@ export function MandateWorkspace({
         />
       </div>
     </div>
-  );
-}
-
-// ── §1 The Job ───────────────────────────────────────────────────────────────
-
-function JobSection({ data }: { data: MandateWorkspaceData }) {
-  // THE GOAL comes from the code declaration, not from this row. `description`
-  // is a different field and was standing in for it — that is why this section
-  // used to say "no written goal" about mandates that have one.
-  const { goal, loading, error, loaded } = useMandateGoal(
-    data.mandate.mandate_key,
-  );
-  return (
-    <Section title="The job">
-      <div className="space-y-3 rounded-xl border border-border/60 bg-card p-4">
-        <div className="space-y-1">
-          {goal ? (
-            <p className="text-[15px] font-medium leading-snug text-foreground">
-              {goal}
-            </p>
-          ) : loading ? (
-            <p className="text-[13px] text-muted-foreground">Reading the goal…</p>
-          ) : error ? (
-            <p className="text-[13px] text-amber-700 dark:text-amber-400">
-              The goal could not be read: {error}
-            </p>
-          ) : loaded ? (
-            <p className="text-[13px] italic text-muted-foreground">
-              No goal declared — a registry gap worth fixing.
-            </p>
-          ) : null}
-          {goal ? (
-            <p className="text-[11px] text-muted-foreground/70">
-              Declared in code — edited where the Mandate is declared, not here.
-            </p>
-          ) : null}
-        </div>
-        {data.mandate.description && data.mandate.description !== goal ? (
-          <p className="text-[13px] leading-relaxed text-muted-foreground">
-            {data.mandate.description}
-          </p>
-        ) : null}
-
-        {/* Inputs — the Provision IS the input declaration. */}
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            <Package className="h-3 w-3" />
-            {data.offer
-              ? `Inputs — ${data.offer.values.length} values offered`
-              : "Inputs"}
-          </div>
-          {data.offer ? (
-            <ProvisionOfferList
-              values={data.offer.values}
-              pinnedContext={data.pinnedContext}
-            />
-          ) : data.contract.requiredVariables.length > 0 ? (
-            <div className="rounded-lg border border-border/50 px-3 py-2">
-              <p className="text-[11px] text-muted-foreground">
-                Legacy contract — required variables (no Provision yet):
-              </p>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {data.contract.requiredVariables.map((name) => (
-                  <code key={name} className="rounded bg-muted px-1.5 py-0.5 text-[11px]">
-                    {name}
-                  </code>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="text-[12px] text-muted-foreground">
-              No declared inputs — this job runs on user text alone.
-            </p>
-          )}
-          {/* The user-text channel is platform-default-accepted; no mandate
-              forbids it today. Stated, not implied. */}
-          <p className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground/80">
-            <MessageSquareText className="h-3 w-3" />
-            Free text from the caller is accepted (platform default).
-          </p>
-          {Object.keys(data.pins).length > 0 ? (
-            <p className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground/80">
-              <Lock className="h-3 w-3" />
-              Pinned behaviors:{" "}
-              {Object.entries(data.pins)
-                .map(([k, v]) => `${k}=${String(v)}`)
-                .join(" · ")}{" "}
-              (platform-locked)
-            </p>
-          ) : null}
-        </div>
-
-        {/* Output — the exact acceptable shape. */}
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            <ArrowRight className="h-3 w-3" />
-            Output
-          </div>
-          {data.mandate.output_kind ? (
-            <EntityRef
-              token="shape"
-              id={data.mandate.output_kind}
-              name={data.mandate.output_kind}
-              href={`/shapes/${encodeURIComponent(data.mandate.output_kind)}`}
-              showIcon={false}
-              className="font-mono text-[12px]"
-            />
-          ) : (
-            <p className="text-[12px] text-amber-700 dark:text-amber-400">
-              No output kind declared
-              {data.contract.requiredOutputKeys.length > 0
-                ? " — consumers require these keys:"
-                : " — unspecified."}
-            </p>
-          )}
-          {data.contract.requiredOutputKeys.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {data.contract.requiredOutputKeys.map((key) => (
-                <code key={key} className="rounded bg-muted px-1.5 py-0.5 text-[11px]">
-                  {key}
-                </code>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </div>
-    </Section>
   );
 }
 

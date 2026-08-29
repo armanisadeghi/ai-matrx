@@ -36,14 +36,16 @@ const MANDATE_ID = "0f2a1f1e-1111-4c4c-9c9c-aaaaaaaaaaaa";
 const SYSTEM_AGENT_ID = "11111111-2222-4333-8444-555555555555";
 const BOUND_AGENT_ID = "99999999-8888-4777-8666-555555555555";
 
+// Post-1W shape: mandate.definition columns (the pre-cutover use_latest /
+// default_agent_id fixture was exactly the seam-bypass failure class the
+// aidream suite documents — the fake must carry the ACTIVE schema's columns).
 const MANDATE_ROW: Row = {
   id: MANDATE_ID,
   mandate_key: "workflow.contract_check",
   is_enabled: true,
-  use_latest: true,
-  default_agent_id: SYSTEM_AGENT_ID,
-  contract: null,
-  input_kind: null,
+  default_holder_type: "agent",
+  default_holder_id: SYSTEM_AGENT_ID,
+  default_holder_version_id: null,
   output_kind: null,
   provision_key: null,
   pins: null,
@@ -69,7 +71,8 @@ function makeChain(table: string): Chain {
     order: () => chain,
     limit: async () => ({ data: scenario.orgBindings, error: null }),
     maybeSingle: async () => ({
-      data: table === "mandate" ? MANDATE_ROW : scenario.userBinding,
+      // Post-1W tables: mandate.definition / mandate.binding.
+      data: table === "definition" ? MANDATE_ROW : scenario.userBinding,
       error: null,
     }),
   };
@@ -165,9 +168,8 @@ describe("resolveMandate — agent Holders resolve exactly as before", () => {
     scenario.userBinding = {
       id: "b1b1b1b1-0000-4000-8000-000000000000",
       holder_type: "agent",
-      agent_id: BOUND_AGENT_ID,
-      agent_version_id: null,
-      use_latest: true,
+      holder_id: BOUND_AGENT_ID,
+      holder_version_id: null,
       config_overrides: null,
       is_enabled: true,
     };
@@ -181,9 +183,8 @@ describe("resolveMandate — agent Holders resolve exactly as before", () => {
     // Rows written before the column existed read as agent Holders.
     scenario.userBinding = {
       id: "b2b2b2b2-0000-4000-8000-000000000000",
-      agent_id: BOUND_AGENT_ID,
-      agent_version_id: null,
-      use_latest: true,
+      holder_id: BOUND_AGENT_ID,
+      holder_version_id: null,
       config_overrides: null,
       is_enabled: true,
     };
@@ -197,11 +198,10 @@ describe("resolveMandate — a workflow Holder REFUSES, loudly", () => {
   const workflowUserBinding: Row = {
     id: "b3b3b3b3-0000-4000-8000-000000000000",
     holder_type: "workflow",
-    // No agent_id — a workflow Holder carries none by construction. This is
-    // exactly the row that used to fall through to the system default.
-    agent_id: null,
-    agent_version_id: null,
-    use_latest: true,
+    // The workflow's id rides holder_id; nothing agent-shaped exists on the
+    // row. This is exactly the row that used to fall through to the default.
+    holder_id: "eeeeeeee-0000-4000-8000-000000000000",
+    holder_version_id: null,
     config_overrides: null,
     is_enabled: true,
   };
@@ -236,9 +236,8 @@ describe("resolveMandate — a workflow Holder REFUSES, loudly", () => {
       {
         id: "b4b4b4b4-0000-4000-8000-000000000000",
         holder_type: "workflow",
-        agent_id: null,
-        agent_version_id: null,
-        use_latest: true,
+        holder_id: "eeeeeeee-0000-4000-8000-000000000000",
+        holder_version_id: null,
         config_overrides: null,
         is_enabled: true,
         updated_at: "2026-08-27T00:00:00Z",
@@ -271,9 +270,8 @@ describe("resolveMandate — a workflow Holder REFUSES, loudly", () => {
     scenario.userBinding = {
       id: "b5b5b5b5-0000-4000-8000-000000000000",
       holder_type: "agent",
-      agent_id: BOUND_AGENT_ID,
-      agent_version_id: null,
-      use_latest: true,
+      holder_id: BOUND_AGENT_ID,
+      holder_version_id: null,
       config_overrides: null,
       is_enabled: true,
     };

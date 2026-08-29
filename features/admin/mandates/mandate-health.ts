@@ -272,3 +272,47 @@ export const HEALTH_HINT: Partial<Record<MandateHealth, string>> = {
     "This mandate serves every user, but its default is a personal agent only some of them can see.",
   "agent archived": "The pinned agent is archived — rebind before it breaks.",
 };
+
+// ── Drift remedy — which "newest" is real, and which button can reach it ─────
+
+/**
+ * What the drift panel may honestly offer.
+ *
+ * THE BUG THIS EXISTS TO KILL (2026-08-29, live case
+ * `agent_factory.structure_builder`): the agent master counter said v9 while
+ * the newest SAVED snapshot row was v8 — every save bumps the master, but a
+ * snapshot row is only written for versions that were explicitly saved. The
+ * panel took "newest" from the saved list and reported "current v8 / newest
+ * v8" under a banner claiming a newer version exists. Newest is
+ * max(master counter, newest saved); when the master is ahead, no pin can
+ * reach it — only tracking latest runs the live definition.
+ */
+export interface DriftRemedy {
+  /** The real newest version number — max(master counter, newest saved). */
+  newestNumber: number | null;
+  /** The newest SAVED snapshot — the only thing an explicit pin can target. */
+  newestSavedNumber: number | null;
+  /** The live definition is ahead of every saved snapshot. */
+  liveAheadOfSaved: boolean;
+  /** A pin update actually moves the mandate (a newer snapshot than the pin exists). */
+  pinUpdateHelps: boolean;
+}
+
+export function resolveDriftRemedy(
+  masterVersion: number | null,
+  newestSavedNumber: number | null,
+  pinnedNumber: number | null,
+): DriftRemedy {
+  const newestNumber =
+    masterVersion === null && newestSavedNumber === null
+      ? null
+      : Math.max(masterVersion ?? 0, newestSavedNumber ?? 0);
+  const liveAheadOfSaved =
+    masterVersion !== null &&
+    (newestSavedNumber === null || masterVersion > newestSavedNumber);
+  const pinUpdateHelps =
+    newestSavedNumber !== null &&
+    pinnedNumber !== null &&
+    newestSavedNumber > pinnedNumber;
+  return { newestNumber, newestSavedNumber, liveAheadOfSaved, pinUpdateHelps };
+}
