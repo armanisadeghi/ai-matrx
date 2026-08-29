@@ -7,9 +7,15 @@
 // counterpart to the Redux prompt-execution engine (which models interactive
 // chat instances).
 //
-// Wraps the platform's canonical callApi primitive so auth, URL selection,
-// request scope, source attribution, API-version routing, diagnostics, and
-// NDJSON parsing cannot drift from other Python requests.
+// MOVED (2026-08-29, agents-package production adoption): the wire now rides
+// `@ai-matrx/agents/matrx` (`startAgentRun` — the published Matrx API client)
+// over the host `MatrxTransport` (`lib/api/matrx-transport.ts`), and every
+// stream event folds through `@ai-matrx/agents/projection/request` — the
+// portable projector's `answer` / `completion` / `error` are this flow's
+// result authority (its first production consumer; the v2 adoption gate in
+// /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/PACKAGE-CONTRACT.md).
+// Auth, URL selection, request scope, API-version routing and diagnostics are
+// still callApi's machinery — imported, never re-implemented.
 //
 // Backend contract (verified against the Agent Demo, the reference caller):
 //   POST {base}/ai/agents/{agentId}
@@ -19,7 +25,7 @@
 //   one-shot run still mints an id (it is the caller's correlation handle) and
 //   opts out of persistence with store:false.
 //   → NDJSON stream; `event: "chunk"` carries `data.text`; `event: "error"`
-//     carries a structured error. `consumeStream` returns `accumulatedText`.
+//     carries a structured error.
 //
 // Usage:
 //   const { run, running, error } = useRunAgent();
@@ -30,12 +36,27 @@
 //   });
 
 import { useCallback, useRef, useState } from "react";
+import type { Action } from "redux";
+import type { ThunkAction } from "redux-thunk";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import type { RootState } from "@/lib/redux/store";
 import {
-  callAgentStart,
+  startAgentRun,
+  type MatrxAgentStartRequest,
+} from "@ai-matrx/agents/matrx";
+import {
+  createAgentRequestProjection,
+  projectAgentEvent,
+} from "@ai-matrx/agents/projection/request";
+import {
+  buildRequestBody,
+  resolveScope,
+  waitForAuthReady,
   type CallScope,
   type LLMParamsBody,
 } from "@/lib/api/call-api";
+import { createMatrxTransport } from "@/lib/api/matrx-transport";
+import { applyDesktopTargetToRequestBody } from "@/lib/api/desktop-target-request";
 import type { components } from "@/types/python-generated/api-types";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -74,8 +95,20 @@ export interface UseRunAgent {
   reset: () => void;
 }
 
+/** Body type for POST /ai/agents/{agent_id} with transport-injected scope. */
+type RunAgentBody = Omit<
+  components["schemas"]["AgentStartRequest"],
+  "organization_id" | "project_id" | "task_id"
+> &
+  Partial<
+    Pick<
+      components["schemas"]["AgentStartRequest"],
+      "organization_id" | "project_id" | "task_id"
+    >
+  >;
+
 export function buildRunAgentRequest(args: RunAgentArgs): {
-  body: Parameters<typeof callAgentStart>[0]["body"];
+  body: RunAgentBody;
   scopeOverrides: Partial<CallScope>;
 } {
   const scopeOverrides: Partial<CallScope> = {};
@@ -108,112 +141,119 @@ export function buildRunAgentRequest(args: RunAgentArgs): {
   };
 }
 
+const stringField = (bag: unknown, key: string): string | null => {
+  if (typeof bag !== "object" || bag === null) return null;
+  const value = (bag as Record<string, unknown>)[key];
+  return typeof value === "string" && value ? value : null;
+};
+
+/**
+ * Run a one-shot agent through the published package client and resolve with
+ * the full text output. Thunk-shaped so the hook (and thunk-style callers)
+ * share ONE implementation with real `getState` access.
+ *
+ * Result semantics (parity with the pre-package flow, proven by
+ * `useRunAgent.test.ts` + `run-agent-via-matrx.test.ts`):
+ *   - a fatal `error` event → throw its `user_message` → `message` → fallback;
+ *   - a `failed`/`cancelled` `user_request` completion → throw
+ *     `result.error` → `result.user_message` → "The agent run <status>"
+ *     (when both fire, the error event wins — the package/projector ruling);
+ *   - otherwise resolve accumulated chunk text, falling back to the
+ *     completion's `result.output`.
+ */
+export function runAgentViaMatrxClient(
+  args: RunAgentArgs,
+): ThunkAction<Promise<string>, RootState, unknown, Action> {
+  return async (_dispatch, getState) => {
+    await waitForAuthReady(getState);
+    const state = getState();
+
+    const { body, scopeOverrides } = buildRunAgentRequest(args);
+    // callApi's scope machinery, reused verbatim: required org (validated
+    // against any body org), project/task injection, UI-only field stripping.
+    const scope = resolveScope(state, scopeOverrides);
+    const request = buildRequestBody(body, scope) as Record<string, unknown>;
+    const desktopTargetInstanceId =
+      state.adminPreferences?.desktopTargetInstanceId ?? null;
+    if (desktopTargetInstanceId) {
+      applyDesktopTargetToRequestBody(request, desktopTargetInstanceId);
+    }
+
+    const transport = createMatrxTransport(getState, {
+      organizationId: scope.organization_id,
+      source: "runAgentViaMatrxClient",
+    });
+
+    const handle = await startAgentRun(
+      transport,
+      args.agentId,
+      request as unknown as MatrxAgentStartRequest,
+      args.signal ? { signal: args.signal } : {},
+    );
+
+    // The portable projector is the ONE event interpreter for this flow.
+    let projection = createAgentRequestProjection({
+      requestId: handle.requestId ?? String(request.conversation_id),
+      conversationId: handle.conversationId,
+    });
+    for await (const envelope of handle.events) {
+      const previousAnswer = projection.answer;
+      projection = projectAgentEvent(projection, envelope);
+      if (projection.answer !== previousAnswer) {
+        args.onChunk?.(projection.answer);
+      }
+    }
+
+    if (projection.error) {
+      throw new Error(
+        stringField(projection.error, "user_message") ??
+          stringField(projection.error, "message") ??
+          "The agent run failed",
+      );
+    }
+    const completion = projection.completion;
+    const completionStatus =
+      typeof completion?.status === "string" ? completion.status : null;
+    if (completionStatus === "failed" || completionStatus === "cancelled") {
+      const result = completion?.result;
+      throw new Error(
+        stringField(result, "error") ??
+          stringField(result, "user_message") ??
+          `The agent run ${completionStatus}`,
+      );
+    }
+
+    if (projection.answer) return projection.answer;
+    return stringField(completion?.result, "output") ?? "";
+  };
+}
+
 export function useRunAgent(): UseRunAgent {
   const dispatch = useAppDispatch();
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const streamErrorRef = useRef<string | null>(null);
+  const runningRef = useRef(false);
 
   const reset = useCallback(() => {
     setRunning(false);
     setError(null);
-    streamErrorRef.current = null;
+    runningRef.current = false;
   }, []);
 
   const run = useCallback(
-    async ({
-      agentId,
-      userInput,
-      variables,
-      configOverrides,
-      organizationId,
-      projectId,
-      taskId,
-      contextAnchor,
-      sourceApp,
-      sourceFeature,
-      signal,
-      onChunk,
-    }: RunAgentArgs): Promise<string> => {
+    async (args: RunAgentArgs): Promise<string> => {
       setRunning(true);
       setError(null);
-      streamErrorRef.current = null;
+      runningRef.current = true;
 
       try {
-        let accumulated = "";
-        let completionOutput: string | null = null;
-        const request = buildRunAgentRequest({
-          agentId,
-          userInput,
-          variables,
-          configOverrides,
-          organizationId,
-          projectId,
-          taskId,
-          contextAnchor,
-          sourceApp,
-          sourceFeature,
-          signal,
-          onChunk,
-        });
-
-        const response = await dispatch(
-          callAgentStart({
-            agentId,
-            body: request.body,
-            scopeOverrides: request.scopeOverrides,
-            signal,
-            onStreamEvent: (event) => {
-              if (event.event === "chunk") {
-                accumulated += event.data.text;
-                onChunk?.(accumulated);
-                return;
-              }
-              if (event.event === "error") {
-                streamErrorRef.current =
-                  event.data.user_message ||
-                  event.data.message ||
-                  "The agent run failed";
-                return;
-              }
-              if (event.event !== "completion") return;
-              if (
-                event.data.status === "failed" ||
-                event.data.status === "cancelled"
-              ) {
-                const result = event.data.result ?? {};
-                streamErrorRef.current =
-                  (typeof result.error === "string" && result.error) ||
-                  (typeof result.user_message === "string" &&
-                    result.user_message) ||
-                  `The agent run ${event.data.status}`;
-                return;
-              }
-              const output = event.data.result?.output;
-              if (typeof output === "string" && output) {
-                completionOutput = output;
-              }
-            },
-            onStreamError: (err) => {
-              streamErrorRef.current =
-                err.message || "The agent run failed";
-            },
-          }),
-        );
-
-        if (response.error && !streamErrorRef.current) {
-          streamErrorRef.current = response.error.message;
-        }
-        if (streamErrorRef.current) {
-          throw new Error(streamErrorRef.current);
-        }
-
-        return accumulated || completionOutput || "";
+        return await dispatch(runAgentViaMatrxClient(args));
       } catch (err) {
         const message = extractErrorMessage(err);
         setError(message);
         throw err instanceof Error ? err : new Error(message);
       } finally {
+        runningRef.current = false;
         setRunning(false);
       }
     },

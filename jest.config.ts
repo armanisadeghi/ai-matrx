@@ -57,6 +57,11 @@ const config: Config = {
         // because the published files are ESM).
         "^@ai-matrx/([^/]+)/package\\.json$":
             "<rootDir>/node_modules/@ai-matrx/$1/package.json",
+        // `./matrx` is the one subpath whose dist target is a DIRECTORY
+        // (dist/matrx/index.js), so it must be mapped before the generic
+        // subpath rule below (which would resolve it to dist/matrx.js).
+        "^@ai-matrx/agents/matrx$":
+            "<rootDir>/node_modules/@ai-matrx/agents/dist/matrx/index.js",
         "^@ai-matrx/([^/]+)/(.+)$":
             "<rootDir>/node_modules/@ai-matrx/$1/dist/$2.js",
         // BARE specifiers for the packages that ship `exports` but NO `main`

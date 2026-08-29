@@ -22,7 +22,7 @@ import {
 } from "../instance-resources/instance-resources.selectors";
 import { selectIsExecuting } from "../selectors/aggregate.selectors";
 import { enqueueInboxMessage } from "../inbox/inbox.thunks";
-import { callCancelRequest } from "@/lib/api/call-api";
+import { cancelAgentRunRequest } from "@/lib/api/matrx-transport";
 import { toast } from "@/lib/toast";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 import { requireExecutionOrganizationId } from "../utils/required-organization";
@@ -414,7 +414,7 @@ export const cancelExecution = createAsyncThunk<
     // everything streamed persists server-side.
     const serverRequestId = latestServerRequestId(state, conversationId);
     if (serverRequestId) {
-      void dispatch(callCancelRequest(serverRequestId)).then((result) => {
+      void dispatch(cancelAgentRunRequest(serverRequestId)).then((result) => {
         if (result.error) {
           console.warn(
             "[cancel-execution] server cancel failed (best-effort)",
@@ -474,7 +474,7 @@ export const interruptAndSend = createAsyncThunk<
 
     const serverRequestId = latestServerRequestId(initial, conversationId);
     if (serverRequestId) {
-      void dispatch(callCancelRequest(serverRequestId, "interrupt")).then(
+      void dispatch(cancelAgentRunRequest(serverRequestId, "interrupt")).then(
         (result) => {
           if (result.error) {
             console.warn(

@@ -449,7 +449,7 @@ export interface ApiCallResult<T = unknown> {
  * NOTE: This runs synchronously from Redux state snapshot.
  * For the async "wait for auth to be ready" case, see waitForAuthReady().
  */
-function resolveAuth(state: RootState): ResolvedAuth {
+export function resolveAuth(state: RootState): ResolvedAuth {
   const accessToken = selectAccessToken(state);
   const fingerprintId = selectFingerprintId(state);
   const isAdmin = selectIsSuperAdmin(state);
@@ -486,7 +486,7 @@ function resolveAuth(state: RootState): ResolvedAuth {
  * TODO: Consider exposing the fingerprint-fetch fallback (currently only in
  * useApiAuth hook). For thunks, a separate fingerprint-thunk should exist.
  */
-async function waitForAuthReady(
+export async function waitForAuthReady(
   getState: () => RootState,
   timeoutMs = 1000,
 ): Promise<boolean> {
@@ -530,7 +530,7 @@ async function waitForAuthReady(
  * If the resolved URL is undefined (env var not set for the selected environment),
  * an error is thrown so the misconfiguration is immediately obvious.
  */
-function resolveBaseUrl(
+export function resolveBaseUrl(
   state: RootState,
   testOverrides?: TestOverrides,
 ): string {
@@ -608,7 +608,7 @@ function buildUrl(
  *
  * Fields that are null/undefined are omitted from the final scope object.
  */
-function resolveScope(
+export function resolveScope(
   state: RootState,
   overrides?: Partial<CallScope>,
 ): ResolvedCallScope {
@@ -845,7 +845,7 @@ function extractServerErrorMessage(serverDetail: unknown): string | undefined {
   return undefined;
 }
 
-function normalizeError(err: unknown): ApiCallError {
+export function normalizeError(err: unknown): ApiCallError {
   if (err instanceof OrganizationContextError) {
     return {
       type: "validation_error",
@@ -926,7 +926,7 @@ function normalizeError(err: unknown): ApiCallError {
  * downgrade is loud: console.warn + an `ai_v2_downgrade` record in the Error
  * Inspector; a sustained stream of these means a v2 surface is unhealthy.
  */
-async function fetchWithV2Fallback(
+export async function fetchWithV2Fallback(
   url: string,
   init: RequestInit,
   opts: Parameters<typeof resilientFetch>[2],
@@ -1517,26 +1517,11 @@ export function callConversationContinue(
 }
 
 // ─── Cancel: Abort a running request ─────────────────────────────────────────
-
-/**
- * Stop a running request at its next iteration boundary.
- * `mode: "interrupt"` = stop-and-fork (the INTERRUPT send mode): the server
- * hides the tail produced after the last clean boundary
- * (is_visible_to_user/model = false) so the user's follow-up replies to the
- * last thing they actually saw. Plain "cancel" keeps everything visible.
- */
-export function callCancelRequest(
-  requestId: string,
-  mode: "cancel" | "interrupt" = "cancel",
-) {
-  return callApi({
-    path: "/ai/cancel/{request_id}",
-    method: "POST",
-    pathParams: { request_id: requestId },
-    queryParams: mode === "interrupt" ? { mode } : undefined,
-    stream: false,
-  });
-}
+//
+// MOVED (2026-08-29, agents-package production adoption): the cancel flow now
+// rides `@ai-matrx/agents/matrx`'s `cancelAgentRun` over the host transport —
+// see `cancelAgentRunRequest` in `lib/api/matrx-transport.ts`. Same URL, same
+// auth/org headers, same `ApiCallResult` envelope for callers.
 
 // ─── Warm-up: Pre-load agent into server cache ────────────────────────────────
 
