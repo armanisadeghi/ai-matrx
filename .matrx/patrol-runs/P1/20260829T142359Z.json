@@ -43,6 +43,27 @@
       ],
       "previousEventHash": "c3a4dafc0db651ea23d6231a8bcc2362aa23880b583410e871f9d261d9bd8ca7",
       "eventHash": "5b80c717d142be9851809b52766eb4498d5a0788b30c6ad5276d4fab19c2ad58"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-29T14:28:57.748Z",
+      "actor": "p1-certifier",
+      "summary": "Independent adversarial review CERTIFIED exact candidate bd224a57bc with no batch-caused defect.",
+      "evidence": [],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "bd224a57bc0f8794fa20625e67a20ad650002d79",
+        "certifierTaskId": "p1-certifier",
+        "checks": [
+          "Exact candidate diff preserves behavior and links live findings by rule name to the established Rulebook anchor.",
+          "Missing or retired rule ids render an explicit unavailable state with no dead link and no bare id.",
+          "pnpm type-check PASS; P1 detector 73 to 72 and AuditionDialog finding removed.",
+          "Run-record verification PASS; unrelated P5 and Fleet Health manifest drift does not reject P1."
+        ]
+      },
+      "previousEventHash": "5b80c717d142be9851809b52766eb4498d5a0788b30c6ad5276d4fab19c2ad58",
+      "eventHash": "083975c734166ade0a91c30095858a4f0342cb2051905c81d3e77b68d2449565"
     }
   ]
 }

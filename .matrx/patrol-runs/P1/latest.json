@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260829T142359Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-29T14:24:02.179Z",
-  "summary": "Rule citations now use real names and the canonical Rulebook anchor; candidate gates are ready for independent review.",
+  "state": "certified",
+  "updatedAt": "2026-08-29T14:28:57.748Z",
+  "summary": "Independent adversarial review CERTIFIED exact candidate bd224a57bc with no batch-caused defect.",
   "source": "20260829T142359Z.json",
-  "eventHash": "5b80c717d142be9851809b52766eb4498d5a0788b30c6ad5276d4fab19c2ad58"
+  "eventHash": "083975c734166ade0a91c30095858a4f0342cb2051905c81d3e77b68d2449565"
 }
