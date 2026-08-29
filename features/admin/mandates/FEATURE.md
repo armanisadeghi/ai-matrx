@@ -91,6 +91,10 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
+- 2026-08-29 — Contract chips no longer use a fixed 20px height. Wrapped
+  output-kind, required-output-key, and input-variable badges now grow with
+  their content, keeping every line inside the colored background and row.
+
 - 2026-08-29 — Feature and Mandate identifiers now honor the canonical table's
   wrapping boundary instead of requesting no-wrap, preventing long snake_case
   names from painting across neighboring cells.

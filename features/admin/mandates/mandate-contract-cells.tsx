@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import type { MandateRow } from "./mandate-health";
 
 const KIND_REGISTRY_BASE = "/administration/utilities/kind-registry";
+const CONTRACT_BADGE_CLASS =
+  "h-auto min-h-5 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] px-1.5 py-0.5 text-left text-[10px] leading-tight";
 
 /** Required variables as chips, plus the ever-present free-text channel. */
 export function MandateInputsCell({
@@ -47,7 +49,7 @@ export function MandateInputsCell({
         <Badge
           key={name}
           variant="outline"
-          className="h-5 px-1.5 font-mono text-[10px]"
+          className={`${CONTRACT_BADGE_CLASS} font-mono`}
         >
           {name}
         </Badge>
@@ -78,10 +80,11 @@ export function MandateOutputCell({
         rel="noopener noreferrer"
         onClick={(e) => e.stopPropagation()}
         title={`Registered content kind "${kind}" — open its definition`}
+        className="inline-flex max-w-full"
       >
         <Badge
           variant="secondary"
-          className="h-5 px-1.5 font-mono text-[10px] hover:bg-accent"
+          className={`${CONTRACT_BADGE_CLASS} font-mono hover:bg-accent`}
         >
           {kind}
         </Badge>
@@ -101,7 +104,7 @@ export function MandateOutputCell({
           <Badge
             key={key}
             variant="outline"
-            className="h-5 px-1.5 font-mono text-[10px]"
+            className={`${CONTRACT_BADGE_CLASS} font-mono`}
           >
             {key}
           </Badge>
@@ -115,7 +118,7 @@ export function MandateOutputCell({
   return (
     <Badge
       variant="outline"
-      className="h-5 px-1.5 text-[10px] text-amber-600 border-amber-500/40 bg-amber-500/10"
+      className={`${CONTRACT_BADGE_CLASS} border-amber-500/40 bg-amber-500/10 text-amber-600`}
       title="This mandate promises nothing about its output — no registered kind and no required output keys. That is a contract gap: consumers can't know what they'll get."
     >
       unspecified
