@@ -64,34 +64,28 @@ export function MyTimesheetContext({
   payPeriodId: string | null;
 }) {
   const { orgRef, isLoading } = useHrContext();
-  const [resolved, setResolved] = useState<Resolution>({ state: "resolving" });
 
   // Params win, always. When both are present nothing is resolved and nothing is fetched.
   const bothFromParams = Boolean(employmentParam && periodParam);
+  /*
+    The inputs this answer belongs to. An answer whose key no longer matches is STALE and reads as
+    `resolving` — which is why nothing here calls `setState` synchronously inside the effect to
+    clear it. That pattern is a cascading render (`react-hooks/set-state-in-effect`), and the same
+    invalidation falls out of a derived comparison for free.
+  */
+  const key = `${employmentParam ?? ""}|${periodParam ?? ""}`;
+  const [answer, setAnswer] = useState<{ key: string; value: Resolution } | null>(null);
 
   useEffect(() => {
-    if (bothFromParams) {
-      setResolved({
-        state: "ready",
-        employmentId: employmentParam as string,
-        payPeriodId: periodParam as string,
-        periodNote: null,
-      });
-      return;
-    }
     /*
-      The employer context is still resolving. The door does not need it — it resolves from the
-      SESSION, not from `?org=` — but rendering a resolved answer before the shell has settled
-      would flash a timesheet under the wrong employer heading.
+      Params win — nothing is fetched. And the employer context is still settling: the door does
+      not need it (it resolves from the SESSION, not from `?org=`), but rendering a resolved answer
+      before the shell settles would flash a timesheet under the wrong employer heading.
     */
-    if (isLoading) {
-      setResolved({ state: "resolving" });
-      return;
-    }
+    if (bothFromParams || isLoading) return;
 
     let cancelled = false;
     const controller = new AbortController();
-    setResolved({ state: "resolving" });
 
     void getMyTimesheetContext(employmentParam, { signal: controller.signal })
       .then((ctx) => {
@@ -100,30 +94,39 @@ export function MyTimesheetContext({
         // An explicit `?period=` still wins over the resolved one.
         const period = periodParam ?? ctx.payPeriodId;
         if (!employment || !period) {
-          setResolved({
-            state: "no-period",
-            reason:
-              ctx.noPeriodReason ??
-              "There is no pay period covering your hours yet, so there is nothing to show here.",
+          setAnswer({
+            key,
+            value: {
+              state: "no-period",
+              reason:
+                ctx.noPeriodReason ??
+                "There is no pay period covering your hours yet, so there is nothing to show here.",
+            },
           });
           return;
         }
-        setResolved({
-          state: "ready",
-          employmentId: employment,
-          payPeriodId: period,
-          // Only `most_recent` carries one, and it is the server's sentence, printed not summarised.
-          periodNote: periodParam ? null : ctx.periodNote,
+        setAnswer({
+          key,
+          value: {
+            state: "ready",
+            employmentId: employment,
+            payPeriodId: period,
+            // Only `most_recent` carries one, and it is the server's sentence, printed not summarised.
+            periodNote: periodParam ? null : ctx.periodNote,
+          },
         });
       })
       .catch((err: unknown) => {
         if (cancelled || controller.signal.aborted) return;
-        setResolved({
-          state: "refused",
-          sentence:
-            err instanceof HrRpcError
-              ? err.userMessage
-              : "We could not reach your timesheet just now. Try again in a moment.",
+        setAnswer({
+          key,
+          value: {
+            state: "refused",
+            sentence:
+              err instanceof HrRpcError
+                ? err.userMessage
+                : "We could not reach your timesheet just now. Try again in a moment.",
+          },
         });
       });
 
@@ -131,7 +134,18 @@ export function MyTimesheetContext({
       cancelled = true;
       controller.abort();
     };
-  }, [bothFromParams, employmentParam, periodParam, isLoading]);
+  }, [bothFromParams, employmentParam, periodParam, isLoading, key]);
+
+  const resolved: Resolution = bothFromParams
+    ? {
+        state: "ready",
+        employmentId: employmentParam as string,
+        payPeriodId: periodParam as string,
+        periodNote: null,
+      }
+    : answer?.key === key
+      ? answer.value
+      : { state: "resolving" };
 
   if (resolved.state === "resolving") return <HrLoading variant="panel" rows={5} />;
 
