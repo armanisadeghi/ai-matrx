@@ -225,6 +225,7 @@ describe("ComponentRegistry — DB tier", () => {
       resolvedBy: "db",
       componentSource: null,
       propsTransform: null,
+      hasComponentSource: false,
       pinnedKindVersion: null,
       updatedAt: "2026-01-01T00:00:00Z",
       createdBy: null,

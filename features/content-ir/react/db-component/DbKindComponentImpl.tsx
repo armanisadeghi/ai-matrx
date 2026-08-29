@@ -14,9 +14,9 @@
  *     envelope (`reconstructRegionValue` — residues merged back, zero-loss);
  *     floor: `JSON.parse(content)`.
  *  2. Re-resolve the db row via `resolveComponent(kind, "web", "output")`.
- *     Routing already proved a db row won, and the resolver is a module
- *     singleton, so this is warm by construction; a miss here is a real
- *     defect → scream + generic viewer (R6 — never a blank hole).
+ *     A body-less warm metadata shell requests its per-kind cold row and
+ *     renders the kind loading face until the granular registry repaint lands
+ *     the body. A real miss is a defect → generic viewer (never a blank hole).
  *  3. `config.flavor === 'html'` → the sandboxed iframe flavor
  *     (KindHtmlFrame). Otherwise compile + render inside the error boundary
  *     (fallback = the kind's generic structured viewer).
@@ -28,10 +28,14 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
 import { readEnvelope } from "../../redux/render-block-envelope";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";
-import { resolveComponent } from "../../registry/component-registry";
+import {
+  componentRegistry,
+  resolveComponent,
+} from "../../registry/component-registry";
 import {
   applyPropsTransform,
   getOrCompileDbKindComponent,
+  isDbKindComponentBodyPending,
   kindComponentConfig,
 } from "./dbKindComponentCache";
 import { DbKindComponentErrorBoundary } from "./DbKindComponentErrorBoundary";
@@ -41,6 +45,10 @@ import type {
   KindComponentUiOptions,
   ResolveKindValue,
 } from "./dbKindComponentCache";
+import { useContentIrKindVersion } from "../use-registry-repaint";
+import { resolveLoadingSlugForKind } from "../loading/resolve-loading-slug";
+import { resolveKindLoadingComponent } from "../loading/kind-loading-registry";
+import { earlyKeysFromValue } from "../loading/kind-loading.types";
 
 /**
  * Safe fallback when no runner is supplied (bare test/SSR render): the action
@@ -125,12 +133,47 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
   );
 
   const { kind, value } = readInstanceValue(content, metadata);
+  const registryVersion = useContentIrKindVersion(kind);
+  void registryVersion;
+
+  const resolution = kind
+    ? resolveComponent(kind, "web", "output")
+    : null;
+  const bodyPending = Boolean(
+    resolution &&
+      resolution.resolvedBy === "db" &&
+      resolution.source === "db" &&
+      resolution.isActive &&
+      isDbKindComponentBodyPending(resolution),
+  );
+
+  React.useEffect(() => {
+    if (kind && bodyPending) {
+      componentRegistry.requestComponent(kind, "web", "output");
+    }
+  }, [bodyPending, kind]);
+
   if (!kind) {
     screamRouteDefect("(unresolvable)", "no kind in envelope or content");
     return generic;
   }
 
-  const resolution = resolveComponent(kind, "web", "output");
+  if (bodyPending) {
+    const loadingValue =
+      value !== null && typeof value === "object" && !Array.isArray(value)
+        ? (value as Record<string, unknown>)
+        : null;
+    const Loader = resolveKindLoadingComponent(
+      resolveLoadingSlugForKind(kind).slug,
+    );
+    return (
+      <Loader
+        {...earlyKeysFromValue(loadingValue, kind)}
+        value={loadingValue}
+      />
+    );
+  }
+
   if (
     !resolution ||
     resolution.resolvedBy !== "db" ||
