@@ -20,8 +20,10 @@ submission brief; stop and rescout if the live portal materially disagrees.
 2. The campaign key is unique; the task contains a current official-source scouting record.
 3. Every requested scope maps to an implemented product action and verification operation.
 4. The task is `Phase: ready_to_submit`, or the scout recorded `easy_execute` and every gate passed.
-5. Any legal, billing, compliance, regulated-data, identity, DNS, publication, customer-impact, or
-   material scope choice has an explicit owner decision.
+5. Any paid commitment, negotiated/custom legal term, compliance or regulated-data attestation,
+   legal-identity attestation, production DNS/traffic change, public publication/external
+   communication, customer-data access, destructive action, or broader-scope choice has an explicit
+   owner decision.
 6. The action is covered by the standing authorization in the provider-access feature, or the task
    records the explicit owner decision for an uncovered paid, negotiated, regulated,
    customer-impacting, destructive, public, or human-only boundary.
