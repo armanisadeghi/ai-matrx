@@ -16,7 +16,7 @@ importers:
     dependencies:
       '@ai-matrx/agents':
         specifier: latest
-        version: 0.5.0
+        version: 0.5.1
       '@ai-matrx/capture':
         specifier: latest
         version: 0.1.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -798,8 +798,8 @@ packages:
   '@acemir/cssom@0.9.31':
     resolution: {integrity: sha512-ZnR3GSaH+/vJ0YlHau21FjfLYjMpYVIzTD8M8vIEQvIGxeOXyXdzCI140rrCY862p/C/BbzWsjc1dgnM9mkoTA==}
 
-  '@ai-matrx/agents@0.5.0':
-    resolution: {integrity: sha512-vZmhIMGgVGzFwQA1YafFjdsZ8fWQlsPFKc357iiKFmu23WsMbR/kqqOTlE8mFlpBfX53HfWQ/xePx+d/+LsVFA==}
+  '@ai-matrx/agents@0.5.1':
+    resolution: {integrity: sha512-AvLsiQrTkm1gQVH0OX0gModa8C/+1Q4k9eiI1jsvSTFFmzgCVOPbrjQFucvR6shyi75ZZUElJ25QG+95RN60Pw==}
     engines: {node: '>=20'}
 
   '@ai-matrx/capture@0.1.2':
@@ -13045,7 +13045,7 @@ snapshots:
 
   '@acemir/cssom@0.9.31': {}
 
-  '@ai-matrx/agents@0.5.0': {}
+  '@ai-matrx/agents@0.5.1': {}
 
   '@ai-matrx/capture@0.1.2(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
     dependencies:
