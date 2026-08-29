@@ -8,10 +8,5 @@
     "file": "features/cx-chat/components/agent/local-agents.ts",
     "name": "promptId",
     "reason": "user-selected picker roster (not an automatic selector) — ROLLOUT classification"
-  },
-  {
-    "file": "features/public-chat/components/AgentSelector.tsx",
-    "name": "promptId",
-    "reason": "user-selected picker roster (not an automatic selector) — ROLLOUT classification"
   }
 ]
