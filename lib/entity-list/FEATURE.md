@@ -7,6 +7,10 @@ else: scope tabs with true server counts, search (+ optional deep toggle),
 Filters & Sort panel, column picker, the controlled MatrxDataTable, view/
 density persistence, inline edit commit, and the error banner.
 
+Inline edits retain a bounded source-row snapshot across server refreshes and
+query/page changes, so saving still reaches the feature writer with the row's
+identity and kind after that row moves off the rendered page.
+
 **Consumers:** `/agents/all` (`features/agents/browse/listConfig.tsx` — the
 proving ground) · `/workflows/all`
 (`features/workflow-runtime/browse/listConfig.tsx` — first consumer to need a
@@ -222,6 +226,9 @@ demoting the detail page — cheap, high value, not a redesign. This shell is
 how that savior page gets built.
 
 ## Change log
+
+- 2026-08-29 — Inline edit drafts retain their source row across server-page
+  reconciliation, preventing refresh/realtime/page movement from rejecting a save.
 
 - 2026-08-26 — Enforced the phone touch-target contract across shared search,
   scope narrowing, and column selection controls.

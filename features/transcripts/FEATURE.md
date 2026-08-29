@@ -12,6 +12,8 @@ The canonical store for finished transcripts (one row, one JSONB `segments` blob
 
 ## Change log
 
+- 2026-08-29 — Hub inline edits retain the row identity/kind across list
+  reconciliation, so refresh or page movement cannot reject a valid save.
 - 2026-08-29 — Transcript cards keep the title door and row Actions control at 44px below the desktop breakpoint, preserving the shared entity-list touch contract.
 
 ---

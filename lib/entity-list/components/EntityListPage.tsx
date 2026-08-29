@@ -12,7 +12,7 @@
 //     persisted per user and synced across devices.
 //   QUERY (scope, search, filters, page) → useEntityList, always starts clean.
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -38,6 +38,7 @@ import { useEntityList } from "../useEntityList";
 import { readSortFromParams, sortToParamPatch } from "../urlQuery";
 import { entityListRowHref } from "../doors";
 import { countActiveFilters } from "../types";
+import { EditRowRegistry } from "../editRowRegistry";
 import { EntityScopeTabs } from "./EntityScopeTabs";
 import { EntityListToolbar } from "./EntityListToolbar";
 import { EntityListTable } from "./EntityListTable";
@@ -194,6 +195,16 @@ export function EntityListPage<TRow>({
     },
   });
 
+  // Inline drafts can outlive the current server page: realtime, a refresh,
+  // or a query change may move the edited row before Save is pressed.
+  const editRowsRef = useRef<EditRowRegistry<TRow> | null>(null);
+  if (editRowsRef.current === null) {
+    editRowsRef.current = new EditRowRegistry<TRow>();
+  }
+  useEffect(() => {
+    editRowsRef.current?.remember(list.rows, config.getRowId);
+  }, [config.getRowId, list.rows]);
+
   const { actions, modals } = config.useRowActions(list);
 
   // Owner / org / access columns only carry information outside "Mine", where
@@ -211,7 +222,7 @@ export function EntityListPage<TRow>({
     const entries = Object.entries(edits);
     await Promise.all(
       entries.map(async ([rowId, edit]) => {
-        const row = list.rows.find((r) => config.getRowId(r) === rowId);
+        const row = editRowsRef.current?.get(rowId);
         if (!row) throw new Error("Edited row is no longer in the list");
         await save(row, edit);
         list.patchRow(rowId, edit);
