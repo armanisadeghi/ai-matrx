@@ -4,7 +4,10 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
-import type { ContextTemplate } from "@/features/scopes/types";
+import type {
+  ContextTemplate,
+  FlatTemplateScopeType,
+} from "@/features/scopes/types";
 
 const emptyTemplates: ContextTemplate[] = [];
 
@@ -39,6 +42,36 @@ export const selectTemplatesByCategory = createSelector(
         (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name),
       );
     }
+    return out;
+  },
+);
+
+/**
+ * Every template's scope types flattened into one alphabetized list with
+ * source-template metadata stamped on each entry — the "Individual scopes"
+ * borrow list in the template gallery.
+ */
+export const selectFlatTemplateScopeTypes = createSelector(
+  selectTemplatesList,
+  (templates): FlatTemplateScopeType[] => {
+    const out: FlatTemplateScopeType[] = [];
+    for (const t of templates) {
+      for (const st of t.scope_types) {
+        out.push({
+          ...st,
+          template_id: t.id,
+          template_key: t.key,
+          template_name: t.name,
+          template_category: t.category,
+          template_is_personal: t.is_personal,
+        });
+      }
+    }
+    out.sort((a, b) =>
+      a.label_plural.localeCompare(b.label_plural, undefined, {
+        sensitivity: "base",
+      }),
+    );
     return out;
   },
 );

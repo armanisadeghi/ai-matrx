@@ -9,7 +9,7 @@ import {
   selectScopesByType,
 } from "../../redux/scope/scopesSlice";
 import type { ScopeType, Scope } from "../../redux/scope/types";
-import { toSlug } from "@/features/scope-system/utils/slugify";
+import { toSlug } from "@/features/scopes/utils/slugify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";

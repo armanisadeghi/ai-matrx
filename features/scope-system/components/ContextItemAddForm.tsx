@@ -29,7 +29,7 @@ import {
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
 import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
-import { slugifyKey } from "@/features/scope-system/utils/slugify";
+import { slugifyKey } from "@/features/scopes/utils/slugify";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import {
   EntryModeToggle,

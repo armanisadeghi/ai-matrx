@@ -49,7 +49,7 @@ import {
   createContextItem,
   listScopeTypeItems,
 } from "@/features/scope-system/redux/contextItemsSlice";
-import { slugifyKey } from "@/features/scope-system/utils/slugify";
+import { slugifyKey } from "@/features/scopes/utils/slugify";
 import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
 import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
 import { cn } from "@/lib/utils";

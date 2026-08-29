@@ -16,7 +16,7 @@ import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { updateScope } from "@/features/agent-context/redux/scope/scopesSlice";
 import type { Scope } from "@/features/agent-context/redux/scope/types";
-import { toSlug, isValidSlug } from "@/features/scope-system/utils/slugify";
+import { toSlug, isValidSlug } from "@/features/scopes/utils/slugify";
 
 interface ScopeAdvancedSectionProps {
   scope: Scope;

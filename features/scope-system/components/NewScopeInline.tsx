@@ -21,7 +21,7 @@ import {
   toSlug,
   isValidSlug,
   isReservedSlug,
-} from "@/features/scope-system/utils/slugify";
+} from "@/features/scopes/utils/slugify";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 

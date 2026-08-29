@@ -26,7 +26,7 @@ import {
   selectModelLabelById,
   fetchModelOptions,
 } from "@/features/ai-models/redux/modelRegistrySlice";
-import { isUuid } from "@/features/scope-system/utils/slugify";
+import { isUuid } from "@/features/scopes/utils/slugify";
 import { supabase } from "@/utils/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

@@ -529,6 +529,34 @@ const scopesSlice = createSlice({
         error: null,
       };
     },
+    /** Echoed single-item write (create/update) — folds the authoritative row
+     *  into the type's catalog, keeping sort_order/display_name ordering. */
+    contextItemUpserted(state, action: PayloadAction<ContextItemRow>) {
+      const item = action.payload;
+      const prev = state.contextItemsByTypeId[item.scope_type_id];
+      const items = (prev?.items ?? []).filter((i) => i.id !== item.id);
+      items.push(item);
+      items.sort(
+        (a, b) =>
+          (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
+          a.display_name.localeCompare(b.display_name),
+      );
+      state.contextItemsByTypeId[item.scope_type_id] = {
+        status: "ready",
+        items,
+        fetchedAt: prev?.fetchedAt ?? Date.now(),
+        error: null,
+      };
+    },
+    /** Echoed archive — drops the item from its type's catalog. */
+    contextItemRemoved(
+      state,
+      action: PayloadAction<{ scopeTypeId: string; itemId: string }>,
+    ) {
+      const prev = state.contextItemsByTypeId[action.payload.scopeTypeId];
+      if (!prev) return;
+      prev.items = prev.items.filter((i) => i.id !== action.payload.itemId);
+    },
     contextItemsFetchRejected(
       state,
       action: PayloadAction<{ scopeTypeId: string; error: string }>,

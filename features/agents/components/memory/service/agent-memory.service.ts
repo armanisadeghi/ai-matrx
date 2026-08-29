@@ -14,7 +14,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { slugifyKey } from "@/features/scope-system/utils/slugify";
+import { slugifyKey } from "@/features/scopes/utils/slugify";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
 import type {

@@ -486,6 +486,27 @@ export interface ContextItemsEntry {
 
 // ─── Templates (read-only catalog) ─────────────────────────────────────
 
+/** One context-item column defined inside a template scope type. */
+export interface TemplateItemField {
+  key: string;
+  display_name: string;
+}
+
+/** One scope type inside a template, with its context-item columns. */
+export interface TemplateScopeTypeDetail {
+  id: string;
+  key: string;
+  icon: string;
+  label_singular: string;
+  label_plural: string;
+  sort_order: number;
+  max_assignments_per_entity: number | null;
+  parent_template_type_id: string | null;
+  /** Resolved label of the parent template scope type (client-side join). */
+  parent_type_label: string | null;
+  fields: TemplateItemField[];
+}
+
 export interface ContextTemplate {
   id: string;
   key: string;
@@ -494,9 +515,113 @@ export interface ContextTemplate {
   category: string;
   icon: string;
   is_active: boolean;
+  is_personal: boolean;
   sort_order: number;
   scope_type_count: number;
   context_item_count: number;
+  /** Full nested detail — what applying this template creates. */
+  scope_types: TemplateScopeTypeDetail[];
+}
+
+/**
+ * A template scope type flattened out of its template — the "Individual
+ * scopes" borrow list in the gallery. Carries the source template identity.
+ */
+export interface FlatTemplateScopeType extends TemplateScopeTypeDetail {
+  template_id: string;
+  template_key: string;
+  template_name: string;
+  template_category: string;
+  template_is_personal: boolean;
+}
+
+// ─── Mutation params (the sanctioned SECURITY DEFINER write family) ────
+
+export interface CreateScopeTypeParams {
+  org_id: string;
+  label_singular: string;
+  label_plural: string;
+  parent_type_id?: string;
+  icon?: string;
+  description?: string;
+  sort_order?: number;
+  max_assignments?: number;
+  default_variable_keys?: string[];
+  color?: string;
+  slug?: string;
+}
+
+export interface UpdateScopeTypeParams {
+  type_id: string;
+  label_singular?: string;
+  label_plural?: string;
+  icon?: string;
+  description?: string;
+  sort_order?: number;
+  max_assignments?: number;
+  color?: string;
+  slug?: string;
+}
+
+export interface CreateScopeParams {
+  org_id: string;
+  type_id: string;
+  name: string;
+  parent_scope_id?: string;
+  description?: string;
+  settings?: Json;
+  slug?: string;
+  sort_order?: number;
+}
+
+export interface UpdateScopeParams {
+  scope_id: string;
+  name?: string;
+  description?: string;
+  settings?: Json;
+  slug?: string;
+  sort_order?: number;
+}
+
+export interface CreateContextItemParams {
+  scope_type_id: string;
+  key: string;
+  display_name: string;
+  value_type?: ContextItemValueType;
+  description?: string;
+  category?: string;
+  fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"];
+  sensitivity?: Database["public"]["Enums"]["context_sensitivity"];
+  tags?: string[];
+  slug?: string;
+  sort_order?: number;
+  allowed_reference_types?: string[];
+  max_items?: number;
+  allowed_scope_type_ids?: string[];
+  reference_source?: Json;
+}
+
+export interface UpdateContextItemParams {
+  item_id: string;
+  display_name?: string;
+  description?: string;
+  category?: string;
+  value_type?: ContextItemValueType;
+  fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"];
+  sensitivity?: Database["public"]["Enums"]["context_sensitivity"];
+  tags?: string[];
+  sort_order?: number;
+  status?: Database["public"]["Enums"]["context_item_status"];
+  status_note?: string;
+}
+
+/** What `apply_template` reports back (jsonb envelope from the RPC). */
+export interface ApplyTemplateResult {
+  template_id: string;
+  organization_id: string;
+  /** The created `context.scope_types` rows (jsonb array from the RPC). */
+  scope_types_created: Json;
+  context_items_count: number;
 }
 
 // ─── Resolution shapes ─────────────────────────────────────────────────
@@ -620,6 +745,10 @@ export interface SetContextValuePayload {
   value_json?: Json | null;
   value_document_url?: string | null;
   value_reference_id?: string | null;
+  /** `datetime` items — the RPC routes it to `value_timestamp` (timestamptz). */
+  value_timestamp?: string | null;
+  /** `time` items — the RPC routes it to `value_time`. */
+  value_time?: string | null;
   /** Defaults to `ai_enriched` server-side when omitted. */
   source_type?: ContextSourceType;
   change_summary?: string;

@@ -47,10 +47,19 @@ import {
   mapPgErrorPair,
   ok,
 } from "@/features/scopes/service/rpcResult";
+import {
+  isReservedSlug,
+  isValidSlug,
+  toSlug,
+} from "@/features/scopes/utils/slugify";
 import type {
+  ApplyTemplateResult,
   ContextItemRow,
   ContextItemValue,
   ContextTemplate,
+  CreateContextItemParams,
+  CreateScopeParams,
+  CreateScopeTypeParams,
   OrgNode,
   ProjectNode,
   ReferencingContextValue,
@@ -59,8 +68,10 @@ import type {
   ResolvedSuggestionValue,
   EntityType,
   ScopeNode,
+  ScopeRow,
   ScopeTreeResponse,
   ScopeTypeNode,
+  ScopeTypeRow,
   ScopesRpcError,
   ScopesRpcResult,
   ScopeWithType,
@@ -68,6 +79,10 @@ import type {
   SetContextValueResult,
   TaskBucketLevel,
   TaskNode,
+  TemplateScopeTypeDetail,
+  UpdateContextItemParams,
+  UpdateScopeParams,
+  UpdateScopeTypeParams,
 } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
@@ -717,8 +732,12 @@ export const scopesService = {
       const query = contextDb(supabase)
         .from("templates")
         .select(
-          `id, key, name, description, category, icon, is_active, sort_order,
-           template_scope_types ( id, template_context_items ( id ) )`,
+          `id, key, name, description, category, icon, is_active, is_personal, sort_order,
+           template_scope_types (
+             id, key, icon, label_singular, label_plural, sort_order,
+             max_assignments_per_entity, parent_template_type_id,
+             template_context_items ( id, key, display_name, sort_order )
+           )`,
         )
         .order("sort_order", { ascending: true });
 
@@ -728,13 +747,30 @@ export const scopesService = {
       if (error) return err(...mapPgErrorPair(error));
 
       const templates: ContextTemplate[] = (data ?? []).map((row) => {
-        const scopeTypes = (row.template_scope_types ?? []) as Array<{
-          id: string;
-          template_context_items: Array<{ id: string }>;
-        }>;
-        const scope_type_count = scopeTypes.length;
-        const context_item_count = scopeTypes.reduce(
-          (acc, st) => acc + (st.template_context_items?.length ?? 0),
+        const scopeTypes = row.template_scope_types ?? [];
+        const labelById = new Map(
+          scopeTypes.map((st) => [st.id, st.label_singular]),
+        );
+        const scope_types: TemplateScopeTypeDetail[] = scopeTypes
+          .map((st) => ({
+            id: st.id,
+            key: st.key,
+            icon: st.icon ?? "",
+            label_singular: st.label_singular,
+            label_plural: st.label_plural,
+            sort_order: st.sort_order ?? 0,
+            max_assignments_per_entity: st.max_assignments_per_entity ?? null,
+            parent_template_type_id: st.parent_template_type_id ?? null,
+            parent_type_label: st.parent_template_type_id
+              ? (labelById.get(st.parent_template_type_id) ?? null)
+              : null,
+            fields: [...(st.template_context_items ?? [])]
+              .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+              .map((f) => ({ key: f.key, display_name: f.display_name })),
+          }))
+          .sort((a, b) => a.sort_order - b.sort_order);
+        const context_item_count = scope_types.reduce(
+          (acc, st) => acc + st.fields.length,
           0,
         );
         return {
@@ -745,9 +781,11 @@ export const scopesService = {
           category: row.category ?? "",
           icon: row.icon ?? "",
           is_active: !!row.is_active,
+          is_personal: !!row.is_personal,
           sort_order: row.sort_order ?? 0,
-          scope_type_count,
+          scope_type_count: scope_types.length,
           context_item_count,
+          scope_types,
         };
       });
 
@@ -973,22 +1011,230 @@ export const scopesService = {
   },
 
   // ──────────────────────────────────────────────────────────────────
-  //  WRITE — placeholders for Phase 4+ mutation paths.
-  //  Each returns `internal` until the corresponding RPC ships and the
-  //  implementation here is filled in. Surface stays constant.
+  //  WRITE — the sanctioned SECURITY DEFINER mutation family (C17 HYBRID
+  //  ruling, 2026-08-29: reads stay direct RLS table reads; writes go
+  //  through these RPCs). Every function checks org access INSIDE
+  //  (iam.has_org_access / has_org_admin / owner-admin membership) and
+  //  the create paths take an explicit org — nothing here assigns one.
   // ──────────────────────────────────────────────────────────────────
 
-  createScopeType: notYetImplemented("create_scope_type"),
-  updateScopeType: notYetImplemented("update_scope_type"),
-  deleteScopeType: notYetImplemented("delete_scope_type"),
+  /** `create_scope_type` — org-explicit, org-access checked inside. */
+  async createScopeType(
+    params: CreateScopeTypeParams,
+  ): Promise<ScopesRpcResult<ScopeTypeNode>> {
+    try {
+      requireUserId();
+      const slug = resolveSlug(
+        params.slug,
+        params.label_plural || params.label_singular,
+      );
+      if (isScopesRpcErr(slug)) return slug;
+      const { data, error } = await supabase.rpc("create_scope_type", {
+        p_org_id: params.org_id,
+        p_label_singular: params.label_singular,
+        p_label_plural: params.label_plural,
+        p_parent_type_id: params.parent_type_id ?? undefined,
+        p_icon: params.icon ?? "folder",
+        p_description: params.description ?? "",
+        p_sort_order: params.sort_order ?? 0,
+        p_max_assignments: params.max_assignments ?? undefined,
+        p_default_variable_keys: params.default_variable_keys ?? [],
+        p_color: params.color ?? undefined,
+        p_slug: slug.data,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      return decodeScopeTypeNode(data, "create_scope_type");
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
 
-  createScope: notYetImplemented("create_scope"),
-  updateScope: notYetImplemented("update_scope"),
-  deleteScope: notYetImplemented("delete_scope"),
+  /** `update_scope_type` — org resolved from the row and checked inside. */
+  async updateScopeType(
+    params: UpdateScopeTypeParams,
+  ): Promise<ScopesRpcResult<ScopeTypeNode>> {
+    try {
+      requireUserId();
+      let slug: string | undefined;
+      if (params.slug !== undefined) {
+        const resolved = resolveSlug(
+          params.slug,
+          params.label_plural ?? params.label_singular ?? "",
+        );
+        if (isScopesRpcErr(resolved)) return resolved;
+        slug = resolved.data;
+      }
+      const { data, error } = await supabase.rpc("update_scope_type", {
+        p_type_id: params.type_id,
+        p_label_singular: params.label_singular,
+        p_label_plural: params.label_plural,
+        p_icon: params.icon,
+        p_description: params.description,
+        p_sort_order: params.sort_order,
+        p_max_assignments: params.max_assignments,
+        p_color: params.color,
+        p_slug: slug,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      return decodeScopeTypeNode(data, "update_scope_type");
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
 
-  createContextItem: notYetImplemented("create_context_item"),
-  updateContextItem: notYetImplemented("update_context_item"),
-  deleteContextItem: notYetImplemented("delete_context_item"),
+  /** `delete_scope_type` — soft archive; owner/admin membership checked inside. */
+  async deleteScopeType(
+    typeId: string,
+  ): Promise<ScopesRpcResult<{ id: string }>> {
+    try {
+      requireUserId();
+      const { error } = await supabase.rpc("delete_scope_type", {
+        p_type_id: typeId,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      return ok({ id: typeId });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** `create_scope` — org-explicit, org-access checked inside. */
+  async createScope(
+    params: CreateScopeParams,
+  ): Promise<ScopesRpcResult<ScopeNode>> {
+    try {
+      requireUserId();
+      const slug = resolveSlug(params.slug, params.name);
+      if (isScopesRpcErr(slug)) return slug;
+      const { data, error } = await supabase.rpc("create_scope", {
+        p_org_id: params.org_id,
+        p_type_id: params.type_id,
+        p_name: params.name,
+        p_parent_scope_id: params.parent_scope_id ?? undefined,
+        p_description: params.description ?? "",
+        p_settings: params.settings ?? {},
+        p_slug: slug.data,
+        p_sort_order: params.sort_order ?? undefined,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      return decodeScopeNode(data, "create_scope");
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** `update_scope` — org resolved from the row and checked inside. */
+  async updateScope(
+    params: UpdateScopeParams,
+  ): Promise<ScopesRpcResult<ScopeNode>> {
+    try {
+      requireUserId();
+      let slug: string | undefined;
+      if (params.slug !== undefined) {
+        const resolved = resolveSlug(params.slug, params.name ?? "");
+        if (isScopesRpcErr(resolved)) return resolved;
+        slug = resolved.data;
+      }
+      const { data, error } = await supabase.rpc("update_scope", {
+        p_scope_id: params.scope_id,
+        p_name: params.name,
+        p_description: params.description,
+        p_settings: params.settings ?? undefined,
+        p_slug: slug,
+        p_sort_order: params.sort_order,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      return decodeScopeNode(data, "update_scope");
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** `delete_scope` — soft archive; owner/admin membership checked inside. */
+  async deleteScope(scopeId: string): Promise<ScopesRpcResult<{ id: string }>> {
+    try {
+      requireUserId();
+      const { error } = await supabase.rpc("delete_scope", {
+        p_scope_id: scopeId,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      return ok({ id: scopeId });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** `create_context_item` — org resolved from the scope type, org-admin checked inside. */
+  async createContextItem(
+    params: CreateContextItemParams,
+  ): Promise<ScopesRpcResult<ContextItemRow>> {
+    try {
+      requireUserId();
+      const { data, error } = await supabase.rpc("create_context_item", {
+        p_scope_type_id: params.scope_type_id,
+        p_key: params.key,
+        p_display_name: params.display_name,
+        p_value_type: params.value_type ?? "string",
+        p_description: params.description ?? "",
+        p_category: params.category ?? undefined,
+        p_fetch_hint: params.fetch_hint ?? "on_demand",
+        p_sensitivity: params.sensitivity ?? "internal",
+        p_tags: params.tags ?? [],
+        p_slug: params.slug ?? undefined,
+        p_sort_order: params.sort_order ?? undefined,
+        p_allowed_reference_types: params.allowed_reference_types ?? undefined,
+        p_max_items: params.max_items ?? undefined,
+        p_allowed_scope_type_ids: params.allowed_scope_type_ids ?? undefined,
+        p_reference_source: params.reference_source ?? undefined,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      return decodeContextItemRow(data, "create_context_item");
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** `update_context_item` — org resolved from the row's scope type, org-admin checked inside. */
+  async updateContextItem(
+    params: UpdateContextItemParams,
+  ): Promise<ScopesRpcResult<ContextItemRow>> {
+    try {
+      requireUserId();
+      const { data, error } = await supabase.rpc("update_context_item", {
+        p_item_id: params.item_id,
+        p_display_name: params.display_name,
+        p_description: params.description,
+        p_category: params.category,
+        p_value_type: params.value_type,
+        p_fetch_hint: params.fetch_hint,
+        p_sensitivity: params.sensitivity,
+        p_tags: params.tags,
+        p_sort_order: params.sort_order,
+        p_status: params.status,
+        p_status_note: params.status_note,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      return decodeContextItemRow(data, "update_context_item");
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
+
+  /** `delete_context_item` — soft archive (`is_active=false`, values retained). */
+  async deleteContextItem(
+    itemId: string,
+  ): Promise<ScopesRpcResult<{ id: string }>> {
+    try {
+      requireUserId();
+      const { error } = await supabase.rpc("delete_context_item", {
+        p_item_id: itemId,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      return ok({ id: itemId });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
 
   /**
    * Write a value into a scope cell via the `set_context_value` SECURITY
@@ -1045,6 +1291,8 @@ export const scopesService = {
     }
   },
 
+  // Value history operations — their RPCs do not exist yet; the surface
+  // stays constant so callers compile today and light up when they ship.
   revertContextValue: notYetImplemented("revert_context_value"),
   deleteContextValue: notYetImplemented("delete_context_value"),
 
@@ -1076,8 +1324,136 @@ export const scopesService = {
     }
   },
 
-  applyTemplate: notYetImplemented("apply_template"),
+  /** `apply_template` — org-explicit; org-access checked inside the RPC. */
+  async applyTemplate(params: {
+    template_id: string;
+    org_id: string;
+  }): Promise<ScopesRpcResult<ApplyTemplateResult>> {
+    try {
+      requireUserId();
+      const { data, error } = await supabase.rpc("apply_template", {
+        p_template_id: params.template_id,
+        p_org_id: params.org_id,
+      });
+      if (error) return err(...mapPgErrorPair(error));
+      // Json-direct RPC (no row schema) — sanctioned two-step cast after a
+      // minimal runtime check; see the type-safety skill, Pattern 1.
+      const result =
+        data && typeof data === "object" && !Array.isArray(data)
+          ? (data as unknown as ApplyTemplateResult)
+          : null;
+      if (!result) {
+        return err("internal", "apply_template returned no result");
+      }
+      return ok(result);
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
 };
+
+// ─── internal: mutation-result decoders ─────────────────────────────────
+//
+// The mutation RPCs return `to_jsonb(row)` (i.e. `Json` in the generated
+// types — no row schema to guard against), so each result passes a minimal
+// runtime shape check before the sanctioned two-step cast, then maps onto
+// the canonical node shape the tree slice stores. A malformed envelope is
+// an `internal` error, never a silently-wrong cache entry.
+
+function isRowObject(data: unknown): data is Record<string, unknown> {
+  return !!data && typeof data === "object" && !Array.isArray(data);
+}
+
+function decodeScopeTypeNode(
+  data: unknown,
+  rpc: string,
+): ScopesRpcResult<ScopeTypeNode> {
+  if (!isRowObject(data) || typeof data.id !== "string") {
+    return err("internal", `${rpc} returned no scope type row`);
+  }
+  // `to_jsonb(context.scope_types)` — matches the generated ScopeTypeRow.
+  const row = data as unknown as ScopeTypeRow;
+  if (typeof row.organization_id !== "string") {
+    return err("internal", `${rpc} returned a row without organization_id`);
+  }
+  return ok({
+    id: row.id,
+    organization_id: row.organization_id,
+    label_singular: row.label_singular ?? "",
+    label_plural: row.label_plural ?? "",
+    icon: row.icon ?? "folder",
+    color: row.color ?? "",
+    max_assignments_per_entity: row.max_assignments_per_entity ?? null,
+    sort_order: row.sort_order ?? 0,
+    parent_type_id: row.parent_type_id ?? null,
+    default_variable_keys: row.default_variable_keys ?? [],
+    scopes: [],
+  });
+}
+
+function decodeScopeNode(data: unknown, rpc: string): ScopesRpcResult<ScopeNode> {
+  if (!isRowObject(data) || typeof data.id !== "string") {
+    return err("internal", `${rpc} returned no scope row`);
+  }
+  // `to_jsonb(context.scopes)` (+ a `type_label` decoration on create).
+  const row = data as unknown as ScopeRow;
+  if (
+    typeof row.organization_id !== "string" ||
+    typeof row.scope_type_id !== "string"
+  ) {
+    return err("internal", `${rpc} returned a row without org/type ids`);
+  }
+  return ok({
+    id: row.id,
+    scope_type_id: row.scope_type_id,
+    organization_id: row.organization_id,
+    name: row.name ?? "",
+    description: row.description ?? "",
+    parent_scope_id: row.parent_scope_id ?? null,
+    settings: row.settings ?? {},
+  });
+}
+
+function decodeContextItemRow(
+  data: unknown,
+  rpc: string,
+): ScopesRpcResult<ContextItemRow> {
+  if (
+    !isRowObject(data) ||
+    typeof data.id !== "string" ||
+    typeof data.scope_type_id !== "string"
+  ) {
+    return err("internal", `${rpc} returned no context item row`);
+  }
+  // `to_jsonb(context.context_items)` — matches the generated ContextItemRow.
+  return ok(data as unknown as ContextItemRow);
+}
+
+// ─── internal: slug resolution for the create/update writes ─────────────
+//
+// Same contract the legacy thunks enforced (a valid, unreserved kebab slug
+// derived from the display name when the caller doesn't supply one) — but as
+// a described `invalid_argument` result instead of a thrown Error.
+
+function resolveSlug(
+  supplied: string | undefined,
+  fallbackName: string,
+): ScopesRpcResult<string> {
+  const slug = supplied?.trim() || toSlug(fallbackName);
+  if (!slug || !isValidSlug(slug)) {
+    return err(
+      "invalid_argument",
+      "A URL slug is required — use letters or numbers in the name",
+    );
+  }
+  if (isReservedSlug(slug)) {
+    return err(
+      "invalid_argument",
+      `"${slug}" is a reserved word — choose another slug`,
+    );
+  }
+  return ok(slug);
+}
 
 // ─── internal: bulk source→scope read over the association edge ─────────
 //

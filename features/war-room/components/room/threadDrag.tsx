@@ -4,7 +4,7 @@
 //
 // Feature e007e2fc — the shared drag-reorder primitives for War Room threads.
 // Built on @dnd-kit/sortable (already a dependency, the canonical reorder lib
-// here — see features/scope-system/components/ReorderDialog.tsx). One place so
+// here — see features/scopes/components/management/ReorderDialog.tsx). One place so
 // the Stage rail and the Grid gallery share identical sensor + sortable wiring.
 //
 // `ThreadDragHandle` is the minimal shape a tile component needs to render a

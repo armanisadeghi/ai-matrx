@@ -15,7 +15,7 @@ import {
   isUuid,
   isValidSlug,
   toSlug,
-} from "@/features/scope-system/utils/slugify";
+} from "@/features/scopes/utils/slugify";
 
 function requiredSlug(value: string, kind: string, supplied?: string): string {
   const slug = supplied?.trim() || toSlug(value);

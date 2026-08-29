@@ -61,7 +61,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ContextItemAddForm } from "./ContextItemAddForm";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 import { useOpenContextItemsWindow } from "@/features/overlays/openers/contextItemsWindow";
-import { ReorderDialog } from "./ReorderDialog";
+import { ReorderDialog } from "@/features/scopes/components/management/ReorderDialog";
 import { ScopeNotFound } from "./ScopeNotFound";
 import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import {

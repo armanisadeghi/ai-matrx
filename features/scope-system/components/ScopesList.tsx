@@ -46,7 +46,7 @@ import { NewScopeInline } from "./NewScopeInline";
 import { ContextItemAddForm } from "./ContextItemAddForm";
 import { ScopeGlyph } from "@/features/scopes/components/ScopeGlyph";
 import { ScopeNotFound } from "./ScopeNotFound";
-import { ReorderDialog } from "./ReorderDialog";
+import { ReorderDialog } from "@/features/scopes/components/management/ReorderDialog";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchScopes,

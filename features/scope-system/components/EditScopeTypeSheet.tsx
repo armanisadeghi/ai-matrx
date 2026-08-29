@@ -18,7 +18,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
-import { ScopeColorPicker } from "./ScopeColorPicker";
+import { ScopeColorPicker } from "@/features/scopes/components/management/ScopeColorPicker";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -34,7 +34,7 @@ import {
   deleteContextItem,
   selectItemsByType,
 } from "@/features/scope-system/redux/contextItemsSlice";
-import { slugifyKey, toSlug } from "@/features/scope-system/utils/slugify";
+import { slugifyKey, toSlug } from "@/features/scopes/utils/slugify";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EditContextItemSheet } from "./EditContextItemSheet";
 

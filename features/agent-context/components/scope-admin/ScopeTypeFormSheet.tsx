@@ -23,7 +23,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { TailwindColorPicker } from "@/components/ui/TailwindColorPicker";
-import { toSlug } from "@/features/scope-system/utils/slugify";
+import { toSlug } from "@/features/scopes/utils/slugify";
 
 interface ScopeTypeFormSheetProps {
   open: boolean;

@@ -10,7 +10,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { contextDb } from "@/utils/supabase/contextDb";
 import type { TablesUpdate } from "@/types/database.types";
-import { isUuid } from "@/features/scope-system/utils/slugify";
+import { isUuid } from "@/features/scopes/utils/slugify";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import type { ReferenceSource } from "@/features/scopes/utils/referenceSource";
 import type {

@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
-import { ScopeColorPicker } from "./ScopeColorPicker";
+import { ScopeColorPicker } from "@/features/scopes/components/management/ScopeColorPicker";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -29,7 +29,7 @@ import {
   createContextItem,
   listScopeTypeItems,
 } from "@/features/scope-system/redux/contextItemsSlice";
-import { slugifyKey } from "@/features/scope-system/utils/slugify";
+import { slugifyKey } from "@/features/scopes/utils/slugify";
 
 type ContextItemDraft = { id: string; display_name: string };
 
