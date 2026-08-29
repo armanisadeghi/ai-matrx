@@ -409,13 +409,14 @@ function ResultBody({ result }: { result: MandateTestResponse }) {
   }
   // An agent that answered with a JSON document gets the document floor; plain
   // prose gets the canonical markdown renderer.
+  let parsed: unknown;
   try {
-    const parsed: unknown = JSON.parse(output);
-    if (isJsonObject(parsed) || Array.isArray(parsed)) {
-      return <StructuredValueView value={parsed} />;
-    }
+    parsed = JSON.parse(output);
   } catch {
-    // Not JSON — it is prose, which is exactly what MarkdownStream renders.
+    parsed = undefined;
+  }
+  if (isJsonObject(parsed) || Array.isArray(parsed)) {
+    return <StructuredValueView value={parsed} />;
   }
   return <MarkdownStream content={output} />;
 }
