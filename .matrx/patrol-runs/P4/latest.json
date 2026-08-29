@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P4",
   "runId": "2026-08-18T131537Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-18T13:18:50.575Z",
-  "summary": "Detector-scope repair and 48-item exception projection are ready for exact-candidate adversarial review",
+  "state": "delivered",
+  "updatedAt": "2026-08-29T14:21:56.488Z",
+  "summary": "Delivered certified P4 detector repair; first shipped in v0.4.790; 48 exception decisions remain open",
   "source": "2026-08-18T131537Z.json",
-  "eventHash": "863d56cb879a253336b0996a8645d5af71c6bc593d1accb9e8f9f32c33b6b9b9"
+  "eventHash": "8dc295ae9564f1b32b1451ba2764c7496c6f48ae7b09b65302fb234e258461d3"
 }
