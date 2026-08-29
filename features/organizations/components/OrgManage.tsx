@@ -439,6 +439,29 @@ export function OrgManage({
             </SectionCard>
           )}
 
+          {/* API keys — machine credentials (owner-gated, ruling C16) */}
+          {isOwner && (
+            <SectionCard
+              id="api-keys"
+              icon={KeyRound}
+              title="API keys"
+              description="Machine credentials for this organization — each key acts as its own service identity, scoped to exactly this org."
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <p className="text-sm text-muted-foreground flex-1">
+                  Create a key for CI, integrations, or partner systems; the
+                  secret is shown once and revocation is immediate.
+                </p>
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/organizations/${slug}/settings/api-keys`}>
+                    Open API keys
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Link>
+                </Button>
+              </div>
+            </SectionCard>
+          )}
+
           {/* Change policy (C-18) — how AI-proposed changes are handled */}
           <SectionCard
             id="change-policy"

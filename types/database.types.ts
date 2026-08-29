@@ -49223,6 +49223,80 @@ export type Database = {
           },
         ]
       }
+      api_keys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_prefix: string
+          expires_at: string | null
+          id: string
+          key_id: string
+          last_used_at: string | null
+          metadata: Json
+          name: string
+          organization_id: string
+          revoked_at: string | null
+          secret_hash: string
+          service_user_id: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_prefix: string
+          expires_at?: string | null
+          id?: string
+          key_id: string
+          last_used_at?: string | null
+          metadata?: Json
+          name: string
+          organization_id: string
+          revoked_at?: string | null
+          secret_hash: string
+          service_user_id: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_prefix?: string
+          expires_at?: string | null
+          id?: string
+          key_id?: string
+          last_used_at?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          revoked_at?: string | null
+          secret_hash?: string
+          service_user_id?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       industries: {
         Row: {
           created_at: string
