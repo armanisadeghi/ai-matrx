@@ -569,22 +569,46 @@ run_gate() {
     # [OK] with real findings inside it — which is the exact opposite of
     # "scream, never block", and is how an advisory gate quietly becomes decor.
     #
-    # IT HAS NOW HAPPENED TWICE, so treat this as a law and not a suggestion:
+    # IT WAS NOT A ONE-OFF. 2026-08-29 every one of the 57 advisory gates was
+    # run by hand and its badge compared against its actual output: THIRTEEN
+    # were printing a green [OK] over real findings. The two known incidents
+    # were the visible corner of a systemic hole:
     #   2026-08-26  check:component-created-by printed "VIOLATION" and exited 0.
     #               229 offenders behind a green [OK] for five days. Fixed by
     #               invoking `:strict` in the advisory list (see below).
     #   2026-08-29  check:migrations printed "Migrations: 88 drifted" and exited
     #               0 — drift NEVER changes that checker's exit code, in either
-    #               mode, so `:strict` could not have saved it either. 88 real
-    #               findings printed as a green [OK]; the only possible fix was
-    #               the banner. `MIGRATION LEDGER DRIFT` / `MIGRATION LEDGER
-    #               UNVERIFIABLE` are now in the list below and the checker's
-    #               header says not to reword them without editing this regex.
+    #               mode, so `:strict` could not have saved it either.
+    # ...and the eleven the audit added, worst first:
+    #     832  unwired work            PURPOSE-BUILT WORK APPEARS UNFINISHED
+    #     198  backend boundaries      BACKEND BOUNDARY APPROVAL REQUIRED
+    #     136  NO NULL ORG ratchet     NO NULL ORG VIOLATED   ← see below
+    #      41  access errors           [LOUD] … still guess why a read failed
+    #      40  agent disclosure        THE DISCLOSURE LAW
+    #      33  URL state               raw history writes
+    #      28  surface blast radius    Surface impact: 9 breaking, 19 warning
+    #      24  UI primitives           [WARN] … hand-rolled control(s)
+    #      16  API contract ratchet    check:api-contracts FAILED
+    #      10  access guards           [WARN]-only findings (THE VIEW LAW)
+    #       2  retired-db ref, doc-claims, stale allowlist entry
     #
-    # The lesson both times: an exit code you did not verify is not a signal.
+    # 🚨 NO NULL ORG IS THE ONE TO LEARN FROM. Its two SIBLING ratchets print
+    # `CANONICAL RATCHET EXCEEDED`, which this regex knows — so they badge
+    # correctly. check-org-null.ts happens to phrase its scream differently, so
+    # the single ratchet with an explicit owner ruling behind it ("make the
+    # release script scream ... NO NULL ORG") was the one printing green, over
+    # 136 new NULL-org rows across 8 tables. Sibling gates are not evidence.
+    #
+    # `\[WARN\]` and `\[LOUD\]` are now matched outright, because they are this
+    # house's scream tokens — a dozen checkers already print one — and matching
+    # the CONVENTION rather than each phrase is what stops the next checker from
+    # falling in. Over-reporting is the safe direction here: a needless [WARN]
+    # costs a scroll, a needless [OK] costs 229 violations.
+    #
+    # The lesson every time: an exit code you did not verify is not a signal.
     # After wiring a gate here, run it once with a KNOWN finding present and
     # confirm this script prints [WARN] or [FAIL] — never take green on faith.
-    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|ROUTE METADATA GAPS|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|PICKERS THAT DO NOT TAKE NEW INPUT|TYPE-ESCAPE HATCHES ABOVE BASELINE|UNACKNOWLEDGED DDL GUARD FIRINGS|CANONICAL RATCHET EXCEEDED|MIGRATION LEDGER DRIFT|MIGRATION LEDGER UNVERIFIABLE|MIGRATION SLOT COLLISION|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
+    if $has_output && grep -qE '\[FAIL\]|\[WARN\]|\[LOUD\]|ADMIN ROUTE REGISTRY GAP|ROUTE METADATA GAPS|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|PICKERS THAT DO NOT TAKE NEW INPUT|TYPE-ESCAPE HATCHES ABOVE BASELINE|UNACKNOWLEDGED DDL GUARD FIRINGS|CANONICAL RATCHET EXCEEDED|MIGRATION LEDGER DRIFT|MIGRATION LEDGER UNVERIFIABLE|MIGRATION SLOT COLLISION|NO NULL ORG VIOLATED|gained a nullable organization_id|IS LYING TO AGENTS|check:api-contracts FAILED|BACKEND BOUNDARY APPROVAL REQUIRED|Surface impact: [0-9]+ breaking|PURPOSE-BUILT WORK APPEARS UNFINISHED|still guess why a read failed|raw history writes|instructional references to the RETIRED|THE DISCLOSURE LAW|stale allowlist entry|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|error\(s\)' "$tmp" 2>/dev/null; then
         echo -e "${YELLOW}[WARN]${NC}  [$step/$total] ${label} (${elapsed}s) — findings below (advisory)"
         print_gate_details "$tmp"
         rm -f "$tmp"
