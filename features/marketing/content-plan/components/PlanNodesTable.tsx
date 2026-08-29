@@ -227,7 +227,10 @@ export function PlanNodesTable({
         : [],
     [boundKeywordIds, keywordPhrases.data],
   );
-  const keywordAccess = useAccessStates("seo_keyword", unresolvedKeywordIds);
+  const {
+    states: keywordAccessStates,
+    refresh: refreshKeywordAccess,
+  } = useAccessStates("seo_keyword", unresolvedKeywordIds);
   const openKeywordIntel = useOpenKeywordWindow();
 
   const statusCategories = useCategories({
@@ -400,11 +403,9 @@ export function PlanNodesTable({
             return (
               <UnresolvedEntityRef
                 id={row.primary_keyword_id}
-                context={
-                  keywordAccess.states.get(row.primary_keyword_id) ?? null
-                }
+                context={keywordAccessStates.get(row.primary_keyword_id) ?? null}
                 onChanged={() => {
-                  keywordAccess.refresh();
+                  refreshKeywordAccess();
                   void keywordPhrases.refetch();
                 }}
                 className="text-xs"
@@ -644,7 +645,8 @@ export function PlanNodesTable({
     keywordPhrases.data,
     keywordPhrases.isLoading,
     keywordPhrases.refetch,
-    keywordAccess,
+    keywordAccessStates,
+    refreshKeywordAccess,
     keywordValues.data,
     openKeywordIntel,
   ]);
