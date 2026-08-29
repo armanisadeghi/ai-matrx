@@ -472,6 +472,18 @@ export interface ScopeValuesEntry {
   error: string | null;
 }
 
+/**
+ * Cache entry for one scope type's ACTIVE context-item catalog (the item
+ * DEFINITIONS, not per-scope values — those live in `ScopeValuesEntry`).
+ * Mirrors `CategoriesEntry`.
+ */
+export interface ContextItemsEntry {
+  status: "idle" | "loading" | "ready" | "error";
+  items: ContextItemRow[];
+  fetchedAt: number | null;
+  error: string | null;
+}
+
 // ─── Templates (read-only catalog) ─────────────────────────────────────
 
 export interface ContextTemplate {

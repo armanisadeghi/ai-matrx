@@ -35,23 +35,25 @@ import {
   makeSelectScopesForType,
 } from "@/features/scopes/redux/selectors/tree";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { ensureScopeTypeItems } from "@/features/scopes/redux/thunks/ensureScopeTypeItems";
 import {
-  listScopeTypeItems,
-  selectItemsByType,
-  selectItemsLoadedForType,
-  type ContextItem,
-  type ContextValueType,
-} from "@/features/scope-system/redux/contextItemsSlice";
+  makeSelectItemsForType,
+  makeSelectItemsStatusForType,
+} from "@/features/scopes/redux/selectors/context-items";
+import type {
+  ContextItemRow,
+  ContextItemValueType,
+} from "@/features/scopes/types";
 
 /** Append/overwrite only makes sense for a cell that IS text. */
-const TEXT_COMPATIBLE_VALUE_TYPES: ReadonlySet<ContextValueType> = new Set([
+const TEXT_COMPATIBLE_VALUE_TYPES: ReadonlySet<ContextItemValueType> = new Set([
   "string",
   "object",
   "array",
   "document",
 ]);
 
-export function isTextCompatibleContextItem(item: ContextItem): boolean {
+export function isTextCompatibleContextItem(item: ContextItemRow): boolean {
   return TEXT_COMPATIBLE_VALUE_TYPES.has(item.value_type);
 }
 
@@ -61,7 +63,7 @@ export interface ScopeContextTarget {
   scopeId: string;
   contextItemId: string;
   /** The full picked item — present only when `contextItemId` changed in this emit. */
-  item?: ContextItem;
+  item?: ContextItemRow;
 }
 
 interface ScopeContextTargetPickerProps {
@@ -100,16 +102,22 @@ export function ScopeContextTargetPicker({
     selectScopesForType(s, scopeTypeId || null),
   );
 
-  const itemsLoaded = useAppSelector((s) =>
-    scopeTypeId ? selectItemsLoadedForType(s, scopeTypeId) : false,
-  );
+  const selectItemsForType = useMemo(() => makeSelectItemsForType(), []);
   const items = useAppSelector((s) =>
-    scopeTypeId ? selectItemsByType(s, scopeTypeId) : [],
+    selectItemsForType(s, scopeTypeId || null),
   );
+  const selectItemsStatusForType = useMemo(
+    () => makeSelectItemsStatusForType(),
+    [],
+  );
+  const itemsStatus = useAppSelector((s) =>
+    selectItemsStatusForType(s, scopeTypeId || null),
+  );
+  const itemsLoaded = itemsStatus === "ready" || itemsStatus === "error";
 
   useEffect(() => {
-    if (scopeTypeId && !itemsLoaded) dispatch(listScopeTypeItems(scopeTypeId));
-  }, [scopeTypeId, itemsLoaded, dispatch]);
+    if (scopeTypeId) void dispatch(ensureScopeTypeItems(scopeTypeId));
+  }, [scopeTypeId, dispatch]);
 
   const emit = (next: Partial<ScopeContextTarget>) =>
     onChange({

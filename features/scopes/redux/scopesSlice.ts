@@ -24,6 +24,8 @@ import type {
   AssociationEdge,
   AssociationsEntry,
   CategoriesEntry,
+  ContextItemRow,
+  ContextItemsEntry,
   PlatformCategory,
   EntityScopesEntry,
   OrgNode,
@@ -132,6 +134,15 @@ export interface ScopesState {
    * category NOUNS, that caches the assignment EDGES.
    */
   categoriesByDimension: Record<string, CategoriesEntry>;
+
+  /**
+   * Per-scope-type ACTIVE context-item catalogs (`context.context_items`),
+   * keyed by scope_type_id. The item DEFINITIONS — reference data, like the
+   * tree — never the per-scope cell values (those live in the high-churn
+   * `contextValues` sidecar slice). Populated lazily by
+   * `ensureScopeTypeItems`; session-scoped (not persisted).
+   */
+  contextItemsByTypeId: Record<string, ContextItemsEntry>;
 }
 
 const initialState: ScopesState = {
@@ -146,6 +157,7 @@ const initialState: ScopesState = {
   entityScopesByKey: {},
   associationsByKey: {},
   categoriesByDimension: {},
+  contextItemsByTypeId: {},
 };
 
 const scopesSlice = createSlice({
@@ -490,6 +502,43 @@ const scopesSlice = createSlice({
         categories: [...categories, action.payload.category],
         fetchedAt: prev?.fetchedAt ?? Date.now(),
         error: null,
+      };
+    },
+
+    // ─── Context-item catalogs (per scope type) ──────────────────
+    contextItemsFetchPending(
+      state,
+      action: PayloadAction<{ scopeTypeId: string }>,
+    ) {
+      const prev = state.contextItemsByTypeId[action.payload.scopeTypeId];
+      state.contextItemsByTypeId[action.payload.scopeTypeId] = {
+        status: "loading",
+        items: prev?.items ?? [],
+        fetchedAt: prev?.fetchedAt ?? null,
+        error: null,
+      };
+    },
+    contextItemsFetchFulfilled(
+      state,
+      action: PayloadAction<{ scopeTypeId: string; items: ContextItemRow[] }>,
+    ) {
+      state.contextItemsByTypeId[action.payload.scopeTypeId] = {
+        status: "ready",
+        items: action.payload.items,
+        fetchedAt: Date.now(),
+        error: null,
+      };
+    },
+    contextItemsFetchRejected(
+      state,
+      action: PayloadAction<{ scopeTypeId: string; error: string }>,
+    ) {
+      const prev = state.contextItemsByTypeId[action.payload.scopeTypeId];
+      state.contextItemsByTypeId[action.payload.scopeTypeId] = {
+        status: "error",
+        items: prev?.items ?? [],
+        fetchedAt: prev?.fetchedAt ?? null,
+        error: action.payload.error,
       };
     },
 
