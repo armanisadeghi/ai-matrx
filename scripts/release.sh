@@ -319,6 +319,13 @@ verify_patrol_delivery
 # This gate is deliberately outside --no-gates. A release may skip broad
 # advisory suites, but it may never ship a frontend that can send the migrated
 # Vault/Authenticator traffic without one explicit organization context.
+info "Verifying every @ai-matrx package is declared and installed at npm latest..."
+if pnpm check:matrx-packages; then
+    ok "Matrx-owned packages are current."
+else
+    fail "MATRX PACKAGE VERSION DRIFT — run pnpm sync:matrx-packages, commit package.json + pnpm-lock.yaml, and retry."
+fi
+
 info "Enforcing the organization-context transport contract..."
 if pnpm check:organization-context; then
     ok "Organization-context transport contract passed."

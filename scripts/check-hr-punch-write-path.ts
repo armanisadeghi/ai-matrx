@@ -280,6 +280,20 @@ const EXPECTED_CHECKS = [
   // declares itself in platform.client_callable_door and keeps its grant. This check asserts the
   // trigger exists and is enabled, so it cannot be silently dropped, re-opening the class at birth.
   "definer_grant_ddl_guard_installed",
+  // hr_l3_111 — the SQL half of `features/hr/routes.ts`'s opening law, NOBODY HAND-ASSEMBLES AN HR
+  // URL. HR is strictly single-employer and SPEC-UI-IA §1 resolves the active employer from `?org=`
+  // FIRST, so an `/hr` link with no employer lands its reader wherever the picker chooses — proven
+  // live on 2026-08-28, where one bare `/hr/tasks` link rewrote every subsequent link to a DIFFERENT
+  // employer and bare `/hr` landed in a third. `features/hr/__tests__/no-hand-built-hr-urls.test.ts`
+  // closed that for `.ts`/`.tsx` and is structurally blind to a `||` concatenation inside a
+  // CREATE FUNCTION body — which is where the 26 worst instances were living, including
+  // `hr._wf_notify`: the notification spine, whose link is the one a person follows out of an EMAIL,
+  // with no HR page open to inherit an employer from. It had already written 535 employer-free deep
+  // links across 2 organizations. Detector: `hr.hr_links_without_employer()`, narrowed to navigation
+  // position the way the TS guard is (a link literal opens at the path, so `'POST /hr/…'` route
+  // mentions and prose are ignored). Falsified by re-creating the pre-fix `hr._wf_notify` line in a
+  // throwaway function: the check went red on it and green again when it was dropped.
+  "hr_deep_links_carry_the_employer",
 ] as const;
 
 interface ConformanceRow {

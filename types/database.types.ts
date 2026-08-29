@@ -43082,6 +43082,7 @@ export type Database = {
         Args: { p_class: string; p_policy: Json }
         Returns: Json
       }
+      _leave_deduction_clause: { Args: { p_fig: Json }; Returns: string }
       _leave_floor_field: {
         Args: {
           p_configured: Json
@@ -44085,6 +44086,15 @@ export type Database = {
         }[]
       }
       heal_grant_drift: { Args: never; Returns: Json }
+      hr_links_without_employer: {
+        Args: never
+        Returns: {
+          function_name: string
+          line: string
+          line_no: number
+          schema_name: string
+        }[]
+      }
       incident_excluded: {
         Args: { p_incident: string; p_user: string }
         Returns: boolean
@@ -57260,6 +57270,15 @@ export type Database = {
       __dump_schema_ddl: { Args: { p_schema: string }; Returns: string }
       __dump_schema_routines: { Args: { p_schema: string }; Returns: string }
       __hr_punch_write_path_conformance: {
+        Args: never
+        Returns: {
+          check_key: string
+          detail: Json
+          ok: boolean
+          severity: string
+        }[]
+      }
+      __migration_slot_guard_conformance: {
         Args: never
         Returns: {
           check_key: string

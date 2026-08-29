@@ -33,7 +33,7 @@ Defaults: scope = **everything**, delivery = **commit and push**. Narrow scope o
 ## Checklist
 
 ```
-- [ ] 1. Types synced & no type errors    → pnpm sync-types
+- [ ] 1. Matrx packages + types current   → pnpm sync-types
 - [ ] 2. No unapplied/drifted migrations   → pnpm check:migrations
 - [ ] 3. Touch-based checks (table below)
 - [ ] 4. Fix everything the checks surfaced
@@ -42,7 +42,7 @@ Defaults: scope = **everything**, delivery = **commit and push**. Narrow scope o
 
 ### 1. Types — `pnpm sync-types`
 
-Regenerates Supabase DB types + Python API types, then type-checks. Must print **"Type-check passed."** Errors → fix per the **`type-safety`** skill (DB types are canonical; never `as any` / `as unknown` / `@ts-ignore` / `@ts-expect-error`; escalate what you can't fix properly). Re-run until green.
+Refreshes every `@ai-matrx/*` dependency from npm `latest`, regenerates Supabase DB types + Python API types, then type-checks. Commit `package.json` + `pnpm-lock.yaml` when package resolution changes. Must print **"Type-check passed."** Errors → fix per the **`type-safety`** skill (DB types are canonical; never `as any` / `as unknown` / `@ts-ignore` / `@ts-expect-error`; escalate what you can't fix properly). Re-run until green.
 
 ### 2. Migrations — `pnpm check:migrations`
 

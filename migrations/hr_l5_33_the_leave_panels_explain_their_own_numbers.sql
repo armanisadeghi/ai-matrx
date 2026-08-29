@@ -567,10 +567,13 @@ begin
      not like '%coalesce(v_projav, (v_fig ->> ''available'')::numeric, 0)%' then
     raise exception 'hr_l5_33 B: the preview is not using the door''s own fallback quantity';
   end if;
+  -- The un-projected refusal wording must exist, because it is the ONLY thing standing in the
+  -- gap the old body fell through: a request starting today, or past the horizon, that the door
+  -- will refuse. Its absence means the silence is back.
   if (select pg_get_functiondef(p.oid) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'hr' and p.proname = 'leave_request_preview')
-     like '%v_proj_sentence := null;%v_proj_sentence := null;%' then
-    raise exception 'hr_l5_33 B: a second silent fall-through is back in the preview';
+     not like '% available, so it will not be accepted%' then
+    raise exception 'hr_l5_33 B: the un-projected refusal sentence is gone — the silence is back';
   end if;
 
   ---------------------------------------------------------------- contracts

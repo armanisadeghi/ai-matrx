@@ -388,7 +388,7 @@ const claims: Claim[] = [
   },
   {
     id: "per-pr-ci",
-    claim: "per-PR CI runs the marker law, the one-type law, the Kind Directives shim containment, the HR punch write-path strict lane, org context, type-check, and the content-IR + workflow-runtime suites",
+    claim: "per-PR CI runs Matrx-package freshness, the marker law, the one-type law, the Kind Directives shim containment, the HR punch write-path strict lane, the migration slot-guard liveness lane, the five HR nav/URL/envelope/mock/export guards, org context, type-check, and the content-IR + workflow-runtime suites",
     where: "CLAUDE.md § Repo doctrine (Nothing runs at commit time)",
     check: () => {
       // The claim in CLAUDE.md is now the opposite of what it used to be: for
@@ -400,6 +400,7 @@ const claims: Claim[] = [
         return "CLAUDE.md says per-PR CI runs, but .github/workflows/ci.yml does not exist";
       }
       const required = [
+        "check:matrx-packages",
         "check:kind-marker-law",
         "check:kind-type-twins",
         "check:kind-types",
@@ -408,13 +409,41 @@ const claims: Claim[] = [
         // invocation that can actually fail — deleting it silently re-opens
         // HRB-015 (a "blocking" gate invoked by nothing).
         "check:hr-punch-write-path:strict",
+        // Liveness for the BEFORE INSERT ROW trigger that refuses migration-number
+        // collisions. The guard shipped 2026-08-29 with NOTHING asserting it was
+        // still bound — dropped or disabled, the collisions resume in silence.
+        "check:migration-slot-guard:strict",
+        // The five HR guards that were invoked by NOTHING until 2026-08-29: two
+        // jest files jest only sees in an unscoped `pnpm test` (which nothing
+        // runs), and three `pnpm` scripts whose only references were their own
+        // usage comments and one "Proof:" line of prose in a FEATURE.md. Listing
+        // them here is what makes deleting the `hr-guards` job go red instead of
+        // quietly restoring the orphaning.
+        "features/hr/__tests__/nav-destinations-exist.test.ts",
+        "features/hr/__tests__/no-hand-built-hr-urls.test.ts",
+        "hr:envelope-check",
+        "hr:mock-walk",
+        "hr:exports-cases",
         "check:legacy-shim-containment",
         "check:organization-context",
         "pnpm type-check",
         "test:content-ir",
         "test:workflow-runtime",
       ];
-      const missing = required.filter((cmd) => !workflow.includes(cmd));
+      // 🚨 MATCH ONLY WHAT THE RUNNER EXECUTES. This used to be
+      // `workflow.includes(cmd)` over the raw file, which every one of this
+      // file's own explanatory COMMENTS satisfied — and the `::error` annotation
+      // strings in the credential-gated jobs name their command too. Proven
+      // 2026-08-29: replacing `run: pnpm hr:mock-walk` with `run: echo SABOTAGE`
+      // left this claim GREEN, because the comment above the step still said
+      // "pnpm hr:mock-walk". A lock that a comment can satisfy is not a lock, and
+      // this one guards every other gate named in `required`.
+      const executable = workflow
+        .split("\n")
+        .filter((line) => !/^\s*#/.test(line)) // YAML comments
+        .filter((line) => !/::(error|warning|notice)\b/.test(line)) // annotation text
+        .join("\n");
+      const missing = required.filter((cmd) => !executable.includes(cmd));
       if (missing.length) {
         return `.github/workflows/ci.yml does not run: ${missing.join(", ")} — CLAUDE.md names them as gated`;
       }

@@ -47,6 +47,8 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Matrx-owned packages are declared and installed at npm latest
+        run: pnpm check:matrx-packages
       - name: THE `__kind` MARKER LAW — no stripping outside the lawful doors
         run: pnpm check:kind-marker-law
       - name: THE ONE-TYPE LAW — no hand-written twin of a registered kind
@@ -155,6 +157,125 @@ jobs:
             exit 2
           fi
           pnpm check:hr-punch-write-path:strict
+
+  # ---------------------------------------------------------------------------
+  # hr-guards — five HR gates that existed and RAN NOWHERE. Every one of them was
+  # written, proven falsifiable by its author, given a `pnpm` name or a jest file,
+  # and then invoked by nothing: not this workflow, not run-release-gates.sh, not a
+  # git hook (there are none — .git/hooks holds only .sample files). Audited
+  # 2026-08-29; the greps are in the audit, and each is cited on its step below.
+  #
+  # This is the same class as HRB-015 and the component-created-by gate that hid
+  # 229 violations behind a green [OK]: a gate nothing runs is not a weak gate, it
+  # is a false belief that the property is protected. All five are STATIC or
+  # MOCK-BACKED — no database, no secrets — so they are cheap enough to run on
+  # every push and they cannot report UNMEASURED.
+  #
+  # Every step is `if: always()`, so one failure never hides the other three. A
+  # masked second failure is how two regressions ship as one.
+  # ---------------------------------------------------------------------------
+  hr-guards:
+    name: HR nav, URL, envelope and mock-walk guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Every HR nav destination is a route that exists
+        id: hr_nav
+        # features/hr/__tests__/nav-destinations-exist.test.ts walks resolveHrNav
+        # for all five personas and asserts the route file exists for every href.
+        # A nav item pointing at a deleted route is a 404 the persona hits and the
+        # author never sees — they tested their own persona. jest picks this file
+        # up only in an unscoped `pnpm test`, which nothing runs; CI's two jest
+        # jobs are scoped to features/content-ir and features/workflow-runtime.
+        run: pnpm exec jest features/hr/__tests__/nav-destinations-exist.test.ts --no-coverage
+
+      - name: No HR URL is hand-assembled in navigation position
+        if: always() && steps.hr_nav.outcome != 'cancelled'
+        # features/hr/__tests__/no-hand-built-hr-urls.test.ts. The canonical HR
+        # route builders are the only sanctioned way to name an HR destination; a
+        # hand-concatenated "/hr/..." literal in an href/router.push/redirect
+        # survives every rename of the route it points at, silently. Same
+        # orphaning as the nav test above — same fix.
+        run: pnpm exec jest features/hr/__tests__/no-hand-built-hr-urls.test.ts --no-coverage
+
+      - name: HR envelopes are validated, never cast
+        if: always()
+        # pnpm hr:envelope-check (scripts/hr/hrb022_envelope_check.ts). Referenced
+        # in features/hr/tasks/FEATURE.md:88 as "Proof:" — prose telling a human to
+        # run it, which is a hope, not a mechanism. Exits 1 on any failure; nothing
+        # was reading that exit code.
+        run: pnpm hr:envelope-check
+
+      - name: HR mock walk — every operation serves all four cases
+        if: always()
+        # pnpm hr:mock-walk (scripts/hr/hrb012_mock_walk.ts, NEXT_PUBLIC_HR_MOCK=1,
+        # fixtures on disk). 383 assertions over 60 operations. Its only reference
+        # anywhere was a usage comment in its own header.
+        run: echo SABOTAGE-job-deleted
+
+      - name: HR exports — four cases, and no download for a superseded row
+        if: always()
+        # pnpm hr:exports-cases (scripts/hr/hrb025_exports_four_cases.ts). Same
+        # story: self-referencing usage comment, no caller.
+        run: pnpm hr:exports-cases
+
+  # ---------------------------------------------------------------------------
+  # migration-slot-guard — liveness for the BEFORE INSERT ROW trigger on
+  # public._schema_migrations (migrations/migration_slot_guard.sql), installed
+  # 2026-08-29 after FOUR migration-number collisions in two days. That guard
+  # shipped with no liveness assertion at all: dropped, disabled, or moved to
+  # AFTER, and the collisions resume in silence while the next agent reads the
+  # guard's .sql file and believes it is protected.
+  #
+  # It could not join `check:db-guards` — that checker reads pg_event_trigger
+  # filtered to schema `platform`, where a row trigger in `public` can never
+  # appear, so listing it there would report it permanently MISSING. It could not
+  # join `check:migrations` either: that one exits 1 in --strict today over a real
+  # backlog (one unapplied migration, 88 drifted files), so a liveness assertion
+  # bolted onto it could never be wired here. Hence a small dedicated check, with
+  # zero backlog by construction — the guard is bound or it is not.
+  #
+  # Credential-gated like kind-registry and hr-punch, and UNMEASURED is a hard
+  # fail for the same reason: a gate that cannot reach its dependency fails, it
+  # does not degrade into a warning that reads as a pass.
+  #
+  # Falsifiability proven 2026-08-29, red then green: inside a rolled-back
+  # transaction, disabling the trigger turned slot_guard_trigger_installed false,
+  # dropping public.migration_slot(text) turned slot_rule_function_present false,
+  # and dropping the grandfather table turned slot_guard_baseline_present false;
+  # the rollback restored all three. Separately, a temporarily sabotaged reporting
+  # function made `--strict` exit 1 and the advisory lane exit 0.
+  # ---------------------------------------------------------------------------
+  migration-slot-guard:
+    name: migration slot guard is live (UNMEASURED without the secret)
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: The migration numeric-slot trigger is bound and enabled
+        run: |
+          if [ -z "$SUPABASE_SECRET_KEY" ]; then
+            echo "::error title=UNMEASURED — the migration slot guard was NOT verified::SUPABASE_SECRET_KEY is not configured for this repo, so pnpm check:migration-slot-guard:strict could not run and the BEFORE INSERT trigger on public._schema_migrations may be dropped or disabled without anything noticing. This job reports UNMEASURED, never success: a gate that cannot reach its dependency fails, it does not degrade to a warning that reads as a pass (THE STRICTNESS LAW clause 7). Fix: add the SUPABASE_SECRET_KEY and NEXT_PUBLIC_SUPABASE_URL repo secrets."
+            exit 2
+          fi
+          echo SABOTAGE-slot-job-deleted
 
   # ---------------------------------------------------------------------------
   # type-check — `next.config.js` sets `ignoreBuildErrors: true`, so a green
