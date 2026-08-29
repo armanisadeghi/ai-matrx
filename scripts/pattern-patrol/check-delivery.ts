@@ -2,7 +2,10 @@
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 
-import { checkContainedBlockedCandidates, checkPatrolCommits } from "./delivery-policy";
+import {
+  checkContainedPatrolCandidates,
+  checkPatrolCommits,
+} from "./delivery-policy";
 
 function value(name: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
@@ -26,13 +29,21 @@ function verifiedRemoteReleaseBase(repoRoot: string, head: string): string {
     .filter(Boolean);
   for (const tag of tags) {
     const localCommit = git(repoRoot, ["rev-parse", `${tag}^{commit}`]);
-    const remote = git(repoRoot, ["ls-remote", "--tags", "origin", `refs/tags/${tag}*`])
+    const remote = git(repoRoot, [
+      "ls-remote",
+      "--tags",
+      "origin",
+      `refs/tags/${tag}*`,
+    ])
       .split("\n")
       .filter(Boolean);
-    const peeled = remote.find((line) => line.endsWith(`refs/tags/${tag}^{}`)) ?? remote[0];
+    const peeled =
+      remote.find((line) => line.endsWith(`refs/tags/${tag}^{}`)) ?? remote[0];
     if (peeled?.split(/\s+/)[0] === localCommit) return tag;
   }
-  throw new Error("no version tag verified against origin is an ancestor of the release head");
+  throw new Error(
+    "no version tag verified against origin is an ancestor of the release head",
+  );
 }
 
 try {
@@ -41,10 +52,12 @@ try {
   const base = value("base") ?? verifiedRemoteReleaseBase(repoRoot, head);
   const problems = [
     ...checkPatrolCommits({ repoRoot, base, head }),
-    ...checkContainedBlockedCandidates({ repoRoot, head }),
+    ...checkContainedPatrolCandidates({ repoRoot, head }),
   ];
   if (problems.length > 0) {
-    console.error("PATROL DELIVERY BLOCKED — uncertified or unrecorded patrol work found:");
+    console.error(
+      "PATROL DELIVERY BLOCKED — uncertified or unrecorded patrol work found:",
+    );
     for (const problem of problems) console.error(`- ${problem}`);
     process.exitCode = 1;
   } else {

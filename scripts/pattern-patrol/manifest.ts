@@ -38,6 +38,7 @@ export interface AutomationUpdateSpec {
 
 export const PATROL_PATHS = {
   repoRoot: "/Users/armanisadeghi/code/matrx-frontend",
+  workspaceRoot: "/Users/armanisadeghi/code",
   // The patrol docs live under systems/improvement/. This pointed at
   // systems/pattern-patrols for long enough that every generated prompt told
   // its agent to read four files that do not exist — a patrol reading nothing
@@ -236,7 +237,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=SU;BYHOUR=1;BYMINUTE=10",
     cadence: "Sundays 1:10 AM",
     runInstruction:
-      "Find controls that offer a set of choices with no way to add one, and close them: a type-ahead offering Create \"what you typed\", writing through that vocabulary's ONE existing path, selecting the new value at once. Adding a SECOND write path is the failure mode to avoid — find the canonical creator before editing. A platform-shared vocabulary is the one exception and still never a dead end: say so in the control and offer the local-override path. Escalate only when the vocabulary's owner, or what \"a new one\" means, is a genuine product question.",
+      'Find controls that offer a set of choices with no way to add one, and close them: a type-ahead offering Create "what you typed", writing through that vocabulary\'s ONE existing path, selecting the new value at once. Adding a SECOND write path is the failure mode to avoid — find the canonical creator before editing. A platform-shared vocabulary is the one exception and still never a dead end: say so in the control and offer the local-override path. Escalate only when the vocabulary\'s owner, or what "a new one" means, is a genuine product question.',
   },
 ] as const satisfies readonly PatrolDefinition[];
 
@@ -245,6 +246,8 @@ export const FLEET_HEALTH = {
   automationName: "Pattern Patrol Fleet Health",
   rrule: "FREQ=DAILY;BYHOUR=7;BYMINUTE=10",
   cadence: "Daily 7:10 AM",
+  projectId: "242533b6-0e6c-4f39-b05e-7f5274ef78f0",
+  cwd: PATROL_PATHS.workspaceRoot,
 } as const;
 
 function patrolPrompt(patrol: PatrolDefinition): string {
@@ -300,6 +303,7 @@ CHECK:
 - Never edit product code, another patrol's report, or another patrol's memory. Update only Fleet Health memory with audited ids, evidence, time, and one learning.
 - HUMAN-LANGUAGE CONTRACT: speak to Arman as a non-technical product owner. Never ask him to review a task id, record, ref, hash, controller, prerequisite, or other internal machinery. Translate internal evidence into: the patrol's plain-English job, what happened in the product or check, what the system will do next, and whether any real product decision remains. Keep ids and technical evidence in Fleet Health memory, not in the human ask.
 - SELF-REPAIR CONTRACT: retry, reconcile, or create focused machinery work for operational failures without asking Arman to diagnose them. Ask Arman only when a genuine product choice, policy exception, external account/capacity decision, or destructive action requires his authority. Phrase that request as one ordinary-language question with the consequences of each option.
+- ALL-REPOSITORY REPAIR CONTRACT: run from ${PATROL_PATHS.workspaceRoot}, where every Matrx repository is directly available. Trace deterministic failures into the owning repository and repair internal tools, integrations, local services, or orchestration instead of turning them into Arman's diagnosis task. Use each repository's own instructions and authorized local credentials/browser path. Report an external blocker only after the in-scope repair paths are genuinely exhausted.
 
 RESPONSE: always report the health of all registered patrols in plain English and separately state how many new runs were checked. If clean, begin "PATTERN PATROL FLEET HEALTHY — <number> new runs checked." If unhealthy, begin "AUTOMATION DEGRADED — ACTION REQUIRED" and give one terse bullet per affected patrol: its job, what failed, user impact if known, and the automatic next step. Do not include task ids unless Arman explicitly asks for technical evidence. End with a question only when Arman truly must make a decision; otherwise end by stating what the system is retrying or repairing. Never make failed or incomplete work look clean.`;
 }
@@ -330,6 +334,7 @@ export function automationUpdateSpecs(): AutomationUpdateSpec[] {
       name: FLEET_HEALTH.automationName,
       prompt: fleetHealthPrompt(),
       rrule: FLEET_HEALTH.rrule,
+      projectId: FLEET_HEALTH.projectId,
       executionEnvironment: "local" as const,
       destination: "local" as const,
     },

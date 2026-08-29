@@ -12,7 +12,9 @@ export interface PatrolCommitTrailers {
   candidateSha?: string;
 }
 
-export function parsePatrolCommitTrailers(message: string): PatrolCommitTrailers | undefined {
+export function parsePatrolCommitTrailers(
+  message: string,
+): PatrolCommitTrailers | undefined {
   const value = (name: string) =>
     message.match(new RegExp(`^${name}:\\s*(.+?)\\s*$`, "im"))?.[1]?.trim();
   const patrolId = value("Patrol-Id");
@@ -20,7 +22,11 @@ export function parsePatrolCommitTrailers(message: string): PatrolCommitTrailers
   const delivery = value("Patrol-Delivery");
   const candidateSha = value("Patrol-Candidate");
   if (!patrolId && !runId && !delivery && !candidateSha) return undefined;
-  if (!patrolId || !runId || (delivery !== "certified" && delivery !== "none")) {
+  if (
+    !patrolId ||
+    !runId ||
+    (delivery !== "certified" && delivery !== "none")
+  ) {
     throw new Error(
       "patrol commit trailers require Patrol-Id, Patrol-Run, and Patrol-Delivery: certified|none",
     );
@@ -31,7 +37,10 @@ export function parsePatrolCommitTrailers(message: string): PatrolCommitTrailers
   return { patrolId, runId, delivery, candidateSha };
 }
 
-export function isPatrolCommit(message: string, paths: readonly string[]): boolean {
+export function isPatrolCommit(
+  message: string,
+  paths: readonly string[],
+): boolean {
   return (
     /^Patrol-(?:Id|Run|Delivery|Candidate):/im.test(message) ||
     paths.some(
@@ -47,6 +56,14 @@ function recordPath(patrolId: string, runId: string): string {
   return `.matrx/patrol-runs/${patrolId}/${runId}.json`;
 }
 
+function permanentRecordIdentity(
+  path: string,
+): { patrolId: string; runId: string } | undefined {
+  const match = /^\.matrx\/patrol-runs\/([^/]+)\/([^/]+)\.json$/.exec(path);
+  if (!match || match[2] === "latest") return undefined;
+  return { patrolId: match[1], runId: match[2] };
+}
+
 function git(repoRoot: string, args: string[]): string {
   return execFileSync("git", args, { cwd: repoRoot, encoding: "utf8" }).trim();
 }
@@ -59,7 +76,9 @@ function loadRecordAtRef(
 ): PatrolRunRecord {
   const path = recordPath(patrolId, runId);
   try {
-    return JSON.parse(git(repoRoot, ["show", `${recordRef}:${path}`])) as PatrolRunRecord;
+    return JSON.parse(
+      git(repoRoot, ["show", `${recordRef}:${path}`]),
+    ) as PatrolRunRecord;
   } catch {
     throw new Error(`missing permanent run record in ${recordRef}: ${path}`);
   }
@@ -83,34 +102,52 @@ function loadRemoteAuthority(input: {
   try {
     git(repoRoot, ["merge-base", "--is-ancestor", candidateSha, remoteSha]);
   } catch {
-    throw new Error(`remote authority ${ref} does not preserve candidate ${candidateSha}`);
+    throw new Error(
+      `remote authority ${ref} does not preserve candidate ${candidateSha}`,
+    );
   }
   return { ref, record: loadRecordAtRef(repoRoot, remoteSha, patrolId, runId) };
 }
 
-function recordAppendProblems(repoRoot: string, commitSha: string, paths: readonly string[]): string[] {
+function recordAppendProblems(
+  repoRoot: string,
+  commitSha: string,
+  paths: readonly string[],
+): string[] {
   const problems: string[] = [];
   const recordPaths = paths.filter(
-    (path) => path.startsWith(".matrx/patrol-runs/") && path.endsWith(".json") && !path.endsWith("/latest.json"),
+    (path) =>
+      path.startsWith(".matrx/patrol-runs/") &&
+      path.endsWith(".json") &&
+      !path.endsWith("/latest.json"),
   );
   for (const path of recordPaths) {
     let current: PatrolRunRecord;
     try {
-      current = JSON.parse(git(repoRoot, ["show", `${commitSha}:${path}`])) as PatrolRunRecord;
+      current = JSON.parse(
+        git(repoRoot, ["show", `${commitSha}:${path}`]),
+      ) as PatrolRunRecord;
     } catch {
-      problems.push(`${path}: permanent run records may not be deleted or made unreadable`);
+      problems.push(
+        `${path}: permanent run records may not be deleted or made unreadable`,
+      );
       continue;
     }
     const validation = validatePatrolRunRecord(current);
     problems.push(...validation.map((problem) => `${path}: ${problem}`));
     let parent: PatrolRunRecord | undefined;
     try {
-      parent = JSON.parse(git(repoRoot, ["show", `${commitSha}^:${path}`])) as PatrolRunRecord;
+      parent = JSON.parse(
+        git(repoRoot, ["show", `${commitSha}^:${path}`]),
+      ) as PatrolRunRecord;
     } catch {
       parent = undefined;
     }
     if (!parent) continue;
-    if (parent.patrolId !== current.patrolId || parent.runId !== current.runId) {
+    if (
+      parent.patrolId !== current.patrolId ||
+      parent.runId !== current.runId
+    ) {
       problems.push(`${path}: permanent run identity changed`);
       continue;
     }
@@ -119,9 +156,13 @@ function recordAppendProblems(repoRoot: string, commitSha: string, paths: readon
       continue;
     }
     const prefixChanged = parent.events.some(
-      (event, index) => JSON.stringify(event) !== JSON.stringify(current.events[index]),
+      (event, index) =>
+        JSON.stringify(event) !== JSON.stringify(current.events[index]),
     );
-    if (prefixChanged) problems.push(`${path}: permanent run history was rewritten instead of appended`);
+    if (prefixChanged)
+      problems.push(
+        `${path}: permanent run history was rewritten instead of appended`,
+      );
   }
   return problems;
 }
@@ -137,17 +178,29 @@ export function authorizePatrolCommit(input: {
   const problems: string[] = [];
   let record: PatrolRunRecord;
   try {
-    record = loadRecordAtRef(repoRoot, recordRef, trailers.patrolId, trailers.runId);
+    record = loadRecordAtRef(
+      repoRoot,
+      recordRef,
+      trailers.patrolId,
+      trailers.runId,
+    );
   } catch (error) {
     return [(error as Error).message];
   }
   problems.push(...validatePatrolRunRecord(record));
-  if (record.patrolId !== trailers.patrolId || record.runId !== trailers.runId) {
-    problems.push("commit trailers do not match the permanent run record identity");
+  if (
+    record.patrolId !== trailers.patrolId ||
+    record.runId !== trailers.runId
+  ) {
+    problems.push(
+      "commit trailers do not match the permanent run record identity",
+    );
   }
 
   if (trailers.delivery === "none") {
-    const productPaths = paths.filter((changedPath) => !changedPath.startsWith(".matrx/"));
+    const productPaths = paths.filter(
+      (changedPath) => !changedPath.startsWith(".matrx/"),
+    );
     if (productPaths.length > 0) {
       problems.push(
         `Patrol-Delivery: none changed non-report paths: ${productPaths.slice(0, 5).join(", ")}`,
@@ -175,17 +228,22 @@ export function authorizePatrolCommit(input: {
   }
   if (
     authority &&
-    canonicalPatrolRecordJson(authority.record) !== canonicalPatrolRecordJson(record)
+    canonicalPatrolRecordJson(authority.record) !==
+      canonicalPatrolRecordJson(record)
   ) {
-    problems.push(`release record does not exactly match remote authority ${authority.ref}`);
+    problems.push(
+      `release record does not exactly match remote authority ${authority.ref}`,
+    );
   }
   const certification = [...record.events]
     .reverse()
     .find(
       (event) =>
-        event.state === "certified" && event.certification?.candidateSha === candidateSha,
+        event.state === "certified" &&
+        event.certification?.candidateSha === candidateSha,
     );
-  if (!certification) problems.push(`candidate ${candidateSha} has no CERTIFIED event`);
+  if (!certification)
+    problems.push(`candidate ${candidateSha} has no CERTIFIED event`);
   const latestDelivery = [...record.events]
     .reverse()
     .find(
@@ -193,36 +251,57 @@ export function authorizePatrolCommit(input: {
         ["delivery_queued", "delivered"].includes(event.state) &&
         event.delivery?.candidateSha === candidateSha,
     );
-  if (!latestDelivery) problems.push(`candidate ${candidateSha} is not in the delivery queue`);
+  if (!latestDelivery)
+    problems.push(`candidate ${candidateSha} is not in the delivery queue`);
   const latest = record.events.at(-1);
-  if (!latest || !["delivery_queued", "delivered", "closed", "reconciled"].includes(latest.state)) {
+  if (
+    !latest ||
+    !["delivery_queued", "delivered", "closed", "reconciled"].includes(
+      latest.state,
+    )
+  ) {
     problems.push(
       `run is ${latest?.state ?? "empty"}; latest state must be delivery_queued, delivered, closed, or reconciled`,
     );
   }
-  if (["closed", "reconciled"].includes(latest?.state ?? "") && latestDelivery?.state !== "delivered") {
+  if (
+    ["closed", "reconciled"].includes(latest?.state ?? "") &&
+    latestDelivery?.state !== "delivered"
+  ) {
     problems.push(`${latest?.state} run has no prior delivered state`);
   }
   if (latestDelivery?.delivery?.candidateSha !== candidateSha) {
-    problems.push(`latest delivery event does not name exact candidate ${candidateSha}`);
+    problems.push(
+      `latest delivery event does not name exact candidate ${candidateSha}`,
+    );
   }
   if (
     latestDelivery?.delivery?.preservedRef !==
     deterministicAuthorityRef(trailers.patrolId, trailers.runId)
   ) {
-    problems.push("latest delivery event does not name the deterministic remote authority ref");
+    problems.push(
+      "latest delivery event does not name the deterministic remote authority ref",
+    );
   }
-  const productPaths = paths.filter((changedPath) => !changedPath.startsWith(".matrx/"));
+  const productPaths = paths.filter(
+    (changedPath) => !changedPath.startsWith(".matrx/"),
+  );
   if (productPaths.length > 0 && commitSha !== candidateSha) {
     problems.push(
       `product-changing commit ${commitSha} is not the exact certified candidate ${candidateSha}`,
     );
   }
-  const ancestry = spawnSync("git", ["merge-base", "--is-ancestor", candidateSha, commitSha], {
-    cwd: repoRoot,
-  });
+  const ancestry = spawnSync(
+    "git",
+    ["merge-base", "--is-ancestor", candidateSha, commitSha],
+    {
+      cwd: repoRoot,
+    },
+  );
   if (ancestry.status !== 0) {
-    problems.push(`certified candidate ${candidateSha} is not contained by commit ${commitSha}`);
+    problems.push(
+      `certified candidate ${candidateSha} is not contained by commit ${commitSha}`,
+    );
   }
   return problems;
 }
@@ -239,9 +318,63 @@ export function checkPatrolCommits(input: {
   const problems: string[] = [];
   for (const commitSha of commits) {
     const message = git(repoRoot, ["show", "-s", "--format=%B", commitSha]);
-    const paths = git(repoRoot, ["diff-tree", "--no-commit-id", "--name-only", "-r", commitSha])
+    const paths = git(repoRoot, [
+      "diff-tree",
+      "--no-commit-id",
+      "--name-only",
+      "-r",
+      commitSha,
+    ])
       .split("\n")
       .filter(Boolean);
+    const productPaths = paths.filter((path) => !path.startsWith(".matrx/"));
+    if (productPaths.length > 0) {
+      for (const path of paths) {
+        const identity = permanentRecordIdentity(path);
+        if (!identity) continue;
+        let candidateRecord: PatrolRunRecord;
+        let releaseRecord: PatrolRunRecord;
+        try {
+          candidateRecord = loadRecordAtRef(
+            repoRoot,
+            commitSha,
+            identity.patrolId,
+            identity.runId,
+          );
+          releaseRecord = loadRecordAtRef(
+            repoRoot,
+            head,
+            identity.patrolId,
+            identity.runId,
+          );
+        } catch (error) {
+          problems.push(`${commitSha}: ${(error as Error).message}`);
+          continue;
+        }
+        const candidateProblems = validatePatrolRunRecord(candidateRecord);
+        const releaseProblems = validatePatrolRunRecord(releaseRecord);
+        problems.push(
+          ...candidateProblems.map(
+            (problem) => `${commitSha}: ${path}: ${problem}`,
+          ),
+          ...releaseProblems.map(
+            (problem) => `${commitSha}: ${path} at ${head}: ${problem}`,
+          ),
+        );
+        if (candidateProblems.length > 0 || releaseProblems.length > 0)
+          continue;
+        const certification = releaseRecord.events.find(
+          (event) =>
+            event.state === "certified" &&
+            event.certification?.candidateSha === commitSha,
+        );
+        if (!certification) {
+          problems.push(
+            `${commitSha}: patrol candidate changed product paths and ${path} but ${head} has no independent exact-candidate CERTIFIED evidence`,
+          );
+        }
+      }
+    }
     if (!isPatrolCommit(message, paths)) continue;
     let trailers: PatrolCommitTrailers | undefined;
     try {
@@ -251,52 +384,87 @@ export function checkPatrolCommits(input: {
       continue;
     }
     if (!trailers) {
-      problems.push(`${commitSha}: patrol work has no certification/delivery trailers`);
+      problems.push(
+        `${commitSha}: patrol work has no certification/delivery trailers`,
+      );
       continue;
     }
     problems.push(
-      ...authorizePatrolCommit({ repoRoot, commitSha, recordRef: head, paths, trailers }).map(
-        (problem) => `${commitSha}: ${problem}`,
-      ),
+      ...authorizePatrolCommit({
+        repoRoot,
+        commitSha,
+        recordRef: head,
+        paths,
+        trailers,
+      }).map((problem) => `${commitSha}: ${problem}`),
     );
   }
   return problems;
 }
 
-export function checkContainedBlockedCandidates(input: {
+export function checkContainedPatrolCandidates(input: {
   repoRoot: string;
   head: string;
 }): string[] {
   const { repoRoot, head } = input;
-  const paths = git(repoRoot, ["ls-tree", "-r", "--name-only", head, "--", ".matrx/patrol-runs"])
+  const paths = git(repoRoot, [
+    "ls-tree",
+    "-r",
+    "--name-only",
+    head,
+    "--",
+    ".matrx/patrol-runs",
+  ])
     .split("\n")
     .filter((path) => path.endsWith(".json") && !path.endsWith("/latest.json"));
   const problems: string[] = [];
   for (const path of paths) {
     let record: PatrolRunRecord;
     try {
-      record = JSON.parse(git(repoRoot, ["show", `${head}:${path}`])) as PatrolRunRecord;
+      record = JSON.parse(
+        git(repoRoot, ["show", `${head}:${path}`]),
+      ) as PatrolRunRecord;
     } catch (error) {
-      problems.push(`${path}: unreadable permanent record: ${(error as Error).message}`);
+      problems.push(
+        `${path}: unreadable permanent record: ${(error as Error).message}`,
+      );
       continue;
     }
     const validation = validatePatrolRunRecord(record);
     problems.push(...validation.map((problem) => `${path}: ${problem}`));
     if (validation.length > 0) continue;
-    const latest = record.events.at(-1);
-    if (!latest || latest.state !== "infrastructure_blocked") continue;
-    const candidateSha = latest.blocker?.preservedSha;
-    if (!candidateSha) continue;
-    const contained = spawnSync("git", ["merge-base", "--is-ancestor", candidateSha, head], {
-      cwd: repoRoot,
-    }).status === 0;
-    const delivered = record.events.some(
-      (event) => event.state === "delivered" && event.delivery?.candidateSha === candidateSha,
-    );
-    if (contained && !delivered) {
-      problems.push(
-        `${path}: ${latest.state} candidate ${candidateSha} is already contained by ${head} without a DELIVERED reconciliation`,
+    const candidates = record.events.flatMap((event) => {
+      if (
+        event.state === "infrastructure_blocked" &&
+        event.blocker?.preservedSha
+      ) {
+        return [
+          { candidateSha: event.blocker.preservedSha, state: event.state },
+        ];
+      }
+      if (event.state === "escaped_delivery" && event.escape?.candidateSha) {
+        return [
+          { candidateSha: event.escape.candidateSha, state: event.state },
+        ];
+      }
+      return [];
+    });
+    for (const { candidateSha, state } of candidates) {
+      const contained =
+        spawnSync("git", ["merge-base", "--is-ancestor", candidateSha, head], {
+          cwd: repoRoot,
+        }).status === 0;
+      if (!contained) continue;
+      const certification = record.events.find(
+        (event) =>
+          event.state === "certified" &&
+          event.certification?.candidateSha === candidateSha,
       );
+      if (!certification) {
+        problems.push(
+          `${path}: ${state} candidate ${candidateSha} is contained by ${head} without independent exact-candidate CERTIFIED evidence`,
+        );
+      }
     }
   }
   return problems;

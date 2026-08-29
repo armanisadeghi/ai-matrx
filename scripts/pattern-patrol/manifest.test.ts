@@ -1,6 +1,8 @@
 import {
   automationUpdateSpecs,
+  FLEET_HEALTH,
   PATROL_DELIVERY_POLICY,
+  PATROL_PATHS,
   PATROLS,
   registryScheduleTable,
 } from "./manifest";
@@ -9,9 +11,13 @@ import { parseAutomationToml } from "./check-manifest";
 describe("Pattern Patrol typed manifest", () => {
   it("owns thirteen unique product patrols plus fleet health", () => {
     expect(PATROLS).toHaveLength(13);
-    expect(new Set(PATROLS.map((patrol) => patrol.patrolId)).size).toBe(13);
-    expect(new Set(PATROLS.map((patrol) => patrol.automationId)).size).toBe(13);
-    expect(automationUpdateSpecs()).toHaveLength(14);
+    expect(new Set(PATROLS.map((patrol) => patrol.patrolId)).size).toBe(
+      PATROLS.length,
+    );
+    expect(new Set(PATROLS.map((patrol) => patrol.automationId)).size).toBe(
+      PATROLS.length,
+    );
+    expect(automationUpdateSpecs()).toHaveLength(PATROLS.length + 1);
   });
 
   it("generates every required common contract once per product prompt", () => {
@@ -64,16 +70,36 @@ describe("Pattern Patrol typed manifest", () => {
     ).toContain("every verified generic loader automatically");
   });
 
-  it("keeps P5's compact two-icon copy contract in the typed prompt source", () => {
-    const p5 = PATROLS.find((patrol) => patrol.patrolId === "P5");
-    expect(p5?.runInstruction).toContain("compact two-icon CopyButtons pair");
-    expect(p5?.runInstruction).toContain("JSON inside the Copy-for-AI dropdown");
-    expect(p5?.runInstruction).toContain("Never create large or visibly labeled copy buttons");
+  it("keeps Fleet Health on the workspace-root project with human self-repair contracts", () => {
+    const fleet = automationUpdateSpecs().find(
+      (candidate) => candidate.id === FLEET_HEALTH.automationId,
+    );
+    expect(fleet).toMatchObject({
+      projectId: FLEET_HEALTH.projectId,
+      executionEnvironment: "local",
+      destination: "local",
+    });
+    expect(FLEET_HEALTH.cwd).toBe(PATROL_PATHS.workspaceRoot);
+    expect(fleet?.prompt).toContain("ALL-REPOSITORY REPAIR CONTRACT");
+    expect(fleet?.prompt).toContain("HUMAN-LANGUAGE CONTRACT");
+    expect(fleet?.prompt).toContain("SELF-REPAIR CONTRACT");
+  });
 
+  it("promotes P5's compact two-icon instruction into the typed source", () => {
+    const instruction = PATROLS.find(
+      (patrol) => patrol.patrolId === "P5",
+    )?.runInstruction;
+    expect(instruction).toContain("compact two-icon CopyButtons pair");
+    expect(instruction).toContain(
+      "JSON inside the Copy-for-AI dropdown rather than a third control",
+    );
+    expect(instruction).toContain(
+      "Never create large or visibly labeled copy buttons",
+    );
     const livePrompt = automationUpdateSpecs().find(
       (spec) => spec.id === "pattern-patrol-p5-copy-everywhere",
     )?.prompt;
-    expect(livePrompt).toContain(p5?.runInstruction);
+    expect(livePrompt).toContain(instruction);
   });
 
   it("generates a registry row for every automation", () => {

@@ -6,6 +6,7 @@ import {
   automationUpdateSpecs,
   PATROL_PATHS,
   PATROLS,
+  FLEET_HEALTH,
   registryScheduleTable,
 } from "./manifest";
 
@@ -126,7 +127,14 @@ function validateLiveAutomations(): string[] {
       ["reasoning_effort", expected.reasoningEffort],
       ["execution_environment", expected.executionEnvironment],
       ["project_id", expected.projectId],
-      ["cwds", [PATROL_PATHS.repoRoot]],
+      [
+        "cwds",
+        [
+          expected.id === FLEET_HEALTH.automationId
+            ? FLEET_HEALTH.cwd
+            : PATROL_PATHS.repoRoot,
+        ],
+      ],
     ];
     for (const [key, value] of comparisons) {
       if (JSON.stringify(actual[key]) !== JSON.stringify(value)) {
