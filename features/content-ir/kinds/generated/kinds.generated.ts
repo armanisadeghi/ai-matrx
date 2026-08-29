@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 501 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 502 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "c1a58dd150dd";
+export const KIND_REGISTRY_FINGERPRINT = "1e1b010f5cf9";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -352,9 +352,9 @@ export interface AiVisibilityPanelCostEstimateResult {
 /**
  * Mirrors ``KeyMessage`` — one thing we want assistants to be saying.
  *  *
- *  * Shared by 2 kinds (ai_visibility_panel, ai_visibility_panel_list).
+ *  * From kind `ai_visibility_panel`.
  */
-export interface AiVisibilityPanelKeyMessageResult {
+export interface AiVisibilityPanelKeyMessageResult_AiVisibilityPanel {
   key?: string;
   label?: string;
   terms?: string[];
@@ -365,17 +365,39 @@ export interface AiVisibilityPanelKeyMessageResult {
 }
 
 /**
+ * Mirrors ``KeyMessage`` — one thing we want assistants to be saying.
+ *  *
+ *  * From kind `ai_visibility_panel_list`.
+ */
+export interface AiVisibilityPanelKeyMessageResult_AiVisibilityPanelList {
+  key?: string;
+  label?: string;
+  terms?: string[];
+}
+
+/**
  * Mirrors ``PanelPrompt`` — one buyer question, in the user's words.
  *  *
- *  * Shared by 3 kinds (ai_visibility_panel, ai_visibility_panel_list, ai_visibility_panel_preview).
+ *  * Shared by 2 kinds (ai_visibility_panel, ai_visibility_panel_preview).
  */
-export interface AiVisibilityPanelPromptResult {
+export interface AiVisibilityPanelPromptResult_AiVisibilityPanel {
   key?: string;
   text?: string;
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
+  intent?: string | null;
+}
+
+/**
+ * Mirrors ``PanelPrompt`` — one buyer question, in the user's words.
+ *  *
+ *  * From kind `ai_visibility_panel_list`.
+ */
+export interface AiVisibilityPanelPromptResult_AiVisibilityPanelList {
+  key?: string;
+  text?: string;
   intent?: string | null;
 }
 
@@ -2158,6 +2180,20 @@ export interface InfluentialUnverifiedClaimResult {
 }
 
 /**
+ * * From kind `ingest_source_request`.
+ */
+export interface IngestSourceItem {
+  url?: string | null;
+  label?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "ingest_source";
+  file_id?: string | null;
+  raw_text?: string;
+}
+
+/**
  * One chunk of source material with full provenance.
  *  *
  *  * From kind `ingested_sources`.
@@ -2210,13 +2246,25 @@ export interface IntakeBusinessInference {
 }
 
 /**
- * * Shared by 2 kinds (site_intake_analysis, site_intake_apply_result).
+ * * From kind `site_intake_analysis`.
  */
-export interface IntakeClassifyEstimate {
+export interface IntakeClassifyEstimate_SiteIntakeAnalysis {
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
+  batches: number;
+  batch_size: number;
+  est_cost_usd?: number | null;
+  est_input_tokens: number;
+  est_output_tokens: number;
+  unclassified_keywords: number;
+}
+
+/**
+ * * From kind `site_intake_apply_result`.
+ */
+export interface IntakeClassifyEstimate_SiteIntakeApplyResult {
   batches: number;
   batch_size: number;
   est_cost_usd?: number | null;
@@ -4273,9 +4321,22 @@ export interface SeoGscPageSummary {
 /**
  * Mirrors ``aidream.services.seo.prospect_import.ImportEntryPlan`` exactly.
  *  *
- *  * Shared by 3 kinds (seo_prospect_capture_result, seo_prospect_import_preview, seo_prospect_import_report).
+ *  * From kind `seo_prospect_capture_result`.
  */
-export interface SeoImportEntryPlan {
+export interface SeoImportEntryPlan_SeoProspectCaptureResult {
+  raw: string;
+  url?: string | null;
+  why: string;
+  domain?: string | null;
+  verdict: "new" | "existing" | "duplicate_in_list" | "blocklisted" | "unusable";
+}
+
+/**
+ * Mirrors ``aidream.services.seo.prospect_import.ImportEntryPlan`` exactly.
+ *  *
+ *  * Shared by 2 kinds (seo_prospect_import_preview, seo_prospect_import_report).
+ */
+export interface SeoImportEntryPlan_SeoProspectImportPreview {
   raw: string;
   url?: string | null;
   why: string;
@@ -4350,23 +4411,13 @@ export interface SeoKeywordVolumeRejectedPhrase {
  */
 export interface SeoLandscapeBriefData {
   id: string;
-  facts?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    [key: string]: JsonValue | string | undefined;
-  };
-  /**
-   * The registered kind this payload is an instance of, when it is one.
-   */
-  __kind?: string;
+  facts?: Record<string, JsonValue>;
   status: string;
   site_id: string;
   guidance?: string;
   reviewed_at?: string | null;
   generated_at?: string | null;
-  service_lines?: SeoServiceLine[];
+  service_lines?: SeoServiceLine_SeoLandscapeBriefReadResult[];
   auto_accept_at?: string | null;
   brief_markdown: string;
   agent_confidence?: number | null;
@@ -4501,13 +4552,31 @@ export interface SeoPagePerformanceSample {
  * Mirrors ``PriorRelationship`` exactly — present only when a
  * ``crm.party`` already exists for the captured domain.
  *  *
- *  * Shared by 2 kinds (seo_prospect_capture_preview, seo_prospect_capture_result).
+ *  * From kind `seo_prospect_capture_preview`.
  */
-export interface SeoPriorRelationship {
+export interface SeoPriorRelationship_SeoProspectCapturePreview {
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
+  summary: string;
+  party_id: string;
+  campaigns?: string[];
+  last_win_at?: string | null;
+  display_name: string;
+  confirmed_wins?: number;
+  do_not_contact?: boolean;
+  interaction_count?: number;
+  last_interaction_at?: string | null;
+}
+
+/**
+ * Mirrors ``PriorRelationship`` exactly — present only when a
+ * ``crm.party`` already exists for the captured domain.
+ *  *
+ *  * From kind `seo_prospect_capture_result`.
+ */
+export interface SeoPriorRelationship_SeoProspectCaptureResult {
   summary: string;
   party_id: string;
   campaigns?: string[];
@@ -4527,13 +4596,9 @@ export interface SeoPriorRelationship {
  *  * From kind `seo_prospect_capture_result`.
  */
 export interface SeoProspectImportReportSection {
-  /**
-   * The registered kind this payload is an instance of, when it is one.
-   */
-  __kind?: string;
   errors?: string[];
   created?: number;
-  entries?: SeoImportEntryPlan[];
+  entries?: SeoImportEntryPlan_SeoProspectCaptureResult[];
   matched?: number;
   site_id: string;
   skipped?: number;
@@ -4822,15 +4887,28 @@ export interface SeoSerpIntentContext {
 /**
  * Mirrors ``aidream.services.seo.landscape_brief.ServiceLine``.
  *  *
- *  * Shared by 2 kinds (seo_landscape_brief, seo_landscape_brief_read_result).
+ *  * From kind `seo_landscape_brief`.
  */
-export interface SeoServiceLine {
+export interface SeoServiceLine_SeoLandscapeBrief {
   why?: string;
   name: string;
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
+  footprint?: string;
+  customer_segment?: string;
+  footprint_detail?: string;
+}
+
+/**
+ * Mirrors ``aidream.services.seo.landscape_brief.ServiceLine``.
+ *  *
+ *  * From kind `seo_landscape_brief_read_result`.
+ */
+export interface SeoServiceLine_SeoLandscapeBriefReadResult {
+  why?: string;
+  name: string;
   footprint?: string;
   customer_segment?: string;
   footprint_detail?: string;
@@ -5861,7 +5939,7 @@ export interface AgentResult {
  * a renderer lays out a self-describing row without knowing what produced
  * it, and an edge can carry a single group as a value in its own right.
  *  *
- *  * Kind `aggregate_group` (registry v3).
+ *  * Kind `aggregate_group` (registry v5).
  */
 export interface AggregateGroup {
   /**
@@ -5875,7 +5953,7 @@ export interface AggregateGroup {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "aggregate_group";
+  __kind?: "aggregate_group";
   /**
    * The aggregate for this group.
    */
@@ -5883,7 +5961,7 @@ export interface AggregateGroup {
 }
 
 /**
- * Kind `aggregate_result` (registry v5).
+ * Kind `aggregate_result` (registry v7).
  */
 export interface AggregateResult {
   /**
@@ -5893,7 +5971,7 @@ export interface AggregateResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "aggregate_result";
+  __kind?: "aggregate_result";
   /**
    * Per-group results when group_by is set (insertion order).
    */
@@ -5945,13 +6023,13 @@ export interface AiAnswer {
  * rename to the DB sweep; this kind mirrors the node's live shape rather
  * than the canonical one so nothing drifts between the two.
  *  *
- *  * Kind `ai_cost_summary` (registry v5).
+ *  * Kind `ai_cost_summary` (registry v6).
  */
 export interface AiCostSummary {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "ai_cost_summary";
+  __kind?: "ai_cost_summary";
   model_ids?: string[];
   providers?: string[];
   models_used?: string[];
@@ -5998,7 +6076,7 @@ export interface AiVisibilityPanel {
    */
   __kind: "ai_visibility_panel";
   engines?: string[];
-  prompts?: AiVisibilityPanelPromptResult[];
+  prompts?: AiVisibilityPanelPromptResult_AiVisibilityPanel[];
   site_id?: string;
   is_active?: boolean;
   run_count?: number;
@@ -6007,7 +6085,7 @@ export interface AiVisibilityPanel {
   declared_by?: string;
   last_run_at?: string | null;
   cadence_days?: number;
-  key_messages?: AiVisibilityPanelKeyMessageResult[];
+  key_messages?: AiVisibilityPanelKeyMessageResult_AiVisibilityPanel[];
   last_run_status?: string | null;
   last_run_cost_usd?: number | string | null;
   coverage_tracker_id?: string | null;
@@ -6018,13 +6096,13 @@ export interface AiVisibilityPanel {
  * Output of ``seo.ai_visibility.panel.list`` — saved panels for one site
  * or the current workspace.
  *  *
- *  * Kind `ai_visibility_panel_list` (registry v4).
+ *  * Kind `ai_visibility_panel_list` (registry v5).
  */
 export interface AiVisibilityPanelList {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "ai_visibility_panel_list";
+  __kind?: "ai_visibility_panel_list";
   panels?: AiVisibilityPanel[];
 }
 
@@ -6044,15 +6122,15 @@ export interface AiVisibilityPanelPreview {
   summary?: string;
   estimate?: AiVisibilityPanelCostEstimateResult;
   panel_id?: string;
-  prompts_deferred?: AiVisibilityPanelPromptResult[];
-  prompts_this_pass?: AiVisibilityPanelPromptResult[];
+  prompts_deferred?: AiVisibilityPanelPromptResult_AiVisibilityPanel[];
+  prompts_this_pass?: AiVisibilityPanelPromptResult_AiVisibilityPanel[];
 }
 
 /**
  * Output of ``seo.ai_visibility.panel.run`` — the next bounded pass of a
  * saved AI-answer panel, with responses, coverage, and measured cost.
  *  *
- *  * Kind `ai_visibility_panel_run_result` (registry v3).
+ *  * Kind `ai_visibility_panel_run_result` (registry v4).
  */
 export interface AiVisibilityPanelRunResult {
   name?: string;
@@ -6060,7 +6138,7 @@ export interface AiVisibilityPanelRunResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "ai_visibility_panel_run_result";
+  __kind?: "ai_visibility_panel_run_result";
   status?: "ok" | "partial" | "empty" | "failed";
   cost_usd?: number | string | null;
   panel_id?: string;
@@ -6378,7 +6456,7 @@ export interface BatchReview {
 }
 
 /**
- * Kind `batched_list_result` (registry v5).
+ * Kind `batched_list_result` (registry v7).
  */
 export interface BatchedListResult {
   /**
@@ -6392,7 +6470,7 @@ export interface BatchedListResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "batched_list_result";
+  __kind?: "batched_list_result";
   /**
    * The list split into chunks, in order.
    */
@@ -6480,13 +6558,13 @@ export interface BranchResult {
 /**
  * Output of ``seo.prospecting.broken_links.preview`` — mirrors ``BrokenLinkProspectingPreview``.
  *  *
- *  * Kind `broken_link_prospecting_preview` (registry v3).
+ *  * Kind `broken_link_prospecting_preview` (registry v4).
  */
 export interface BrokenLinkProspectingPreview {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "broken_link_prospecting_preview";
+  __kind?: "broken_link_prospecting_preview";
   reason?: string | null;
   site_id: string;
   unreachable?: number;
@@ -6737,14 +6815,14 @@ export interface ClientSiteAudit {
 }
 
 /**
- * Kind `cms_align_result` (registry v5).
+ * Kind `cms_align_result` (registry v6).
  */
 export interface CmsAlignResult {
   items?: CmsAlignItem[];
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "cms_align_result";
+  __kind?: "cms_align_result";
   errors?: string[];
   failed?: number;
   applied?: number;
@@ -6795,13 +6873,13 @@ export interface CmsPageBuild {
 }
 
 /**
- * Kind `cms_publish_result` (registry v5).
+ * Kind `cms_publish_result` (registry v6).
  */
 export interface CmsPublishResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "cms_publish_result";
+  __kind?: "cms_publish_result";
   failed?: number;
   dry_run?: boolean;
   results?: PublishBatchItem[];
@@ -6818,13 +6896,13 @@ export interface CmsPublishResult {
 }
 
 /**
- * Kind `cms_reconcile_report` (registry v5).
+ * Kind `cms_reconcile_report` (registry v6).
  */
 export interface CmsReconcileReport {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "cms_reconcile_report";
+  __kind?: "cms_reconcile_report";
   ghosts?: CmsReconcileGhostItem[];
   matched?: CmsReconcileMatchItem[];
   orphans?: CmsReconcileOrphanItem[];
@@ -6838,14 +6916,14 @@ export interface CmsReconcileReport {
 }
 
 /**
- * Kind `cms_starter_kit_result` (registry v5).
+ * Kind `cms_starter_kit_result` (registry v6).
  */
 export interface CmsStarterKitResult {
   notes?: string[];
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "cms_starter_kit_result";
+  __kind?: "cms_starter_kit_result";
   forced: boolean;
   dry_run: boolean;
   site_id: string;
@@ -6883,13 +6961,13 @@ export interface CodeBlock {
 /**
  * Output of ``ai.util.format_scraped_content`` — scraped pages joined into one block.
  *  *
- *  * Kind `combined_page_text` (registry v5).
+ *  * Kind `combined_page_text` (registry v6).
  */
 export interface CombinedPageText {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "combined_page_text";
+  __kind?: "combined_page_text";
   sources?: string[];
   page_count?: number;
   failed_pages?: number;
@@ -7349,21 +7427,21 @@ export interface CrmFoldSettings {
 }
 
 /**
- * Output of ``text.custom_extract`` — a sandboxed script's ``__result__``.
- *
- * ``result`` is deliberately ``JsonValue``: the whole point of the node is
- * that the author's script reshapes ``inputs`` into whatever shape it wants
- * (a scalar, a list, a record). That is the node's real, honest contract —
- * ``CustomExtractOutput`` in ``matrx_graph.nodes.text.custom_extract`` has
- * exactly this one field, ``extra="forbid"``.
+ * Success payload (Node Result System) — genuine failures (sandbox
+ * violation, timeout, runtime error, non-JSON result) FAIL the node
+ * (ExecutionError → the scheduler's failure ladder); the old vestigial
+ * ok/error payload fields are gone.
  *  *
- *  * Kind `custom_script_result` (registry v3).
+ *  * Kind `custom_script_result` (registry v5).
  */
 export interface CustomScriptResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "custom_script_result";
+  __kind?: "custom_script_result";
+  /**
+   * The value the script assigned to `__result__`.
+   */
   result?: JsonValue;
 }
 
@@ -7426,22 +7504,52 @@ export interface DataTable {
 }
 
 /**
- * Kind `datetime_snapshot` (registry v5).
+ * Kind `datetime_snapshot` (registry v7).
  */
 export interface DatetimeSnapshot {
+  /**
+   * Day of the month, 1–31.
+   */
   day: number;
+  /**
+   * Current instant as an ISO-8601 string.
+   */
   iso: string;
+  /**
+   * Hour, 0–23.
+   */
   hour: number;
+  /**
+   * Calendar year.
+   */
   year: number;
+  /**
+   * Month, 1–12.
+   */
   month: number;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "datetime_snapshot";
+  __kind?: "datetime_snapshot";
+  /**
+   * Minute, 0–59.
+   */
   minute: number;
+  /**
+   * Second, 0–59.
+   */
   second: number;
+  /**
+   * Current instant as Unix milliseconds.
+   */
   unix_ms: number;
+  /**
+   * Day of the week — Monday=0 … Sunday=6.
+   */
   weekday: number;
+  /**
+   * Current instant as Unix seconds (fractional).
+   */
   unix_seconds: number;
 }
 
@@ -7836,7 +7944,7 @@ export interface FaqItem {
  * is ``str | None`` here rather than ``JsonValue`` — see
  * ``ExtractFieldOutput`` in ``aidream.graph_actions.text.transform``.
  *  *
- *  * Kind `field_lookup_result` (registry v3).
+ *  * Kind `field_lookup_result` (registry v5).
  */
 export interface FieldLookupResult {
   found: boolean;
@@ -7844,7 +7952,7 @@ export interface FieldLookupResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "field_lookup_result";
+  __kind?: "field_lookup_result";
 }
 
 /**
@@ -7860,7 +7968,7 @@ export interface FieldLookupResult {
  * is the RUN-level failure's version of the same fact, and the two shapes
  * must stay identical so one component renders both.
  *  *
- *  * Kind `field_problem` (registry v3).
+ *  * Kind `field_problem` (registry v4).
  */
 export interface FieldProblem {
   got?: string | null;
@@ -7869,18 +7977,18 @@ export interface FieldProblem {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "field_problem";
+  __kind?: "field_problem";
   expected?: string | null;
 }
 
 /**
- * Kind `file_binary_content` (registry v5).
+ * Kind `file_binary_content` (registry v7).
  */
 export interface FileBinaryContent {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_binary_content";
+  __kind?: "file_binary_content";
   data_b64?: string;
   mime_type?: string | null;
   truncated?: boolean;
@@ -7889,7 +7997,7 @@ export interface FileBinaryContent {
 }
 
 /**
- * Kind `file_discovery_result` (registry v5).
+ * Kind `file_discovery_result` (registry v7).
  */
 export interface FileDiscoveryResult {
   count?: number;
@@ -7897,17 +8005,17 @@ export interface FileDiscoveryResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_discovery_result";
+  __kind?: "file_discovery_result";
 }
 
 /**
- * Kind `file_download_result` (registry v5).
+ * Kind `file_download_result` (registry v7).
  */
 export interface FileDownloadResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_download_result";
+  __kind?: "file_download_result";
   local_path?: string | null;
   size_bytes?: number;
   source_url?: string | null;
@@ -8019,39 +8127,39 @@ export interface FileSearchResults {
 }
 
 /**
- * Kind `file_text_content` (registry v5).
+ * Kind `file_text_content` (registry v7).
  */
 export interface FileTextContent {
   text?: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_text_content";
+  __kind?: "file_text_content";
   truncated?: boolean;
   bytes_read?: number;
   local_path?: string | null;
 }
 
 /**
- * Kind `file_tree_result` (registry v5).
+ * Kind `file_tree_result` (registry v7).
  */
 export interface FileTreeResult {
   tree?: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_tree_result";
+  __kind?: "file_tree_result";
   file_count?: number;
 }
 
 /**
- * Kind `file_upload_result` (registry v5).
+ * Kind `file_upload_result` (registry v7).
  */
 export interface FileUploadResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "file_upload_result";
+  __kind?: "file_upload_result";
   is_new?: boolean;
   file_id?: string | null;
   version?: number;
@@ -8090,7 +8198,7 @@ export interface FileWriteResult {
  * registered contract, so a per-node wording would either lie about the
  * other producers or push each of them into minting a near-duplicate kind.
  *  *
- *  * Kind `filter_result` (registry v7).
+ *  * Kind `filter_result` (registry v9).
  */
 export interface FilterResult {
   /**
@@ -8104,7 +8212,7 @@ export interface FilterResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "filter_result";
+  __kind?: "filter_result";
   /**
    * How many elements were dropped.
    */
@@ -8131,7 +8239,7 @@ export interface FlashcardSet {
 }
 
 /**
- * Kind `flattened_list_result` (registry v3).
+ * Kind `flattened_list_result` (registry v5).
  */
 export interface FlattenedListResult {
   /**
@@ -8145,7 +8253,7 @@ export interface FlattenedListResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "flattened_list_result";
+  __kind?: "flattened_list_result";
   /**
    * How many input elements were flattened.
    */
@@ -8153,15 +8261,28 @@ export interface FlattenedListResult {
 }
 
 /**
- * Kind `formatted_datetime` (registry v5).
+ * Success payload (Node Result System) — bad ISO input / bad format
+ * string are node Failures (``parse_failed`` / ``format_failed``). The old
+ * ``ok``/``error`` payload fields are gone.
+ *  *
+ *  * Kind `formatted_datetime` (registry v7).
  */
 export interface FormattedDatetime {
+  /**
+   * The instant it was rendered from, so the value stays sortable.
+   */
   iso?: string | null;
+  /**
+   * The datetime rendered with the strftime format. Lossy by design — never re-parse it; use ``iso``.
+   */
   text: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "formatted_datetime";
+  __kind?: "formatted_datetime";
+  /**
+   * The strftime pattern used, so it can be re-rendered.
+   */
   format?: string | null;
 }
 
@@ -8448,13 +8569,13 @@ export interface GraphqlResponse {
 /**
  * Output of ``growth_loop.stage.dispatch`` — one CODE-selected stage's outcome.
  *  *
- *  * Kind `growth_loop_stage_decision` (registry v3).
+ *  * Kind `growth_loop_stage_decision` (registry v4).
  */
 export interface GrowthLoopStageDecision {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "growth_loop_stage_decision";
+  __kind?: "growth_loop_stage_decision";
   reason: string;
   decision: string;
   evidence?: string[];
@@ -8529,15 +8650,24 @@ export interface GscSiteIntakeProposal {
 }
 
 /**
- * Kind `hash_result` (registry v7).
+ * Kind `hash_result` (registry v9).
  */
 export interface HashResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "hash_result";
+  __kind?: "hash_result";
+  /**
+   * The hex digest of the input text.
+   */
   digest: string;
+  /**
+   * The algorithm used to compute the digest.
+   */
   algorithm: string;
+  /**
+   * Set when the digest was shortened. A truncated digest no longer verifies against ``algorithm``, and the payload must say so — a 12-character value labelled 'sha256' invites a verification that can only fail.
+   */
   truncated_to?: number | null;
 }
 
@@ -8650,13 +8780,13 @@ export interface IdentifierEntry {
 /**
  * Output of ``ai.image.concept_generate``.
  *  *
- *  * Kind `image_concepts_result` (registry v5).
+ *  * Kind `image_concepts_result` (registry v6).
  */
 export interface ImageConceptsResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "image_concepts_result";
+  __kind?: "image_concepts_result";
   concepts?: ImageConceptKind[];
 }
 
@@ -8704,13 +8834,13 @@ export interface ImageMetadata {
 /**
  * Output of ``ai.image.prompt_write``.
  *  *
- *  * Kind `image_prompts_result` (registry v5).
+ *  * Kind `image_prompts_result` (registry v6).
  */
 export interface ImagePromptsResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "image_prompts_result";
+  __kind?: "image_prompts_result";
   prompts?: ImagePromptSpecKind[];
   concept_name?: string;
 }
@@ -8718,13 +8848,13 @@ export interface ImagePromptsResult {
 /**
  * Output of ``ai.image.qc_judge``.
  *  *
- *  * Kind `image_qc_result` (registry v5).
+ *  * Kind `image_qc_result` (registry v6).
  */
 export interface ImageQcResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "image_qc_result";
+  __kind?: "image_qc_result";
   verdict: ImageQcVerdict;
   image_url?: string;
 }
@@ -8732,18 +8862,29 @@ export interface ImageQcResult {
 /**
  * Vision-model verdict, nested inside ``ai.image.qc_judge``'s output.
  *  *
- *  * Kind `image_qc_verdict` (registry v5).
+ *  * Kind `image_qc_verdict` (registry v7).
  */
 export interface ImageQcVerdict {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "image_qc_verdict";
+  __kind?: "image_qc_verdict";
   passed: boolean;
   reasoning: string;
   confidence: number;
   failure_modes?: string[];
   suggested_retry_prompt?: string | null;
+}
+
+/**
+ * Kind `ingest_source_request` (registry v2).
+ */
+export interface IngestSourceRequest {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "ingest_source_request";
+  sources?: IngestSourceItem[];
 }
 
 /**
@@ -8794,13 +8935,13 @@ export interface IntakePhotoGrouping {
 /**
  * Output of ``interview.finalize`` — the closed session and its deliverables.
  *  *
- *  * Kind `interview_finalize_result` (registry v5).
+ *  * Kind `interview_finalize_result` (registry v6).
  */
 export interface InterviewFinalizeResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "interview_finalize_result";
+  __kind?: "interview_finalize_result";
   rounds?: number;
   document?: string;
   session_id?: string;
@@ -8810,7 +8951,7 @@ export interface InterviewFinalizeResult {
 /**
  * Output of ``interview.gate`` — converge, or loop back.
  *  *
- *  * Kind `interview_gate_decision` (registry v5).
+ *  * Kind `interview_gate_decision` (registry v6).
  */
 export interface InterviewGateDecision {
   note?: string;
@@ -8818,7 +8959,7 @@ export interface InterviewGateDecision {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "interview_gate_decision";
+  __kind?: "interview_gate_decision";
   converged?: boolean;
   done_refused?: boolean;
   stage_before?: string;
@@ -8861,7 +9002,7 @@ export interface InterviewHoleSet {
 /**
  * Output of ``interview.route`` — which node the hub dispatched to.
  *  *
- *  * Kind `interview_routing_decision` (registry v5).
+ *  * Kind `interview_routing_decision` (registry v6).
  */
 export interface InterviewRoutingDecision {
   note?: string;
@@ -8869,20 +9010,20 @@ export interface InterviewRoutingDecision {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "interview_routing_decision";
+  __kind?: "interview_routing_decision";
   dispatched?: string;
 }
 
 /**
  * Output of ``interview.scribe_apply`` — the Scribe's structured output applied.
  *  *
- *  * Kind `interview_scribe_apply_result` (registry v5).
+ *  * Kind `interview_scribe_apply_result` (registry v6).
  */
 export interface InterviewScribeApplyResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "interview_scribe_apply_result";
+  __kind?: "interview_scribe_apply_result";
   tracking?: boolean;
   questions_changed?: number;
   doc_patches_applied?: number;
@@ -8891,7 +9032,7 @@ export interface InterviewScribeApplyResult {
 /**
  * Output of ``interview.hydrate`` — the session this run animates.
  *  *
- *  * Kind `interview_session_hydration` (registry v5).
+ *  * Kind `interview_session_hydration` (registry v6).
  */
 export interface InterviewSessionHydration {
   phase?: string;
@@ -8900,7 +9041,7 @@ export interface InterviewSessionHydration {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "interview_session_hydration";
+  __kind?: "interview_session_hydration";
   session_id?: string;
 }
 
@@ -8979,15 +9120,21 @@ export interface Items {
 export type Json = unknown;
 
 /**
- * Kind `json_path_result` (registry v7).
+ * Kind `json_path_result` (registry v9).
  */
 export interface JsonPathResult {
+  /**
+   * True when the path resolved to a value; false when a segment was missing.
+   */
   found: boolean;
+  /**
+   * The value at the path, or the configured default when not found.
+   */
   value?: JsonValue;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "json_path_result";
+  __kind?: "json_path_result";
 }
 
 /**
@@ -9161,13 +9308,13 @@ export interface KeywordRelationshipMap {
 }
 
 /**
- * Kind `keyword_relationship_research` (registry v8).
+ * Kind `keyword_relationship_research` (registry v10).
  */
 export interface KeywordRelationshipResearch {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "keyword_relationship_research";
+  __kind?: "keyword_relationship_research";
   /**
    * Categorized lists of keywords related to the primary keyword.
    */
@@ -9580,7 +9727,7 @@ export interface MapResult {
 }
 
 /**
- * Kind `mapped_list_result` (registry v9).
+ * Kind `mapped_list_result` (registry v11).
  */
 export interface MappedListResult {
   /**
@@ -9590,7 +9737,7 @@ export interface MappedListResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "mapped_list_result";
+  __kind?: "mapped_list_result";
   /**
    * The reshaped elements, in input order.
    */
@@ -9604,14 +9751,14 @@ export interface MappedListResult {
 /**
  * A block of markdown prose. Rendered by the streaming markdown renderer.
  *  *
- *  * Kind `markdown` (registry v6).
+ *  * Kind `markdown` (registry v8).
  */
 export interface Markdown {
   text: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "markdown";
+  __kind?: "markdown";
 }
 
 /**
@@ -10172,7 +10319,7 @@ export interface NodeError {
  * workflow, which node, and then — nested inside ``output`` — exactly what
  * the data is, all the way down.
  *  *
- *  * Kind `node_outcome` (registry v6).
+ *  * Kind `node_outcome` (registry v8).
  */
 export interface NodeOutcome {
   step?: number | null;
@@ -10180,7 +10327,7 @@ export interface NodeOutcome {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "node_outcome";
+  __kind?: "node_outcome";
   output?: unknown | null;
   run_id: string;
   status?: string;
@@ -10515,13 +10662,13 @@ export interface PageCleaningReport {
 /**
  * Output of ``page_extraction.run`` — an agent fanned across a document's pages.
  *  *
- *  * Kind `page_extraction_run_result` (registry v3).
+ *  * Kind `page_extraction_run_result` (registry v4).
  */
 export interface PageExtractionRunResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "page_extraction_run_result";
+  __kind?: "page_extraction_run_result";
   run_id?: string | null;
   status?: "completed";
   total_cost?: number;
@@ -10534,13 +10681,13 @@ export interface PageExtractionRunResult {
 /**
  * Output of ``page_extraction.validate`` — an agent judging previously extracted rows.
  *  *
- *  * Kind `page_extraction_validate_result` (registry v3).
+ *  * Kind `page_extraction_validate_result` (registry v4).
  */
 export interface PageExtractionValidateResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "page_extraction_validate_result";
+  __kind?: "page_extraction_validate_result";
   run_id?: string | null;
   status?: "completed";
   rows_total?: number;
@@ -10825,17 +10972,36 @@ export interface PageVideo {
 }
 
 /**
- * Kind `parsed_datetime` (registry v5).
+ * Success payload (Node Result System) — a parse failure is a node
+ * Failure (``code='parse_failed'``), never an ok=false payload. The old
+ * ``ok``/``error`` payload fields are gone.
+ *  *
+ *  * Kind `parsed_datetime` (registry v7).
  */
 export interface ParsedDatetime {
+  /**
+   * The parsed datetime as ISO-8601.
+   */
   iso: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "parsed_datetime";
+  __kind?: "parsed_datetime";
+  /**
+   * The parsed datetime as Unix milliseconds. Absolute only when ``has_timezone`` is true — a naive input is interpreted in the worker's local timezone.
+   */
   unix_ms: number;
+  /**
+   * The string that was parsed, kept as provenance.
+   */
   source_text?: string | null;
+  /**
+   * Whether the parsed value carried a UTC offset.
+   */
   has_timezone?: boolean | null;
+  /**
+   * That offset in seconds; null for a naive value.
+   */
   utc_offset_seconds?: number | null;
 }
 
@@ -10854,7 +11020,7 @@ export interface ParsedJson {
 }
 
 /**
- * Kind `parsed_table` (registry v5).
+ * Kind `parsed_table` (registry v6).
  */
 export interface ParsedTable {
   /**
@@ -10868,7 +11034,7 @@ export interface ParsedTable {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "parsed_table";
+  __kind?: "parsed_table";
   /**
    * Column names from the header row (empty when has_header is off).
    */
@@ -10910,7 +11076,7 @@ export interface PdfTableExtraction {
 }
 
 /**
- * Kind `pdf_text_extraction` (registry v5).
+ * Kind `pdf_text_extraction` (registry v6).
  */
 export interface PdfTextExtraction {
   text?: string;
@@ -10919,7 +11085,7 @@ export interface PdfTextExtraction {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "pdf_text_extraction";
+  __kind?: "pdf_text_extraction";
   used_ocr?: boolean;
   ocr_pages?: number;
   local_path?: string;
@@ -11453,13 +11619,13 @@ export interface PodcastEpisode {
 /**
  * Output of ``podcast.video.compose`` — the composed official video's durable URL.
  *  *
- *  * Kind `podcast_video_compose_result` (registry v3).
+ *  * Kind `podcast_video_compose_result` (registry v4).
  */
 export interface PodcastVideoComposeResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "podcast_video_compose_result";
+  __kind?: "podcast_video_compose_result";
   official_video_url?: string;
 }
 
@@ -11640,14 +11806,14 @@ export interface PressStoryAngleGenerationResult {
 /**
  * Output of ``seo.press.story_angle.rule`` — mirrors ``StoryAngleRulingResult``.
  *  *
- *  * Kind `press_story_angle_ruling_result` (registry v3).
+ *  * Kind `press_story_angle_ruling_result` (registry v4).
  */
 export interface PressStoryAngleRulingResult {
   id: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "press_story_angle_ruling_result";
+  __kind?: "press_story_angle_ruling_result";
   status: "accepted" | "developing" | "pitched" | "landed" | "dismissed";
 }
 
@@ -12197,13 +12363,13 @@ export interface RagIngestionAudit {
 /**
  * Output of ``rag.library.upsert`` — the saved/updated library doc row.
  *  *
- *  * Kind `rag_library_doc_result` (registry v5).
+ *  * Kind `rag_library_doc_result` (registry v6).
  */
 export interface RagLibraryDocResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_library_doc_result";
+  __kind?: "rag_library_doc_result";
   chunks_written?: number;
   library_doc_id?: string;
   skipped_unchanged?: boolean;
@@ -12212,13 +12378,13 @@ export interface RagLibraryDocResult {
 /**
  * Output of ``rag.library.ingest_pdf`` — a PDF processed straight into the library.
  *  *
- *  * Kind `rag_library_pdf_ingestion_result` (registry v5).
+ *  * Kind `rag_library_pdf_ingestion_result` (registry v6).
  */
 export interface RagLibraryPdfIngestionResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_library_pdf_ingestion_result";
+  __kind?: "rag_library_pdf_ingestion_result";
   chunks_written?: number;
   embedding_model?: string;
   skipped_unchanged?: boolean;
@@ -12316,13 +12482,13 @@ export interface RagSearchResult {
 /**
  * Output of ``rag.ingest_source`` — one-shot single-source ingestion.
  *  *
- *  * Kind `rag_source_ingestion_result` (registry v5).
+ *  * Kind `rag_source_ingestion_result` (registry v6).
  */
 export interface RagSourceIngestionResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_source_ingestion_result";
+  __kind?: "rag_source_ingestion_result";
   field_id?: string | null;
   source_id?: string;
   source_kind?: string;
@@ -12393,14 +12559,17 @@ export interface RagUpsertResult {
 }
 
 /**
- * Kind `random_string_result` (registry v5).
+ * Kind `random_string_result` (registry v7).
  */
 export interface RandomStringResult {
+  /**
+   * The generated random string.
+   */
   value: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "random_string_result";
+  __kind?: "random_string_result";
 }
 
 /**
@@ -12543,7 +12712,7 @@ export interface RedirectHop {
 }
 
 /**
- * Kind `regex_extract_result` (registry v5).
+ * Kind `regex_extract_result` (registry v7).
  */
 export interface RegexExtractResult {
   /**
@@ -12557,7 +12726,7 @@ export interface RegexExtractResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "regex_extract_result";
+  __kind?: "regex_extract_result";
   /**
    * All matches — one entry per match: the full match string (no groups), a dict (named groups), or a list (positional groups). Named groups take precedence if a pattern mixes both.
    */
@@ -12565,19 +12734,25 @@ export interface RegexExtractResult {
 }
 
 /**
- * Kind `regex_replace_result` (registry v7).
+ * Kind `regex_replace_result` (registry v9).
  */
 export interface RegexReplaceResult {
+  /**
+   * The text after substitutions.
+   */
   text: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "regex_replace_result";
+  __kind?: "regex_replace_result";
+  /**
+   * How many substitutions were made.
+   */
   replacements: number;
 }
 
 /**
- * Kind `rendered_text` (registry v4).
+ * Kind `rendered_text` (registry v6).
  */
 export interface RenderedText {
   /**
@@ -12587,7 +12762,7 @@ export interface RenderedText {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rendered_text";
+  __kind?: "rendered_text";
   /**
    * How many elements were rendered.
    */
@@ -13203,13 +13378,13 @@ export interface RuleGovernedVariantSet {
  * a frame that already carries it (a run read response), it is elided via
  * ``output_ref`` rather than serialized twice.
  *  *
- *  * Kind `run_result` (registry v6).
+ *  * Kind `run_result` (registry v8).
  */
 export interface RunResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "run_result";
+  __kind?: "run_result";
   output?: unknown | null;
   run_id: string;
   status?: string;
@@ -13752,14 +13927,14 @@ export interface SeoCompetitorClassificationProposal {
 /**
  * Output of ``seo.competitors.discover``.
  *  *
- *  * Kind `seo_competitor_discovery_result` (registry v3).
+ *  * Kind `seo_competitor_discovery_result` (registry v4).
  */
 export interface SeoCompetitorDiscoveryResult {
   count?: number;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_competitor_discovery_result";
+  __kind?: "seo_competitor_discovery_result";
   limitations?: string[];
   competitor_ids?: string[];
 }
@@ -13868,13 +14043,13 @@ export interface SeoGscSearchPerformanceReceipt {
 /**
  * Output of ``seo.keywords.classify`` — batch classification counters.
  *  *
- *  * Kind `seo_keyword_classify_result` (registry v3).
+ *  * Kind `seo_keyword_classify_result` (registry v4).
  */
 export interface SeoKeywordClassifyResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_keyword_classify_result";
+  __kind?: "seo_keyword_classify_result";
   batches?: number;
   updated?: number;
   eligible?: number;
@@ -13967,13 +14142,13 @@ export interface SeoKeywordSerpIntentAnalysis {
  * Output of ``seo.keywords.topics.assign`` — keywords placed into the
  * shared topic tree for a business territory.
  *  *
- *  * Kind `seo_keyword_topic_assign_result` (registry v4).
+ *  * Kind `seo_keyword_topic_assign_result` (registry v5).
  */
 export interface SeoKeywordTopicAssignResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_keyword_topic_assign_result";
+  __kind?: "seo_keyword_topic_assign_result";
   eligible?: number;
   result_kind?: "keywords.assign_topics";
   unassignable?: number;
@@ -14024,7 +14199,7 @@ export interface SeoLandscapeBrief {
   guidance?: string;
   reviewed_at?: string | null;
   generated_at?: string | null;
-  service_lines?: SeoServiceLine[];
+  service_lines?: SeoServiceLine_SeoLandscapeBrief[];
   auto_accept_at?: string | null;
   brief_markdown: string;
   agent_confidence?: number | null;
@@ -14034,14 +14209,14 @@ export interface SeoLandscapeBrief {
 /**
  * Output of ``seo.competitors.landscape_brief.read`` — brief, or none yet.
  *  *
- *  * Kind `seo_landscape_brief_read_result` (registry v4).
+ *  * Kind `seo_landscape_brief_read_result` (registry v5).
  */
 export interface SeoLandscapeBriefReadResult {
   brief?: SeoLandscapeBriefData | null;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_landscape_brief_read_result";
+  __kind?: "seo_landscape_brief_read_result";
 }
 
 /**
@@ -14252,13 +14427,13 @@ export interface SeoPageAuditResult {
  * Output of ``seo.pages.analyze_batch`` — change-gated page analyses
  * queued through the durable Batch lane.
  *  *
- *  * Kind `seo_page_batch_submit_result` (registry v3).
+ *  * Kind `seo_page_batch_submit_result` (registry v4).
  */
 export interface SeoPageBatchSubmitResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_page_batch_submit_result";
+  __kind?: "seo_page_batch_submit_result";
   errors?: string[];
   site_id: string;
   enqueued?: number;
@@ -14340,7 +14515,7 @@ export interface SeoProspectCapturePreview {
   site_id?: string | null;
   verdict: "new" | "existing" | "blocklisted" | "unusable";
   site_label?: string | null;
-  prior_relationship?: SeoPriorRelationship | null;
+  prior_relationship?: SeoPriorRelationship_SeoProspectCapturePreview | null;
   site_choice_required?: boolean;
 }
 
@@ -14348,7 +14523,7 @@ export interface SeoProspectCapturePreview {
  * Output of ``seo.prospecting.capture.run`` — what the one-click capture
  * actually did, via the same import path every prospecting method uses.
  *  *
- *  * Kind `seo_prospect_capture_result` (registry v4).
+ *  * Kind `seo_prospect_capture_result` (registry v5).
  */
 export interface SeoProspectCaptureResult {
   url: string;
@@ -14356,13 +14531,13 @@ export interface SeoProspectCaptureResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_prospect_capture_result";
+  __kind?: "seo_prospect_capture_result";
   domain?: string | null;
   report?: SeoProspectImportReportSection | null;
   outcome: "created" | "matched" | "skipped";
   site_id: string;
   site_label?: string | null;
-  prior_relationship?: SeoPriorRelationship | null;
+  prior_relationship?: SeoPriorRelationship_SeoProspectCaptureResult | null;
 }
 
 /**
@@ -14376,7 +14551,7 @@ export interface SeoProspectImportPreview {
    * The registered kind this payload is an instance of.
    */
   __kind: "seo_prospect_import_preview";
-  entries?: SeoImportEntryPlan[];
+  entries?: SeoImportEntryPlan_SeoProspectImportPreview[];
   site_id: string;
   skipped: number;
   new_domains: number;
@@ -14397,7 +14572,7 @@ export interface SeoProspectImportReport {
   __kind: "seo_prospect_import_report";
   errors?: string[];
   created?: number;
-  entries?: SeoImportEntryPlan[];
+  entries?: SeoImportEntryPlan_SeoProspectImportPreview[];
   matched?: number;
   site_id: string;
   skipped?: number;
@@ -14965,17 +15140,32 @@ export interface SerpPlacement {
 }
 
 /**
- * Kind `shifted_datetime` (registry v5).
+ * Kind `shifted_datetime` (registry v7).
  */
 export interface ShiftedDatetime {
+  /**
+   * The shifted datetime as an ISO-8601 string.
+   */
   iso: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "shifted_datetime";
+  __kind?: "shifted_datetime";
+  /**
+   * The shifted datetime as Unix milliseconds. Absolute only when ``has_timezone`` is true (same caveat as ``datetime.parse``).
+   */
   unix_ms: number;
+  /**
+   * The instant that was shifted, kept as provenance.
+   */
   source_iso?: string | null;
+  /**
+   * Whether the value carried a UTC offset.
+   */
   has_timezone?: boolean | null;
+  /**
+   * That offset in seconds; null for a naive value.
+   */
   utc_offset_seconds?: number | null;
 }
 
@@ -15005,23 +15195,23 @@ export interface SiteIntakeAnalysis {
   data_min_date?: string | null;
   bundle_periods?: string[];
   proposal_doc_id?: string | null;
-  classify_estimate?: IntakeClassifyEstimate | null;
+  classify_estimate?: IntakeClassifyEstimate_SiteIntakeAnalysis | null;
 }
 
 /**
  * Output of ``seo.site.intake.apply`` — the confirmed intake persisted.
  *  *
- *  * Kind `site_intake_apply_result` (registry v4).
+ *  * Kind `site_intake_apply_result` (registry v5).
  */
 export interface SiteIntakeApplyResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "site_intake_apply_result";
+  __kind?: "site_intake_apply_result";
   site_id: string;
   result_kind?: string;
   open_questions?: string[];
-  classify_estimate?: IntakeClassifyEstimate | null;
+  classify_estimate?: IntakeClassifyEstimate_SiteIntakeApplyResult | null;
   valuations_written?: number;
   brand_aliases_added?: string[];
   unknown_topic_slugs?: string[];
@@ -15031,13 +15221,13 @@ export interface SiteIntakeApplyResult {
 /**
  * Output of ``seo.site.strategy.interview`` — business context turned into topic values.
  *  *
- *  * Kind `site_strategy_result` (registry v3).
+ *  * Kind `site_strategy_result` (registry v4).
  */
 export interface SiteStrategyResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "site_strategy_result";
+  __kind?: "site_strategy_result";
   result_kind?: string;
   open_questions?: string[];
   valuations_written?: number;
@@ -15058,20 +15248,21 @@ export interface SiteUrlVerificationResult {
 }
 
 /**
- * Output of ``text.slug`` — a URL/filename-safe slug.
- *  *
- *  * Kind `slug_result` (registry v3).
+ * Kind `slug_result` (registry v5).
  */
 export interface SlugResult {
+  /**
+   * The URL/filename-safe slug — lowercase ASCII with runs of non-alphanumerics collapsed to the separator.
+   */
   slug: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "slug_result";
+  __kind?: "slug_result";
 }
 
 /**
- * Kind `sorted_list_result` (registry v5).
+ * Kind `sorted_list_result` (registry v7).
  */
 export interface SortedListResult {
   /**
@@ -15085,7 +15276,7 @@ export interface SortedListResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "sorted_list_result";
+  __kind?: "sorted_list_result";
 }
 
 /**
@@ -15210,15 +15401,21 @@ export interface SourceRef {
 }
 
 /**
- * Kind `split_result` (registry v7).
+ * Kind `split_result` (registry v9).
  */
 export interface SplitResult {
+  /**
+   * How many parts were produced.
+   */
   count: number;
+  /**
+   * The pieces of the text after splitting.
+   */
   parts: string[];
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "split_result";
+  __kind?: "split_result";
 }
 
 /**
@@ -15306,14 +15503,14 @@ export interface StatusPingDebug {
 /**
  * A list of short text values.
  *  *
- *  * Kind `string_list` (registry v8).
+ *  * Kind `string_list` (registry v10).
  */
 export interface StringList {
   items?: string[];
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "string_list";
+  __kind?: "string_list";
 }
 
 /**
@@ -15665,16 +15862,20 @@ export interface TastingNote {
 }
 
 /**
- * Output of ``text.template`` — a ``{{placeholder}}`` template filled in.
- *  *
- *  * Kind `template_render_result` (registry v3).
+ * Kind `template_render_result` (registry v5).
  */
 export interface TemplateRenderResult {
+  /**
+   * The template with every {{placeholder}} filled in.
+   */
   text: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "template_render_result";
+  __kind?: "template_render_result";
+  /**
+   * Placeholder names that had no value in `variables` (each was rendered as an empty string).
+   */
   missing_keys?: string[];
 }
 
@@ -15691,34 +15892,38 @@ export interface TestCard {
 }
 
 /**
- * Plain text. The generic prose kind — one block of unformatted text.
+ * Plain text — the generic prose kind. One block, no rendering promise.
+ *
+ * Registered as ``text`` (family ``workflow_io``). Deliberately NOT
+ * ``markdown``: that slug promises a renderer a markdown document, and a
+ * joined list of parts or a JSON string is not one.
  *  *
- *  * Kind `text` (registry v8).
+ *  * Kind `text` (registry v10).
  */
 export interface Text {
   text: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "text";
+  __kind?: "text";
 }
 
 /**
- * Kind `text_chunk_set` (registry v5).
+ * Kind `text_chunk_set` (registry v6).
  */
 export interface TextChunkSet {
   count?: number;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "text_chunk_set";
+  __kind?: "text_chunk_set";
   chunks?: string[];
   overlap?: number;
   chunk_size?: number;
 }
 
 /**
- * Kind `text_quality_check_result` (registry v7).
+ * Kind `text_quality_check_result` (registry v9).
  */
 export interface TextQualityCheckResult {
   chars: number;
@@ -15727,23 +15932,30 @@ export interface TextQualityCheckResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "text_quality_check_result";
+  __kind?: "text_quality_check_result";
   passed: boolean;
   reason?: string | null;
 }
 
 /**
- * Shared by any node whose entire output is one rendered/joined/
- * serialized text field — ``data.stringify_json``, ``text.join``.
+ * RETIREMENT CANDIDATE (flagged 2026-08-21, Arman's call — see
+ * KINDS_EVERYWHERE_PLAN §12). Minted for ``data.stringify_json`` /
+ * ``text.join`` only because the generic ``text`` kind was an undeclarable
+ * bare scalar. The 2026-08-21 object re-seed made ``text`` byte-identical in
+ * shape (``{"text": str}``); both former declarers now declare ``text`` and
+ * NOTHING declares this slug. Kept registered (not deleted) because 9
+ * historical ``workflow.node_outcome`` rows are stamped with it — same
+ * precedent as ``record_projection_result`` below: retirement is a ruling,
+ * never an agent's cleanup.
  *  *
- *  * Kind `text_result` (registry v7).
+ *  * Kind `text_result` (registry v9).
  */
 export interface TextResult {
   text: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "text_result";
+  __kind?: "text_result";
 }
 
 /**
@@ -16291,14 +16503,20 @@ export interface UserInputs {
 }
 
 /**
- * Kind `uuid_value` (registry v5).
+ * Kind `uuid_value` (registry v7).
  */
 export interface UuidValue {
+  /**
+   * The generated UUID string.
+   */
   uuid: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "uuid_value";
+  __kind?: "uuid_value";
+  /**
+   * The UUID version actually produced (4 = random, 7 = timestamp-ordered). Read from the value itself, not from the request — a consumer relying on time-ordering must be able to SEE that it got it.
+   */
   version?: number | null;
 }
 
@@ -19044,14 +19262,14 @@ export interface WebSearchResults {
 /**
  * Output of ``ai.util.extract_search_urls`` — flat URL list.
  *  *
- *  * Kind `web_search_urls` (registry v5).
+ *  * Kind `web_search_urls` (registry v6).
  */
 export interface WebSearchUrls {
   urls?: string[];
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "web_search_urls";
+  __kind?: "web_search_urls";
 }
 
 /**
@@ -19864,18 +20082,36 @@ export interface WineTasting {
 }
 
 /**
- * Kind `word_count_result` (registry v7).
+ * Kind `word_count_result` (registry v9).
  */
 export interface WordCountResult {
+  /**
+   * Number of lines.
+   */
   lines: number;
+  /**
+   * Number of words (runs of word characters).
+   */
   words: number;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "word_count_result";
+  __kind?: "word_count_result";
+  /**
+   * Number of sentences (split on '.', '!', '?').
+   */
   sentences: number;
+  /**
+   * Total character count, including whitespace.
+   */
   characters: number;
+  /**
+   * Number of paragraphs (blocks separated by blank lines).
+   */
   paragraphs: number;
+  /**
+   * Character count excluding all whitespace.
+   */
   characters_no_spaces: number;
 }
 
@@ -20101,6 +20337,7 @@ export type GeneratedKindSlug =
   | "image_prompts_result"
   | "image_qc_result"
   | "image_qc_verdict"
+  | "ingest_source_request"
   | "ingested_sources"
   | "intake_photo_grouping"
   | "interview_finalize_result"
@@ -20605,6 +20842,7 @@ export interface KindPayloadBySlug {
   "image_prompts_result": ImagePromptsResult;
   "image_qc_result": ImageQcResult;
   "image_qc_verdict": ImageQcVerdict;
+  "ingest_source_request": IngestSourceRequest;
   "ingested_sources": IngestedSources;
   "intake_photo_grouping": IntakePhotoGrouping;
   "interview_finalize_result": InterviewFinalizeResult;
@@ -21113,6 +21351,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "image_prompts_result",
   "image_qc_result",
   "image_qc_verdict",
+  "ingest_source_request",
   "ingested_sources",
   "intake_photo_grouping",
   "interview_finalize_result",
