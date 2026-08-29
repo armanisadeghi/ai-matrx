@@ -40,6 +40,8 @@ function buildDefaultSettings(settings: PrintSetting[]): PrintSettings {
     } else if (s.type === "range") {
       out[s.fromId] = s.defaultFrom;
       out[s.toId] = s.defaultTo;
+    } else if (s.type === "number" || s.type === "select") {
+      out[s.id] = s.defaultValue;
     }
   }
   return out;
@@ -254,6 +256,94 @@ function PrintOptionsContent({
                           aria-label={`${setting.label} — to`}
                           className="w-14 h-7 text-xs text-center rounded border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                         />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (setting.type === "number") {
+                  const min = setting.min ?? 0;
+                  const val =
+                    (settingValues[setting.id] as number | undefined) ??
+                    setting.defaultValue;
+                  const parse = (raw: string) => {
+                    if (raw === "") return setting.defaultValue;
+                    const n = parseInt(raw, 10);
+                    if (Number.isNaN(n)) return setting.defaultValue;
+                    const bounded = Math.max(min, n);
+                    return setting.max !== undefined
+                      ? Math.min(setting.max, bounded)
+                      : bounded;
+                  };
+                  return (
+                    <div
+                      key={setting.id}
+                      className="w-full flex items-start gap-3 px-3 py-2.5 rounded-lg border border-border bg-background"
+                    >
+                      <span className="flex flex-col min-w-0 flex-1">
+                        <span className="text-sm font-medium text-foreground">
+                          {setting.label}
+                        </span>
+                        {setting.description && (
+                          <span className="text-xs text-muted-foreground mt-0.5">
+                            {setting.description}
+                          </span>
+                        )}
+                      </span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={min}
+                        max={setting.max}
+                        value={val}
+                        onChange={(e) =>
+                          setNumberSetting(setting.id, parse(e.target.value))
+                        }
+                        aria-label={setting.label}
+                        className="w-16 h-7 text-xs text-center rounded border border-input bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring shrink-0 mt-0.5"
+                      />
+                    </div>
+                  );
+                }
+
+                if (setting.type === "select") {
+                  const val =
+                    (settingValues[setting.id] as string | undefined) ??
+                    setting.defaultValue;
+                  return (
+                    <div
+                      key={setting.id}
+                      className="w-full flex items-start gap-3 px-3 py-2.5 rounded-lg border border-border bg-background"
+                    >
+                      <span className="flex flex-col min-w-0 flex-1">
+                        <span className="text-sm font-medium text-foreground">
+                          {setting.label}
+                        </span>
+                        {setting.description && (
+                          <span className="text-xs text-muted-foreground mt-0.5">
+                            {setting.description}
+                          </span>
+                        )}
+                      </span>
+                      <div className="flex items-center gap-0.5 shrink-0 rounded-md border border-input p-0.5 mt-0.5">
+                        {setting.options.map((opt) => (
+                          <button
+                            key={opt.value}
+                            onClick={() =>
+                              setSettingValues((prev) => ({
+                                ...prev,
+                                [setting.id]: opt.value,
+                              }))
+                            }
+                            className={`px-2 h-6 text-xs rounded transition-colors ${
+                              val === opt.value
+                                ? "bg-primary text-primary-foreground"
+                                : "text-muted-foreground hover:bg-accent"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   );

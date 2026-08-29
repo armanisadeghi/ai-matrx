@@ -54,6 +54,31 @@ export type PrintSetting =
       toPlaceholder?: string;
       /** Which variant IDs this setting applies to. Omit = applies to all. */
       appliesTo?: string[];
+    }
+  | {
+      /** A single numeric input (e.g. "start at label #", "copies"). */
+      type: "number";
+      id: string;
+      label: string;
+      description?: string;
+      defaultValue: number;
+      /** Minimum accepted value (inclusive). Default 0. */
+      min?: number;
+      /** Maximum accepted value (inclusive). Omit = unbounded. */
+      max?: number;
+      /** Which variant IDs this setting applies to. Omit = applies to all. */
+      appliesTo?: string[];
+    }
+  | {
+      /** A one-of-N choice rendered as a compact segmented row. */
+      type: "select";
+      id: string;
+      label: string;
+      description?: string;
+      options: { value: string; label: string }[];
+      defaultValue: string;
+      /** Which variant IDs this setting applies to. Omit = applies to all. */
+      appliesTo?: string[];
     };
 
 /** A resolved map of setting id → current value, passed to print(). */

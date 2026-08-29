@@ -11,7 +11,7 @@
  *
  * Nothing is uploaded, stored, or persisted: the image lives in a canvas for
  * the length of one `decodeQrFromImageFile` call and is dropped. Decoding is
- * local (`lib/qr/decode.ts`), so the answer is instant and the surface can show
+ * local (`@ai-matrx/kit/qr`), so the answer is instant and the surface can show
  * the user WHAT it read before anything is committed.
  *
  * Generic on purpose — reach for this for any QR intake, never a second one.

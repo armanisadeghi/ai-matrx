@@ -1,39 +1,31 @@
----
-name: block-print-system
-description: >-
-  Implement, fix, extend, or audit the three-tier block-aware print/PDF system in matrx-admin.
-  Covers the BlockPrinter interface, HTML template printers, DOM capture printers,
-  PrintOptionsDialog, usePrintOptions, useDomCapturePrint, and fullscreen print wiring.
-  Use when adding print support to a block, fixing print bugs, improving print output quality,
-  creating new print variants or settings, or understanding how the print system works.
----
-
 # Block Print System
 
-Three-tier architecture for printing AI response messages, each tier handling a different scope.
+Three-tier architecture for printing AI response messages, plus the reusable
+printing core that other surfaces build on. **The core lives in
+`lib/block-print/`** — chat-specific tiers live with the conversation feature.
 
 ## Architecture Overview
 
 ```
 Tier 1 — Quick Print (prose only)
-  MessageOptionsMenu "Print / Save PDF" → printMarkdownContent() → regex → HTML window
-  File: features/chat/utils/markdown-print-utils.ts
+  printMarkdownContent() → regex → HTML window
+  File: features/conversation/utils/markdown-print.ts
   Limitation: ignores all custom blocks
 
 Tier 2 — Full Message (DOM screenshot)
-  MessageOptionsMenu "Full Print (all blocks)" → useDomCapturePrint → html2canvas + jsPDF
-  Files: features/chat/hooks/useDomCapturePrint.ts, features/chat/utils/dom-capture-print-utils.ts
+  useDomCapturePrint → html2canvas + jsPDF
+  File: features/conversation/hooks/useDomCapturePrint.ts
   Hook returns: { captureRef, isCapturing, progress, captureAsPDF, error }
   isCapturing must be wired to the menu item (disabled state + label change)
 
 Tier 3 — Per-Block (best quality, block owns its output)
   Print button in each block's header → either HTML template printer or DOM capture
-  Dialog: features/chat/components/print/PrintOptionsDialog.tsx
+  Dialog + hook: lib/block-print/PrintOptionsDialog.tsx (usePrintOptions)
 ```
 
 ## The BlockPrinter Interface
 
-Source of truth: `features/chat/utils/block-print-utils.ts`
+Source of truth: `lib/block-print/block-print-utils.ts`
 
 ```typescript
 interface BlockPrinter {
@@ -45,49 +37,46 @@ interface BlockPrinter {
 
 interface PrintVariant { id: string; label: string; description?: string; }
 
-type PrintSetting = {
-    type: "boolean";
-    id: string;
-    label: string;
-    description?: string;
-    defaultValue: boolean;
-    appliesTo?: string[];   // which variantIds; omit = all variants
-};
+// PrintSetting is a discriminated union of FOUR control types (all support
+// appliesTo?: string[] — which variantIds the setting shows for):
+//   { type: "boolean"; id; label; description?; defaultValue }
+//   { type: "range";   id; label; fromId; toId; defaultFrom; defaultTo; min?;
+//     fromPlaceholder?; toPlaceholder? }   // two number inputs; writes TWO
+//     settings-map keys (fromId/toId); 0 = "no bound" by convention
+//   { type: "number";  id; label; defaultValue; min?; max? }  // single numeric input
+//   { type: "select";  id; label; options: {value,label}[]; defaultValue }
+//     // compact segmented one-of-N row
 
 type PrintSettings = Record<string, boolean | string | number>;
 ```
 
-If `variants.length === 0` AND `settings.length === 0`, `usePrintOptions` calls `print(data)` immediately with no dialog. Otherwise the `PrintOptionsDialog` opens first.
+If `variants.length === 0` AND `settings.length === 0`, `usePrintOptions` calls `print(data)` immediately with no dialog. Otherwise the `PrintOptionsDialog` opens first (Dialog on desktop, Drawer on mobile).
 
 ## Existing Printers
 
-| Block | Strategy | File |
+| Block / surface | Strategy | File |
 |---|---|---|
-| FlashcardsBlock | HTML template | `blocks/flashcards/flashcards-printer.ts` |
-| MultipleChoiceQuiz | HTML template | `blocks/quiz/quiz-printer.ts` |
-| MathProblemBlock | HTML template | `blocks/math/math-printer.ts` |
-| TimelineBlock | DOM capture | inline in component |
-| ComparisonTableBlock | DOM capture | inline in component |
-| DecisionTreeBlock | DOM capture | inline in component |
-| InteractiveDiagramBlock | DOM capture | inline in component |
-| cookingRecipeDisplay | DOM capture (portrait) | inline in component |
-| ProgressTrackerBlock | DOM capture (portrait) | inline in component |
-| TroubleshootingBlock | DOM capture (portrait) | inline in component |
-| ResearchBlock | DOM capture (portrait) | inline in component |
-| ResourceCollectionBlock | DOM capture (portrait) | inline in component |
+| FlashcardsBlock | HTML template | `components/mardown-display/blocks/flashcards/flashcards-printer.ts` |
+| MultipleChoiceQuiz | HTML template | `components/mardown-display/blocks/quiz/quiz-printer.ts` |
+| MathProblemBlock | HTML template | `components/mardown-display/blocks/math/math-printer.ts` |
+| DiagramBlock | HTML template | `components/mardown-display/blocks/diagram/diagram-printer.ts` |
+| PD rating report | HTML template | `features/legal/wc/pd-ratings/print/pd-report-printer.ts` |
+| Performance review report | HTML template | `features/employee-performance-reviews/review-report.ts` |
+| **QR label sheets** | HTML template (registry-driven grid) | `lib/label-print/qr-labels-printer.ts` — Avery-stock QR labels; template registry, calibration page, on-screen preview + jsPDF lane. See `lib/label-print/FEATURE.md` |
+| Various display blocks | DOM capture | inline in component via `lib/block-print/dom-capture-block-printer.ts` |
 
 ## Adding an HTML Template Printer
 
 1. Create `<block-name>-printer.ts` alongside the component file.
-2. Import `buildPrintDocument, openPrintWindow, escapeHtml, type BlockPrinter, type PrintSettings` from `@/features/chat/utils/block-print-utils`.
+2. Import `buildPrintDocument, openPrintWindow, escapeHtml, type BlockPrinter, type PrintSettings` from `@/lib/block-print/block-print-utils`.
 3. Define `variants` and optional `settings` arrays.
 4. In `print(data, variantId = "default", settings?)`:
    - Cast and guard: `if (!typed?.items?.length) { openPrintWindow(buildPrintDocument("<p>No data.</p>", ...), "fallback"); return; }`
    - Call `escapeHtml()` on every user string.
    - Read settings as: `const show = (settings?.showX ?? false) as boolean`.
-5. In the component: call `usePrintOptions(printer, data)`, wire `triggerPrint` to a `<Printer>` button, render `<PrintOptionsDialog>` outside (not inside) the block wrapper.
+5. In the component: call `usePrintOptions(printer, data)` (from `@/lib/block-print/PrintOptionsDialog`), wire `triggerPrint` to a `<Printer>` button, render `<PrintOptionsDialog>` outside (not inside) the block wrapper.
 
-Full example: `flashcards-printer.ts` (HTML template with variants + settings).
+Full examples: `flashcards-printer.ts` (variants + boolean settings + FIT_TEXT auto-shrink), `lib/label-print/qr-labels-printer.ts` (all four setting types, inch-exact `@page` geometry, data-URI images).
 
 ## Adding a DOM Capture Block
 
@@ -101,7 +90,7 @@ const handlePrint = useCallback(async () => {
     if (!blockContentRef.current || isPrinting) return;
     setIsPrinting(true);
     try {
-        const { captureBlockElement } = await import('@/features/chat/utils/dom-capture-block-printer');
+        const { captureBlockElement } = await import('@/lib/block-print/dom-capture-block-printer');
         await captureBlockElement(blockContentRef.current, 'filename', 'landscape'); // or 'portrait'
     } catch (err) {
         console.error('[BlockName] Print failed:', err);
@@ -120,20 +109,23 @@ Key rules:
 
 ## Wiring Tier 2 `isCapturing`
 
-In AssistantMessage / PromptAssistantMessage:
+In the assistant-message component:
 
 ```typescript
 const { captureRef, isCapturing, captureAsPDF } = useDomCapturePrint();
 ```
 
-Pass `isCapturing` to `MessageOptionsMenu` as a prop. The menu item should be `disabled` and show `"Generating PDF…"` while true.
+Pass `isCapturing` to the message options menu as a prop. The menu item should be `disabled` and show `"Generating PDF…"` while true.
 
 ## Key Utilities
 
+All in `lib/block-print/`:
+
 - `buildPrintDocument(bodyHtml, title?, extraStyles?)` → complete `<!DOCTYPE html>` string
-- `openPrintWindow(htmlDoc, filename?)` → popup window with `window.print()` autofire; falls back to `.html` download if popup blocked
-- `printHtmlContent(bodyHtml, title?, extraStyles?)` → shorthand combo (not used by any block currently)
+- `openPrintWindow(htmlDoc, filename?)` → popup window; falls back to `.html` download if popup blocked. **The window is a fresh unauthenticated document — inline every image as a data URI, never fetch.**
+- `printHtmlContent(bodyHtml, title?, extraStyles?)` → shorthand combo
 - `captureBlockElement(el, filename, orientation?)` → delegates to `captureToPDF` with scale:2
+- Fixed-geometry sheets (`@page { size: …; margin: 0 }`, inch-exact cells, screen-only "100% scale, no margins" banner, FIT_TEXT auto-shrink): patterns in `flashcards-printer.ts` (Avery 5388) and, generalized to a template registry, `lib/label-print/`
 
 ## Common Bugs to Watch For
 
@@ -142,8 +134,4 @@ Pass `isCapturing` to `MessageOptionsMenu` as a prop. The menu item should be `d
 3. **Print button absent in fullscreen** — must add to fullscreen header explicitly
 4. **Missing `settings` param in `print()`** — use `settings?.key ?? defaultValue` pattern
 5. **`isCapturing` not wired** — users get no feedback during Tier 2 PDF generation
-
-## For Detailed Reference
-
-- `features/chat/components/print/README.md` — full block inventory, roadmap, DB-dynamic architecture plan
-- `features/chat/components/print/BLOCK-PRINTER-GUIDE.md` — step-by-step with complete checklists
+6. **Fetched images in a print window** — the window has no auth; only data URIs render
