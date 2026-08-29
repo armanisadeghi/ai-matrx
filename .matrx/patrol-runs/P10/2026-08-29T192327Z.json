@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P10",
+  "runId": "2026-08-29T192327Z",
+  "baseSha": "fb8e110a2f715f727ab21706a874ca44c16a3354",
+  "createdAt": "2026-08-29T19:23:38.648Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-29T19:23:38.648Z",
+      "actor": "/root",
+      "summary": "P10 eradication Batch 2: schema-aware generated-boundary repair.",
+      "evidence": [
+        "shared-checkout-source-commit:a58d9d3644a8e4871c2bd896a5e488f8bbd749ce",
+        "owned-paths:features/ai-models/service.ts,features/agents/redux/agent-definition/converters.ts"
+      ],
+      "previousEventHash": null,
+      "eventHash": "70e861f713db7ce381d6102779564554b8d89fa27361a52083ae851e0b395f81"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-29T19:23:39.152Z",
+      "actor": "/root",
+      "summary": "Repair implementation preserved; adding required feature documentation and focused proof.",
+      "evidence": [
+        "baseline-type-check:pass",
+        "batch-file-count:4"
+      ],
+      "previousEventHash": "70e861f713db7ce381d6102779564554b8d89fa27361a52083ae851e0b395f81",
+      "eventHash": "deec7ea11fc196bf90f34055897b7a6bba8f4f2841105728dc8945c27b6c2464"
+    }
+  ]
+}

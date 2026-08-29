@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P10",
-  "runId": "2026-08-29T191203Z",
-  "state": "closed",
-  "updatedAt": "2026-08-29T19:22:52.624Z",
-  "summary": "Batch 1 lifecycle closed; deeper repair wave continues in a new permanent record.",
-  "source": "2026-08-29T191203Z.json",
-  "eventHash": "c79907b750f49e38a6e8dd2d9ab7439062dc407cd1220ab4c38ae38ca84ff360"
+  "runId": "2026-08-29T192327Z",
+  "state": "fixing",
+  "updatedAt": "2026-08-29T19:23:39.152Z",
+  "summary": "Repair implementation preserved; adding required feature documentation and focused proof.",
+  "source": "2026-08-29T192327Z.json",
+  "eventHash": "deec7ea11fc196bf90f34055897b7a6bba8f4f2841105728dc8945c27b6c2464"
 }
