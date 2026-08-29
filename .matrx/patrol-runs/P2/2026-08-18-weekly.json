@@ -87,6 +87,26 @@
       },
       "previousEventHash": "51dcc3b00a1bce309ddc6511ccc29618af7e126545049636f8ebdc9f0af2dc61",
       "eventHash": "1081cb9714a2bb00881286704eec02004b1391f2dc492408d79d8b29124ab45e"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-29T14:18:20.167Z",
+      "actor": "codex-fleet-health-retry",
+      "summary": "Delivered certified P2 repair: integrated on main and first shipped in v0.4.779; no redundant release created.",
+      "evidence": [
+        "Candidate 2f4917730 is an ancestor of integration 82bb37452.",
+        "Integration 82bb37452 is an ancestor of release commit 03bb4b60e tagged v0.4.779.",
+        "Release v0.4.779 and candidate remain ancestors of current origin/main a8a3e79a6."
+      ],
+      "delivery": {
+        "candidateSha": "2f491773093442f46036fe14cbb266fe79466311",
+        "preservedRef": "refs/heads/patrol-runs/P2/2026-08-18-weekly",
+        "integratedSha": "82bb374523d1ef83f559f0c3d08a455c766b3e21",
+        "release": "v0.4.779"
+      },
+      "previousEventHash": "1081cb9714a2bb00881286704eec02004b1391f2dc492408d79d8b29124ab45e",
+      "eventHash": "5454a4efac3b1de9232f3e6fa8dff8aa68d6cba52fb9531ec8ca98e87b9f4575"
     }
   ]
 }

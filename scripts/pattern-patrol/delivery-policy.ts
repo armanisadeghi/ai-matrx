@@ -31,8 +31,16 @@ export function parsePatrolCommitTrailers(message: string): PatrolCommitTrailers
   return { patrolId, runId, delivery, candidateSha };
 }
 
-export function isPatrolCommit(message: string, _paths: readonly string[]): boolean {
-  return /^Patrol-(?:Id|Run|Delivery|Candidate):/im.test(message);
+export function isPatrolCommit(message: string, paths: readonly string[]): boolean {
+  return (
+    /^Patrol-(?:Id|Run|Delivery|Candidate):/im.test(message) ||
+    paths.some(
+      (path) =>
+        path.startsWith(".matrx/patrol-runs/") &&
+        path.endsWith(".json") &&
+        !path.endsWith("/latest.json"),
+    )
+  );
 }
 
 function recordPath(patrolId: string, runId: string): string {
@@ -187,13 +195,13 @@ export function authorizePatrolCommit(input: {
     );
   if (!latestDelivery) problems.push(`candidate ${candidateSha} is not in the delivery queue`);
   const latest = record.events.at(-1);
-  if (!latest || !["delivery_queued", "delivered", "closed"].includes(latest.state)) {
+  if (!latest || !["delivery_queued", "delivered", "closed", "reconciled"].includes(latest.state)) {
     problems.push(
-      `run is ${latest?.state ?? "empty"}; latest state must be delivery_queued, delivered, or closed`,
+      `run is ${latest?.state ?? "empty"}; latest state must be delivery_queued, delivered, closed, or reconciled`,
     );
   }
-  if (latest?.state === "closed" && latestDelivery?.state !== "delivered") {
-    problems.push("closed run has no prior delivered state");
+  if (["closed", "reconciled"].includes(latest?.state ?? "") && latestDelivery?.state !== "delivered") {
+    problems.push(`${latest?.state} run has no prior delivered state`);
   }
   if (latestDelivery?.delivery?.candidateSha !== candidateSha) {
     problems.push(`latest delivery event does not name exact candidate ${candidateSha}`);

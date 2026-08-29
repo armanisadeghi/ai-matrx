@@ -21,7 +21,8 @@
 // Server half: aidream POST /masterworks/audition (durable streaming run via
 // useMasterworkRun; verdict event `masterwork_audition_verdict`). Owner-only.
 
-import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Scale } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,8 @@ import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDicta
 import { cn } from "@/lib/utils";
 import type { paths } from "@/types/python-generated/api-types";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import type { RulebookRule } from "../../types";
+import { ruleAnchorId } from "../detail/RuleRelations";
 import {
   EXPERT_CALLS,
   listAuditionRuns,
@@ -155,6 +158,7 @@ export function AuditionDialog({
   open,
   onOpenChange,
   rulebookId,
+  rules,
   benchmarkClaim,
   initialCandidate,
   onGapsCaptured,
@@ -162,6 +166,9 @@ export function AuditionDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rulebookId: string;
+  /** Already loaded by the parent; supplies the citation's name and live
+   * target. */
+  rules: RulebookRule[];
   /**
    * The Expert's own intake claim about how ChatGPT does today
    * (`metadata.intake.benchmark`). THE INTAKE ANSWERS DO WORK: a Rulebook
@@ -190,6 +197,10 @@ export function AuditionDialog({
   const [expertWhy, setExpertWhy] = useState("");
   const [expertSaved, setExpertSaved] = useState<number | null>(null);
   const [savingExpert, setSavingExpert] = useState(false);
+  const rulesById = useMemo(
+    () => new Map(rules.map((rule) => [rule.id, rule])),
+    [rules],
+  );
 
   const run = useMasterworkRun<AuditionVerdict>({
     surface: "audition",
@@ -441,20 +452,35 @@ export function AuditionDialog({
               ) : null}
               {verdict.findings.length > 0 ? (
                 <ul className="space-y-1">
-                  {verdict.findings.map((f) => (
-                    <li key={f.rule_id} className="text-xs text-muted-foreground">
-                      <span className="font-medium text-foreground">
-                        {f.rule_id}
-                      </span>{" "}
-                      —{" "}
-                      {f.winner === "candidate"
-                        ? "yours wins"
-                        : f.winner === "reference"
-                          ? "the original wins"
-                          : "even"}
-                      {f.note ? `: ${f.note}` : null}
-                    </li>
-                  ))}
+                  {verdict.findings.map((f) => {
+                    const rule = rulesById.get(f.rule_id);
+                    return (
+                      <li
+                        key={f.rule_id}
+                        className="text-xs text-muted-foreground"
+                      >
+                        {rule ? (
+                          <Link
+                            href={`/masterwork/${rulebookId}#${ruleAnchorId(rule.id)}`}
+                            className="font-medium text-primary underline-offset-2 hover:underline"
+                          >
+                            {rule.name}
+                          </Link>
+                        ) : (
+                          <span className="font-medium text-amber-600 dark:text-amber-500">
+                            a rule that is no longer in this Rulebook
+                          </span>
+                        )}{" "}
+                        —{" "}
+                        {f.winner === "candidate"
+                          ? "yours wins"
+                          : f.winner === "reference"
+                            ? "the original wins"
+                            : "even"}
+                        {f.note ? `: ${f.note}` : null}
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : null}
               {verdict.gaps.length > 0 ? (

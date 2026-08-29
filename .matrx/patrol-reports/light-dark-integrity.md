@@ -95,7 +95,19 @@ chunk boundaries are unchanged.
   no batch-caused defect and confirmed every count and proposal source above.
 - Integration: candidate ancestry is preserved in `origin/main` at
   `f290fda8cb9902673e524041d4d545f597474aa9`; the permanent lifecycle is
-  `delivery_queued` for the serialized release owner.
+  `delivered`. The exact certified candidate first shipped in `v0.4.790`
+  (`a3ce6a3d8157408d7a597c7a8a88e463c1ecfcc4`), so this reconciliation did
+  not create a redundant release.
+
+## Fleet Health reconciliation — 2026-08-29
+
+- The hash-chained run record now closes the existing `delivery_queued` state
+  as `delivered`, naming the certified candidate, preserved authority ref,
+  integration commit, and first containing release.
+- The manifest-owned automation is ACTIVE on
+  `FREQ=WEEKLY;BYDAY=TU,FR;BYHOUR=6;BYMINUTE=10`.
+- All 48 visual exception proposals remain explicitly open; this lifecycle
+  reconciliation grants no approval and changes no exception source or ledger.
 
 ## Recursive learning
 
@@ -103,7 +115,10 @@ This run proved that an otherwise-correct detector can become overinclusive
 when Next profile parking leaves ignored source copies beside the live tree.
 The smallest durable improvement is now encoded: full-repo detectors must
 exclude `.next*` and `_*_build_excluded*`, with a fixture that places a real
-candidate inside each ignored directory.
+candidate inside each ignored directory. Fleet Health also proved that release
+ancestry can close a stranded delivery record without issuing a second release;
+the next durable improvement is an automated delivered-state reconciliation
+whenever a queued candidate is already contained by a version tag.
 
 ## EXCEPTION APPROVAL REQUIRED
 

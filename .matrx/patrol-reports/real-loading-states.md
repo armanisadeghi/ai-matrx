@@ -1,6 +1,7 @@
 # P8 — Real loading states
 
 - Run date: 2026-08-17
+- Delivery reconciliation: 2026-08-29
 - Run kind: scheduled structural-novelty pass plus open-sighting reconciliation
 - Authority: mixed Tier M / Tier R under the dedicated `real-loading-states` skill
 - Scan-start commit: `edc63f092`
@@ -128,7 +129,7 @@ These replace page, panel, list, tree, editor, preview, or identity content. The
 
 - First exact candidate `d82ac5e38275c1b1a4b216e314d0169c749f264a`: **CERTIFIED** by `/root/p8_exact_certifier`; 17 callsites across 15 files. Type-check, patrol contracts, Prettier, diff check, and batch-delta lint passed. All four scoped lint errors reproduce on base `458decd82` and are unchanged debt. Representative Bing callback smoke returned HTTP 200, rendered the final DOM, and emitted no console warning/error; transient fallback markup was verified statically.
 - Follow-up exact candidate `78cac960bd795942b590b9240449856235818a5e`: **CERTIFIED** by `/root/p8_exact_certifier`; 2 callsites across 2 files. Type-check, patrol contracts, Prettier, diff check, and scoped lint all passed. The picker lazy-open flow and geometry are unchanged; the canvas retains one `next/dynamic({ ssr: false })` boundary and its full-size wrapper.
-- The first candidate is delivered on `origin/main` and recorded in permanent run `ba129be4-5d09-40b0-a8bb-4a0eb77fdc26`. The follow-up is integrated on `origin/main`; its permanent run `ff48b527-3733-47e8-9f33-1dc4e326cfe2` is awaiting the serialized release projection before its final `delivered` event.
+- Both candidates are delivered on `origin/main`. Permanent run `ba129be4-5d09-40b0-a8bb-4a0eb77fdc26` records the 15-file batch; run `ff48b527-3733-47e8-9f33-1dc4e326cfe2` records exact follow-up candidate `78cac960bd795942b590b9240449856235818a5e` as first shipped in `v0.4.763` (`b991fe64159e846f5303edc8fd690d8eb3be7cf2`). Fleet Health reconciled the stale delivery projection without creating another release.
 - Managed preview used the exact automation checkout and enforced lease. The core route compiled at 187.4 GB under the 192 GB cap. No cap termination occurred during proof.
 
 ### Delivered 3-file batch

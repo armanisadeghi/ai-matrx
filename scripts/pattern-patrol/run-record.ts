@@ -13,6 +13,7 @@ export const PATROL_RUN_STATES = [
   "delivered",
   "reversed",
   "closed",
+  "reconciled",
 ] as const;
 
 export type PatrolRunState = (typeof PATROL_RUN_STATES)[number];
@@ -44,6 +45,12 @@ export interface PatrolEscape {
   reason: string;
 }
 
+export interface PatrolReconciliation {
+  candidateSha: string;
+  escapedEventHash: string;
+  checks: string[];
+}
+
 export interface PatrolRunEvent {
   sequence: number;
   state: PatrolRunState;
@@ -55,6 +62,7 @@ export interface PatrolRunEvent {
   blocker?: PatrolBlocker;
   delivery?: PatrolDelivery;
   escape?: PatrolEscape;
+  reconciliation?: PatrolReconciliation;
   previousEventHash: string | null;
   eventHash: string;
 }
@@ -78,6 +86,7 @@ export interface PatrolRunEventInput {
   blocker?: PatrolBlocker;
   delivery?: PatrolDelivery;
   escape?: PatrolEscape;
+  reconciliation?: PatrolReconciliation;
 }
 
 const TRANSITIONS: Record<PatrolRunState, readonly PatrolRunState[]> = {
@@ -92,7 +101,8 @@ const TRANSITIONS: Record<PatrolRunState, readonly PatrolRunState[]> = {
   delivery_queued: ["delivered", "infrastructure_blocked", "reversed"],
   delivered: ["reversed", "closed"],
   reversed: ["fixing", "closed"],
-  closed: [],
+  closed: ["reconciled"],
+  reconciled: [],
 };
 
 function canonicalize(value: unknown): string {
@@ -213,6 +223,46 @@ function validateEventRequirements(
       nonEmpty(value, label);
     }
   }
+
+  if (event.state === "reconciled") {
+    const reconciliation = event.reconciliation;
+    if (!reconciliation) throw new Error("reconciled events require reconciliation details");
+    nonEmpty(reconciliation.candidateSha, "reconciled candidate SHA");
+    nonEmpty(reconciliation.escapedEventHash, "escaped-delivery event hash");
+    if (reconciliation.checks.length === 0) {
+      throw new Error("reconciled events require at least one recorded proof check");
+    }
+    if (reconciliation.checks.some((check) => !check.trim())) {
+      throw new Error("reconciliation checks must not be blank");
+    }
+    const escaped = priorEvents.find(
+      (prior) =>
+        prior.state === "escaped_delivery" &&
+        prior.eventHash === reconciliation.escapedEventHash &&
+        prior.escape?.candidateSha === reconciliation.candidateSha,
+    );
+    if (!escaped) {
+      throw new Error("reconciliation must name the exact prior escaped-delivery event and candidate");
+    }
+    const certified = priorEvents.find(
+      (prior) =>
+        prior.sequence > escaped.sequence &&
+        prior.state === "certified" &&
+        prior.certification?.candidateSha === reconciliation.candidateSha,
+    );
+    if (!certified) {
+      throw new Error("reconciliation requires later exact-candidate certification");
+    }
+    const delivered = priorEvents.find(
+      (prior) =>
+        prior.sequence > certified.sequence &&
+        prior.state === "delivered" &&
+        prior.delivery?.candidateSha === reconciliation.candidateSha,
+    );
+    if (!delivered) {
+      throw new Error("reconciliation requires later exact-candidate delivery bookkeeping");
+    }
+  }
 }
 
 export function createPatrolRunRecord(input: {
@@ -289,6 +339,7 @@ export function appendPatrolRunEvent(
     blocker: input.blocker,
     delivery: input.delivery,
     escape: input.escape,
+    reconciliation: input.reconciliation,
     previousEventHash: previous.eventHash,
   };
   const event: PatrolRunEvent = { ...withoutHash, eventHash: hashEvent(withoutHash) };
@@ -370,7 +421,14 @@ export function canQueuePatrolDelivery(
 }
 
 export function isPrivilegedPatrolState(state: PatrolRunState): boolean {
-  return ["certified", "escaped_delivery", "delivery_queued", "delivered", "reversed"].includes(state);
+  return [
+    "certified",
+    "escaped_delivery",
+    "delivery_queued",
+    "delivered",
+    "reversed",
+    "reconciled",
+  ].includes(state);
 }
 
 export function canonicalPatrolRecordJson(record: PatrolRunRecord): string {

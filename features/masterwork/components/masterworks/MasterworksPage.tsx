@@ -567,6 +567,7 @@ export function MasterworksPage({
             if (!open) setAuditionCandidate(null);
           }}
           rulebookId={rulebookId}
+          rules={rulebook.rules}
           benchmarkClaim={
             (rulebook.metadata as { intake?: { benchmark?: string } } | null)
               ?.intake?.benchmark

@@ -1,0 +1,116 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P1",
+  "runId": "20260829T142359Z",
+  "baseSha": "a8a3e79a6f338071490f163e921130be27e7cfa1",
+  "createdAt": "2026-08-29T14:24:00.133Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-29T14:24:00.133Z",
+      "actor": "p1-fleet-retry",
+      "summary": "Fleet Health retry confirmed one live Rulebook rule-citation dead end and one deterministic automation status drift.",
+      "evidence": [
+        "Live automation was PAUSED while the typed manifest requires ACTIVE on Monday at 01:10.",
+        "AuditionDialog still rendered rule_id as inert text after the former BacktestDialog was renamed.",
+        "RulebookDetailPage now exposes stable per-rule anchors through ruleAnchorId, removing the prior machinery ambiguity."
+      ],
+      "previousEventHash": null,
+      "eventHash": "c2f818ad611863e18b8133b8e4f3e49342c0a208dd67422cf5bdfcf38ceac39d"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-29T14:24:00.753Z",
+      "actor": "p1-fleet-retry",
+      "summary": "Applying the established Rulebook rule anchor to Audition citations and reconciling the generated live automation config.",
+      "evidence": [
+        "Bounded two-file product batch; no product choice or exception required."
+      ],
+      "previousEventHash": "c2f818ad611863e18b8133b8e4f3e49342c0a208dd67422cf5bdfcf38ceac39d",
+      "eventHash": "c3a4dafc0db651ea23d6231a8bcc2362aa23880b583410e871f9d261d9bd8ca7"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-29T14:24:02.179Z",
+      "actor": "p1-fleet-retry",
+      "summary": "Rule citations now use real names and the canonical Rulebook anchor; candidate gates are ready for independent review.",
+      "evidence": [
+        "Live automation updated from PAUSED to ACTIVE using the exact generated P1 spec.",
+        "Generated prompt byte-matches the live prompt; schedule is FREQ=WEEKLY;BYDAY=MO;BYHOUR=1;BYMINUTE=10."
+      ],
+      "previousEventHash": "c3a4dafc0db651ea23d6231a8bcc2362aa23880b583410e871f9d261d9bd8ca7",
+      "eventHash": "5b80c717d142be9851809b52766eb4498d5a0788b30c6ad5276d4fab19c2ad58"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-29T14:28:57.748Z",
+      "actor": "p1-certifier",
+      "summary": "Independent adversarial review CERTIFIED exact candidate bd224a57bc with no batch-caused defect.",
+      "evidence": [],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "bd224a57bc0f8794fa20625e67a20ad650002d79",
+        "certifierTaskId": "p1-certifier",
+        "checks": [
+          "Exact candidate diff preserves behavior and links live findings by rule name to the established Rulebook anchor.",
+          "Missing or retired rule ids render an explicit unavailable state with no dead link and no bare id.",
+          "pnpm type-check PASS; P1 detector 73 to 72 and AuditionDialog finding removed.",
+          "Run-record verification PASS; unrelated P5 and Fleet Health manifest drift does not reject P1."
+        ]
+      },
+      "previousEventHash": "5b80c717d142be9851809b52766eb4498d5a0788b30c6ad5276d4fab19c2ad58",
+      "eventHash": "083975c734166ade0a91c30095858a4f0342cb2051905c81d3e77b68d2449565"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-29T14:30:15.520Z",
+      "actor": "p1-fleet-retry",
+      "summary": "Certified P1 candidate is integrated on origin/main and queued for the serialized release lane.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P1/20260829T142359Z"
+      ],
+      "delivery": {
+        "candidateSha": "bd224a57bc0f8794fa20625e67a20ad650002d79",
+        "preservedRef": "refs/heads/patrol-runs/P1/20260829T142359Z"
+      },
+      "previousEventHash": "083975c734166ade0a91c30095858a4f0342cb2051905c81d3e77b68d2449565",
+      "eventHash": "0c3e84e4ee160f4c02969b631651a13b56ef3b0ae364d85bd1bfb2836ebec08d"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-29T14:30:53.334Z",
+      "actor": "p1-fleet-retry",
+      "summary": "Certified Rulebook rule-door repair is integrated and contained in v0.4.1441.",
+      "evidence": [
+        "Release v0.4.1441 contains candidate bd224a57bc as an ancestor."
+      ],
+      "delivery": {
+        "candidateSha": "bd224a57bc0f8794fa20625e67a20ad650002d79",
+        "preservedRef": "refs/heads/patrol-runs/P1/20260829T142359Z",
+        "integratedSha": "50cfae5c4f967822f26e16ac25d2bab3b6aa34b3",
+        "release": "v0.4.1441"
+      },
+      "previousEventHash": "0c3e84e4ee160f4c02969b631651a13b56ef3b0ae364d85bd1bfb2836ebec08d",
+      "eventHash": "bbfc9d4d11b1b267e0b38aa20007fe3f642071ba908998cd745577e8fc3337a0"
+    },
+    {
+      "sequence": 7,
+      "state": "closed",
+      "at": "2026-08-29T14:30:58.733Z",
+      "actor": "p1-fleet-retry",
+      "summary": "P1 retry closed: one verified rule-citation dead end fixed, independently certified, integrated, and released; live automation restored to ACTIVE.",
+      "evidence": [
+        "No approvals or exceptions required.",
+        "Generated P1 prompt matches live configuration and Monday 01:10 schedule."
+      ],
+      "previousEventHash": "bbfc9d4d11b1b267e0b38aa20007fe3f642071ba908998cd745577e8fc3337a0",
+      "eventHash": "fe2ac9a7880aecc55dd10647d231c765118b856a3223be086a01794e2e926f60"
+    }
+  ]
+}

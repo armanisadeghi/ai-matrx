@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P1",
-  "runId": "2026-08-17T081511Z",
+  "runId": "20260829T142359Z",
   "state": "closed",
-  "updatedAt": "2026-08-17T08:17:45Z",
-  "summary": "P1 closed with one missing-machinery finding, zero fixes, and no Tier-M candidate.",
-  "source": "2026-08-17T081511Z.json",
-  "eventHash": "b68c30d212a7bb6e362e419f3b8ff817f98e5de3490ddff34522662926174cfd"
+  "updatedAt": "2026-08-29T14:30:58.733Z",
+  "summary": "P1 retry closed: one verified rule-citation dead end fixed, independently certified, integrated, and released; live automation restored to ACTIVE.",
+  "source": "20260829T142359Z.json",
+  "eventHash": "fe2ac9a7880aecc55dd10647d231c765118b856a3223be086a01794e2e926f60"
 }

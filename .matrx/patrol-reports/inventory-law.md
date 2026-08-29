@@ -5,6 +5,7 @@
 **Base:** `4f0e491c03460506c9ee440e0cff3140d4c3ba61`
 **Candidate:** `2f491773093442f46036fe14cbb266fe79466311`
 **Certification:** **CERTIFIED** — exact candidate `2f491773093442f46036fe14cbb266fe79466311`
+**Delivery:** **DELIVERED** — integrated as ancestor of `82bb374523d1ef83f559f0c3d08a455c766b3e21`; first shipped in `v0.4.779` (`03bb4b60e51c1ef5862696525bb20ca1f9336f37`)
 
 ## Outcome
 
@@ -12,9 +13,10 @@
 - **2 fixed in this run:** the summary sub-agent in `ContextPolicyDetailSheet` and selected agent in `SurfaceAgentBindPanel` now use canonical `EntityRef` doors. Both preserve the current work by opening the label in a new tab and expose the registered agent peek.
 - `pnpm check:dead-ends --rule=no-doors-in-file`: **9 → 7**; both changed files cleared. The remaining seven alerts are two verified findings plus five reverified false positives.
 - **30 open catalogue units:** 2 detector findings + 28 manual conversions (8 list-shell, 9 action-authority, 4 peek/window, 7 assist-adoption tasks).
-- **3 total delivered repairs across P2:** the prior Master Input repair plus this run's two candidates once certified/integrated.
+- **3 total delivered repairs across P2:** the prior Master Input repair plus this run's two certified agent-door repairs. The permanent record was reconciled to `delivered` on 2026-08-29; no redundant release was created.
 - `pnpm check:reuse-index` exits zero but loudly reports four stale Primitives Index paths (`services/message_templates`, its FEATURE, `services/outreach_single_send`, and its FEATURE). This is baseline documentation debt, not P2 product evidence.
-- No exception was proposed or approved.
+- **Only genuine product decision:** after a comparison is revealed, should each agent name in the comparison header become a canonical new-tab agent door? Blind mode must keep every identity-bearing link, title, peek control, and accessible label out of the DOM.
+- No exception was proposed or approved. The skill-resource and architectural catalogue items are evidence/machinery work, not product decisions.
 
 ## Prior delivered repair — 2026-08-12
 

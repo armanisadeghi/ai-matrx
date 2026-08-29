@@ -102,7 +102,7 @@ export default function LSIKeywordGenerator({
           rateLimitInfo.remaining > 0 && (
             <div className="p-4 bg-warning/10 border border-warning/30 rounded-lg backdrop-blur-sm">
               <p className="text-sm text-warning text-center">
-                ⚠️ Only {rateLimitInfo.remaining} free generations remaining.
+                Only {rateLimitInfo.remaining} free generations remaining.
                 <a
                   href="/sign-up"
                   className="underline ml-1 font-semibold hover:text-warning/80 transition-colors"
