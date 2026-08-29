@@ -1,4 +1,4 @@
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import { isJsonObject } from "@/types/json";
 import { createClient } from "@/utils/supabase/client";
 import { startOAuthPopup } from "@/utils/oauth-popup";

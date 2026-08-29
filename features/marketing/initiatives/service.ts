@@ -1,5 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import type { Database } from "@/types/database.types";
 import type {
   EntityFacets,

@@ -32,7 +32,7 @@
 
 "use client";
 
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -449,6 +449,44 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
 // ── 4b. The employer we opened is not the one you asked for ─────────────────
 
 /**
+ * 🚨 LAW B IS STATED EXACTLY ONCE PER PAGE, AND NEVER ZERO TIMES.
+ *
+ * The disclosure used to live in `HrShell` alone, and thirteen `/hr/*` pages do not
+ * mount `HrShell` — `/hr/tasks`, `/hr/tasks/[instanceId]` (the route every HR
+ * notification deep-links to) and the whole `/hr/me/*` family. So on exactly the
+ * surfaces an outside link lands somebody on, HR could open a different employer in
+ * silence. Proven live on 2026-08-29: `/hr?org=<unreachable>` said so; the same
+ * `?org=` on `/hr/tasks/<instance>` said nothing and rendered another employer's
+ * pay change.
+ *
+ * So the notice now hangs off `HrPageState` — the ordered state machine EVERY HR
+ * surface already runs through — and the chromes that state it above the page
+ * (`HrShell`, the two task surfaces) CLAIM it through this context so the nested
+ * `HrPageState` inside them stands down. Outermost renderer wins. Never render
+ * `HrEmployerSubstitutionNotice` without claiming, and never claim without
+ * rendering it.
+ */
+const HrDisclosureClaimedContext = createContext(false);
+
+/**
+ * Wrap a subtree whose chrome has ALREADY stated the substitution, so the
+ * `HrPageState` inside it does not state it a second time.
+ */
+export function HrDisclosureClaimed({ children }: { children: ReactNode }) {
+  return (
+    <HrDisclosureClaimedContext.Provider value={true}>
+      {children}
+    </HrDisclosureClaimedContext.Provider>
+  );
+}
+
+/** True when an ancestor chrome already stated the substitution. */
+export function useHrDisclosureClaimed(): boolean {
+  return useContext(HrDisclosureClaimedContext);
+}
+
+
+/**
  * 🚨 NO EMPLOYER IS EVER SUBSTITUTED IN SILENCE (`useHrContext` law B).
  *
  * `useHrContextResolver` legitimately rescues a person whose asked-for employer
@@ -632,6 +670,7 @@ export function HrPageState({
   requireEmployer?: boolean;
 }) {
   const context = useHrContext();
+  const disclosureClaimed = useHrDisclosureClaimed();
 
   if (context.isLoading) return <HrLoading variant={variant} rows={rows} />;
 
@@ -692,5 +731,18 @@ export function HrPageState({
     );
   }
 
-  return <>{children}</>;
+  /*
+    🚨 STATE 9 IS NOT JUST "THE PAGE" — IT IS THE PAGE, PLUS WHICH EMPLOYER IT IS.
+    Every other state above says out loud what the HR context turned out to be; the
+    granted page that opened a DIFFERENT employer than the link asked for was the one
+    that said nothing. `HrEmployerSubstitutionNotice` renders null in the ordinary
+    case, so this adds ZERO DOM unless an employer really was swapped.
+  */
+  if (disclosureClaimed) return <>{children}</>;
+  return (
+    <HrDisclosureClaimed>
+      <HrEmployerSubstitutionNotice className="mx-4 mt-3 sm:mx-6" />
+      {children}
+    </HrDisclosureClaimed>
+  );
 }

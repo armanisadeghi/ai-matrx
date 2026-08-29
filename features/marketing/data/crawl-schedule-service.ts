@@ -35,7 +35,7 @@ import type { CrawlSchedule } from "@/features/marketing/types";
 import { assertData } from "@/features/marketing/data/service";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 
 export const CRAWL_SCHEDULE_COLUMNS =

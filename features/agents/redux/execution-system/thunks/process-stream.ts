@@ -18,7 +18,7 @@ import type { CompletionStats } from "@/features/agents/types/instance.types";
 import type { ClientMetrics } from "@/features/agents/types/request.types";
 import type { ToolLifecycleStatus } from "@/features/agents/types/request.types";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
-import { monitorStream } from "@/lib/net/stream-monitor";
+import { monitorStream } from "@ai-matrx/data/net";
 import {
   isChunkEvent,
   isReasoningChunkEvent,

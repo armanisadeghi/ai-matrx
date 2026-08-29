@@ -1,5 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
 import { pokeUnderstudy } from "./understudy/refresh";
 import {

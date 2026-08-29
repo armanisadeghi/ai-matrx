@@ -23,7 +23,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import { uniqueChannelTopic } from "@ai-matrx/data/db";
 import { listResults } from "@/features/page-extraction/api/runs";
 import type { PageExtractionResult } from "@/features/page-extraction/types";
 

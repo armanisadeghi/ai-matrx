@@ -15,8 +15,8 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { guardedUpdate } from "@ai-matrx/data/db";
+import { readAllRows } from "@ai-matrx/data/db";
 import { folderForProductCaptureItem } from "@/features/files/utils/folder-conventions";
 
 import type {

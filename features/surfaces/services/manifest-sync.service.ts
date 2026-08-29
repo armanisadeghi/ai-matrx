@@ -35,7 +35,7 @@ import {
   getRegisteredSurfaceNames,
 } from "@/features/surfaces/manifests/registry";
 import { listRegisteredNamespaces } from "@/features/surfaces/config/namespace-registry";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import type {
   BrokenMapping,
   SurfaceAgentRole,

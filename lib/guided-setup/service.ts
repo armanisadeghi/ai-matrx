@@ -13,7 +13,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import { EMPTY_RUN_STATE } from "./engine";
 import type { ChecklistRun, ChecklistRunState, ChecklistScope } from "./types";
 

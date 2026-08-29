@@ -23,7 +23,7 @@
 // Pattern stolen from features/notes/redux/realtimeMiddleware.ts.
 import type { Middleware } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import { uniqueChannelTopic } from "@ai-matrx/data/db";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import type { RootState } from "@/lib/redux/store";
 import {

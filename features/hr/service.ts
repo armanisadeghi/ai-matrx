@@ -25,7 +25,7 @@
 // `{kind:"failed"}` with a sentence, never a bare Postgres code (§2 error state).
 
 import { supabase } from "@/utils/supabase/client";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import {
   HR_SEPARATION_REASON_DIMENSION,
   type HrSeparationReasonCategory,

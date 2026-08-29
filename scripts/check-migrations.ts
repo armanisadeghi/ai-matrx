@@ -44,7 +44,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { tryReadAllRowsRest } from "../lib/supabase/readAllRows";
+import { tryReadAllRowsRest } from "@ai-matrx/data/db";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "matrx-frontend";

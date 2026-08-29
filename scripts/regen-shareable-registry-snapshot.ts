@@ -38,7 +38,7 @@ import { createClient } from "@supabase/supabase-js";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { config as loadEnv } from "dotenv";
-import { readAllRows } from "../lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 loadEnv({ path: ".env.local" });
 loadEnv({ path: ".env" });

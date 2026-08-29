@@ -38,7 +38,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
-import { readAllRows } from "../../lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const AIDREAM_ROOT = process.env.AIDREAM_ROOT ?? resolve(ROOT, "..", "aidream");

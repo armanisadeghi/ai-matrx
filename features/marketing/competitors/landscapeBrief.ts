@@ -21,7 +21,7 @@ import {
 import { isErrorEvent, type TypedStreamEvent } from "@/lib/api/types";
 import { isJsonObject } from "@/types/json";
 import type { AppDispatch } from "@/lib/redux/store";
-import { guardedUpdate, type GuardedUpdateResult } from "@/utils/supabase/guardedUpdate";
+import { guardedUpdate, type GuardedUpdateResult } from "@ai-matrx/data/db";
 
 export type LandscapeBriefRow =
   Database["seo"]["Tables"]["landscape_brief"]["Row"];

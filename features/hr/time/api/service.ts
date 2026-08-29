@@ -18,7 +18,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 import { callHrTimeRpc, type HrRpcOptions } from "./rpc";
 import {

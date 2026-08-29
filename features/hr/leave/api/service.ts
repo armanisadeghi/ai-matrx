@@ -22,7 +22,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import type { HrResult } from "@/features/hr/types";
 
 /** The time lane's own options type, imported from source — never re-exported through `rpc.ts`. */

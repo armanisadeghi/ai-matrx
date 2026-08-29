@@ -8,7 +8,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
-import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { pgErrorToError } from "@ai-matrx/data";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   toDriftAlert,

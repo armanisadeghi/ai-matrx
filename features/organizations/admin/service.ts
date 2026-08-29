@@ -7,7 +7,7 @@
  * Canonical path: React → supabase-js .rpc() → Postgres. No Next.js API hop, no Python.
  */
 import { supabase } from "@/utils/supabase/client";
-import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { pgErrorToError } from "@ai-matrx/data";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { isJsonObject } from "@/types/json";
 import type { OrgRole } from "../types";

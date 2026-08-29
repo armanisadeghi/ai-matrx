@@ -28,7 +28,7 @@ import {
   FILES_TABLE_COLUMNS,
   FILE_VERSIONS_TABLE_COLUMNS,
 } from "@/features/files/filesDb";
-import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { pgErrorToError } from "@ai-matrx/data";
 
 import * as Files from "@/features/files/api/files";
 import * as Folders from "@/features/files/api/folders";

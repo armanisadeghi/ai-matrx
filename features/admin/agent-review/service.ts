@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {

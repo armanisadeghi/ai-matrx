@@ -46,6 +46,7 @@ import {
   type GoogleConnectionResource,
   type GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
+import { isStaleGoogleConnectionSelection } from "@/features/marketing/google/service";
 import {
   diagnoseGoogleConnection,
   googleConnectionDiagnostics,
@@ -266,6 +267,15 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
         organizationId: selectedYoutubeConnection.organization_id,
       });
     } catch (error) {
+      if (isStaleGoogleConnectionSelection(error)) {
+        setSelectedYoutubeChannelId("");
+        await inventory.refetch();
+        toast.info("YouTube access changed", {
+          description:
+            "That channel is no longer available to this account. The Google connection list has been refreshed; reconnect the account if you still need it.",
+        });
+        return;
+      }
       toast.error("YouTube channel could not be read", {
         description:
           error instanceof Error ? error.message : "YouTube read failed.",

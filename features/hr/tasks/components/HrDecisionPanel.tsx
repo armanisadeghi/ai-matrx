@@ -22,6 +22,7 @@ import {
 } from "@/features/hr/tasks/service";
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
 import { hrTasksHref } from "@/features/hr/routes";
+import { HrEmployerSubstitutionNotice } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import type {
@@ -284,6 +285,18 @@ export function HrDecisionPanel({
 
     return (
         <div className="flex h-full flex-col overflow-hidden">
+            {/*
+              🚨 THE DEEP-LINK LANDING OWES THE DISCLOSURE, AND NOTHING ABOVE IT PROVIDES ONE.
+              This is the route every HR notification points at, and it mounts `PageHeader` —
+              not `HrShell` — so until 2026-08-29 it was the one surface where HR could open a
+              DIFFERENT employer than the link named and say nothing (`useHrContext` law B).
+              Proven live: `/hr/tasks/<instance>?org=<unreachable>` rendered another employer's
+              pay change in silence while `/hr?org=<same>` stated the swap. Renders null in the
+              ordinary case. `embedded` drops it because the host surface already states it.
+            */}
+            {embedded ? null : (
+                <HrEmployerSubstitutionNotice className="mx-4 mt-3 shrink-0" />
+            )}
             {/* Embedded, the back link points at the list this window was opened FROM, so it is
                 dropped — but the restricted banner is a disclosure fact and is never dropped, so
                 the bar survives whenever there is something in it. */}

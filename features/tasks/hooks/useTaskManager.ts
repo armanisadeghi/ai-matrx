@@ -12,7 +12,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/utils/supabase/client';
-import { uniqueChannelTopic } from '@/utils/supabase/realtime';
+import { uniqueChannelTopic } from '@ai-matrx/data/db';
 import { getUserId } from '@/utils/auth/getUserId';
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 import type { DatabaseTask, DatabaseProject, ProjectWithTasks } from '../types';

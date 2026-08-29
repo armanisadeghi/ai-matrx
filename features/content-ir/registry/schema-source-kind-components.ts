@@ -15,7 +15,7 @@
 
 import type { Json } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 async function getSupabase() {
   const { supabase } = await import("@/utils/supabase/client");

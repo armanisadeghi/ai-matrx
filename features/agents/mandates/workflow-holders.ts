@@ -18,7 +18,7 @@
 // every refusal the gate returns is shown verbatim.
 
 import { supabase } from "@/utils/supabase/client";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 export interface WorkflowHolderCandidate {
   id: string;

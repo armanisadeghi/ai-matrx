@@ -25,7 +25,7 @@ import { config } from "dotenv";
 import { resolve } from "node:path";
 
 import { validateStructuralLeg } from "@ai-matrx/content-ir";
-import { readAllRows } from "../../lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 config({ path: resolve(process.cwd(), ".env.local") });
 

@@ -24,7 +24,7 @@ import { getCmsClient, verifySiteOwnership, verifyAssetOwnership } from "../_lib
 import { resolveCmsCaller, type CmsCaller } from "../_lib/cmsAccess";
 import { logCmsActivity } from "../_lib/activityLog";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 // Durable public hosts a library asset URL may live on. Anything else — an
 // arbitrary external https URL — is refused so

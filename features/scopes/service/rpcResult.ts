@@ -25,7 +25,7 @@
 // `Error`, and keep the Postgres/PostgREST code in `detail` so the next
 // failure is attributable instead of anonymous.
 
-import { isTransportFailure } from "@/lib/net/errors";
+import { isTransportFailure } from "@ai-matrx/data/net";
 
 import type { ScopesRpcError, ScopesRpcResult } from "@/features/scopes/types";
 

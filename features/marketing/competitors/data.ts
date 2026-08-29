@@ -1,7 +1,7 @@
 import type { Database } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { callApi } from "@/lib/api/call-api";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import type { AppDispatch } from "@/lib/redux/store";
 import type {
   CompetitorTrackingStatus,

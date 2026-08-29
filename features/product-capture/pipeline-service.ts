@@ -9,7 +9,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { guardedUpdate } from "@ai-matrx/data/db";
 
 import type { CaptureItem } from "./types";
 import type {

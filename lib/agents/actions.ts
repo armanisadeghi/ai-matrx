@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type { Database } from "@/types/database.types";
 import { stripNullish } from "@/utils/supabase/payload";
-import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { pgErrorToError } from "@ai-matrx/data";
 import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
 import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 

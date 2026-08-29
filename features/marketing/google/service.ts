@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
-import { parseHttpError } from "@/lib/api/errors";
+import { BackendApiError, parseHttpError } from "@/lib/api/errors";
 import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
@@ -23,6 +23,19 @@ export type GoogleConnectionPurpose =
   | "general"
   | "google_ads_isolated"
   | "read_only_sweep";
+
+/**
+ * A connection/resource can disappear between the RLS-scoped inventory read
+ * and a deliberate preview click (membership removed, connection revoked, or
+ * resource reconciled by a fresh OAuth grant). Those 403/404 responses are
+ * stale-selection control flow, not a product crash.
+ */
+export function isStaleGoogleConnectionSelection(error: unknown): boolean {
+  return (
+    error instanceof BackendApiError &&
+    (error.status === 403 || error.status === 404)
+  );
+}
 
 // `credential_item_id` / `vault_secret_key` are REFERENCES, never secrets (a
 // vault item id and a key name). Reading them is what lets the UI tell the

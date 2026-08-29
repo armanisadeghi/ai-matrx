@@ -49,7 +49,7 @@ import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
-import { readAllRowsRest } from "../lib/supabase/readAllRows";
+import { readAllRowsRest } from "@ai-matrx/data/db";
 import {
   requestTakeoverArgsSchema,
   updatePlanArgsSchema,

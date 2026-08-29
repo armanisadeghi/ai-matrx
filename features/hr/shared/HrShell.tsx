@@ -54,7 +54,7 @@ import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { cn } from "@/lib/utils";
 
 import { hrHref, hrSwitchEmployerHref } from "../routes";
-import { HrEmployerSubstitutionNotice } from "./HrStates";
+import { HrDisclosureClaimed, HrEmployerSubstitutionNotice } from "./HrStates";
 import { resolveHrNav } from "./hr-nav";
 import { useHrContext } from "./useHrContext";
 import { isOrgSteward, useHrPersona } from "./useHrPersona";
@@ -194,7 +194,14 @@ export function HrShell({
               </div>
             ) : null}
           </div>
-          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+          {/*
+            The shell states the substitution above, so it CLAIMS the disclosure —
+            otherwise the `HrPageState` inside the page would state it a second time.
+            See `HrDisclosureClaimed` in `HrStates`.
+          */}
+          <div className="flex min-h-0 flex-1 flex-col">
+            <HrDisclosureClaimed>{children}</HrDisclosureClaimed>
+          </div>
         </div>
       </div>
     </>

@@ -12,7 +12,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import { uniqueChannelTopic } from "@ai-matrx/data/db";
 import type { AppThunk } from "@/lib/redux/store";
 import type { ListScope } from "@/lib/list-scope/types";
 import type {

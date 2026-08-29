@@ -1,7 +1,9 @@
 import {
   connectionResource,
+  isStaleGoogleConnectionSelection,
   type GoogleConnectionPurpose,
 } from "@/features/marketing/google/service";
+import { BackendApiError } from "@/lib/api/errors";
 import { GOOGLE_CONNECTION_SCOPES } from "@/features/marketing/google/types";
 import {
   GOOGLE_ADS_REPORTING_SCOPES,
@@ -27,6 +29,36 @@ const baseResource = {
 };
 
 describe("Google OAuth connection resources", () => {
+  it.each([403, 404])(
+    "treats HTTP %s after inventory selection as stale access control flow",
+    (status) => {
+      expect(
+        isStaleGoogleConnectionSelection(
+          new BackendApiError({
+            code: status === 403 ? "forbidden" : "not_found",
+            detail: "selection is no longer reachable",
+            userMessage: "Selection unavailable",
+            status,
+          }),
+        ),
+      ).toBe(true);
+    },
+  );
+
+  it("keeps provider and server failures on the captured error path", () => {
+    expect(
+      isStaleGoogleConnectionSelection(
+        new BackendApiError({
+          code: "internal_error",
+          detail: "provider failed",
+          userMessage: "Please try again",
+          status: 500,
+        }),
+      ),
+    ).toBe(false);
+    expect(isStaleGoogleConnectionSelection(new Error("network"))).toBe(false);
+  });
+
   it("preserves YouTube channels as first-class resources", () => {
     expect(
       connectionResource({

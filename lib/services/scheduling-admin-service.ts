@@ -7,7 +7,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
-import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { pgErrorToError } from "@ai-matrx/data";
 import { buildSearchOr } from "@/utils/supabase-search";
 import type {
   RunStatus,

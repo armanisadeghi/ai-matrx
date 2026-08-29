@@ -18,7 +18,7 @@
 // recording survives route/tab changes.
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import { isTransportFailure } from "@/lib/net/errors";
+import { isTransportFailure } from "@ai-matrx/data/net";
 import { showVoiceInputErrorToast } from "@/features/audio/services/voiceInputErrorToast";
 import {
   useVoiceCapture,

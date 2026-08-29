@@ -16,7 +16,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { pgErrorToError } from "@ai-matrx/data";
 import { runWithSessionRetry } from "@/lib/supabase/authRetry";
 import type { StorageUsageResponse } from "@/features/files/types";
 

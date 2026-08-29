@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import {
   getCmsClient,
   lookupCmsPageAccess,

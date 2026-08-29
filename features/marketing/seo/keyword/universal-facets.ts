@@ -22,7 +22,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database.types";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 type UniversalFacetViewRow =
   Database["seo"]["Views"]["keyword_universal_facet"]["Row"];

@@ -15,7 +15,7 @@ import type {
 import { supabase } from "@/utils/supabase/client";
 import type { RootState } from "@/lib/redux/rootReducer";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import { uniqueChannelTopic } from "@ai-matrx/data/db";
 import type { SyncEngineApi } from "@/lib/sync/engine/middleware";
 import {
   upsertNoteFromServer,

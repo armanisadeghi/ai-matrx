@@ -21,7 +21,7 @@ import {
   type StoredFieldElement,
 } from "@ai-matrx/content-ir";
 import type { BlockSchemaEntry, BlockSchemaRegistry } from "./schema-source-flexible-data";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 async function getSupabase() {
   const { supabase } = await import("@/utils/supabase/client");

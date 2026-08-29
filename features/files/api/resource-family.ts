@@ -1,5 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
-import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { pgErrorToError } from "@ai-matrx/data";
 
 export const FILE_RESOURCE_FAMILY_SCHEMA_VERSION = 2;
 

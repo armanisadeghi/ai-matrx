@@ -13,8 +13,8 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { interviewDb } from "@/utils/supabase/interviewDb";
-import { readAllRows } from "@/lib/supabase/readAllRows";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import { readAllRows } from "@ai-matrx/data/db";
+import { uniqueChannelTopic } from "@ai-matrx/data/db";
 import type {
   HoleClassification,
   HoleStatus,

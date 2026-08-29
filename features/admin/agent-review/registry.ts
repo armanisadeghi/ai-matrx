@@ -1,5 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import type { Database } from "@/types/database.types";
 
 export type TaxonomyNodeRow =

@@ -13,6 +13,10 @@ import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice"
 import { HrFailureResolveDialog } from "@/features/hr/tasks/components/HrFailureResolveDialog";
 import { HrTaskTable } from "@/features/hr/tasks/components/HrTaskTable";
 import { hrTaskHref, hrTasksHref } from "@/features/hr/routes";
+import {
+    HrDisclosureClaimed,
+    HrEmployerSubstitutionNotice,
+} from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { isScope } from "@/features/hr/tasks/envelope";
 import { useHrInbox } from "@/features/hr/tasks/hooks/useHrInbox";
@@ -191,6 +195,15 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
 
     return (
         <div className="flex h-full flex-col overflow-hidden">
+            {/*
+              🚨 THIS ROUTE HAS NO `HrShell`, SO IT OWES THE DISCLOSURE ITSELF.
+              `/hr/tasks` is a `PageHeader` route: nothing above it states which
+              employer opened, so a `?org=` that resolved to a different one would be
+              silent here — the defect `useHrContext` law B exists to prevent. The
+              notice renders null in the ordinary case; the claim stops the embedded
+              `HrDecisionPanel` below from repeating it.
+            */}
+            <HrEmployerSubstitutionNotice className="mx-4 mt-3 shrink-0" />
             <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
                 {SCOPES.map((option) => {
                     // §5.9: scopes are shown only where the persona has them.
