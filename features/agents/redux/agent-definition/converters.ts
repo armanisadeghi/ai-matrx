@@ -25,13 +25,15 @@ import { parseCustomTools } from "@/features/agents/redux/agent-definition/parse
 import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
 import { stripNullish } from "@/utils/supabase/payload";
 import type { SkillConfig } from "@/features/skills/types";
-import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
+import { parseUiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
 import type { MatrxDirectivesConfig } from "@/features/agents/types/matrx-directives.types";
 import { isJsonObject } from "@/types/json";
 import type {
   AgentDefinition,
   AgentType,
   AgentVersionSnapshot,
+  ModelTier,
+  ModelTiers,
 } from "../../types/agent-definition.types";
 
 // ---------------------------------------------------------------------------
@@ -54,14 +56,13 @@ const SETTINGS_FORBIDDEN_KEYS: readonly string[] = [
 
 function sanitizeServerSettings(
   settings: AgentDefinition["settings"] | null | undefined,
-): AgentDefinition["settings"] {
+): Record<string, unknown> {
   if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
-    return {} as AgentDefinition["settings"];
+    return {};
   }
-  const src = settings as Record<string, unknown>;
   const out: Record<string, unknown> = {};
   const stripped: string[] = [];
-  for (const [k, v] of Object.entries(src)) {
+  for (const [k, v] of Object.entries(settings)) {
     if (SETTINGS_FORBIDDEN_KEYS.includes(k)) {
       stripped.push(k);
       continue;
@@ -76,7 +77,7 @@ function sanitizeServerSettings(
         "an upstream writer is mis-routing them into settings.",
     );
   }
-  return out as AgentDefinition["settings"];
+  return out;
 }
 
 export type { AgentVersionSnapshot };
@@ -125,15 +126,14 @@ export function parseSkillConfigJson(raw: unknown): SkillConfig {
     forbidden: [],
     disabled: false,
   };
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return empty;
-  const obj = raw as Record<string, unknown>;
+  if (!isJsonObject(raw)) return empty;
   const arrOrEmpty = (v: unknown): string[] =>
     Array.isArray(v) ? v.filter((s): s is string => typeof s === "string") : [];
   return {
-    included: arrOrEmpty(obj.included),
-    listed: arrOrEmpty(obj.listed),
-    forbidden: arrOrEmpty(obj.forbidden),
-    disabled: typeof obj.disabled === "boolean" ? obj.disabled : false,
+    included: arrOrEmpty(raw.included),
+    listed: arrOrEmpty(raw.listed),
+    forbidden: arrOrEmpty(raw.forbidden),
+    disabled: typeof raw.disabled === "boolean" ? raw.disabled : false,
   };
 }
 
@@ -143,9 +143,103 @@ export function parseAgentAutoToolsDisabled(raw: unknown): boolean {
   return raw.auto_tools_disabled === true;
 }
 
+/** Narrow the generated text column to the two values enforced by the DB. */
+function parseAgentType(raw: string): AgentType {
+  if (raw === "user" || raw === "builtin") return raw;
+  throw new Error(`[agent-converters] Invalid agent_type: ${raw}`);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
+}
+
+/** Validate understood directive keys while preserving opaque host-owned keys. */
+function parseMatrxDirectives(raw: unknown): MatrxDirectivesConfig {
+  if (!isJsonObject(raw)) {
+    throw new Error("[agent-converters] matrx_actions must be an object");
+  }
+  if (raw.actions !== undefined && !isStringArray(raw.actions)) {
+    throw new Error("[agent-converters] matrx_actions.actions must be strings");
+  }
+  if (
+    raw.apply_policy !== undefined &&
+    raw.apply_policy !== "auto" &&
+    raw.apply_policy !== "ask" &&
+    raw.apply_policy !== "off"
+  ) {
+    throw new Error(
+      '[agent-converters] matrx_actions.apply_policy must be "auto", "ask", or "off"',
+    );
+  }
+  if (raw.auto_apply !== undefined && typeof raw.auto_apply !== "boolean") {
+    throw new Error(
+      "[agent-converters] matrx_actions.auto_apply must be a boolean",
+    );
+  }
+  if (raw.allow !== undefined && !isStringArray(raw.allow)) {
+    throw new Error("[agent-converters] matrx_actions.allow must be strings");
+  }
+  if (raw.directive !== undefined && typeof raw.directive !== "string") {
+    throw new Error(
+      "[agent-converters] matrx_actions.directive must be a string",
+    );
+  }
+
+  const parsed: MatrxDirectivesConfig = {};
+  Object.assign(parsed, raw);
+  return parsed;
+}
+
+/** Validate the small, closed model-tier JSON contract at DB ingress. */
+function parseModelTiersJson(raw: unknown): ModelTiers | null {
+  if (raw === null) return null;
+  if (!isJsonObject(raw) || typeof raw.default !== "string") {
+    throw new Error(
+      "[agent-converters] model_tiers must be null or an object with a string default",
+    );
+  }
+
+  const parsed: ModelTiers = { default: raw.default };
+  if (raw.flexible !== undefined) {
+    if (typeof raw.flexible !== "boolean") {
+      throw new Error(
+        "[agent-converters] model_tiers.flexible must be a boolean",
+      );
+    }
+    parsed.flexible = raw.flexible;
+  }
+
+  if (raw.tiers !== undefined) {
+    if (!isJsonObject(raw.tiers)) {
+      throw new Error("[agent-converters] model_tiers.tiers must be an object");
+    }
+    const tiers: Record<string, ModelTier> = {};
+    for (const [key, value] of Object.entries(raw.tiers)) {
+      if (!isJsonObject(value) || typeof value.modelId !== "string") {
+        throw new Error(
+          `[agent-converters] model_tiers.tiers.${key}.modelId must be a string`,
+        );
+      }
+      if (value.label !== undefined && typeof value.label !== "string") {
+        throw new Error(
+          `[agent-converters] model_tiers.tiers.${key}.label must be a string`,
+        );
+      }
+      const tier: ModelTier = { modelId: value.modelId };
+      if (value.label !== undefined) tier.label = value.label;
+      tiers[key] = tier;
+    }
+    parsed.tiers = tiers;
+  }
+
+  return parsed;
+}
+
 /**
  * Converts a full agents Row into the frontend AgentDefinition shape.
- * Safe to call with any row — all JSONB fields are cast but not key-converted.
+ * Closed JSONB contracts are parsed here; their keys are never case-converted.
  */
 export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
   // Tools come from the authoritative columns — never from tool_config.
@@ -173,7 +267,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     isActive: row.is_active,
     isArchived: row.is_archived,
     isFavorite: row.is_favorite,
-    agentType: row.agent_type as AgentType,
+    agentType: parseAgentType(row.agent_type),
 
     modelId: row.model_id,
     // messages: JSONB — cast but not key-converted
@@ -187,19 +281,19 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     tools,
 
     contextPolicies:
-      (row.context_policies as unknown as AgentDefinition["contextPolicies"]) ?? [],
+      (row.context_policies as unknown as AgentDefinition["contextPolicies"]) ??
+      [],
     autoContextDisabled: row.auto_context_disabled === true,
     inputKind: row.input_kind ?? null,
 
-    modelTiers:
-      (row.model_tiers as unknown as AgentDefinition["modelTiers"]) ?? null,
+    modelTiers: parseModelTiersJson(row.model_tiers),
     outputSchema:
       (row.output_schema as unknown as AgentDefinition["outputSchema"]) ?? null,
     customTools,
     autoToolsDisabled,
     skillConfig,
-    uiGates: (row.ui_gates as unknown as UiGates) ?? {},
-    matrxDirectives: (row.matrx_actions as unknown as MatrxDirectivesConfig) ?? {},
+    uiGates: parseUiGates(row.ui_gates),
+    matrxDirectives: parseMatrxDirectives(row.matrx_actions),
     mcpServers: row.mcp_servers ?? [],
 
     createdBy: row.created_by,
@@ -248,7 +342,13 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
  * utils/supabase/payload.ts for the full rationale.
  */
 export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
-  const raw: Partial<AgentInsert> = {
+  if (!agent.organizationId) {
+    throw new Error(
+      "[agent-converters] organizationId is required for agent.definition inserts",
+    );
+  }
+
+  const raw: AgentInsert = {
     name: agent.name,
     description: agent.description,
     category: agent.category,
@@ -259,35 +359,25 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     agent_type: agent.agentType,
 
     model_id: agent.modelId,
-    messages:
-      agent.messages as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["messages"],
-    variable_definitions:
-      agent.variableDefinitions as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["variable_definitions"],
-    settings: sanitizeServerSettings(
-      agent.settings,
-    ) as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["settings"],
+    messages: agent.messages,
+    variable_definitions: agent.variableDefinitions,
+    settings: sanitizeServerSettings(agent.settings),
     tools: sanitizeAgentToolIds(agent.tools, "agentDefinitionToInsert"),
 
-    ui_gates:
-      agent.uiGates as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["ui_gates"],
-    matrx_actions:
-      agent.matrxDirectives as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["matrx_actions"],
+    ui_gates: agent.uiGates,
+    matrx_actions: agent.matrxDirectives,
 
-    context_policies:
-      agent.contextPolicies as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["context_policies"],
+    context_policies: agent.contextPolicies,
     auto_context_disabled: agent.autoContextDisabled,
     input_kind: agent.inputKind,
 
-    model_tiers:
-      agent.modelTiers as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["model_tiers"],
-    output_schema:
-      agent.outputSchema as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["output_schema"],
-    custom_tools:
-      agent.customTools as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["custom_tools"],
+    model_tiers: agent.modelTiers,
+    output_schema: agent.outputSchema,
+    custom_tools: agent.customTools,
     mcp_servers: agent.mcpServers,
 
     created_by: agent.createdBy,
-    organization_id: agent.organizationId ?? undefined,
+    organization_id: agent.organizationId,
     task_id: agent.taskId,
 
     default_rag_boost: agent.defaultRagBoost,
@@ -299,7 +389,7 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     skill_config: skillConfigToJsonb(agent.skillConfig),
   };
 
-  return stripNullish(raw) as AgentInsert;
+  return stripNullish(raw);
 }
 
 // ---------------------------------------------------------------------------
@@ -327,16 +417,11 @@ export function agentDefinitionToUpdate(
   if (partial.agentType !== undefined) update.agent_type = partial.agentType;
 
   if (partial.modelId !== undefined) update.model_id = partial.modelId;
-  if (partial.messages !== undefined)
-    update.messages =
-      partial.messages as unknown as Database["agent"]["Tables"]["definition"]["Update"]["messages"];
+  if (partial.messages !== undefined) update.messages = partial.messages;
   if (partial.variableDefinitions !== undefined)
-    update.variable_definitions =
-      partial.variableDefinitions as unknown as Database["agent"]["Tables"]["definition"]["Update"]["variable_definitions"];
+    update.variable_definitions = partial.variableDefinitions;
   if (partial.settings !== undefined)
-    update.settings = sanitizeServerSettings(
-      partial.settings,
-    ) as unknown as Database["agent"]["Tables"]["definition"]["Update"]["settings"];
+    update.settings = sanitizeServerSettings(partial.settings);
   if (partial.tools !== undefined) {
     update.tools = sanitizeAgentToolIds(
       partial.tools,
@@ -344,35 +429,33 @@ export function agentDefinitionToUpdate(
     );
   }
 
-  if (partial.uiGates !== undefined)
-    update.ui_gates =
-      partial.uiGates as unknown as Database["agent"]["Tables"]["definition"]["Update"]["ui_gates"];
+  if (partial.uiGates !== undefined) update.ui_gates = partial.uiGates;
   if (partial.matrxDirectives !== undefined)
-    update.matrx_actions =
-      partial.matrxDirectives as unknown as Database["agent"]["Tables"]["definition"]["Update"]["matrx_actions"];
+    update.matrx_actions = partial.matrxDirectives;
 
   if (partial.contextPolicies !== undefined)
-    update.context_policies =
-      partial.contextPolicies as unknown as Database["agent"]["Tables"]["definition"]["Update"]["context_policies"];
+    update.context_policies = partial.contextPolicies;
 
   if (partial.autoContextDisabled !== undefined)
     update.auto_context_disabled = partial.autoContextDisabled;
   if (partial.inputKind !== undefined) update.input_kind = partial.inputKind;
 
-  if (partial.modelTiers !== undefined)
-    update.model_tiers =
-      partial.modelTiers as unknown as Database["agent"]["Tables"]["definition"]["Update"]["model_tiers"];
+  if (partial.modelTiers !== undefined) update.model_tiers = partial.modelTiers;
   if (partial.outputSchema !== undefined)
-    update.output_schema =
-      partial.outputSchema as unknown as Database["agent"]["Tables"]["definition"]["Update"]["output_schema"];
+    update.output_schema = partial.outputSchema;
   if (partial.customTools !== undefined)
-    update.custom_tools =
-      partial.customTools as unknown as Database["agent"]["Tables"]["definition"]["Update"]["custom_tools"];
+    update.custom_tools = partial.customTools;
   if (partial.mcpServers !== undefined) update.mcp_servers = partial.mcpServers;
 
   if (partial.createdBy !== undefined) update.created_by = partial.createdBy;
-  if (partial.organizationId !== undefined)
-    update.organization_id = partial.organizationId ?? undefined;
+  if (partial.organizationId !== undefined) {
+    if (partial.organizationId === null) {
+      throw new Error(
+        "[agent-converters] organizationId cannot be cleared on agent.definition",
+      );
+    }
+    update.organization_id = partial.organizationId;
+  }
   if (partial.taskId !== undefined) update.task_id = partial.taskId;
 
   if (partial.defaultRagBoost !== undefined)
@@ -429,7 +512,7 @@ export function versionSnapshotRowToAgentDefinition(
     changedAt: row.changed_at,
     changeNote: row.change_note,
 
-    agentType: row.agent_type as AgentDefinition["agentType"],
+    agentType: parseAgentType(row.agent_type),
     name: row.name,
     description: row.description,
     category: row.category,
@@ -454,20 +537,13 @@ export function versionSnapshotRowToAgentDefinition(
     contextPolicies: row.context_policies ?? [],
     autoContextDisabled: row.auto_context_disabled === true,
     inputKind: row.input_kind ?? null,
-    modelTiers: row.model_tiers,
+    modelTiers: parseModelTiersJson(row.model_tiers),
     outputSchema: row.output_schema,
     customTools: row.custom_tools ?? [],
-    autoToolsDisabled: Boolean(
-      (row as unknown as { tool_config?: { auto_tools_disabled?: boolean } })
-        .tool_config?.auto_tools_disabled,
-    ),
-    // Version snapshot row schema may or may not carry skill_config — the
-    // RPC return type isn't tightened here. Defensive parse handles both.
-    skillConfig: parseSkillConfigJson(
-      (row as { skill_config?: unknown }).skill_config,
-    ),
-    uiGates: (row.ui_gates as unknown as UiGates) ?? {},
-    matrxDirectives: (row.matrx_actions as unknown as MatrxDirectivesConfig) ?? {},
+    autoToolsDisabled: parseAgentAutoToolsDisabled(row.tool_config),
+    skillConfig: parseSkillConfigJson(row.skill_config),
+    uiGates: parseUiGates(row.ui_gates),
+    matrxDirectives: parseMatrxDirectives(row.matrx_actions),
     mcpServers: row.mcp_servers ?? [],
 
     isOwner: null,

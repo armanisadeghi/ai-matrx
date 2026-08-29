@@ -180,10 +180,15 @@ function WindowPanelBodyShell({
     <div
       ref={bodyRef}
       className={cn(
-        "relative z-0 min-h-0 flex-1 overflow-hidden p-1.5 pointer-events-none",
+        // The structural guard ring is part of the body surface, not window
+        // chrome. Painting it with the canonical page background keeps the
+        // 6px resize-handle gutter visually continuous with full-bleed bodies
+        // such as Chat instead of exposing the card-coloured window shell.
+        "relative z-0 min-h-0 flex-1 overflow-hidden bg-background p-1.5 pointer-events-none",
         fitContent && "overflow-visible",
         captureDimensions && "fixed -left-[100000px] top-0 z-[-1] flex",
       )}
+      data-window-panel-body-shell
       style={captureDimensions ?? undefined}
     >
       <div

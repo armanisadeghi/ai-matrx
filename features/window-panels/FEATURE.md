@@ -841,6 +841,7 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 
 ## Change log
 
+- **2026-08-29** — **Window body guard rings now paint with the canonical background token.** The structural 6px `WindowPanelBodyShell` gutter still protects resize-handle hit zones, but it no longer exposes the card-coloured window shell around full-bleed bodies such as Chat; the gutter and transparent body content now resolve to the same `bg-background` surface.
 - **2026-08-26** — **Degenerate viewport recovery is warning-level observability.** The expected hidden/prerendered 0×0 measurement still warns once and prevents geometry writes, but no longer enters the production `client:console-error` queue.
 
 - **2026-08-24** — Added `userSearchWindow`, the canonical reusable user-discovery panel. It is callback-backed, multi-instance, ephemeral, mobile-fullscreen, runtime-validates every overlay payload, and renders a sortable/filterable/paginated `MatrxDataTable`. Super-admin callers may load the protected account directory; ordinary callers provide only candidates they can already see. `UserSearchField` is the shared inline-input plus window-launch affordance.

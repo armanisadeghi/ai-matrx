@@ -21,7 +21,7 @@ import {
   selectAgentName,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
+import { SharedBattleInput } from "@/features/agent-comparison/shared/SharedBattleInput";
 import SearchableSelect from "@/components/matrx/SearchableSelect";
 import type { Option } from "@/components/matrx/SearchableSelect";
 import { cn } from "@/lib/utils";
@@ -239,25 +239,11 @@ export function LockedInputSection() {
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[11px] font-semibold text-foreground">
-                Shared request
-              </span>
-              <span className="text-[10px] text-muted-foreground">
-                Use Submit All in the toolbar to run every model.
-              </span>
-            </div>
-            <SmartAgentInput
-              conversationId={inputConversationId}
-              surfaceKey="agent-comparison-model-input"
-              sendButtonVariant="blue"
-              showSendButton={false}
-              showSubmitOnEnterToggle={false}
-              disableSend
-              variablesPanelStyle="inline"
-            />
-          </div>
+          <SharedBattleInput
+            conversationId={inputConversationId}
+            surfaceKey="agent-comparison-model-input"
+            description="Use Submit All in the toolbar to run every model."
+          />
         </div>
       )}
     </div>

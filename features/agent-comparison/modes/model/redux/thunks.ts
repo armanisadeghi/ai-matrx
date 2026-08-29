@@ -30,7 +30,6 @@ import {
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
-import { setSubmitOnEnter } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
 import { fetchModelById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -54,6 +53,12 @@ import {
   submitAllStarted,
 } from "./slice";
 import type { ModelColumn } from "../types";
+import {
+  createBattleInputDraft,
+  hydrateBattleInputDraft,
+  readBattleInputDraft,
+  replaceBattleInputDraft,
+} from "@/features/agent-comparison/shared/battleInputDraft";
 
 // =============================================================================
 // Page-wide constants
@@ -76,30 +81,6 @@ function resolveAgentModelLabel(
   if (!modelId) return null;
   const row = state.modelRegistry?.entities?.[modelId];
   return row?.common_name ?? row?.name ?? modelId;
-}
-
-async function createModelInputInstance(
-  dispatch: AppDispatch,
-  agentId: string,
-  agentVersionId: string | null,
-): Promise<string> {
-  const conversationId = generateConversationId();
-  await dispatch(
-    createManualInstance({
-      agentId,
-      conversationId,
-      initialAgentVersionId: agentVersionId,
-      apiEndpointMode: "agent",
-      sourceFeature: MODEL_SOURCE_FEATURE,
-    }),
-  ).unwrap();
-  dispatch(
-    setSubmitOnEnter({
-      conversationId,
-      value: false,
-    }),
-  );
-  return conversationId;
 }
 
 // =============================================================================
@@ -135,21 +116,14 @@ export const setLockedAgent = createAsyncThunk<
       }),
     );
 
-    const inputConversationId = await createModelInputInstance(
+    const inputConversationId = await replaceBattleInputDraft({
       dispatch,
       agentId,
-      null,
-    );
-    if (state.agentComparisonModel.inputConversationId) {
-      dispatch(
-        copyInstanceRequestDraft({
-          sourceConversationId: state.agentComparisonModel.inputConversationId,
-          targetConversationId: inputConversationId,
-          copyVariables: false,
-        }),
-      );
-      dispatch(destroyInstance(state.agentComparisonModel.inputConversationId));
-    }
+      agentVersionId: null,
+      previousConversationId:
+        state.agentComparisonModel.inputConversationId,
+      copyVariables: false,
+    });
     dispatch(setModelInputConversationId(inputConversationId));
 
     // Recreate every column's instance under the new agent, carrying
@@ -225,20 +199,13 @@ export const setLockedVersion = createAsyncThunk<
 
     const post = getState();
     const pinnedVersionId = version === "current" ? null : (versionId ?? null);
-    const inputConversationId = await createModelInputInstance(
+    const inputConversationId = await replaceBattleInputDraft({
       dispatch,
       agentId,
-      pinnedVersionId,
-    );
-    if (post.agentComparisonModel.inputConversationId) {
-      dispatch(
-        copyInstanceRequestDraft({
-          sourceConversationId: post.agentComparisonModel.inputConversationId,
-          targetConversationId: inputConversationId,
-        }),
-      );
-      dispatch(destroyInstance(post.agentComparisonModel.inputConversationId));
-    }
+      agentVersionId: pinnedVersionId,
+      previousConversationId:
+        post.agentComparisonModel.inputConversationId,
+    });
     dispatch(setModelInputConversationId(inputConversationId));
 
     for (const col of post.agentComparisonModel.columns) {
@@ -497,15 +464,10 @@ function buildModelEntries(state: RootState): UpsertEntryInput[] {
 function buildSetMetadata(state: RootState): Record<string, unknown> {
   const { agentId, agentVersion, agentVersionId } =
     state.agentComparisonModel.locked;
-  const inputConversationId = state.agentComparisonModel.inputConversationId;
-  const variables = inputConversationId
-    ? (state.instanceVariableValues.byConversationId[inputConversationId]
-        ?.userValues ?? {})
-    : {};
-  const userMessage = inputConversationId
-    ? (state.instanceUserInput.byConversationId[inputConversationId]?.text ??
-      "")
-    : "";
+  const { variables, userMessage } = readBattleInputDraft(
+    state,
+    state.agentComparisonModel.inputConversationId,
+  );
   return {
     mode: "model",
     locked: {
@@ -604,23 +566,17 @@ export const loadModelBattleSet = createAsyncThunk<
         agentVersionId: locked.agent_version_id ?? null,
       }),
     );
-    const inputConversationId = await createModelInputInstance(
+    const inputConversationId = await createBattleInputDraft({
       dispatch,
-      locked.agent_id,
-      locked.agent_version_id ?? null,
-    );
-    dispatch(
-      setUserInputText({
-        conversationId: inputConversationId,
-        text: locked.user_message ?? "",
-      }),
-    );
-    dispatch(
-      setUserVariableValues({
-        conversationId: inputConversationId,
-        values: locked.variables ?? {},
-      }),
-    );
+      agentId: locked.agent_id,
+      agentVersionId: locked.agent_version_id ?? null,
+    });
+    hydrateBattleInputDraft({
+      dispatch,
+      conversationId: inputConversationId,
+      userMessage: locked.user_message ?? "",
+      variables: locked.variables ?? {},
+    });
     dispatch(setModelInputConversationId(inputConversationId));
   }
 

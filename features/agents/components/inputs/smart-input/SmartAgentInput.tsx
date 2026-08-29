@@ -94,7 +94,7 @@ export function SmartAgentInput({
   // connected — it is a reminder, never a nag.
   const connectorStrip =
     showConnectors && !isAmbient ? (
-      <ChatConnectorStrip className="mt-1.5" />
+      <ChatConnectorStrip className="mt-0.5" />
     ) : null;
 
   if (singleRowTextarea || (isAmbient && ambientLayout === "single-line")) {

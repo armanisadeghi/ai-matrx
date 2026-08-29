@@ -57,8 +57,8 @@ function statusOf(
 
 const CHIP_BASE =
   // `before:` expands the touch target on mobile without adding a pixel of height.
-  "group relative inline-flex h-6 shrink-0 items-center rounded-full border text-[11px] font-medium leading-none transition-colors " +
-  "before:absolute before:inset-x-0 before:-inset-y-2 before:content-[''] sm:before:hidden " +
+  "group relative inline-flex h-4 shrink-0 items-center rounded-full border text-[10px] font-medium leading-none transition-colors " +
+  "before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] sm:before:hidden " +
   "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-0";
 
 export function ConnectorStrip({
@@ -88,12 +88,12 @@ export function ConnectorStrip({
   if (outstanding.length === 0) {
     if (hideWhenAllConnected) return null;
     return (
-      <div className={cn("flex h-6 items-center", className)}>
+      <div className={cn("flex h-4 items-center", className)}>
         <Link
           href={directoryHref}
-          className="inline-flex items-center gap-1.5 rounded-full px-1 text-[11px] leading-none text-muted-foreground/60 transition-colors hover:text-foreground"
+          className="relative inline-flex h-4 items-center gap-1 rounded-full px-1 text-[10px] leading-none text-muted-foreground/60 transition-colors before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] hover:text-foreground sm:before:hidden"
         >
-          <Check className="h-3 w-3 text-success/80" aria-hidden />
+          <Check className="h-2.5 w-2.5 text-success/80" aria-hidden />
           <span>
             {connectedCount} {connectedCount === 1 ? "tool" : "tools"} connected
           </span>
@@ -106,7 +106,7 @@ export function ConnectorStrip({
     <TooltipProvider delayDuration={250}>
       <div
         className={cn(
-          "flex h-6 w-full items-center gap-1.5 overflow-x-auto scrollbar-hide",
+          "flex h-4 w-full items-center gap-1 overflow-x-auto scrollbar-hide",
           className,
         )}
       >
@@ -119,7 +119,7 @@ export function ConnectorStrip({
             <Logo
               colored={connected}
               className={cn(
-                "h-3.5 w-3.5",
+                "h-3 w-3",
                 connected
                   ? undefined
                   : "text-muted-foreground/70 transition-colors group-hover:text-foreground",
@@ -134,10 +134,10 @@ export function ConnectorStrip({
               {mark}
               <span className="max-w-[10rem] truncate">{connector.name}</span>
               {connected && (
-                <Check className="h-2.5 w-2.5 text-success/80" aria-hidden />
+                <Check className="h-2 w-2 text-success/80" aria-hidden />
               )}
               {unavailable && (
-                <span className="text-[10px] font-normal text-muted-foreground/60">
+                <span className="text-[9px] font-normal text-muted-foreground/60">
                   soon
                 </span>
               )}
@@ -146,7 +146,7 @@ export function ConnectorStrip({
 
           const chipClass = cn(
             CHIP_BASE,
-            compact ? "w-6 justify-center px-0" : "gap-1.5 pl-1.5 pr-2",
+            compact ? "w-5 justify-center px-0" : "gap-1 pl-1 pr-1.5",
             connected
               ? "border-border/50 bg-card/50 text-foreground/80 hover:border-border hover:bg-accent"
               : "border-border/60 bg-card/60 text-muted-foreground hover:border-border hover:bg-accent hover:text-foreground",

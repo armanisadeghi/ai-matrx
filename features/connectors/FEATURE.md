@@ -62,7 +62,7 @@ No tables of its own. The connected-set is whatever the host resolves. Google co
 />
 ```
 
-Trigger: the composer renders. The strip reads `connectorsFor("strip")`, maps each entry to a status, and renders one 24px-tall row. Exit: the user clicks a chip → `onConnect(id)` fires; the strip changes nothing itself.
+Trigger: the composer renders. The strip reads `connectorsFor("strip")`, maps each entry to a status, and renders one 16px-tall visual row. On coarse pointers, invisible pseudo-elements preserve a 40px hit area without consuming layout height. Exit: the user clicks a chip → `onConnect(id)` fires; the strip changes nothing itself.
 
 ### (b) A connector the user already has
 
@@ -88,8 +88,8 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 - **`surfaces` is the gate, not a hint.** `"strip"` is reserved for connections that change what a _normal conversation_ can do; niche but real connectors (Google Search Console) are `["directory"]` only — directory-only is **not** the same as coming-soon.
 - **The `id` is generic; the `name` carries today's truth.** `google-workspace` covers any file the user picks or we create — Docs and Sheets are today's support, not the ceiling. Never bake a feature list into an id or a file name.
 - **Color means connected.** This is a deliberate departure from ChatGPT/Claude/v0, which keep composer chrome monochrome. Here the paint-on-connect is the reward and the only status signal that survives at 11px. An unconnected mark must stay `currentColor`.
-- **One line, 24px, always.** It sits under a chat input; it may never wrap or compete. Overflow scrolls horizontally (`overflow-x-auto scrollbar-hide`) — this is why nothing breaks at 375px.
-- **Touch targets:** chips are 24px tall by design; a `before:` pseudo-element expands the hit area to 40px on mobile only (`sm:before:hidden`) without adding a pixel of layout height.
+- **One line, 16px, always.** It sits under a chat input; it may never wrap or compete. Overflow scrolls horizontally (`overflow-x-auto scrollbar-hide`) — this is why nothing breaks at 375px.
+- **Touch targets:** the visual chips stay 16px tall; a `before:` pseudo-element expands the hit area to 40px on mobile only (`sm:before:hidden`) without adding a pixel of layout height.
 - **No hotlinked logos, ever.** Marks are local inline SVG (`marks.tsx`) or a Lucide icon via `lucideMark`. No emoji.
 - **`resolveStatus` overrides `connectedIds`** — pass one, not both, unless you mean it.
 
@@ -120,6 +120,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-08-29` — Halved the connector reminder's vertical footprint across every Smart Agent Input: the visual row is now 16px with a 2px composer gap, while coarse-pointer hit areas remain 40px via non-layout pseudo-elements.
 - `2026-08-28` — Auth-gated the shared Google inventory query so `/chat/new` cannot read the authenticated-only connection table during pre-hydration anonymous state.
 - `2026-08-22` — First-party Google connector cards now share one live scope-health reader across Chat and Settings; the directory exposes Workspace, Gmail, and Search Console with each connector's canonical management door.
 - `2026-08-19` — Codex: retired the legacy Slack demo callback that returned a bot token in the browser URL. Slack connections must use canonical MCP OAuth so tokens are sealed in Unified Credential Vault.

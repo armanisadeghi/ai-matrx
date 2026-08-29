@@ -158,12 +158,7 @@ export function AgentTextarea({
   const handleSend = useCallback(() => {
     if (disableSend) return;
     dispatch(smartExecute({ conversationId, surfaceKey }));
-  }, [
-    disableSend,
-    conversationId,
-    surfaceKey,
-    dispatch,
-  ]);
+  }, [disableSend, conversationId, surfaceKey, dispatch]);
 
   const handleSteerSend = useCallback(() => {
     if (disableSend) return;
@@ -305,6 +300,9 @@ export function AgentTextarea({
   return (
     <div className="px-2 relative shrink-0">
       <div className="relative">
+        {/* The layout effect owns the exact content height. The CSS cap is a
+            second line of defence: if a host reflows between measurement and
+            paint, an unexpanded composer still cannot absorb the flex column. */}
         <textarea
           ref={textareaRef}
           value={visibleText}
@@ -316,7 +314,10 @@ export function AgentTextarea({
               ? "duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
               : "duration-150 ease-out"
           }`}
-          style={{ minHeight: compact ? 28 : 40 }}
+          style={{
+            minHeight: compact ? 28 : 40,
+            maxHeight: isExpanded ? undefined : 200,
+          }}
           rows={1}
           data-agent-main-input
         />

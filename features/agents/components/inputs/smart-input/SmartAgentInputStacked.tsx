@@ -108,7 +108,10 @@ export function SmartAgentInputStacked({
   // `transition-[padding,border-color]` lets focus/expansion changes flow
   // smoothly; the textarea inside owns its own height transition.
   const shellClassName = cn(
-    "w-full border",
+    // A composer is content-sized chrome. `shrink-0` is a layout backstop for
+    // constrained flex hosts (windows, battle columns, split panes): spare
+    // column height always belongs to the transcript, never the input shell.
+    "w-full shrink-0 border",
     "flex flex-col min-h-0 overflow-hidden",
     isAmbient
       ? "min-h-[72px] rounded-[20px] border-glass-edge bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,box-shadow] focus-within:border-primary/70 focus-within:bg-card focus-within:ring-2 focus-within:ring-primary/15 focus-within:shadow-glass-lg"
