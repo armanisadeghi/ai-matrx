@@ -76,8 +76,14 @@ export function DocumentsTab({ org }: { org: HrOrgRef }) {
       />
 
       {/* 🚨 STATED, NOT ASSUMED. Somebody looking for an I-9 here has to be told
-          where it actually is, or they will conclude it was never collected. */}
-      <div className="flex max-w-prose items-start gap-2 rounded-md border border-border px-3 py-2">
+          where it actually is, or they will conclude it was never collected.
+
+          🚨 AND THE DOOR HAS TO OPEN. This said the right sentence and then
+          offered `/hr/documents/i9`, which does not exist — so the one control
+          whose entire job was "it is over there, not here" sent the reader to
+          "We couldn't find that page", which reads as "it is nowhere". A
+          registered promise is the honest version of the same sentence. */}
+      <div className="flex max-w-prose flex-wrap items-start gap-2 rounded-md border border-border px-3 py-2">
         <FileWarning
           className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
           aria-hidden
@@ -85,12 +91,13 @@ export function DocumentsTab({ org }: { org: HrOrgRef }) {
         <p className="text-sm text-foreground">
           I-9s are not here. They live in their own register with their own
           access, deliberately separate from the personnel file.{" "}
-          <Link
-            href="/hr/documents/i9"
+          <button
+            type="button"
+            onClick={() => void announceComingSoon("hr.documents.i9-register")}
             className="underline underline-offset-2 hover:text-primary"
           >
-            Open the I-9 register
-          </Link>
+            About the I-9 register
+          </button>
           .
         </p>
       </div>

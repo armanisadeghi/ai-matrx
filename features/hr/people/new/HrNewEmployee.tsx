@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1273,24 +1274,37 @@ function PartyPicker({
  * carries the candidate id it was handed by the Hiring surface's own door and
  * says plainly what it could not prefill — rather than showing empty fields that
  * read as "the candidate record had nothing in it".
+ *
+ * 🚨 AND IT MUST NOT OFFER A DOOR BACK. It used to link `this candidate` to
+ * `/hr/hiring/candidates/<id>` — a route under a pillar that is not built, so
+ * the only outbound link on a screen that has just admitted it could not prefill
+ * anything went to "We couldn't find that page". Worse in a new tab, where the
+ * 404 arrives with no way back to the half-filled form. The id is still worth
+ * naming — it is the evidence this hire came from a candidate — so it is shown
+ * as text, with the registered promise beside it.
  */
 function CandidateNote({ candidateId }: { candidateId: string | null }) {
   return (
     <Fieldset title="From a candidate">
       {candidateId ? (
         <p className="text-sm text-muted-foreground">
-          Hiring{" "}
-          <Link
-            href={`/hr/hiring/candidates/${candidateId}`}
-            className="underline underline-offset-2 hover:text-primary"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            this candidate
-          </Link>
+          Hiring candidate{" "}
+          <span className="font-mono text-xs text-foreground">
+            {candidateId}
+          </span>
           . Their details are not carried over automatically yet — fill in what
           you need below. Interview notes, self-ID and rejection history never
-          cross into an employee record by design.
+          cross into an employee record by design.{" "}
+          <button
+            type="button"
+            onClick={() =>
+              void announceComingSoon("hr.hiring.candidate-record")
+            }
+            className="underline underline-offset-2 hover:text-primary"
+          >
+            About the candidate record
+          </button>
+          .
         </p>
       ) : (
         <p className="text-sm text-muted-foreground">

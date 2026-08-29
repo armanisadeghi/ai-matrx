@@ -22,10 +22,10 @@
 // never a toggle, never a reveal-on-hover, never in component state.
 
 import { useState } from "react";
-import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { updateHrEmployee } from "@/features/hr/service";
@@ -670,7 +670,17 @@ function NotCollected({
   );
 }
 
-/** Inside 90 days → a warning chip with a door to the I-9 register (§2.3.2). */
+/**
+ * Inside 90 days → a warning chip with a door to the I-9 register (§2.3.2).
+ *
+ * 🚨 THE DOOR WAS A 404. This chip is the product telling somebody a legal
+ * deadline is coming and then handing them the next step — and the next step was
+ * a link to `/hr/documents/i9`, a route that has never existed. The worst place
+ * in HR to put a dead link is on the one warning with a statutory clock behind
+ * it. Until the register is built the chip states the registered promise instead
+ * (`hr.documents.i9-register`); the warning itself is unchanged, because the
+ * expiry is real whether or not the register is.
+ */
 function WorkAuthorizationWarning({
   days,
   expiresOn,
@@ -688,12 +698,13 @@ function WorkAuthorizationWarning({
               days === 1 ? "day" : "days"
             } away.`}
       </span>
-      <Link
-        href="/hr/documents/i9"
+      <button
+        type="button"
+        onClick={() => void announceComingSoon("hr.documents.i9-register")}
         className="text-sm font-medium text-foreground underline underline-offset-2 hover:text-primary"
       >
-        Open the I-9 register
-      </Link>
+        About the I-9 register
+      </button>
     </div>
   );
 }
