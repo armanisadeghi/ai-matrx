@@ -18,6 +18,7 @@
  */
 
 import { getStore, type AppDispatch } from "@/lib/redux/store";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { isQuiet } from "../quiet";
 import type { Json } from "@/types/database.types";
 import { emitAssist } from "../service";
@@ -31,10 +32,27 @@ export async function emitAssistTracked(
 ): Promise<string | null> {
   // `getStore()` is null before the store singleton is created; a producer
   // that early cannot be answering a mute the user has not been able to set.
-  const quietUntil =
-    getStore()?.getState().userPreferences.assists?.quietUntil ?? null;
+  const state = getStore()?.getState();
+  const quietUntil = state?.userPreferences.assists?.quietUntil ?? null;
   if (isQuiet(quietUntil)) return null;
-  const id = await emitAssist(userId, input);
+
+  // 🚨 NO NULL ORG (owner ruling 2026-08-21, db-rules §2). This chokepoint is
+  // where the owning org enters, for the same reason the quiet gate lives here:
+  // nine producers call this and none of them should have to remember.
+  //
+  // `selectOrganizationId` — the org the user EXPLICITLY chose — not
+  // `selectEffectiveOrganizationId`, whose own docstring says it is legacy and
+  // that "new writes must use selectOrganizationId ... and fail closed when
+  // neither exists". §2 says the same thing in stronger words: "No
+  // active/preferred/personal/first-org fallback is legal at write time."
+  // So with no explicit org we emit NOTHING. An assist is a nudge; skipping one
+  // costs the user a suggestion, while guessing its scope puts a row in an org
+  // it does not belong to — and a wrongly-scoped row is visible to the wrong
+  // people, which is not a cosmetic defect.
+  const organizationId = state ? selectOrganizationId(state) : null;
+  if (!organizationId) return null;
+
+  const id = await emitAssist(userId, input, organizationId);
   if (!id) return null;
   const now = new Date().toISOString();
   const assist = toAssist({
@@ -67,7 +85,7 @@ export async function emitAssistTracked(
     expires_at: input.expiresAt ?? null,
     suppressed_until: null,
     priority: input.priority ?? 0,
-    organization_id: null,
+    organization_id: organizationId,
     created_by: userId,
     updated_by: null,
     created_at: now,
