@@ -165,6 +165,7 @@ Important retained classes:
 - Fresh adversarial certifier verdict: **CERTIFIED** for the corrected candidate; no batch-caused defect.
 - Current-main source comparison surfaced later unrelated baseline debt (two promoted icon lint errors and 17 reuse-index paths). These were unchanged outside the frozen P9 batch and did not reject certification.
 - Release quality gates completed in advisory mode after the push and reported unrelated repository/database debt; P9 type-check, doctrine, manifest contracts, and corrected interaction proof remained green.
+- A final fleet-wide `check:patrol-contracts` rerun on the newer concurrent main reports only the separate `pattern-patrol-fleet-health` prompt, project, and cwd drift. The generated manifest and live P9 automation still agree on ACTIVE status, worktree execution, and Thursday 00:10 cadence; this unrelated fleet baseline does not reject P9.
 
 ## Delivery reconciliation
 
