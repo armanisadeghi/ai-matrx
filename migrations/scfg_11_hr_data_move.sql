@@ -1,0 +1,8 @@
+-- scfg_11: move HR org overrides from iam.organizations.settings->'hr' jsonb
+-- into platform.knob_override. Applied live via Supabase MCP 2026-08-29.
+-- Census scfg_00 held: EXACTLY ONE row moved —
+--   ('hr.time_and_attendance','kiosk_enabled','organization',
+--    2643e470-b275-47f3-95f3-ae275ad3ca47, true)
+-- 0 unmatched keys; module_enabled scalars skipped by construction
+-- (jsonb_typeof(slug.value)='object' filter). Blobs untouched until scfg_13.
+-- Full statement in the Supabase migration history (scfg_11_hr_data_move).

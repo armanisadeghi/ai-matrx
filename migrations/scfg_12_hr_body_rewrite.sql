@@ -1,0 +1,41 @@
+-- scfg_12: rewrite the HR knob machinery over the scoped-configuration
+-- primitive, signatures and return envelopes preserved. Applied live via
+-- Supabase MCP 2026-08-29; full statements in the Supabase migration history
+-- (scfg_12_hr_body_rewrite). What changed:
+--
+-- 1. platform._knob_override_write(feature,key,scope_kind,scope_id,org,value,
+--    note,actor) — the ONE gate-free validation+write body (definer, NOT
+--    client-granted; all grants revoked). Knob existence, scope-kind
+--    permission (overridable_by), org/sub-org scope tenancy via
+--    knob_scope_kind.scope_table, type/range/enum validation, direction +
+--    statutory-floor checks against the LIVE platform rung, null-clears
+--    (RECORDED DECISION 21: the key is REMOVED, never nulled), upsert with
+--    actor stamp, esign-vocabulary refusal envelope.
+-- 2. platform.knob_override_set — now gate (org owner/admin membership, or
+--    self for the user rung, or platform admin) + delegate to the body.
+-- 3. hr._hr_knob / hr._knob — one-line delegates to platform.knob_resolve.
+--    RUNG 4 (the caller default) IS GONE: every key the engine reads is seeded
+--    (census scfg_00 + scfg_10), so an unseeded key is now the P0001 refusal
+--    the knob doctrine requires. p_default stays in _hr_knob's signature so
+--    ~40 SQL call sites keep compiling; it is deliberately unused.
+--    (_punch_knob/_clock_knob already delegate to _hr_knob; untouched.)
+-- 4. public.hr_knob_set / hr_knob_clear — the HR capability gate
+--    (hr._l1_settings_gate) and the L1 audit stamp are preserved; the write
+--    is delegated to platform._knob_override_write. Envelope reason names are
+--    mapped back to the historical HR vocabulary (unknown_knob,
+--    scope_not_in_employer) so features/hr consumers see no contract change.
+--    Sub-org rungs (employer_profile/pay_group/location) now write REAL
+--    platform.knob_override rows instead of hr.<table>.settings jsonb — and
+--    since knob_resolve accepts a scope chain, those rungs are readable for
+--    the first time (they were write-only before; census found zero rows).
+-- 5. public.hr_knob_index — same signature, same HR-admin gate, same key set,
+--    now reading platform.knob_override; `platform_locked` is a REAL boolean
+--    at last (Decision 27b), and `platform_locked_unknown_reason` is dropped
+--    (verified unread in features/hr).
+-- 6. An in-migration parity block re-checked the scfg_00 baseline (override
+--    org resolves true, plain org false, seeded keys non-null through
+--    _knob/_punch_knob, unseeded key raises) and would have aborted the
+--    migration on any diff. All legs green on apply. (Note: the rung-4 leg's
+--    inner `raise exception` also carries errcode P0001, so that one leg
+--    could self-mask; the property was separately proven by the scfg_03
+--    probes, where knob_resolve raised P0001 directly.)

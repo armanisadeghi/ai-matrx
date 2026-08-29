@@ -1,0 +1,13 @@
+-- scfg_10: seed the three keys riding hr._hr_knob's rung-4 caller default
+-- (census scfg_00), then declare HR's overridability. MUST precede scfg_12's
+-- resolver rewrite. Applied live via Supabase MCP 2026-08-29.
+-- Result verified: 212 hr.* rows -> 210 org+sub-org overridable, 2 locked
+-- (hr.jurisdiction_rules.advisory_rules_block_money,
+--  hr.time_and_attendance.show_raw_alongside_rounded).
+-- Seeded: hr.time_and_attendance.{punch_enabled_worker_classes (json),
+-- kiosk_pending_recheck_seconds (integer 10 [3..300]),
+-- web_punch_ip_verification (string "off")} — each with basis + review_due
+-- 2026-10-15 per the limits-are-knobs agent-decision rule; the composite
+-- worker-classes key records its duplication of the four booleans as a
+-- follow-up. Full statement preserved in the Supabase migration history
+-- (supabase_migrations.schema_migrations name scfg_10_hr_seed_and_overridability).

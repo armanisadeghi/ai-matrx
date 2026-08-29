@@ -1,0 +1,8 @@
+-- scfg_13: strip register-matching knob paths from iam.organizations.settings->'hr'
+-- now that scfg_12 resolves from platform.knob_override. Applied live via
+-- Supabase MCP 2026-08-29; full statement in the Supabase migration history
+-- (scfg_13_hr_blob_strip). Refuses to strip any path without a matching
+-- knob_override row; module_enabled and all non-object content survive (F15);
+-- empty slug objects are removed, never the 'hr' object itself. Result: the
+-- one migrated path removed; post-strip resolution re-verified
+-- (kiosk_enabled=true for the override org).
