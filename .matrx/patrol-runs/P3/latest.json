@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "2026-08-27T131727Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-27T13:21:34.688Z",
-  "summary": "Applied a bounded eight-file P3 batch for 11 hover-hidden touch actions and eight missing coarse-pointer touch-floor roots.",
+  "state": "reconciled",
+  "updatedAt": "2026-08-29T14:43:18.521Z",
+  "summary": "Reconciled the preserved release-before-certification incident after exact-checkout representative interaction proof and a certified fail-closed controller repair.",
   "source": "2026-08-27T131727Z.json",
-  "eventHash": "8876feb7baad04bcf661924b0515100ccc7da4f66e786d5e1a39cb22136e8116"
+  "eventHash": "fa1f2fec27bba592b0432555c89baca6df32459ad610188bed721683ed443b63"
 }
