@@ -12,6 +12,7 @@ import React from "react";
 import Link from "next/link";
 import { Camera, ExternalLink, Loader2 } from "lucide-react";
 
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 
@@ -62,10 +63,17 @@ export function ItemWorkspace({
   const { item } = ws;
 
   if (ws.notFound) {
+    // A zero-row read is denied / deleted / never-existed / signed-out, and
+    // this pane cannot tell them apart — it used to assert the second one.
+    // The gate asks the platform and says the true one, with a way forward.
     return (
-      <p className="py-16 text-center text-sm text-muted-foreground">
-        This item no longer exists.
-      </p>
+      <AccessGate
+        token="product_capture_item"
+        id={itemId}
+        onRetry={() => void ws.reload()}
+        fallbackHref="/tools/product-capture/all"
+        fallbackLabel="All capture items"
+      />
     );
   }
   if (!item) {

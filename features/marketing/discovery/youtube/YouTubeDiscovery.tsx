@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { Youtube } from "@/components/icons/brand-icons";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -208,11 +209,9 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
       setSelectedIds(new Set());
       setActiveHistoryId(result.search_id ?? null);
       if (result.search_id) {
-        const url = new URL(window.location.href);
-        url.searchParams.set("search", result.search_id);
         // Programmatic: stamping the id of the search the user just ran onto
         // the current entry, not a new step the user could go Back over.
-        window.history.replaceState(null, "", url);
+        commitUrlParams({ search: result.search_id }, "replace");
       }
       try {
         const history = await listYouTubeSearchHistory();
@@ -259,10 +258,8 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
     setError(null);
     setActiveHistoryId(entry.id);
     setHistoryOpen(false);
-    const url = new URL(window.location.href);
-    url.searchParams.set("search", entry.id);
     // Discrete: opening a past search is a step Back must undo.
-    window.history.pushState(null, "", url);
+    commitUrlParams({ search: entry.id }, "push");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

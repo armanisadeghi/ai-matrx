@@ -42,6 +42,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
 import { buildGscValueColumns } from "@/features/marketing/search-console/lib/columns";
+import { UnresolvedEntityRef } from "@/features/access-gate/components/UnresolvedEntityRef";
+import { useAccessStates } from "@/features/access-gate/hooks/useAccessStates";
 import { getKeywordPhrasesByIds } from "@/features/marketing/seo/keyword/data";
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { filterAndSortRows } from "@/components/official/matrx-data-table/filter-engine";
@@ -213,6 +215,19 @@ export function PlanNodesTable({
     row.primary_keyword_id
       ? (keywordPhrases.data?.get(row.primary_keyword_id) ?? null)
       : null;
+  // A bound keyword whose phrase did not come back is the LIST shape of the
+  // four-cause ambiguity (denied / deleted / never existed / signed out). The
+  // cell used to print "Keyword not found", which is the surface asserting a
+  // cause it never checked. `useAccessStates` asks the resolver once for every
+  // hole on the page — and ONLY for the holes, never for ids we could read.
+  const unresolvedKeywordIds = useMemo(
+    () =>
+      keywordPhrases.data
+        ? boundKeywordIds.filter((id) => !keywordPhrases.data.has(id))
+        : [],
+    [boundKeywordIds, keywordPhrases.data],
+  );
+  const keywordAccess = useAccessStates("seo_keyword", unresolvedKeywordIds);
   const openKeywordIntel = useOpenKeywordWindow();
 
   const statusCategories = useCategories({
@@ -377,10 +392,23 @@ export function PlanNodesTable({
           }
           const phrase = phraseOf(row);
           if (!phrase) {
+            if (keywordPhrases.isLoading) {
+              return (
+                <span className="text-xs text-muted-foreground">Loading…</span>
+              );
+            }
             return (
-              <span className="text-xs text-muted-foreground">
-                {keywordPhrases.isLoading ? "Loading…" : "Keyword not found"}
-              </span>
+              <UnresolvedEntityRef
+                id={row.primary_keyword_id}
+                context={
+                  keywordAccess.states.get(row.primary_keyword_id) ?? null
+                }
+                onChanged={() => {
+                  keywordAccess.refresh();
+                  void keywordPhrases.refetch();
+                }}
+                className="text-xs"
+              />
             );
           }
           return (
@@ -615,6 +643,8 @@ export function PlanNodesTable({
     drift,
     keywordPhrases.data,
     keywordPhrases.isLoading,
+    keywordPhrases.refetch,
+    keywordAccess,
     keywordValues.data,
     openKeywordIntel,
   ]);

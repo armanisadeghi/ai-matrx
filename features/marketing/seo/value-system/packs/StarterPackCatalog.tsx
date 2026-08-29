@@ -508,6 +508,7 @@ function PackSummaryPanel({
 
 export function StarterPackCatalog() {
   const { site, brandId } = useMarketingSite();
+  // access-errors: ok — a denied brand never reaches this screen: MarketingSiteLayoutClient gates the same useBrand(brandId) read with <AccessGate token="web_brand"> and returns before any site surface renders, so a second gate here could only ever be dead code.
   const brand = useBrand(brandId);
   const router = useRouter();
   const queryClient = useQueryClient();

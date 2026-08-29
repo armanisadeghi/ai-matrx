@@ -10470,6 +10470,3930 @@ export type Database = {
       [_ in never]: never
     }
   }
+  commerce: {
+    Tables: {
+      asset_allocation: {
+        Row: {
+          allocation_state: string
+          created_at: string
+          created_by: string | null
+          external_order_id: string | null
+          id: string
+          intake_asset_id: string
+          metadata: Json
+          order_line_item_id: string | null
+          organization_id: string
+          product_id: string | null
+          quantity: number
+          released_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          allocation_state?: string
+          created_at?: string
+          created_by?: string | null
+          external_order_id?: string | null
+          id?: string
+          intake_asset_id: string
+          metadata?: Json
+          order_line_item_id?: string | null
+          organization_id: string
+          product_id?: string | null
+          quantity?: number
+          released_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          allocation_state?: string
+          created_at?: string
+          created_by?: string | null
+          external_order_id?: string | null
+          id?: string
+          intake_asset_id?: string
+          metadata?: Json
+          order_line_item_id?: string | null
+          organization_id?: string
+          product_id?: string | null
+          quantity?: number
+          released_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_allocation_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_allocation_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_grading: {
+        Row: {
+          cosmetic_grade: string | null
+          created_at: string
+          created_by: string | null
+          data_sanitization_status: string | null
+          ebay_condition: string | null
+          ebay_condition_descriptors: Json | null
+          fulfilled_at: string | null
+          fulfillment_source: string | null
+          functional_grade: string | null
+          grading_payload: Json
+          grading_status: string
+          id: string
+          intake_asset_id: string
+          is_data_bearing: boolean | null
+          metadata: Json
+          missing_components: Json | null
+          organization_id: string
+          requested_at: string | null
+          standard: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          cosmetic_grade?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_sanitization_status?: string | null
+          ebay_condition?: string | null
+          ebay_condition_descriptors?: Json | null
+          fulfilled_at?: string | null
+          fulfillment_source?: string | null
+          functional_grade?: string | null
+          grading_payload?: Json
+          grading_status?: string
+          id?: string
+          intake_asset_id: string
+          is_data_bearing?: boolean | null
+          metadata?: Json
+          missing_components?: Json | null
+          organization_id: string
+          requested_at?: string | null
+          standard?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          cosmetic_grade?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_sanitization_status?: string | null
+          ebay_condition?: string | null
+          ebay_condition_descriptors?: Json | null
+          fulfilled_at?: string | null
+          fulfillment_source?: string | null
+          functional_grade?: string | null
+          grading_payload?: Json
+          grading_status?: string
+          id?: string
+          intake_asset_id?: string
+          is_data_bearing?: boolean | null
+          metadata?: Json
+          missing_components?: Json | null
+          organization_id?: string
+          requested_at?: string | null
+          standard?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_grading_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_identifier: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          identifier_kind: string
+          intake_asset_id: string
+          is_machine_readable: boolean
+          is_primary: boolean
+          metadata: Json
+          organization_id: string
+          replaced_at: string | null
+          replaced_reason: string | null
+          updated_at: string
+          updated_by: string | null
+          value: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          identifier_kind: string
+          intake_asset_id: string
+          is_machine_readable?: boolean
+          is_primary?: boolean
+          metadata?: Json
+          organization_id: string
+          replaced_at?: string | null
+          replaced_reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          identifier_kind?: string
+          intake_asset_id?: string
+          is_machine_readable?: boolean
+          is_primary?: boolean
+          metadata?: Json
+          organization_id?: string
+          replaced_at?: string | null
+          replaced_reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_identifier_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_lot_event: {
+        Row: {
+          counterpart_asset_ids: Json
+          created_at: string
+          created_by: string | null
+          dimension: string | null
+          event_kind: string
+          id: string
+          intake_asset_id: string
+          metadata: Json
+          organization_id: string
+          performed_at: string
+          performed_by: string | null
+          quantity_after: number | null
+          quantity_before: number | null
+          reason: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          counterpart_asset_ids?: Json
+          created_at?: string
+          created_by?: string | null
+          dimension?: string | null
+          event_kind: string
+          id?: string
+          intake_asset_id: string
+          metadata?: Json
+          organization_id: string
+          performed_at?: string
+          performed_by?: string | null
+          quantity_after?: number | null
+          quantity_before?: number | null
+          reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          counterpart_asset_ids?: Json
+          created_at?: string
+          created_by?: string | null
+          dimension?: string | null
+          event_kind?: string
+          id?: string
+          intake_asset_id?: string
+          metadata?: Json
+          organization_id?: string
+          performed_at?: string
+          performed_by?: string | null
+          quantity_after?: number | null
+          quantity_before?: number | null
+          reason?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_lot_event_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_mandate_result: {
+        Row: {
+          agent_run_id: string | null
+          confidence: number | null
+          cost: Json | null
+          created_at: string
+          created_by: string | null
+          finished_at: string | null
+          fulfillment_source: string
+          id: string
+          intake_asset_id: string
+          mandate_key: string
+          metadata: Json
+          organization_id: string
+          output: Json
+          output_kind: string | null
+          reasoning: string | null
+          resolved_agent_id: string | null
+          run_status: string
+          started_at: string | null
+          step: string
+          superseded_by: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          agent_run_id?: string | null
+          confidence?: number | null
+          cost?: Json | null
+          created_at?: string
+          created_by?: string | null
+          finished_at?: string | null
+          fulfillment_source?: string
+          id?: string
+          intake_asset_id: string
+          mandate_key: string
+          metadata?: Json
+          organization_id: string
+          output?: Json
+          output_kind?: string | null
+          reasoning?: string | null
+          resolved_agent_id?: string | null
+          run_status?: string
+          started_at?: string | null
+          step: string
+          superseded_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          agent_run_id?: string | null
+          confidence?: number | null
+          cost?: Json | null
+          created_at?: string
+          created_by?: string | null
+          finished_at?: string | null
+          fulfillment_source?: string
+          id?: string
+          intake_asset_id?: string
+          mandate_key?: string
+          metadata?: Json
+          organization_id?: string
+          output?: Json
+          output_kind?: string | null
+          reasoning?: string | null
+          resolved_agent_id?: string | null
+          run_status?: string
+          started_at?: string | null
+          step?: string
+          superseded_by?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_mandate_result_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_price_factor: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          factor: string
+          factor_kind: string
+          id: string
+          intake_asset_id: string
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          source_result_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          factor: string
+          factor_kind: string
+          id?: string
+          intake_asset_id: string
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          source_result_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          weight: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          factor?: string
+          factor_kind?: string
+          id?: string
+          intake_asset_id?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          source_result_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_price_factor_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_price_factor_source_result_id_fkey"
+            columns: ["source_result_id"]
+            isOneToOne: false
+            referencedRelation: "asset_mandate_result"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_reshoot_request: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          intake_asset_id: string
+          metadata: Json
+          organization_id: string
+          reason: string | null
+          requested_by_result_id: string | null
+          satisfied_at: string | null
+          satisfied_by_artifact_id: string | null
+          updated_at: string
+          updated_by: string | null
+          value_impact: string | null
+          version: number
+          what_is_needed: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intake_asset_id: string
+          metadata?: Json
+          organization_id: string
+          reason?: string | null
+          requested_by_result_id?: string | null
+          satisfied_at?: string | null
+          satisfied_by_artifact_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value_impact?: string | null
+          version?: number
+          what_is_needed: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intake_asset_id?: string
+          metadata?: Json
+          organization_id?: string
+          reason?: string | null
+          requested_by_result_id?: string | null
+          satisfied_at?: string | null
+          satisfied_by_artifact_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value_impact?: string | null
+          version?: number
+          what_is_needed?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_reshoot_request_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_reshoot_request_requested_by_result_id_fkey"
+            columns: ["requested_by_result_id"]
+            isOneToOne: false
+            referencedRelation: "asset_mandate_result"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_reshoot_request_satisfied_by_artifact_id_fkey"
+            columns: ["satisfied_by_artifact_id"]
+            isOneToOne: false
+            referencedRelation: "intake_artifact"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_review: {
+        Row: {
+          agent_run_id: string | null
+          created_at: string
+          created_by: string | null
+          findings: Json
+          id: string
+          intake_asset_id: string
+          is_final_arbiter: boolean
+          lens: string
+          mandate_key: string | null
+          metadata: Json
+          organization_id: string
+          reasoning: string | null
+          review_round: number
+          updated_at: string
+          updated_by: string | null
+          verdict: string
+          version: number
+        }
+        Insert: {
+          agent_run_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          findings?: Json
+          id?: string
+          intake_asset_id: string
+          is_final_arbiter?: boolean
+          lens: string
+          mandate_key?: string | null
+          metadata?: Json
+          organization_id: string
+          reasoning?: string | null
+          review_round?: number
+          updated_at?: string
+          updated_by?: string | null
+          verdict: string
+          version?: number
+        }
+        Update: {
+          agent_run_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          findings?: Json
+          id?: string
+          intake_asset_id?: string
+          is_final_arbiter?: boolean
+          lens?: string
+          mandate_key?: string | null
+          metadata?: Json
+          organization_id?: string
+          reasoning?: string | null
+          review_round?: number
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_review_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_unknown: {
+        Row: {
+          answer: string | null
+          answer_source: string | null
+          answered_at: string | null
+          answered_by: string | null
+          created_at: string
+          created_by: string | null
+          deferred_at: string | null
+          deferred_reason: string | null
+          field_key: string | null
+          id: string
+          intake_asset_id: string
+          metadata: Json
+          options: Json | null
+          organization_id: string
+          priority: number
+          question: string
+          question_kind: string
+          raised_by: string
+          resolution_method: string | null
+          skip_count: number
+          updated_at: string
+          updated_by: string | null
+          value_impact: string | null
+          version: number
+        }
+        Insert: {
+          answer?: string | null
+          answer_source?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deferred_at?: string | null
+          deferred_reason?: string | null
+          field_key?: string | null
+          id?: string
+          intake_asset_id: string
+          metadata?: Json
+          options?: Json | null
+          organization_id: string
+          priority?: number
+          question: string
+          question_kind?: string
+          raised_by?: string
+          resolution_method?: string | null
+          skip_count?: number
+          updated_at?: string
+          updated_by?: string | null
+          value_impact?: string | null
+          version?: number
+        }
+        Update: {
+          answer?: string | null
+          answer_source?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deferred_at?: string | null
+          deferred_reason?: string | null
+          field_key?: string | null
+          id?: string
+          intake_asset_id?: string
+          metadata?: Json
+          options?: Json | null
+          organization_id?: string
+          priority?: number
+          question?: string
+          question_kind?: string
+          raised_by?: string
+          resolution_method?: string | null
+          skip_count?: number
+          updated_at?: string
+          updated_by?: string | null
+          value_impact?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_unknown_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cloud_sync_connection: {
+        Row: {
+          connection_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          last_cursor: string | null
+          last_error: Json | null
+          last_polled_at: string | null
+          metadata: Json
+          organization_id: string
+          poll_interval_seconds: number
+          provider: string
+          root_path: string | null
+          sync_status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          connection_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          last_cursor?: string | null
+          last_error?: Json | null
+          last_polled_at?: string | null
+          metadata?: Json
+          organization_id: string
+          poll_interval_seconds?: number
+          provider: string
+          root_path?: string | null
+          sync_status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          connection_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          last_cursor?: string | null
+          last_error?: Json | null
+          last_polled_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          poll_interval_seconds?: number
+          provider?: string
+          root_path?: string | null
+          sync_status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      ebay_business_policy: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          desired_hash: string | null
+          desired_payload: Json
+          external_id: string | null
+          id: string
+          is_default: boolean
+          marketplace_site_id: string
+          metadata: Json
+          name: string
+          next_attempt_at: string | null
+          observed_at: string | null
+          observed_hash: string | null
+          observed_payload: Json | null
+          organization_id: string
+          policy_type: string
+          sync_attempts: number
+          sync_error: Json | null
+          sync_state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          external_id?: string | null
+          id?: string
+          is_default?: boolean
+          marketplace_site_id: string
+          metadata?: Json
+          name: string
+          next_attempt_at?: string | null
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          organization_id: string
+          policy_type: string
+          sync_attempts?: number
+          sync_error?: Json | null
+          sync_state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          external_id?: string | null
+          id?: string
+          is_default?: boolean
+          marketplace_site_id?: string
+          metadata?: Json
+          name?: string
+          next_attempt_at?: string | null
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          organization_id?: string
+          policy_type?: string
+          sync_attempts?: number
+          sync_error?: Json | null
+          sync_state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_business_policy_marketplace_site_id_fkey"
+            columns: ["marketplace_site_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_category: {
+        Row: {
+          category_tree_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ebay_category_id: string
+          expired_replacement_id: string | null
+          id: string
+          is_leaf: boolean
+          level: number | null
+          marketplace_id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          parent_category_id: string | null
+          path: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_tree_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ebay_category_id: string
+          expired_replacement_id?: string | null
+          id?: string
+          is_leaf?: boolean
+          level?: number | null
+          marketplace_id: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          parent_category_id?: string | null
+          path?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_tree_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ebay_category_id?: string
+          expired_replacement_id?: string | null
+          id?: string
+          is_leaf?: boolean
+          level?: number | null
+          marketplace_id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          parent_category_id?: string | null
+          path?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      ebay_category_aspect: {
+        Row: {
+          aspects: Json
+          category_tree_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ebay_category_id: string
+          fetched_at: string
+          id: string
+          marketplace_id: string
+          metadata: Json
+          organization_id: string
+          required_aspect_names: Json
+          tree_version: string | null
+          updated_at: string
+          updated_by: string | null
+          validator_overrides: Json
+          variation_aspect_names: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          aspects?: Json
+          category_tree_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ebay_category_id: string
+          fetched_at?: string
+          id?: string
+          marketplace_id: string
+          metadata?: Json
+          organization_id: string
+          required_aspect_names?: Json
+          tree_version?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          validator_overrides?: Json
+          variation_aspect_names?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          aspects?: Json
+          category_tree_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ebay_category_id?: string
+          fetched_at?: string
+          id?: string
+          marketplace_id?: string
+          metadata?: Json
+          organization_id?: string
+          required_aspect_names?: Json
+          tree_version?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          validator_overrides?: Json
+          variation_aspect_names?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      ebay_category_tree: {
+        Row: {
+          category_tree_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          fetched_at: string
+          id: string
+          marketplace_id: string
+          metadata: Json
+          organization_id: string
+          tree_version: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          category_tree_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          fetched_at?: string
+          id?: string
+          marketplace_id: string
+          metadata?: Json
+          organization_id: string
+          tree_version: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          category_tree_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          fetched_at?: string
+          id?: string
+          marketplace_id?: string
+          metadata?: Json
+          organization_id?: string
+          tree_version?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      ebay_custom_policy: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          desired_hash: string | null
+          desired_payload: Json
+          external_id: string | null
+          id: string
+          label: string | null
+          marketplace_site_id: string
+          metadata: Json
+          name: string
+          observed_at: string | null
+          observed_hash: string | null
+          observed_payload: Json | null
+          organization_id: string
+          policy_type: string
+          sync_error: Json | null
+          sync_state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          external_id?: string | null
+          id?: string
+          label?: string | null
+          marketplace_site_id: string
+          metadata?: Json
+          name: string
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          organization_id: string
+          policy_type: string
+          sync_error?: Json | null
+          sync_state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          external_id?: string | null
+          id?: string
+          label?: string | null
+          marketplace_site_id?: string
+          metadata?: Json
+          name?: string
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          organization_id?: string
+          policy_type?: string
+          sync_error?: Json | null
+          sync_state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_custom_policy_marketplace_site_id_fkey"
+            columns: ["marketplace_site_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_inventory_item: {
+        Row: {
+          availability_distributions: Json | null
+          condition: string | null
+          condition_description: string | null
+          condition_descriptors: Json | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          desired_hash: string | null
+          desired_payload: Json
+          id: string
+          locale: string | null
+          marketplace_account_id: string
+          metadata: Json
+          next_attempt_at: string | null
+          observed_at: string | null
+          observed_hash: string | null
+          observed_payload: Json | null
+          organization_id: string
+          package_weight_and_size: Json | null
+          pickup_at_location_availability: Json | null
+          priority: number
+          product_document: Json
+          product_variant_id: string | null
+          ship_to_quantity: number
+          sku: string
+          sync_attempts: number
+          sync_error: Json | null
+          sync_state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          availability_distributions?: Json | null
+          condition?: string | null
+          condition_description?: string | null
+          condition_descriptors?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          id?: string
+          locale?: string | null
+          marketplace_account_id: string
+          metadata?: Json
+          next_attempt_at?: string | null
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          organization_id: string
+          package_weight_and_size?: Json | null
+          pickup_at_location_availability?: Json | null
+          priority?: number
+          product_document?: Json
+          product_variant_id?: string | null
+          ship_to_quantity?: number
+          sku: string
+          sync_attempts?: number
+          sync_error?: Json | null
+          sync_state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          availability_distributions?: Json | null
+          condition?: string | null
+          condition_description?: string | null
+          condition_descriptors?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          id?: string
+          locale?: string | null
+          marketplace_account_id?: string
+          metadata?: Json
+          next_attempt_at?: string | null
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          organization_id?: string
+          package_weight_and_size?: Json | null
+          pickup_at_location_availability?: Json | null
+          priority?: number
+          product_document?: Json
+          product_variant_id?: string | null
+          ship_to_quantity?: number
+          sku?: string
+          sync_attempts?: number
+          sync_error?: Json | null
+          sync_state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_inventory_item_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ebay_inventory_item_product_variant_id_fkey"
+            columns: ["product_variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variant"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_inventory_item_group: {
+        Row: {
+          aspects: Json | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          desired_hash: string | null
+          desired_payload: Json
+          id: string
+          image_urls: Json | null
+          inventory_item_group_key: string
+          marketplace_account_id: string
+          metadata: Json
+          observed_at: string | null
+          observed_hash: string | null
+          observed_payload: Json | null
+          organization_id: string
+          product_id: string | null
+          subtitle: string | null
+          sync_error: Json | null
+          sync_state: string
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          varies_by: Json | null
+          version: number
+          video_ids: Json | null
+        }
+        Insert: {
+          aspects?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          id?: string
+          image_urls?: Json | null
+          inventory_item_group_key: string
+          marketplace_account_id: string
+          metadata?: Json
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          organization_id: string
+          product_id?: string | null
+          subtitle?: string | null
+          sync_error?: Json | null
+          sync_state?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          varies_by?: Json | null
+          version?: number
+          video_ids?: Json | null
+        }
+        Update: {
+          aspects?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          id?: string
+          image_urls?: Json | null
+          inventory_item_group_key?: string
+          marketplace_account_id?: string
+          metadata?: Json
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          organization_id?: string
+          product_id?: string | null
+          subtitle?: string | null
+          sync_error?: Json | null
+          sync_state?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          varies_by?: Json | null
+          version?: number
+          video_ids?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_inventory_item_group_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ebay_inventory_item_group_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_inventory_item_group_member: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          group_id: string
+          id: string
+          inventory_item_id: string
+          metadata: Json
+          organization_id: string
+          removal_blocked_reason: string | null
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          group_id: string
+          id?: string
+          inventory_item_id: string
+          metadata?: Json
+          organization_id: string
+          removal_blocked_reason?: string | null
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          group_id?: string
+          id?: string
+          inventory_item_id?: string
+          metadata?: Json
+          organization_id?: string
+          removal_blocked_reason?: string | null
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_inventory_item_group_member_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "ebay_inventory_item_group"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ebay_inventory_item_group_member_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "ebay_inventory_item"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_inventory_location: {
+        Row: {
+          address: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          desired_hash: string | null
+          desired_payload: Json
+          fulfillment_center_specifications: Json | null
+          geo_coordinates: Json | null
+          id: string
+          location_types: Json
+          marketplace_account_id: string
+          merchant_location_key: string
+          merchant_location_status: string
+          metadata: Json
+          name: string | null
+          observed_at: string | null
+          observed_hash: string | null
+          observed_payload: Json | null
+          operating_hours: Json | null
+          organization_id: string
+          phone: string | null
+          special_hours: Json | null
+          sync_error: Json | null
+          sync_state: string
+          time_zone_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          address?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          fulfillment_center_specifications?: Json | null
+          geo_coordinates?: Json | null
+          id?: string
+          location_types?: Json
+          marketplace_account_id: string
+          merchant_location_key: string
+          merchant_location_status?: string
+          metadata?: Json
+          name?: string | null
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          operating_hours?: Json | null
+          organization_id: string
+          phone?: string | null
+          special_hours?: Json | null
+          sync_error?: Json | null
+          sync_state?: string
+          time_zone_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          address?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          fulfillment_center_specifications?: Json | null
+          geo_coordinates?: Json | null
+          id?: string
+          location_types?: Json
+          marketplace_account_id?: string
+          merchant_location_key?: string
+          merchant_location_status?: string
+          metadata?: Json
+          name?: string | null
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          operating_hours?: Json | null
+          organization_id?: string
+          phone?: string | null
+          special_hours?: Json | null
+          sync_error?: Json | null
+          sync_state?: string
+          time_zone_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_inventory_location_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_listing: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          end_reason: string | null
+          ended_at: string | null
+          external_listing_id: string
+          id: string
+          is_foreign: boolean
+          listing_on_hold: boolean
+          listing_status: string | null
+          listing_url: string | null
+          marketplace_account_id: string
+          marketplace_id: string | null
+          metadata: Json
+          observed_at: string | null
+          observed_payload: Json | null
+          offer_id: string | null
+          organization_id: string
+          price_observed: number | null
+          published_at: string | null
+          sold_quantity: number
+          title_observed: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          end_reason?: string | null
+          ended_at?: string | null
+          external_listing_id: string
+          id?: string
+          is_foreign?: boolean
+          listing_on_hold?: boolean
+          listing_status?: string | null
+          listing_url?: string | null
+          marketplace_account_id: string
+          marketplace_id?: string | null
+          metadata?: Json
+          observed_at?: string | null
+          observed_payload?: Json | null
+          offer_id?: string | null
+          organization_id: string
+          price_observed?: number | null
+          published_at?: string | null
+          sold_quantity?: number
+          title_observed?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          end_reason?: string | null
+          ended_at?: string | null
+          external_listing_id?: string
+          id?: string
+          is_foreign?: boolean
+          listing_on_hold?: boolean
+          listing_status?: string | null
+          listing_url?: string | null
+          marketplace_account_id?: string
+          marketplace_id?: string | null
+          metadata?: Json
+          observed_at?: string | null
+          observed_payload?: Json | null
+          offer_id?: string | null
+          organization_id?: string
+          price_observed?: number | null
+          published_at?: string | null
+          sold_quantity?: number
+          title_observed?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_listing_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ebay_listing_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "ebay_offer"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_marketplace_policy: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          ebay_category_id: string | null
+          fetched_at: string
+          id: string
+          marketplace_id: string
+          metadata: Json
+          organization_id: string
+          payload: Json
+          policy_kind: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ebay_category_id?: string | null
+          fetched_at?: string
+          id?: string
+          marketplace_id: string
+          metadata?: Json
+          organization_id: string
+          payload?: Json
+          policy_kind: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          ebay_category_id?: string | null
+          fetched_at?: string
+          id?: string
+          marketplace_id?: string
+          metadata?: Json
+          organization_id?: string
+          payload?: Json
+          policy_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      ebay_media_asset: {
+        Row: {
+          asset_kind: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          document_type: string | null
+          ebay_url: string | null
+          expires_at: string | null
+          external_id: string | null
+          id: string
+          last_error: Json | null
+          marketplace_account_id: string
+          max_dimension_url: string | null
+          metadata: Json
+          organization_id: string
+          product_media_id: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          uploaded_at: string | null
+          version: number
+        }
+        Insert: {
+          asset_kind: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          document_type?: string | null
+          ebay_url?: string | null
+          expires_at?: string | null
+          external_id?: string | null
+          id?: string
+          last_error?: Json | null
+          marketplace_account_id: string
+          max_dimension_url?: string | null
+          metadata?: Json
+          organization_id: string
+          product_media_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          uploaded_at?: string | null
+          version?: number
+        }
+        Update: {
+          asset_kind?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          document_type?: string | null
+          ebay_url?: string | null
+          expires_at?: string | null
+          external_id?: string | null
+          id?: string
+          last_error?: Json | null
+          marketplace_account_id?: string
+          max_dimension_url?: string | null
+          metadata?: Json
+          organization_id?: string
+          product_media_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          uploaded_at?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_media_asset_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ebay_media_asset_product_media_id_fkey"
+            columns: ["product_media_id"]
+            isOneToOne: false
+            referencedRelation: "product_media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_notification_destination: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          destination_status: string | null
+          endpoint: string
+          external_destination_id: string | null
+          id: string
+          metadata: Json
+          name: string
+          observed_payload: Json | null
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          verification_token_ref: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          destination_status?: string | null
+          endpoint: string
+          external_destination_id?: string | null
+          id?: string
+          metadata?: Json
+          name: string
+          observed_payload?: Json | null
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          verification_token_ref?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          destination_status?: string | null
+          endpoint?: string
+          external_destination_id?: string | null
+          id?: string
+          metadata?: Json
+          name?: string
+          observed_payload?: Json | null
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          verification_token_ref?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      ebay_notification_event: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_date: string | null
+          id: string
+          marketplace_account_id: string | null
+          metadata: Json
+          notification_id: string
+          organization_id: string
+          payload: Json
+          processed_at: string | null
+          processing_error: Json | null
+          publish_attempt_count: number | null
+          publish_date: string | null
+          received_at: string
+          schema_version: string | null
+          signature_verified: boolean
+          topic_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_date?: string | null
+          id?: string
+          marketplace_account_id?: string | null
+          metadata?: Json
+          notification_id: string
+          organization_id: string
+          payload?: Json
+          processed_at?: string | null
+          processing_error?: Json | null
+          publish_attempt_count?: number | null
+          publish_date?: string | null
+          received_at?: string
+          schema_version?: string | null
+          signature_verified?: boolean
+          topic_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_date?: string | null
+          id?: string
+          marketplace_account_id?: string | null
+          metadata?: Json
+          notification_id?: string
+          organization_id?: string
+          payload?: Json
+          processed_at?: string | null
+          processing_error?: Json | null
+          publish_attempt_count?: number | null
+          publish_date?: string | null
+          received_at?: string
+          schema_version?: string | null
+          signature_verified?: boolean
+          topic_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_notification_event_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_notification_subscription: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          destination_id: string
+          external_filter_id: string | null
+          external_subscription_id: string | null
+          filter_schema: Json | null
+          id: string
+          marketplace_account_id: string | null
+          metadata: Json
+          organization_id: string
+          payload_schema_version: string | null
+          subscription_scope: string
+          subscription_status: string | null
+          topic_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          destination_id: string
+          external_filter_id?: string | null
+          external_subscription_id?: string | null
+          filter_schema?: Json | null
+          id?: string
+          marketplace_account_id?: string | null
+          metadata?: Json
+          organization_id: string
+          payload_schema_version?: string | null
+          subscription_scope?: string
+          subscription_status?: string | null
+          topic_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          destination_id?: string
+          external_filter_id?: string | null
+          external_subscription_id?: string | null
+          filter_schema?: Json | null
+          id?: string
+          marketplace_account_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          payload_schema_version?: string | null
+          subscription_scope?: string
+          subscription_status?: string | null
+          topic_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_notification_subscription_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "ebay_notification_destination"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ebay_notification_subscription_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_notification_topic: {
+        Row: {
+          authorization_scopes: Json
+          context: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          fetched_at: string
+          id: string
+          is_filterable: boolean
+          metadata: Json
+          organization_id: string
+          scope: string | null
+          supported_payloads: Json | null
+          topic_id: string
+          topic_status: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          authorization_scopes?: Json
+          context?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          fetched_at?: string
+          id?: string
+          is_filterable?: boolean
+          metadata?: Json
+          organization_id: string
+          scope?: string | null
+          supported_payloads?: Json | null
+          topic_id: string
+          topic_status?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          authorization_scopes?: Json
+          context?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          fetched_at?: string
+          id?: string
+          is_filterable?: boolean
+          metadata?: Json
+          organization_id?: string
+          scope?: string | null
+          supported_payloads?: Json | null
+          topic_id?: string
+          topic_status?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      ebay_offer: {
+        Row: {
+          available_quantity: number | null
+          charity: Json | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          desired_hash: string | null
+          desired_payload: Json
+          ebay_category_id: string | null
+          ebay_secondary_category_id: string | null
+          extended_producer_responsibility: Json | null
+          external_offer_id: string | null
+          format: string
+          hide_buyer_details: boolean
+          id: string
+          include_catalog_product_details: boolean
+          inventory_item_id: string
+          listing_description: string | null
+          listing_duration: string
+          listing_policies: Json | null
+          listing_start_date: string | null
+          lot_size: number | null
+          marketplace_id: string
+          marketplace_site_id: string
+          merchant_location_key: string | null
+          metadata: Json
+          next_attempt_at: string | null
+          observed_at: string | null
+          observed_hash: string | null
+          observed_payload: Json | null
+          offer_status: string
+          organization_id: string
+          price_currency: string | null
+          price_value: number | null
+          pricing_summary: Json | null
+          priority: number
+          quantity_limit_per_buyer: number | null
+          regulatory: Json | null
+          store_category_names: Json | null
+          sync_attempts: number
+          sync_error: Json | null
+          sync_state: string
+          tax: Json | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          available_quantity?: number | null
+          charity?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          ebay_category_id?: string | null
+          ebay_secondary_category_id?: string | null
+          extended_producer_responsibility?: Json | null
+          external_offer_id?: string | null
+          format?: string
+          hide_buyer_details?: boolean
+          id?: string
+          include_catalog_product_details?: boolean
+          inventory_item_id: string
+          listing_description?: string | null
+          listing_duration?: string
+          listing_policies?: Json | null
+          listing_start_date?: string | null
+          lot_size?: number | null
+          marketplace_id: string
+          marketplace_site_id: string
+          merchant_location_key?: string | null
+          metadata?: Json
+          next_attempt_at?: string | null
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          offer_status?: string
+          organization_id: string
+          price_currency?: string | null
+          price_value?: number | null
+          pricing_summary?: Json | null
+          priority?: number
+          quantity_limit_per_buyer?: number | null
+          regulatory?: Json | null
+          store_category_names?: Json | null
+          sync_attempts?: number
+          sync_error?: Json | null
+          sync_state?: string
+          tax?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          available_quantity?: number | null
+          charity?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          desired_hash?: string | null
+          desired_payload?: Json
+          ebay_category_id?: string | null
+          ebay_secondary_category_id?: string | null
+          extended_producer_responsibility?: Json | null
+          external_offer_id?: string | null
+          format?: string
+          hide_buyer_details?: boolean
+          id?: string
+          include_catalog_product_details?: boolean
+          inventory_item_id?: string
+          listing_description?: string | null
+          listing_duration?: string
+          listing_policies?: Json | null
+          listing_start_date?: string | null
+          lot_size?: number | null
+          marketplace_id?: string
+          marketplace_site_id?: string
+          merchant_location_key?: string | null
+          metadata?: Json
+          next_attempt_at?: string | null
+          observed_at?: string | null
+          observed_hash?: string | null
+          observed_payload?: Json | null
+          offer_status?: string
+          organization_id?: string
+          price_currency?: string | null
+          price_value?: number | null
+          pricing_summary?: Json | null
+          priority?: number
+          quantity_limit_per_buyer?: number | null
+          regulatory?: Json | null
+          store_category_names?: Json | null
+          sync_attempts?: number
+          sync_error?: Json | null
+          sync_state?: string
+          tax?: Json | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_offer_inventory_item_id_fkey"
+            columns: ["inventory_item_id"]
+            isOneToOne: false
+            referencedRelation: "ebay_inventory_item"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ebay_offer_marketplace_site_id_fkey"
+            columns: ["marketplace_site_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_site"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_order: {
+        Row: {
+          buyer_external_id: string | null
+          buyer_username_observed: string | null
+          cancel_status: Json | null
+          created_at: string
+          created_by: string | null
+          creation_date: string | null
+          ebay_collect_and_remit_tax: boolean
+          ebay_collected_charges: Json | null
+          external_order_id: string
+          fulfillment_start_instructions: Json | null
+          id: string
+          last_modified_date: string | null
+          legacy_order_id: string | null
+          marketplace_account_id: string
+          marketplace_id: string | null
+          metadata: Json
+          observed_at: string | null
+          order_fulfillment_status: string | null
+          order_payment_status: string | null
+          organization_id: string
+          payment_summary: Json | null
+          pricing_summary: Json | null
+          raw_payload: Json | null
+          sales_record_reference: string | null
+          total_amount: number | null
+          total_currency: string | null
+          total_marketplace_fee: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          buyer_external_id?: string | null
+          buyer_username_observed?: string | null
+          cancel_status?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creation_date?: string | null
+          ebay_collect_and_remit_tax?: boolean
+          ebay_collected_charges?: Json | null
+          external_order_id: string
+          fulfillment_start_instructions?: Json | null
+          id?: string
+          last_modified_date?: string | null
+          legacy_order_id?: string | null
+          marketplace_account_id: string
+          marketplace_id?: string | null
+          metadata?: Json
+          observed_at?: string | null
+          order_fulfillment_status?: string | null
+          order_payment_status?: string | null
+          organization_id: string
+          payment_summary?: Json | null
+          pricing_summary?: Json | null
+          raw_payload?: Json | null
+          sales_record_reference?: string | null
+          total_amount?: number | null
+          total_currency?: string | null
+          total_marketplace_fee?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          buyer_external_id?: string | null
+          buyer_username_observed?: string | null
+          cancel_status?: Json | null
+          created_at?: string
+          created_by?: string | null
+          creation_date?: string | null
+          ebay_collect_and_remit_tax?: boolean
+          ebay_collected_charges?: Json | null
+          external_order_id?: string
+          fulfillment_start_instructions?: Json | null
+          id?: string
+          last_modified_date?: string | null
+          legacy_order_id?: string | null
+          marketplace_account_id?: string
+          marketplace_id?: string | null
+          metadata?: Json
+          observed_at?: string | null
+          order_fulfillment_status?: string | null
+          order_payment_status?: string | null
+          organization_id?: string
+          payment_summary?: Json | null
+          pricing_summary?: Json | null
+          raw_payload?: Json | null
+          sales_record_reference?: string | null
+          total_amount?: number | null
+          total_currency?: string | null
+          total_marketplace_fee?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_order_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_order_line_item: {
+        Row: {
+          applied_promotions: Json | null
+          created_at: string
+          created_by: string | null
+          delivery_cost: Json | null
+          gift_details: Json | null
+          id: string
+          legacy_item_id: string | null
+          legacy_variation_id: string | null
+          line_item_cost: number | null
+          line_item_fulfillment_status: string | null
+          line_item_id: string
+          listing_id: string | null
+          metadata: Json
+          order_id: string
+          organization_id: string
+          product_variant_id: string | null
+          quantity: number
+          refunds: Json | null
+          sku: string | null
+          taxes: Json | null
+          title: string | null
+          total: number | null
+          updated_at: string
+          updated_by: string | null
+          variation_aspects: Json | null
+          version: number
+        }
+        Insert: {
+          applied_promotions?: Json | null
+          created_at?: string
+          created_by?: string | null
+          delivery_cost?: Json | null
+          gift_details?: Json | null
+          id?: string
+          legacy_item_id?: string | null
+          legacy_variation_id?: string | null
+          line_item_cost?: number | null
+          line_item_fulfillment_status?: string | null
+          line_item_id: string
+          listing_id?: string | null
+          metadata?: Json
+          order_id: string
+          organization_id: string
+          product_variant_id?: string | null
+          quantity?: number
+          refunds?: Json | null
+          sku?: string | null
+          taxes?: Json | null
+          title?: string | null
+          total?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          variation_aspects?: Json | null
+          version?: number
+        }
+        Update: {
+          applied_promotions?: Json | null
+          created_at?: string
+          created_by?: string | null
+          delivery_cost?: Json | null
+          gift_details?: Json | null
+          id?: string
+          legacy_item_id?: string | null
+          legacy_variation_id?: string | null
+          line_item_cost?: number | null
+          line_item_fulfillment_status?: string | null
+          line_item_id?: string
+          listing_id?: string | null
+          metadata?: Json
+          order_id?: string
+          organization_id?: string
+          product_variant_id?: string | null
+          quantity?: number
+          refunds?: Json | null
+          sku?: string | null
+          taxes?: Json | null
+          title?: string | null
+          total?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          variation_aspects?: Json | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_order_line_item_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "ebay_listing"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ebay_order_line_item_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "ebay_order"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ebay_order_line_item_product_variant_id_fkey"
+            columns: ["product_variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variant"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_shipping_fulfillment: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          desired_payload: Json
+          external_fulfillment_id: string | null
+          id: string
+          line_item_refs: Json | null
+          metadata: Json
+          order_id: string
+          organization_id: string
+          shipped_date: string | null
+          shipping_carrier_code: string | null
+          sync_error: Json | null
+          sync_state: string
+          tracking_number: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          desired_payload?: Json
+          external_fulfillment_id?: string | null
+          id?: string
+          line_item_refs?: Json | null
+          metadata?: Json
+          order_id: string
+          organization_id: string
+          shipped_date?: string | null
+          shipping_carrier_code?: string | null
+          sync_error?: Json | null
+          sync_state?: string
+          tracking_number?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          desired_payload?: Json
+          external_fulfillment_id?: string | null
+          id?: string
+          line_item_refs?: Json | null
+          metadata?: Json
+          order_id?: string
+          organization_id?: string
+          shipped_date?: string | null
+          shipping_carrier_code?: string | null
+          sync_error?: Json | null
+          sync_state?: string
+          tracking_number?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_shipping_fulfillment_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "ebay_order"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ebay_store_category: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          depth: number
+          external_category_id: string | null
+          id: string
+          marketplace_account_id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          parent_id: string | null
+          pending_task_id: string | null
+          sort_order: number | null
+          sync_error: Json | null
+          sync_state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          depth?: number
+          external_category_id?: string | null
+          id?: string
+          marketplace_account_id: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          parent_id?: string | null
+          pending_task_id?: string | null
+          sort_order?: number | null
+          sync_error?: Json | null
+          sync_state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          depth?: number
+          external_category_id?: string | null
+          id?: string
+          marketplace_account_id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          parent_id?: string | null
+          pending_task_id?: string | null
+          sort_order?: number | null
+          sync_error?: Json | null
+          sync_state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ebay_store_category_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ebay_store_category_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "ebay_store_category"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      human_correction: {
+        Row: {
+          after_value: string | null
+          before_value: string | null
+          corrected_at: string
+          corrected_by: string | null
+          correction_reason: string | null
+          created_at: string
+          created_by: string | null
+          field_path: string
+          gate: string | null
+          id: string
+          intake_asset_id: string | null
+          is_near_miss: boolean
+          mandate_key: string | null
+          metadata: Json
+          organization_id: string
+          product_id: string | null
+          source_result_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          after_value?: string | null
+          before_value?: string | null
+          corrected_at?: string
+          corrected_by?: string | null
+          correction_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          field_path: string
+          gate?: string | null
+          id?: string
+          intake_asset_id?: string | null
+          is_near_miss?: boolean
+          mandate_key?: string | null
+          metadata?: Json
+          organization_id: string
+          product_id?: string | null
+          source_result_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          after_value?: string | null
+          before_value?: string | null
+          corrected_at?: string
+          corrected_by?: string | null
+          correction_reason?: string | null
+          created_at?: string
+          created_by?: string | null
+          field_path?: string
+          gate?: string | null
+          id?: string
+          intake_asset_id?: string | null
+          is_near_miss?: boolean
+          mandate_key?: string | null
+          metadata?: Json
+          organization_id?: string
+          product_id?: string | null
+          source_result_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "human_correction_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "human_correction_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "human_correction_source_result_id_fkey"
+            columns: ["source_result_id"]
+            isOneToOne: false
+            referencedRelation: "asset_mandate_result"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_artifact: {
+        Row: {
+          artifact_kind: string
+          captured_at: string | null
+          cloud_sync_connection_id: string | null
+          content_hash: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          duration_ms: number | null
+          file_id: string | null
+          id: string
+          intake_asset_id: string | null
+          intake_batch_id: string
+          is_delineator: boolean
+          metadata: Json
+          organization_id: string
+          original_path: string | null
+          sequence_index: number | null
+          shot_role: string | null
+          source: string
+          transcribed_at: string | null
+          transcript: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          artifact_kind?: string
+          captured_at?: string | null
+          cloud_sync_connection_id?: string | null
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duration_ms?: number | null
+          file_id?: string | null
+          id?: string
+          intake_asset_id?: string | null
+          intake_batch_id: string
+          is_delineator?: boolean
+          metadata?: Json
+          organization_id: string
+          original_path?: string | null
+          sequence_index?: number | null
+          shot_role?: string | null
+          source?: string
+          transcribed_at?: string | null
+          transcript?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          artifact_kind?: string
+          captured_at?: string | null
+          cloud_sync_connection_id?: string | null
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duration_ms?: number | null
+          file_id?: string | null
+          id?: string
+          intake_asset_id?: string | null
+          intake_batch_id?: string
+          is_delineator?: boolean
+          metadata?: Json
+          organization_id?: string
+          original_path?: string | null
+          sequence_index?: number | null
+          shot_role?: string | null
+          source?: string
+          transcribed_at?: string | null
+          transcript?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_artifact_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_artifact_intake_batch_id_fkey"
+            columns: ["intake_batch_id"]
+            isOneToOne: false
+            referencedRelation: "intake_batch"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_asset: {
+        Row: {
+          attributes: Json
+          blocked_reason: string | null
+          composition: string | null
+          composition_confidence: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          estimated_value: number | null
+          estimated_value_currency: string | null
+          featured_artifact_id: string | null
+          grading_standard: string | null
+          id: string
+          intake_batch_id: string
+          is_gem_candidate: boolean
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          parent_asset_id: string | null
+          pipeline_state: string
+          product_id: string | null
+          promoted_at: string | null
+          quantity: number
+          split_dimension: string | null
+          tracking_mode: string
+          updated_at: string
+          updated_by: string | null
+          value_bucket: string | null
+          version: number
+        }
+        Insert: {
+          attributes?: Json
+          blocked_reason?: string | null
+          composition?: string | null
+          composition_confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          estimated_value?: number | null
+          estimated_value_currency?: string | null
+          featured_artifact_id?: string | null
+          grading_standard?: string | null
+          id?: string
+          intake_batch_id: string
+          is_gem_candidate?: boolean
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          parent_asset_id?: string | null
+          pipeline_state?: string
+          product_id?: string | null
+          promoted_at?: string | null
+          quantity?: number
+          split_dimension?: string | null
+          tracking_mode?: string
+          updated_at?: string
+          updated_by?: string | null
+          value_bucket?: string | null
+          version?: number
+        }
+        Update: {
+          attributes?: Json
+          blocked_reason?: string | null
+          composition?: string | null
+          composition_confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          estimated_value?: number | null
+          estimated_value_currency?: string | null
+          featured_artifact_id?: string | null
+          grading_standard?: string | null
+          id?: string
+          intake_batch_id?: string
+          is_gem_candidate?: boolean
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          parent_asset_id?: string | null
+          pipeline_state?: string
+          product_id?: string | null
+          promoted_at?: string | null
+          quantity?: number
+          split_dimension?: string | null
+          tracking_mode?: string
+          updated_at?: string
+          updated_by?: string | null
+          value_bucket?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intake_asset_featured_artifact_fk"
+            columns: ["featured_artifact_id"]
+            isOneToOne: false
+            referencedRelation: "intake_artifact"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_asset_intake_batch_id_fkey"
+            columns: ["intake_batch_id"]
+            isOneToOne: false
+            referencedRelation: "intake_batch"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_asset_parent_asset_id_fkey"
+            columns: ["parent_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intake_asset_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      intake_batch: {
+        Row: {
+          capture_mode: string
+          client_party_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          grading_standard: string
+          id: string
+          label: string | null
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          received_at: string | null
+          status: string
+          stream_kind: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          capture_mode?: string
+          client_party_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          grading_standard?: string
+          id?: string
+          label?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          received_at?: string | null
+          status?: string
+          stream_kind: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          capture_mode?: string
+          client_party_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          grading_standard?: string
+          id?: string
+          label?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          received_at?: string | null
+          status?: string
+          stream_kind?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      marketplace_account: {
+        Row: {
+          advertising_eligibility: Json
+          connection_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          external_account_id: string
+          health_reason: string | null
+          health_status: string
+          id: string
+          kyc_status: Json
+          last_full_sync_at: string | null
+          last_seen_at: string | null
+          marketplace_provider: string
+          metadata: Json
+          opted_in_programs: Json
+          organization_id: string
+          payments_program_status: Json
+          registration_marketplace_id: string | null
+          seller_registration_completed: boolean
+          seller_standards_level: string | null
+          selling_limit_amount: number | null
+          selling_limit_currency: string | null
+          selling_limit_quantity: number | null
+          store_description: string | null
+          store_name: string | null
+          store_subscription_level: string | null
+          store_url: string | null
+          updated_at: string
+          updated_by: string | null
+          username_observed: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          advertising_eligibility?: Json
+          connection_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          external_account_id: string
+          health_reason?: string | null
+          health_status?: string
+          id?: string
+          kyc_status?: Json
+          last_full_sync_at?: string | null
+          last_seen_at?: string | null
+          marketplace_provider?: string
+          metadata?: Json
+          opted_in_programs?: Json
+          organization_id: string
+          payments_program_status?: Json
+          registration_marketplace_id?: string | null
+          seller_registration_completed?: boolean
+          seller_standards_level?: string | null
+          selling_limit_amount?: number | null
+          selling_limit_currency?: string | null
+          selling_limit_quantity?: number | null
+          store_description?: string | null
+          store_name?: string | null
+          store_subscription_level?: string | null
+          store_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          username_observed?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          advertising_eligibility?: Json
+          connection_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          external_account_id?: string
+          health_reason?: string | null
+          health_status?: string
+          id?: string
+          kyc_status?: Json
+          last_full_sync_at?: string | null
+          last_seen_at?: string | null
+          marketplace_provider?: string
+          metadata?: Json
+          opted_in_programs?: Json
+          organization_id?: string
+          payments_program_status?: Json
+          registration_marketplace_id?: string | null
+          seller_registration_completed?: boolean
+          seller_standards_level?: string | null
+          selling_limit_amount?: number | null
+          selling_limit_currency?: string | null
+          selling_limit_quantity?: number | null
+          store_description?: string | null
+          store_name?: string | null
+          store_subscription_level?: string | null
+          store_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          username_observed?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      marketplace_account_deletion_audit: {
+        Row: {
+          cascade_completed_at: string | null
+          cascade_report: Json | null
+          cascade_started_at: string | null
+          created_at: string
+          created_by: string | null
+          eias_token: string | null
+          external_account_id: string | null
+          id: string
+          metadata: Json
+          notification_id: string
+          organization_id: string
+          raw_payload: Json
+          received_at: string
+          signature_header: string | null
+          signature_verified: boolean
+          updated_at: string
+          updated_by: string | null
+          username_observed: string | null
+          version: number
+        }
+        Insert: {
+          cascade_completed_at?: string | null
+          cascade_report?: Json | null
+          cascade_started_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          eias_token?: string | null
+          external_account_id?: string | null
+          id?: string
+          metadata?: Json
+          notification_id: string
+          organization_id: string
+          raw_payload?: Json
+          received_at?: string
+          signature_header?: string | null
+          signature_verified?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          username_observed?: string | null
+          version?: number
+        }
+        Update: {
+          cascade_completed_at?: string | null
+          cascade_report?: Json | null
+          cascade_started_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          eias_token?: string | null
+          external_account_id?: string | null
+          id?: string
+          metadata?: Json
+          notification_id?: string
+          organization_id?: string
+          raw_payload?: Json
+          received_at?: string
+          signature_header?: string | null
+          signature_verified?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          username_observed?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
+      marketplace_api_call: {
+        Row: {
+          api_name: string
+          called_at: string
+          correlation_id: string | null
+          created_at: string
+          created_by: string | null
+          duration_ms: number | null
+          ebay_errors: Json | null
+          ebay_warnings: Json | null
+          http_method: string | null
+          http_status: number | null
+          id: string
+          idempotency_key: string | null
+          marketplace_account_id: string | null
+          metadata: Json
+          operation: string
+          organization_id: string
+          path: string | null
+          record_status_codes: Json | null
+          request_body: Json | null
+          response_body: Json | null
+          sync_run_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          api_name: string
+          called_at?: string
+          correlation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_ms?: number | null
+          ebay_errors?: Json | null
+          ebay_warnings?: Json | null
+          http_method?: string | null
+          http_status?: number | null
+          id?: string
+          idempotency_key?: string | null
+          marketplace_account_id?: string | null
+          metadata?: Json
+          operation: string
+          organization_id: string
+          path?: string | null
+          record_status_codes?: Json | null
+          request_body?: Json | null
+          response_body?: Json | null
+          sync_run_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          api_name?: string
+          called_at?: string
+          correlation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_ms?: number | null
+          ebay_errors?: Json | null
+          ebay_warnings?: Json | null
+          http_method?: string | null
+          http_status?: number | null
+          id?: string
+          idempotency_key?: string | null
+          marketplace_account_id?: string | null
+          metadata?: Json
+          operation?: string
+          organization_id?: string
+          path?: string | null
+          record_status_codes?: Json | null
+          request_body?: Json | null
+          response_body?: Json | null
+          sync_run_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_api_call_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_api_call_sync_run_id_fkey"
+            columns: ["sync_run_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_sync_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_rate_budget: {
+        Row: {
+          api_context: string
+          api_name: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          fetched_at: string
+          id: string
+          limit_per_window: number | null
+          marketplace_account_id: string | null
+          metadata: Json
+          organization_id: string
+          remaining: number | null
+          reset_at: string | null
+          resource_name: string
+          time_window_seconds: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          api_context: string
+          api_name: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          fetched_at?: string
+          id?: string
+          limit_per_window?: number | null
+          marketplace_account_id?: string | null
+          metadata?: Json
+          organization_id: string
+          remaining?: number | null
+          reset_at?: string | null
+          resource_name: string
+          time_window_seconds: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          api_context?: string
+          api_name?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          fetched_at?: string
+          id?: string
+          limit_per_window?: number | null
+          marketplace_account_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          remaining?: number | null
+          reset_at?: string | null
+          resource_name?: string
+          time_window_seconds?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_rate_budget_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_site: {
+        Row: {
+          category_tree_version: string | null
+          created_at: string
+          created_by: string | null
+          currency: string | null
+          default_category_tree_id: string | null
+          deleted_at: string | null
+          id: string
+          is_enabled: boolean
+          locale: string | null
+          marketplace_account_id: string
+          marketplace_id: string
+          metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          category_tree_version?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          default_category_tree_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_enabled?: boolean
+          locale?: string | null
+          marketplace_account_id: string
+          marketplace_id: string
+          metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          category_tree_version?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          default_category_tree_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_enabled?: boolean
+          locale?: string | null
+          marketplace_account_id?: string
+          marketplace_id?: string
+          metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_site_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_sync_run: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          error: Json | null
+          finished_at: string | null
+          id: string
+          marketplace_account_id: string
+          metadata: Json
+          objects_changed: number
+          objects_examined: number
+          objects_failed: number
+          organization_id: string
+          run_kind: string
+          run_status: string
+          started_at: string | null
+          summary: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          marketplace_account_id: string
+          metadata?: Json
+          objects_changed?: number
+          objects_examined?: number
+          objects_failed?: number
+          organization_id: string
+          run_kind: string
+          run_status?: string
+          started_at?: string | null
+          summary?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          error?: Json | null
+          finished_at?: string | null
+          id?: string
+          marketplace_account_id?: string
+          metadata?: Json
+          objects_changed?: number
+          objects_examined?: number
+          objects_failed?: number
+          organization_id?: string
+          run_kind?: string
+          run_status?: string
+          started_at?: string | null
+          summary?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_sync_run_marketplace_account_id_fkey"
+            columns: ["marketplace_account_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prediction_outcome: {
+        Row: {
+          actual_numeric: number | null
+          actual_value: string | null
+          agent_id: string | null
+          agent_version: string | null
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          error_abs: number | null
+          error_pct: number | null
+          id: string
+          intake_asset_id: string | null
+          mandate_key: string
+          metadata: Json
+          model_id: string | null
+          observed_at: string | null
+          organization_id: string
+          outcome_source: string | null
+          predicted_at: string
+          predicted_numeric: number | null
+          predicted_range_max: number | null
+          predicted_range_min: number | null
+          predicted_value: string | null
+          prediction_kind: string
+          product_id: string | null
+          source_result_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          was_correct: boolean | null
+        }
+        Insert: {
+          actual_numeric?: number | null
+          actual_value?: string | null
+          agent_id?: string | null
+          agent_version?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          error_abs?: number | null
+          error_pct?: number | null
+          id?: string
+          intake_asset_id?: string | null
+          mandate_key: string
+          metadata?: Json
+          model_id?: string | null
+          observed_at?: string | null
+          organization_id: string
+          outcome_source?: string | null
+          predicted_at?: string
+          predicted_numeric?: number | null
+          predicted_range_max?: number | null
+          predicted_range_min?: number | null
+          predicted_value?: string | null
+          prediction_kind: string
+          product_id?: string | null
+          source_result_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          was_correct?: boolean | null
+        }
+        Update: {
+          actual_numeric?: number | null
+          actual_value?: string | null
+          agent_id?: string | null
+          agent_version?: string | null
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          error_abs?: number | null
+          error_pct?: number | null
+          id?: string
+          intake_asset_id?: string | null
+          mandate_key?: string
+          metadata?: Json
+          model_id?: string | null
+          observed_at?: string | null
+          organization_id?: string
+          outcome_source?: string | null
+          predicted_at?: string
+          predicted_numeric?: number | null
+          predicted_range_max?: number | null
+          predicted_range_min?: number | null
+          predicted_value?: string | null
+          prediction_kind?: string
+          product_id?: string | null
+          source_result_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          was_correct?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prediction_outcome_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_outcome_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prediction_outcome_source_result_id_fkey"
+            columns: ["source_result_id"]
+            isOneToOne: false
+            referencedRelation: "asset_mandate_result"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product: {
+        Row: {
+          attributes: Json
+          brand: string | null
+          category_id: string | null
+          condition: string | null
+          condition_notes: string | null
+          cost: number | null
+          created_at: string
+          created_by: string | null
+          default_package: Json
+          deleted_at: string | null
+          description_html: string | null
+          ean: string | null
+          gtin: string | null
+          id: string
+          isbn: string | null
+          metadata: Json
+          mpn: string | null
+          msrp: number | null
+          organization_id: string
+          quantity_on_hand: number
+          source_note: string | null
+          status: string
+          target_price: number | null
+          title: string
+          upc: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          attributes?: Json
+          brand?: string | null
+          category_id?: string | null
+          condition?: string | null
+          condition_notes?: string | null
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          default_package?: Json
+          deleted_at?: string | null
+          description_html?: string | null
+          ean?: string | null
+          gtin?: string | null
+          id?: string
+          isbn?: string | null
+          metadata?: Json
+          mpn?: string | null
+          msrp?: number | null
+          organization_id: string
+          quantity_on_hand?: number
+          source_note?: string | null
+          status?: string
+          target_price?: number | null
+          title: string
+          upc?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          attributes?: Json
+          brand?: string | null
+          category_id?: string | null
+          condition?: string | null
+          condition_notes?: string | null
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          default_package?: Json
+          deleted_at?: string | null
+          description_html?: string | null
+          ean?: string | null
+          gtin?: string | null
+          id?: string
+          isbn?: string | null
+          metadata?: Json
+          mpn?: string | null
+          msrp?: number | null
+          organization_id?: string
+          quantity_on_hand?: number
+          source_note?: string | null
+          status?: string
+          target_price?: number | null
+          title?: string
+          upc?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      product_channel_ref: {
+        Row: {
+          channel: string
+          confidence: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          matched_by: string | null
+          metadata: Json
+          organization_id: string
+          product_id: string
+          ref_kind: string
+          ref_value: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          channel: string
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          matched_by?: string | null
+          metadata?: Json
+          organization_id: string
+          product_id: string
+          ref_kind: string
+          ref_value: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          channel?: string
+          confidence?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          matched_by?: string | null
+          metadata?: Json
+          organization_id?: string
+          product_id?: string
+          ref_kind?: string
+          ref_value?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_channel_ref_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_media: {
+        Row: {
+          ai_processing: Json
+          alt_text: string | null
+          bytes: number | null
+          content_hash: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          file_id: string | null
+          height: number | null
+          id: string
+          metadata: Json
+          organization_id: string
+          product_id: string
+          product_variant_id: string | null
+          public_url: string | null
+          role: string
+          sort_order: number
+          source_url: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          width: number | null
+        }
+        Insert: {
+          ai_processing?: Json
+          alt_text?: string | null
+          bytes?: number | null
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          file_id?: string | null
+          height?: number | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          product_id: string
+          product_variant_id?: string | null
+          public_url?: string | null
+          role?: string
+          sort_order?: number
+          source_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          width?: number | null
+        }
+        Update: {
+          ai_processing?: Json
+          alt_text?: string | null
+          bytes?: number | null
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          file_id?: string | null
+          height?: number | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          product_id?: string
+          product_variant_id?: string | null
+          public_url?: string | null
+          role?: string
+          sort_order?: number
+          source_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_media_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_media_product_variant_id_fkey"
+            columns: ["product_variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variant"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variant: {
+        Row: {
+          barcode: string | null
+          cost: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          dimensions_override: Json | null
+          id: string
+          metadata: Json
+          organization_id: string
+          product_id: string
+          quantity_on_hand: number
+          sort_order: number
+          updated_at: string
+          updated_by: string | null
+          variant_key: string
+          variation_aspects: Json
+          version: number
+          weight_override: Json | null
+        }
+        Insert: {
+          barcode?: string | null
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dimensions_override?: Json | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          product_id: string
+          quantity_on_hand?: number
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          variant_key: string
+          variation_aspects?: Json
+          version?: number
+          weight_override?: Json | null
+        }
+        Update: {
+          barcode?: string | null
+          cost?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dimensions_override?: Json | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          product_id?: string
+          quantity_on_hand?: number
+          sort_order?: number
+          updated_at?: string
+          updated_by?: string | null
+          variant_key?: string
+          variation_aspects?: Json
+          version?: number
+          weight_override?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variant_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recall_audit: {
+        Row: {
+          audit_kind: string
+          challenge_agent_id: string | null
+          challenge_agent_version: string | null
+          challenge_bucket: string | null
+          challenge_confidence: number | null
+          challenge_reasoning: string | null
+          challenge_value_estimate: number | null
+          created_at: string
+          created_by: string | null
+          days_since_disposal: number | null
+          disagreement_value_delta: number | null
+          escalated_at: string | null
+          human_verdict: string | null
+          human_verdict_at: string | null
+          human_verdict_by: string | null
+          id: string
+          intake_asset_id: string | null
+          is_disagreement: boolean
+          market_value_at_audit: number | null
+          metadata: Json
+          organization_id: string
+          original_agent_id: string | null
+          original_agent_version: string | null
+          original_bucket: string | null
+          original_confidence: number | null
+          original_result_id: string | null
+          product_id: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          audit_kind: string
+          challenge_agent_id?: string | null
+          challenge_agent_version?: string | null
+          challenge_bucket?: string | null
+          challenge_confidence?: number | null
+          challenge_reasoning?: string | null
+          challenge_value_estimate?: number | null
+          created_at?: string
+          created_by?: string | null
+          days_since_disposal?: number | null
+          disagreement_value_delta?: number | null
+          escalated_at?: string | null
+          human_verdict?: string | null
+          human_verdict_at?: string | null
+          human_verdict_by?: string | null
+          id?: string
+          intake_asset_id?: string | null
+          is_disagreement?: boolean
+          market_value_at_audit?: number | null
+          metadata?: Json
+          organization_id: string
+          original_agent_id?: string | null
+          original_agent_version?: string | null
+          original_bucket?: string | null
+          original_confidence?: number | null
+          original_result_id?: string | null
+          product_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          audit_kind?: string
+          challenge_agent_id?: string | null
+          challenge_agent_version?: string | null
+          challenge_bucket?: string | null
+          challenge_confidence?: number | null
+          challenge_reasoning?: string | null
+          challenge_value_estimate?: number | null
+          created_at?: string
+          created_by?: string | null
+          days_since_disposal?: number | null
+          disagreement_value_delta?: number | null
+          escalated_at?: string | null
+          human_verdict?: string | null
+          human_verdict_at?: string | null
+          human_verdict_by?: string | null
+          id?: string
+          intake_asset_id?: string | null
+          is_disagreement?: boolean
+          market_value_at_audit?: number | null
+          metadata?: Json
+          organization_id?: string
+          original_agent_id?: string | null
+          original_agent_version?: string | null
+          original_bucket?: string | null
+          original_confidence?: number | null
+          original_result_id?: string | null
+          product_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recall_audit_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recall_audit_original_result_id_fkey"
+            columns: ["original_result_id"]
+            isOneToOne: false
+            referencedRelation: "asset_mandate_result"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recall_audit_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "product"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   communication: {
     Tables: {
       contact_submissions: {
@@ -44864,6 +48788,23 @@ export type Database = {
         Returns: string
       }
       timecard_wf_validate: { Args: { p_instance_id: string }; Returns: Json }
+      timecards_never_asked_to_attest: {
+        Args: never
+        Returns: {
+          carries_a_statement: boolean
+          employment_id: string
+          employment_status: string
+          pay_period_employment_id: string
+          pay_period_id: string
+          period_state: string
+          period_submitted_at: string
+          repair: string
+          repairable: boolean
+          row_created_at: string
+          row_state: string
+          worker_class: string
+        }[]
+      }
       timecards_without_an_approver: {
         Args: never
         Returns: {
@@ -92454,6 +96395,9 @@ export const Constants = {
     Enums: {},
   },
   code: {
+    Enums: {},
+  },
+  commerce: {
     Enums: {},
   },
   communication: {

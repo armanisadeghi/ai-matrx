@@ -326,7 +326,13 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
                     : refusal.reason === "not_a_platform_rule"
                       ? "Not a platform rule"
                       : refusal.reason === "not_found"
-                        ? "Rule not found"
+                        ? // NOT "Rule not found": the operator is looking at
+                          // this rule, so the door answering `not_found`
+                          // cannot mean it is absent — it means the write
+                          // never reached it (its own scope, a stale id, a
+                          // lapsed session). Naming a cause we cannot know is
+                          // the guess `features/access-gate/` exists to kill.
+                          "We couldn't reach that rule"
                         : "The status change did not go through"}
           </div>
           {refusal.detail ? (
