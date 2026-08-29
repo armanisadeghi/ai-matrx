@@ -23,6 +23,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Pencil, Plus, TriangleAlert, Trash2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -169,14 +170,15 @@ export default function KindVariantsTab({ detail }: KindVariantsTabProps) {
     );
   }
 
-  function deleteVariant(name: string) {
-    if (
-      !window.confirm(
-        `Delete the "${name}" variant? Any input that references it by name will fall back to the kind's default component.`,
-      )
-    ) {
-      return;
-    }
+  async function deleteVariant(name: string) {
+    const approved = await confirm({
+      title: `Delete the "${name}" variant?`,
+      description:
+        "Any input that references it by name will fall back to the kind's default component.",
+      confirmLabel: "Delete variant",
+      variant: "destructive",
+    });
+    if (!approved) return;
     void persist(
       variants.filter((v) => v.name !== name),
       `Deleted variant "${name}"`,
@@ -276,7 +278,7 @@ export default function KindVariantsTab({ detail }: KindVariantsTabProps) {
                         variant="ghost"
                         className="min-h-10 text-red-600 dark:text-red-400"
                         disabled={saving || draft !== null}
-                        onClick={() => deleteVariant(variant.name)}
+                        onClick={() => void deleteVariant(variant.name)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         <span className="sr-only">Delete {variant.name}</span>
