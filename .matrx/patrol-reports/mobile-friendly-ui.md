@@ -159,8 +159,12 @@ follow-up candidate `b242d633f1247620468c3c4a8d5faaedf7e0d9cf` removes that
 regression on top of current main and was independently **CERTIFIED**: focused
 Jest passed 15/15, type-check and shell/diff checks passed, local and remote
 authorization precede lease and branch mutation, the post-ship hard checkpoint
-remains before tag creation, and no rebase path exists. This retry integrates
-the final certified state without creating a redundant release.
+remains before tag creation, and no rebase path exists. A second concurrent
+merge, `bd22614a02b2a0bd9db246964a85a77db99e6095`, then explicitly selected
+the fail-forward version again. The final exact follow-up on that merge ancestry,
+`bd6d6672cd1336747f01d57c96ea44a519615814`, was independently **CERTIFIED**
+with the same 15/15 focused suite and ordering assertions. This retry integrates
+that final certified state without creating a redundant release.
 
 ## Open routing
 
@@ -197,6 +201,13 @@ independent adversarial review **CERTIFIED** exact follow-up
 `b242d633f1247620468c3c4a8d5faaedf7e0d9cf` against its current-main parent.
 That candidate restores the hard failure without changing the previously
 certified ordering or history-preservation behavior.
+
+When a second concurrent merge again selected fail-forward behavior,
+independent adversarial review **CERTIFIED** final exact follow-up
+`bd6d6672cd1336747f01d57c96ea44a519615814` against merge parent
+`fe3fcc2bfdbfd3f0742578b3c9bccb487f00b9ae`. The certifier verified both
+pre-mutation authorization checks, the post-ship hard checkpoint, no rebase,
+and the complete focused gate set.
 
 ## Recursive learning
 
