@@ -1,7 +1,7 @@
-"""hr_l1_60 — falsification of the two residuals hr_l1_59 left open, over real HTTPS PostgREST.
+"""hr_l1_61 — falsification of the two residuals hr_l1_59 left open, over real HTTPS PostgREST.
 
 Run:  cd /Users/armanisadeghi/code/aidream && uv run --with asyncpg --with httpx \
-        python /Users/armanisadeghi/code/matrx-frontend/scripts/hr/hr_l1_60_scoped_population_and_queue_falsification.py
+        python /Users/armanisadeghi/code/matrx-frontend/scripts/hr/hr_l1_61_scoped_population_and_queue_falsification.py
       (add `--baseline` to record the PRE-fix behaviour; the expectations then invert for the
        three rows the migration is there to change, and the run is expected to FAIL on them.)
 
@@ -130,7 +130,7 @@ async def main():
                          scope_kind, scope_id, is_active, effective_from, reason)
                   values ('{staged}'::uuid, '{WTS}'::uuid, '{TOMO_EMPLOYMENT}'::uuid, 'hr_admin',
                           'department', '{DEPT_FIELD_SERVICES}'::uuid, true, current_date,
-                          'hr_l1_60 falsification fixture - removed by the same script run');
+                          'hr_l1_61 falsification fixture - removed by the same script run');
                 end $fixture$;""")
         print(f"staged department-scoped hr_admin for tomo: role_assignment {staged}")
 
