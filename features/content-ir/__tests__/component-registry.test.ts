@@ -229,7 +229,6 @@ describe("ComponentRegistry — DB tier", () => {
       pinnedKindVersion: null,
       updatedAt: "2026-01-01T00:00:00Z",
       createdBy: null,
-      hasComponentSource: false,
     });
     // The compiled floor is untouched underneath.
     expect(registry.hasCompiled("flashcard_set", "web", "output")).toBe(true);

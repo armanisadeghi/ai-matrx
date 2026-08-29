@@ -277,19 +277,49 @@ END $$;
 
 -- ── 6. Final state assertion ────────────────────────────────────────────────
 DO $$
-DECLARE v_nullable text; v_trig int; v_null int;
+DECLARE v_nullable text; v_trig int; v_null int; v_first text; v_del text; v_bad int;
 BEGIN
   SELECT is_nullable INTO v_nullable FROM information_schema.columns
    WHERE table_schema = 'workbench' AND table_name = 'udt_dataset_fields' AND column_name = 'organization_id';
-  SELECT count(*) INTO v_trig FROM pg_trigger
-   WHERE tgrelid = 'workbench.udt_dataset_fields'::regclass AND tgname = '_inherit_org' AND NOT tgisinternal;
-  SELECT count(*) INTO v_null FROM workbench.udt_dataset_fields WHERE organization_id IS NULL;
-
   IF v_nullable <> 'NO' THEN RAISE EXCEPTION 'ABORT: organization_id is still nullable.'; END IF;
-  IF v_trig <> 1 THEN RAISE EXCEPTION 'ABORT: the _inherit_org backstop is not attached.'; END IF;
+
+  -- Both org triggers present — asserted by FUNCTION, not by name, so renaming
+  -- one cannot fake this green.
+  SELECT count(*) INTO v_trig FROM pg_trigger
+   WHERE tgrelid = 'workbench.udt_dataset_fields'::regclass AND NOT tgisinternal
+     AND tgfoid IN ('platform.inherit_org_from_parent'::regproc, 'public._stamp_org_default'::regproc);
+  IF v_trig <> 2 THEN RAISE EXCEPTION 'ABORT: org triggers incomplete (found % of 2).', v_trig; END IF;
+
+  -- ...and the inheritor MUST sort first, or the personal-org default wins and a
+  -- shared dataset's columns scatter across personal orgs (the 0441 failure).
+  SELECT tgname INTO v_first FROM pg_trigger
+   WHERE tgrelid = 'workbench.udt_dataset_fields'::regclass AND NOT tgisinternal
+     AND tgfoid IN ('platform.inherit_org_from_parent'::regproc, 'public._stamp_org_default'::regproc)
+   ORDER BY tgname LIMIT 1;
+  IF v_first <> '_0_inherit_org' THEN
+    RAISE EXCEPTION 'ABORT: the org inheritor (%) does not sort before the personal-org backstop.', v_first;
+  END IF;
+
+  -- The FK must no longer carry ON DELETE SET NULL against a NOT NULL column.
+  SELECT confdeltype INTO v_del FROM pg_constraint
+   WHERE conrelid = 'workbench.udt_dataset_fields'::regclass
+     AND conname = 'udt_dataset_fields_organization_id_fkey';
+  IF v_del IS NULL THEN RAISE EXCEPTION 'ABORT: the organization FK is missing.'; END IF;
+  IF v_del = 'n' THEN
+    RAISE EXCEPTION 'ABORT: the organization FK still has ON DELETE SET NULL against a NOT NULL column.';
+  END IF;
+
+  SELECT count(*) INTO v_null FROM workbench.udt_dataset_fields WHERE organization_id IS NULL;
   IF v_null <> 0 THEN RAISE EXCEPTION 'ABORT: % NULL-org row(s) remain.', v_null; END IF;
 
-  RAISE NOTICE 'NO NULL ORG / workbench.udt_dataset_fields: NOT NULL + backstop live, 0 NULL-org rows. Table leaves the nullable-org baseline.';
+  -- Every row agrees with its parent. Inheritance, not a guess.
+  SELECT count(*) INTO v_bad
+    FROM workbench.udt_dataset_fields f
+    JOIN workbench.udt_datasets d ON d.id = f.table_id
+   WHERE f.organization_id IS DISTINCT FROM d.organization_id;
+  IF v_bad <> 0 THEN RAISE EXCEPTION 'ABORT: % field row(s) disagree with their dataset''s org.', v_bad; END IF;
+
+  RAISE NOTICE 'NO NULL ORG / workbench.udt_dataset_fields: NOT NULL + inheritor + backstop live, FK hardened, 0 NULL-org rows, all rows agree with their parent. Table leaves the nullable-org baseline.';
 END $$;
 
 COMMIT;

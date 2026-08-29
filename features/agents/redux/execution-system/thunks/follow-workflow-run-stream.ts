@@ -27,11 +27,13 @@
  * a requestId, then follow the run's SSE feed into that same request row.
  *
  * SSE mechanics mirror `features/agents/runtime-reconnect/api.ts`: fetch-based
- * (EventSource cannot set the Authorization header), all three frame
- * separators (sse-starlette emits CRLF), stall detector above the server's
+ * (EventSource cannot set the Authorization header), framing via
+ * `@ai-matrx/agents/stream/sse` (all three frame separators handled by
+ * construction — sse-starlette emits CRLF), stall detector above the server's
  * 15s ping cadence.
  */
 
+import { readMatrxSseStream } from "@ai-matrx/agents/stream/sse";
 import type { AppThunk } from "@/lib/redux/store";
 import {
   appendWorkflowNodeStream,
@@ -39,7 +41,6 @@ import {
 } from "../active-requests/active-requests.slice";
 import { resolveBackendForConversation } from "./resolve-base-url";
 
-const SSE_FRAME_SEPARATOR = /\r\n\r\n|\n\n|\r\r/;
 const STALL_TIMEOUT_MS = 45_000;
 const RECONNECT_LIMIT = 10;
 const RECONNECT_DELAY_MS = 2_000;
@@ -177,58 +178,28 @@ export function followWorkflowRunStream(
         }
 
         armStall();
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        try {
-          for (;;) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            let sep: RegExpExecArray | null;
-            while ((sep = SSE_FRAME_SEPARATOR.exec(buffer)) !== null) {
-              const frame = buffer.slice(0, sep.index);
-              buffer = buffer.slice(sep.index + sep[0].length);
-              // Any parsed frame — comment pings included — proves the wire.
-              armStall();
-              failures = 0;
+        for await (const frame of readMatrxSseStream(res.body)) {
+          // Any parsed frame — comment pings included — proves the wire.
+          armStall();
+          failures = 0;
 
-              let eventType = "message";
-              let eventId: string | undefined;
-              const dataLines: string[] = [];
-              for (const line of frame.split(/\r\n|\n|\r/)) {
-                if (line.startsWith(":")) continue;
-                if (line.startsWith("event:")) eventType = line.slice(6).trim();
-                else if (line.startsWith("data:"))
-                  dataLines.push(line.slice(5).replace(/^ /, ""));
-                else if (line.startsWith("id:")) eventId = line.slice(3).trim();
-              }
-              if (dataLines.length === 0) continue;
+          if (frame.data === null) continue;
 
-              if (eventType === "end") return;
-              if (eventType !== "data") continue;
+          if (frame.event === "end") return;
+          if (frame.event !== "data") continue;
 
-              const seq =
-                eventId && Number.isInteger(Number(eventId))
-                  ? Number(eventId)
-                  : null;
-              if (seq !== null && seq > cursor) cursor = seq;
+          const seq = frame.seq;
+          if (seq !== null && seq > cursor) cursor = seq;
 
-              let parsed: WorkflowRunWireEvent;
-              try {
-                parsed = JSON.parse(
-                  dataLines.join("\n"),
-                ) as WorkflowRunWireEvent;
-              } catch {
-                continue; // malformed frame — durable replay heals gaps
-              }
-              if (typeof parsed?.event !== "string") continue;
-              routeEvent(parsed, seq);
-              if (TERMINAL_RUN_EVENTS.has(parsed.event)) return;
-            }
+          let parsed: WorkflowRunWireEvent;
+          try {
+            parsed = JSON.parse(frame.data) as WorkflowRunWireEvent;
+          } catch {
+            continue; // malformed frame — durable replay heals gaps
           }
-        } finally {
-          reader.releaseLock();
+          if (typeof parsed?.event !== "string") continue;
+          routeEvent(parsed, seq);
+          if (TERMINAL_RUN_EVENTS.has(parsed.event)) return;
         }
         // Server closed without `end` (restart / already terminal) — retry;
         // Last-Event-ID replays anything missed from wf_node_events.
