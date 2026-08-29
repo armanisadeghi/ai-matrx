@@ -15974,9 +15974,73 @@ export type Database = {
         }
         Returns: boolean
       }
+      abandon_notification_render: {
+        Args: {
+          p_error_code: string
+          p_error_message: string
+          p_id: string
+          p_worker_id: string
+        }
+        Returns: boolean
+      }
       admit_pending_sms_command_turn: {
         Args: { p_inbound_message_id: string }
         Returns: string
+      }
+      claim_notifications_for_render: {
+        Args: {
+          p_lease_seconds?: number
+          p_limit?: number
+          p_worker_id: string
+        }
+        Returns: {
+          acted_at: string | null
+          attempt_count: number
+          body: string | null
+          channel: string
+          claimed_by: string | null
+          created_at: string
+          created_by: string | null
+          dedupe_key: string | null
+          deep_link: string | null
+          delivered_at: string | null
+          error_code: string | null
+          error_message: string | null
+          event_key: string
+          id: string
+          lease_expires_at: string | null
+          metadata: Json
+          next_attempt_at: string
+          organization_id: string
+          outcome: string | null
+          outcome_at: string | null
+          payload: Json
+          provider: string | null
+          provider_message_id: string | null
+          read_at: string | null
+          read_channel: string | null
+          recipient_actor_token_id: string | null
+          recipient_kind: string
+          recipient_label: string | null
+          recipient_party_id: string | null
+          recipient_user_id: string | null
+          sent_at: string | null
+          status: string
+          subject: string | null
+          target_id: string | null
+          target_kind: string | null
+          to_address: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notification"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       claim_pending_notifications: {
         Args: {
@@ -16575,6 +16639,15 @@ export type Database = {
           refusal: string
           resolved_timezone: string
         }[]
+      }
+      stamp_notification_render: {
+        Args: {
+          p_body: string
+          p_id: string
+          p_subject: string
+          p_worker_id: string
+        }
+        Returns: boolean
       }
       voice_call_consent_persistence_readiness: {
         Args: { p_program_key?: string }
@@ -47424,6 +47497,7 @@ export type Database = {
         Args: { p_condition: Json; p_ctx: Json }
         Returns: boolean
       }
+      _wf_decision_words: { Args: { p_outcome: string }; Returns: string }
       _wf_display: {
         Args: { p_contentless?: boolean; p_step: string }
         Returns: Json
