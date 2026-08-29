@@ -34,7 +34,7 @@ import {
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
-import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
+import { confirm } from "@ai-matrx/kit/confirm";
 import { removeInstanceTab } from "../redux/slice";
 import { deleteNote, moveNoteToFolder, restoreNote } from "../redux/thunks";
 import { ingestSource } from "@/features/rag/api/ingest";

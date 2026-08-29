@@ -46,7 +46,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
+import { confirm } from "@ai-matrx/kit/confirm";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import { filterAndSortRows } from "@/components/official/matrx-data-table/filter-engine";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";

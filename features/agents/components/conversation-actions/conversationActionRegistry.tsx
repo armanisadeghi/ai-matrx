@@ -40,7 +40,7 @@ import type {
 } from "@/components/official/item/types";
 import type { AppDispatch } from "@/lib/redux/store";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
+import { confirm } from "@ai-matrx/kit/confirm";
 
 import {
   setConversationFavorite,
