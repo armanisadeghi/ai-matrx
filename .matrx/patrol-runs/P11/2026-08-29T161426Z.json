@@ -135,6 +135,26 @@
       ],
       "previousEventHash": "8ef69be392ab04a932752c949ce31417440e1754d242ddcb832a7f92233785ce",
       "eventHash": "9e591d0c67d5f46f8a9badbbe64a1ce2dd449ff3601d30e9d81eb1969d7d871e"
+    },
+    {
+      "sequence": 10,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-29T16:26:03.128Z",
+      "actor": "/root/p11_certifier_4b060808",
+      "summary": "Corrected candidate 4b060808 passed static adversarial checks but required visual certification is infrastructure blocked",
+      "evidence": [
+        "Type-check PASS; core-only strict page-header PASS; strict scroll-chain PASS; diff-check PASS",
+        "Full page-header remains exactly seven baseline dev/public warnings; patrol-contracts remains only fleet-health prompt drift",
+        "Prior feature-owned PageHeader detector rejection is fixed; no current false positive found",
+        "Preview lease remains owned by /Users/armanisadeghi/code/matrx-frontend; it was not reused or stopped"
+      ],
+      "blocker": {
+        "prerequisite": "Acquire this exact automation worktree preview lease and complete desktop, intermediate, mobile, light, and dark proof",
+        "preservedRef": "refs/heads/codex/p11-20260829-repair",
+        "preservedSha": "4b06080808465764e280fbfef3cd895abb093c24"
+      },
+      "previousEventHash": "9e591d0c67d5f46f8a9badbbe64a1ce2dd449ff3601d30e9d81eb1969d7d871e",
+      "eventHash": "1683f84304f77fdf4d1d9379f4481dc25abf2e7cad32bd5cca6bf5845c4aa21c"
     }
   ]
 }
