@@ -24,7 +24,7 @@ export default async function CommerceStoreConnectPage() {
           </h1>
         </div>
       </PageHeader>
-      <div className="h-full overflow-y-auto bg-textured">
+      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
         <StoreConnectShell />
       </div>
     </>

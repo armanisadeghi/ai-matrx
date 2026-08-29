@@ -100,6 +100,13 @@ const COMMERCE_REVIEW_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      name: "billing-dimensions",
+      filePath: "features/commerce-config/billing-dimensions.ts",
+      description:
+        "The seeded commerce billable dimensions (items processed, listings published, storage) — the ONE vocabulary future billing.capability / billing.plan_limit wiring consumes. No live consumer yet; registered here so it is never orphaned. Commerce knob CONFIG has no commerce-local page: platform tier /administration/users/limits, org tier /organizations/[orgId]/settings/configuration, user tier the Personal configuration Settings tab.",
+      status: "Coming soon",
+    },
+    {
       name: "service + types",
       filePath: "features/commerce-review/service.ts",
       description:

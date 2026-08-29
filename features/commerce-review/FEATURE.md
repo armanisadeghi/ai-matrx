@@ -50,7 +50,20 @@ These surfaces review AI output but launch no agent from the client, and the pip
 `mandateKey`s. When they land, register them via a manifest `agentRole` per the `agent-disclosure`
 skill — never invent keys to satisfy disclosure early.
 
+## Route chrome
+
+Every route here is a (core) page: `<PageHeader>` carries the identity, the body is
+`h-full` + `pt-[var(--shell-header-h)]` (interactive content at the top must clear the
+glass — the core-route-headers doctrine). Never subtract the header height; never render
+a faux in-body header bar.
+
 ## Change Log
 
+- 2026-08-29 — Deleted the `/commerce/settings` parallel config surface (Arman's ruling;
+  no-legacy): the store-connect step 1 now opens `/organizations/[orgId]/settings/configuration`
+  (active org via `selectEffectiveOrganizationId`, `/organizations` when none). Added
+  `pt-[var(--shell-header-h)]` clearance to the triage/drafts/attention/stores bodies —
+  their top-of-page controls sat behind the glass header. Registered the commerce
+  billing-dimensions module in this feature's admin map.
 - 2026-08-29 — Created (W11): both gate queues, the attention queue, the store-connect shell,
   the learning-tap-lawful write path, admin map.

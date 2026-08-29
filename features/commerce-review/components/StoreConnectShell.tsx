@@ -14,19 +14,28 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
-const STEPS: {
+const buildSteps = (
+  organizationId: string | null,
+): {
   title: string;
   detail: string;
   done: boolean;
   href?: string;
-}[] = [
+}[] => [
   {
     title: "Set your organization's configuration",
     detail:
       "Hold days, triage mode, cost budgets — every pipeline decision is a setting you control.",
     done: false,
-    href: "/commerce/settings",
+    // The org rung of the ONE scoped-configuration ladder — never a
+    // commerce-local settings page (that parallel surface was deleted
+    // 2026-08-29 per no-legacy; Arman's ruling).
+    href: organizationId
+      ? `/organizations/${organizationId}/settings/configuration`
+      : "/organizations",
   },
   {
     title: "Connect your eBay store",
@@ -43,6 +52,8 @@ const STEPS: {
 ];
 
 export function StoreConnectShell() {
+  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  const steps = buildSteps(organizationId);
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4">
       <div className="rounded-lg border border-border bg-card p-4">
@@ -53,7 +64,7 @@ export function StoreConnectShell() {
           </h2>
         </div>
         <ol className="mt-4 space-y-4">
-          {STEPS.map((step) => (
+          {steps.map((step) => (
             <li key={step.title} className="flex gap-3">
               {step.done ? (
                 <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />

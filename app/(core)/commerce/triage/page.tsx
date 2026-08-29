@@ -24,7 +24,7 @@ export default async function CommerceTriagePage() {
           </h1>
         </div>
       </PageHeader>
-      <div className="h-full overflow-hidden bg-textured">
+      <div className="h-full overflow-hidden bg-textured pt-[var(--shell-header-h)]">
         <TriageQueue />
       </div>
     </>

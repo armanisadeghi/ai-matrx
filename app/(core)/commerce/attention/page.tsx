@@ -22,7 +22,7 @@ export default async function CommerceAttentionPage() {
           <h1 className="truncate font-semibold text-foreground">Attention</h1>
         </div>
       </PageHeader>
-      <div className="h-full overflow-y-auto bg-textured">
+      <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
         <AttentionQueue />
       </div>
     </>
