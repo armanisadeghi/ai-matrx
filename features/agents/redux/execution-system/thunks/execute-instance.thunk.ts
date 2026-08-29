@@ -150,6 +150,19 @@ export function buildAgentStartLifecycleFields(
   };
 }
 
+/**
+ * A hydrated server row continues even when it has no persisted messages.
+ * Failed/empty first turns can materialize `cx_conversation` before any
+ * message lands, so message count alone cannot decide whether an id is new.
+ */
+export function shouldContinuePersistedConversation(
+  cacheOnly: boolean,
+  hasPriorTurns: boolean,
+  isEphemeral: boolean,
+): boolean {
+  return !isEphemeral && (!cacheOnly || hasPriorTurns);
+}
+
 // =============================================================================
 // Assemble Request (pure selector logic, extracted for testability)
 // =============================================================================
@@ -810,7 +823,11 @@ export const executeInstance = createAsyncThunk<
       // agent, and we replay the transcript as `prior_messages` (read from the
       // PRE-dispatch snapshot, so this turn's optimistic user bubble is
       // excluded — it travels as user_input).
-      const isContinuation = hasPriorTurns && !isEphemeral;
+      const isContinuation = shouldContinuePersistedConversation(
+        instance.cacheOnly,
+        hasPriorTurns,
+        isEphemeral,
+      );
       const priorMessages =
         isEphemeral && hasPriorTurns
           ? selectWireTranscript(state, conversationId)

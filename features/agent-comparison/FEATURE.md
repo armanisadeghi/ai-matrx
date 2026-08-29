@@ -128,7 +128,8 @@ and Runs floating windows.
 - **Load** (toolbar): list user's sets in a dialog. Selecting one resets
   `state.battle.columns` to match the entries (in `display_order`), creates
   manual instances for each `conversation_id`, and calls `loadConversation`
-  to stream message history into Redux.
+  to stream message history into Redux. A hydrated server row is a continuation
+  even when it has zero messages; resubmitting it must never assert `is_new`.
 
 ---
 
@@ -176,6 +177,9 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-08-28 — Loaded Request Mod conversations with an existing server row
+  now continue by row identity even when no message persisted, preventing
+  duplicate-id start requests after an empty or failed first turn.
 - 2026-08-28 — **Submit All never requires typed user input.** Open Battle and
   all locked-axis modes launch every configured column; Request Mod no longer
   misclassifies image/file-only columns as empty, and the obsolete empty-input
@@ -238,3 +242,4 @@ attributable to this page in analytics.
   "skipped" tally) but stay editable. Persisted in the comparison set's
   per-entry metadata. Visual: column body dims with a "PAUSED — SKIPPED ON
   SUBMIT ALL" notice; editor-window tab gets a pause icon + italic label.
+
