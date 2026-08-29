@@ -52,6 +52,7 @@ import type {
   HrDenied,
   HrDirectoryFilter,
   HrDirectoryPage,
+  HrDirectoryStatusRequest,
   HrFailed,
 } from "../../types";
 
@@ -92,9 +93,23 @@ function parseCsv(raw: string | null): string[] {
     .filter(Boolean);
 }
 
-function asStatuses(values: string[]): HrDirectoryStatus[] {
-  return values.filter((v): v is HrDirectoryStatus =>
-    (HR_DIRECTORY_STATUSES as readonly string[]).includes(v),
+/**
+ * 🚨 `all` IS A REAL REQUEST, NOT AN ABSENT ONE.
+ *
+ * The shared header filter's "All" item CLEARS the column filter, and a cleared
+ * status filter is route 10's DEFAULT view — which excludes former employees. So
+ * "All" quietly returned 17 of 20 people. Clearing now writes `?status=all`, the
+ * door resolves `all` to every status THIS viewer may see, and the two requests
+ * (nothing asked / everything asked) stay honestly distinct.
+ *
+ * Anything else that is not a live status token is dropped rather than forwarded:
+ * the door refuses an unknown status, and a stale URL is not a reason to show
+ * somebody a refusal.
+ */
+function asStatuses(values: string[]): HrDirectoryStatusRequest[] {
+  return values.filter(
+    (v): v is HrDirectoryStatusRequest =>
+      v === "all" || (HR_DIRECTORY_STATUSES as readonly string[]).includes(v),
   );
 }
 
@@ -134,15 +149,49 @@ export type HrFilterLabelLookup = (
   value: string,
 ) => string | null;
 
-export function useHrDirectoryUrlState(): HrDirectoryUrlState {
+/**
+ * @param defaultStatuses `page.statuses.default` once the first response lands.
+ *
+ * 🚨 THE APPLIED DEFAULT IS SHOWN, NOT IMPLIED. With the status filter empty the
+ * header offered an "All" that in fact meant route 10's default view — active,
+ * on leave and not-yet-started, silently minus every former employee. Seeding the
+ * viewer's own default set as an EXPLICIT selection makes the narrowing legible in
+ * the filter chip, and turns the header's "All" into a real, different request.
+ *
+ * The seed is display + fetch only: `activeFilterCount` counts URL params, so a
+ * resting directory is still "no filters applied" and an employer with nobody in it
+ * still gets the first-hire door rather than a filtered-empty state.
+ */
+export function useHrDirectoryUrlState(
+  defaultStatuses?: readonly HrDirectoryStatus[],
+): HrDirectoryUrlState {
   const params = useUrlSearchParams();
 
-  const columnFilters: ColumnFiltersState = {};
+  // What the URL says. This is what goes on the WIRE.
+  const wireFilters: ColumnFiltersState = {};
   for (const [columnId, param] of Object.entries(FILTER_PARAM)) {
     const values = parseCsv(params.get(param));
     if (values.length === 0) continue;
-    columnFilters[columnId] = { kind: "select", value: values[0], values };
+    wireFilters[columnId] = { kind: "select", value: values[0], values };
   }
+
+  // What the header SHOWS. The seeded default is display-only and is deliberately
+  // NOT sent: an unfiltered request already lands on exactly this set server-side,
+  // so seeding it here would cost a second identical fetch on every mount for no
+  // change in the answer. It exists so the applied narrowing is visible in the
+  // chip instead of hiding behind an "All" that meant something narrower.
+  const statusIsExplicit = params.get("status") !== null;
+  const columnFilters: ColumnFiltersState =
+    !statusIsExplicit && defaultStatuses && defaultStatuses.length > 0
+      ? {
+          ...wireFilters,
+          directory_status: {
+            kind: "select",
+            value: defaultStatuses[0],
+            values: [...defaultStatuses],
+          },
+        }
+      : wireFilters;
 
   const sortRaw = params.get("sort");
   const sort: SortState = (() => {
@@ -204,7 +253,12 @@ export function useHrDirectoryUrlState(): HrDirectoryUrlState {
       for (const [columnId, param] of Object.entries(FILTER_PARAM)) {
         const value = next.columnFilters[columnId];
         if (!value || value.kind !== "select") {
-          patch[param] = null;
+          // Clearing the STATUS filter is the header's "All", and All means all
+          // this viewer may see — never "whatever no filter happens to return".
+          // Only once the door has told us the viewer's default: before that we
+          // have no tier and must not turn a page change into a widened request.
+          patch[param] =
+            columnId === "directory_status" && defaultStatuses ? "all" : null;
           continue;
         }
         const values =
@@ -221,7 +275,7 @@ export function useHrDirectoryUrlState(): HrDirectoryUrlState {
       const textOnly = next.search !== state.search && next.page === state.page;
       write(patch, textOnly ? "replace" : "push");
     },
-    [state.page, state.search, write],
+    [defaultStatuses, state.page, state.search, write],
   );
 
   const myTeam = params.get("my_team") === "1";
@@ -238,8 +292,13 @@ export function useHrDirectoryUrlState(): HrDirectoryUrlState {
     [write],
   );
 
+  // The seeded default is not a filter the user applied. Counting it would put a
+  // "Clear" affordance on a resting directory and turn an employer with nobody in
+  // it into a filtered-empty state instead of the first-hire door.
   const activeFilterCount =
-    Object.keys(columnFilters).length +
+    Object.keys(columnFilters).filter(
+      (columnId) => columnId !== "directory_status" || statusIsExplicit,
+    ).length +
     (state.search ? 1 : 0) +
     (myTeam ? 1 : 0) +
     (hiredFrom || hiredTo ? 1 : 0);
@@ -278,7 +337,11 @@ export function useHrDirectoryUrlState(): HrDirectoryUrlState {
 
   return {
     state,
-    queryState: { ...state, search: debouncedSearch },
+    queryState: {
+      ...state,
+      search: debouncedSearch,
+      columnFilters: wireFilters,
+    },
     onStateChange,
     myTeam,
     setMyTeam,

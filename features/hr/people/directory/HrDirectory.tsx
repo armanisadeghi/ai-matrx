@@ -21,7 +21,7 @@
 //  5. CONTRACTORS ARE MARKED QUIETLY, AS A FACT (Arman's Q3 ruling) — one small
 //     neutral chip. The marketplace of record shows only inside the Job tab.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Download,
@@ -46,7 +46,7 @@ import { useHrContext } from "../../shared/useHrContext";
 import { useHrPersona } from "../../shared/useHrPersona";
 import { fetchHrOrgChart, fetchHrStructure } from "../../service";
 import { hrPeopleNewHref } from "../../routes";
-import type { HrDirectoryRow, HrResult } from "../../types";
+import type { HrDirectoryPage, HrDirectoryRow, HrResult } from "../../types";
 import { useHrRequest } from "../shared/useHrRequest";
 import { HrDirectoryCardGrid } from "./HrDirectoryCards";
 import {
@@ -166,7 +166,16 @@ export function HrDirectory() {
   const { persona, can, employeeId, employmentId } = useHrPersona();
   const organizationId = active?.organization_id ?? null;
 
-  const url = useHrDirectoryUrlState();
+  // 🚨 THE DOOR PUBLISHES THIS VIEWER'S VOCABULARY, AND THE SURFACE OBEYS IT.
+  // `statuses.allowed` is what may be asked for and `statuses.default` is what an
+  // unfiltered request returns — two different things, which is why the header's
+  // bare "All" could not be left standing for either. Until the first response
+  // lands there is no tier and no vocabulary, so the surface offers neither.
+  const [vocabulary, setVocabulary] = useState<HrDirectoryPage["statuses"] | null>(
+    null,
+  );
+
+  const url = useHrDirectoryUrlState(vocabulary?.default);
   const { facets, degraded } = useHrDirectoryFacets(organizationId);
   const directory = useHrDirectory({
     organizationId,
@@ -176,6 +185,18 @@ export function HrDirectory() {
     hiredTo: url.hiredTo,
     myEmploymentId: employmentId,
   });
+
+  const wireStatuses = directory.page?.statuses;
+  useEffect(() => {
+    if (!wireStatuses) return;
+    setVocabulary((prior) =>
+      prior &&
+      prior.allowed.join() === wireStatuses.allowed.join() &&
+      prior.default.join() === wireStatuses.default.join()
+        ? prior
+        : wireStatuses,
+    );
+  }, [wireStatuses]);
 
   // STYLE, not query. Persisted per user and synced across devices; the platform
   // default for THIS surface is cards (knob `hr.employees.directory_default_view`,
@@ -205,10 +226,24 @@ export function HrDirectory() {
   const page = directory.page;
   const rows: HrDirectoryRow[] = page?.rows ?? [];
   const total = page?.total ?? 0;
-  const publishes = page?.columns ?? { hire_date: false, manager: false };
+  // Every flag defaults to FALSE while the door has not answered. A column that
+  // appears before we know whether this viewer may have it is the wrong default in
+  // exactly the direction that matters.
+  const publishes = page?.columns ?? {
+    hire_date: false,
+    manager: false,
+    worker_class: false,
+    employment_detail: false,
+  };
+  const allowedStatuses = vocabulary?.allowed ?? [];
 
-  const columns = buildHrDirectoryColumns({ org: orgRef, publishes, facets });
-  const labelLookup = makeFacetLabelLookup(facets);
+  const columns = buildHrDirectoryColumns({
+    org: orgRef,
+    publishes,
+    allowedStatuses,
+    facets,
+  });
+  const labelLookup = makeFacetLabelLookup(facets, allowedStatuses);
   const appliedFilters = url.describeFilters(labelLookup);
 
   const showMyTeamTab = persona === "manager" || can("working_record.read");
@@ -357,13 +392,18 @@ export function HrDirectory() {
                   [row.display_name, row.job_title, row.department, row.location]
                     .filter(Boolean)
                     .join(" · "),
+                // A copy carries what the VIEWER received. `worker_class` is
+                // spread in only when the door published it, so a directory-tier
+                // copy has no key for it rather than a key holding `undefined`.
                 agentRow: (row) => ({
                   employee_id: row.employee_id,
                   display_name: row.display_name,
                   job_title: row.job_title,
                   department: row.department,
                   location: row.location,
-                  worker_class: row.worker_class,
+                  ...(publishes.worker_class
+                    ? { worker_class: row.worker_class }
+                    : {}),
                   directory_status: row.directory_status,
                 }),
               }}

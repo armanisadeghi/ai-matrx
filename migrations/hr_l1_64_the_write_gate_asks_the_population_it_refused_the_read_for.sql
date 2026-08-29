@@ -583,6 +583,20 @@ on conflict (schema_name, function_name, home_migration) do update
       reason = excluded.reason, is_active = true;
 
 ---------------------------------------------------------------------------------------------
+-- 4b. AND THE DUPLICATE CONTRACT SET FROM THE FIRST APPLY IS DELETED, NOT LEFT "FOR SAFETY"
+--
+-- The same double-apply described in §3b also inserted this migration's fourteen contract rows
+-- under its retired filename. They are exact duplicates of the rows above and they are currently
+-- satisfied, so they raise nothing today — which is what makes them dangerous. A contract row
+-- names the migration that OWNS a clause, and `hr_l1_63_the_write_gate_…sql` does not exist: the
+-- day one of these clauses legitimately changes, the guard would go red and send the next agent
+-- hunting for a file that was never on disk. Two contract rows for one clause is not redundancy,
+-- it is a second source of truth. Scoped to this migration's own former name only.
+---------------------------------------------------------------------------------------------
+delete from hr.function_contract
+ where home_migration = 'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql';
+
+---------------------------------------------------------------------------------------------
 -- 5. EVERY CONTRACT, INCLUDING EVERY EARLIER MIGRATION'S, MUST SURVIVE THIS ONE
 ---------------------------------------------------------------------------------------------
 do $verify$

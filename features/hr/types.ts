@@ -195,9 +195,18 @@ export type HrMyContext = {
 
 // ── hr_directory_list ───────────────────────────────────────────────────────
 
+/**
+ * The status request. `"all"` is a real token the door understands and it means
+ * EVERY STATUS THIS VIEWER MAY SEE — never "the default set". Sending no status at
+ * all is a different request: route 10's default view, which excludes `terminated`.
+ * A status the viewer may not have (`prehire` / `terminated` for anyone below the
+ * HR tier) is REFUSED with `42501`, not quietly dropped (`hr_l1_64`).
+ */
+export type HrDirectoryStatusRequest = HrDirectoryStatus | "all";
+
 export type HrDirectoryFilter = {
   search?: string | null;
-  status?: HrDirectoryStatus[] | null;
+  status?: HrDirectoryStatusRequest[] | null;
   department_id?: string | null;
   location_id?: string | null;
   job_title_id?: string | null;
@@ -207,9 +216,24 @@ export type HrDirectoryFilter = {
   my_team?: string | null;
 };
 
+/**
+ * One directory row.
+ *
+ * 🚨 SEVEN FIELDS ARE OPTIONAL BECAUSE THEY ARE **ABSENT** FOR A DIRECTORY-TIER
+ * VIEWER — not null, not blank, not present-and-empty. `hr_directory_list` removes
+ * them from the payload for anyone below the working-record tier (`hr_l1_64`), so
+ * `undefined` here is the wire telling you this viewer never received the field.
+ * They are exactly the `hr.employment` / `hr.position_assignment` facts, which
+ * SPEC-ACCESS §3.2 marks `—` for an ordinary org member.
+ *
+ * Read `page.columns` — not these fields — to decide what to RENDER. A cell that
+ * tests `row.hire_date` and prints nothing is a column of blanks, which announces
+ * that the data exists and that this viewer is not getting it (§4.2).
+ */
 export type HrDirectoryRow = {
   employee_id: string;
-  employment_id: string | null;
+  /** ABSENT below the working-record tier. Compare with `!= null`, never `!== null`. */
+  employment_id?: string | null;
   display_name: string;
   employee_number: string | null;
   work_email: string | null;
@@ -226,13 +250,24 @@ export type HrDirectoryRow = {
   manager_employee_id: string | null;
   /** null when `hr.employees.directory_shows_manager` is off — the COLUMN is absent, not blank. */
   manager_name: string | null;
-  worker_class: HrWorkerClass | null;
-  flsa_status: string | null;
-  schedule_class: string | null;
-  fte: number | null;
-  /** null when `hr.employees.directory_shows_hire_date` is off. */
-  hire_date: string | null;
+  /** ABSENT below the working-record tier (`page.columns.worker_class`). */
+  worker_class?: HrWorkerClass | null;
+  /** ABSENT below the working-record tier (`page.columns.employment_detail`). */
+  flsa_status?: string | null;
+  /** ABSENT below the working-record tier (`page.columns.employment_detail`). */
+  schedule_class?: string | null;
+  /** ABSENT below the working-record tier (`page.columns.employment_detail`). */
+  fte?: number | null;
   /**
+   * ABSENT below the working-record tier, and null when
+   * `hr.employees.directory_shows_hire_date` is off. `page.columns.hire_date`
+   * folds both together — render on that, never on this field's presence.
+   */
+  hire_date?: string | null;
+  /**
+   * ABSENT below the working-record tier — it describes which employment the job
+   * columns came from, and a directory-tier viewer receives no job columns.
+   *
    * Where this row's job columns came from.
    *
    * `hr.employee.current_*` is the sanctioned source for the directory (SPEC-EMPLOYEES §1.2 /
@@ -250,7 +285,7 @@ export type HrDirectoryRow = {
    * - `no_primary_assignment`   — a live spell with no primary assignment on the date
    * - `no_spell`                — no live spell at all (a terminated person reached by filter)
    */
-  row_basis: "current" | "upcoming" | "no_primary_assignment" | "no_spell";
+  row_basis?: "current" | "upcoming" | "no_primary_assignment" | "no_spell";
   custom: Record<string, unknown> | null;
 };
 
@@ -263,10 +298,36 @@ export type HrDirectoryPage = {
   persona: HrPersona;
   capabilities: string[];
   /**
-   * Which optional columns this org publishes. A `false` here means the column is
-   * ABSENT from the table, not rendered empty (§4.2 applies to columns too).
+   * Which columns exist FOR THIS VIEWER — the org's publishing knobs and the
+   * viewer's access tier, already folded together by the door. A `false` here means
+   * the column is ABSENT from the table, not rendered empty (§4.2 applies to columns
+   * exactly as it applies to fields), and it also means the underlying field is not
+   * in `rows` at all.
+   *
+   * - `hire_date`         — `directory_shows_hire_date` AND the working-record tier
+   * - `manager`           — `directory_shows_manager` (org knob; every tier)
+   * - `worker_class`      — the working-record tier
+   * - `employment_detail` — `employment_id` / `flsa_status` / `schedule_class` /
+   *                         `fte` / `row_basis`, the rest of the working record
    */
-  columns: { hire_date: boolean; manager: boolean };
+  columns: {
+    hire_date: boolean;
+    manager: boolean;
+    worker_class: boolean;
+    employment_detail: boolean;
+  };
+  /**
+   * The status vocabulary of THIS viewer's directory.
+   *
+   * `allowed` is what may be asked for — naming anything outside it is refused with
+   * `42501`, so a control must offer exactly this set and no more. `default` is what
+   * arrives when nothing is asked for (route 10 excludes `terminated` there). The
+   * two differ, which is why the table's bare "All" could not be left meaning "the
+   * default": ask for `["all"]` to get everything in `allowed`.
+   */
+  statuses: { allowed: HrDirectoryStatus[]; default: HrDirectoryStatus[] };
+  /** `full` · `team` (a manager inside their own My-team scope) · `directory`. */
+  tier: "full" | "team" | "directory";
   as_of: string;
 };
 

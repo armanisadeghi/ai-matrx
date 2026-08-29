@@ -1,7 +1,7 @@
-"""hr_l1_63 — the WRITE gate asks the population it just refused the READ for. Real HTTPS PostgREST.
+"""hr_l1_64 — the WRITE gate asks the population it just refused the READ for. Real HTTPS PostgREST.
 
 Run:  cd /Users/armanisadeghi/code/aidream && uv run --with asyncpg --with httpx \
-        python /Users/armanisadeghi/code/matrx-frontend/scripts/hr/hr_l1_63_write_gate_population_falsification.py
+        python /Users/armanisadeghi/code/matrx-frontend/scripts/hr/hr_l1_64_write_gate_population_falsification.py
       (`--baseline` records the PRE-fix behaviour; directions (1) and (3) FAIL there, which is
        the defect. Direction (2) — the must-not-break — passes in BOTH runs or the fix is wrong.)
 
@@ -49,7 +49,7 @@ PERSONAS = {"tomo": "g2t13.tomas@example.test",       # no live grant of his own
             "priya": "admin+g2v.priya@admin.com",     # hr_admin, ORG-scoped, WTS
             "admin": "admin@admin.com"}               # hr_owner, ORG-scoped, WTS
 
-FIXTURE_REASON = "hr_l1_63 falsification fixture - removed by the same script run"
+FIXTURE_REASON = "hr_l1_64 falsification fixture - removed by the same script run"
 R = []
 
 

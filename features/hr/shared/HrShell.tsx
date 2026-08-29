@@ -54,6 +54,7 @@ import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { cn } from "@/lib/utils";
 
 import { hrHref, hrSwitchEmployerHref } from "../routes";
+import { HrEmployerSubstitutionNotice } from "./HrStates";
 import { resolveHrNav } from "./hr-nav";
 import { useHrContext } from "./useHrContext";
 import { isOrgSteward, useHrPersona } from "./useHrPersona";
@@ -155,6 +156,15 @@ export function HrShell({
           className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden"
         >
           <div className={cn(subNav ? null : "pt-[var(--shell-header-h)]")}>
+            {/*
+              🚨 The employer we opened is not always the one that was asked for —
+              `useHrContext` law B. When it is not, the page says so HERE, above
+              everything, with the way back. Never let the switcher label be the only
+              evidence that HR changed employers on somebody.
+            */}
+            <div className="px-4 pt-3 empty:hidden sm:px-6">
+              <HrEmployerSubstitutionNotice />
+            </div>
             {crumbs.length > 0 || description ? (
               <div className="px-4 pt-3 sm:px-6">
                 {crumbs.length > 0 ? (

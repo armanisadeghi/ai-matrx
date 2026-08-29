@@ -446,6 +446,58 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
   );
 }
 
+// ── 4b. The employer we opened is not the one you asked for ─────────────────
+
+/**
+ * 🚨 NO EMPLOYER IS EVER SUBSTITUTED IN SILENCE (`useHrContext` law B).
+ *
+ * `useHrContextResolver` legitimately rescues a person whose asked-for employer
+ * cannot do HR — without it, a multi-employer admin whose global active org is her
+ * personal workspace lands in an empty HR with no way in. But an unannounced swap is
+ * the same defect as a link that quietly changes employer, which is the one thing
+ * every URL rule in `routes.ts` exists to prevent. So the rescue always says so.
+ *
+ * NOT a modal, NOT a toast, and NOT dismissible: it is a statement of which employer
+ * this page is showing, and it must still be true the moment somebody looks up.
+ */
+export function HrEmployerSubstitutionNotice({
+  className,
+}: { className?: string } = {}) {
+  const { substitution } = useHrContext();
+  if (!substitution) return null;
+
+  const { askedName, askedRef, reason, openedName } = substitution;
+
+  const sentence =
+    reason === "module-off"
+      ? `${askedName ?? "The employer you asked for"} doesn't have HR turned on, so this is ${openedName}.`
+      : `That link named an employer you can't do HR in, so this is ${openedName}.`;
+
+  return (
+    <div
+      role="status"
+      data-hr-employer-substitution={reason}
+      className={cn(
+        "flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100",
+        className,
+      )}
+    >
+      <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      <span className="min-w-0">{sentence}</span>
+      {/* The way back is a real door: `?org=` is honored now, so a module-off
+          employer opens its enable door instead of bouncing back to here. */}
+      {askedRef ? (
+        <Link
+          href={hrHref(askedRef)}
+          className="shrink-0 font-medium underline underline-offset-2 hover:no-underline"
+        >
+          Open {askedName ?? "it"} anyway
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
 // ── Module-level states — ABSENT, NOT DISABLED ──────────────────────────────
 
 /**
