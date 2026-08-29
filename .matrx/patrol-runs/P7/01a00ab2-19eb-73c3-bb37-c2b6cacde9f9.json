@@ -69,6 +69,22 @@
       },
       "previousEventHash": "d9490610dc5415d9ef7a3529115ce09c1f1b8f4e7d135230ba1a051ba55f7ec8",
       "eventHash": "e6b4b59ed0630c6f5f8bf8e2ca2df1668452155a32be6ec0d2d52bfa2ad549d8"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-29T14:33:05.562Z",
+      "actor": "pattern-patrol-p7-worker",
+      "summary": "Certified P7 candidate is preserved and queued for fast integration to origin/main.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P7/01a00ab2-19eb-73c3-bb37-c2b6cacde9f9"
+      ],
+      "delivery": {
+        "candidateSha": "f70638875cbae083e1b9f160ee32215e4ad2bb74",
+        "preservedRef": "refs/heads/patrol-runs/P7/01a00ab2-19eb-73c3-bb37-c2b6cacde9f9"
+      },
+      "previousEventHash": "e6b4b59ed0630c6f5f8bf8e2ca2df1668452155a32be6ec0d2d52bfa2ad549d8",
+      "eventHash": "dfb5d960e077d9302cf29bbe201e5a33ebe86524517ce5bdc0dbfb8bb270d1e2"
     }
   ]
 }
