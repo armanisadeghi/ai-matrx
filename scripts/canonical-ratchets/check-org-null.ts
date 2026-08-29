@@ -10,7 +10,8 @@
  *
  * NULL is not a scope. System/global/builtin content belongs to the system org
  * (`matrx-system`, 39c38960-d30c-4840-b0c1-c9960de95582, `global_readable`);
- * user content falls back to the creator's personal org. This is the DATA and
+ * every user-owned write receives the initiating organization explicitly. No
+ * user-derived fallback or database trigger may choose it. This is the DATA and
  * SCHEMA half of the enforcement — `platform._ddl_guard` lane (e) is the DDL
  * half, and it fires at creation time, before a row exists to be wrong.
  *
@@ -350,10 +351,9 @@ function report(snap: OrgNullSnapshot, base: Baseline): boolean {
       // The fix hint belongs with an actual defect. Printing it under a clean
       // by-constraint report would tell the reader to "fix" rows the database
       // requires to be exactly as they are.
-      console.log(`  ${C.cyan}fix: find the write path and give the row its organization. System/global/builtin${C.reset}`);
-      console.log(`  ${C.cyan}     content → the system org (${snap.system_org_id}). User content → the creator's${C.reset}`);
-      console.log(`  ${C.cyan}     personal org (public.ensure_personal_organization), or attach the${C.reset}`);
-      console.log(`  ${C.cyan}     public._stamp_org_default backstop. NULL is never the answer. (db-rules §2.)${C.reset}`);
+      console.log(`  ${C.cyan}fix: find the initiating write path and pass its organization_id explicitly.${C.reset}`);
+      console.log(`  ${C.cyan}     System/global/builtin content uses the system org (${snap.system_org_id}).${C.reset}`);
+      console.log(`  ${C.cyan}     Never infer scope from the user and never attach an org-assignment trigger.${C.reset}`);
     }
   } else if (rowGrowth < 0) {
     console.log(`  ${C.green}${-rowGrowth} fewer than baseline — shrink it: pnpm check:org-null --update-baseline${C.reset}`);
@@ -375,9 +375,9 @@ function report(snap: OrgNullSnapshot, base: Baseline): boolean {
     console.log(
       `${STRICT ? C.red : C.yellow}${C.bold}  NO NULL ORG VIOLATED — ${newCols.length} table(s) gained a nullable organization_id.${C.reset}`,
     );
-    console.log(`  ${C.cyan}fix: ALTER COLUMN organization_id SET NOT NULL, and attach the backstop${C.reset}`);
-    console.log(`  ${C.cyan}     (public._stamp_org_default or platform.inherit_org_from_parent) in the SAME${C.reset}`);
-    console.log(`  ${C.cyan}     migration — db-rules §2 law. The baseline may only SHRINK.${C.reset}`);
+    console.log(`  ${C.cyan}fix: make every writer pass the initiating organization_id explicitly, then${C.reset}`);
+    console.log(`  ${C.cyan}     ALTER COLUMN organization_id SET NOT NULL. Do not add a resolver or trigger.${C.reset}`);
+    console.log(`  ${C.cyan}     The baseline may only SHRINK — db-rules §2.${C.reset}`);
   } else if (fixedCols.length) {
     for (const c of fixedCols) console.log(`  ${C.green}- ${c}${C.reset}  ${C.dim}FIXED${C.reset}`);
     console.log(`  ${C.green}${fixedCols.length} fixed — shrink the baseline: pnpm check:org-null --update-baseline${C.reset}`);
