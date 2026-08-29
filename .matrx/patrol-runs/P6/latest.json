@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P6",
   "runId": "e266c3f6-22ec-4f63-8446-e251e5b46f25",
-  "state": "certified",
-  "updatedAt": "2026-08-29T14:33:47.240Z",
-  "summary": "CERTIFIED exact candidate 508177a056c6b5be446cbc609ca9dca9e6a1e244; no concrete batch-caused defect.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-29T14:34:11.118Z",
+  "summary": "Retroactively queueing exact candidate 508177a056 after independent certification; automatic integration and v0.4.1441 release had already occurred before the verdict.",
   "source": "e266c3f6-22ec-4f63-8446-e251e5b46f25.json",
-  "eventHash": "39e3d9af059e3cc2be46ba2fe8cbc9b8d03c4e9546ac9b45188969675163579e"
+  "eventHash": "90bbb7079a90b9ca8553d47005c6d948c8936f467c9515d5472bc641957440b8"
 }
