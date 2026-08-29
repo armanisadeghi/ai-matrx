@@ -17,6 +17,9 @@ importers:
       '@ai-matrx/agents':
         specifier: latest
         version: 0.5.0
+      '@ai-matrx/capture':
+        specifier: latest
+        version: 0.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/content-ir':
         specifier: latest
         version: 0.3.0
@@ -798,6 +801,16 @@ packages:
   '@ai-matrx/agents@0.5.0':
     resolution: {integrity: sha512-vZmhIMGgVGzFwQA1YafFjdsZ8fWQlsPFKc357iiKFmu23WsMbR/kqqOTlE8mFlpBfX53HfWQ/xePx+d/+LsVFA==}
     engines: {node: '>=20'}
+
+  '@ai-matrx/capture@0.1.0':
+    resolution: {integrity: sha512-E6Y+sHULdhLUREC3rMWTO77xUQx6z8/cpOFIZbAhaS4eVFTGZwd10Y28xXxHZ+pCPCntUSJd9xFSdW8MLysKAg==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: 19.2.7
+      react-dom: 19.2.7
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
 
   '@ai-matrx/content-ir-react@0.5.1':
     resolution: {integrity: sha512-DvEMlydbe8QZzCQAYpurC2PCmkN7OVZ7YM3l3crrK1PMdLsjpMty54NesoXNrq3A5960VtOPphNq4vE2QvYwTA==}
@@ -9728,6 +9741,11 @@ packages:
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
+  lucide-react@0.545.0:
+    resolution: {integrity: sha512-7r1/yUuflQDSt4f1bpn5ZAocyIxcTyVyBBChSVtBKn5M+392cPmI5YJMWOJKk/HUWGm5wg83chlAZtCcGbEZtw==}
+    peerDependencies:
+      react: 19.2.7
+
   lucide-react@1.22.0:
     resolution: {integrity: sha512-c9o3l0PiNcgOQDW4F31BEYHudE7kgxVt3o30qMl36ZPwTxXlGB4QnLilhERvVM4uh/pl5MDyY1/gzZSYcHDtBg==}
     peerDependencies:
@@ -13028,6 +13046,14 @@ snapshots:
   '@acemir/cssom@0.9.31': {}
 
   '@ai-matrx/agents@0.5.0': {}
+
+  '@ai-matrx/capture@0.1.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      lucide-react: 0.545.0(react@19.2.7)
+      react: 19.2.7
+      tailwind-merge: 3.6.0
+    optionalDependencies:
+      react-dom: 19.2.7(react@19.2.7)
 
   '@ai-matrx/content-ir-react@0.5.1(@ai-matrx/content-ir@0.3.0)(react@19.2.7)':
     dependencies:
@@ -24805,6 +24831,10 @@ snapshots:
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
+
+  lucide-react@0.545.0(react@19.2.7):
+    dependencies:
+      react: 19.2.7
 
   lucide-react@1.22.0(react@19.2.7):
     dependencies:
