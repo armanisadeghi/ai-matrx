@@ -23,6 +23,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { readAllRows } from "@ai-matrx/data/db";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
@@ -233,7 +234,7 @@ export async function createMandateNote(
     .select("*")
     .single();
 
-  if (error) throw new Error(error.message || "Could not save the note.");
+  if (error) throw operationFailed("save this note", error);
   return toNote(data as MandateNoteRow, null);
 }
 
@@ -242,5 +243,5 @@ export async function deleteMandateNote(noteId: string): Promise<void> {
   const { error } = await mandateNotes(createClient())
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", noteId);
-  if (error) throw new Error(error.message || "Could not delete the note.");
+  if (error) throw operationFailed("delete this note", error);
 }

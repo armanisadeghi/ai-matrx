@@ -13,6 +13,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import {
   createOwnedShapeExample,
   makeOwnedShapeExampleCanonical,
@@ -39,7 +40,7 @@ export async function reactivateComponent(
     .from("kind_component")
     .update({ is_active: true })
     .eq("id", diagnosis.inactiveComponentId);
-  if (error) throw new Error(error.message);
+  if (error) throw operationFailed("re-activate this component", error);
   invalidateKindRenderGap(diagnosis.kind);
   await refreshKindComponents(0);
 }

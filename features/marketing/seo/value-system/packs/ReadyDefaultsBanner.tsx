@@ -46,6 +46,7 @@ export function ReadyDefaultsBanner() {
   const { site, brandId } = useMarketingSite();
   const siteId = site.id;
   const organizationId = site.organization_id ?? null;
+  // access-errors: ok — a denied brand never reaches this banner: MarketingSiteLayoutClient gates the same useBrand(brandId) read with <AccessGate token="web_brand"> and returns before rendering any site surface. An optional nudge must never become the surface that reports a denial.
   const brand = useBrand(brandId);
   const [dismissedNow, setDismissedNow] = useState<string | null>(null);
 

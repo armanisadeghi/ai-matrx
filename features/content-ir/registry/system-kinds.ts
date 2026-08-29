@@ -87,6 +87,7 @@ import { PLAN_PAGE_RESEARCH_KIND_DEFINITIONS } from "../kinds/plan-page-research
 import { PLAN_PAGE_OUTLINE_KIND_DEFINITIONS } from "../kinds/plan-page-outline";
 import { PLAN_PAGE_DRAFT_KIND_DEFINITIONS } from "../kinds/plan-page-draft";
 import { PLAN_PAGE_REVIEW_KIND_DEFINITIONS } from "../kinds/plan-page-review";
+import { PLAN_SHAPE_RECOMMENDATION_KIND_DEFINITIONS } from "../kinds/plan-shape-recommendation";
 import { CMS_PAGE_BUILD_KIND_DEFINITIONS } from "../kinds/cms-page-build";
 import { INGESTED_SOURCES_KIND_DEFINITIONS } from "../kinds/ingested-sources";
 import { STUDY_NOTES_KIND_DEFINITIONS } from "../kinds/study-notes";
@@ -149,6 +150,10 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...PLAN_PAGE_OUTLINE_KIND_DEFINITIONS,
   ...PLAN_PAGE_DRAFT_KIND_DEFINITIONS,
   ...PLAN_PAGE_REVIEW_KIND_DEFINITIONS,
+  // Setup's shape planner is also python-owned. Its active root row has a
+  // NULL `data[]`, so this mirror is the parser floor that lets the live DB
+  // component receive the recommendation instead of a degraded raw object.
+  ...PLAN_SHAPE_RECOMMENDATION_KIND_DEFINITIONS,
   ...CMS_PAGE_BUILD_KIND_DEFINITIONS,
   ...INGESTED_SOURCES_KIND_DEFINITIONS,
   ...STUDY_NOTES_KIND_DEFINITIONS,

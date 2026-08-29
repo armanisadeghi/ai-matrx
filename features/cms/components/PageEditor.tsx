@@ -9,6 +9,7 @@ import React, {
   useRef,
 } from "react";
 import { useSearchParams } from "next/navigation";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import type {
   ClientComponent,
   ClientPage,
@@ -247,16 +248,11 @@ export default function PageEditor({
   // text replace): the Code tab resolves to whichever buffer is showing.
   const effectiveTab: EditorTab = activeTab === "code" ? codeTab : activeTab;
   // Tabs are URL state ("routes are free") — every switch lands in `?tab=` so
-  // any tab is shareable/deep-linkable. `replaceState` keeps history clean and
-  // never re-runs the server component.
+  // any tab is shareable/deep-linkable. `replace` keeps history clean and
+  // never re-runs the server component; going through `commitUrlParams` is
+  // what tells the rest of the editor's url-state controls to re-read.
   const syncTabToUrl = (value: EditorTab) => {
-    const params = new URLSearchParams(window.location.search);
-    params.set("tab", value);
-    window.history.replaceState(
-      null,
-      "",
-      `${window.location.pathname}?${params.toString()}`,
-    );
+    commitUrlParams({ tab: value }, "replace");
   };
   const setActiveTab = (tab: TopTab) => {
     setActiveTabState(tab);

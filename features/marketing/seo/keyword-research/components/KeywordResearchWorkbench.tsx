@@ -1018,6 +1018,21 @@ export default function KeywordResearchWorkbench() {
               ))}
             </SelectContent>
           </Select>
+          {/* An empty dropdown is a dead end with no explanation — and "you
+              have no sites" is a claim a failed read cannot support. Say the
+              read failed and offer it again. */}
+          {siteOptions.isError ? (
+            <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+              We couldn&apos;t load your sites.
+              <button
+                type="button"
+                onClick={() => void siteOptions.refetch()}
+                className="rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              >
+                Try again
+              </button>
+            </span>
+          ) : null}
           {isSuperAdmin ? (
             <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
               <span className="inline-flex h-11 items-center gap-1.5 text-xs font-medium text-muted-foreground">

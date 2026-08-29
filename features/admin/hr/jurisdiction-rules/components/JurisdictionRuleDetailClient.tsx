@@ -311,6 +311,11 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
         </div>
       </div>
 
+      {/* The `not_found` label deliberately does NOT claim the rule is absent:
+          the operator is looking at it on this very page, so the door refusing
+          the write can only mean the write never reached it — its own scope, a
+          stale id, a lapsed session. Naming a cause we cannot know is the guess
+          `features/access-gate/` exists to kill. */}
       {refusal ? (
         <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
           <div className="flex items-center gap-1.5 font-medium text-destructive">
@@ -326,7 +331,7 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
                     : refusal.reason === "not_a_platform_rule"
                       ? "Not a platform rule"
                       : refusal.reason === "not_found"
-                        ? "Rule not found"
+                        ? "We couldn't reach that rule"
                         : "The status change did not go through"}
           </div>
           {refusal.detail ? (

@@ -111,6 +111,28 @@ function UseOnSite({ packId }: { packId: string }) {
     );
   }
 
+  if (sites.isError) {
+    // NOT the "add a website" door below: a failed read is not proof the
+    // reader has no websites, and telling someone with a dozen sites to make
+    // their first one is the same class of lie `features/access-gate/` exists
+    // to kill. Say what we do know, and offer the read again.
+    return (
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+        <span>
+          We couldn&apos;t load your websites, so there is nothing to choose
+          from yet.
+        </span>
+        <button
+          type="button"
+          onClick={() => void sites.refetch()}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium hover:border-primary/50 hover:bg-accent"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
+
   if (!chosen) {
     // No sites at all — the honest door is the one that creates the first site.
     return (

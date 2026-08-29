@@ -54,11 +54,19 @@ function asEnvelope(value: unknown): Envelope {
 /**
  * Turn a door's answer into either its payload or a thrown Error carrying the server's sentence.
  *
- * `fallback` is what to say when the server refused without one — never a bare reason code, which
- * is not an answer to "what went wrong?".
+ * `fallback` is what to say when the server refused without one — and what the reader gets when the
+ * call never reached the door at all — never a bare reason code and never PostgREST's own prose,
+ * neither of which is an answer to "what went wrong?".
  */
 function unwrap(data: unknown, error: { message?: string } | null, fallback: string): Envelope {
-  if (error) throw new Error(error.message || fallback);
+  // 🚨 A TRANSPORT FAILURE IS NOT A SENTENCE. `error` here is PostgREST's own
+  // prose — an RLS code, a schema name, "JWT expired" — which is the exact
+  // class `check:access-errors` counts and `features/access-gate/` exists to
+  // kill: it is not something an administrator can act on. The panel gets THIS
+  // lane's own sentence instead, and the raw response still travels as `cause`
+  // for the Error Inspector. (An envelope refusal is different and is handled
+  // below: that sentence was authored FOR this reader by the door itself.)
+  if (error) throw new Error(fallback, { cause: error });
   const envelope = asEnvelope(data);
   if (envelope.ok !== false) return envelope;
 

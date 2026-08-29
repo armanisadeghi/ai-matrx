@@ -469,10 +469,18 @@ export function isOnFilesAllRoute(pathname?: string): boolean {
 /**
  * Mirror a folder activation in the URL without remounting the shell.
  *
- * When already on `/files/all`, uses `history.pushState` / `replaceState` so
- * Next.js does not soft-navigate (no RSC refetch, no loading skeleton, no
- * PageShell remount). When coming from another section (`/files/recents`, …),
- * falls back to `router.push` because the route tree differs.
+ * This is the ONE writer in the files surface that moves the PATHNAME, so it
+ * cannot go through `commitUrlParams` (which only ever rewrites the query
+ * string of the current path). When already on `/files/all` it writes history
+ * directly so Next.js does not soft-navigate (no RSC refetch, no loading
+ * skeleton, no PageShell remount); when coming from another section
+ * (`/files/recents`, …) it falls back to `router.push` because the route tree
+ * differs.
+ *
+ * Because it bypasses both the router and `commitUrlParams`, it announces the
+ * write itself with `matrx:url-state` — the same event `commitUrlParams`
+ * fires. Without it, every url-state-backed control on the page (and the
+ * shell's `NavActiveSync`) keeps rendering the pre-navigation URL.
  */
 export function navigateFilesFolderPath(
   folderPath: string | null,
@@ -488,6 +496,7 @@ export function navigateFilesFolderPath(
     } else {
       window.history.pushState(window.history.state, "", url);
     }
+    window.dispatchEvent(new Event("matrx:url-state"));
     return;
   }
 

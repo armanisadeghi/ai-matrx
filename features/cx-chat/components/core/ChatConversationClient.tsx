@@ -129,8 +129,16 @@ export default function ChatConversationClient({
     ) {
       lastSyncedConvId.current = latestConversationId;
 
+      // PATHNAME write, so it cannot go through `commitUrlParams` (that only
+      // rewrites the query of the current path): a brand-new conversation gets
+      // stamped into `/demos/chat/c/<id>` in place, with no Next navigation —
+      // the stream is mid-flight and a soft nav would remount the room.
+      // It therefore fires `matrx:url-state` itself, exactly as
+      // `commitUrlParams` would, so every url-state-backed control on the page
+      // (and the shell's NavActiveSync) re-reads instead of going stale.
       const newUrl = `/demos/chat/c/${latestConversationId}?agent=${agentId}`;
       window.history.replaceState(window.history.state, "", newUrl);
+      window.dispatchEvent(new Event("matrx:url-state"));
 
       window.dispatchEvent(
         new CustomEvent("chat:conversationCreated", {

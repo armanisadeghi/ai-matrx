@@ -14,6 +14,7 @@
 // the caller's runs.
 
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import {
   MODEL_COUNTS,
@@ -305,12 +306,12 @@ export async function deletePodcastRun(runId: string): Promise<void> {
     .is("deleted_at", null)
     .select("id")
     .maybeSingle();
-  if (error) throw error;
-  if (!data) {
-    throw new Error(
-      "Podcast run was not found or you do not have permission to delete it.",
-    );
-  }
+  if (error) throw operationFailed("remove this run from your history", error);
+  // A zero-row UPDATE under RLS is FOUR situations at once — already hidden,
+  // deleted, never existed, or invisible to this reader — and naming one of
+  // them (this line used to name two) is the guess `features/access-gate/`
+  // exists to kill. Say what did not happen, not why.
+  if (!data) throw operationFailed("remove this run from your history");
 }
 
 // ── public reads (direct Supabase) ─────────────────────────────────────────────

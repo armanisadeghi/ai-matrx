@@ -22,6 +22,7 @@
  */
 
 import { useState } from "react";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Boxes, CircleAlert, Hammer, Loader2 } from "lucide-react";
@@ -91,8 +92,10 @@ export default function KindRegistryPageClient({
 
   function selectTab(next: TabId) {
     setTab(next);
-    // Deep-linkable tabs without a navigation.
-    window.history.replaceState(null, "", `?tab=${next}`);
+    // Deep-linkable tabs without a navigation. `commitUrlParams` merges into
+    // the live query (a raw `?tab=` write dropped every sibling param) and
+    // notifies the page's other url-state controls.
+    commitUrlParams({ tab: next }, "replace");
   }
 
   const doctorError = boardError && (

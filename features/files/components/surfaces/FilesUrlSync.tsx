@@ -15,10 +15,13 @@
  *
  *   - Redux → URL  (continuous, this component):
  *       This component subscribes to the relevant Redux UI selectors
- *       and writes them back to `?…` via `router.replace` whenever
- *       the user changes anything. It uses `replace` (not `push`) so
- *       a back-button press doesn't get polluted by every filter
- *       toggle. Folder NAVIGATION (which rewrites the pathname) lives
+ *       and writes them back to `?…` whenever the user changes
+ *       anything — through `commitUrlParams` on `/files/all` (a
+ *       history write that still notifies every other url-state
+ *       control), and through `router.replace` on the sections that
+ *       resolve their view server-side. It uses `replace` (not
+ *       `push`) so a back-button press doesn't get polluted by every
+ *       filter toggle. Folder NAVIGATION (which rewrites the pathname) lives
  *       in `PageShell.handleSelectFolder` and uses `navigateFilesFolderPath`
  *       (`history.pushState` on `/files/all`, `router.push` when crossing
  *       sections) so back/forward retraces folder history without remounting
@@ -44,6 +47,7 @@ import {
   selectViewMode,
   selectVisibleColumns,
 } from "@/features/files/redux/selectors";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import {
   isOnFilesAllRoute,
   paramsEqual,
@@ -142,22 +146,30 @@ export function FilesUrlSync({
 
     if (paramsEqual(nextOwned, currentOwned)) return;
 
-    // Preserve any non-owned params already on the URL (e.g. `?ref=…`).
-    const merged = new URLSearchParams();
-    for (const [key, value] of currentSearchParams.entries()) {
-      if (!ownedKeys.includes(key)) merged.set(key, value);
-    }
-    for (const [key, value] of nextOwned.entries()) merged.set(key, value);
-
-    const qs = merged.toString();
     const browserPath =
       typeof window !== "undefined" ? window.location.pathname : pathname;
-    const nextUrl = qs ? `${browserPath}?${qs}` : browserPath;
 
     if (isOnFilesAllRoute(browserPath)) {
-      window.history.replaceState(window.history.state, "", nextUrl);
+      // A patch over OUR keys only — `commitUrlParams` merges it into the live
+      // query string, so non-owned params (`?ref=…`) survive untouched, keys
+      // at their default are dropped instead of accumulating, an unchanged URL
+      // is a no-op, and — the reason this is not a raw `replaceState` — every
+      // other url-state-backed control on the page is told to re-read.
+      const patch: Record<string, string | null> = {};
+      for (const key of ownedKeys) patch[key] = nextOwned.get(key);
+      commitUrlParams(patch, "replace");
     } else {
-      router.replace(nextUrl, { scroll: false });
+      // Other `/files/*` sections resolve their view server-side, so the write
+      // has to be a real (soft) navigation rather than a history poke.
+      const merged = new URLSearchParams();
+      for (const [key, value] of currentSearchParams.entries()) {
+        if (!ownedKeys.includes(key)) merged.set(key, value);
+      }
+      for (const [key, value] of nextOwned.entries()) merged.set(key, value);
+      const qs = merged.toString();
+      router.replace(qs ? `${browserPath}?${qs}` : browserPath, {
+        scroll: false,
+      });
     }
 
     // The Redux store is stable across renders; useAppStore() is only

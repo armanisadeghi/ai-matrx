@@ -2,7 +2,7 @@
 
 **Status:** active
 **Tier:** 1
-**Last updated:** 2026-08-26
+**Last updated:** 2026-08-29
 
 ## Draft brief — SERVER-side, persisted on arrival
 
@@ -872,6 +872,14 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-29 — **Shape recommendations route through their registered UI.**
+  The python-owned `plan_shape_recommendation` row has a complete emitted JSON
+  schema and an active DB component, but its unflattened `data[]` is null. The
+  Content IR cold-registry path therefore had no parser schema and degraded a
+  valid Setup work order to raw data before component routing. A compiled
+  parser mirror now covers the root plus its two nested row kinds; nested rows
+  without `__kind` are typed through the parser's single-kind speculation.
+  Regression: `kind-plan-shape-recommendation.test.ts`.
 - 2026-08-26 — **Company research regained its human approval gate; Resources
   deletion became durable.** Removed the one-click
   `useCompanyQuickResearch` chain from Setup and routed "Plan company research"

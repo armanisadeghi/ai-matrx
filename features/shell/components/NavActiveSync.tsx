@@ -8,10 +8,24 @@
 //
 //   .shell-root[data-pathname^="/demos/chat"] [data-nav-href="/demos/chat"] { ... }
 //
-// Zero re-renders. No state. No props. Mounts once, cleans up on unmount.
-// This is the ONLY client-side piece needed for the entire navigation system.
+// It listens on the three signals that can move the URL, so it never has to
+// monkey-patch the global History API (which it used to — a process-wide
+// mutation that stacked if two shells ever mounted, and hid every write from
+// the url-state gate):
+//
+//   1. `usePathname()`      — every Link / router navigation.
+//   2. `popstate`           — Back / Forward.
+//   3. `matrx:url-state`    — the event `commitUrlParams` fires, which is how
+//                             every URL write that bypasses the Next router is
+//                             required to announce itself (see
+//                             `pnpm check:url-state`). `navigateFilesFolderPath`
+//                             is the one pathname-level writer that needs it.
+//
+// The component renders null, so the pathname subscription costs one no-op
+// re-render of this node and nothing else in the tree.
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 function syncNav() {
   const pathname = window.location.pathname;
@@ -20,30 +34,21 @@ function syncNav() {
 }
 
 export default function NavActiveSync() {
+  const pathname = usePathname();
+
+  // Router navigations, plus the mount pass that corrects any server/client
+  // pathname mismatch.
   useEffect(() => {
-    // Sync on mount — corrects any server/client pathname mismatch
     syncNav();
+  }, [pathname]);
 
-    // Back / forward navigation
+  // Back/forward, and URL writes that go around the router.
+  useEffect(() => {
     window.addEventListener("popstate", syncNav);
-
-    // Client-side Link navigation patches pushState
-    const originalPushState = history.pushState.bind(history);
-    history.pushState = function (...args) {
-      originalPushState(...args);
-      syncNav();
-    };
-
-    const originalReplaceState = history.replaceState.bind(history);
-    history.replaceState = function (...args) {
-      originalReplaceState(...args);
-      syncNav();
-    };
-
+    window.addEventListener("matrx:url-state", syncNav);
     return () => {
       window.removeEventListener("popstate", syncNav);
-      history.pushState = originalPushState;
-      history.replaceState = originalReplaceState;
+      window.removeEventListener("matrx:url-state", syncNav);
     };
   }, []);
 

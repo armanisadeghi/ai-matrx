@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { toast } from "@/lib/toast";
 
@@ -55,6 +56,9 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
 
   const [item, setItem] = useState<CaptureItem | null>(null);
   const [notFound, setNotFound] = useState(false);
+  // The gate's Retry has to re-run the real load — a retry that cannot succeed
+  // is the exact lie `features/access-gate/` exists to kill.
+  const [reloadNonce, setReloadNonce] = useState(0);
   const [files, setFiles] = useState<CaptureFile[]>([]);
   const [pending, setPending] = useState<PendingUpload[]>([]);
   const [notes, setNotes] = useState("");
@@ -97,7 +101,7 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
       })();
     }, 0);
     return () => clearTimeout(timer);
-  }, [itemId, adoptItem]);
+  }, [itemId, adoptItem, reloadNonce]);
 
   // ── Notes autosave (same contract as the capture surface) ────────────────
   const flushNotes = useCallback(async () => {
@@ -239,9 +243,19 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
           title="Product Capture"
         />
         <div className="flex h-full items-center justify-center pt-[var(--shell-header-h)]">
-          <p className="text-sm text-muted-foreground">
-            This item no longer exists.
-          </p>
+          {/* A zero-row read is denied / deleted / never-existed / signed-out.
+              This surface cannot tell them apart — it used to assert the
+              second one. The gate asks the platform and says the true one. */}
+          <AccessGate
+            token="product_capture_item"
+            id={itemId}
+            onRetry={() => {
+              setNotFound(false);
+              setReloadNonce((n) => n + 1);
+            }}
+            fallbackHref="/tools/product-capture/all"
+            fallbackLabel="All capture items"
+          />
         </div>
       </>
     );

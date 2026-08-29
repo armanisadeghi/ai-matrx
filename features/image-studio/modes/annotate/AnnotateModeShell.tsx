@@ -130,7 +130,7 @@ export function AnnotateModeShell({
 
   const handleBlurFaces = async () => {
     if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection) {
-      void announceComingSoon("image-studio.face-detection");
+      toast.info("Face detection is coming soon.");
       return;
     }
     const sourceFileId =

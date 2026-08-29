@@ -36,7 +36,6 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -328,7 +327,7 @@ export function EditAiToolbar({
 
   const handleSuggest = async () => {
     if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.editSuggestions) {
-      void announceComingSoon("image-studio.edit-suggestions");
+      toast.info("AI edit suggestions are coming soon.");
       return;
     }
     const id = ensureId("Suggest edits");
@@ -351,7 +350,7 @@ export function EditAiToolbar({
 
   const handlePrompt = async () => {
     if (!IMAGE_STUDIO_BACKEND_CAPABILITIES.promptEdit) {
-      void announceComingSoon("image-studio.prompt-edit");
+      toast.info("Prompt-based image editing is coming soon.");
       return;
     }
     const id = ensureId("AI edit by prompt");
