@@ -13,15 +13,16 @@ import {
   type RefinableContent,
 } from "@/components/content-refine/useRefinableContent";
 import { useToastManager } from "@/hooks/useToastManager";
-import {
-  getScopeContext,
-  setScopeContextValue,
-  selectValuesByScope,
-  type ScopeContextRow,
-} from "@/features/scope-system/redux/scopeValuesSlice";
+import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
+import { setContextValue } from "@/features/scopes/redux/thunks/setContextValue";
+import { makeSelectScopeValues } from "@/features/scopes/redux/selectors/context-values";
+import { isScopesRpcErr } from "@/features/scopes/types";
+import type {
+  ContextItemRow,
+  ContextItemValue,
+} from "@/features/scopes/types";
 import type { ScopeContextTarget } from "@/features/scopes/components/quick-assign/ScopeContextTargetPicker";
 import { isTextCompatibleContextItem } from "@/features/scopes/components/quick-assign/ScopeContextTargetPicker";
-import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
 
 export type UpdateMethod = "append" | "overwrite";
 
@@ -41,7 +42,7 @@ export function useSetContextValue({
   const { workingContent } = refine;
 
   const [target, setTarget] = useState<Partial<ScopeContextTarget>>({});
-  const [pickedItem, setPickedItem] = useState<ContextItem | null>(null);
+  const [pickedItem, setPickedItem] = useState<ContextItemRow | null>(null);
   const [updateMethod, setUpdateMethod] = useState<UpdateMethod>("append");
   const [isSaving, setIsSaving] = useState(false);
   const [savedScopeId, setSavedScopeId] = useState<string | null>(null);
@@ -49,27 +50,26 @@ export function useSetContextValue({
   const scopeId = target.scopeId || "";
   const contextItemId = target.contextItemId || "";
 
-  const rowsForScope = useAppSelector((s) =>
-    scopeId ? selectValuesByScope(s, scopeId) : undefined,
+  const selectScopeValues = useMemo(() => makeSelectScopeValues(), []);
+  const valuesForScope = useAppSelector((s) =>
+    selectScopeValues(s, scopeId || null),
   );
 
   // Load the scope's current values once a scope is picked, so we know
   // whether the chosen item already has a value (append target / overwrite
-  // baseline) without a per-item round trip.
+  // baseline) without a per-item round trip. `ensureContextValues` no-ops
+  // when the scope's values are already cached or in flight.
   useEffect(() => {
-    if (scopeId && !rowsForScope) {
-      dispatch(getScopeContext({ scope_id: scopeId }));
-    }
-  }, [scopeId, rowsForScope, dispatch]);
+    if (scopeId) void dispatch(ensureContextValues(scopeId));
+  }, [scopeId, dispatch]);
 
-  const currentRow: ScopeContextRow | undefined = useMemo(
-    () => rowsForScope?.find((r) => r.item_id === contextItemId),
-    [rowsForScope, contextItemId],
-  );
+  // Keyed by context_item_id; a row exists only when the cell has a current
+  // persisted value.
+  const currentRow: ContextItemValue | undefined = contextItemId
+    ? valuesForScope[contextItemId]
+    : undefined;
 
-  const hasExistingValue = Boolean(
-    currentRow?.has_value && currentRow.value_text,
-  );
+  const hasExistingValue = Boolean(currentRow?.value_text);
 
   // Default to append whenever a value already exists; reset to append
   // (the non-destructive default) whenever the target changes.
@@ -107,18 +107,26 @@ export function useSetContextValue({
 
     setIsSaving(true);
     try {
-      await dispatch(
-        setScopeContextValue({
+      // The thunk wraps the sanctioned `set_context_value` RPC and never
+      // throws — errors come back in the ScopesRpcResult envelope.
+      const res = await dispatch(
+        setContextValue({
           scope_id: scopeId,
           context_item_id: contextItemId,
           value_text: finalValue,
+          source_type: "manual",
           change_summary: hasExistingValue
             ? updateMethod === "append"
               ? "Appended from a chat message"
               : "Overwritten from a chat message"
             : "Set from a chat message",
         }),
-      ).unwrap();
+      );
+      if (isScopesRpcErr(res)) {
+        console.error("useSetContextValue: save failed", res.error);
+        toast.error("Failed to save context value");
+        return false;
+      }
 
       toast.success(
         hasExistingValue
@@ -127,10 +135,6 @@ export function useSetContextValue({
       );
       setSavedScopeId(scopeId);
       return true;
-    } catch (err) {
-      console.error("useSetContextValue: save failed", err);
-      toast.error("Failed to save context value");
-      return false;
     } finally {
       setIsSaving(false);
     }

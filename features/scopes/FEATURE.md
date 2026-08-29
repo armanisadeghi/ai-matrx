@@ -46,7 +46,9 @@ this directory.
   `associationCandidates.ts`, `categoriesService.ts`, `entityTitles.ts`, `entityRows.ts`,
   `favoritesService.ts`, `rpcResult.ts`.
 - `redux/` — `scopesSlice.ts` (the canonical tree + `associationsByKey` + `entityScopesByKey` +
-  `categoriesByDimension`), `contextValuesSlice.ts` (high-churn values sidecar),
+  `categoriesByDimension` + `contextItemsByTypeId`, the lazy per-scope-type item catalogs fed by
+  `ensureScopeTypeItems`), `contextValuesSlice.ts` (high-churn values sidecar; writes echo through
+  `thunks/setContextValue.ts` → the sanctioned `set_context_value` RPC),
   `templatesSlice.ts`, plus `thunks/` and `selectors/`. `appContextSlice.ts` lives at
   `lib/redux/slices/`.
 - `hooks/` — `useScopeTree`, `useActiveContext`, `useContextValues`, `useEntityScopes`,
@@ -173,6 +175,10 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-08-29 — Quick-assign (target picker + `useSetContextValue`) rewired off the legacy
+  scope-system slices onto canonical paths: new `ensureScopeTypeItems` thunk +
+  `contextItemsByTypeId` catalogs on `scopesSlice`, new `setContextValue` write thunk over the
+  `set_context_value` RPC folding into `contextValuesSlice` (Lane F W4–W5).
 - 2026-08-28 — Repaired the DB-wide definer-grant guard's search-path-dependent grandfather
   identity so scope RLS keeps authenticated EXECUTE on `iam.has_access` across unrelated DDL.
 - 2026-08-28 — Classified the bounded Supabase upstream-connect/reset-before-headers response as
