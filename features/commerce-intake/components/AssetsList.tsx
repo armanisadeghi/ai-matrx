@@ -16,6 +16,11 @@ import { Button } from "@/components/ui/button";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 
 import type { IntakeAsset } from "../types";
@@ -32,13 +37,37 @@ interface ListRow {
   artifactCount: number;
 }
 
+/**
+ * A persisted organization can hydrate before the Supabase session does.
+ * Never let that stale org context launch a PostgREST request as `anon`.
+ */
+export function intakeAssetsLoadKey(input: {
+  authReady: boolean;
+  userId: string | null;
+  accessToken: string | null;
+  organizationId: string | null;
+}): string | null {
+  const { authReady, userId, accessToken, organizationId } = input;
+  if (!authReady || !userId || !accessToken || !organizationId) return null;
+  return `${userId}:${organizationId}`;
+}
+
 export function AssetsList() {
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const accessToken = useAppSelector(selectAccessToken);
+  const loadKey = intakeAssetsLoadKey({
+    authReady,
+    userId,
+    accessToken,
+    organizationId,
+  });
   const router = useRouter();
   const [rows, setRows] = useState<ListRow[] | null>(null);
 
   useEffect(() => {
-    if (!organizationId) return;
+    if (!loadKey || !organizationId) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -75,7 +104,7 @@ export function AssetsList() {
     return () => {
       cancelled = true;
     };
-  }, [organizationId]);
+  }, [loadKey, organizationId]);
 
   if (rows === null) {
     return (
