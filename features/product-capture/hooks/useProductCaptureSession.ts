@@ -72,6 +72,10 @@ export interface UseProductCaptureSessionResult {
 
   addPhoto: (blob: Blob) => void;
   addVideo: (blob: Blob, fileName: string) => void;
+  /** Files the user picked from their own device (gallery / files app).
+   *  Images and videos land as normal artifacts of the current item; the
+   *  count of accepted files is returned so the caller can report skips. */
+  addUploads: (files: File[] | FileList) => number;
   /** Voice note: upload + background transcription into the notes. */
   addAudioNote: (blob: Blob) => void;
   setNotes: (text: string) => void;
@@ -467,6 +471,39 @@ export function useProductCaptureSession(
     [startArtifact],
   );
 
+  const addUploads = useCallback(
+    (input: File[] | FileList) => {
+      const files = Array.from(input);
+      let accepted = 0;
+      let skipped = 0;
+      for (const file of files) {
+        const kind: ProductCaptureFileKind | null = file.type.startsWith(
+          "image/",
+        )
+          ? "photo"
+          : file.type.startsWith("video/")
+            ? "video"
+            : null;
+        if (!kind) {
+          skipped += 1;
+          continue;
+        }
+        accepted += 1;
+        const previewUrl = createTrackedObjectUrl(file);
+        void startArtifact(file, kind, previewUrl).catch(() => {
+          // Surfaced on the artifact chip.
+        });
+      }
+      if (skipped > 0) {
+        toast.error(
+          `${skipped} file${skipped === 1 ? "" : "s"} skipped — only photos and videos can be added.`,
+        );
+      }
+      return accepted;
+    },
+    [startArtifact],
+  );
+
   const addAudioNote = useCallback(
     (blob: Blob) => {
       artifactSeqRef.current += 1;
@@ -561,6 +598,7 @@ export function useProductCaptureSession(
     notesSaving,
     addPhoto,
     addVideo,
+    addUploads,
     addAudioNote,
     setNotes,
     setCode,

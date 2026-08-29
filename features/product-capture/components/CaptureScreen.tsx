@@ -16,12 +16,16 @@
  *   a new one carrying the code (or names the untouched current item).
  * - Photo ↔ video toggle at any time (video records the SAME pinned lease
  *   via `startVideoRecording`, mic on).
+ * - **Upload:** photos/videos already on the device (shot earlier, sent over,
+ *   taken on another camera) join the current item through the same
+ *   `session.addUploads` path — same folder, same link rows, same filmstrip,
+ *   many files at once.
  * - SKU quick entry, collapsible autosaving notes, one-tap voice notes with
  *   background transcription — all rendered here, all owned by
  *   `useProductCaptureSession`.
  *
- * When getUserMedia is unavailable the OS-camera fallback input keeps photo
- * capture working; SKU/notes/voice stay fully functional.
+ * When getUserMedia is unavailable the OS-camera fallback input and the upload
+ * lane keep media capture working; SKU/notes/voice stay fully functional.
  */
 
 import React, {
@@ -39,6 +43,7 @@ import {
   Eye,
   EyeOff,
   FileAudio,
+  ImagePlus,
   LayoutGrid,
   Loader2,
   PackagePlus,
@@ -165,6 +170,7 @@ export function CaptureScreen({
   const leaseRef = useRef<CameraLease | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fallbackInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const devices = useSyncExternalStore(
     subscribeMediaDevices,
@@ -336,6 +342,23 @@ export function CaptureScreen({
       e.target.value = "";
       if (!file) return;
       session.addPhoto(file);
+    },
+    [session],
+  );
+
+  // Upload lane: photos/videos the worker already has on the device (shot
+  // earlier, sent to them, or from another camera) join the item exactly like
+  // a live capture — same folder, same link rows, same filmstrip.
+  const handleUploadChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      const picked = files ? session.addUploads(files) : 0;
+      e.target.value = "";
+      if (picked > 0) {
+        toast.success(
+          `Adding ${picked} file${picked === 1 ? "" : "s"} to this item…`,
+        );
+      }
     },
     [session],
   );
@@ -557,13 +580,24 @@ export function CaptureScreen({
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80 px-8 text-center">
           <p className="text-sm text-white/90">
             The in-page camera isn&apos;t available here. Use your device
-            camera instead — each photo is added the moment you take it.
-            Notes, SKU and voice notes keep working.
+            camera instead, or upload photos and videos you already have —
+            either way they are added the moment you pick them. Notes, SKU
+            and voice notes keep working.
           </p>
-          <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
-            <CameraIcon className="mr-1.5 h-4 w-4" />
-            Open system camera
-          </Button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
+              <CameraIcon className="mr-1.5 h-4 w-4" />
+              Open system camera
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => uploadInputRef.current?.click()}
+            >
+              <ImagePlus className="mr-1.5 h-4 w-4" />
+              Upload from device
+            </Button>
+          </div>
         </div>
       )}
 
@@ -573,6 +607,18 @@ export function CaptureScreen({
         accept="image/*"
         capture="environment"
         onChange={handleFallbackChange}
+        className="hidden"
+      />
+
+      {/* Upload lane: the device's own photos/videos, many at a time. No
+          `capture` attribute — that is what makes the OS open the gallery /
+          files picker rather than the camera. */}
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept="image/*,video/*"
+        multiple
+        onChange={handleUploadChange}
         className="hidden"
       />
 
@@ -638,8 +684,8 @@ export function CaptureScreen({
           />
         </div>
 
-        {/* Photo/video toggle */}
-        <div className="flex justify-center pb-1">
+        {/* Photo/video toggle + the upload lane */}
+        <div className="relative flex justify-center pb-1">
           <div className="flex rounded-full bg-white/10 p-0.5">
             <button
               type="button"
@@ -670,6 +716,19 @@ export function CaptureScreen({
               Video
             </button>
           </div>
+          <button
+            type="button"
+            onClick={() => uploadInputRef.current?.click()}
+            disabled={recording || session.organizationId === null}
+            aria-label="Upload photos or videos from this device"
+            className={cn(
+              "absolute right-2 top-0 flex h-9 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-medium text-white/90 hover:bg-white/20",
+              (recording || session.organizationId === null) && "opacity-40",
+            )}
+          >
+            <ImagePlus className="h-3.5 w-3.5" />
+            Upload
+          </button>
         </div>
 
         {/* Instant lane: the Process affordance (mode="instant" only) */}
