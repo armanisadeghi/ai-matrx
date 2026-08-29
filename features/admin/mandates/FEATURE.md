@@ -91,6 +91,10 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
+- 2026-08-29 — Feature and Mandate identifiers now honor the canonical table's
+  wrapping boundary instead of requesting no-wrap, preventing long snake_case
+  names from painting across neighboring cells.
+
 - 2026-08-29 — Server-backed console facts now wait for explicit organization
   hydration and refetch on organization changes, closing the cold-tab preflight
   race that left Coverage, Goal, and Code truth unavailable after selection.

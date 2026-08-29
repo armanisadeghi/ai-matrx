@@ -671,7 +671,7 @@ export function MandatesConsole() {
         filter: "select",
         width: 150,
         cell: (r) => (
-          <span className="whitespace-nowrap font-mono text-xs">
+          <span className="font-mono text-xs">
             {r.feature}
           </span>
         ),
@@ -684,7 +684,7 @@ export function MandatesConsole() {
         cell: (r) => (
           <div className="flex flex-col items-start gap-0.5">
             <span
-              className="whitespace-nowrap font-mono text-xs"
+              className="font-mono text-xs"
               title={`Full mandate key: ${r.mandateKey}`}
             >
               {r.mandateName}

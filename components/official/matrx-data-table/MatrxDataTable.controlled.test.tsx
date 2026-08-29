@@ -203,6 +203,33 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).toContain("py-1.5 align-middle lg:py-0.5");
   });
 
+  it("makes every desktop cell a wrapping boundary for long unbroken text", () => {
+    const longSnakeCaseName =
+      "feature_with_a_mandate_name_that_is_longer_than_its_column";
+    const markup = renderToStaticMarkup(
+      <MatrxDataTable
+        data={[{ id: "row-a", name: longSnakeCaseName }]}
+        columns={[
+          {
+            accessorKey: "name",
+            header: "Name",
+            width: 120,
+            cell: (row) => (
+              <span className="whitespace-nowrap">{row.name}</span>
+            ),
+          },
+        ]}
+        getRowId={(row) => row.id}
+        detail={{ enabled: false }}
+      />,
+    );
+
+    expect(markup).toContain("data-matrx-cell-content");
+    expect(markup).toContain("[overflow-wrap:anywhere]");
+    expect(markup).toContain("sm:[&amp;_*]:whitespace-normal");
+    expect(markup).toContain(longSnakeCaseName);
+  });
+
   it("keeps pagination in one compact row without overflow narration", () => {
     const markup = renderToStaticMarkup(
       <MatrxDataTable

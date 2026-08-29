@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** shared official primitive (`components/official/`)
-**Last updated:** `2026-08-25`
+**Last updated:** `2026-08-29`
 
 ---
 
@@ -108,6 +108,11 @@ tables (AI Models, relationships, …) can cut over to one contract.
 - **Desktop body rows are dense; mobile rows stay touch-spaced.** Body cells use
   2px vertical padding at `lg` and 6px below `lg`. Consumer cells must not add
   desktop vertical padding that defeats the shared row density.
+- **Desktop cell content always wraps inside its own column.** The canonical
+  content boundary uses `overflow-wrap: anywhere` and overrides descendant
+  `white-space: nowrap`, so long identifiers, URLs, and snake_case values can
+  never paint across adjacent cells. Mobile keeps its deliberate content-sized
+  horizontal-scroll presentation instead of crushing columns.
 - **Inline edits are deferred** — draft locally, persist only on floating Save pill.
 - **High-frequency edits may auto-save.** `edit.autoSave` persists each committed
   cell immediately; a failed write stays in the dirty pill for retry or cancel.
@@ -276,6 +281,10 @@ Do not drop these when replacing `AiModelTable`:
 | GenericDataTable              | pagination, empty/loading                        | no sticky / filters / panels            |
 
 ## Change log
+
+- 2026-08-29 — Made every desktop body cell a hard wrapping boundary. Long
+  unbroken values now wrap within the column even when a consumer accidentally
+  renders a `whitespace-nowrap` descendant; added a snake_case regression case.
 
 - 2026-08-28 — **The table footer is one exact compact row, and horizontal
   overflow is actionable instead of narrated.** Removed the in-flow "More
