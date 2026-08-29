@@ -50,6 +50,69 @@
       ],
       "previousEventHash": "475296121de3aea914630d3a27675f8fa2e427ac7a928594bd0e5b1d4e0dc9bc",
       "eventHash": "a7b73d1f2a1626a695c0d23d96f99eb5b22ae288f2584712be30d7d92b90ddf6"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-29T14:33:47.240Z",
+      "actor": "p6-adversarial-certifier",
+      "summary": "CERTIFIED exact candidate 508177a056c6b5be446cbc609ca9dca9e6a1e244; no concrete batch-caused defect.",
+      "evidence": [
+        "The exact candidate removes 15 glyph-bearing literals across 11 TSX files and adds none; handlers, state, classes, ARIA, conditions, and copy meaning remain intact.",
+        "Raw detector 1,091/421 -> 1,076/411; AST triage 127/63 -> 112/52; 102 verified findings remain in 47 files.",
+        "Exact candidate and its product ancestor reached origin/main and v0.4.1441 before this verdict through the automatic integration/release lane; this delivery-order defect is not candidate-caused and is reconciled explicitly after certification."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "508177a056c6b5be446cbc609ca9dca9e6a1e244",
+        "certifierTaskId": "/root/p6_adversarial_certifier",
+        "checks": [
+          "pnpm type-check PASS.",
+          "git diff --check PASS.",
+          "pnpm check:doctrine PASS.",
+          "pnpm check:ui-primitives PASS with 24 unrelated warnings.",
+          "Scoped ESLint diagnostics all predate the base and do not intersect changed lines.",
+          "P6 run records, manifest, ACTIVE schedule, prior v0.4.673 ancestry, detector counts, and AST counts independently verified."
+        ]
+      },
+      "previousEventHash": "a7b73d1f2a1626a695c0d23d96f99eb5b22ae288f2584712be30d7d92b90ddf6",
+      "eventHash": "39e3d9af059e3cc2be46ba2fe8cbc9b8d03c4e9546ac9b45188969675163579e"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-29T14:34:11.118Z",
+      "actor": "fleet-health-retry-controller",
+      "summary": "Retroactively queueing exact candidate 508177a056 after independent certification; automatic integration and v0.4.1441 release had already occurred before the verdict.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P6/e266c3f6-22ec-4f63-8446-e251e5b46f25"
+      ],
+      "delivery": {
+        "candidateSha": "508177a056c6b5be446cbc609ca9dca9e6a1e244",
+        "preservedRef": "refs/heads/patrol-runs/P6/e266c3f6-22ec-4f63-8446-e251e5b46f25"
+      },
+      "previousEventHash": "39e3d9af059e3cc2be46ba2fe8cbc9b8d03c4e9546ac9b45188969675163579e",
+      "eventHash": "90bbb7079a90b9ca8553d47005c6d948c8936f467c9515d5472bc641957440b8"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-29T14:34:23.048Z",
+      "actor": "fleet-health-retry-controller",
+      "summary": "DELIVERED: exact certified P6 candidate 508177a056 is on origin/main and contained in v0.4.1441; delivery ordering was reconciled after the automatic lane released before certification.",
+      "evidence": [
+        "Candidate 508177a056c6b5be446cbc609ca9dca9e6a1e244 is an ancestor of origin/main.",
+        "Release commit 50cfae5c4f967822f26e16ac25d2bab3b6aa34b3 is tagged v0.4.1441 and contains the candidate.",
+        "Independent CERTIFIED evidence was appended after automatic integration/release; report and memory preserve that process defect rather than implying a pre-delivery verdict."
+      ],
+      "delivery": {
+        "candidateSha": "508177a056c6b5be446cbc609ca9dca9e6a1e244",
+        "preservedRef": "refs/heads/patrol-runs/P6/e266c3f6-22ec-4f63-8446-e251e5b46f25",
+        "integratedSha": "508177a056c6b5be446cbc609ca9dca9e6a1e244",
+        "release": "v0.4.1441"
+      },
+      "previousEventHash": "90bbb7079a90b9ca8553d47005c6d948c8936f467c9515d5472bc641957440b8",
+      "eventHash": "62f18e63414c648535187741d42fe4c2274bd78ca14bb255edfee474acf3aa00"
     }
   ]
 }
