@@ -43,6 +43,9 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
    (Arman's Q2 ruling). Contractors are marked **quietly, as a fact** — one small neutral chip,
    never a lesser status (Arman's Q3 ruling); the marketplace of record shows only in the Job tab.
 7. **Capability-gated actions are ABSENT**, never disabled.
+8. **Malformed employee IDs 404 before any read.** Every `[employeeId]` page validates with
+   `isFullUuid` before mounting `EmployeeProfile` or `EmployeeProfileRedirect`; invalid route text
+   never reaches `hr_employee_profile` as a Postgres `22P02`.
 
 ## Internal contracts
 
@@ -78,6 +81,8 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
 
 ## Change Log
 
+- `2026-08-28` — Employee-profile routes reject malformed UUIDs before mounting the client reader,
+  preventing database `22P02` failures from typed or automated bad URLs.
 - `2026-08-28` — Verification consent now fails closed to everyone except the linked subject,
   including pre-start hires; compensation requests notify that subject and expose a self-scoped
   consent inbox door.

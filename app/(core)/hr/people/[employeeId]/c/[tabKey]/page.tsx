@@ -6,9 +6,11 @@
 // custom tab "notes" or "job" can never shadow a legally-required one.
 
 import { Suspense } from "react";
+import { notFound } from "next/navigation";
 
 import { EmployeeProfile } from "@/features/hr/people/profile/EmployeeProfile";
 import { HrLoading } from "@/features/hr/shared/HrStates";
+import { isFullUuid } from "@/utils/supabase-search";
 
 export const metadata = { title: "Employee" };
 
@@ -18,6 +20,7 @@ export default async function HrEmployeeCustomTabPage({
   params: Promise<{ employeeId: string; tabKey: string }>;
 }) {
   const { employeeId, tabKey } = await params;
+  if (!isFullUuid(employeeId)) notFound();
 
   return (
     <Suspense fallback={<HrLoading variant="profile" />}>

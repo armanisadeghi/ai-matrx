@@ -11,9 +11,11 @@
 // custom-tab route and never this one with `tab="c"`.
 
 import { Suspense } from "react";
+import { notFound } from "next/navigation";
 
 import { EmployeeProfile } from "@/features/hr/people/profile/EmployeeProfile";
 import { HrLoading } from "@/features/hr/shared/HrStates";
+import { isFullUuid } from "@/utils/supabase-search";
 
 export const metadata = { title: "Employee" };
 
@@ -26,6 +28,7 @@ export default async function HrEmployeeTabPage({
 }) {
   const { employeeId, tab } = await params;
   const query = await searchParams;
+  if (!isFullUuid(employeeId)) notFound();
 
   return (
     <Suspense fallback={<HrLoading variant="profile" />}>

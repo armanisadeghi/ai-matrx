@@ -11,9 +11,11 @@
 // user. A server redirect would have to guess.
 
 import { Suspense } from "react";
+import { notFound } from "next/navigation";
 
 import { EmployeeProfileRedirect } from "@/features/hr/people/profile/EmployeeProfile";
 import { HrLoading } from "@/features/hr/shared/HrStates";
+import { isFullUuid } from "@/utils/supabase-search";
 
 export const metadata = { title: "Employee" };
 
@@ -23,6 +25,7 @@ export default async function HrEmployeeRedirectPage({
   params: Promise<{ employeeId: string }>;
 }) {
   const { employeeId } = await params;
+  if (!isFullUuid(employeeId)) notFound();
 
   return (
     <Suspense fallback={<HrLoading variant="profile" />}>
