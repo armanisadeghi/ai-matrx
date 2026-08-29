@@ -279,6 +279,12 @@ export async function appendToItemNotes(
  */
 export async function closeItem(item: CaptureItem): Promise<CaptureItem> {
   if (item.status === "captured") return item;
+  // 🚨 `processed` is TERMINAL — never walk it backwards to `captured`. That
+  // write is the server workflow's trigger, so a close landing on an item the
+  // INSTANT lane already analyzed re-runs the whole pipeline on it (and loses
+  // the processed status on the way). A legitimate re-capture goes through
+  // `reopenItem` first, which puts the row back at `capturing`.
+  if (item.status === "processed") return item;
   return guardedItemWrite(item, () => ({ status: "captured" }));
 }
 

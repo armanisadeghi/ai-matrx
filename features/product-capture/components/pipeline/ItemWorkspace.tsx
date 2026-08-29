@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Camera, ExternalLink, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 
 import type {
   AnalysisResult,
@@ -21,7 +22,11 @@ import type {
   PipelineStage,
   ResearchResult,
 } from "../../pipeline-types";
-import { PIPELINE_STAGES, STAGE_LABELS } from "../../pipeline-types";
+import {
+  INSTANT_ANALYSIS_KIND,
+  PIPELINE_STAGES,
+  STAGE_LABELS,
+} from "../../pipeline-types";
 import { usePipelineItem } from "./usePipelineItem";
 import { AnalysisPanel } from "./AnalysisPanel";
 import { ResearchPanel } from "./ResearchPanel";
@@ -76,6 +81,16 @@ export function ItemWorkspace({
   const research = (ws.payloads.research?.data ?? {}) as Partial<ResearchResult>;
   const grading = (ws.payloads.grading?.data ?? {}) as Partial<GradingResult>;
   const listing = (ws.payloads.listing?.data ?? {}) as Partial<ListingDraft>;
+  // The INSTANT lane's record. It is the raw registered kind object, so it
+  // renders through the kind registry exactly as it did while it streamed on
+  // the capture surface — never re-shaped into the pipeline's AnalysisResult.
+  const instantRecord = ws.payloads.instant_analysis?.data as
+    | Record<string, unknown>
+    | undefined;
+  const instantAnalysis =
+    instantRecord && Object.keys(instantRecord).length > 0
+      ? instantRecord
+      : null;
 
   const primary = PRIMARY_ACTION[item.stage];
 
@@ -165,7 +180,24 @@ export function ItemWorkspace({
       </PanelSection>
 
       {/* Stage panels — current stage first, earlier artifacts below. */}
-      {item.stage === "intake" && (
+      {/* The instant lane analyzed this item from the capture surface — its
+          record is the item's intake truth, and without this panel it had no
+          home outside the sheet it streamed into. */}
+      {instantAnalysis && (
+        <PanelSection title="Instant analysis">
+          <KindInstanceRender
+            kind={
+              typeof instantAnalysis.__kind === "string"
+                ? instantAnalysis.__kind
+                : INSTANT_ANALYSIS_KIND
+            }
+            value={instantAnalysis}
+            variant="bare"
+          />
+        </PanelSection>
+      )}
+
+      {item.stage === "intake" && !instantAnalysis && (
         <PanelSection title="Awaiting analysis">
           <p className="text-sm text-muted-foreground">
             The intake vision agent runs when capture closes. Its analysis

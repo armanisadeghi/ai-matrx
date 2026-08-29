@@ -125,24 +125,27 @@ export function CaptureScreen({
   mode = "standard",
 }: CaptureScreenProps) {
   const router = useRouter();
-  const session = useProductCaptureSession({ initialItemId });
   const instantMode = mode === "instant";
+  const session = useProductCaptureSession({
+    initialItemId,
+    lane: instantMode ? "instant" : "standard",
+  });
   useDeclaredSurfaceMandates(
     instantMode ? INSTANT_MANDATE_REFS : NO_MANDATE_REFS,
   );
 
   // ── Instant lane (mode="instant") ────────────────────────────────────────
-  const instant = useInstantAnalysis();
+  // The hook takes the current item so it can restore that item's earlier run
+  // (transcript + saved record) whenever the surface lands on it again — a
+  // processed item is never a blank Process button.
+  const instant = useInstantAnalysis({
+    item: session.currentItem,
+    enabled: instantMode,
+  });
   const [processOpen, setProcessOpen] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
 
-  const onProcess = useCallback(() => {
-    // Already running: the button re-opens the sheet (closing it never
-    // cancels the run — the result seam persists it regardless).
-    if (instant.isRunning) {
-      setProcessOpen(true);
-      return;
-    }
+  const runInstant = useCallback(() => {
     const item = session.currentItem;
     if (!item) return;
     setLaunchError(null);
@@ -153,6 +156,17 @@ export function CaptureScreen({
       );
     });
   }, [session.currentItem, instant]);
+
+  const onProcess = useCallback(() => {
+    // A run in flight, or a result this item already has: the button OPENS the
+    // sheet rather than paying for the analysis twice. Closing the sheet never
+    // cancels a run — the hook's seams persist it regardless.
+    if (instant.isRunning || instant.storedResult) {
+      setProcessOpen(true);
+      return;
+    }
+    runInstant();
+  }, [instant.isRunning, instant.storedResult, runInstant]);
 
   const onInstantNextItem = useCallback(() => {
     setProcessOpen(false);
@@ -738,19 +752,25 @@ export function CaptureScreen({
               className="h-11 w-full rounded-full"
               onClick={onProcess}
               disabled={
-                currentItem === null || recording || session.uploadingCount > 0
+                currentItem === null ||
+                recording ||
+                // A saved analysis is always viewable; only a NEW run waits
+                // for this item's uploads to land.
+                (session.uploadingCount > 0 && !instant.storedResult)
               }
             >
-              {instant.isRunning ? (
+              {instant.isRunning || instant.restoring ? (
                 <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
               ) : (
                 <BrainCircuit className="mr-1.5 h-4 w-4" />
               )}
-              {session.uploadingCount > 0
-                ? "Waiting for uploads…"
-                : instant.isRunning
-                  ? "Analyzing…"
-                  : "Process item"}
+              {instant.isRunning
+                ? "Analyzing…"
+                : instant.storedResult
+                  ? "View analysis"
+                  : session.uploadingCount > 0
+                    ? "Waiting for uploads…"
+                    : "Process item"}
             </Button>
           </div>
         )}
@@ -825,10 +845,17 @@ export function CaptureScreen({
           open={processOpen}
           onOpenChange={setProcessOpen}
           conversationId={instant.conversationId}
-          pending={processOpen && !instant.conversationId && !launchError}
+          pending={
+            processOpen &&
+            instant.isRunning &&
+            !instant.conversationId &&
+            !launchError
+          }
           isRunning={instant.isRunning}
           error={launchError ?? instant.error}
-          saved={instant.saved}
+          storedResult={instant.storedResult}
+          restoring={instant.restoring}
+          onReanalyze={runInstant}
           onNextItem={onInstantNextItem}
         />
       )}

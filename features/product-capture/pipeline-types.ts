@@ -165,7 +165,8 @@ export type PayloadKind =
   | "research"
   | "grading"
   | "listing"
-  | "instant_analysis";
+  | "instant_analysis"
+  | "instant_run";
 
 export interface PayloadDataByKind {
   analysis: AnalysisResult;
@@ -180,6 +181,59 @@ export interface PayloadDataByKind {
    * kind registry), not to this pipeline's own contracts above.
    */
   instant_analysis: Record<string, unknown>;
+  /**
+   * THE INSTANT LANE'S DURABLE RUN POINTER — written the moment the run's
+   * conversation exists, BEFORE a single token streams.
+   *
+   * Without it the conversation id lived in React state only, so tapping away
+   * (or backgrounding the phone) destroyed the local instance and orphaned a
+   * paid run: no stream to come back to, and the result seam never fired.
+   * With it, returning to the item rehydrates the transcript
+   * (`loadConversation`), rejoins a still-running turn
+   * (`reconnectServerOperation`), and recovers a run that finished while
+   * nobody was watching into the `instant_analysis` payload.
+   *
+   * It is a POINTER and stays its own kind — `instant_analysis` holds the
+   * verbatim agent-kind object and never carries client bookkeeping.
+   */
+  instant_run: InstantRunPointer;
+}
+
+/**
+ * The kind the instant-lane mandate produces — the fallback when a stored
+ * record carries no `__kind` of its own (older rows; the marker is normally
+ * part of the data). Lives here, not in the hook module, so a render surface
+ * can name the kind without pulling the runner's dependency graph in with it.
+ */
+export const INSTANT_ANALYSIS_KIND = "electronics_intake_analysis";
+
+/** @see PayloadDataByKind.instant_run */
+export interface InstantRunPointer {
+  version: 1;
+  conversationId: string;
+  startedAt: string;
+  /** Set once the client saw the run settle — a returning user is not told
+   *  "still working" about a turn that ended an hour ago. */
+  settledAt?: string;
+}
+
+/** Narrow a stored `instant_run` payload; null for anything unusable. */
+export function readInstantRunPointer(
+  data: unknown,
+): InstantRunPointer | null {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const raw = data as Record<string, unknown>;
+  const conversationId = raw.conversationId;
+  if (typeof conversationId !== "string" || conversationId.length === 0) {
+    return null;
+  }
+  return {
+    version: 1,
+    conversationId,
+    startedAt:
+      typeof raw.startedAt === "string" ? raw.startedAt : new Date(0).toISOString(),
+    ...(typeof raw.settledAt === "string" ? { settledAt: raw.settledAt } : {}),
+  };
 }
 
 /** One stored payload row (workbench.product_capture_payload). */
