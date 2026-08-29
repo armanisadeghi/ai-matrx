@@ -54,9 +54,15 @@ export function DraftReviewQueue() {
   useEffect(() => {
     if (!organizationId) return;
     let cancelled = false;
+    // Fresh load (org change / retry): drop stale rows and any prior error.
+    setItems(null);
+    setLoadError(null);
     listDraftQueue(organizationId)
       .then((rows) => {
-        if (!cancelled) setItems(rows);
+        if (!cancelled) {
+          setItems(rows);
+          setLoadError(null);
+        }
       })
       .catch((e: unknown) => {
         if (!cancelled)

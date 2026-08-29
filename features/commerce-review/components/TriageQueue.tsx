@@ -55,9 +55,15 @@ export function TriageQueue() {
   useEffect(() => {
     if (!organizationId) return;
     let cancelled = false;
+    // Fresh load (org change / retry): drop stale rows and any prior error.
+    setItems(null);
+    setLoadError(null);
     listTriageQueue(organizationId)
       .then((rows) => {
-        if (!cancelled) setItems(rows);
+        if (!cancelled) {
+          setItems(rows);
+          setLoadError(null);
+        }
       })
       .catch((e: unknown) => {
         if (!cancelled)

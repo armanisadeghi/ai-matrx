@@ -218,16 +218,26 @@ export function useIntakeSession(
       // Untracked mode: the note draft appends onto the batch notes.
       if (!asset) {
         const b = batchRef.current;
-        const text = notesRef.current.trim();
-        if (!b || modeRef.current !== "untracked" || !text) return true;
+        const snapshot = notesRef.current.trim();
+        if (!b || modeRef.current !== "untracked" || !snapshot) return true;
+        // Clear the draft SYNCHRONOUSLY at snapshot time — text typed while
+        // the append is in flight belongs to the NEXT segment and must never
+        // be wiped by a clear-after-await.
         notesDirtyRef.current = false;
+        notesRef.current = "";
+        setNotesState("");
         setNotesSaving(true);
         try {
-          await appendToBatchNotes(b.id, text);
-          notesRef.current = "";
-          setNotesState("");
+          await appendToBatchNotes(b.id, snapshot);
           return true;
         } catch (err) {
+          // Restore by PREPENDING the snapshot to whatever was typed since —
+          // never overwrite newer text.
+          const typedSince = notesRef.current;
+          notesRef.current = typedSince
+            ? `${snapshot}\n${typedSince}`
+            : snapshot;
+          setNotesState(notesRef.current);
           notesDirtyRef.current = true;
           console.error("[commerce-intake] batch note flush failed", err);
           toast.error("Notes could not be saved — check your connection.");
@@ -370,6 +380,12 @@ export function useIntakeSession(
         toast.error("Item saved, but could not be marked captured.");
       });
     }
+    // The flush awaited: a DIFFERENT item may have been adopted meanwhile
+    // (e.g. a capture started right after a mode switch). Session state now
+    // belongs to that item — never clear it from this late-resolving finish.
+    if ((currentAssetRef.current?.id ?? null) !== (asset?.id ?? null)) {
+      return true;
+    }
     persistResume({ assetId: null });
     previewUrlsRef.current.forEach((url) => revokeTrackedObjectUrl(url));
     previewUrlsRef.current.clear();
@@ -480,21 +496,34 @@ export function useIntakeSession(
 
   // ── Mode switch ───────────────────────────────────────────────────────────
 
+  /** Re-entrancy guard: one mode switch at a time. */
+  const modeSwitchingRef = useRef(false);
+
   const setCaptureMode = useCallback(
     (mode: BatchCaptureMode) => {
-      if (mode === modeRef.current) return;
-      // Finish the open item; the next artifact resolves the right batch.
-      // (finishCurrentAsset snapshots the old mode/batch synchronously, so
-      // flipping the refs right after is safe.)
-      void finishCurrentAsset();
-      modeRef.current = mode;
-      setCaptureModeState(mode);
-      batchRef.current = null;
-      setBatch(null);
-      // A batch create racing this toggle must not land captures on the
-      // old-mode batch — drop the in-flight promise with the mode it carried.
-      ensureBatchPromiseRef.current = null;
-      persistResume({ batchId: "", assetId: null, mode });
+      if (mode === modeRef.current || modeSwitchingRef.current) return;
+      modeSwitchingRef.current = true;
+      void (async () => {
+        try {
+          // Sequenced: the open item must finish (notes flushed, state
+          // cleared) BEFORE the mode flips — a fire-and-forget finish could
+          // resolve late and wipe an item adopted in the NEW mode. On a
+          // failed flush (already toasted) the item stays open and the mode
+          // stays put.
+          const finished = await finishCurrentAsset();
+          if (!finished) return;
+          modeRef.current = mode;
+          setCaptureModeState(mode);
+          batchRef.current = null;
+          setBatch(null);
+          // A batch create racing this toggle must not land captures on the
+          // old-mode batch — drop the in-flight promise with its old mode.
+          ensureBatchPromiseRef.current = null;
+          persistResume({ batchId: "", assetId: null, mode });
+        } finally {
+          modeSwitchingRef.current = false;
+        }
+      })();
     },
     [finishCurrentAsset, persistResume],
   );
