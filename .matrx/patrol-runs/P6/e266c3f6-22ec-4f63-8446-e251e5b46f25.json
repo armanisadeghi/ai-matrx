@@ -34,6 +34,22 @@
       ],
       "previousEventHash": "8c8deef106ffd61622544d71a7591fa2e8a4be4a7ab47de934733f2ffdb7cdb2",
       "eventHash": "475296121de3aea914630d3a27675f8fa2e427ac7a928594bd0e5b1d4e0dc9bc"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-29T14:27:03.806Z",
+      "actor": "codex-patrol-worker",
+      "summary": "Submitted the 11-file, 15-finding P6 batch and reconciled projections for exact-candidate adversarial review.",
+      "evidence": [
+        "Raw detector 1,091/421 -> 1,076/411; AST triage 117 verified findings in 58 files -> 102 in 47 files.",
+        "Pre/post pnpm type-check PASS; git diff --check PASS; doctrine PASS; P6 manifest contract PASS.",
+        "Scoped ESLint debt is outside edited lines and unchanged by the text-only diff.",
+        "Managed preview lease belongs to the canonical checkout and was not reused; exact source delta preserves markup/classes across the single decorative-deletion risk class.",
+        "Prior v0.4.673 delivery is now reconciled in report and ledger; the usage-limit abort is explicitly not counted as clean."
+      ],
+      "previousEventHash": "475296121de3aea914630d3a27675f8fa2e427ac7a928594bd0e5b1d4e0dc9bc",
+      "eventHash": "a7b73d1f2a1626a695c0d23d96f99eb5b22ae288f2584712be30d7d92b90ddf6"
     }
   ]
 }
