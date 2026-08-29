@@ -31,7 +31,8 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
-import { hrTimeExceptionsHref } from "@/features/hr/routes";
+import { hrTimeExceptionsHref, type HrOrgRef } from "@/features/hr/routes";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { cn } from "@/lib/utils";
 
 import type { AttendanceExceptionRow } from "../api/types";

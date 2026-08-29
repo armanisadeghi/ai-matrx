@@ -1722,7 +1722,7 @@ export async function setHrEmploymentPayGroup(args: {
   const result = await callHrRaw(
     "hr_employment_set_pay_group",
     { p_employment_id: args.employmentId, p_pay_group_id: args.payGroupId },
-    { envelope: true, whatFailed: "This person's pay group" },
+    { envelope: true, whatFailed: "This person's pay group", write: true },
   );
   if (!result.ok) return result;
 
@@ -1764,7 +1764,7 @@ export async function seedHrActivation(
   const result = await callHrRaw(
     "hr_activation_seed",
     { p_organization_id: organizationId },
-    { envelope: true, whatFailed: "The starting codes and calendars" },
+    { envelope: true, whatFailed: "The starting codes and calendars", write: true },
   );
   if (!result.ok) return result;
 
@@ -1818,7 +1818,7 @@ export async function inviteHrEmployeeLogin(args: {
       p_employee_id: args.employeeId,
       p_email: args.email?.trim() ? args.email.trim() : null,
     },
-    { envelope: true, whatFailed: "The login invitation" },
+    { envelope: true, whatFailed: "The login invitation", write: true },
   );
   if (!result.ok) return result;
 
@@ -1857,7 +1857,7 @@ export async function acceptHrEmployeeInvite(
   const result = await callHrRaw(
     "hr_invite_accept",
     { p_token: token },
-    { envelope: true, whatFailed: "This invitation" },
+    { envelope: true, whatFailed: "This invitation", write: true },
   );
   if (!result.ok) return result;
 

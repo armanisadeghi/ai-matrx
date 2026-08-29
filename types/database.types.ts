@@ -12463,6 +12463,10 @@ export type Database = {
           launch_facts: Json
         }[]
       }
+      delivery_failure_sentence: {
+        Args: { p_channel?: string; p_error_code: string }
+        Returns: string
+      }
       enqueue_my_sms_assistant_test: {
         Args: {
           p_body: string
@@ -30419,7 +30423,6 @@ export type Database = {
           custom: Json
           deleted_at: string | null
           directory_opt_out: boolean
-          directory_status: string
           display_name: string
           employee_number: string
           former_names: Json
@@ -30458,7 +30461,6 @@ export type Database = {
           custom?: Json
           deleted_at?: string | null
           directory_opt_out?: boolean
-          directory_status?: string
           display_name: string
           employee_number: string
           former_names?: Json
@@ -30497,7 +30499,6 @@ export type Database = {
           custom?: Json
           deleted_at?: string | null
           directory_opt_out?: boolean
-          directory_status?: string
           display_name?: string
           employee_number?: string
           former_names?: Json
@@ -43882,6 +43883,10 @@ export type Database = {
       employee_by_party: {
         Args: { p_organization_id: string; p_party_id: string }
         Returns: Json
+      }
+      employee_directory_status: {
+        Args: { p_employee_id: string; p_on: string }
+        Returns: string
       }
       employment_as_of: {
         Args: { p_employee_id: string; p_on: string }

@@ -11,8 +11,9 @@
 //     never a layout shift on arrival, never the words "Loading…".
 //  2. ERROR names the failed operation IN WORDS, says what the actor does next, and
 //     offers a retry. A raw Postgres code or a bare "something went wrong" is a
-//     defect. The code may appear as a secondary technical reference, never as the
-//     message.
+//     defect. The code lives BEHIND the "Error reference" disclosure — never in the
+//     body, never as the message. `Technical reference: 22P02` was printed as flat
+//     body text until D11, so a mistyped URL ended in a bare SQLSTATE.
 //  3. NO-ACCESS renders the persona's nearest legitimate surface with ONE sentence.
 //     Never a permission wall over a real layout, and NEVER a hint that the record
 //     exists — "not reachable" and "does not exist" must read identically, because
@@ -293,10 +294,28 @@ export function HrError({
             <Link href={hrHref(null)}>Back to HR</Link>
           </Button>
         </div>
+        {/*
+          🚨 THE MACHINE TOKEN GOES IN THE DISCLOSURE, NOT THE BODY — the same
+          affordance as "Record reference" (`HrDecisionPanel`), "Refusal
+          reference" (`HrRefusalNotice`) and "Consent reference"
+          (`VerificationRowActions`). This printed `Technical reference: 22P02`
+          as flat body text, so a mistyped URL ended with a bare SQLSTATE staring
+          at whoever followed the link. The sentence above already says what
+          happened in words; the code is for whoever has to trace it afterwards.
+
+          "Error reference", NOT "Record reference": the siblings' labels each
+          promise their own contents, and this one holds the failure's own code,
+          not the address of a record.
+        */}
         {code ? (
-          <p className="text-[0.6875rem] text-muted-foreground">
-            Technical reference: {code}
-          </p>
+          <details className="pt-0.5">
+            <summary className="cursor-pointer text-[0.6875rem] text-muted-foreground">
+              Error reference
+            </summary>
+            <p className="mt-1 break-words font-mono text-[0.6875rem] text-muted-foreground">
+              {code}
+            </p>
+          </details>
         ) : null}
       </div>
     </div>

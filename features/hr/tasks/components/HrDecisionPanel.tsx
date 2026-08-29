@@ -370,8 +370,19 @@ export function HrDecisionPanel({
                         {activeStep ? (
                             <section className="space-y-3 rounded-lg border border-border bg-card p-4">
                                 <div className="flex flex-wrap items-baseline gap-2">
+                                    {/* 🚨 THE STEP IS NAMED, NOT KEYED. This heading — directly
+                                        above the Approve / Reject controls, on a page whose every
+                                        other line is a sentence — read `manager_approval`.
+                                        `hr._wf_display` has returned `step_label` (the step
+                                        definition's own label: "Manager approval of the change")
+                                        for every decorated step all along, and
+                                        `public.hr_wf_instance` decorates EVERY step, so this is
+                                        the same label path the flow heading already uses. The key
+                                        stays only as the fallback for a step with no definition
+                                        behind it. */}
                                     <h2 className="text-sm font-semibold">
-                                        {str(activeStep, "step_key")}
+                                        {str(activeStep, "step_label") ??
+                                            str(activeStep, "step_key")}
                                     </h2>
                                     <span className="text-xs text-muted-foreground">
                                         due {relativeDue(str(activeStep, "due_at"))}
@@ -497,8 +508,12 @@ export function HrDecisionPanel({
                             <ul className="divide-y divide-border rounded-lg border border-border bg-card text-sm">
                                 {steps.map((s) => (
                                     <li key={String(s.id)} className="flex items-center gap-3 p-3">
+                                        {/* The chain read `auto_approve / manager_approval /
+                                            hr_review` — three machine keys presented to a manager
+                                            as the record of what happened. Same label path as the
+                                            active step above. */}
                                         <span className="truncate font-medium">
-                                            {str(s, "step_key")}
+                                            {str(s, "step_label") ?? str(s, "step_key")}
                                         </span>
                                         <span className="text-muted-foreground">{str(s, "state")}</span>
                                         {str(s, "resolution_path") ? (

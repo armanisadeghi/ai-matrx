@@ -309,6 +309,9 @@ export function parseInbox(source: Obj): HrInbox {
             step_id: str(rpc, r, "step_id"),
             instance_id: str(rpc, r, "instance_id"),
             flow_key: str(rpc, r, "flow_key"),
+            // Optional at the seam for the same reason `waiting_on_others` is: the door sends it
+            // since hr_c4_55, and an older payload falls back to the key rather than throwing.
+            flow_label: optStr(r, "flow_label"),
             timeout_at: optStr(r, "timeout_at") ?? null,
         })),
         waiting_on_others: objects(rpc, source, "waiting_on_others").map((r) => ({
@@ -326,14 +329,36 @@ export function parseInbox(source: Obj): HrInbox {
             failure_id: str(rpc, r, "failure_id"),
             instance_id: str(rpc, r, "instance_id"),
             failure_class: str(rpc, r, "failure_class"),
+            // Which request the failure is ON — a bare class token names a category, not a thing.
+            flow_key: optStr(r, "flow_key"),
+            flow_label: optStr(r, "flow_label"),
             state: str(rpc, r, "state"),
             occurred_at: optStr(r, "occurred_at") ?? null,
         })),
+        /*
+            🚨 A DECISION HISTORY NAMES WHAT WAS DECIDED AND ABOUT WHOM (hr_c4_55 / D10).
+            This parsed four fields — id, instance, verb, timestamp — because those were the four
+            the door sent, so a manager's own last thirty days rendered as forty consecutive lines
+            of "approved" and a clock time. The naming now comes from `hr._wf_display` inside
+            `hr.wf_pending`, the same rule that decorates the queue rows above, so entitlement is
+            decided once in the door and never re-derived here. Everything past the original four
+            is optional at the seam: an older payload degrades to the verb rather than throwing at
+            somebody looking at their own history.
+        */
         recently_decided: objects(rpc, source, "recently_decided").map((r) => ({
             decision_id: str(rpc, r, "decision_id"),
             instance_id: str(rpc, r, "instance_id"),
+            step_id: optStr(r, "step_id"),
             decision: str(rpc, r, "decision"),
             decided_at: optStr(r, "decided_at") ?? null,
+            reason: optStr(r, "reason"),
+            title: optStr(r, "title"),
+            flow_key: optStr(r, "flow_key"),
+            flow_label: optStr(r, "flow_label"),
+            step_label: optStr(r, "step_label"),
+            subject_label: optStr(r, "subject_label"),
+            subject_withheld: optBool(r, "subject_withheld"),
+            digest: optStr(r, "digest"),
         })),
         bulk_max: num(rpc, source, "bulk_max"),
         default_sort: str(rpc, source, "default_sort"),

@@ -776,7 +776,7 @@ values
    || 'through the person''s own hr.pay_period_employment row. It must never acquire a capability '
    || 'gate — that would re-break it for exactly the people it exists for.',
    true, true)
-on conflict (schema_name, function_name) do update
+on conflict (schema_name, function_name, home_migration) do update
   set home_migration    = excluded.home_migration,
       must_contain      = excluded.must_contain,
       must_not_contain  = excluded.must_not_contain,
@@ -828,11 +828,12 @@ begin
   select count(*)::integer into v_n
     from hr.leave_enrollment le
     join hr.leave_policy p on p.id = le.leave_policy_id and p.accrual_method <> 'unlimited'
-   cross join lateral hr.leave_figures(le.employment_id, le.leave_policy_id, current_date) f
+   cross join lateral (
+      select hr.leave_figures(le.employment_id, le.leave_policy_id, current_date) as fig) x
    where le.deleted_at is null
-     and ((f ->> 'bookable_now')::numeric < 0
-          or ((f ->> 'pending_beyond_balance')::numeric > 0
-              and hr._leave_sentence(f) not like '%waiting for a decision%'));
+     and ((x.fig ->> 'bookable_now')::numeric < 0
+          or ((x.fig ->> 'pending_beyond_balance')::numeric > 0
+              and hr._leave_sentence(x.fig) not like '%waiting for a decision%'));
   if v_n > 0 then
     raise exception 'hr_c4_55: % enrollment(s) render a negative bookable figure or an unexplained clamp', v_n;
   end if;
@@ -841,7 +842,7 @@ begin
   if hr._leave_sentence(jsonb_build_object(
        'accrual_method','per_pay_period','ledger_balance', 24, 'pending_approval', 48,
        'pending_beyond_balance', 24, 'projected_available', 54.8,
-       'projected_as_of', '2026-09-21')) not like '%projected to%'
+       'projected_as_of', '2026-09-21')) not like '%Projected to Sep 21, 2026 %54.8 hours%'
   then
     raise exception 'hr_c4_55: the overhang sentence dropped the projected figure';
   end if;

@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { HrTimeShell } from "@/features/hr/time/HrTimeShell";
 import { HrLoading } from "@/features/hr/shared/HrStates";
 import { EmploymentPeriodDetail } from "@/features/hr/time/timesheet/EmploymentPeriodDetail";
+import { notFound } from "next/navigation";
+import { isFullUuid } from "@/utils/supabase-search";
 
 /**
  * Route 29 — `/hr/time/timesheets/[employmentId]` (SPEC-UI-IA §3.4 row 29, SPEC-TIME §2.4).
@@ -20,6 +22,13 @@ export default async function EmploymentTimesheetPage({
   searchParams: Promise<{ period?: string }>;
 }) {
   const { employmentId } = await params;
+
+  // 🚨 A MALFORMED ID IN THE URL IS REFUSED HERE, BEFORE ANY READ. Postgres casts
+  // the route text to `uuid` inside the door and raises `22P02`, which reached the
+  // person as a sentence about a value in the wrong format — on a READ, with no
+  // form on screen and nothing to save (D11). The three `/hr/people/[employeeId]`
+  // routes were guarded on 2026-08-28; the other nine dynamic HR routes were not.
+  if (!isFullUuid(employmentId)) notFound();
   const { period } = await searchParams;
 
   return (

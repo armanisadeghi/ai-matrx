@@ -12,6 +12,8 @@
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { MyLeaveLedgerSurface } from "@/features/hr/leave/components/MyLeaveLedgerSurface";
+import { notFound } from "next/navigation";
+import { isFullUuid } from "@/utils/supabase-search";
 
 export const metadata = { title: "Time-off ledger" };
 
@@ -21,6 +23,13 @@ export default async function HrMeTimeOffLedgerPage({
   params: Promise<{ policyId: string }>;
 }) {
   const { policyId } = await params;
+
+  // 🚨 A MALFORMED ID IN THE URL IS REFUSED HERE, BEFORE ANY READ. Postgres casts
+  // the route text to `uuid` inside the door and raises `22P02`, which reached the
+  // person as a sentence about a value in the wrong format — on a READ, with no
+  // form on screen and nothing to save (D11). The three `/hr/people/[employeeId]`
+  // routes were guarded on 2026-08-28; the other nine dynamic HR routes were not.
+  if (!isFullUuid(policyId)) notFound();
 
   return (
     <>
