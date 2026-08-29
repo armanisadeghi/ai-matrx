@@ -11,6 +11,43 @@ const CHANNEL_ICON: Record<string, typeof Mail> = {
 };
 
 /**
+ * 🚨 THE CHANNEL IS PART OF THE VISIBLE SENTENCE, AND NO RAW KEY IS EVER SHOWN.
+ *
+ * These chips used to render the delivery sentence ALONE — `delivered` / `read` / `not sent — no
+ * address on file for this channel` — with the channel hidden in a `title` tooltip. A leave
+ * request notified on three channels therefore rendered up to three IDENTICAL "no address on file
+ * for this channel" chips (measured live on instance 0a8bf31d: five of them), and the only way to
+ * learn which channel each one was about was to hover — which a touch device cannot do, a screen
+ * reader does not announce, and a screenshot does not carry. "This channel" in a sentence that
+ * never names the channel says nothing.
+ *
+ * And the tooltip itself carried the RAW KEY: `in_app: delivered`, `sms: not sent — …`. The whole
+ * point of hr_c4_55 was that our internal spellings stop reaching an HR manager's screen; a
+ * snake_case enum value in a tooltip is that same leak by a quieter route.
+ *
+ * So the channel is named HERE, in human words, in the visible text — and the chip carries NO
+ * `title` at all. A tooltip that only repeats what is already visible is dead weight, and an empty
+ * tooltip surface is the one that cannot leak.
+ *
+ * The keys are `communication.notification.channel`. `push` is declared in SPEC-NOTIFICATIONS but
+ * not yet built; it is named here so the day it ships it does not arrive as a bare key.
+ */
+const CHANNEL_LABEL: Record<string, string> = {
+    email: "Email",
+    sms: "Text message",
+    in_app: "In-app",
+    push: "Push",
+};
+
+/**
+ * An unrecognised channel is a defect, not a display case, so it SCREAMS rather than
+ * printing the key it does not recognise (the loud-patches rule).
+ */
+function channelLabel(channel: string): string {
+    return CHANNEL_LABEL[channel] ?? "Unrecognised channel";
+}
+
+/**
  * SPEC-UI-IA §5.9 — "each row shows delivery and read state where a notification
  * was sent; the notification's outcome lives with the task, not in a separate
  * log". These rows come from `hr.workflow_notice`, the VIEW over
@@ -92,9 +129,10 @@ export function HrDeliveryState({ notices }: { notices: HrInboxNotice[] | undefi
                 const state = stateOf(notice);
                 const Marker = state.tone === "warn" ? AlertTriangle : Icon;
                 return (
+                    /* No `title`. The channel and the state are both in the visible text above —
+                       see the CHANNEL_LABEL comment for why a tooltip is not allowed back. */
                     <span
                         key={`${notice.channel}-${notice.sent_at ?? index}`}
-                        title={`${notice.channel}: ${state.label}`}
                         className={
                             "inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-xs " +
                             (state.tone === "warn"
@@ -105,7 +143,8 @@ export function HrDeliveryState({ notices }: { notices: HrInboxNotice[] | undefi
                         }
                     >
                         <Marker className="h-3 w-3" />
-                        {state.label}
+                        <span className="font-medium">{channelLabel(notice.channel)}</span>
+                        <span>{state.label}</span>
                     </span>
                 );
             })}

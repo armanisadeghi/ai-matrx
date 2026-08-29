@@ -71,6 +71,8 @@ export function TimesheetWeeks({
           key={week.workweek.id}
           week={week}
           viewer={viewer}
+          periodStartOn={timesheet.payPeriod.periodStartOn}
+          periodEndOn={timesheet.payPeriod.periodEndOn}
           onOpenPunch={onOpenPunch}
         />
       ))}
@@ -81,6 +83,16 @@ export function TimesheetWeeks({
 }
 
 /**
+ * The workweek's last local date. A workweek is seven local days from its stamped start, so this
+ * is calendar arithmetic on a `YYYY-MM-DD` string and never touches an instant, a zone or an hours
+ * figure — see the comment in {@link WeekBlock} for why the distinction matters here.
+ */
+function lastDateOfWorkweek(weekStartLocalDate: string): string {
+  const [year, month, day] = weekStartLocalDate.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + 6)).toISOString().slice(0, 10);
+}
+
+/**
  * One workweek. The **hard visual break** §9 rule 6 requires between weeks is this component's
  * outer border plus the gap the parent puts between them — a shift spanning the boundary renders in
  * both blocks and says so.
@@ -88,13 +100,37 @@ export function TimesheetWeeks({
 function WeekBlock({
   week,
   viewer,
+  periodStartOn,
+  periodEndOn,
   onOpenPunch,
 }: {
   week: TimesheetWeek;
   viewer: TimesheetViewer;
+  periodStartOn: string;
+  periodEndOn: string;
   onOpenPunch?: (punchId: string) => void;
 }) {
   const ww = week.workweek;
+  const weekLastDate = lastDateOfWorkweek(ww.weekStartLocalDate);
+  /*
+   * 🚨 THE WEEK TOTAL AND THE DAY ROWS UNDER IT ARE NOT THE SAME QUANTITY, AND THE SCREEN NOW
+   * SAYS SO (round 43).
+   *
+   * Measured on `/hr/me/timesheet` for the punch employee: **Worked this week 8.23** sat directly
+   * above ONE day row reading **8.22**, and a pay-period total of **8.22**. Nothing was rounded
+   * twice — `hr.workweek.hours_worked` (8.2250 → 8.23) covers the whole workweek Aug 23–29, while
+   * the day row and `hr.pay_period_employment.total_hours` cover only Aug 27, and the engine
+   * rounds each ONCE from 4-dp `hr.work_interval.hours`. The missing 0.0083 h sat on Thu Aug 28 —
+   * inside the workweek, outside the Aug 21–27 period, and therefore rendered nowhere on this
+   * screen. Three correct figures a person could only read as a contradiction.
+   *
+   * The server's `boundary_week` flag does NOT cover this: it fires on a week whose intervals land
+   * in more than one pay period, and this interval landed in NONE (no period exists past Aug 27
+   * yet). So the fact is derived here from DATES ONLY — no hours are touched, summed or compared,
+   * which is what `scripts/check-hr-time-arithmetic.ts` exists to keep true.
+   */
+  const weekReachesOutsidePeriod =
+    weekLastDate > periodEndOn || ww.weekStartLocalDate < periodStartOn;
 
   return (
     <section className="overflow-hidden rounded-lg border-2 border-border bg-card">
@@ -122,6 +158,17 @@ function WeekBlock({
         ) : null}
 
         {week.splitAtBoundary ? <WeekSplitNote className="mt-2" /> : null}
+
+        {/* See the derivation comment at the top of this component. */}
+        {weekReachesOutsidePeriod ? (
+          <p className="mt-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs">
+            This workweek runs {formatLocalDate(ww.weekStartLocalDate, { weekday: true })} to{" "}
+            {formatLocalDate(weekLastDate, { weekday: true })}, past the edge of this pay period.
+            The week totals below cover the <span className="font-medium">whole workweek</span>;
+            the day rows cover only the days inside this period, so the two are different
+            quantities and need not add up to each other.
+          </p>
+        ) : null}
 
         {/*
           * 🚨 THE WEEK'S OWN GRAIN (T-5). "This workweek was 169 hours long, not 168" is the only
