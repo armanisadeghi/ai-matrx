@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LinkIcon } from "lucide-react";
+import { loginHref } from "@/utils/auth/auth-destination";
 
 // The honest 404 for a short link that is invalid or has expired. One message
 // for both cases on purpose — the route must not be an oracle for probing
@@ -21,7 +22,7 @@ export default function ShortLinkNotFound() {
         </p>
         <div className="mt-6">
           <Link
-            href="/login"
+            href={loginHref("/")}
             className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             Sign in to AI Matrx
