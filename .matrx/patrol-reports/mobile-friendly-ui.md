@@ -152,8 +152,25 @@ An earlier repair ancestor, `592ef9c4f5924c7bf407ff70c64e8e2010bf8695`,
 was concurrently integrated before certification and entered releases
 `v0.4.1441` and `v0.4.1442`; commit `09d31a9b53eb0afd69ae06b1622cd83b3e6eeb39`
 then restored the unsafe advisory behavior. Those facts remain visible rather
-than being rewritten. This retry integrates the final certified repair without
-creating a redundant release.
+than being rewritten. During final integration, current main also merged
+`4c4476af2ee74510f1eb8b498bf7bfc76482873c`, which again restored the
+fail-forward branch after the certified repair was already in ancestry. Exact
+follow-up candidate `b242d633f1247620468c3c4a8d5faaedf7e0d9cf` removes that
+regression on top of current main and was independently **CERTIFIED**: focused
+Jest passed 15/15, type-check and shell/diff checks passed, local and remote
+authorization precede lease and branch mutation, the post-ship hard checkpoint
+remains before tag creation, and no rebase path exists. A second concurrent
+merge, `bd22614a02b2a0bd9db246964a85a77db99e6095`, then explicitly selected
+the fail-forward version again. The final exact follow-up on that merge ancestry,
+`bd6d6672cd1336747f01d57c96ea44a519615814`, was independently **CERTIFIED**
+with the same 15/15 focused suite and ordering assertions. This retry integrates
+that final certified state without creating a redundant release. A concurrent
+fleet process cut `v0.4.1443` from the fail-forward ancestry before this final
+integration; this retry did not create that release. Certified candidate
+`bd6d6672cd` is preserved as an ancestor of final integration
+`c4a2f09dfd4202d8b4e3d7eb807e3fde495ed0cc`. The scheduled fleet policy keeps
+the current `release.sh` fail-forward for patrol findings; certification of the
+historical hard-stop candidate does not override that release policy.
 
 ## Open routing
 
@@ -182,8 +199,27 @@ Independent adversarial review also **CERTIFIED** lifecycle candidate
 `9d168957618fbabc876239fdee736fc6184d4ae7`, after rejecting its predecessor
 for checking authorization too late. That candidate checked local and remote
 source authorization before release-lane mutation and preserved exact history
-across divergence or push races; the current fleet release remains explicitly
-fail-forward for advisory patrol findings.
+across divergence or push races. Later concurrent merges restored fail-forward
+behavior, as recorded below; current main intentionally retains that scheduled
+fleet policy while preserving the certified hard-stop candidates in ancestry.
+
+After a parallel fail-forward commit was subsequently merged into main,
+independent adversarial review **CERTIFIED** exact follow-up
+`b242d633f1247620468c3c4a8d5faaedf7e0d9cf` against its current-main parent.
+That candidate restores the hard failure without changing the previously
+certified ordering or history-preservation behavior.
+
+When a second concurrent merge again selected fail-forward behavior,
+independent adversarial review **CERTIFIED** final exact follow-up
+`bd6d6672cd1336747f01d57c96ea44a519615814` against merge parent
+`fe3fcc2bfdbfd3f0742578b3c9bccb487f00b9ae`. The certifier verified both
+pre-mutation authorization checks, the post-ship hard checkpoint, no rebase,
+and the complete focused gate set.
+
+Code integration `c4a2f09dfd4202d8b4e3d7eb807e3fde495ed0cc` and projection
+`b0a9943d6cf3301914587207a2da00517edd6afb` preserve that certified SHA as an
+ancestor on `origin/main`. Current main applies the fleet's fail-forward patrol
+policy. No release was created for the retry.
 
 ## Recursive learning
 
