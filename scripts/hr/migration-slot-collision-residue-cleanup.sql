@@ -1,4 +1,9 @@
--- migration_slot_collision_residue_cleanup.sql
+-- migration-slot-collision-residue-cleanup.sql
+--
+-- OPERATOR SCRIPT, NOT A MIGRATION: the canonical migration runner exclusively
+-- owns public._schema_migrations and rejects migration files that mutate its
+-- ledger. Run this cleanup explicitly with privileged SQL tooling after review;
+-- never place it under migrations/ or bypass the runner's ledger guard.
 --
 -- WHY THIS EXISTS: on 2026-08-29 two agents working this shared checkout each
 -- claimed migration number `hr_l1_63`, and the fallout cascaded one slot further:
