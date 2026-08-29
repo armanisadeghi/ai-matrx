@@ -56,6 +56,12 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { parseMandateContract } from "@/features/agents/mandates/overrides";
 import { parseMandateWave1 } from "@/features/agents/mandates/provision-shapes";
+import {
+  contractOfMandate,
+  holderOfBinding,
+  holderOfMandate,
+  isFloatingMandate,
+} from "@/lib/supabase/mandateStorage";
 import { MandateTestBench } from "./MandateTestBench";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
 import { MandateContextGate } from "./MandateContextGate";
@@ -241,11 +247,17 @@ function DriftPanel({
   const writeVersionPin = async (mode: "pin" | "latest") => {
     setBusy(mode);
     try {
+      // "pin" stores the newest saved version; "latest" clears the pin. The
+      // storage router decides whether clearing means `use_latest = true` or a
+      // NULL version id — the two schemas say it differently, this surface
+      // says it once.
       await updateMandateDefinition(row.mandate.id, {
-        default_agent_id: agentId,
-        default_agent_version_id:
-          mode === "pin" ? (latestSaved?.id ?? null) : null,
-        use_latest: mode === "latest",
+        holder: {
+          holderType: "agent",
+          holderId: agentId,
+          versionId: mode === "pin" ? (latestSaved?.id ?? null) : null,
+          useLatest: mode === "latest",
+        },
       });
       toast.success(
         mode === "pin"
@@ -276,8 +288,9 @@ function DriftPanel({
           const impact = computeRebindImpact({
             currentVariables: oldSnap.variableDefinitions ?? [],
             candidateVariables: nextSnap.variableDefinitions ?? [],
-            contractRequired: parseMandateContract(row.mandate.contract)
-              .requiredVariables,
+            contractRequired: parseMandateContract(
+              contractOfMandate(row.mandate),
+            ).requiredVariables,
             codeSuppliedVariables: row.codeTruth?.code_variables,
           });
           if (impact.breaking.length > 0) {
@@ -948,7 +961,7 @@ function StatusBanner({
           </span>
           <span className="text-muted-foreground">
             System agent,{" "}
-            {row.mandate.use_latest
+            {isFloatingMandate(row.mandate)
               ? "tracking the latest version"
               : "pin is up to date"}
             .
@@ -1074,7 +1087,7 @@ function FactsPanel({
         )}
       </Fact>
       <Fact label="Version">
-        {row.mandate.use_latest ? (
+        {isFloatingMandate(row.mandate) ? (
           <span>
             latest
             {row.latestVersion != null && (
@@ -1096,7 +1109,9 @@ function FactsPanel({
           </span>
         ) : (
           <span className="text-muted-foreground">
-            {row.mandate.default_agent_version_id ? "unknown version" : "latest"}
+            {holderOfMandate(row.mandate).versionId
+              ? "unknown version"
+              : "latest"}
           </span>
         )}
       </Fact>
@@ -1268,15 +1283,17 @@ function MandateEditor({
     checking,
     saving: rebindSaving,
   } = useGuardedRebind({ mandate, currentAgentId, codeTruth, onSaved });
-  const pinnedVersion = mandate.default_agent_version_id
-    ? data.versionsById[mandate.default_agent_version_id]
+  const storedHolder = holderOfMandate(mandate);
+  const pinnedVersion = storedHolder.versionId
+    ? data.versionsById[storedHolder.versionId]
     : undefined;
-  const initialAgentId =
-    mandate.default_agent_id ?? pinnedVersion?.agentId ?? null;
+  const initialAgentId = storedHolder.holderId ?? pinnedVersion?.agentId ?? null;
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
-  const [useLatest, setUseLatest] = useState<boolean>(Boolean(mandate.use_latest));
+  const [useLatest, setUseLatest] = useState<boolean>(
+    isFloatingMandate(mandate),
+  );
   const [versionId, setVersionId] = useState<string | null>(
-    mandate.default_agent_version_id,
+    storedHolder.versionId,
   );
   // Versions keyed by the agent they were fetched for — "loading" is DERIVED
   // (requested agent ≠ loaded agent), so the effect never sets state
@@ -1421,10 +1438,11 @@ function OverridesList({
     <div className="space-y-1 text-xs">
       <div className="font-medium text-muted-foreground">All bindings</div>
       {bindings.map((b) => {
-        const versionAgentId = b.agent_version_id
-          ? data.versionsById[b.agent_version_id]?.agentId
+        const bindingHolder = holderOfBinding(b);
+        const versionAgentId = bindingHolder.versionId
+          ? data.versionsById[bindingHolder.versionId]?.agentId
           : undefined;
-        const agentKey = b.agent_id ?? versionAgentId;
+        const agentKey = bindingHolder.holderId ?? versionAgentId;
         const agent = agentKey ? (data.agentsById[agentKey] ?? null) : null;
         return (
           <div key={b.id} className="space-y-0.5 py-0.5">

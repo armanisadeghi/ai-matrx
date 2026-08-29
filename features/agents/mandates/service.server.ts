@@ -36,7 +36,16 @@ import {
   type MandateBindingLayer,
 } from "./provision-shapes";
 import type { ResolvedMandate } from "./service";
-import { mandateBindings, mandateDefinitions } from "@/lib/supabase/mandateStorage";
+import {
+  BINDING_HOLDER_COLUMNS,
+  contractOfMandate,
+  holderOfBinding,
+  holderOfMandate,
+  inputKindOfMandate,
+  isFloatingMandate,
+  mandateBindings,
+  mandateDefinitions,
+} from "@/lib/supabase/mandateStorage";
 
 /** The HOLDER gate — twin of `service.ts`'s `assertExecutableHolder`; a
  * `workflow` Holder carries no `agent_id`, so without this the binding falls
@@ -83,13 +92,14 @@ export async function resolveMandateServer(
   if (!mandate.is_enabled) {
     throw new Error(`mandate "${mandateKey}" is disabled`);
   }
-  if (!mandate.use_latest || !mandate.default_agent_id) {
+  const systemHolder = holderOfMandate(mandate);
+  if (!isFloatingMandate(mandate) || !systemHolder.holderId) {
     throw new Error(
-      `mandate "${mandateKey}" is version-pinned — client-run mandates must be floating (use_latest); route this consumer through the server, or rebind`,
+      `mandate "${mandateKey}" is version-pinned — client-run mandates must be floating (no pinned Holder version); route this consumer through the server, or rebind`,
     );
   }
 
-  let agentId = mandate.default_agent_id;
+  let agentId = systemHolder.holderId;
   let provenance: ResolvedMandate["provenance"] = "system";
   let holderType: ResolvedMandate["holderType"] = "agent";
   let configOverrides: ResolvedMandate["configOverrides"] = null;
@@ -102,7 +112,7 @@ export async function resolveMandateServer(
   if (userId) {
     const { data: orgBindings, error: orgError } = await mandateBindings(supabase)
       .select(
-        "id, holder_type, agent_id, agent_version_id, use_latest, config_overrides, is_enabled, updated_at",
+        `id, ${BINDING_HOLDER_COLUMNS}, config_overrides, is_enabled, updated_at` as const,
       )
       .eq("mandate_id", mandate.id)
       .eq("principal_type", "org")
@@ -113,7 +123,8 @@ export async function resolveMandateServer(
     const orgBinding = (orgBindings ?? []).find((b) => b.is_enabled) ?? null;
     if (orgBinding) {
       holderType = assertExecutableHolder(mandateKey, "organization", orgBinding);
-      if (orgBinding.agent_version_id) {
+      const orgHolder = holderOfBinding(orgBinding);
+      if (orgHolder.versionId) {
         throw new Error(
           `mandate "${mandateKey}": an organization binding is version-pinned — client-run mandates must be floating; update the binding`,
         );
@@ -121,8 +132,8 @@ export async function resolveMandateServer(
       if (isJsonObject(orgBinding.config_overrides)) {
         configOverrides = toLlmParams(orgBinding.config_overrides);
       }
-      if (orgBinding.agent_id) {
-        agentId = orgBinding.agent_id;
+      if (orgHolder.holderId) {
+        agentId = orgHolder.holderId;
         provenance = "org";
       }
     }
@@ -130,9 +141,7 @@ export async function resolveMandateServer(
 
   if (userId) {
     const { data: binding, error: bindingError } = await mandateBindings(supabase)
-      .select(
-        "id, holder_type, agent_id, agent_version_id, use_latest, config_overrides, is_enabled",
-      )
+      .select(`id, ${BINDING_HOLDER_COLUMNS}, config_overrides, is_enabled` as const)
       .eq("mandate_id", mandate.id)
       .eq("principal_type", "user")
       .eq("subject_user_id", userId)
@@ -141,7 +150,8 @@ export async function resolveMandateServer(
     if (bindingError) throw bindingError;
     if (binding?.is_enabled) {
       holderType = assertExecutableHolder(mandateKey, "user", binding);
-      if (binding.agent_version_id) {
+      const userHolder = holderOfBinding(binding);
+      if (userHolder.versionId) {
         throw new Error(
           `mandate "${mandateKey}": your override is version-pinned — client-run mandates must be floating; update the binding`,
         );
@@ -153,8 +163,8 @@ export async function resolveMandateServer(
           ...toLlmParams(binding.config_overrides),
         };
       }
-      if (binding.agent_id) {
-        agentId = binding.agent_id;
+      if (userHolder.holderId) {
+        agentId = userHolder.holderId;
         provenance = "user";
       }
     }
@@ -171,8 +181,8 @@ export async function resolveMandateServer(
     // The same contract the client resolver carries — required variables are a
     // RUN-time precondition on the caller, not only a bind-time check on the
     // agent (disease D4).
-    contract: parseMandateContract(mandate.contract),
-    inputKind: mandate.input_kind,
+    contract: parseMandateContract(contractOfMandate(mandate)),
+    inputKind: inputKindOfMandate(mandate),
     outputKind: mandate.output_kind,
     provisionKey: wave1.provisionKey,
     pins: wave1.pins,

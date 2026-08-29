@@ -41,6 +41,8 @@ import {
   mandateDefinitions,
   holderOfBinding,
   holderOfMandate,
+  mandateHolderWrite,
+  type HolderWrite,
   type MandateBindingRow,
   type MandateDefinitionRow,
   type MandateDefinitionUpdate,
@@ -185,24 +187,40 @@ export async function fetchMandateConsoleData(
   return { mandates, agentsById, versionsById, bindingsByMandateId };
 }
 
+/**
+ * The write allowlist for a definition edit, in switch-neutral terms.
+ *
+ * The Holder half is ONE field — `holder` — instead of the three columns it
+ * used to be, because those columns are named differently on the two schemas
+ * and `use_latest` does not survive the cutover at all. `mandateHolderWrite`
+ * in the storage router turns the decision ("this Holder, tracking latest or
+ * pinned to this version") into whichever columns the ACTIVE schema stores.
+ */
+export type MandateDefinitionPatch = {
+  /** Set to REBIND. Omit to leave the mandate's default Holder untouched. */
+  holder?: HolderWrite;
+} & Partial<Pick<
+  MandateDefinitionUpdate,
+  | "is_enabled"
+  | "label"
+  | "description"
+  // The Mandate-level Context Policy gate. Gates only NARROW — see
+  // the mandate's auto_context_disabled column.
+  | "auto_context_disabled"
+>>;
+
 export async function updateMandateDefinition(
   mandateId: string,
-  patch: Partial<Pick<
-    MandateDefinitionUpdate,
-    | "default_agent_id"
-    | "default_agent_version_id"
-    | "use_latest"
-    | "is_enabled"
-    | "label"
-    | "description"
-    // The Mandate-level Context Policy gate. Gates only NARROW — see
-    // agent.mandate.auto_context_disabled.
-    | "auto_context_disabled"
-  >>,
+  patch: MandateDefinitionPatch,
 ): Promise<MandateDefinitionRow> {
   const supabase = createClient();
+  const { holder, ...fields } = patch;
+  const columns: MandateDefinitionUpdate = {
+    ...fields,
+    ...(holder ? mandateHolderWrite(holder) : {}),
+  };
   const { data, error } = await mandateDefinitions(supabase)
-    .update(patch)
+    .update(columns)
     .eq("id", mandateId)
     .select("*")
     .single();
@@ -362,11 +380,12 @@ export async function fetchPinnedAgentIdentity(
   // Pass BOTH identifiers when present: agent_id resolves the identity, and
   // agent_version_id lets the route resolve the pinned version number — a
   // version-pinned unresolved pin must not lose its pinned-version badge.
-  if (mandate.default_agent_id) {
-    params.set("agent_id", mandate.default_agent_id);
+  const holder = holderOfMandate(mandate);
+  if (holder.holderId) {
+    params.set("agent_id", holder.holderId);
   }
-  if (mandate.default_agent_version_id) {
-    params.set("agent_version_id", mandate.default_agent_version_id);
+  if (holder.versionId) {
+    params.set("agent_version_id", holder.versionId);
   }
   if ([...params.keys()].length === 0) {
     return { agent: null, pinnedVersionNumber: null, systemTwin: null };
@@ -950,14 +969,15 @@ export async function promoteMandateTestResult(
 export async function resolveMandateDefaultAgentId(
   mandate: MandateDefinitionRow,
 ): Promise<string | null> {
-  if (mandate.default_agent_id) return mandate.default_agent_id;
-  if (!mandate.default_agent_version_id) return null;
+  const holder = holderOfMandate(mandate);
+  if (holder.holderId) return holder.holderId;
+  if (!holder.versionId) return null;
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
     .from("definition_version")
     .select("agent_id")
-    .eq("id", mandate.default_agent_version_id)
+    .eq("id", holder.versionId)
     .single();
   if (error) throw error;
   return data.agent_id;

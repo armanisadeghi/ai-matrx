@@ -7,7 +7,16 @@
  */
 import { createClient } from "@/utils/supabase/client";
 import { parseOfferedValues } from "@/features/agents/mandates/provision-shapes";
-import { mandateDefinitions, mandateProvisions } from "@/lib/supabase/mandateStorage";
+import {
+  MANDATE_CONTRACT_COLUMNS,
+  MANDATE_HOLDER_COLUMNS,
+  contractOfMandate,
+  holderOfMandate,
+  mandateDefinitions,
+  mandateProvisions,
+  type HolderRef,
+} from "@/lib/supabase/mandateStorage";
+import type { Json } from "@/types/database.types";
 
 export interface SeoMandateRow {
   id: string;
@@ -16,9 +25,10 @@ export interface SeoMandateRow {
   description: string | null;
   provision_key: string | null;
   output_kind: string | null;
-  default_agent_id: string | null;
-  default_agent_version_id: string | null;
-  contract: Record<string, unknown> | null;
+  /** The mandate's platform-default Holder, read through the storage router —
+   * this console never names a schema's holder columns itself. */
+  holder: HolderRef;
+  contract: Json;
 }
 
 export interface SeoProvisionRow {
@@ -60,7 +70,7 @@ export async function fetchSeoMandates(): Promise<SeoMandateRow[]> {
   const supabase = createClient();
   const { data, error } = await mandateDefinitions(supabase)
     .select(
-      "id, mandate_key, label, description, provision_key, output_kind, default_agent_id, default_agent_version_id, contract",
+      `id, mandate_key, label, description, provision_key, output_kind, ${MANDATE_HOLDER_COLUMNS}, ${MANDATE_CONTRACT_COLUMNS}` as const,
     )
     .is("deleted_at", null)
     .order("mandate_key");
@@ -68,9 +78,18 @@ export async function fetchSeoMandates(): Promise<SeoMandateRow[]> {
   // Filter client-side — the proven MandatesConsole reads unfiltered and RLS
   // narrows; a PostgREST `like` pattern containing a dot returned zero rows
   // in production while the same rows load unfiltered (measured 2026-08-26).
-  return ((data ?? []) as SeoMandateRow[]).filter((row) =>
-    row.mandate_key.startsWith("seo."),
-  );
+  return (data ?? [])
+    .filter((row) => row.mandate_key.startsWith("seo."))
+    .map((row) => ({
+      id: row.id,
+      mandate_key: row.mandate_key,
+      label: row.label,
+      description: row.description,
+      provision_key: row.provision_key,
+      output_kind: row.output_kind,
+      holder: holderOfMandate(row),
+      contract: contractOfMandate(row),
+    }));
 }
 
 export async function fetchSeoProvisions(): Promise<SeoProvisionRow[]> {

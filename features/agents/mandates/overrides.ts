@@ -178,13 +178,14 @@ export async function fetchMandatePickerData(
     });
   }
 
-  let defaultAgentId = mandate.default_agent_id;
-  if (!defaultAgentId && mandate.default_agent_version_id) {
+  const systemHolder = holderOfMandate(mandate);
+  let defaultAgentId = systemHolder.holderId;
+  if (!defaultAgentId && systemHolder.versionId) {
     const { data: version, error: versionError } = await supabase
       .schema("agent")
       .from("definition_version")
       .select("agent_id")
-      .eq("id", mandate.default_agent_version_id)
+      .eq("id", systemHolder.versionId)
       .maybeSingle();
     if (versionError) throw versionError;
     defaultAgentId = version?.agent_id ?? null;

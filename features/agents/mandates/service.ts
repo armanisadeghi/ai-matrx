@@ -46,7 +46,18 @@ import {
   type MandateWave1Fields,
 } from "./provision-shapes";
 import type { JsonObject } from "@/types/json";
-import { mandateBindings, mandateDefinitions } from "@/lib/supabase/mandateStorage";
+import {
+  BINDING_HOLDER_COLUMNS,
+  MANDATE_HOLDER_COLUMNS,
+  MANDATE_STORAGE_LABEL,
+  contractOfMandate,
+  holderOfBinding,
+  holderOfMandate,
+  inputKindOfMandate,
+  isFloatingMandate,
+  mandateBindings,
+  mandateDefinitions,
+} from "@/lib/supabase/mandateStorage";
 
 export interface ResolvedMandate {
   mandateKey: string;
@@ -181,13 +192,14 @@ export async function resolveMandate(
   if (!mandate.is_enabled) {
     throw new Error(`mandate "${mandateKey}" is disabled`);
   }
-  if (!mandate.use_latest || !mandate.default_agent_id) {
+  const systemHolder = holderOfMandate(mandate);
+  if (!isFloatingMandate(mandate) || !systemHolder.holderId) {
     throw new Error(
-      `mandate "${mandateKey}" is version-pinned — client-run mandates must be floating (use_latest); route this consumer through the server, or rebind`,
+      `mandate "${mandateKey}" is version-pinned — client-run mandates must be floating (no pinned Holder version); route this consumer through the server, or rebind`,
     );
   }
 
-  let agentId = mandate.default_agent_id;
+  let agentId = systemHolder.holderId;
   let provenance: ResolvedMandate["provenance"] = "system";
   let holderType: ResolvedMandate["holderType"] = "agent";
   let configOverrides: Partial<FeLlmParams> | null = null;
@@ -203,7 +215,7 @@ export async function resolveMandate(
   if (userId) {
     const { data: orgBindings, error: orgError } = await mandateBindings(supabase)
       .select(
-        "id, holder_type, agent_id, agent_version_id, use_latest, config_overrides, is_enabled, updated_at",
+        `id, ${BINDING_HOLDER_COLUMNS}, config_overrides, is_enabled, updated_at` as const,
       )
       .eq("mandate_id", mandate.id)
       .eq("principal_type", "org")
@@ -219,13 +231,14 @@ export async function resolveMandate(
       if (isJsonObject(orgBinding.config_overrides)) {
         configOverrides = toLlmParams(orgBinding.config_overrides);
       }
-      if (orgBinding.agent_version_id) {
+      const orgHolder = holderOfBinding(orgBinding);
+      if (orgHolder.versionId) {
         throw new Error(
           `mandate "${mandateKey}": an organization binding is version-pinned — client-run mandates must be floating; update the binding`,
         );
       }
-      if (orgBinding.agent_id) {
-        agentId = orgBinding.agent_id;
+      if (orgHolder.holderId) {
+        agentId = orgHolder.holderId;
         provenance = "org";
       }
     }
@@ -236,9 +249,7 @@ export async function resolveMandate(
   // User wins over org — the same precedence the server walks.
   if (userId) {
     const { data: binding, error: bindingError } = await mandateBindings(supabase)
-      .select(
-        "id, holder_type, agent_id, agent_version_id, use_latest, config_overrides, is_enabled",
-      )
+      .select(`id, ${BINDING_HOLDER_COLUMNS}, config_overrides, is_enabled` as const)
       .eq("mandate_id", mandate.id)
       .eq("principal_type", "user")
       .eq("subject_user_id", userId)
@@ -254,13 +265,14 @@ export async function resolveMandate(
           ...toLlmParams(binding.config_overrides),
         };
       }
-      if (binding.agent_version_id) {
+      const userHolder = holderOfBinding(binding);
+      if (userHolder.versionId) {
         throw new Error(
           `mandate "${mandateKey}": your override is version-pinned — client-run mandates must be floating; update the binding`,
         );
       }
-      if (binding.agent_id) {
-        agentId = binding.agent_id;
+      if (userHolder.holderId) {
+        agentId = userHolder.holderId;
         provenance = "user";
       }
     }
@@ -274,8 +286,8 @@ export async function resolveMandate(
     holderType,
     configOverrides,
     provenance,
-    contract: parseMandateContract(mandate.contract),
-    inputKind: mandate.input_kind,
+    contract: parseMandateContract(contractOfMandate(mandate)),
+    inputKind: inputKindOfMandate(mandate),
     outputKind: mandate.output_kind,
     provisionKey: wave1.provisionKey,
     pins: wave1.pins,
@@ -331,9 +343,7 @@ export async function fetchMandatePins(
 
   const supabase = createClient();
   const { data, error } = await mandateDefinitions(supabase)
-    .select(
-      "mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled",
-    )
+    .select(`mandate_key, ${MANDATE_HOLDER_COLUMNS}, is_enabled` as const)
     .in("mandate_key", missing)
     .is("deleted_at", null);
   if (error) throw error;
@@ -341,19 +351,20 @@ export async function fetchMandatePins(
   const found = new Set<string>();
   for (const row of data ?? []) {
     found.add(row.mandate_key);
-    if (!row.default_agent_id) {
+    const holder = holderOfMandate(row);
+    if (!holder.holderId) {
       // Master id is backfilled on every research mandate; a NULL here is a data
       // defect worth screaming about, not silently skipping.
       console.error(
-        `[mandates] mandate "${row.mandate_key}" has no default_agent_id — backfill the master id on agent.mandate`,
+        `[mandates] mandate "${row.mandate_key}" has no default Holder — backfill the master id on ${MANDATE_STORAGE_LABEL}`,
       );
       continue;
     }
     const value: MandatePin = {
       mandateKey: row.mandate_key,
-      agentId: row.default_agent_id,
-      versionId: row.default_agent_version_id,
-      useLatest: row.use_latest ?? false,
+      agentId: holder.holderId,
+      versionId: holder.versionId,
+      useLatest: isFloatingMandate(row),
       isEnabled: row.is_enabled ?? true,
     };
     pinCache.set(row.mandate_key, { at: Date.now(), value });
@@ -401,7 +412,9 @@ export async function fetchMandateIdentities(
   if (keys.length === 0) return out;
 
   const { data, error } = await mandateDefinitions(createClient())
-    .select("id, mandate_key, label, description, default_agent_id, is_enabled")
+    .select(
+      `id, mandate_key, label, description, ${MANDATE_HOLDER_COLUMNS}, is_enabled` as const,
+    )
     .in("mandate_key", keys)
     .is("deleted_at", null);
   if (error) throw error;
@@ -412,7 +425,7 @@ export async function fetchMandateIdentities(
       mandateId: row.id,
       label: row.label,
       description: row.description,
-      defaultAgentId: row.default_agent_id,
+      defaultAgentId: holderOfMandate(row).holderId,
       isEnabled: row.is_enabled ?? true,
     };
   }
