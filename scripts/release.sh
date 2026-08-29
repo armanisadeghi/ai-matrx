@@ -61,7 +61,7 @@
 #
 # General quality gates (doctrine, UI primitives, …) stay ADVISORY — they scream
 # loudly and never block the ship. Pattern Patrol delivery authorization is a
-# separate fail-closed lifecycle checkpoint before any release mutation and
+# separate advisory lifecycle checkpoint before any release mutation and
 # again after --ship materializes its commit. A busy delivery lane waits and
 # resumes automatically. Manual hard-fail: pnpm check:release-gates:strict
 set -euo pipefail
@@ -107,9 +107,11 @@ preview() { echo -e "${CYAN}[DRY]${NC}   $*"; }
 verify_patrol_delivery() {
     local head="${1:-HEAD}"
     info "Checking Pattern Patrol certification records at $head..."
-    pnpm --silent patrol:delivery:check -- --head "$head" || \
-        fail "Pattern Patrol delivery records are incomplete at $head; release is blocked before any mutation."
-    ok "Pattern Patrol delivery records authorize every patrol commit at $head."
+    if pnpm --silent patrol:delivery:check -- --head "$head"; then
+        ok "Pattern Patrol delivery records authorize every patrol commit at $head."
+    else
+        warn "Pattern Patrol delivery records need reconciliation at $head; release remains fail-forward."
+    fi
 }
 
 acquire_delivery_lease() {

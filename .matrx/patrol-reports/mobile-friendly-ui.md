@@ -4,7 +4,7 @@
 - **Run id:** `2026-08-27T131727Z`
 - **Base:** `2cfc5d15ffbb1886572f97f7ea58451dadcc1aa6` (`v0.4.1306` ancestry)
 - **Run kind:** structural-novelty scope + open-sighting verification + periodic full viewport/safe-area pass
-- **Current state:** reconciled after exact-SHA certification, existing delivery bookkeeping, recovered exact-checkout interaction proof, and a certified fail-closed lifecycle repair
+- **Current state:** reconciled after exact-SHA certification, existing delivery bookkeeping, recovered exact-checkout interaction proof, and certified release-authorization ordering evidence
 - **Findings:** 19 verified occurrences in 8 files
 - **Fixed in candidate:** 19
 - **Approvals needed:** 0
@@ -118,7 +118,7 @@ not emulate a coarse pointer. The proof therefore combines real 375x812
 interactions with exact-checkout rendered-CSSOM verification of the
 coarse-pointer rule; it does not claim native coarse-pointer emulation.
 
-## Fail-closed lifecycle repair — 2026-08-29
+## Release-authorization lifecycle evidence — 2026-08-29
 
 The retry verified two controller defects. First, `release.sh` treated patrol
 delivery authorization as advisory, and the delivery policy did not recognize
@@ -128,7 +128,7 @@ initial hard-fail repair (`078f36e07127ba1e32b037d8f7afa452f10a893e`) still
 performed its authorization check after lease acquisition and branch mutation;
 independent adversarial review rejected it for that concrete ordering defect.
 
-Final machinery candidate `9d168957618fbabc876239fdee736fc6184d4ae7`:
+Certified machinery candidate `9d168957618fbabc876239fdee736fc6184d4ae7`:
 
 - recognizes permanent patrol-run record paths as patrol provenance;
 - requires authorization for both the local release source and fetched
@@ -143,6 +143,10 @@ Final machinery candidate `9d168957618fbabc876239fdee736fc6184d4ae7`:
 Independent adversarial review **CERTIFIED** that exact machinery SHA after the
 rejection. Focused Jest coverage passed 14/14, along with the Git-authority
 test, type-check, shell syntax, diff, and candidate-scoped delivery checks.
+The fleet release policy subsequently restored patrol delivery findings to an
+advisory, fail-forward gate. This evidence therefore records the certified
+ordering behavior of that candidate; it does not claim the current release
+controller hard-stops on patrol findings.
 
 An earlier repair ancestor, `592ef9c4f5924c7bf407ff70c64e8e2010bf8695`,
 was concurrently integrated before certification and entered releases
@@ -181,11 +185,12 @@ The candidate had already been preserved on `origin/main` and entered
 `v0.4.1307`; the permanent record retains that ordering as escaped delivery and
 then closes it with exact-candidate certification and delivery reconciliation.
 
-Independent adversarial review also **CERTIFIED** final fail-closed lifecycle
-candidate `9d168957618fbabc876239fdee736fc6184d4ae7`, after rejecting its
-predecessor for checking authorization too late. The certified repair now
-checks local and remote source authorization before release-lane mutation and
-preserves exact history across divergence or push races.
+Independent adversarial review also **CERTIFIED** lifecycle candidate
+`9d168957618fbabc876239fdee736fc6184d4ae7`, after rejecting its predecessor
+for checking authorization too late. That candidate checked local and remote
+source authorization before release-lane mutation and preserved exact history
+across divergence or push races; the current fleet release remains explicitly
+fail-forward for advisory patrol findings.
 
 After a parallel fail-forward commit was subsequently merged into main,
 independent adversarial review **CERTIFIED** exact follow-up

@@ -309,6 +309,15 @@ const EXPECTED_CHECKS = [
   // transaction; the writer fix was then falsified end to end through the real doors (enrol →
   // submit → the wording is on the row BEFORE the employee is asked → attest → byte-identical).
   "every_attestation_records_its_statement",
+  // hr_l3_113: check 39, the COMPLEMENT of check 38 above and not a duplicate of it. 38 is scoped
+  // to rows where somebody actually attested (attested_at is not null) and is structurally blind to
+  // the row nobody was ever asked about — which is what a late transfer or backdated hire produced,
+  // because hr.pay_period_transition opens the attestation instances once, at open->submitted,
+  // while hr._enroll_pay_period_rows writes rows into submitted/approved/reopened periods too. Such
+  // a row also cannot leave `open`, so one late transfer blocks the whole period's approval.
+  // Dropping this key back out restores exactly the blindness that let the gap survive hr_l3_91
+  // and hr_l3_112.
+  "every_timecard_in_a_submitted_period_was_asked",
 ] as const;
 
 interface ConformanceRow {
