@@ -273,6 +273,15 @@ describe("content_ir read adapter — cold tier", () => {
       await import("../registry/schema-source-kind-tables");
     const result = await getKindSchemaAndMetaBySlugFromTables("py_object");
 
-    expect(result).toEqual({ schema: null, loadingComponent: "card" });
+    expect(result).toEqual({
+      schema: null,
+      loadingComponent: "card",
+      // Lazy registry (2026-08-29): the emitted contract rides the cold
+      // fetch — it is the only road it takes to the client now.
+      emittedJsonSchema: {
+        type: "object",
+        properties: { nested: { type: "object" } },
+      },
+    });
   });
 });

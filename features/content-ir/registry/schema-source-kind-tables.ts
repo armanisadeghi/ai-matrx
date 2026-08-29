@@ -337,6 +337,70 @@ export interface KindSchemaAndMeta {
   schema: KindSchema | null;
   /** `metadata.loading_component` — loading-library slug (null = default). */
   loadingComponent: string | null;
+  /**
+   * The kind's `emitted_json_schema`, verbatim. Under the LAZY registry this
+   * is the ONLY road an emitted contract takes into the client — the warm
+   * tier is a slug-level catalog and carries no schemas — so the cold fetch
+   * must not throw it away (it was always selected; it was just dropped).
+   * Loading silhouettes and python-owned-kind recognition read it.
+   */
+  emittedJsonSchema: Json | null;
+}
+
+/**
+ * THE LIGHT CATALOG — the ONLY list read the lazy warm tier performs.
+ *
+ * Arman's ruling (2026-08-29): nothing is fetched until it's needed; if we
+ * ever fetch a list, it is names only, as a quick cheap first look — the DB
+ * is always the only truth. This selects slug + the declared loading slug
+ * (a JSON-path projection, so `metadata` itself never travels) for every
+ * non-deleted kind: a few KB, vs the ~1.9 MB the old bulk warm read shipped
+ * (every `data` + `emitted_json_schema`). Schemas, emitted contracts, and
+ * everything else load per-kind on demand through the cold tier.
+ */
+export interface KindCatalogLiteEntry {
+  slug: string;
+  loadingComponent: string | null;
+}
+
+export async function listKindCatalogFromTables(): Promise<
+  KindCatalogLiteEntry[]
+> {
+  const supabase = await getSupabase();
+  type CatalogRow = { id: string; kind: string; loading_component: string | null };
+  let rows: CatalogRow[];
+  try {
+    rows = await readAllRows<CatalogRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("content_ir")
+          .from("kind_definition")
+          // The JSON-path projection keeps `metadata` itself off the wire.
+          // `as "*"` sidesteps supabase-js's type-level parser, which blows
+          // TS2589 on the `->>`-alias column; the trailing cast supplies the
+          // real row type.
+          .select(
+            "id, kind, loading_component:metadata->>loading_component" as "*",
+            { count: "exact" },
+          )
+          .is("deleted_at", null)
+          .order("id", { ascending: true })
+          .range(from, to) as unknown as PromiseLike<{
+          data: CatalogRow[] | null;
+          error: { message: string } | null;
+          count?: number | null;
+        }>,
+      { label: "content_ir.kind_definition (light catalog)" },
+    );
+  } catch (error) {
+    throw new KindTablesError(
+      `Failed to list the kind catalog: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  return rows.map((r) => ({
+    slug: r.kind,
+    loadingComponent: r.loading_component ?? null,
+  }));
 }
 
 /** Cold tier: one kind by slug (+ its edges, child ids resolved), null when absent. */
@@ -417,8 +481,9 @@ export async function getKindSchemaAndMetaBySlugFromTables(
   }
 
   const loadingComponent = kindLoadingComponentFromMetadata(def.metadata ?? null);
+  const emittedJsonSchema = (def.emitted_json_schema ?? null) as Json | null;
   if (hasUnflattenedObjectContract(def.data, def.emitted_json_schema)) {
-    return { schema: null, loadingComponent };
+    return { schema: null, loadingComponent, emittedJsonSchema };
   }
   try {
     return {
@@ -427,6 +492,7 @@ export async function getKindSchemaAndMetaBySlugFromTables(
         edges: specs,
       }),
       loadingComponent,
+      emittedJsonSchema,
     };
   } catch (err) {
     // A malformed kind reads as schema-absent (→ compiled-floor fallback),
@@ -436,7 +502,7 @@ export async function getKindSchemaAndMetaBySlugFromTables(
         err instanceof Error ? err.message : String(err)
       }`,
     );
-    return { schema: null, loadingComponent };
+    return { schema: null, loadingComponent, emittedJsonSchema };
   }
 }
 

@@ -14,6 +14,11 @@
  *
  * A row that carries real fields (or a root form) still wins — that is the
  * documented contract, and it is pinned here too.
+ *
+ * LAZY registry (2026-08-29): the warm tier is a slug catalog and carries no
+ * schemas, so this guard now lives on the COLD path — the per-kind fetch a
+ * sighting fires (which is also how a DB row overrides a compiled schema).
+ * These tests exercise exactly that path.
  */
 
 import type { KindSchema } from "@ai-matrx/content-ir";
@@ -26,16 +31,19 @@ const RICH: KindSchema = {
   },
 };
 
-async function warmWith(schemas: Record<string, KindSchema>) {
+async function coldFetchWith(dbSchema: KindSchema | null) {
   jest.resetModules();
   const captureError = jest.fn();
   jest.doMock("@/lib/diagnostics/errorCaptureStore", () => ({ captureError }));
   jest.doMock("../registry/schema-source-kind-tables", () => ({
-    listKindSchemasFromTables: jest.fn(async () => ({
-      schemas,
-      entries: [],
-    })),
-    getKindSchemaAndMetaBySlugFromTables: jest.fn(async () => null),
+    listKindCatalogFromTables: jest.fn(async () => [
+      { slug: "kind_under_test", loadingComponent: null },
+    ]),
+    getKindSchemaAndMetaBySlugFromTables: jest.fn(async () =>
+      dbSchema === null
+        ? { schema: null, loadingComponent: null, emittedJsonSchema: null }
+        : { schema: dbSchema, loadingComponent: null, emittedJsonSchema: null },
+    ),
   }));
   jest.doMock("../registry/system-kinds", () => ({
     SYSTEM_KIND_DEFINITIONS: [
@@ -50,6 +58,15 @@ async function warmWith(schemas: Record<string, KindSchema>) {
   }));
   const { kindRegistry } = await import("../registry/kind-registry");
   await kindRegistry.ensureWarm();
+  // The cold path is fire-and-forget; wait for its arrival notification.
+  const arrived = new Promise<void>((resolve) => {
+    const off = kindRegistry.onSchemaArrived(() => {
+      off();
+      resolve();
+    });
+  });
+  kindRegistry.requestSchema("kind_under_test");
+  await arrived;
   return { kindRegistry, captureError };
 }
 
@@ -61,7 +78,7 @@ afterEach(() => {
 });
 
 test("an omitted unavailable schema quietly keeps the compiled floor", async () => {
-  const { kindRegistry, captureError } = await warmWith({});
+  const { kindRegistry, captureError } = await coldFetchWith(null);
 
   expect(
     Object.keys(kindRegistry.getSchema("kind_under_test")?.fields ?? {}),
@@ -71,9 +88,7 @@ test("an omitted unavailable schema quietly keeps the compiled floor", async () 
 
 test("a fieldless adapter result keeps the floor and emits one structured diagnostic", async () => {
   const error = jest.spyOn(console, "error").mockImplementation(() => {});
-  const { kindRegistry, captureError } = await warmWith({
-    kind_under_test: FIELDLESS,
-  });
+  const { kindRegistry, captureError } = await coldFetchWith(FIELDLESS);
 
   expect(
     Object.keys(kindRegistry.getSchema("kind_under_test")?.fields ?? {}),
@@ -84,7 +99,6 @@ test("a fieldless adapter result keeps the floor and emits one structured diagno
       source: "content-ir",
       operation: "select",
       relation: "kind_under_test",
-      callSite: "KindRegistry.ensureWarm",
       raw: {
         kind: "kind_under_test",
         recovery: "compiled_schema_retained",
@@ -98,11 +112,9 @@ test("a fieldless adapter result keeps the floor and emits one structured diagno
 });
 
 test("a DB row WITH fields still overrides the compiled schema", async () => {
-  const { kindRegistry, captureError } = await warmWith({
-    kind_under_test: {
-      kind: "kind_under_test",
-      fields: { headline: { type: "string", required: true } },
-    },
+  const { kindRegistry, captureError } = await coldFetchWith({
+    kind: "kind_under_test",
+    fields: { headline: { type: "string", required: true } },
   });
 
   expect(
