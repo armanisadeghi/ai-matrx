@@ -46,6 +46,11 @@ Global search also indexes the intact dotted `mandate_key` through the table's
 non-column `searchText` seam. Searching `hindsight.reviewer` therefore finds the
 row even though its visible Feature and Mandate values remain separate.
 
+The console waits for the explicit Redux `organization_id` before requesting
+coverage, goals, or code truth, and reloads them when that organization changes.
+Cold-tab app-context hydration must never freeze these server facts on a local
+`Select an organization` preflight error after the shell has selected one.
+
 **The drawer is FACTS-FIRST, THEN ISSUE-DRIVEN (`MandateDetailPanel.tsx`).** Structure: labeled mandate facts → live code facts + per-variable server verdicts → health remedy → three collapsible sections (**Change pinned agent** / **Test this mandate** / **User & org bindings**). The code facts come from typed `GET /mandates/code-truth`; per-variable labels come from typed `POST /mandates/{mandate_key}/variable-verdicts`, evaluated against the agent that actually runs. Never infer either from `mandate.contract`.
 
 **The code-truth read allows 60 seconds to receive headers.** A cold server may
@@ -86,6 +91,9 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
+- 2026-08-29 — Server-backed console facts now wait for explicit organization
+  hydration and refetch on organization changes, closing the cold-tab preflight
+  race that left Coverage, Goal, and Code truth unavailable after selection.
 - 2026-08-29 — The ad-hoc `POST /mandates/{key}/test` transport and runtime result guard moved to the shared mandates feature so admin and core workspaces consume one implementation without pulling the admin service into the core bundle.
 - 2026-08-28 — **The coverage board, the real GOAL, the full Provision, and four
   offenders closed.**

@@ -38,6 +38,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { isJsonObject } from "@/types/json";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import {
   selectAgentLineageIndex,
@@ -198,6 +199,7 @@ export function humanRow(r: ConsoleRow): string {
 
 export function MandatesConsole() {
   const dispatch = useAppDispatch();
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
   const [data, setData] = useState<MandateConsoleData | null>(null);
   const [codeTruthByMandateKey, setCodeTruthByMandateKey] = useState<
     Record<string, MandateCodeTruth>
@@ -324,8 +326,18 @@ export function MandatesConsole() {
 
   useEffect(() => {
     dispatch(fetchAgentsListFull());
+  }, [dispatch]);
+
+  // `callApi` requires the explicitly selected organization. On a cold tab,
+  // the console can mount before app-context hydration finishes; firing here
+  // at null permanently froze Coverage, Goal and Code truth on the local
+  // preflight error even though the shell showed the organization moments
+  // later. Wait for the same Redux authority the transport reads, and refetch
+  // whenever the user switches organizations.
+  useEffect(() => {
+    if (!selectedOrganizationId) return;
     fetchData();
-  }, [dispatch, fetchData]);
+  }, [fetchData, selectedOrganizationId]);
 
   // Any mandate write anywhere — including a rebind made from the Linked Agent
   // Sync window (updateMandateDefinition fires the invalidation bus) — reloads
