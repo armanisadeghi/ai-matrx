@@ -16531,6 +16531,16 @@ export type Database = {
         Args: { p_channel: string; p_notification_id: string }
         Returns: boolean
       }
+      notification_user_channels: {
+        Args: {
+          p_base: Json
+          p_event_key: string
+          p_mandatory?: boolean
+          p_organization_id: string
+          p_user: string
+        }
+        Returns: Json
+      }
       record_notification_outcome: {
         Args: {
           p_acted_at?: string
