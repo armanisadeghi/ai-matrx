@@ -41,6 +41,8 @@ import {
 import { stringifyCompact } from "@/components/mardown-display/blocks/json/json-compact-stringify";
 import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/CodeBlockWithContextAttach";
 import { useOpenConvertToShapeWindow } from "@/features/overlays/openers/convertToShapeWindow";
+import { findKindMarkers } from "@/features/content-ir/react/kind-problems";
+import KindEscapedNotice from "@/features/content-ir/react/KindEscapedNotice";
 
 // Lazy-loaded — these views/dialogs only open on user action, and JsonBlock
 // itself lives inside the MarkdownStream ssr:false gate, so the boundaries
@@ -147,6 +149,18 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
   const parsed = useMemo(() => {
     return parseJsonSafe(effectiveContent);
   }, [effectiveContent]);
+
+  // THE KIND TRIPWIRE (Arman, 2026-08-29): a `__kind` anywhere in this JSON
+  // means a Shape instance is being shown as anonymous code — either an
+  // unregistered slug (say so) or a pipeline crack (say so AND report it).
+  // Settled content only: a mid-stream buffer is still the promotion path's
+  // to claim, and a half-parsed value would misread markers.
+  // `allowConvertToShape === false` marks surfaces that display kind JSON on
+  // purpose (conversion previews, authoring inspectors) — no tripwire there.
+  const kindMarkers = useMemo(() => {
+    if (!parsed.ok || isStreamActive || !allowConvertToShape) return [];
+    return findKindMarkers(parsed.value);
+  }, [parsed, isStreamActive, allowConvertToShape]);
 
   const tabular = useMemo(() => {
     if (!parsed.ok) {
@@ -426,6 +440,7 @@ export const JsonBlock: React.FC<JsonBlockProps> = ({
       onMouseUp={stopBubble}
       onDoubleClick={stopBubble}
     >
+      {kindMarkers.length > 0 ? <KindEscapedNotice markers={kindMarkers} /> : null}
       {mode === "code" ? (
         <Suspense fallback={<PaneFallback label="Loading code…" />}>
           <CodeBlockWithContextAttach
