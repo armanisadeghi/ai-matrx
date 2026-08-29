@@ -5205,6 +5205,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mcp-connections/{server_id}/selected-file-metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Selected File Metadata
+         * @description Read metadata for one explicit Dropbox file path or id.
+         */
+        post: operations["selected_file_metadata_mcp_connections__server_id__selected_file_metadata_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mcp-connections/{server_id}/oauth-tokens": {
         parameters: {
             query?: never;
@@ -5571,6 +5591,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/microsoft-integrations/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Authorize */
+        post: operations["authorize_microsoft_integrations_authorize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Callback */
+        get: operations["callback_microsoft_integrations_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh */
+        post: operations["refresh_microsoft_integrations_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preflight */
+        post: operations["preflight_microsoft_integrations_preflight_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disconnect */
+        post: operations["disconnect_microsoft_integrations_disconnect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/microsoft-integrations/onedrive/selected-file/metadata": {
         parameters: {
             query?: never;
@@ -5716,6 +5821,40 @@ export interface paths {
         };
         /** Default Category Tree */
         get: operations["default_category_tree_ebay_integrations_sandbox_taxonomy_default_category_tree_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/trello-integrations/public/boards/{board_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Board */
+        get: operations["public_board_trello_integrations_public_boards__board_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/zotero/public-libraries/{library_type}/{library_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Public Library Items */
+        get: operations["list_public_library_items_zotero_public_libraries__library_type___library_id__items_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -39549,6 +39688,34 @@ export interface components {
             /** Schema Source */
             schema_source?: string | null;
         };
+        /**
+         * DropboxSelectedFileMetadata
+         * @description Provider-formatted metadata for the one requested file.
+         */
+        DropboxSelectedFileMetadata: {
+            /** Server Id */
+            server_id: string;
+            /** File Ref */
+            file_ref: string;
+            /** Metadata */
+            metadata: string;
+            /**
+             * Tool Name
+             * @default GetFileMetadata
+             */
+            tool_name?: string;
+        };
+        /**
+         * DropboxSelectedFileRequest
+         * @description One exact Dropbox file reference; directory discovery is not accepted.
+         */
+        DropboxSelectedFileRequest: {
+            /**
+             * File Ref
+             * @description Exact Dropbox file path or file id returned by Dropbox.
+             */
+            file_ref: string;
+        };
         /** DryRunEdgeReport */
         DryRunEdgeReport: {
             /**
@@ -50476,10 +50643,46 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** MicrosoftAuthorizationRequest */
+        MicrosoftAuthorizationRequest: {
+            /** Campaigns */
+            campaigns: ("identity" | "outlook_mail_basic" | "outlook_calendar_basic" | "onedrive_files_read" | "sharepoint_selected" | "teams_personal_read")[];
+        };
+        /** MicrosoftAuthorizationResponse */
+        MicrosoftAuthorizationResponse: {
+            /** Authorization Url */
+            authorization_url: string;
+            /** Campaigns */
+            campaigns: string[];
+            /** Requested Scopes */
+            requested_scopes: string[];
+        };
         /** MicrosoftConnectionRequest */
         MicrosoftConnectionRequest: {
             /** Connection Id */
             connection_id: string;
+        };
+        /** MicrosoftEntitlementResponse */
+        MicrosoftEntitlementResponse: {
+            /** Campaign */
+            campaign: string;
+            /** Ready */
+            ready: boolean;
+            /** Reason */
+            reason: string | null;
+        };
+        /** MicrosoftLifecycleResponse */
+        MicrosoftLifecycleResponse: {
+            /** Connection Id */
+            connection_id: string;
+            /** Status */
+            status: string;
+            /** Campaigns */
+            campaigns: string[];
+            /** Scopes */
+            scopes: string[];
+            /** Entitlements */
+            entitlements: components["schemas"]["MicrosoftEntitlementResponse"][];
         };
         /**
          * MintControlRequest
@@ -69412,6 +69615,47 @@ export interface components {
             folders: components["schemas"]["TrashFolderEntry"][];
         };
         /**
+         * TrelloPublicBoardResult
+         * @description Safe public metadata proof; no Trello credential or private data.
+         */
+        TrelloPublicBoardResult: {
+            /**
+             * Provider
+             * @default trello
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default public_no_auth
+             */
+            access?: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+            /** Short Url */
+            short_url: string;
+            /** Permission Level */
+            permission_level: string;
+            /** Cards */
+            cards: components["schemas"]["TrelloPublicCard"][];
+        };
+        /** TrelloPublicCard */
+        TrelloPublicCard: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+            /** Closed */
+            closed: boolean;
+            /** List Id */
+            list_id: string;
+        };
+        /**
          * TriggerCreate
          * @description Child sch_trigger row payload.
          */
@@ -73646,6 +73890,66 @@ export interface components {
             comment_count: number | null;
             /** Privacy Status */
             privacy_status: string | null;
+        };
+        /** ZoteroCreator */
+        ZoteroCreator: {
+            /** Creator Type */
+            creator_type?: string | null;
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Name */
+            name?: string | null;
+        };
+        /** ZoteroPublicItem */
+        ZoteroPublicItem: {
+            /**
+             * Kind
+             * @default zotero_public_library_item
+             * @constant
+             */
+            __kind?: "zotero_public_library_item";
+            /** Key */
+            key: string;
+            /** Version */
+            version: number;
+            /** Item Type */
+            item_type: string;
+            /** Title */
+            title: string;
+            /** Creators */
+            creators: components["schemas"]["ZoteroCreator"][];
+            /** Date */
+            date?: string | null;
+            /** Doi */
+            doi?: string | null;
+            /** Isbn */
+            isbn?: string | null;
+        };
+        /** ZoteroPublicLibraryResponse */
+        ZoteroPublicLibraryResponse: {
+            /**
+             * Kind
+             * @default zotero_public_library_items
+             * @constant
+             */
+            __kind?: "zotero_public_library_items";
+            /**
+             * Library Type
+             * @enum {string}
+             */
+            library_type: "users" | "groups";
+            /** Library Id */
+            library_id: number;
+            /** Library Name */
+            library_name?: string | null;
+            /** Library Version */
+            library_version?: number | null;
+            /** Returned Count */
+            returned_count: number;
+            /** Items */
+            items: components["schemas"]["ZoteroPublicItem"][];
         };
         /** DeletedResponse */
         aidream__api__routers__admin_app_logs__DeletedResponse: {
@@ -83608,6 +83912,41 @@ export interface operations {
             };
         };
     };
+    selected_file_metadata_mcp_connections__server_id__selected_file_metadata_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DropboxSelectedFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DropboxSelectedFileMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     persist_tokens_mcp_connections__server_id__oauth_tokens_post: {
         parameters: {
             query?: never;
@@ -84250,6 +84589,167 @@ export interface operations {
             };
         };
     };
+    authorize_microsoft_integrations_authorize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MicrosoftAuthorizationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MicrosoftAuthorizationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    callback_microsoft_integrations_callback_get: {
+        parameters: {
+            query: {
+                state: string;
+                code?: string | null;
+                error?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            307: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_microsoft_integrations_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MicrosoftConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MicrosoftLifecycleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preflight_microsoft_integrations_preflight_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MicrosoftConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MicrosoftLifecycleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disconnect_microsoft_integrations_disconnect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MicrosoftConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     selected_file_metadata_microsoft_integrations_onedrive_selected_file_metadata_post: {
         parameters: {
             query?: never;
@@ -84529,6 +85029,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EbaySandboxTaxonomyResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_board_trello_integrations_public_boards__board_id__get: {
+        parameters: {
+            query?: {
+                card_limit?: number;
+            };
+            header?: never;
+            path: {
+                board_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrelloPublicBoardResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_public_library_items_zotero_public_libraries__library_type___library_id__items_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                library_type: "users" | "groups";
+                library_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZoteroPublicLibraryResponse"];
                 };
             };
             /** @description Validation Error */

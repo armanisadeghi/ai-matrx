@@ -13406,6 +13406,59 @@
         }
       }
     },
+    "/mcp-connections/{server_id}/selected-file-metadata": {
+      "post": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Selected File Metadata",
+        "description": "Read metadata for one explicit Dropbox file path or id.",
+        "operationId": "selected_file_metadata_mcp_connections__server_id__selected_file_metadata_post",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DropboxSelectedFileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DropboxSelectedFileMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mcp-connections/{server_id}/oauth-tokens": {
       "post": {
         "tags": [
@@ -14299,6 +14352,231 @@
         }
       }
     },
+    "/microsoft-integrations/authorize": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Authorize",
+        "operationId": "authorize_microsoft_integrations_authorize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MicrosoftAuthorizationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MicrosoftAuthorizationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/callback": {
+      "get": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Callback",
+        "operationId": "callback_microsoft_integrations_callback_get",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "State"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          }
+        ],
+        "responses": {
+          "307": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/refresh": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Refresh",
+        "operationId": "refresh_microsoft_integrations_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MicrosoftConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MicrosoftLifecycleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/preflight": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Preflight",
+        "operationId": "preflight_microsoft_integrations_preflight_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MicrosoftConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MicrosoftLifecycleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/disconnect": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Disconnect",
+        "operationId": "disconnect_microsoft_integrations_disconnect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MicrosoftConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/microsoft-integrations/onedrive/selected-file/metadata": {
       "post": {
         "tags": [
@@ -14650,6 +14928,128 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EbaySandboxTaxonomyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trello-integrations/public/boards/{board_id}": {
+      "get": {
+        "tags": [
+          "Trello Integrations"
+        ],
+        "summary": "Public Board",
+        "operationId": "public_board_trello_integrations_public_boards__board_id__get",
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Board Id"
+            }
+          },
+          {
+            "name": "card_limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 0,
+              "default": 20,
+              "title": "Card Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrelloPublicBoardResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/zotero/public-libraries/{library_type}/{library_id}/items": {
+      "get": {
+        "tags": [
+          "Zotero"
+        ],
+        "summary": "List Public Library Items",
+        "operationId": "list_public_library_items_zotero_public_libraries__library_type___library_id__items_get",
+        "parameters": [
+          {
+            "name": "library_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "users",
+                "groups"
+              ],
+              "type": "string",
+              "title": "Library Type"
+            }
+          },
+          {
+            "name": "library_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Library Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 25,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZoteroPublicLibraryResponse"
                 }
               }
             }
@@ -102743,6 +103143,53 @@
         ],
         "title": "DrainRowResult"
       },
+      "DropboxSelectedFileMetadata": {
+        "properties": {
+          "server_id": {
+            "type": "string",
+            "title": "Server Id"
+          },
+          "file_ref": {
+            "type": "string",
+            "title": "File Ref"
+          },
+          "metadata": {
+            "type": "string",
+            "title": "Metadata"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "default": "GetFileMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_id",
+          "file_ref",
+          "metadata"
+        ],
+        "title": "DropboxSelectedFileMetadata",
+        "description": "Provider-formatted metadata for the one requested file."
+      },
+      "DropboxSelectedFileRequest": {
+        "properties": {
+          "file_ref": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 2,
+            "pattern": "^(?:/.+|id:.+)$",
+            "title": "File Ref",
+            "description": "Exact Dropbox file path or file id returned by Dropbox."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_ref"
+        ],
+        "title": "DropboxSelectedFileRequest",
+        "description": "One exact Dropbox file reference; directory discovery is not accepted."
+      },
       "DryRunEdgeReport": {
         "properties": {
           "state": {
@@ -131020,6 +131467,61 @@
         "title": "MessageUpdate",
         "description": "Fields the client can edit on an existing ``cx_message`` row.\n\nEvery field is optional — only fields the caller actually sets are\nwritten to the DB. ``content`` accepts the same structured JSON the\nserver would have written (list of parts) — callers that want to\nedit a simple text message should still send the list form."
       },
+      "MicrosoftAuthorizationRequest": {
+        "properties": {
+          "campaigns": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "identity",
+                "outlook_mail_basic",
+                "outlook_calendar_basic",
+                "onedrive_files_read",
+                "sharepoint_selected",
+                "teams_personal_read"
+              ]
+            },
+            "type": "array",
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Campaigns"
+          }
+        },
+        "type": "object",
+        "required": [
+          "campaigns"
+        ],
+        "title": "MicrosoftAuthorizationRequest"
+      },
+      "MicrosoftAuthorizationResponse": {
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "title": "Authorization Url"
+          },
+          "campaigns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Campaigns"
+          },
+          "requested_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requested Scopes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorization_url",
+          "campaigns",
+          "requested_scopes"
+        ],
+        "title": "MicrosoftAuthorizationResponse"
+      },
       "MicrosoftConnectionRequest": {
         "properties": {
           "connection_id": {
@@ -131034,6 +131536,78 @@
           "connection_id"
         ],
         "title": "MicrosoftConnectionRequest"
+      },
+      "MicrosoftEntitlementResponse": {
+        "properties": {
+          "campaign": {
+            "type": "string",
+            "title": "Campaign"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "campaign",
+          "ready",
+          "reason"
+        ],
+        "title": "MicrosoftEntitlementResponse"
+      },
+      "MicrosoftLifecycleResponse": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "campaigns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Campaigns"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes"
+          },
+          "entitlements": {
+            "items": {
+              "$ref": "#/components/schemas/MicrosoftEntitlementResponse"
+            },
+            "type": "array",
+            "title": "Entitlements"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "status",
+          "campaigns",
+          "scopes",
+          "entitlements"
+        ],
+        "title": "MicrosoftLifecycleResponse"
       },
       "MintControlRequest": {
         "properties": {
@@ -177141,6 +177715,93 @@
         ],
         "title": "TrashListResponse"
       },
+      "TrelloPublicBoardResult": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "trello"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "short_url": {
+            "type": "string",
+            "title": "Short Url"
+          },
+          "permission_level": {
+            "type": "string",
+            "title": "Permission Level"
+          },
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/TrelloPublicCard"
+            },
+            "type": "array",
+            "title": "Cards"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "url",
+          "short_url",
+          "permission_level",
+          "cards"
+        ],
+        "title": "TrelloPublicBoardResult",
+        "description": "Safe public metadata proof; no Trello credential or private data."
+      },
+      "TrelloPublicCard": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "closed": {
+            "type": "boolean",
+            "title": "Closed"
+          },
+          "list_id": {
+            "type": "string",
+            "title": "List Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "url",
+          "closed",
+          "list_id"
+        ],
+        "title": "TrelloPublicCard"
+      },
       "TriggerCreate": {
         "properties": {
           "type": {
@@ -188322,6 +188983,194 @@
           "privacy_status"
         ],
         "title": "YouTubeVideoPreview"
+      },
+      "ZoteroCreator": {
+        "properties": {
+          "creator_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creator Type"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "title": "ZoteroCreator"
+      },
+      "ZoteroPublicItem": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zotero_public_library_item",
+            "title": "Kind",
+            "default": "zotero_public_library_item"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "item_type": {
+            "type": "string",
+            "title": "Item Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "creators": {
+            "items": {
+              "$ref": "#/components/schemas/ZoteroCreator"
+            },
+            "type": "array",
+            "title": "Creators"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "isbn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isbn"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "version",
+          "item_type",
+          "title",
+          "creators"
+        ],
+        "title": "ZoteroPublicItem"
+      },
+      "ZoteroPublicLibraryResponse": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zotero_public_library_items",
+            "title": "Kind",
+            "default": "zotero_public_library_items"
+          },
+          "library_type": {
+            "type": "string",
+            "enum": [
+              "users",
+              "groups"
+            ],
+            "title": "Library Type"
+          },
+          "library_id": {
+            "type": "integer",
+            "title": "Library Id"
+          },
+          "library_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Library Name"
+          },
+          "library_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Library Version"
+          },
+          "returned_count": {
+            "type": "integer",
+            "title": "Returned Count"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ZoteroPublicItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "library_type",
+          "library_id",
+          "returned_count",
+          "items"
+        ],
+        "title": "ZoteroPublicLibraryResponse"
       },
       "aidream__api__routers__admin_app_logs__DeletedResponse": {
         "properties": {
