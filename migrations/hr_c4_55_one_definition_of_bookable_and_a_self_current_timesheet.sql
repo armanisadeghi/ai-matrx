@@ -1,6 +1,15 @@
 -- HR domain C4 — migration 55. Two employee-facing surfaces that told a person something
 -- impossible or dead (round-42 adversarial walk, defects D3 and D6).
 --
+-- ⚠️ THE NUMBER 55 IS USED TWICE, AND THAT IS RECORDED RATHER THAN QUIETLY RENUMBERED.
+-- A concurrent lane applied `hr_c4_55_a_delivery_failure_speaks_to_the_person_not_the_operator`
+-- nine minutes before this file landed — a shared-checkout race, not a conflict: both ledgers key
+-- on the FILENAME, both rows exist, and `hr.function_contracts_broken()` is 0. Renaming this file
+-- now would orphan `hr_c4_56_restore_my_timesheet_context_client_grant`, which cites "the first
+-- hr_c4_55 bytes" by that name. (That 56 is a third lane's corrective for the grant this file's
+-- FIRST attempt lost to the definer-grant guard; the declaration below already fixes it, and the
+-- two are idempotent over each other.)
+--
 -- =====================================================================================
 -- PART A (D3) — "Available −16 h" UNDER THE CAPTION "What you can book right now."
 --
