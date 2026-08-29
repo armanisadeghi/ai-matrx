@@ -129,6 +129,8 @@ interface TableToolbarProps {
   toolbarTrailing?: React.ReactNode;
   /** Shared direct Copy / Copy for AI controls for the current table view. */
   copyControls?: React.ReactNode;
+  /** Mobile-only view controls (sort, saved views, columns) hosted in the same drawer. */
+  mobileViewControls?: React.ReactNode;
 }
 
 export default function TableToolbar({
@@ -188,6 +190,7 @@ export default function TableToolbar({
   onRowOrderingSuccess,
   toolbarTrailing,
   copyControls,
+  mobileViewControls,
 }: TableToolbarProps) {
   const isMobile = useIsMobile();
   // Show toast when trying to use edit features in read-only mode
@@ -219,7 +222,7 @@ export default function TableToolbar({
       {/* Toolbar UI — dense, single-row on desktop. Below md, the Column/Row/
           Paste + reorder/clean/reference/export/settings clusters collapse
           into one drawer trigger so the row never overflows the viewport. */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-2">
+      <div className="mb-0 flex flex-col justify-between gap-0 md:mb-2 md:flex-row md:items-center md:gap-2">
         <div className="hidden md:flex items-center w-full md:w-auto gap-1">
           {isReadOnly ? (
             // Read-only mode: show disabled-style buttons with view icon
@@ -260,7 +263,7 @@ export default function TableToolbar({
           )}
         </div>
 
-        <div className="flex items-center gap-2 w-full md:flex-1 md:max-w-sm">
+        <div className="flex w-full items-center gap-1.5 md:flex-1 md:max-w-sm md:gap-2">
           <form onSubmit={handleSearch} className="flex flex-1 gap-1">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -269,14 +272,15 @@ export default function TableToolbar({
                 placeholder="Search table..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-9 md:h-7 pl-7 pr-7 text-base md:text-sm"
+                className="h-11 w-full pl-8 pr-10 text-base md:h-7 md:pl-7 md:pr-7 md:text-sm"
                 style={{ fontSize: "16px" }}
               />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={clearSearch}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-0 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground md:right-1 md:h-7 md:w-7"
+                  aria-label="Clear table search"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -285,7 +289,7 @@ export default function TableToolbar({
             <Button
               size="sm"
               type="submit"
-              className="h-9 w-9 md:h-7 md:w-7 p-0 flex-shrink-0"
+              className="hidden h-7 w-7 flex-shrink-0 p-0 md:inline-flex"
               title="Search"
             >
               <Search className="h-3.5 w-3.5" />
@@ -297,7 +301,7 @@ export default function TableToolbar({
           <Button
             variant="outline"
             size="icon"
-            className="md:hidden h-9 w-9 flex-shrink-0"
+            className="h-11 w-11 flex-shrink-0 md:hidden"
             onClick={() => setShowMobileActions(true)}
             aria-label="Table actions"
           >
@@ -373,11 +377,16 @@ export default function TableToolbar({
       <BottomSheet
         open={showMobileActions}
         onOpenChange={setShowMobileActions}
-        title="Table Actions"
+        title="Table controls"
         contentClassName="bg-card"
       >
-        <BottomSheetHeader title="Table Actions" />
+        <BottomSheetHeader title="Table controls" />
         <BottomSheetBody className="px-3 pb-4 space-y-0.5">
+          {mobileViewControls ? (
+            <div className="mb-2 border-b border-border pb-2">
+              {mobileViewControls}
+            </div>
+          ) : null}
           {isReadOnly && (
             <div className="flex items-center gap-2 px-2 py-2 text-sm font-medium text-purple-600 dark:text-purple-400">
               <Eye className="h-4 w-4" />

@@ -40,10 +40,15 @@ import {
   History,
   Undo2,
   Redo2,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
-import { EditableCell, normalizeCellValue } from "@/features/data-tables/components/EditableCell";
+import {
+  EditableCell,
+  normalizeCellValue,
+} from "@/features/data-tables/components/EditableCell";
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
 import { resolveFieldFormat } from "@/lib/field-formats/format";
@@ -64,7 +69,10 @@ import {
 } from "@/features/data-tables/hooks/useTableRealtime";
 import { useGridSelection } from "@/features/data-tables/hooks/useGridSelection";
 import { useCellUndo } from "@/features/data-tables/hooks/useCellUndo";
-import { cellDomKey, type CellAddress } from "@/features/data-tables/grid-selection";
+import {
+  cellDomKey,
+  type CellAddress,
+} from "@/features/data-tables/grid-selection";
 import { classifyEcho } from "@/features/data-tables/realtime-echo";
 import {
   bulkWrite,
@@ -100,10 +108,7 @@ import { TableSkeleton } from "./TableSkeleton";
 import { CellCleanupButton } from "@/components/content-cleanup/CellCleanupButton";
 import { cleanValue } from "@/lib/content-cleanup/clean-cells";
 import { DEFAULT_ENABLED_VALUE_OPERATIONS } from "@/lib/content-cleanup/value-operations";
-import type {
-  CleanableRow,
-  RowPatch,
-} from "@/lib/content-cleanup/value-types";
+import type { CleanableRow, RowPatch } from "@/lib/content-cleanup/value-types";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -128,6 +133,7 @@ import {
   type DataTableWriteLiveState,
 } from "@/features/data-tables/hooks/useDataTableWriteHandlers";
 import { TableCopyControls } from "@/features/data-tables/components/TableCopyControls";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TableDataRow {
   id: string;
@@ -302,6 +308,7 @@ const UserTableViewer = ({
   emitSurfaceScope = false,
 }: UserTableViewerProps) => {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [tableInfo, setTableInfo] = useState<TableInfo | null>(null);
   const [fields, setFields] = useState<TableField[]>([]);
   const [data, setData] = useState<TableDataRow[]>([]);
@@ -382,7 +389,9 @@ const UserTableViewer = ({
   // `features/data-tables/column-filters.ts` for why, and for the one place a
   // row is tested against a filter.
   /** Set when a filter ran over a capped subset — never left implicit. */
-  const [filterTruncatedAt, setFilterTruncatedAt] = useState<number | null>(null);
+  const [filterTruncatedAt, setFilterTruncatedAt] = useState<number | null>(
+    null,
+  );
   /** Set when the rows a filter needs could not be loaded at all. */
   const [fullDatasetError, setFullDatasetError] = useState<string | null>(null);
   const [fullDatasetCache, setFullDatasetCache] = useState<
@@ -897,7 +906,11 @@ const UserTableViewer = ({
         prev
           ? prev.map((row) =>
               row.id === event.rowId
-                ? { ...row, data: incomingData, updated_at: event.row?.updated_at }
+                ? {
+                    ...row,
+                    data: incomingData,
+                    updated_at: event.row?.updated_at,
+                  }
                 : row,
             )
           : prev,
@@ -906,7 +919,11 @@ const UserTableViewer = ({
         prev
           ? prev.map((row) =>
               row.id === event.rowId
-                ? { ...row, data: incomingData, updated_at: event.row?.updated_at }
+                ? {
+                    ...row,
+                    data: incomingData,
+                    updated_at: event.row?.updated_at,
+                  }
                 : row,
             )
           : prev,
@@ -1065,7 +1082,10 @@ const UserTableViewer = ({
 
   // Handle sorting. Pass an explicit direction to set it directly (used by the
   // per-column header menu); omit it to toggle asc/desc on repeated clicks.
-  const handleSort = async (field: string, explicitDirection?: "asc" | "desc") => {
+  const handleSort = async (
+    field: string,
+    explicitDirection?: "asc" | "desc",
+  ) => {
     const newDirection =
       explicitDirection ??
       (field === sortField && sortDirection === "asc" ? "desc" : "asc");
@@ -1542,7 +1562,13 @@ const UserTableViewer = ({
     }
 
     setAllSortedData(null);
-    await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm);
+    await loadTableData(
+      currentPage,
+      limit,
+      sortField,
+      sortDirection,
+      searchTerm,
+    );
     toast({
       title: "Cells cleaned",
       description: `Updated ${patches.length} row${patches.length !== 1 ? "s" : ""}.`,
@@ -1598,7 +1624,14 @@ const UserTableViewer = ({
     });
 
     setAllSortedData(null);
-    await loadTableData(currentPage, limit, sortField, sortDirection, searchTerm, true);
+    await loadTableData(
+      currentPage,
+      limit,
+      sortField,
+      sortDirection,
+      searchTerm,
+      true,
+    );
   };
 
   // Add this helper function somewhere in the component, before the return statement
@@ -1852,7 +1885,13 @@ const UserTableViewer = ({
   const refreshAfterWrite = useCallback(() => {
     setAllSortedData(null);
     setFullDatasetCache(null);
-    void loadTableData(currentPage, limit, sortField, sortDirection, searchTerm);
+    void loadTableData(
+      currentPage,
+      limit,
+      sortField,
+      sortDirection,
+      searchTerm,
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, limit, sortField, sortDirection, searchTerm]);
 
@@ -1890,7 +1929,9 @@ const UserTableViewer = ({
 
   const readCell = useCallback(
     (address: CellAddress): unknown =>
-      displayRows.find((r) => r.id === address.rowId)?.data?.[address.fieldName],
+      displayRows.find((r) => r.id === address.rowId)?.data?.[
+        address.fieldName
+      ],
     [displayRows],
   );
 
@@ -1904,7 +1945,11 @@ const UserTableViewer = ({
             ? JSON.stringify(raw)
             : String(raw);
       void navigator.clipboard.writeText(text).then(
-        () => toast({ title: "Copied", description: text.slice(0, 80) || "Empty cell" }),
+        () =>
+          toast({
+            title: "Copied",
+            description: text.slice(0, 80) || "Empty cell",
+          }),
         () =>
           toast({
             title: "Could not copy",
@@ -2034,7 +2079,11 @@ const UserTableViewer = ({
       const value = normalizeCellValue(rawValue, field?.data_type ?? "string");
       await applyBulkColumn(
         fieldName,
-        buildSetColumnOps(rows.map((r) => r.id), fieldName, value),
+        buildSetColumnOps(
+          rows.map((r) => r.id),
+          fieldName,
+          value,
+        ),
         rows,
         `Set ${field?.display_name ?? fieldName} on ${rows.length} row${rows.length === 1 ? "" : "s"}`,
       );
@@ -2224,9 +2273,7 @@ const UserTableViewer = ({
         surfaceScopeRef.current = surfaceScopeSnapshot;
       }}
       className={
-        fillHeight
-          ? "flex h-full min-h-0 flex-col gap-2 p-2"
-          : "space-y-4 p-2"
+        fillHeight ? "flex h-full min-h-0 flex-col gap-2 p-2" : "space-y-4 p-2"
       }
     >
       {/* Title band — only for embedded surfaces that have no header of their
@@ -2255,12 +2302,12 @@ const UserTableViewer = ({
 
       {/* Sort indicator with save option */}
       {sortField && !isReadOnly && (
-        <div className="flex shrink-0 items-center gap-2 text-xs">
+        <div className="hidden shrink-0 items-center gap-2 text-xs md:flex">
           <span className="text-gray-500 dark:text-gray-400">
             Sorted by{" "}
             <span className="font-medium text-gray-700 dark:text-gray-300">
-              {fields.find((f) => f.field_name === sortField)
-                ?.display_name || sortField}
+              {fields.find((f) => f.field_name === sortField)?.display_name ||
+                sortField}
             </span>
             <span className="ml-1">{sortDirection === "asc" ? "↑" : "↓"}</span>
           </span>
@@ -2396,6 +2443,102 @@ const UserTableViewer = ({
             loadRows={loadRowsForCopy}
           />
         }
+        mobileViewControls={
+          <div className="space-y-2">
+            {sortField && !isReadOnly ? (
+              <div className="rounded-lg bg-muted/40 px-3 py-2.5 text-sm">
+                <div className="flex min-h-11 items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                    Sorted by{" "}
+                    <span className="font-medium text-foreground">
+                      {fields.find((field) => field.field_name === sortField)
+                        ?.display_name || sortField}
+                    </span>{" "}
+                    {sortDirection === "asc" ? "↑" : "↓"}
+                  </span>
+                  {isSortSaved ? (
+                    <span className="flex shrink-0 items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                      Default
+                    </span>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-11 shrink-0 px-2 text-xs text-primary"
+                      onClick={saveDefaultSort}
+                      disabled={savingSortPreference}
+                    >
+                      {savingSortPreference ? "Saving…" : "Make default"}
+                    </Button>
+                  )}
+                </div>
+                {savedSortField ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-11 w-full justify-start px-2 text-xs text-muted-foreground"
+                    onClick={clearDefaultSort}
+                    disabled={savingSortPreference}
+                  >
+                    Clear default sort
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+
+            <div className="[&_button]:min-h-11">
+              <SavedViewBar
+                views={savedViews.views}
+                loading={savedViews.loading}
+                liveDefinition={savedViews.liveDefinition}
+                activeViewId={savedViews.activeViewId}
+                readOnly={isReadOnly}
+                displayNameFor={(fieldName) =>
+                  fields.find((field) => field.field_name === fieldName)
+                    ?.display_name ?? fieldName
+                }
+                onApply={savedViews.apply}
+                onClearActive={savedViews.clearActive}
+                onSaveNew={savedViews.saveNew}
+                onUpdate={savedViews.update}
+                onRename={savedViews.rename}
+                onSetDefault={savedViews.setDefault}
+                onDelete={savedViews.remove}
+              />
+            </div>
+
+            <div className="[&>button]:h-11 [&>button]:w-full [&>button]:justify-start [&>button]:px-2 [&>button]:text-sm">
+              <ColumnViewMenu
+                fields={fields.map((field) => ({
+                  field_name: field.field_name,
+                  display_name: field.display_name,
+                  field_order: field.field_order,
+                }))}
+                hidden={hiddenColumns}
+                order={columnOrder}
+                onHiddenChange={setHiddenColumns}
+                onOrderChange={setColumnOrder}
+              />
+            </div>
+
+            {isViewCustomized ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-11 w-full justify-start px-2 text-sm text-muted-foreground"
+                onClick={() => {
+                  resetView();
+                  savedViews.clearActive();
+                }}
+              >
+                Reset search, sort, filters, and columns
+              </Button>
+            ) : null}
+          </div>
+        }
         toolbarTrailing={toolbarTrailing}
       />
 
@@ -2410,8 +2553,8 @@ const UserTableViewer = ({
               This filter couldn&rsquo;t be applied
             </p>
             <p className="text-muted-foreground">
-              {fullDatasetError} The rows below are unfiltered — clear the filter
-              or try again.
+              {fullDatasetError} The rows below are unfiltered — clear the
+              filter or try again.
             </p>
           </div>
           <Button
@@ -2434,38 +2577,41 @@ const UserTableViewer = ({
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
           <p className="min-w-0 text-muted-foreground">
             <span className="font-medium text-amber-700 dark:text-amber-300">
-              Filtering the first {filterTruncatedAt.toLocaleString()} rows only.
+              Filtering the first {filterTruncatedAt.toLocaleString()} rows
+              only.
             </span>{" "}
             This table has {totalCount.toLocaleString()}, so the count below is
-            not the whole table. Narrow it with the search box first for an exact
-            answer.
+            not the whole table. Narrow it with the search box first for an
+            exact answer.
           </p>
         </div>
       )}
 
-      <SavedViewBar
-        views={savedViews.views}
-        loading={savedViews.loading}
-        liveDefinition={savedViews.liveDefinition}
-        activeViewId={savedViews.activeViewId}
-        readOnly={isReadOnly}
-        displayNameFor={(fieldName) =>
-          fields.find((f) => f.field_name === fieldName)?.display_name ??
-          fieldName
-        }
-        onApply={savedViews.apply}
-        onClearActive={savedViews.clearActive}
-        onSaveNew={savedViews.saveNew}
-        onUpdate={savedViews.update}
-        onRename={savedViews.rename}
-        onSetDefault={savedViews.setDefault}
-        onDelete={savedViews.remove}
-      />
+      <div className="hidden md:block">
+        <SavedViewBar
+          views={savedViews.views}
+          loading={savedViews.loading}
+          liveDefinition={savedViews.liveDefinition}
+          activeViewId={savedViews.activeViewId}
+          readOnly={isReadOnly}
+          displayNameFor={(fieldName) =>
+            fields.find((f) => f.field_name === fieldName)?.display_name ??
+            fieldName
+          }
+          onApply={savedViews.apply}
+          onClearActive={savedViews.clearActive}
+          onSaveNew={savedViews.saveNew}
+          onUpdate={savedViews.update}
+          onRename={savedViews.rename}
+          onSetDefault={savedViews.setDefault}
+          onDelete={savedViews.remove}
+        />
+      </div>
 
       {/* Column visibility + order for THIS VIEW. Deliberately next to the
           grid rather than inside Table Settings: Table Settings edits the
           table for everyone, this edits only what you are looking at. */}
-      <div className="flex shrink-0 items-center justify-end gap-1">
+      <div className="hidden shrink-0 items-center justify-end gap-1 md:flex">
         <ColumnViewMenu
           fields={fields.map((f) => ({
             field_name: f.field_name,
@@ -2567,10 +2713,10 @@ const UserTableViewer = ({
             : "border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm outline-none [&>div]:max-h-[70dvh] [&>div]:overflow-auto"
         }
       >
-        <Table className="table-fixed w-full">
+        <Table className="w-auto min-w-max table-auto md:w-full md:min-w-full md:table-fixed">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="sticky left-0 top-0 z-30 w-10 bg-gray-100 px-3 dark:bg-gray-800">
+              <TableHead className="sticky left-0 top-0 z-30 w-10 bg-gray-100 px-2 dark:bg-gray-800 md:px-3">
                 <Checkbox
                   checked={
                     allRowsOnPageSelected
@@ -2594,7 +2740,7 @@ const UserTableViewer = ({
                 return (
                   <TableHead
                     key={field.id}
-                    className="sticky top-0 z-20 bg-gray-100 dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300 py-1.5 min-w-[150px] border-b border-gray-200 dark:border-gray-700 transition-colors hover:bg-gray-200/70 dark:hover:bg-gray-700/70"
+                    className="sticky top-0 z-20 max-w-[70vw] border-b border-gray-200 bg-gray-100 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-200/70 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/70 md:max-w-none md:min-w-[150px]"
                   >
                     <div className="flex items-center justify-between gap-1">
                       <button
@@ -2707,7 +2853,7 @@ const UserTableViewer = ({
                   `}
                 >
                   <TableCell
-                    className="sticky left-0 z-10 w-10 bg-inherit px-3"
+                    className="sticky left-0 z-10 w-10 bg-inherit px-2 md:px-3"
                     onClick={(event) => event.stopPropagation()}
                   >
                     <Checkbox
@@ -2821,7 +2967,7 @@ const UserTableViewer = ({
                         // unsaved text became indistinguishable from a saved
                         // one, which is how you lose an edit without knowing.
                         className={cn(
-                          "py-3 max-w-0 group",
+                          "group max-w-[70vw] py-2 md:max-w-0 md:py-3",
                           !isReadOnly && "cursor-cell",
                           grid.isSelected(row.id, field.field_name) &&
                             !grid.isEditing(row.id, field.field_name) &&
@@ -2867,10 +3013,7 @@ const UserTableViewer = ({
                                 row.id,
                                 field.field_name,
                               )}
-                              editing={grid.isEditing(
-                                row.id,
-                                field.field_name,
-                              )}
+                              editing={grid.isEditing(row.id, field.field_name)}
                               seed={grid.editSeed}
                               onSelect={() => {
                                 grid.select({
@@ -3036,13 +3179,13 @@ const UserTableViewer = ({
         <div
           className={
             fillHeight
-              ? "flex shrink-0 items-center justify-between gap-3"
-              : "flex items-center justify-between gap-3 mt-4"
+              ? "flex shrink-0 items-center justify-between gap-1 md:gap-3"
+              : "mt-4 flex items-center justify-between gap-1 md:gap-3"
           }
         >
-          <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex min-w-0 items-center gap-1 text-sm text-gray-600 dark:text-gray-400 md:gap-2">
             <Select value={String(limit)} onValueChange={handleLimitChange}>
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-10 w-16 md:h-8 md:w-[70px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
@@ -3078,7 +3221,7 @@ const UserTableViewer = ({
                 </SelectItem>
               </SelectContent>
             </Select>
-            <span className="ml-4 whitespace-nowrap">
+            <span className="whitespace-nowrap md:ml-4">
               of {effectiveTotalCount} rows
               {hasColumnFilters && " (filtered)"}
             </span>
@@ -3089,45 +3232,84 @@ const UserTableViewer = ({
           <Pagination className="mx-0 w-auto justify-end">
             <PaginationContent>
               <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                  className={`h-8 ${
-                    currentPage === 1 ? "pointer-events-none opacity-50" : ""
-                  }`}
-                />
+                {isMobile ? (
+                  <PaginationLink
+                    aria-label="Go to previous page"
+                    onClick={() =>
+                      handlePageChange(Math.max(1, currentPage - 1))
+                    }
+                    className={`h-10 w-10 ${
+                      currentPage === 1
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }`}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </PaginationLink>
+                ) : (
+                  <PaginationPrevious
+                    onClick={() =>
+                      handlePageChange(Math.max(1, currentPage - 1))
+                    }
+                    className={`h-8 ${
+                      currentPage === 1
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }`}
+                  />
+                )}
               </PaginationItem>
 
-              {[...Array(Math.min(5, effectiveTotalPages))].map((_, i) => {
-                const pageNum = currentPage <= 3 ? i + 1 : currentPage + i - 2;
-
-                if (pageNum > effectiveTotalPages) return null;
-
-                return (
+              {(isMobile
+                ? [currentPage]
+                : [...Array(Math.min(5, effectiveTotalPages))].map((_, i) =>
+                    currentPage <= 3 ? i + 1 : currentPage + i - 2,
+                  )
+              ).map((pageNum) =>
+                pageNum <= effectiveTotalPages ? (
                   <PaginationItem key={pageNum}>
                     <PaginationLink
                       onClick={() => handlePageChange(pageNum)}
                       isActive={currentPage === pageNum}
-                      className="h-8 w-8"
+                      className="h-10 w-10 md:h-8 md:w-8"
                     >
                       {pageNum}
                     </PaginationLink>
                   </PaginationItem>
-                );
-              })}
+                ) : null,
+              )}
 
               <PaginationItem>
-                <PaginationNext
-                  onClick={() =>
-                    handlePageChange(
-                      Math.min(effectiveTotalPages, currentPage + 1),
-                    )
-                  }
-                  className={`h-8 ${
-                    currentPage === effectiveTotalPages
-                      ? "pointer-events-none opacity-50"
-                      : ""
-                  }`}
-                />
+                {isMobile ? (
+                  <PaginationLink
+                    aria-label="Go to next page"
+                    onClick={() =>
+                      handlePageChange(
+                        Math.min(effectiveTotalPages, currentPage + 1),
+                      )
+                    }
+                    className={`h-10 w-10 ${
+                      currentPage === effectiveTotalPages
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }`}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </PaginationLink>
+                ) : (
+                  <PaginationNext
+                    onClick={() =>
+                      handlePageChange(
+                        Math.min(effectiveTotalPages, currentPage + 1),
+                      )
+                    }
+                    className={`h-8 ${
+                      currentPage === effectiveTotalPages
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }`}
+                  />
+                )}
               </PaginationItem>
             </PaginationContent>
           </Pagination>

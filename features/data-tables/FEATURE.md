@@ -722,6 +722,12 @@ older shapes.
 
 ## Change log
 
+- `2026-08-29` — **Table detail uses one compact mobile control row and content-driven columns.**
+  Search and one overflow target now occupy the only persistent chrome row; sort defaults,
+  saved views, per-view columns/reset, and table actions reuse the existing bottom sheet. The
+  phone grid uses bounded `table-auto` columns with horizontal scrolling instead of dividing
+  the viewport equally across every visible field; desktop keeps its fixed, stable grid. Mobile
+  pagination shows only the current page between tap-sized previous/next controls.
 - `2026-08-25` — **URL-backed table filters no longer crash with React #185.** The shared
   `useMirroredUrlState` now reads the live query string when applying URL changes, so its
   state-to-URL effect cannot be undone by the stale query snapshot from the same render. A
