@@ -36,7 +36,7 @@ describe("AgentTextarea auto-resize", () => {
 
   it("keeps the connector reminder dense without shrinking mobile hit areas", () => {
     expect(smartInputSource).toContain(
-      '<ChatConnectorStrip className="mt-0.5" />',
+      '<ChatConnectorStrip className="mt-0.5 pl-5" />',
     );
     expect(connectorSource).toContain("flex h-4 w-full");
     expect(connectorSource).toContain("before:-inset-y-3");

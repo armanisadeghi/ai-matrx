@@ -22,7 +22,7 @@ import type {
 export const CONNECTORS: ConnectorDefinition[] = [
   {
     id: "google-workspace",
-    name: "Google Docs & Sheets",
+    name: "Google",
     blurb: "Read and update docs and sheets you choose",
     logo: GoogleMark,
     surfaces: ["strip", "directory"],
