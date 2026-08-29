@@ -263,6 +263,15 @@ query GETs (unblocked by `apiGet`'s `query` support), and
 
 ## Change Log
 
+- 2026-08-29 — **`matrx-transport.ts`: the host `MatrxTransport` port for `@ai-matrx/agents/matrx`.**
+  One factory pipeline (`createMatrxTransportFromTarget`) reusing callApi's own machinery —
+  `resolveAuth`, `resolveBaseUrl`, `fetchWithV2Fallback`, `normalizeError` are now exported from
+  `call-api.ts` for it (extraction-in-place; zero duplicated auth/URL/error logic). Policy headers
+  (auth + `X-Organization-Id`) merge ON TOP of the package's wire headers; signal wired through;
+  `applyAiApiVersion` covers concrete paths; non-2xx and thrown failures feed `captureApiError`
+  (with `expectedErrorStatuses` suppression). The cancel flow moved onto it: `cancelAgentRunRequest`
+  replaces `callCancelRequest` (deleted) with the same `ApiCallResult` envelope. Conversation-scoped
+  variant lives in `features/agents/redux/execution-system/thunks/matrx-transport-for-conversation.ts`.
 - 2026-08-27 — Collapsed the aidream production origin onto ONE variable name.
   `AIDREAM_PRODUCTION_URL` (`NEXT_PUBLIC_BACKEND_URL_PROD` + hardcoded production default) is
   now the single reader; the `NEXT_PUBLIC_BACKEND_URL` alias and its seventeen scattered
