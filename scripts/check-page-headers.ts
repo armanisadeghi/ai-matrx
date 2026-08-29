@@ -88,9 +88,10 @@ function walkHeaderComponents(dir: string, out: string[] = []): string[] {
       walkHeaderComponents(full, out);
       continue;
     }
+    if (!entry.endsWith(".tsx")) continue;
     if (
-      entry.endsWith(".tsx") &&
-      /(Header|Mode|Nav)/.test(basename(entry, ".tsx"))
+      /(Header|Mode|Nav)/.test(basename(entry, ".tsx")) ||
+      readFileSync(full, "utf8").includes("<PageHeader")
     ) {
       out.push(full);
     }
@@ -101,6 +102,26 @@ function walkHeaderComponents(dir: string, out: string[] = []): string[] {
 function isRouteFile(path: string): boolean {
   const rel = relative(APP_DIR, path);
   return ROUTE_GLOBS.some((group) => rel.startsWith(`${group}/`));
+}
+
+function scanPageHeaderClearance(path: string): Violation[] {
+  const src = readFileSync(path, "utf8");
+  const pageHeaderBlocks =
+    src.match(/<PageHeader\b[\s\S]*?<\/PageHeader>/g) ?? [];
+  const clearanceHack = pageHeaderBlocks.find((block) =>
+    /className\s*=\s*(?:["'][^"']*\bpr-(?:12|14)\b[^"']*["']|\{`[^`]*\bpr-(?:12|14)\b[^`]*`\})/s.test(
+      block,
+    ),
+  );
+  if (!clearanceHack) return [];
+
+  return [
+    {
+      file: relative(ROOT, path),
+      reason:
+        "Adds pr-12/pr-14 avatar clearance inside <PageHeader>. The shell center slot is already bounded between its left and right controls; remove the redundant padding.",
+    },
+  ];
 }
 
 function scanFile(path: string): Violation[] {
@@ -123,20 +144,7 @@ function scanFile(path: string): Violation[] {
     src.includes("PageHeader") || src.includes("PageSpecificHeaderPortal");
 
   if (relative(APP_DIR, path).startsWith("(core)/") && hasPageHeader) {
-    const pageHeaderBlocks =
-      src.match(/<PageHeader\b[\s\S]*?<\/PageHeader>/g) ?? [];
-    const clearanceHack = pageHeaderBlocks.find((block) =>
-      /className\s*=\s*(?:["'][^"']*\bpr-(?:12|14)\b[^"']*["']|\{`[^`]*\bpr-(?:12|14)\b[^`]*`\})/s.test(
-        block,
-      ),
-    );
-    if (clearanceHack) {
-      violations.push({
-        file: rel,
-        reason:
-          "Adds pr-12/pr-14 avatar clearance inside <PageHeader>. The shell center slot is already bounded between its left and right controls; remove the redundant padding.",
-      });
-    }
+    violations.push(...scanPageHeaderClearance(path));
   }
 
   const marker = FAUX_HEADER_MARKERS.find((m) => src.includes(m));
@@ -186,6 +194,7 @@ function main() {
   const featureHeaderFiles = walkHeaderComponents(FEATURES_DIR);
   const violations = [
     ...files.flatMap(scanFile),
+    ...featureHeaderFiles.flatMap(scanPageHeaderClearance),
     ...featureHeaderFiles.flatMap(scanCompactRouteNav),
   ];
 

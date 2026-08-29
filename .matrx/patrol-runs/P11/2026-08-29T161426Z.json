@@ -47,6 +47,114 @@
       ],
       "previousEventHash": "4a55b81b92c48f7501a09264185f0301d87b2142cb0d8fb9ec0e4b3cee3fab74",
       "eventHash": "7e4799dc2d503ec847d33452817b4080c625483f15f135207cb3a0dc9dd106e8"
+    },
+    {
+      "sequence": 4,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-29T16:21:32.496Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Automation worktree was removed externally during certification and restored from origin/main",
+      "evidence": [
+        "Candidate bytes remained available as immutable Git object and ancestor of origin/main",
+        "No testing or editing continued in the shared canonical checkout"
+      ],
+      "blocker": {
+        "prerequisite": "Restore the exact isolated automation worktree before continuing certification",
+        "preservedRef": "refs/heads/main",
+        "preservedSha": "81508305e1241e81803824dbe8cd27520390dc87"
+      },
+      "previousEventHash": "7e4799dc2d503ec847d33452817b4080c625483f15f135207cb3a0dc9dd106e8",
+      "eventHash": "3e9c1e7368e2ca068673be9cb4d7aaf7d77a0180a87040d59acf3fc4e9c270ed"
+    },
+    {
+      "sequence": 5,
+      "state": "escaped_delivery",
+      "at": "2026-08-29T16:21:33.028Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Recorded uncertified candidate integration on origin/main before the adversarial verdict",
+      "evidence": [
+        "Merge fea935abb8 contains candidate 81508305e1 and the certifying-state record; no release was requested"
+      ],
+      "escape": {
+        "candidateSha": "81508305e1241e81803824dbe8cd27520390dc87",
+        "integratedSha": "fea935abb84ed622789775626c2124553a89b8dd",
+        "release": "unreleased",
+        "reason": "Automatic branch integration merged the candidate and removed its worktree before independent certification completed."
+      },
+      "previousEventHash": "3e9c1e7368e2ca068673be9cb4d7aaf7d77a0180a87040d59acf3fc4e9c270ed",
+      "eventHash": "3b99a3988fac3fcc91e48a128865fe551f93fdccadce365ba0d57ac4faef5e49"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-29T16:21:37.587Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Resumed exact-candidate audit after restoring the isolated worktree",
+      "evidence": [
+        "Candidate 81508305e1 remained byte-identical in the restored origin/main descendant"
+      ],
+      "previousEventHash": "3b99a3988fac3fcc91e48a128865fe551f93fdccadce365ba0d57ac4faef5e49",
+      "eventHash": "fd0bc9bfd9506b481d608b116a9d749c10b4e15d039282209a530bbc76223776"
+    },
+    {
+      "sequence": 7,
+      "state": "rejected",
+      "at": "2026-08-29T16:21:38.110Z",
+      "actor": "/root/p11_certifier_81508305",
+      "summary": "REJECTED candidate 81508305e1: feature-owned PageHeader clearance remained invisible to the new detector",
+      "evidence": [
+        "features/pdf/scanner/components/ScannerSurface.tsx renders PageHeader with pr-12 for core /tools/scanner",
+        "Core-only header check passed falsely because the candidate scanned only app route files for avatar-clearance hacks",
+        "Type-check, scroll-chain, full detector baseline, and patrol-contract baseline otherwise matched"
+      ],
+      "previousEventHash": "fd0bc9bfd9506b481d608b116a9d749c10b4e15d039282209a530bbc76223776",
+      "eventHash": "ea1978913851213500ecd79645bc5f3bdbf206c03eda7b311d8d9f6912d6714c"
+    },
+    {
+      "sequence": 8,
+      "state": "fixing",
+      "at": "2026-08-29T16:21:38.626Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Repairing rejected detector scope and the verified scanner header callsite",
+      "evidence": [
+        "Second batch remains bounded: one feature surface plus the existing detector and run record"
+      ],
+      "previousEventHash": "ea1978913851213500ecd79645bc5f3bdbf206c03eda7b311d8d9f6912d6714c",
+      "eventHash": "8ef69be392ab04a932752c949ce31417440e1754d242ddcb832a7f92233785ce"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-29T16:22:53.216Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Corrected candidate 4b06080808465764e280fbfef3cd895abb093c24 preserved for fresh independent certification",
+      "evidence": [
+        "Candidate pushed to origin/codex/p11-20260829-repair",
+        "Detector now enumerates all feature PageHeader consumers plus named header/nav components",
+        "Post type-check PASS; core-only page-header strict PASS; full warnings unchanged; scroll-chain strict PASS"
+      ],
+      "previousEventHash": "8ef69be392ab04a932752c949ce31417440e1754d242ddcb832a7f92233785ce",
+      "eventHash": "9e591d0c67d5f46f8a9badbbe64a1ce2dd449ff3601d30e9d81eb1969d7d871e"
+    },
+    {
+      "sequence": 10,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-29T16:26:03.128Z",
+      "actor": "/root/p11_certifier_4b060808",
+      "summary": "Corrected candidate 4b060808 passed static adversarial checks but required visual certification is infrastructure blocked",
+      "evidence": [
+        "Type-check PASS; core-only strict page-header PASS; strict scroll-chain PASS; diff-check PASS",
+        "Full page-header remains exactly seven baseline dev/public warnings; patrol-contracts remains only fleet-health prompt drift",
+        "Prior feature-owned PageHeader detector rejection is fixed; no current false positive found",
+        "Preview lease remains owned by /Users/armanisadeghi/code/matrx-frontend; it was not reused or stopped"
+      ],
+      "blocker": {
+        "prerequisite": "Acquire this exact automation worktree preview lease and complete desktop, intermediate, mobile, light, and dark proof",
+        "preservedRef": "refs/heads/codex/p11-20260829-repair",
+        "preservedSha": "4b06080808465764e280fbfef3cd895abb093c24"
+      },
+      "previousEventHash": "9e591d0c67d5f46f8a9badbbe64a1ce2dd449ff3601d30e9d81eb1969d7d871e",
+      "eventHash": "1683f84304f77fdf4d1d9379f4481dc25abf2e7cad32bd5cca6bf5845c4aa21c"
     }
   ]
 }

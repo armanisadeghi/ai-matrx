@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "2026-08-29T161426Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-29T16:16:52.197Z",
-  "summary": "Candidate 81508305e1241e81803824dbe8cd27520390dc87 preserved for independent adversarial certification",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-29T16:26:03.128Z",
+  "summary": "Corrected candidate 4b060808 passed static adversarial checks but required visual certification is infrastructure blocked",
   "source": "2026-08-29T161426Z.json",
-  "eventHash": "7e4799dc2d503ec847d33452817b4080c625483f15f135207cb3a0dc9dd106e8"
+  "eventHash": "1683f84304f77fdf4d1d9379f4481dc25abf2e7cad32bd5cca6bf5845c4aa21c"
 }
