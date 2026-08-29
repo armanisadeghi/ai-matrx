@@ -41,6 +41,9 @@ configuration settings tab. This page duplicates none of their logic.
 
 ## Change Log
 
+- 2026-08-29 — Restored the authenticated client grant for `platform.knob_index` after the
+  client-door DDL guard correctly revoked `scfg_03`'s grant-before-registration ordering; the
+  repair migration asserts both the door declaration and effective EXECUTE privilege.
 - 2026-08-29 — Rewritten onto the canonical scoped-configuration stack: deleted the parallel
   mechanism (service.ts/types.ts over `override_scope`, `org_knob_override`/`user_knob_override`,
   `org_knob_set`/`user_knob_set` — all dropped from the live DB) and remounted the panel on
