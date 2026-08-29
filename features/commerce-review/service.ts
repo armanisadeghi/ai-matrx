@@ -50,7 +50,10 @@ interface CommerceReviewDatabase {
  *  generated Database type (see types.ts header for the removal path). */
 function db() {
   return (
-    createClient() as unknown as SupabaseClient<CommerceReviewDatabase, "commerce">
+    createClient() as unknown as SupabaseClient<
+      CommerceReviewDatabase,
+      "commerce"
+    >
   ).schema("commerce");
 }
 
@@ -179,7 +182,7 @@ export async function listTriageQueue(
       assetId: a.id,
       organizationId: a.organization_id,
       version: a.version,
-      pipelineState: a.pipeline_state,
+      pipelineState: a.pipeline_state as PipelineState,
       notes: a.notes ?? "",
       isGemCandidate: a.is_gem_candidate,
       estimatedValue: a.estimated_value,
@@ -211,20 +214,23 @@ export async function decideValueBucket(
   bucket: ValueBucket,
 ): Promise<void> {
   if (item.aiBucket !== bucket) {
-    const { error } = await db().from("human_correction").insert({
-      intake_asset_id: item.assetId,
-      organization_id: item.organizationId,
-      source_result_id: item.valuationResultId,
-      mandate_key: item.valuationMandateKey,
-      gate: "gate_1",
-      field_path: "value_bucket",
-      before_value: item.aiBucket,
-      after_value: bucket,
-      is_near_miss: item.aiBucket === "no_value" && bucket !== "no_value",
-    });
+    const { error } = await db()
+      .from("human_correction")
+      .insert({
+        intake_asset_id: item.assetId,
+        organization_id: item.organizationId,
+        source_result_id: item.valuationResultId,
+        mandate_key: item.valuationMandateKey,
+        gate: "gate_1",
+        field_path: "value_bucket",
+        before_value: item.aiBucket,
+        after_value: bucket,
+        is_near_miss: item.aiBucket === "no_value" && bucket !== "no_value",
+      });
     if (error) throw error;
   }
-  const nextState: PipelineState = bucket === "no_value" ? "recycled" : "drafting";
+  const nextState: PipelineState =
+    bucket === "no_value" ? "recycled" : "drafting";
   await guardedAssetWrite(item.assetId, item.version, {
     value_bucket: bucket,
     pipeline_state: nextState,
@@ -345,20 +351,16 @@ export async function reviewDraft(
         ? "drafting"
         : "rejected";
 
-  await guardedAssetWrite(
-    item.assetId,
-    item.version,
-    (current) => {
-      const attrs =
-        current.attributes &&
-        typeof current.attributes === "object" &&
-        !Array.isArray(current.attributes)
-          ? { ...(current.attributes as Record<string, Json>) }
-          : {};
-      for (const [path, value] of edits) attrs[`listing.${path}`] = value;
-      return { pipeline_state: nextState, attributes: attrs as Json };
-    },
-  );
+  await guardedAssetWrite(item.assetId, item.version, (current) => {
+    const attrs =
+      current.attributes &&
+      typeof current.attributes === "object" &&
+      !Array.isArray(current.attributes)
+        ? { ...(current.attributes as Record<string, Json>) }
+        : {};
+    for (const [path, value] of edits) attrs[`listing.${path}`] = value;
+    return { pipeline_state: nextState, attributes: attrs as Json };
+  });
 }
 
 // ── Attention queue ─────────────────────────────────────────────────────────
@@ -389,7 +391,9 @@ export async function listAttentionQueue(
   ]);
 
   const items: AttentionItem[] = recalls.map((r) => ({
-    kind: r.escalated_at ? ("recall_escalation" as const) : ("recall_disagreement" as const),
+    kind: r.escalated_at
+      ? ("recall_escalation" as const)
+      : ("recall_disagreement" as const),
     id: r.id,
     assetId: r.intake_asset_id,
     title: r.escalated_at
@@ -416,7 +420,9 @@ export async function listAttentionQueue(
   }
 
   return items.sort((a, b) => {
-    const esc = Number(b.kind === "recall_escalation") - Number(a.kind === "recall_escalation");
+    const esc =
+      Number(b.kind === "recall_escalation") -
+      Number(a.kind === "recall_escalation");
     if (esc !== 0) return esc;
     return b.createdAt.localeCompare(a.createdAt);
   });
@@ -506,8 +512,12 @@ async function guardedAssetWrite(
   assetId: string,
   expectedVersion: number,
   patch:
-    | Partial<Pick<IntakeAssetRow, "pipeline_state" | "value_bucket" | "attributes">>
-    | ((current: AssetRow) => Partial<
+    | Partial<
+        Pick<IntakeAssetRow, "pipeline_state" | "value_bucket" | "attributes">
+      >
+    | ((
+        current: AssetRow,
+      ) => Partial<
         Pick<IntakeAssetRow, "pipeline_state" | "value_bucket" | "attributes">
       >),
 ): Promise<void> {

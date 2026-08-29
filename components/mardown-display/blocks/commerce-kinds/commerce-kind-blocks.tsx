@@ -19,11 +19,11 @@ import {
   CircleDollarSign,
   ClipboardCheck,
   FilePenLine,
+  Gem,
   Microscope,
   PackageSearch,
   ScanSearch,
   ShieldCheck,
-  Sparkles,
   TriangleAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -400,7 +400,7 @@ export function ValueAssessmentBlock({
       slug="value_assessment"
       title="Value assessment"
       subtitle={text(value.bucket_reasoning)}
-      icon={Sparkles}
+      icon={Gem}
       value={value}
       isComplete={isComplete}
       stats={[{ label: "confidence", value: percent(value.confidence) ?? "—" }]}
