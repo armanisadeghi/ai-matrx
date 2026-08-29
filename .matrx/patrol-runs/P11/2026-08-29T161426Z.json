@@ -121,6 +121,20 @@
       ],
       "previousEventHash": "ea1978913851213500ecd79645bc5f3bdbf206c03eda7b311d8d9f6912d6714c",
       "eventHash": "8ef69be392ab04a932752c949ce31417440e1754d242ddcb832a7f92233785ce"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-29T16:22:53.216Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Corrected candidate 4b06080808465764e280fbfef3cd895abb093c24 preserved for fresh independent certification",
+      "evidence": [
+        "Candidate pushed to origin/codex/p11-20260829-repair",
+        "Detector now enumerates all feature PageHeader consumers plus named header/nav components",
+        "Post type-check PASS; core-only page-header strict PASS; full warnings unchanged; scroll-chain strict PASS"
+      ],
+      "previousEventHash": "8ef69be392ab04a932752c949ce31417440e1754d242ddcb832a7f92233785ce",
+      "eventHash": "9e591d0c67d5f46f8a9badbbe64a1ce2dd449ff3601d30e9d81eb1969d7d871e"
     }
   ]
 }
