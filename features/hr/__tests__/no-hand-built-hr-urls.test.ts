@@ -174,12 +174,16 @@ export function handBuiltHrUrls(): Violation[] {
         // The literal can start on a later line than the `href=` that introduced it.
         const literalLine =
           blanked.slice(0, match.index + match[0].length).split("\n").length;
-        const nearby = [
-          rawLines[literalLine - 3] ?? "",
-          rawLines[literalLine - 2] ?? "",
-          rawLines[literalLine - 1] ?? "",
-        ].join("\n");
-        if (nearby.includes(EXEMPT)) continue;
+        // The marker may sit on the line itself or anywhere in the comment block
+        // immediately above it — an exemption usually needs a couple of sentences
+        // to justify itself, and a one-line-only window would silently reject them.
+        let exempt = (rawLines[literalLine - 1] ?? "").includes(EXEMPT);
+        for (let above = literalLine - 2; above >= 0 && !exempt; above--) {
+          const text = (rawLines[above] ?? "").trim();
+          if (!/^(\/\/|\/\*|\*)/.test(text)) break;
+          exempt = text.includes(EXEMPT);
+        }
+        if (exempt) continue;
         found.push({
           file: rel,
           line: literalLine,
