@@ -2,13 +2,17 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-08-26`
+**Last updated:** `2026-08-29`
 
 ---
 
 ## Purpose
 
 The canonical store for finished transcripts (one row, one JSONB `segments` blob) plus the processor workspace that records, uploads, transcribes, and edits them. This doc is also the **core-storage contract** for the whole `/transcripts` ecosystem — read it before building or modifying any transcription surface.
+
+## Change log
+
+- 2026-08-29 — Transcript cards keep the title door and row Actions control at 44px below the desktop breakpoint, preserving the shared entity-list touch contract.
 
 ---
 

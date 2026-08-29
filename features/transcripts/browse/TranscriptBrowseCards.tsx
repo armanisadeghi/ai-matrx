@@ -75,7 +75,7 @@ export function TranscriptBrowseCards({
                     <Link
                       href={titleHref}
                       onClick={(e) => e.stopPropagation()}
-                      className="rounded-sm  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex min-h-11 min-w-11 items-center rounded-sm py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:inline lg:min-h-0 lg:py-0"
                     >
                       {row.title}
                     </Link>
@@ -128,7 +128,7 @@ export function TranscriptBrowseCards({
                   <button
                     type="button"
                     aria-label={`Actions for ${row.title}`}
-                    className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className="flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground lg:h-8 lg:w-8"
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
