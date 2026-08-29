@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P7",
   "runId": "01a00ab2-19eb-73c3-bb37-c2b6cacde9f9",
-  "state": "certifying",
-  "updatedAt": "2026-08-29T14:25:11.505Z",
-  "summary": "Exact two-file P7 candidate is ready for independent adversarial certification.",
+  "state": "certified",
+  "updatedAt": "2026-08-29T14:32:59.519Z",
+  "summary": "CERTIFIED exact two-file P7 candidate; no concrete batch-caused defect.",
   "source": "01a00ab2-19eb-73c3-bb37-c2b6cacde9f9.json",
-  "eventHash": "d9490610dc5415d9ef7a3529115ce09c1f1b8f4e7d135230ba1a051ba55f7ec8"
+  "eventHash": "e6b4b59ed0630c6f5f8bf8e2ca2df1668452155a32be6ec0d2d52bfa2ad549d8"
 }
