@@ -1024,6 +1024,21 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "The platform custom-field client kit (CustomFieldsSection / CustomFieldInput / customFieldColumns) is owned by lane L14 and does not exist yet; HR must not fork a competing editor.",
     surfaces: ["/hr/settings/fields — Add a custom field"],
   },
+  "commerce.store-connect-oauth": {
+    id: "commerce.store-connect-oauth",
+    label: "Connect eBay store",
+    owner: "commerce-review",
+    promise:
+      "Authorize your eBay store so listings, orders and inventory sync into the commerce pipeline.",
+    stage: "building",
+    // W11 ships the connect flow's UI shell; W6 of the ebay-store-management
+    // build owns the OAuth routes (authorize redirect + callback + the
+    // account-deletion endpoint) that fill it. Until those land, the Connect
+    // button is an honest tracked promise, not a dead click.
+    blockedBy:
+      "W6's eBay OAuth routes (authorize + callback) are in flight on the aidream side (common-docs/projects/ebay-store-management/BUILD.md).",
+    surfaces: ["/commerce/stores/connect — Connect eBay store"],
+  },
 };
 
 export function getComingSoon(id: string): ComingSoonEntry | undefined {
