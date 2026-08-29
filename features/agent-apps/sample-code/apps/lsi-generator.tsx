@@ -312,7 +312,6 @@ export default function LSIMarkdownGenerator({
             <Card className="border-warning/50 bg-warning/5">
               <CardContent className="py-3 px-4">
                 <p className="text-sm text-warning flex items-center gap-2">
-                  <span className="text-lg">⚠️</span>
                   Only {rateLimitInfo.remaining} free generations remaining.
                   <a
                     href="/sign-up"

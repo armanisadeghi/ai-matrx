@@ -321,7 +321,7 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
                   Allow Search Engine Indexing
                 </span>
                 <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
-                  ⚠️ Most pages should remain unindexed to prevent duplicate
+                  Most pages should remain unindexed to prevent duplicate
                   content issues.
                 </p>
               </div>
@@ -358,7 +358,7 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
         {state.savedPage && (
           <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-1">
             <div className="text-green-800 dark:text-green-300 text-sm text-center">
-              ✓ Metadata saved successfully!
+              Metadata saved successfully!
             </div>
           </div>
         )}

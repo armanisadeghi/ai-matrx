@@ -145,7 +145,7 @@ function ResultBar({
 
       {saveState.savedDocId ? (
         <span className="text-[10px] text-green-600 dark:text-green-400">
-          Saved as document ✓
+          Saved as document
         </span>
       ) : (
         <Button
