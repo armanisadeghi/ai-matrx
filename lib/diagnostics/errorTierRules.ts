@@ -137,14 +137,13 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
-    id: "hindsight-markdown-delimiter-recovery",
+    id: "guarded-markdown-delimiter-recovery",
     tier: "yellow",
     reason:
-      "Hindsight renders normalized transcripts that legitimately contain raw model and tool delimiter tokens. The shared guard already neutralizes malformed pairs before Markdown sees them, so keep the recovery visible locally without filing the successfully isolated transcript as a server repair job.",
-    addedAt: "2026-08-18",
+      "The shared renderer guard already neutralized the malformed delimiter before Markdown saw it. Keep the repaired content diagnostic visible locally; arbitrary model, tool, file, and transcript text is not an implementation failure for the durable repair queue.",
+    addedAt: "2026-08-29",
     match: {
       source: "markdown-delimiters",
-      routeIncludes: "/administration/agents/hindsight",
     },
   },
   {

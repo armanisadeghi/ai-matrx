@@ -132,21 +132,22 @@ describe("classifyTier", () => {
     );
 
     expect(c.tier).toBe("yellow");
-    expect(c.ruleId).toBe("hindsight-markdown-delimiter-recovery");
+    expect(c.ruleId).toBe("guarded-markdown-delimiter-recovery");
   });
 
-  it("keeps delimiter defects red outside the Hindsight transcript viewer", () => {
+  it("keeps successfully guarded agent-output delimiters local", () => {
     const c = classifyTier(
       captured({
         source: "markdown-delimiters",
-        route: "/chat/conversation-1",
+        route: "/agents/d47378f2-2d91-4dc9-aeef-17c6a2ec2300/run",
         relation: "markdown:BasicMarkdownContent",
         message:
           'Malformed math delimiters: a stray "$$" would have turned 649 chars of prose into a math span. Escaped it.',
       }),
     );
 
-    expect(c.tier).toBe("red");
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("guarded-markdown-delimiter-recovery");
   });
 
   it("keeps Supabase browser transport loss local across routes and RPCs", () => {

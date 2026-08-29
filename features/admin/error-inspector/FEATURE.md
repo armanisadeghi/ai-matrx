@@ -50,13 +50,12 @@ second symptom instead of deduping the incident.
 - **Markdown delimiter guard** — `lib/markdown/delimiter-guard.ts`,
   `reportDelimiterViolations()`, called from the markdown renderers
   (`BasicMarkdownContent`, `ConfigurableMarkdownContent`,
-  `MarkdownWithPlugins`). Source `markdown-delimiters`, red by default. Fires when a stray
+  `MarkdownWithPlugins`). Source `markdown-delimiters`, yellow. Fires when a stray
   `$$` or an unclosed `[` would have swallowed a section of an answer — the
-  guard neutralizes the delimiter so the message still renders, and the capture
-  is how the producer emitting broken content gets found. Hindsight is the
-  narrow exception: normalized transcripts legitimately contain raw model/tool
-  delimiter tokens, so a successfully guarded firing there stays yellow and
-  local while the same failure remains red everywhere else.
+  guard neutralizes the delimiter so the message still renders. Arbitrary model,
+  tool, file, and transcript content can legitimately contain delimiter tokens;
+  a successful guard firing stays visible locally but does not enter the durable
+  implementation-repair queue.
 - **Agent stream (the central artery)** — `lib/diagnostics/captureStreamError.ts`.
   `captureStreamEvent` is wired at the ONE chokepoint every stream consumer pulls
   events through: `parseNdjsonStream` (`lib/api/stream-parser.ts`). It captures
@@ -208,9 +207,10 @@ default: showing a failure to the user does not prove it expected or harmless.
 Supabase status-0 browser transport loss is yellow: wifi, sleep, and deployment
 handoffs are locally retryable client conditions, while every actual HTTP or
 database response stays red.
-Hindsight transcript delimiter recovery is yellow because the transcript is
-expected to preserve raw model/tool tokens and the renderer guard already
-neutralizes them; delimiter defects on every other route stay red.
+Successfully guarded delimiter recovery is yellow on every route: model, tool,
+file, and transcript text are arbitrary content, and the renderer has already
+isolated the malformed token before Markdown sees it. Renderer crashes or
+unguarded malformed output remain separate red failures.
 Resolved+handled AccessGate denials → yellow; the original unknown capture and
 all other resolved record states stay red. Vision Interview's exact Safari
 `Load failed` transport class is yellow because its drafts are durable, its room
@@ -323,6 +323,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-29 — **Successfully guarded Markdown delimiter repairs stay local.** `markdown-delimiters` is yellow on every route because arbitrary model/tool/file/transcript text can contain delimiter tokens and the renderer neutralizes them before Markdown sees them; renderer crashes and unguarded failures remain red.
 - 2026-08-27 — **Web Scraper domain failures are visible and singular.** The scraper can return HTTP 200 while an individual result row carries `success: false`; `useScraperApi` previously converted that row into local panel state, bypassing every rejection-based capture adapter. The new `scraper` adapter records that domain failure with its full diagnostics while standing down for HTTP/network and typed stream errors already captured centrally. Focused tests pin all three boundaries; live verification produced exactly one red Error Inspector row for a controlled failed target.
 - 2026-08-25 — **Shell icon registry failures are structured and singular.** A rejected shell icon now arrives as `shell-navigation` with `SHELL_ICON_UNREGISTERED`, `relation=icon:<name>`, the `CircleHelp` recovery, and its stack. The production console adapter promotes the tagged error instead of also creating a generic `console-error` symptom; focused tests pin both the typed branch and the ordinary console fallback.
 - 2026-08-25 — **DB kind render failures persist once.** `DbKindComponentErrorBoundary` already emits the actionable `react-render` capture with `relation=kind:<slug>` and the component stack; its adjacent `console.error` crossed the production console adapter and created a second generic `console-error` symptom for the same throw. The mirror is removed while the structured capture, generic-viewer recovery, and author incident report remain intact; the focused boundary test asserts one structured capture and no boundary-owned console mirror.
