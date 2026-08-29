@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 648 active entity tokens. A token here is FK-valid for
+// 650 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -150,6 +150,8 @@ export type EntityTypeToken =
   | "commerce_intake_artifact"
   | "commerce_intake_asset"
   | "commerce_intake_batch"
+  | "commerce_label_batch"
+  | "commerce_label_code"
   | "commerce_marketplace_account"
   | "commerce_marketplace_account_deletion_audit"
   | "commerce_marketplace_api_call"
@@ -861,6 +863,7 @@ export type ComponentEntityToken =
   | "commerce_human_correction"
   | "commerce_intake_artifact"
   | "commerce_intake_asset"
+  | "commerce_label_code"
   | "commerce_marketplace_site"
   | "commerce_marketplace_sync_run"
   | "commerce_prediction_outcome"
@@ -1225,6 +1228,8 @@ export type ScopeableEntityToken =
   | "commerce_intake_artifact"
   | "commerce_intake_asset"
   | "commerce_intake_batch"
+  | "commerce_label_batch"
+  | "commerce_label_code"
   | "commerce_marketplace_account"
   | "commerce_marketplace_account_deletion_audit"
   | "commerce_marketplace_api_call"
@@ -1763,6 +1768,7 @@ export type ListedEntityToken =
   | "browser_site_policy"
   | "commerce_cloud_sync_connection"
   | "commerce_intake_batch"
+  | "commerce_label_batch"
   | "commerce_marketplace_account"
   | "commerce_product"
   | "content_ir_kind"
@@ -1955,6 +1961,8 @@ export const ENTITY_TYPE_METADATA = {
   "commerce_intake_artifact": { token: "commerce_intake_artifact", schema: "commerce", table: "intake_artifact", label: "Intake Artifact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_intake_asset": { token: "commerce_intake_asset", schema: "commerce", table: "intake_asset", label: "Intake Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_intake_batch": { token: "commerce_intake_batch", schema: "commerce", table: "intake_batch", label: "Intake Batch", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_label_batch": { token: "commerce_label_batch", schema: "commerce", table: "label_batch", label: "Label Batch", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_label_code": { token: "commerce_label_code", schema: "commerce", table: "label_code", label: "Label Code", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_marketplace_account": { token: "commerce_marketplace_account", schema: "commerce", table: "marketplace_account", label: "Marketplace Account", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_marketplace_account_deletion_audit": { token: "commerce_marketplace_account_deletion_audit", schema: "commerce", table: "marketplace_account_deletion_audit", label: "Marketplace Account Deletion Audit", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_marketplace_api_call": { token: "commerce_marketplace_api_call", schema: "commerce", table: "marketplace_api_call", label: "Marketplace API Call", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2607,6 +2615,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "commerce_intake_artifact",
   "commerce_intake_asset",
   "commerce_intake_batch",
+  "commerce_label_batch",
+  "commerce_label_code",
   "commerce_marketplace_account",
   "commerce_marketplace_account_deletion_audit",
   "commerce_marketplace_api_call",

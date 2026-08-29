@@ -13345,6 +13345,139 @@ export type Database = {
         }
         Relationships: []
       }
+      label_batch: {
+        Row: {
+          code_prefix: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          printed_at: string | null
+          purpose: string | null
+          requested_count: number
+          state: string
+          template_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          code_prefix?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          printed_at?: string | null
+          purpose?: string | null
+          requested_count: number
+          state?: string
+          template_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          code_prefix?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          printed_at?: string | null
+          purpose?: string | null
+          requested_count?: number
+          state?: string
+          template_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      label_code: {
+        Row: {
+          asset_identifier_id: string | null
+          assigned_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          intake_asset_id: string | null
+          label_batch_id: string
+          metadata: Json
+          organization_id: string
+          state: string
+          updated_at: string
+          updated_by: string | null
+          value: string
+          version: number
+          void_reason: string | null
+        }
+        Insert: {
+          asset_identifier_id?: string | null
+          assigned_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intake_asset_id?: string | null
+          label_batch_id: string
+          metadata?: Json
+          organization_id: string
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          value: string
+          version?: number
+          void_reason?: string | null
+        }
+        Update: {
+          asset_identifier_id?: string | null
+          assigned_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intake_asset_id?: string | null
+          label_batch_id?: string
+          metadata?: Json
+          organization_id?: string
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string
+          version?: number
+          void_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "label_code_asset_identifier_id_fkey"
+            columns: ["asset_identifier_id"]
+            isOneToOne: false
+            referencedRelation: "asset_identifier"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_code_intake_asset_id_fkey"
+            columns: ["intake_asset_id"]
+            isOneToOne: false
+            referencedRelation: "intake_asset"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_code_label_batch_id_fkey"
+            columns: ["label_batch_id"]
+            isOneToOne: false
+            referencedRelation: "label_batch"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketplace_account: {
         Row: {
           advertising_eligibility: Json
