@@ -156,10 +156,13 @@ export default function OrgApiKeysPage() {
           ]}
         />
       </PageHeader>
-      <div className="h-full overflow-y-auto">
-        <div className="mx-auto max-w-4xl space-y-6 p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm flex-1">
+      {/* Scroll is owned by .shell-main (the OrgManage convention) — no nested
+          overflow container, so content starts below the glass header and the
+          action button stays clickable. */}
+      <div>
+        <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">
+          <div className="space-y-3">
+            <div className="rounded-lg border border-border bg-muted/40 p-4 text-sm">
               <p className="font-medium">
                 Machine credentials for this organization.
               </p>
@@ -179,10 +182,12 @@ export default function OrgApiKeysPage() {
               )}
             </div>
             {isOwner && (
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                New key
-              </Button>
+              <div className="flex justify-end">
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  New key
+                </Button>
+              </div>
             )}
           </div>
 
