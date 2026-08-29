@@ -45,7 +45,7 @@ import {
   BottomSheet,
   BottomSheetBody,
   BottomSheetHeader,
-} from "@/components/official/bottom-sheet/BottomSheet";
+} from "@ai-matrx/design-system";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   NAV_ITEM_SELECTED,

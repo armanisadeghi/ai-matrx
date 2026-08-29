@@ -15,7 +15,7 @@ import React from "react";
 import {
   BottomSheet,
   BottomSheetHeader,
-} from "@/components/official/bottom-sheet/BottomSheet";
+} from "@ai-matrx/design-system";
 
 export interface ContextSheetProps {
   open: boolean;

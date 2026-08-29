@@ -82,7 +82,7 @@ import {
   BottomSheet,
   BottomSheetBody,
   BottomSheetHeader,
-} from "@/components/official/bottom-sheet/BottomSheet";
+} from "@ai-matrx/design-system";
 
 interface ImageStudioShellProps {
   /** Optional default folder for Save-to-library. */

@@ -19,7 +19,7 @@
  */
 
 import { Lock, PenLine } from "lucide-react";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { SegmentedControl } from "@ai-matrx/design-system";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import type {
   SurfaceWritePolicy,

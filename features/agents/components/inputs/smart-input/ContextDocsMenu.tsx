@@ -32,7 +32,7 @@ import {
   BottomSheet,
   BottomSheetHeader,
   BottomSheetBody,
-} from "@/components/official/bottom-sheet/BottomSheet";
+} from "@ai-matrx/design-system";
 import { INPUT_BUTTON_IDLE_TINT } from "./InputActionButtons";
 import { ActiveContextTree } from "@/features/scopes/components/active-context/ActiveContextTree";
 import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";

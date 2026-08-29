@@ -26,7 +26,7 @@ import {
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem, rowsToCsv } from "@/components/agent-copy/export";
 import { Badge } from "@/components/ui/badge";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { SegmentedControl } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {

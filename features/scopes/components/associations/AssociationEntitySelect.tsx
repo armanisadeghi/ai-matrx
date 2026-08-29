@@ -47,7 +47,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { EditableLabel } from "@/components/official/item/EditableLabel";
+import { EditableLabel } from "@ai-matrx/design-system";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import { cn } from "@/utils/cn";

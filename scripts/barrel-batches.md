@@ -42,7 +42,7 @@ For every `index.ts` in your assigned batch:
 
 ## Batch 3 (21–30)
 ```
-21. components/official/bottom-sheet/index.ts
+21. ~~components/official/bottom-sheet/index.ts~~ (directory deleted 2026-08-29 — BottomSheet family moved to @ai-matrx/design-system)
 22. components/official/content-editor/index.ts
 23. components/official/image-cropper/index.ts
 24. components/official/mobile-action-bar/index.ts

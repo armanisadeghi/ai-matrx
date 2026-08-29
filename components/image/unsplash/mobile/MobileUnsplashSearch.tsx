@@ -8,7 +8,7 @@ import {
   BottomSheet,
   BottomSheetBody,
   BottomSheetHeader,
-} from '@/components/official/bottom-sheet/BottomSheet';
+} from "@ai-matrx/design-system";
 import { Check, SlidersHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

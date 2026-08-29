@@ -16,7 +16,7 @@
  */
 
 import React from "react";
-import { EditableLabel } from "@/components/official/item/EditableLabel";
+import { EditableLabel } from "@ai-matrx/design-system";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { MoreHorizontalTapButton } from "@ai-matrx/tap-target/buttons";
 import { TapTargetButtonGroup } from "@ai-matrx/tap-target";

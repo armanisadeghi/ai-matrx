@@ -15,7 +15,7 @@
 // lie that trains people to ignore the number.
 
 import { useState } from "react";
-import { useScrollFade } from "@/components/official/scroll-fade/useScrollFade";
+import { useScrollFade } from "@ai-matrx/design-system";
 import { SlidersHorizontal, RotateCcw, Star, ArrowUpDown } from "lucide-react";
 import {
   Popover,

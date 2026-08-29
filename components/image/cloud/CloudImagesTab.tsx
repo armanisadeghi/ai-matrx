@@ -49,7 +49,7 @@ import {
   BottomSheet,
   BottomSheetBody,
   BottomSheetHeader,
-} from "@/components/official/bottom-sheet/BottomSheet";
+} from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import EmptyStateCard from "@/components/official/cards/EmptyStateCard";
 import { FloatingSelectionToolbar } from "@/components/shared/FloatingSelectionToolbar";

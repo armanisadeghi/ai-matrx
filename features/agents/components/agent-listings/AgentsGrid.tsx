@@ -10,7 +10,7 @@ import {
   BottomSheet,
   BottomSheetHeader,
   BottomSheetBody,
-} from "@/components/official/bottom-sheet/BottomSheet";
+} from "@ai-matrx/design-system";
 import {
   Check,
   ChevronRight,

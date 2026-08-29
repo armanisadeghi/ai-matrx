@@ -34,7 +34,7 @@
 import { useRef, useState } from "react";
 import { Check, Search } from "lucide-react";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
-import { EditableLabel } from "@/components/official/item/EditableLabel";
+import { EditableLabel } from "@ai-matrx/design-system";
 import {
   MoreHorizontalTapButton,
   SearchTapButton,

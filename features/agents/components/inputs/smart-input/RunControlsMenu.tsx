@@ -44,7 +44,7 @@ import { useDialogContainer } from "@/components/ui/dialog";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { TabbedBottomSheet } from "@/components/official/bottom-sheet/TabbedBottomSheet";
+import { TabbedBottomSheet } from "@ai-matrx/design-system";
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
 import { PlusAttachMenu } from "./PlusAttachMenu";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";

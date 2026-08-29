@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   BottomSheet,
   BottomSheetBody,
-} from "@/components/official/bottom-sheet/BottomSheet";
+} from "@ai-matrx/design-system";
 import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import type {
   ShellNavChild,

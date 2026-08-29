@@ -25,7 +25,7 @@ import { useState } from "react";
 import { ExternalLink, Layers, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { SegmentedControl } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { BindingsPanel } from "./BindingsPanel";
 import { CompletenessStrip } from "./CompletenessStrip";

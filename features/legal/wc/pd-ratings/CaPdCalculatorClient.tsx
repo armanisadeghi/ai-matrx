@@ -22,7 +22,7 @@ import {
   BottomSheet,
   BottomSheetHeader,
   BottomSheetBody,
-} from "@/components/official/bottom-sheet/BottomSheet";
+} from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectIsAuthenticated,

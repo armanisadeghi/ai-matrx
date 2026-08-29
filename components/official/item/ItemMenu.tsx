@@ -15,7 +15,7 @@
  */
 
 import { Fragment, useState, type ReactNode } from "react";
-import { useScrollFade } from "@/components/official/scroll-fade/useScrollFade";
+import { useScrollFade } from "@ai-matrx/design-system";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";

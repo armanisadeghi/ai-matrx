@@ -1,12 +1,13 @@
 /**
- * Item system — shared schema + prop types for ItemRow, ItemMenu, EditableLabel.
+ * Item system — shared schema + prop types for ItemRow and ItemMenu.
+ * (EditableLabel moved to @ai-matrx/design-system, 2026-08-29.)
  *
  * Pure types (no JSX). The menu config is a structured `sections` array with a
  * discriminated union of entries (`kind`), so ordering is explicit, section
  * labels are first-class, separators fall out of section boundaries, and
  * submenus nest naturally.
  *
- * Consumed by ItemMenu.tsx, ItemMenuDrawer.tsx, ItemRow.tsx, EditableLabel.tsx.
+ * Consumed by ItemMenu.tsx, ItemMenuDrawer.tsx, ItemRow.tsx.
  */
 
 import type { LucideIcon } from "lucide-react";
@@ -234,45 +235,6 @@ export interface ItemContextMenuProps extends ItemMenuSurface {
     config: ItemMenuConfigInput;
     context?: ResolvedContextMenuContext | null;
   } | null;
-}
-
-// ── EditableLabel props ─────────────────────────────────────────────────────
-
-export type EditableLabelCommitMode = "optimistic" | "await";
-export type EditableLabelActivation = "click" | "doubleClick" | "controlled";
-
-export interface EditableLabelProps {
-  value: string;
-  /**
-   * Commit handler. optimistic (default): edit mode exits immediately, the
-   * promise is fire-and-forget (owners do optimistic update + revert + toast).
-   * await: input disables with a spinner until the promise resolves; a
-   * rejection keeps edit mode open to retry.
-   */
-  onCommit: (next: string) => void | Promise<void>;
-  commitMode?: EditableLabelCommitMode;
-  /** Return an error message to block the commit (shown under the input). */
-  validate?: (next: string) => string | null;
-  /** Used when the trimmed draft is empty. Undefined → empty cancels. */
-  emptyFallback?: string;
-  maxLength?: number; // default 120
-  /**
-   * "click"/"doubleClick" — internal edit state (headers). "controlled" — host
-   * owns `editing`; EditableLabel renders ONLY the input when editing.
-   */
-  activation?: EditableLabelActivation;
-  editing?: boolean; // controlled mode
-  /** Edit-state notifications. Controlled mode: the ONLY state channel.
-   *  Uncontrolled modes: fired as a notification (layout hooks etc.). */
-  onEditingChange?: (editing: boolean) => void;
-  selectOnEdit?: boolean; // default true
-  placeholder?: string;
-  /** Accessible name, e.g. "Session title". Default "Name". */
-  ariaLabel?: string;
-  truncate?: boolean; // display mode, default true
-  className?: string; // both modes
-  displayClassName?: string;
-  inputClassName?: string;
 }
 
 // ── ItemRow props ───────────────────────────────────────────────────────────

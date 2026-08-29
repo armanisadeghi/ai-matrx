@@ -360,7 +360,7 @@ export const componentList: ComponentEntry[] = [
   {
     id: "editable-label",
     name: "Editable Label",
-    path: "components/official/item/EditableLabel.tsx",
+    path: "@ai-matrx/design-system (npm package)",
     description:
       "Inline rename-in-place text: click or double-click to edit, Enter/blur commits, Esc cancels. Used by Item Row and by header/title surfaces.",
     categories: ["inputs", "text", "interactive"],

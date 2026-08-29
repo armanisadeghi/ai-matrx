@@ -17,7 +17,7 @@
 import { useMemo, useState } from "react";
 import { Building2, Globe, LayoutGrid, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { SegmentedControl } from "@ai-matrx/design-system";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { cn } from "@/lib/utils";

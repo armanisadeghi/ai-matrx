@@ -13,7 +13,7 @@
  * overshoot bounce (fallback: an overshooting cubic-bezier where `linear()`
  * is unsupported), snapping instantly under `prefers-reduced-motion`.
  *
- * Deliberately NOT built on `components/ui/segmented-control.tsx`: that
+ * Deliberately NOT built on `SegmentedControl` from `@ai-matrx/design-system`: that
  * primitive has no animated thumb, uses the light-theme token palette, and
  * cannot model the mode+action mix — this bar lives on camera chrome (white
  * on the live frame, matching the rest of the capture overlay).

@@ -42,7 +42,7 @@ import {
 import {
   ScoreRing,
   scoreAccentBgClasses,
-} from "@/components/official/ScoreRing";
+} from "@ai-matrx/design-system";
 
 const STATUS_META: Record<
   string,

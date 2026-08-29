@@ -27,7 +27,7 @@ import {
   DrawerDescription,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { BottomSheet } from "@/components/official/bottom-sheet/BottomSheet";
+import { BottomSheet } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 jest.mock("@/hooks/use-mobile", () => ({

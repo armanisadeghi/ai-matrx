@@ -27,7 +27,7 @@ import {
   BottomSheet,
   BottomSheetBody,
   BottomSheetHeader,
-} from "@/components/official/bottom-sheet/BottomSheet";
+} from "@ai-matrx/design-system";
 import {
   groupPendingAsks,
   selectActivePendingAsksForConversation,

@@ -9,7 +9,7 @@
 
 import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { EditableLabel } from "@/components/official/item/EditableLabel";
+import { EditableLabel } from "@ai-matrx/design-system";
 import { updateSessionThunk } from "../redux/thunks";
 import { NEW_SESSION_DEFAULT_TITLE } from "../constants";
 

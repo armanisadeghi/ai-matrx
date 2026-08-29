@@ -22,7 +22,7 @@ import {
   BottomSheet,
   BottomSheetBody,
   BottomSheetHeader,
-} from "@/components/official/bottom-sheet/BottomSheet";
+} from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { ResponsiveGallery } from "@/components/image/ResponsiveGallery";
 import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";

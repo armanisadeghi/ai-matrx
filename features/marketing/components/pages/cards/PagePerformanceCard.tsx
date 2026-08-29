@@ -14,7 +14,7 @@ import {
   Unplug,
   Wrench,
 } from "lucide-react";
-import { ScoreRing } from "@/components/official/ScoreRing";
+import { ScoreRing } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";

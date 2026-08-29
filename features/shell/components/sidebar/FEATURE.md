@@ -82,6 +82,7 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 
 ## Change log
 
+- 2026-08-29 — C9 adoption: `BottomSheet`/`TabbedBottomSheet`, `EditableLabel`, `SegmentedControl`, `ScoreRing`, and `useScrollFade` now import from `@ai-matrx/design-system` 0.2.0 (npm); the local originals under `components/official/` and `components/ui/segmented-control.tsx` are deleted. Behavior identical (verbatim ports; host keeps the glass/pb-safe/matrx-scroll-fade CSS contracts in `app/globals.css`).
 - `2026-08-25` — Codex: registered the mobile drawer's `ChevronLeft` Back icon, made `ShellIcon` accept only closed-registry names so first-party omissions fail type-check, and preserved external invalid-icon fallback events as structured `shell-navigation` diagnostics instead of generic console errors.
 - `2026-08-24` — Codex: replaced the glass left mobile sheet and inline primary-group accordions with a solid, searchable, fixed-height bottom drawer with drill-in and Back navigation.
 - `2026-08-15` — Codex: added the prominent admin-only new-tab Launchpad door to the persistent sidebar footer.

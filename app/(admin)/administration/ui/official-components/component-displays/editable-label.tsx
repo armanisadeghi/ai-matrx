@@ -4,13 +4,13 @@ import React, { useState } from "react";
 import { toast } from "@/lib/toast";
 import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
-import { EditableLabel } from "@/components/official/item/EditableLabel";
+import { EditableLabel } from "@ai-matrx/design-system";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
 }
 
-const code = `import { EditableLabel } from "@/components/official/item/EditableLabel";
+const code = `import { EditableLabel } from "@ai-matrx/design-system";
 
 // Click to edit (header titles)
 <EditableLabel value={title} onCommit={setTitle} />

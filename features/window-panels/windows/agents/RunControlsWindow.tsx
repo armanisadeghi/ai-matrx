@@ -20,7 +20,7 @@ import { useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { TabbedBottomSheet } from "@/components/official/bottom-sheet/TabbedBottomSheet";
+import { TabbedBottomSheet } from "@ai-matrx/design-system";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import {
   RunControlsTabPanel,

@@ -28,7 +28,7 @@ import {
   BottomSheet,
   BottomSheetHeader,
   BottomSheetBody,
-} from "@/components/official/bottom-sheet/BottomSheet";
+} from "@ai-matrx/design-system";
 import MobileNoteToolbar from "./MobileNoteToolbar";
 import { NoteContextSection } from "../NoteContextSection";
 import { CreateFolderDialog } from "../CreateFolderDialog";
