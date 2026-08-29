@@ -44,9 +44,14 @@ import {
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 import { openFilePreview } from "./openFilePreview";
+import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
+import { FILE_RENDER_FIELDS } from "@/features/files/redux/file-hydration";
+import type { FileIdentityHint } from "@/features/files/types";
 
 export interface FileResourceChipProps {
   fileId: string;
+  /** Known message/API fields; Redux fetches only missing render metadata. */
+  fileHint?: FileIdentityHint;
   /** When set, renders a small ✕ remove button. Omit to make the chip read-only. */
   onRemove?: () => void;
   /** Override the primary click (for example, open the shared attachment drawer). */
@@ -67,12 +72,17 @@ export interface FileResourceChipProps {
  */
 export function FileResourceChip({
   fileId,
+  fileHint,
   onRemove,
   onOpen,
   size = "sm",
   nameOverride,
   className,
 }: FileResourceChipProps) {
+  useEnsureCloudFile(fileId, {
+    fields: FILE_RENDER_FIELDS,
+    hint: fileHint,
+  });
   const file = useAppSelector((s) => selectFileById(s, fileId));
 
   // Fallback rendering when the file isn't in the slice. We still let the

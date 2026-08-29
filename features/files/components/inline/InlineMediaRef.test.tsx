@@ -8,6 +8,8 @@ import { createRoot, type Root } from "react-dom/client";
 
 const mockUseFileAs = jest.fn();
 const mockUseFileBlob = jest.fn();
+const mockUseEnsureCloudFile = jest.fn();
+let selectedFile: Record<string, unknown> | undefined;
 
 jest.mock("next/image", () => ({
   __esModule: true,
@@ -26,6 +28,18 @@ jest.mock("@/features/files/handler/hooks/useFileAs", () => ({
 
 jest.mock("@/features/files/hooks/useFileBlob", () => ({
   useFileBlob: (...args: unknown[]) => mockUseFileBlob(...args),
+}));
+
+jest.mock("@/features/files/hooks/useEnsureCloudFile", () => ({
+  useEnsureCloudFile: (...args: unknown[]) => mockUseEnsureCloudFile(...args),
+}));
+
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppSelector: () => selectedFile,
+}));
+
+jest.mock("@/features/files/redux/selectors", () => ({
+  selectFileById: jest.fn(),
 }));
 
 jest.mock("@/features/audio/useOutputSinkRef", () => ({
@@ -50,6 +64,7 @@ describe("InlineMediaRef canvas transport", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    selectedFile = undefined;
     mockUseFileAs.mockReturnValue({
       result: "https://cdn.matrxserver.com/user/file",
       status: "ready",
@@ -95,19 +110,34 @@ describe("InlineMediaRef canvas transport", () => {
     );
   });
 
-  it("keeps ordinary previews on the universal display URL path", () => {
+  it("automatically keeps ordinary owned previews on the authenticated ID path", () => {
     act(() => {
       root.render(<InlineMediaRef ref={FILE_ID} alt="Screenshot" />);
     });
 
-    expect(mockUseFileBlob).toHaveBeenCalledWith(null);
-    expect(mockUseFileAs).toHaveBeenCalledWith(
-      { kind: "file_id", fileId: FILE_ID },
-      { kind: "html_src" },
-    );
+    expect(mockUseFileBlob).toHaveBeenCalledWith(FILE_ID);
+    expect(mockUseFileAs).toHaveBeenCalledWith(null, { kind: "html_src" });
     const image = container.querySelector("img");
     expect(image?.getAttribute("src")).toBe(
-      "https://cdn.matrxserver.com/user/file",
+      "blob:https://manage.aimatrx.com/canvas-safe",
+    );
+  });
+
+  it("uses a permanent CDN URL only for an explicitly public file", () => {
+    selectedFile = {
+      visibility: "public",
+      cdnUrl: "https://cdn.matrxserver.com/public/file?v=abc123",
+      publicUrl: null,
+    };
+
+    act(() => {
+      root.render(<InlineMediaRef ref={FILE_ID} alt="Public screenshot" />);
+    });
+
+    expect(mockUseFileBlob).toHaveBeenCalledWith(null);
+    expect(mockUseFileAs).toHaveBeenCalledWith(null, { kind: "html_src" });
+    expect(container.querySelector("img")?.getAttribute("src")).toBe(
+      "https://cdn.matrxserver.com/public/file?v=abc123",
     );
   });
 });

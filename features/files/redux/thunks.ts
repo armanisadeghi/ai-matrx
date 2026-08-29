@@ -23,7 +23,11 @@ import type { CloudFilesState } from "@/features/files/types";
 type StateWithCloudFiles = { cloudFiles: CloudFilesState };
 type AppDispatch = ThunkDispatch<StateWithCloudFiles, unknown, UnknownAction>;
 import { supabase } from "@/utils/supabase/client";
-import { filesDb, FILE_VERSIONS_TABLE_COLUMNS } from "@/features/files/filesDb";
+import {
+  filesDb,
+  FILES_TABLE_COLUMNS,
+  FILE_VERSIONS_TABLE_COLUMNS,
+} from "@/features/files/filesDb";
 import { pgErrorToError } from "@/utils/supabase/pg-error";
 
 import * as Files from "@/features/files/api/files";
@@ -47,6 +51,7 @@ import { newRequestId } from "@/lib/python-client";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   apiFileRecordToCloudFile,
+  dbRowToCloudFile,
   dbRowToCloudFilePermission,
   dbRowToCloudFileVersion,
   dbRowToCloudFolder,
@@ -54,6 +59,15 @@ import {
   parseCloudTreeRows,
   rpcPermissionRowToCloudFilePermission,
 } from "./converters";
+import {
+  areCloudFileFieldsLoaded,
+  FILE_DB_RECORD_FIELDS,
+  FILE_RENDER_TABLE_COLUMNS,
+  fileHintToCloudFilePartial,
+  needsOnlyRenderFields,
+  renderRowToCloudFilePartial,
+  type CloudFileHydrationField,
+} from "./file-hydration";
 import {
   registerRequest,
   releaseRequest,
@@ -122,6 +136,7 @@ import type {
   RevokePermissionArg,
   UpdateFileMetadataArg,
   UploadFilesArg,
+  FileIdentityHint,
 } from "@/features/files/types";
 
 type ThunkApi = { dispatch: AppDispatch; state: StateWithCloudFiles };
@@ -129,6 +144,92 @@ type ThunkApi = { dispatch: AppDispatch; state: StateWithCloudFiles };
 // ---------------------------------------------------------------------------
 // Reads
 // ---------------------------------------------------------------------------
+
+export interface EnsureCloudFileFieldsArg {
+  fileId: string;
+  fields?: readonly CloudFileHydrationField[];
+  hint?: FileIdentityHint;
+}
+
+export type EnsureCloudFileFieldsOutcome = "ready" | "missing";
+
+const fileFieldHydrationInFlight = new Map<
+  string,
+  Promise<(Partial<CloudFile> & Pick<CloudFile, "id">) | null>
+>();
+
+async function fetchCloudFileFields(
+  fileId: string,
+  fields: readonly CloudFileHydrationField[],
+): Promise<(Partial<CloudFile> & Pick<CloudFile, "id">) | null> {
+  const key = `${fileId}:${[...fields].sort().join(",")}`;
+  const existing = fileFieldHydrationInFlight.get(key);
+  if (existing) return existing;
+
+  const request = (async () => {
+    if (needsOnlyRenderFields(fields)) {
+      const { data, error } = await filesDb(supabase)
+        .from("files")
+        .select(FILE_RENDER_TABLE_COLUMNS)
+        .eq("id", fileId)
+        .is("deleted_at", null)
+        .maybeSingle();
+      if (error) throw pgErrorToError(error);
+      return data ? renderRowToCloudFilePartial(data) : null;
+    }
+
+    const { data, error } = await filesDb(supabase)
+      .from("files")
+      .select(FILES_TABLE_COLUMNS)
+      .eq("id", fileId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) throw pgErrorToError(error);
+    return data ? dbRowToCloudFile(data) : null;
+  })().finally(() => fileFieldHydrationInFlight.delete(key));
+
+  fileFieldHydrationInFlight.set(key, request);
+  return request;
+}
+
+/**
+ * Ensure a durable file id has the requested canonical fields in Redux.
+ * Known hints merge first, so the network reads only what is actually absent.
+ */
+export const ensureCloudFileFields = createAsyncThunk<
+  EnsureCloudFileFieldsOutcome,
+  EnsureCloudFileFieldsArg,
+  ThunkApi
+>(
+  "cloudFiles/ensureCloudFileFields",
+  async (
+    { fileId, fields = FILE_DB_RECORD_FIELDS, hint },
+    { dispatch, getState },
+  ) => {
+    dispatch(upsertFile(fileHintToCloudFilePartial(fileId, hint)));
+
+    if (
+      areCloudFileFieldsLoaded(getFileFromState(getState(), fileId), fields)
+    ) {
+      return "ready";
+    }
+
+    dispatch(setFileLoading({ id: fileId, loading: true }));
+    dispatch(setFileError({ id: fileId, error: null }));
+    try {
+      const partial = await fetchCloudFileFields(fileId, fields);
+      if (!partial) return "missing";
+      dispatch(upsertFile(partial));
+      return "ready";
+    } catch (error) {
+      const normalized = pgErrorToError(error);
+      dispatch(setFileError({ id: fileId, error: normalized.message }));
+      throw normalized;
+    } finally {
+      dispatch(setFileLoading({ id: fileId, loading: false }));
+    }
+  },
+);
 
 /**
  * Loads the full tree for the current user via the get_user_file_tree

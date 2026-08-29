@@ -54,7 +54,8 @@ export interface MediaThumbnailProps {
     | "publicUrl"
     | "thumbnailUrl"
     | "visibility"
-  >;
+  > &
+    Partial<Pick<CloudFile, "cdnUrl">>;
   /** Pixel size for the icon fallback. Image/video fill their container. */
   iconSize?: number;
   /** Aspect ratio classes applied to the container, e.g. "aspect-[4/3]". */
@@ -163,7 +164,8 @@ export function MediaThumbnail({
   const needsBytes =
     allowSourceFallback &&
     (strategy === "image" || strategy === "video-poster");
-  const cdnUrl = needsBytes ? (file.publicUrl ?? null) : null;
+  const cdnUrl =
+    needsBytes && isPublic ? (file.cdnUrl ?? file.publicUrl ?? null) : null;
   const cachedOriginalUrl =
     !isPublic && needsBytes ? (getCached(file.id)?.url ?? null) : null;
   const assetRequestPending = useAssetThumb && !asset && !assetError;

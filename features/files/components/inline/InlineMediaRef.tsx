@@ -4,9 +4,9 @@
  * The canonical inline media renderer. Pass a `MediaRef` (or a plain URL,
  * or just a cld_files `fileId`), get back a correctly-sized `<img>` /
  * `<video>` / `<audio>` element. URL resolution flows through the
- * universal handler so signed URLs come from the lazy URL cache (minted
- * once, reused while valid), public files prefer the CDN URL, and share
- * links route through Python.
+ * universal handler. A durable file ID automatically uses authenticated
+ * bytes; an explicitly public file may use its permanent CDN URL. External
+ * URLs and share links still route through the universal handler.
  *
  * Use this everywhere an `<img src={file.publicUrl ?? someSignedUrl}>`
  * pattern would otherwise appear. The component owns the URL lifecycle;
@@ -42,6 +42,10 @@ import {
 } from "lucide-react";
 import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
+import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
+import { FILE_RENDER_FIELDS } from "@/features/files/redux/file-hydration";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectFileById } from "@/features/files/redux/selectors";
 import { useOutputSinkRef } from "@/features/audio/useOutputSinkRef";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 import { useDurableSrc } from "@/features/files/handler/hooks/useDurableSrc";
@@ -567,21 +571,30 @@ export function InlineMediaRef({
   const source = useMemo(() => toFileSource(ref), [ref]);
   const sourceFileId =
     source && source.kind === "file_id" ? source.fileId : null;
-  const needsPixelReadableBlob = Boolean(crossOrigin && sourceFileId);
+  useEnsureCloudFile(sourceFileId, { fields: FILE_RENDER_FIELDS });
+  const file = useAppSelector((state) =>
+    sourceFileId ? selectFileById(state, sourceFileId) : undefined,
+  );
+  const elementType = inferElementType(ref, as);
+  const permanentPublicUrl =
+    file?.visibility === "public" ? (file.cdnUrl ?? file.publicUrl) : null;
+  const needsAuthenticatedBlob = Boolean(
+    sourceFileId &&
+    !permanentPublicUrl &&
+    (elementType === "img" || crossOrigin),
+  );
 
-  // Canvas consumers cannot use an authenticated download URL as <img src>
-  // (the element cannot attach our bearer token), and the CDN deliberately
-  // does not promise CORS headers. Reuse the canonical authenticated byte
-  // cache: it downloads by file ID and exposes a same-origin blob: URL whose
-  // pixels marker.js/canvas may safely read.
+  // Owned image pixels use the durable id through the bearer-authenticated
+  // blob cache. A verified permanent public CDN URL is the sole direct-url
+  // exception. This is automatic: callers never select auth transport.
   const { url: pixelReadableUrl, error: pixelReadableError } = useFileBlob(
-    needsPixelReadableBlob ? sourceFileId : null,
+    needsAuthenticatedBlob ? sourceFileId : null,
   );
   // Canvas-capable consumers need a URL whose bytes remain readable after
   // load. File IDs use the authenticated blob cache above. External URLs
   // still flow through the universal handler's fetchable transport.
   const { result: resolvedUrl, error: resolveError } = useFileAs(
-    needsPixelReadableBlob ? null : source,
+    needsAuthenticatedBlob || permanentPublicUrl ? null : source,
     crossOrigin ? { kind: "fetchable_url" } : { kind: "html_src" },
   );
   // Routes <audio>/<video> to the user's chosen output device (setSinkId) and
@@ -615,8 +628,8 @@ export function InlineMediaRef({
     onEnded: () => setIsMediaPlaying(false),
   };
   const durableSrc = useDurableSrc(
-    pixelReadableUrl ?? resolvedUrl,
-    !crossOrigin ? (sourceFileId ?? undefined) : undefined,
+    permanentPublicUrl ?? pixelReadableUrl ?? resolvedUrl,
+    !needsAuthenticatedBlob ? (sourceFileId ?? undefined) : undefined,
     onError,
   );
   const url = durableSrc.src || null;
@@ -624,8 +637,6 @@ export function InlineMediaRef({
     pixelReadableError ?? resolveError?.message ?? null;
   const dimensions = resolveDimensions(size);
   const isFill = dimensions === "fill";
-  const elementType = inferElementType(ref, as);
-
   const hasLoadError = durableSrc.failed;
   const handleLoadError = durableSrc.onError;
 

@@ -90,6 +90,11 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-29 — ID-backed media hydrates only the canonical fields it lacks.** Message/API hints
+  seed the shared `cloudFiles` record, `_loadedFields` distinguishes absent values from loaded
+  nulls, and concurrent preview/chip consumers share a bounded direct-Supabase read. Private image
+  pixels use the authenticated blob cache automatically; only explicitly public files use their
+  permanent CDN URL.
 - **2026-08-28 — Image preview and thumbnail surfaces converge on the canonical asset variant.**
   `useFileAsset` now exposes the concrete `primaryVariant`; `FilePreview` renders non-public image
   bytes through the existing bearer-authenticated blob cache, and `MediaThumbnail` accepts a

@@ -19,6 +19,7 @@ import {
   webpageUrl,
 } from "@/features/resource-manager/webpage/webpage-snapshot";
 import { resolveContextItemDef } from "./registry";
+import type { FileIdentityHint, Visibility } from "@/features/files/types";
 import type {
   ContextBookmark,
   ContextDrawerItem,
@@ -100,6 +101,19 @@ function readNonEmptyString(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+function readFiniteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function readVisibility(value: unknown): Visibility | undefined {
+  return value === "personal" ||
+    value === "internal" ||
+    value === "link" ||
+    value === "public"
+    ? value
+    : undefined;
+}
+
 function readNestedRecord(
   value: unknown,
   key: string,
@@ -111,7 +125,11 @@ function readNestedRecord(
 function extractMediaRefs(
   data: Data,
   raw: unknown,
-): { fileId: string | null; fileUrl: string | null } {
+): {
+  fileId: string | null;
+  fileUrl: string | null;
+  fileHint: FileIdentityHint | undefined;
+} {
   const d = data ?? {};
   const rawRecord = isRecord(raw) ? raw : null;
   const nestedData = readNestedRecord(raw, "data");
@@ -136,7 +154,42 @@ function extractMediaRefs(
     (nestedData ? readNonEmptyString(nestedData.externalUrl) : null) ??
     (nestedData ? readNonEmptyString(nestedData.url) : null);
 
-  return { fileId, fileUrl };
+  const metadata = isRecord(d.metadata) ? d.metadata : null;
+  const fileName =
+    readNonEmptyString(metadata?.display_title) ??
+    readNonEmptyString(d.fileName) ??
+    readNonEmptyString(d.file_name) ??
+    (rawRecord ? readNonEmptyString(rawRecord.file_name) : null) ??
+    (nestedData ? readNonEmptyString(nestedData.fileName) : null) ??
+    (nestedData ? readNonEmptyString(nestedData.file_name) : null);
+  const mimeType =
+    readNonEmptyString(d.mimeType) ??
+    readNonEmptyString(d.mime_type) ??
+    (rawRecord ? readNonEmptyString(rawRecord.mime_type) : null) ??
+    (nestedData ? readNonEmptyString(nestedData.mimeType) : null) ??
+    (nestedData ? readNonEmptyString(nestedData.mime_type) : null);
+  const fileSize =
+    readFiniteNumber(d.sizeBytes) ??
+    readFiniteNumber(d.size_bytes) ??
+    readFiniteNumber(d.fileSize) ??
+    readFiniteNumber(d.file_size) ??
+    (rawRecord ? readFiniteNumber(rawRecord.size_bytes) : null) ??
+    (nestedData ? readFiniteNumber(nestedData.size_bytes) : null);
+  const visibility =
+    readVisibility(d.visibility) ??
+    (rawRecord ? readVisibility(rawRecord.visibility) : undefined) ??
+    (nestedData ? readVisibility(nestedData.visibility) : undefined);
+  const fileHint: FileIdentityHint | undefined =
+    fileName || mimeType || fileSize !== null || visibility
+      ? {
+          ...(fileName ? { fileName } : {}),
+          ...(mimeType ? { mimeType } : {}),
+          ...(fileSize !== null ? { fileSize } : {}),
+          ...(visibility ? { visibility } : {}),
+        }
+      : undefined;
+
+  return { fileId, fileUrl, fileHint };
 }
 
 function displayTitle(data: Data, fallback: string): string {
@@ -332,10 +385,14 @@ function expand(
     });
   }
 
-  const { fileId, fileUrl } = extractMediaRefs(d, base.raw);
+  const { fileId, fileUrl, fileHint } = extractMediaRefs(d, base.raw);
   if (fileId || fileUrl) {
     return [
-      make("media", displayTitle(d, base.typeLabel), { fileId, fileUrl }),
+      make("media", displayTitle(d, base.typeLabel), {
+        fileId,
+        fileUrl,
+        fileHint,
+      }),
     ];
   }
 

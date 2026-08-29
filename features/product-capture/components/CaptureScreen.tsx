@@ -579,10 +579,10 @@ export function CaptureScreen({
       {cameraBlocked && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80 px-8 text-center">
           <p className="text-sm text-white/90">
-            The in-page camera isn&apos;t available here. Use your device
-            camera instead, or upload photos and videos you already have —
-            either way they are added the moment you pick them. Notes, SKU
-            and voice notes keep working.
+            The in-page camera isn&apos;t available here. Use your device camera
+            instead, or upload photos and videos you already have — either way
+            they are added the moment you pick them. Notes, SKU and voice notes
+            keep working.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
@@ -684,51 +684,51 @@ export function CaptureScreen({
           />
         </div>
 
-        {/* Photo/video toggle + the upload lane */}
-        <div className="relative flex justify-center pb-1">
-          <div className="flex rounded-full bg-white/10 p-0.5">
+        {/* Capture source control: one stable, equal-width row. Upload is an
+            immediate action; Photo and Video remain the persistent modes. */}
+        <div className="flex justify-center px-2 pb-1">
+          <div className="grid w-full max-w-sm grid-cols-3 rounded-full bg-white/10 p-1">
             <button
               type="button"
               onClick={() => setMediaMode("photo")}
               disabled={recording}
+              aria-pressed={mediaMode === "photo"}
               className={cn(
-                "flex h-8 items-center gap-1.5 rounded-full px-4 text-xs font-medium",
+                "flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-40",
                 mediaMode === "photo"
                   ? "bg-white text-black"
-                  : "text-white/80",
+                  : "text-white/80 hover:bg-white/10 hover:text-white",
               )}
             >
-              <CameraIcon className="h-3.5 w-3.5" />
+              <CameraIcon className="h-4 w-4 shrink-0" />
               Photo
             </button>
             <button
               type="button"
               onClick={() => setMediaMode("video")}
               disabled={recording}
+              aria-pressed={mediaMode === "video"}
               className={cn(
-                "flex h-8 items-center gap-1.5 rounded-full px-4 text-xs font-medium",
+                "flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-40",
                 mediaMode === "video"
                   ? "bg-white text-black"
-                  : "text-white/80",
+                  : "text-white/80 hover:bg-white/10 hover:text-white",
               )}
             >
-              <Video className="h-3.5 w-3.5" />
+              <Video className="h-4 w-4 shrink-0" />
               Video
             </button>
+            <button
+              type="button"
+              onClick={() => uploadInputRef.current?.click()}
+              disabled={recording || session.organizationId === null}
+              aria-label="Upload photos or videos from this device"
+              className="flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-40"
+            >
+              <ImagePlus className="h-4 w-4 shrink-0" />
+              Upload
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => uploadInputRef.current?.click()}
-            disabled={recording || session.organizationId === null}
-            aria-label="Upload photos or videos from this device"
-            className={cn(
-              "absolute right-2 top-0 flex h-9 items-center gap-1.5 rounded-full bg-white/10 px-3 text-xs font-medium text-white/90 hover:bg-white/20",
-              (recording || session.organizationId === null) && "opacity-40",
-            )}
-          >
-            <ImagePlus className="h-3.5 w-3.5" />
-            Upload
-          </button>
         </div>
 
         {/* Instant lane: the Process affordance (mode="instant" only) */}
@@ -738,9 +738,7 @@ export function CaptureScreen({
               className="h-11 w-full rounded-full"
               onClick={onProcess}
               disabled={
-                currentItem === null ||
-                recording ||
-                session.uploadingCount > 0
+                currentItem === null || recording || session.uploadingCount > 0
               }
             >
               {instant.isRunning ? (
