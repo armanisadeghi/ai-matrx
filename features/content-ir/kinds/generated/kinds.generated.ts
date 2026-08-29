@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "39133e820e08";
+export const KIND_REGISTRY_FINGERPRINT = "c1a58dd150dd";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2895,6 +2895,18 @@ export interface PhotoGroup {
 }
 
 /**
+ * * From kind `plan_shape_recommendation`.
+ */
+export interface PlanConceptName {
+  name?: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "plan_concept_name";
+  concept_key?: string;
+}
+
+/**
  * * From kind `plan_page_outline`.
  */
 export interface PlanDeferredTopic {
@@ -2940,6 +2952,19 @@ export interface PlanDraftSection {
    * The section's heading, as it appears on the page.
    */
   heading: string;
+}
+
+/**
+ * * From kind `plan_shape_recommendation`.
+ */
+export interface PlanFamilyCount {
+  count?: number;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind: "plan_family_count";
+  reason?: string;
+  family_key?: string;
 }
 
 /**
@@ -11314,7 +11339,7 @@ export interface PlanReviewFindings {
 }
 
 /**
- * Kind `plan_shape_recommendation` (registry v5).
+ * Kind `plan_shape_recommendation` (registry v6).
  */
 export interface PlanShapeRecommendation {
   /**
@@ -11323,23 +11348,8 @@ export interface PlanShapeRecommendation {
   __kind: "plan_shape_recommendation";
   rationale: string;
   archetype_key: string;
-  concept_names?: ({
-    name?: string;
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    concept_key?: string;
-  })[];
-  family_counts: ({
-    count?: number;
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    reason?: string;
-    family_key?: string;
-  })[];
+  concept_names?: PlanConceptName[];
+  family_counts: PlanFamilyCount[];
 }
 
 /**
