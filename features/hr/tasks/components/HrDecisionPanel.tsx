@@ -520,9 +520,19 @@ export function HrDecisionPanel({
                                             <span className="text-muted-foreground">
                                                 {str(f, "state")}
                                             </span>
-                                            {str(f, "detail") ? (
+                                            {/* 🚨 THE SENTENCE, NOT THE HOOK'S OUTPUT (hr_c4_57).
+                                                This read `detail` — `hr.workflow_failure.detail`,
+                                                which is a jsonb OBJECT on every live row, so
+                                                `str()` returned null and this line has never once
+                                                rendered. Had it ever held a JSON string it would
+                                                have printed `hr._wf_call_hook`'s own
+                                                `{sqlstate, detail: sqlerrm}` text — a Postgres
+                                                column name — to an HR manager. The door now ships
+                                                `failure_reason`, built from the failure CLASS
+                                                alone, exactly as a delivery failure is worded. */}
+                                            {str(f, "failure_reason") ? (
                                                 <span className="truncate text-muted-foreground">
-                                                    {str(f, "detail")}
+                                                    {str(f, "failure_reason")}
                                                 </span>
                                             ) : null}
                                             <Button

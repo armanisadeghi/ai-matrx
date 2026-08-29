@@ -409,7 +409,26 @@ export type HrFailureResolution = {
 /** The four actions `hr.wf_resolve_failure` accepts; anything else is `unknown_action`. */
 export type HrFailureAction = "retry" | "resolve" | "abandon" | "reassign";
 
-/** `public.hr_wf_instance` — the decision panel's read. */
+/**
+ * `public.hr_wf_instance` — the decision panel's read.
+ *
+ * 🚨 THE DOOR SHIPS NAMED FIELDS ON EVERY ARM (hr_c4_57). These stay open records because the
+ * panel reads them defensively and the display rule decorates steps with a further ~24 keys — but
+ * what the door actually sends is closed, and deliberately small:
+ *
+ *   instance   id · flow_key · state · state_reason · sensitivity_tier · target_token · target_id
+ *              · requester_employment_id
+ *   steps      id · step_key · step_order · state · due_at · approvals_needed
+ *              · approvals_received · resolution_path   (+ hr._wf_display's decoration)
+ *   decisions  id · decision · decided_at · reason
+ *   events     id · event_kind · from_state · to_state · occurred_at
+ *   failures   id · failure_class · state · occurred_at · failure_reason
+ *
+ * What is NOT here is the point: `instance.payload` (the proposal — it renders only through the
+ * entitlement-gated `change`), `validation_findings`, `rule_snapshot`, `step.resolved_user_ids`,
+ * `decision.client_context`, `metadata`, and the `detail` jsonb on events and failures, which is
+ * where a raising hook's SQLSTATE and Postgres text land. Operator detail stays in the ledger.
+ */
 export type HrInstanceDetail = {
     instance: Record<string, unknown>;
     /** Lifted from the decorated steps by the door — null when withheld from this viewer. */
@@ -417,7 +436,9 @@ export type HrInstanceDetail = {
     subject_withheld?: boolean;
     steps: Record<string, unknown>[];
     decisions: Record<string, unknown>[];
+    /** State trail only. No surface renders one today; the arm carries no operator payload. */
     events: Record<string, unknown>[];
+    /** `failure_reason` is the class's sentence, never the hook's stored `detail`. */
     failures: Record<string, unknown>[];
     /** Narrowed to the six delivery-evidence fields the panel renders — see envelope.ts. */
     notices: HrInboxNotice[];
