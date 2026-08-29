@@ -16,16 +16,26 @@ PostgREST, and the tables through RLS with that user's JWT claims.
 Fixture personas only: the subject is zzz.link.member2@example.invalid, a fixture org member with
 no employee record. Nothing here touches a real person.
 """
-import asyncio, json, os, sys
+import asyncio, json, os, sys, time
 from datetime import date
 
 import asyncpg, httpx
 
 ENV = "/Users/armanisadeghi/code/aidream/.env"
 ORG = "2643e470-b275-47f3-95f3-ae275ad3ca47"          # the G2 fixture employer
-HR_ADMIN = "admin+g2v.priya@admin.com"                 # 21 capabilities incl. working_record.write
-SUBJECT = "zzz.tl15.subject@example.invalid"
-SUBJECT_UID = None   # resolved (or created) in ensure_subject()
+# 🚨 The actor is the org OWNER, not the fixture HR admin (admin+g2v.priya@admin.com, 21
+# capabilities including working_record.write), because `hr_employee_create` calls
+# `public.mbr_add` unconditionally for a login-bearing hire and mbr_add raises
+# "membership manager role required" (42501) for any caller who is not an org manager — even when
+# the membership already exists. A plain HR admin therefore cannot hire anyone who has a login.
+# Filed as a finding; it is not what this walk is testing.
+HR_ADMIN = "admin@admin.com"                           # 37 capabilities, org owner of the fixture
+# A FRESH fixture persona per run. `hr.employee` is unique on (organization_id, party_id) and a
+# soft-deleted employee row still occupies that slot, so re-using one subject would make the walk
+# unrepeatable — and would test a reset instead of a hire.
+STAMP = date.today().strftime("%m%d") + f"{int(time.time()) % 100000:05d}"
+SUBJECT = f"zzz.tl15.{STAMP}@example.invalid"
+SUBJECT_UID = None   # created below
 PAY_GROUP = "5fd777b5-923f-4253-86ca-369101059159"
 JOB_TITLE = "6e2275c6-47a4-4b6a-9ff4-f48e8adeedb0"
 DEPARTMENT = "6715f29c-c677-4546-9c9a-5e2b591ab16e"
@@ -142,7 +152,7 @@ async def main():
     st, ack = await rpc(hr_tok, "hr_employee_create", {"p_payload": {
         "organization_id": ORG, "link_user_id": SUBJECT_UID,
         "legal_first_name": "Zzzrehire", "legal_last_name": "Walkme",
-        "employee_number": "ZZZ-TL15-01",
+        "employee_number": f"ZZZ-TL15-{STAMP}",
         "hire_date": SPELL1_HIRE, "pay_group_id": PAY_GROUP, "job_title_id": JOB_TITLE,
         "department_id": DEPARTMENT, "location_id": LOCATION, "worker_class": "employee"}})
     rec("hr_employee_create accepted spell 1", True, bool(ack.get("ok")), f"{st} {ack}")
@@ -186,6 +196,12 @@ async def main():
         (st >= 400) or (not (dirl or {}).get("rows")), f"{st} {json.dumps(dirl)[:200]}")
 
     # the portal is the ONE surviving surface, and only if the org switched it on
+    prior_knob = await conn.fetchval(
+        "select value from platform.knob_override where feature='continued_access' "
+        "and key='portal_enabled' and scope_id=$1::uuid", ORG)
+    await conn.execute(
+        "select platform._knob_override_write('continued_access','portal_enabled','organization',"
+        "$1::uuid,$1::uuid,'false'::jsonb,'T-L1-5 walk',$2::uuid)", ORG, hr_uid)
     st, portal = await rpc(sub_tok, "continued_access_portal", {"p_organization_id": ORG})
     state_off = await conn.fetchval(
         "select platform.continued_access_state($1::uuid,$2::uuid) ->> 'state'", ORG, SUBJECT_UID)
@@ -243,7 +259,7 @@ async def main():
     rec("spell 2 has an ADJUSTED SERVICE DATE (org rule carry_if_gap_under_months:12)",
         SPELL1_HIRE, s2["adjusted_service_date"].isoformat() if s2["adjusted_service_date"] else None)
     rule = await conn.fetchval(
-        "select hr.rehire_service_dates($1::uuid, $2::date, $3::uuid)", employee_id, SPELL2_HIRE, ORG)
+        "select hr.rehire_service_dates($1::uuid, $2::date, $3::uuid)", employee_id, date.fromisoformat(SPELL2_HIRE), ORG)
     rec("the rule states its own working", True, json.loads(rule).get("carried"), rule)
 
     snap1b = await conn.fetchrow(
@@ -290,13 +306,18 @@ async def main():
     rec("and immediate takes it away again", "departed", again)
 
     # ── restore the org's knob to its default ─────────────────────────────────
-    await conn.execute(
-        "delete from platform.knob_override where feature='continued_access' "
-        "and key='portal_enabled' and scope_id=$1::uuid", ORG)
+    if prior_knob is None:
+        await conn.execute(
+            "delete from platform.knob_override where feature='continued_access' "
+            "and key='portal_enabled' and scope_id=$1::uuid", ORG)
+    else:
+        await conn.execute(
+            "select platform._knob_override_write('continued_access','portal_enabled','organization',"
+            "$1::uuid,$1::uuid,$3::jsonb,'T-L1-5 walk restore',$2::uuid)", ORG, hr_uid, prior_knob)
     left = await conn.fetchval(
-        "select platform.knob_resolve('continued_access','portal_enabled',$1::uuid,null,null) #>> '{}'",
-        ORG)
-    rec("the portal knob is back at its default", "false", left)
+        "select value from platform.knob_override where feature='continued_access' "
+        "and key='portal_enabled' and scope_id=$1::uuid", ORG)
+    rec("the org's portal knob is exactly as the walk found it", prior_knob, left)
 
     await conn.close()
     await http.aclose()
