@@ -89,6 +89,10 @@ drops the option you just deselected traps the user inside their own filter.
   width-capped table or card renders them.
 - The kebab (⋮) still carries the FULL `ItemMenu` (every registry action).
   Modal and menu share the same handlers from `useAgentRowActions`.
+- **Non-owner favorites explain themselves.** Table, Cards, and Compact list
+  keep the star disabled and expose “Shared agents can't be favorited” on hover.
+- Compact-row favorite and action controls remain 44px through the tablet
+  breakpoint; dense targets begin at desktop widths.
 
 ### 2. Style persists, query does not
 
@@ -327,6 +331,9 @@ hostile at 2,000.
 - **2026-08-08** — Added the semantic Agents H1, named the favorite-column
   sort control, raised mobile scope targets to 44px, and sanitized Markdown
   description previews across table and card views.
+- **2026-08-29 (compact row parity)** — Compact list now carries the same
+  disabled favorite reason as Table and Cards, and keeps 44px favorite/action
+  targets through tablet widths.
 - **2026-08-18** — Replaced the retired **Sets** label in the agents-list header with the canonical **Orchestras** name; the existing network icon remains the semantic marker.
 - **2026-07-29** — Mobile browse chrome is one scope/actions row plus one
   search/actions row: scope labels collapse accessibly to icons, Orchestras/New use
