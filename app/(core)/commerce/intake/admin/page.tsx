@@ -84,6 +84,34 @@ const COMMERCE_INTAKE_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/commerce/labels",
+      label: "Label batches",
+      description:
+        "Print runs of pooled QR codes (commerce.label_batch/label_code): mint from a knob-driven form (commerce.labels knobs), import customer IDs (CSV → client_ref/asset_tag, optional paired QR minting).",
+      filePath: "app/(core)/commerce/labels/page.tsx",
+      status: "Live",
+      notes: [
+        "Codes: 14-char confusable-free alphabet, ~69 bits entropy; payload https://aimatrx.com/l/<code>",
+        "Per-org uniqueness DB-enforced on live asset_identifier (org, kind, value) + label_code (org, value)",
+      ],
+    },
+    {
+      url: "/commerce/labels/[batchId]",
+      label: "Label batch detail",
+      description:
+        "One print run: print/preview/PDF/calibration via the lib/label-print seam, reprint ranges, void remaining codes, per-code doors to owning assets. Batch state auto-derived.",
+      filePath: "app/(core)/commerce/labels/[batchId]/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/l/[code]",
+      label: "Public label resolver",
+      description:
+        "The printed QR payload lands here: auth bounce keeps the destination; a resolved code redirects to its intake asset; unassigned/void/unknown get one-card answers. Thin by design.",
+      filePath: "app/(public)/l/[code]/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/commerce/intake/admin",
       label: "Admin map (this page)",
       description: "Admin index of every commerce-intake resource.",
@@ -132,6 +160,13 @@ const COMMERCE_INTAKE_ADMIN_MAP: FeatureAdminMap = {
       name: "AssetsList",
       filePath: "features/commerce-intake/components/AssetsList.tsx",
       description: "Mobile-first complete org asset list with capture hand-off.",
+      status: "Live",
+    },
+    {
+      name: "labels module (pool + claim-on-scan)",
+      filePath: "features/commerce-intake/labels/service.ts",
+      description:
+        "Mint (mintLabelCodes, retry-on-23505), reverse lookup (resolveScannedValue), state-guarded claim (claimLabelCode), void, batch auto-derive, CSV conversion import; codes.ts owns the alphabet/URL/normalization; components own create/print/import dialogs and the batch surfaces.",
       status: "Live",
     },
     {

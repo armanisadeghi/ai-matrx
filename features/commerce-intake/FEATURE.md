@@ -4,7 +4,8 @@
 manual test script below). Routes: `/commerce/intake` (capture) · `/commerce/intake/instant`
 (capture + client-run instant analysis) · `/commerce/intake/assets` (hub list) ·
 `/commerce/intake/assets/[id]` (asset detail) · `/commerce/intake/answer`
-(answer queue) · `/commerce/intake/admin` (map). Project brief + contracts:
+(answer queue) · `/commerce/labels` (label batches) · `/commerce/labels/[batchId]`
+(print run detail) · `/l/[code]` (public label resolver) · `/commerce/intake/admin` (map). Project brief + contracts:
 `/Users/armanisadeghi/code/common-docs/projects/ebay-store-management/BUILD.md` (W4) +
 `PROTOTYPE-CONCEPTS.md` (the concepts are REQUIREMENTS; the prototype's storage is not).
 
@@ -69,6 +70,52 @@ independently.
   through the shared `EditableRows` + `CommitField` primitives — human-correctable
   agent-written values without bespoke forms.
 
+## The label pool (2026-08-29 — `labels/` module)
+
+`commerce.label_batch` (a print run) + `commerce.label_code` (one pooled code) over the
+`lib/label-print` seam. Codes are MINTED rows first (state `available`, no asset) —
+14 chars from a confusable-free alphabet (no 0/O/1/I/L, ≈69 bits entropy, `labels/codes.ts`);
+the printed QR payload is the resolver URL **`https://aimatrx.com/l/<code>`**; a scan accepts
+BOTH the URL and the bare code (`normalizeScannedCode`). Uniqueness is DB-enforced:
+`asset_identifier (org, kind, value) WHERE replaced_at IS NULL` and `label_code (org, value)`
+partial/unique indexes (live 2026-08-29) — a duplicate identifier is now unrepresentable, and
+reverse lookup (`resolveScannedValue`) is one indexed read.
+
+**The claim-on-scan decision table** (`useIntakeSession.processQrCode` — the DECISION function
+changed; the 5-round-reviewed qrChain serialization plumbing did NOT):
+
+| Scan resolves to | Behavior |
+|---|---|
+| Live identifier on the CURRENT asset | No-op ("assigned") |
+| Live identifier on ANOTHER asset | Switch to/open that asset (`resumeAsset`) — never a duplicate row |
+| Pooled `available` code | Normal assign/switch flow, then `claimLabelCode` stamps `available → assigned` (state-guarded CAS + identifier back-link) |
+| `void` code | Refused with a toast |
+| Unknown value | Legacy behavior (fresh `our_qr` row) |
+
+The old "same code after 4 s absence = next unit as a NEW asset" is superseded — per-org
+uniqueness forbids the duplicate row by design; re-scan now opens the existing asset.
+
+- **Batch state is auto-derived** (`deriveBatchState`: void wins; all codes assigned/void →
+  `exhausted`; `printed_at` → `printed`; else `open`), reconciled on detail load.
+- **Replacement lifecycle everywhere:** a retired identifier gets `replaced_at` +
+  `replaced_reason` (never deleted), which frees its slot in the live unique index. Asset
+  detail: Retire per identifier + "Print label" (reprint current, or claim a new pool code,
+  retiring the old primary as `label_replaced`).
+- **Conversion import** (`ImportIdentifiersDialog`, papaparse CSV/paste): match assets by an
+  existing identifier kind → write `client_ref`/`asset_tag` rows; optional paired our_qr
+  minting claims one printed code per matched item and lands on the batch to print.
+- **Knobs, not constants** (`commerce.labels`, seeded 2026-08-29 with basis + review_due):
+  `default_template` (org+user), `qr_ec_level` (org, default M), `max_batch_size` (org,
+  default 1000, 1..10000) — read via `useScopedKnobs` on the create-batch form / detail.
+- **`/l/[code]` resolver** (`app/(public)/l/[code]/page.tsx`) is deliberately THIN: auth
+  bounce keeps the destination, identifier/pool lookup under the viewer's RLS, redirect to
+  the owning asset; unassigned/void/unknown render one-card answers. Richer resolution
+  (public product views, chain-of-custody) is a follow-up.
+- Typing: `label_batch`/`label_code` row twins are hand-declared (`labels/types.ts`) because
+  this build's environment lacks a Supabase CLI token — the next `pnpm db-types` session
+  repoints them at `Database["commerce"]` and deletes the casts (labels/service.ts +
+  the `/l/[code]` page).
+
 ## The two ironclad write rules
 
 1. 🚨 **The status write IS the trigger (§2 policy 3).** Finishing an item writes
@@ -120,9 +167,15 @@ features/commerce-intake/
   components/IntakeCaptureScreen.tsx  full-screen surface (mode toggle, Break, honesty chips,
                                   Photo·Video·Upload row, instant Process button)
   components/IntakeAnswerQueue.tsx    the answer queue
-  components/AssetDetail.tsx          notes / identifiers / EditableRows attributes / Reprocess
+  components/AssetDetail.tsx          notes / identifiers (retire + print label) / EditableRows / Reprocess
   components/AssetsList.tsx           complete org list (readAllRows)
+  labels/                             the label pool module (see § The label pool):
+    codes.ts · service.ts · types.ts · columns/listConfig/rowActions (EntityListPage) ·
+    components/ (BatchesPage, CreateLabelBatchDialog, LabelBatchDetail, PrintLabelDialog,
+    ImportIdentifiersDialog)
 app/(core)/commerce/intake/           capture (ssr:false client boundary) + assets + answer + admin
+app/(core)/commerce/labels/           batches list + [batchId] print-run detail
+app/(public)/l/[code]/                the public label resolver (thin redirect)
 ```
 
 Reused, never reimplemented: camera runtime (`acquireCameraLease`/`CameraPreview`/
@@ -164,6 +217,20 @@ On a phone, logged into an org:
    working; notes and voice keep working.
 
 ## Change log
+
+- 2026-08-29 — **The label pool + claim-on-scan** (the DB/workflow half of the commerce QR
+  system). DB: `commerce.label_batch` + `commerce.label_code` via `platform.create_entity_table`
+  (both `iam.canonical_certify_ok` in-migration), plus THE uniqueness fix — partial unique
+  index on live `asset_identifier (org, kind, value)` (precheck found zero duplicates) and
+  unique `label_code (org, value)`; records `migrations/commerce_label_pool_2026_08_29.sql` +
+  `commerce_labels_knobs_2026_08_29.sql`, ledgered. Code: `labels/` module (mint / claim /
+  resolve / import / print through the lib/label-print seam), `/commerce/labels` routes,
+  `/l/[code]` resolver, claim-on-scan decision table in `useIntakeSession.processQrCode`
+  (serialization plumbing untouched), `replaceIdentifier` lifecycle write, AssetDetail
+  Print-label + Retire, `commerce.labels` knobs (default_template / qr_ec_level /
+  max_batch_size). Behavior change: re-scanning a code live on another asset now OPENS that
+  asset instead of minting a duplicate-code new asset. type-check green; live probes
+  verified the unique index and the assigned-linkage CHECK both refuse.
 
 - 2026-08-29 — W4 initial build: feature + routes as laid out above, onto the live C1
   `commerce` tables. Six §2 policies implemented (transcript routing left to the pipeline —
