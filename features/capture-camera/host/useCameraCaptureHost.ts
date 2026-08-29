@@ -46,7 +46,7 @@ import type {
   CaptureAspect,
   CaptureCameraEngine,
   CaptureCameraMode,
-} from "../types";
+} from "@ai-matrx/capture";
 
 const PHOTO_JPEG_QUALITY = 0.92;
 

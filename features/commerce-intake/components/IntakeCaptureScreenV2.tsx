@@ -45,12 +45,11 @@ import { InstantProcessSheet } from "@/features/product-capture/components/Insta
 import { useQrAutoScan } from "@/features/product-capture/hooks/useQrAutoScan";
 import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 
-import { CameraCapture } from "@/features/capture-camera/components/CameraCapture";
-import { ImageEditSheet } from "@/features/capture-camera/components/ImageEditSheet";
+import { CameraCapture, ImageEditSheet } from "@ai-matrx/capture/react";
 import type {
   CaptureCameraMode,
   CaptureOptionTile,
-} from "@/features/capture-camera/types";
+} from "@ai-matrx/capture";
 import { useCameraCaptureHost } from "@/features/capture-camera/host/useCameraCaptureHost";
 import { CloudLibrarySheet } from "@/features/capture-camera/host/CloudLibrarySheet";
 

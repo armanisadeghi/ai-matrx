@@ -1,6 +1,6 @@
 # Capture Camera — FEATURE.md
 
-**Status:** Built; live at `/commerce/intake/v2` (+ `/v2/instant`) as the isolated rebuild of the intake camera; real-phone acceptance pass pending. **This directory is the EXTRACTION SOURCE for `@ai-matrx/capture`** (`/Users/armanisadeghi/code/aidream/apps/shared/capture` — gates green, unpublished pending the one-time npm trusted-publisher bootstrap). Mirror rule: `components/`, `hooks/`, `types.ts` stay app-import-free (React, lucide-react, `cn` only — the documented substitution points); **`host/` never ships** — it is the app glue.
+**Status:** SHIPPED as **`@ai-matrx/capture` 0.1.0 on npm** — the package (`aidream/apps/shared/capture`) is the SINGLE source of truth for the chrome; the staged copies here were deleted on the swap (no-legacy). This directory now holds ONLY the app glue: `host/` + this doc. Live at `/commerce/intake/v2` (+ `/v2/instant`); real-phone acceptance pass pending. Chrome changes go in the aidream package (bump + tag `npm/capture/vX.Y.Z` + `pnpm sync:matrx-packages` here), never in this repo. Package classes reach Tailwind via the `@source` line for `@ai-matrx/capture/dist` in `app/globals.css`.
 
 The opinionated iPhone-style camera chrome: full-bleed feed under semi-transparent near-black bars, two-tap options grid, honest zoom pills, shutter, VIDEO·PHOTO·UPLOAD mode row, iOS-style sheets, instant in-browser crop/rotate editing.
 
@@ -13,13 +13,13 @@ The opinionated iPhone-style camera chrome: full-bleed feed under semi-transpare
 ## Layout
 
 ```
-types.ts                    ports + slots (CaptureCameraEngine, CaptureCloudPort, CaptureCameraSlots)
-components/                 CameraCapture (assembly) · ShutterButton · ModeSelector · ZoomRow ·
+@ai-matrx/capture           the chrome (npm): CameraCapture · ShutterButton · ModeSelector · ZoomRow ·
                             OptionsGridPanel (two-tap grid) · CaptureSheet (iOS sheet, content+busy) ·
-                            ImageEditSheet (crop/rotate/flip) · GridOverlay · CountdownOverlay
-hooks/useTrackControls.ts   torch/zoom/exposure over track capabilities
-host/                       APP-SIDE: useCameraCaptureHost (lease/photo/video via media-capture runtime) ·
-                            CloudLibrarySheet (tiled cloud gallery over the files layer; tiles open /files/f/[id])
+                            ImageEditSheet (crop/rotate/flip) · GridOverlay · CountdownOverlay ·
+                            useTrackControls · the ports/slots types (root entry, RSC-safe)
+host/                       APP-SIDE: useCameraCaptureHost (lease/photo/video via media-capture runtime,
+                            aspect crop) · CloudLibrarySheet (tiled cloud gallery over the files layer;
+                            tiles open /files/f/[id])
 ```
 
 ## Extensibility — typed slots, not a plugin framework
@@ -35,4 +35,5 @@ Domain features attach via `CaptureCameraSlots`: `topBarCenter/Trailing`, `statu
 
 ## Change Log
 
+- 2026-08-29 — **Published + swapped.** `@ai-matrx/capture` 0.1.0 published via the tag workflow (Arman had pre-reserved the name at 0.0.0); matrx-frontend consumes it as `latest`; staged `components/`/`hooks/`/`types.ts` DELETED; `@source` line added to globals.css.
 - 2026-08-29 — Created: chrome + laws + edit sheet + host adapter + cloud library; commerce v2 rebuilt on it at `/commerce/intake/v2`; package mirrored to `aidream/apps/shared/capture` (typecheck/test/check:package green, unpublished).
