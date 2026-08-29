@@ -46,7 +46,8 @@ import { StructuredValueView } from "@/components/official/structured-value/Stru
 import { VariableInputComponent } from "@/features/agents/components/inputs/input-components/VariableInputComponent";
 import type { VariableCustomComponent } from "@/features/agents/types/agent-definition.types";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsSuperAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import {
@@ -127,6 +128,14 @@ function toJsonValue(value: unknown): JsonValue | undefined {
 export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
   const dispatch = useAppDispatch();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  // THE PRINCIPAL DECIDES WHICH HOLDER RUNS. This section shows the viewer
+  // THEIR resolution — the ribbon and OverrideFlow directly above it — so the
+  // run must be resolved as THEM. Sending no principal resolves the system
+  // default, which would ignore the override the user just made one section
+  // down and could never reach a workflow Holder (those are bound per
+  // principal). See the law on `runMandateAdHocTest`.
+  const viewerUserId = useAppSelector(selectUserId);
+  const viewerOrgId = useAppSelector(selectEffectiveOrganizationId);
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [userInput, setUserInput] = useState("");
   const [running, setRunning] = useState(false);
@@ -211,6 +220,10 @@ export function RunThisJobSection({ data }: { data: MandateWorkspaceData }) {
           candidate_id: crypto.randomUUID(),
           label: "Run this job",
           selection: "current",
+        },
+        principal: {
+          user_id: viewerUserId,
+          organization_id: viewerOrgId,
         },
       });
       setResult(response);

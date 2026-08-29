@@ -150,6 +150,15 @@ export function isMandateTestResult(
  *
  * 🚨 Structured values go in `variables`, NEVER smuggled through `user_input`
  * (THE USER-INPUT LAW) — `user_input` carries only what a human typed.
+ *
+ * 🚨 `principal` DECIDES WHICH HOLDER RUNS. The server resolves the mandate with
+ * exactly the principal it is handed, so omitting it resolves the SYSTEM
+ * default and silently ignores the caller's own binding — which makes a
+ * "run what fulfils this job for me" affordance a lie the moment the user
+ * overrides the Holder (and is the only reason a workflow Holder would never
+ * be the thing that runs). The admin bench deliberately omits it: comparing
+ * candidates against the system default is its whole job. Any surface that
+ * shows a person THEIR resolution must pass THEIR principal.
  */
 export async function runMandateAdHocTest(
   dispatch: AppDispatch,
@@ -158,12 +167,15 @@ export async function runMandateAdHocTest(
     variables: JsonObject;
     userInput?: string | null;
     candidate?: MandateTestCandidate;
+    /** Omitted = resolve the system default. See the law above. */
+    principal?: { user_id: string | null; organization_id: string | null };
   },
 ): Promise<MandateTestResponse> {
   const body: MandateTestRequest = {
     variables: toJsonRecord(input.variables),
     user_input: input.userInput?.trim() ? input.userInput : null,
     candidate: input.candidate,
+    ...(input.principal ? { principal: input.principal } : {}),
   };
   const response = await dispatch(
     callApi({
