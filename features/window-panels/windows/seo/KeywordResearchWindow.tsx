@@ -201,6 +201,20 @@ function KeywordResearchWindowInner({
                 ))}
               </SelectContent>
             </Select>
+            {/* An empty picker with no explanation reads as "you have no
+                sites", which a failed read cannot establish. */}
+            {siteOptions.isError ? (
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                We couldn&apos;t load your sites.
+                <button
+                  type="button"
+                  onClick={() => void siteOptions.refetch()}
+                  className="rounded-md border border-border px-1.5 py-0.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+                >
+                  Try again
+                </button>
+              </span>
+            ) : null}
           </div>
         ) : null}
         <div className="shrink-0 border-b border-border px-3 py-2.5">

@@ -13,6 +13,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import {
   CircleSlash,
   Pencil,
@@ -136,16 +137,11 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
     } else {
       toast.error(`Rule not found: ${initialEditKey}`); // access-errors: ok — verified absence: the key is matched against the complete in-memory registry the admin RPC returned, not an ambiguous DB read
     }
-    const params = new URLSearchParams(window.location.search);
-    params.delete("edit");
-    const query = params.toString();
     // Programmatic: consuming the one-shot `edit` intent off the current
-    // entry so a refresh cannot re-open the editor.
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `/administration/database/relationships/rules${query ? `?${query}` : ""}`,
-    );
+    // entry so a refresh cannot re-open the editor. Every sibling param
+    // survives, and the write announces itself so the rest of the page's
+    // url-state controls do not go stale.
+    commitUrlParams({ edit: null }, "replace");
   }, [initialEditKey, rules]);
 
   // -- derived ---------------------------------------------------------------

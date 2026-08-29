@@ -317,8 +317,8 @@ export function NotesView({
   // Client-side navigations that change [id] still make the new path active.
   //
   // `urlActive` is read via ref, NOT a dep: NoteTabBar rewrites `?active=`
-  // via history.replaceState on every tab action, which Next syncs back into
-  // useSearchParams. With urlActive in the deps this effect re-ran per tab
+  // through the url-state primitive on every tab action, which Next syncs back
+  // into useSearchParams. With urlActive in the deps this effect re-ran per tab
   // action, re-adding the route note's tab after the user closed it and
   // re-dispatching a fetch — a per-action dispatch cascade (2026-07 freeze
   // class amplifier).

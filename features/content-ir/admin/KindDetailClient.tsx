@@ -18,6 +18,7 @@
  */
 
 import { useMemo, useState } from "react";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { ChevronRight, Loader2 } from "lucide-react";
@@ -156,8 +157,10 @@ export default function KindDetailClient({
 
   function selectTab(next: TabId) {
     setTab(next);
-    // Keep the page deep-linkable without a navigation.
-    window.history.replaceState(null, "", `?tab=${next}`);
+    // Keep the page deep-linkable without a navigation. `commitUrlParams`
+    // merges into the live query (a raw `?tab=` write dropped every sibling
+    // param) and notifies the page's other url-state controls.
+    commitUrlParams({ tab: next }, "replace");
   }
 
   return (

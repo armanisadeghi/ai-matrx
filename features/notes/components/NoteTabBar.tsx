@@ -24,6 +24,7 @@ import {
   selectInstanceSplitNoteId,
   selectInstanceTabInteractionAt,
 } from "../redux/selectors";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { NoteTabItem } from "./NoteTabItem";
 import { SplitNotePicker } from "./SplitNotePicker";
 import { orderTabsActiveFirst } from "../utils/tabUrlOrder";
@@ -52,7 +53,6 @@ export function NoteTabBar({ instanceId, syncUrl = true }: NoteTabBarProps) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const hydratedRef = useRef(false);
-  const lastPushedUrlRef = useRef("");
 
   // ── DnD state (local only) ────────────────────────────────────────
   const [draggedTab, setDraggedTab] = useState<string | null>(null);
@@ -107,32 +107,20 @@ export function NoteTabBar({ instanceId, syncUrl = true }: NoteTabBarProps) {
     // still sync; only the not-yet-registered undefined is skipped.
     if (openTabs === undefined) return;
 
-    const params = new URLSearchParams(window.location.search);
     const orderedTabs = orderTabsActiveFirst(openTabs ?? [], activeTabId);
 
-    if (orderedTabs.length > 0) {
-      params.set("tabs", orderedTabs.join(","));
-    } else {
-      params.delete("tabs");
-    }
-
-    if (activeTabId) {
-      params.set("active", activeTabId);
-    } else {
-      params.delete("active");
-    }
-
-    if (splitNoteId) {
-      params.set("split", splitNoteId);
-    } else {
-      params.delete("split");
-    }
-
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    if (newUrl !== lastPushedUrlRef.current) {
-      lastPushedUrlRef.current = newUrl;
-      window.history.replaceState(null, "", newUrl);
-    }
+    // `null` means "drop the key", and `commitUrlParams` no-ops when the URL
+    // would not change — so this needs no "last written URL" bookkeeping. It
+    // is a history write (no Next navigation) that still tells every other
+    // url-state control on the page to re-read.
+    commitUrlParams(
+      {
+        tabs: orderedTabs.length > 0 ? orderedTabs.join(",") : null,
+        active: activeTabId || null,
+        split: splitNoteId || null,
+      },
+      "replace",
+    );
   }, [openTabs, activeTabId, splitNoteId, syncUrl]);
 
   // ── New tab ────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
@@ -712,16 +713,9 @@ function AttachDocDeepLink({
       }),
     );
     openWorkingDocPanel({ conversationId, initialKind: "working" });
-    const params = new URLSearchParams(window.location.search);
-    params.delete("attachDoc");
-    const qs = params.toString();
     // Programmatic: consuming the one-shot `attachDoc` intent off the current
     // entry so a refresh cannot re-open the panel.
-    window.history.replaceState(
-      window.history.state,
-      "",
-      `${window.location.pathname}${qs ? `?${qs}` : ""}`,
-    );
+    commitUrlParams({ attachDoc: null }, "replace");
   }, [
     conversationId,
     conversationRegistered,

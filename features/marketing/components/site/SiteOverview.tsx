@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
 import {
   Activity,
@@ -231,8 +232,10 @@ export function SiteOverview() {
     if (!requested || site.initialized_at || autoInitStarted.current) return;
     autoInitStarted.current = true;
     // Programmatic: consume the one-shot `capture` intent off the current
-    // entry so a refresh cannot re-fire it. Never a user step.
-    window.history.replaceState(null, "", window.location.pathname);
+    // entry so a refresh cannot re-fire it. Never a user step. Drops ONLY
+    // `capture` — the old write reset the whole query string — and tells the
+    // page's other url-state controls to re-read.
+    commitUrlParams({ capture: null }, "replace");
     void runInitialize();
   }, [runInitialize, site.initialized_at]);
 
