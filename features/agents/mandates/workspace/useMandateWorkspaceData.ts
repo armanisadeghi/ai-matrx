@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import type { Database } from "@/types/database.types";
 import { fetchProvision, type ProvisionOffer } from "../provisions";
@@ -71,7 +72,12 @@ export interface MandateWorkspaceData {
 export interface UseMandateWorkspaceData {
   data: MandateWorkspaceData | null;
   loading: boolean;
-  /** Loud, verbatim — never softened. */
+  /**
+   * One plain sentence naming what failed. Never PostgREST prose: an RLS code
+   * or a schema name is not something a person can act on, and every raw
+   * `error.message` here was `check:access-errors`' oldest class of defect.
+   * The raw response still travels as `cause` for the Error Inspector.
+   */
   error: string | null;
   refresh: () => void;
 }
@@ -107,7 +113,7 @@ export function useMandateWorkspaceData(
       )
         ? await mandateQuery.eq("id", mandateKeyOrId).limit(1)
         : await mandateQuery.eq("mandate_key", mandateKeyOrId).limit(1);
-      if (mandateError) throw new Error(mandateError.message);
+      if (mandateError) throw operationFailed("open this mandate", mandateError);
       const mandate = mandateRows?.[0];
       if (!mandate) {
         throw new Error(
@@ -126,7 +132,11 @@ export function useMandateWorkspaceData(
           .is("deleted_at", null)
           .order("updated_at", { ascending: false }),
       ]);
-      if (bindingsResult.error) throw new Error(bindingsResult.error.message);
+      if (bindingsResult.error)
+        throw operationFailed(
+          "load the agents bound to this mandate",
+          bindingsResult.error,
+        );
       const bindings = bindingsResult.data ?? [];
 
       // 3. Holder identities. Version pins resolve to their master for the
@@ -145,7 +155,11 @@ export function useMandateWorkspaceData(
           .from("definition_version")
           .select("id, agent_id, version_number")
           .in("id", versionIds);
-        if (versionError) throw new Error(versionError.message);
+        if (versionError)
+          throw operationFailed(
+            "load the agent versions this mandate is pinned to",
+            versionError,
+          );
         for (const row of versionRows ?? []) {
           versionsById[row.id] = {
             id: row.id,
@@ -169,7 +183,11 @@ export function useMandateWorkspaceData(
           .from("definition")
           .select("id, name, agent_type, is_archived, version")
           .in("id", [...new Set(agentIds)]);
-        if (agentError) throw new Error(agentError.message);
+        if (agentError)
+          throw operationFailed(
+            "load the agents behind this mandate",
+            agentError,
+          );
         for (const row of agentRows ?? []) {
           agentsById[row.id] = {
             id: row.id,

@@ -17,6 +17,7 @@ import { Camera, Loader2, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import {
   CommitField,
@@ -48,6 +49,9 @@ export function AssetDetail({ assetId }: { assetId: string }) {
   const [loading, setLoading] = useState(true);
   const [notesDraft, setNotesDraft] = useState("");
   const [saving, setSaving] = useState(false);
+  // A Retry that cannot succeed is the lie the access gate exists to kill, so
+  // the gate's retry re-runs the real load rather than re-rendering the shell.
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   const assetRef = useRef<IntakeAsset | null>(null);
   const adopt = useCallback((next: IntakeAsset | null) => {
@@ -57,6 +61,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     void (async () => {
       try {
         const [loaded, arts, ids] = await Promise.all([
@@ -79,7 +84,7 @@ export function AssetDetail({ assetId }: { assetId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [assetId, adopt]);
+  }, [assetId, adopt, reloadNonce]);
 
   const saveNotes = useCallback(async () => {
     const current = assetRef.current;
@@ -146,10 +151,17 @@ export function AssetDetail({ assetId }: { assetId: string }) {
     );
   }
   if (!asset) {
+    // A zero-row read is denied / deleted / never-existed / signed-out, and
+    // this surface cannot tell them apart — it used to assert the second one.
+    // The gate asks the platform and says the true one, with a way forward.
     return (
-      <p className="py-16 text-center text-sm text-muted-foreground">
-        This asset no longer exists.
-      </p>
+      <AccessGate
+        token="commerce_intake_asset"
+        id={assetId}
+        onRetry={() => setReloadNonce((n) => n + 1)}
+        fallbackHref="/commerce/intake/assets"
+        fallbackLabel="All intake assets"
+      />
     );
   }
 
