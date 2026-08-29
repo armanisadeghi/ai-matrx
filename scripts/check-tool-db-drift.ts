@@ -110,7 +110,7 @@ async function fetchDbRows(url: string, key: string, names: string[]): Promise<D
   const inList = names.map((n) => encodeURIComponent(n)).join(",");
   // Paged through readAllRowsRest: this set-diffs DB rows against the code Zod
   // schemas, so a PostgREST 1000-row truncation would invent "MISSING in
-  // tool.definition" tools. See lib/supabase/readAllRows.ts.
+  // tool.definition" tools. See readAllRows in @ai-matrx/data/db.
   try {
     return await readAllRowsRest<DbToolRow>({
       url,

@@ -140,7 +140,7 @@ export function useTasks() {
 
     const channel = supabase
       // Unique topic: several components mount this hook at once, and a shared
-      // topic hands them all the SAME channel object (see utils/supabase/realtime).
+      // topic hands them all the SAME channel object (see uniqueChannelTopic in @ai-matrx/data/db).
       .channel(uniqueChannelTopic('tasks-changes'))
       .on(
         'postgres_changes',

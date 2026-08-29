@@ -76,7 +76,7 @@ async function fetchRegistryJson(): Promise<string> {
   const supabase = createClient(url, key);
 
   // Paged: the snapshot is compared whole under --check, so a PostgREST
-  // truncation would read as registry drift. See lib/supabase/readAllRows.ts.
+  // truncation would read as registry drift. See readAllRows in @ai-matrx/data/db.
   let data: unknown[];
   try {
     data = await readAllRows<unknown>(

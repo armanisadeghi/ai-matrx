@@ -57,7 +57,7 @@ A restored run is bound to the viewer ONLY when its conversation came back with 
 
 Bytes NEVER live here — every artifact goes through `uploads.ts` → `fileHandler.upload` into the item's own folder `Product Captures/<orgId>/<code-or-itemId>` (`folderForProductCaptureItem`, `folder-conventions.ts`), **visibility `internal` + `inheritActiveScope`** so the whole org reads them without per-user grants; `metadata.product_capture = {item_id, code, kind}` stamps the linkage on the file too. Org id comes from `selectEffectiveOrganizationId` and is passed EXPLICITLY on every insert (no-db-assigned-org doctrine; `p_org_default => false`).
 
-Item writes are version-guarded CAS (`utils/supabase/guardedUpdate`, retry-once). Notes have exactly two writers: the debounced textarea autosave (replace, flushed on item switch + visibilitychange) and the background transcript. A transcript for the item still on screen lands in the textarea and rides the same autosave (one writer for visible text); one for an item the user already left goes through `appendToItemNotes` (read-append-CAS, so it never clobbers).
+Item writes are version-guarded CAS (`guardedUpdate` from `@ai-matrx/data/db`, retry-once). Notes have exactly two writers: the debounced textarea autosave (replace, flushed on item switch + visibilitychange) and the background transcript. A transcript for the item still on screen lands in the textarea and rides the same autosave (one writer for visible text); one for an item the user already left goes through `appendToItemNotes` (read-append-CAS, so it never clobbers).
 
 ## Layout
 

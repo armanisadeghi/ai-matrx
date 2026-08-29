@@ -8,7 +8,7 @@
  * EXISTENCE / DIFF / COMPLETENESS verdict starts answering confidently wrong
  * the moment its table crosses 1000 rows. FOUND_DEFECTS D190.
  *
- * The fix is `lib/supabase/readAllRows.ts`, which pages to a verified total and
+ * The fix is `readAllRows` (from `@ai-matrx/data/db`), which pages to a verified total and
  * throws rather than returning a partial list.
  *
  * WHAT THIS FLAGS (deliberately narrow, to stay worth reading):
@@ -233,7 +233,7 @@ function main(): number {
     }
   }
   console.log(
-    `\n  ${C.white}Fix — read it through lib/supabase/readAllRows.ts:${C.reset}\n` +
+    `\n  ${C.white}Fix — read it through readAllRows (@ai-matrx/data/db):${C.reset}\n` +
       `    ${C.dim}const rows = await readAllRows(({from,to}) => sb.from("t")` +
       `.select("*", { count: "exact" }).order("id").range(from,to), { label: "t" });${C.reset}\n` +
       `  ${C.dim}Not a defect if a short list is an acceptable answer here (rendering, preview, sampling).${C.reset}`,
