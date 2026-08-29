@@ -112,8 +112,8 @@ export function TriadInputSection({
           mandate_goal: goalOfMandate(data.mandate) ?? "",
           draft_inputs: JSON.stringify(draftInputs),
         },
-        sourceApp: "matrx",
-        sourceFeature: "mandate-workspace/convert-inputs",
+        sourceApp: "matrx-frontend",
+        sourceFeature: "agent-builder",
       });
       toast.success("Structure proposal ready — review below.");
       setDraft(applyConversion(draftInputs, text));
@@ -308,8 +308,8 @@ export function TriadGoalSection({
           current_goal: goal ?? "",
           description: data.mandate.description ?? "",
         },
-        sourceApp: "matrx",
-        sourceFeature: "mandate-workspace/refine-goal",
+        sourceApp: "matrx-frontend",
+        sourceFeature: "agent-builder",
       });
       setDraft(text.trim() || (goal ?? ""));
       setEditing(true);
