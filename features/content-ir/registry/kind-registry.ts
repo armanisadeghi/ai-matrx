@@ -18,6 +18,10 @@
  */
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import {
+  INVALIDATION_KEYS,
+  registerInvalidationCallback,
+} from "@/lib/invalidation/invalidation-registry";
 import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   setJsonRootKeyLookup,
@@ -60,12 +64,23 @@ function reportFieldlessWarmSchema(kind: string): void {
   }
 }
 
+/**
+ * How long a cold-fetch MISS stays latched before the slug becomes fetchable
+ * again. A permanent per-session latch was crack #2 of the 2026-08-29 render
+ * audit: a shape sighted moments before its `kind_definition` row committed
+ * (the create-then-run flow every new customer walks) could NEVER render for
+ * the rest of the session — "first try doesn't work" until a full reload.
+ */
+const MISS_TTL_MS = 15_000;
+
 class KindRegistry {
   private readonly defs = new Map<string, KindDefinition>();
   private readonly arrivalListeners = new Set<SchemaArrivalListener>();
   private readonly inFlight = new Set<string>();
-  private readonly misses = new Set<string>();
+  /** kind → when the miss was recorded. Expires (MISS_TTL_MS) + cleared on refresh. */
+  private readonly misses = new Map<string, number>();
   private warmPromise: Promise<void> | null = null;
+  private lastWarmAt = 0;
   /**
    * Monotonic registry version — bumps whenever definitions change (warm
    * ingest, cold arrival, upsert). The render seam's repaint hook
@@ -232,7 +247,29 @@ class KindRegistry {
   /** One list fetch per app session — resolves when user kinds are loaded. */
   ensureWarm(): Promise<void> {
     if (!this.warmPromise) {
-      this.warmPromise = listKindSchemasFromTables()
+      this.warmPromise = this.loadWarm();
+    }
+    return this.warmPromise;
+  }
+
+  /**
+   * Re-run the warm list (rate-limited, in-flight deduped) — the definitions
+   * twin of `ComponentResolver.refresh`. Until this existed the schema side
+   * was frozen for the whole app session (crack #3): a kind created after the
+   * tab loaded could arrive only through the single-slug cold path, and a
+   * latched miss blocked even that. Cleared misses ride along so "try again"
+   * actually tries again. `maxAgeMs = 0` forces.
+   */
+  refresh(maxAgeMs = 10_000): Promise<void> {
+    if (this.warmPromise && Date.now() - this.lastWarmAt < maxAgeMs) {
+      return this.warmPromise;
+    }
+    this.warmPromise = this.loadWarm();
+    return this.warmPromise;
+  }
+
+  private loadWarm(): Promise<void> {
+    return listKindSchemasFromTables()
         .then(({ schemas, entries }) => {
           const loadingBySlug = new Map<string, string | null>();
           for (const entry of entries) {
@@ -280,6 +317,10 @@ class KindRegistry {
             });
             this.bumpKind(kind);
           }
+          this.lastWarmAt = Date.now();
+          // A completed warm sweep is fresh truth: every latched cold-fetch
+          // miss is stale by definition, so the slugs become fetchable again.
+          this.misses.clear();
           this.bumpVersion();
         })
         .catch((error) => {
@@ -296,14 +337,20 @@ class KindRegistry {
           });
           this.warmPromise = null;
         });
-    }
-    return this.warmPromise;
   }
 
   /** Cold fetch, fire-and-forget (the parser's SchemaResolver.request). */
   requestSchema(kind: string): void {
     if (this.getSchema(kind)) return;
-    if (this.inFlight.has(kind) || this.misses.has(kind)) return;
+    if (this.inFlight.has(kind)) return;
+    // A miss is a lease, not a verdict: past its TTL the slug is fetchable
+    // again, so a shape created seconds after its first sighting renders on
+    // the next request instead of never (crack #2).
+    const missedAt = this.misses.get(kind);
+    if (missedAt !== undefined) {
+      if (Date.now() - missedAt < MISS_TTL_MS) return;
+      this.misses.delete(kind);
+    }
     this.inFlight.add(kind);
 
     void (async () => {
@@ -324,7 +371,7 @@ class KindRegistry {
               loadingComponent: result?.loadingComponent ?? null,
             });
           } else {
-            this.misses.add(kind);
+            this.misses.set(kind, Date.now());
           }
         }
 
@@ -374,3 +421,13 @@ class KindRegistry {
 setJsonRootKeyLookup((key) => getSurfaceForJsonRootKey(key)?.kind ?? null);
 
 export const kindRegistry = new KindRegistry(SYSTEM_KIND_DEFINITIONS);
+
+// A kind DEFINITION write (agent `kind_create` / `kind_update_schema` /
+// `kind_activate`, or the browser Shape Studio) fires this by name — same
+// inversion as the component registry's callback below it: zero import edge
+// from the stream-processing chunk into this cluster. The force refresh
+// replaces the warm tier, clears latched misses, and the per-kind repaint
+// upgrades mounted blocks in place.
+registerInvalidationCallback(INVALIDATION_KEYS.kindDefinitions, () => {
+  void kindRegistry.refresh(0);
+});

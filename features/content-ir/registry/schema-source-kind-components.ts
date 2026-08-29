@@ -15,6 +15,7 @@
 
 import type { Json } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
+import { readAllRows } from "@/lib/supabase/readAllRows";
 
 async function getSupabase() {
   const { supabase } = await import("@/utils/supabase/client");
@@ -163,24 +164,41 @@ export async function listKindComponentsFromTables(): Promise<
   // definition id — ~15.4 kB of query string at current row counts, at the
   // edge of the gateway's 16 kB URI cap; one more growth spurt and the warm
   // load 414s, which takes down EVERY db kind component (2026-08-22).
-  const { data: rows, error } = await supabase
-    .schema("content_ir")
-    .from("kind_component")
-    .select(
-      "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at, created_by, kind_definition!inner(kind, deleted_at)",
-    )
-    .is("deleted_at", null)
-    .is("kind_definition.deleted_at", null)
-    .order("is_default", { ascending: false })
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true })
-    .order("id", { ascending: true });
-  if (error) {
+  // 🚨 readAllRows, NOT a bare `.select()`: this list is treated as complete —
+  // a component row missing from it renders its kind through the generic
+  // viewer. PostgREST silently caps a bare select at 1000 rows, and
+  // kind_component is past that; worse, this query orders `created_at ASC`
+  // last, so the truncation ate the NEWEST rows first — "I just authored a
+  // component and it doesn't render" (the crack-#1 outage, component half).
+  type WarmRow = RawKindComponentRow & {
+    kind_definition?: { kind?: string; deleted_at?: string | null } | null;
+  };
+  let rows: WarmRow[];
+  try {
+    rows = (await readAllRows(
+      ({ from, to }) =>
+        supabase
+          .schema("content_ir")
+          .from("kind_component")
+          .select(
+            "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at, created_by, kind_definition!inner(kind, deleted_at)",
+            { count: "exact" },
+          )
+          .is("deleted_at", null)
+          .is("kind_definition.deleted_at", null)
+          .order("is_default", { ascending: false })
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "content_ir.kind_component" },
+    )) as WarmRow[];
+  } catch (error) {
     throw new KindComponentTablesError(
-      `Failed to list kind_component: ${error.message}`,
+      `Failed to list kind_component: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
-  if (!rows || rows.length === 0) return [];
+  if (rows.length === 0) return [];
 
   const slugById = new Map<string, string>();
   for (const r of rows) {

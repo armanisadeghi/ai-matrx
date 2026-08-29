@@ -32,6 +32,8 @@ export const INVALIDATION_KEYS = {
   dbToolRenderers: "tool-viz:db-renderers",
   /** Content-IR kind-component resolver + compile caches. Detail unused (full refresh; per-kind repaint is granular downstream). */
   kindComponents: "content-ir:kind-components",
+  /** Content-IR kind DEFINITION registry (schemas + latched misses). Detail unused (full warm refresh; per-kind repaint is granular downstream). */
+  kindDefinitions: "content-ir:kind-definitions",
 } as const;
 
 export type InvalidationKey =

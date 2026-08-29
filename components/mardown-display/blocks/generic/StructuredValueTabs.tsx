@@ -32,11 +32,13 @@
  */
 
 import React, { useState } from "react";
-import { Braces, Check, Copy } from "lucide-react";
+import { Braces, Check, Copy, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { KindProblem } from "@/features/content-ir/react/kind-problems";
+import { hasKindErrors } from "@/features/content-ir/react/kind-problems";
 import { IntoTileActions, useHasTileActionsSlot } from "./tile-actions-slot";
 
-type Tab = "preview" | "json";
+type Tab = "preview" | "json" | "errors";
 
 function GhostIconButton({
   active,
@@ -79,11 +81,20 @@ export function StructuredValueTabs({
   value,
   raw,
   header,
+  problems,
   children,
 }: {
   value: unknown;
   raw?: string | null;
   header?: React.ReactNode;
+  /**
+   * What the parser/route recorded about this value being a BROKEN or
+   * unroutable kind instance (`collectKindProblems`). Non-empty adds the
+   * Errors tab — the exact problems, in-band, for everyone (Arman,
+   * 2026-08-29: a `__kind` that isn't kind-rendered must be acknowledged as
+   * a kind, with its exact errors — never an anonymous JSON dump).
+   */
+  problems?: KindProblem[];
   children: React.ReactNode;
 }) {
   const [tab, setTab] = useState<Tab>("preview");
@@ -106,9 +117,31 @@ export function StructuredValueTabs({
   };
 
   const jsonActive = tab === "json";
+  const errorsActive = tab === "errors";
+  const shownProblems = problems ?? [];
+  const hasErrors = hasKindErrors(shownProblems);
 
   const controls = (
     <span className="inline-flex shrink-0 items-center gap-0.5">
+      {shownProblems.length > 0 ? (
+        <GhostIconButton
+          active={errorsActive}
+          label={
+            errorsActive
+              ? "Back to preview"
+              : `View ${shownProblems.length} problem${shownProblems.length === 1 ? "" : "s"}`
+          }
+          icon={TriangleAlert}
+          onClick={() => setTab(errorsActive ? "preview" : "errors")}
+          iconClassName={
+            errorsActive
+              ? undefined
+              : hasErrors
+                ? "text-destructive"
+                : "text-amber-600 dark:text-amber-400"
+          }
+        />
+      ) : null}
       <GhostIconButton
         active={jsonActive}
         label={jsonActive ? "Back to preview" : "View JSON"}
@@ -142,6 +175,30 @@ export function StructuredValueTabs({
       {header}
       {tab === "preview" ? (
         children
+      ) : tab === "errors" ? (
+        <div className="max-h-[28rem] space-y-2 overflow-auto rounded-md border border-border bg-muted/30 p-3">
+          {shownProblems.map((problem, i) => (
+            <div key={i} className="flex items-start gap-2 text-xs leading-relaxed">
+              <TriangleAlert
+                className={cn(
+                  "mt-0.5 h-3.5 w-3.5 shrink-0",
+                  problem.severity === "error"
+                    ? "text-destructive"
+                    : problem.severity === "warning"
+                      ? "text-amber-600 dark:text-amber-400"
+                      : "text-muted-foreground",
+                )}
+              />
+              <div className="min-w-0">
+                <span className="mr-1.5 rounded bg-muted px-1 py-0.5 font-mono text-[10px] text-muted-foreground">
+                  {problem.code}
+                  {problem.path ? ` @ ${problem.path}` : ""}
+                </span>
+                <span className="text-foreground">{problem.message}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <pre className="max-h-[28rem] overflow-auto rounded-md border border-border bg-muted/30 p-3 font-mono text-xs leading-relaxed text-foreground">
           {json}

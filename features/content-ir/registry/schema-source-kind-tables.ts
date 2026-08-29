@@ -21,6 +21,7 @@ import {
   type StoredFieldElement,
 } from "@ai-matrx/content-ir";
 import type { BlockSchemaEntry, BlockSchemaRegistry } from "./schema-source-flexible-data";
+import { readAllRows } from "@/lib/supabase/readAllRows";
 
 async function getSupabase() {
   const { supabase } = await import("@/utils/supabase/client");
@@ -268,28 +269,52 @@ const DEF_COLUMNS =
 export async function listKindSchemasFromTables(): Promise<BlockSchemaRegistry> {
   const supabase = await getSupabase();
 
-  const { data: defRows, error: defErr } = await supabase
-    .schema("content_ir")
-    .from("kind_definition")
-    .select(DEF_COLUMNS)
-    .is("deleted_at", null);
-  if (defErr) {
-    throw new KindTablesError(`Failed to list kind_definition: ${defErr.message}`);
+  // 🚨 readAllRows, NOT a bare `.select()`: this list IS treated as complete —
+  // a kind missing from it parses as `pending_schema` and renders as raw JSON.
+  // PostgREST silently caps a bare select at 1000 rows, and kind_definition
+  // crossed 1000 rows in 2026-08 — which kinds fell off was arbitrary heap
+  // order, i.e. "shape rendering is random" (the crack-#1 outage).
+  let defRows: KindDefProjection[];
+  try {
+    defRows = (await readAllRows(
+      ({ from, to }) =>
+        supabase
+          .schema("content_ir")
+          .from("kind_definition")
+          .select(DEF_COLUMNS, { count: "exact" })
+          .is("deleted_at", null)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "content_ir.kind_definition" },
+    )) as unknown as KindDefProjection[];
+  } catch (error) {
+    throw new KindTablesError(
+      `Failed to list kind_definition: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 
-  const { data: edgeRows, error: edgeErr } = await supabase
-    .schema("content_ir")
-    .from("kind_edge")
-    .select("parent_definition_id, field_name, child_definition_id, position")
-    .is("deleted_at", null);
-  if (edgeErr) {
-    throw new KindTablesError(`Failed to list kind_edge: ${edgeErr.message}`);
+  let edgeRows: KindEdgeProjection[];
+  try {
+    edgeRows = (await readAllRows(
+      ({ from, to }) =>
+        supabase
+          .schema("content_ir")
+          .from("kind_edge")
+          .select("parent_definition_id, field_name, child_definition_id, position", {
+            count: "exact",
+          })
+          .is("deleted_at", null)
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "content_ir.kind_edge" },
+    )) as unknown as KindEdgeProjection[];
+  } catch (error) {
+    throw new KindTablesError(
+      `Failed to list kind_edge: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 
-  return reconstructKindRegistry(
-    (defRows ?? []) as KindDefProjection[],
-    (edgeRows ?? []) as KindEdgeProjection[],
-  );
+  return reconstructKindRegistry(defRows, edgeRows);
 }
 
 /** Cold-tier result: the schema plus the render-relevant definition metadata. */
