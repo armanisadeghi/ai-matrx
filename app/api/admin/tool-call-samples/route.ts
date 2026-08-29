@@ -110,8 +110,8 @@ export async function GET(request: NextRequest) {
       const failed = results.find((result) => result.error);
       if (failed?.error) throw failed.error;
 
-      const rows = results.flatMap(
-        (result) => (result.data ?? []) as PersistedInteractionRow[],
+      const rows: PersistedInteractionRow[] = results.flatMap(
+        (result) => result.data ?? [],
       );
       const samples = buildRecentInteractionSamples(rows).slice(0, MAX_SAMPLES);
       return NextResponse.json({

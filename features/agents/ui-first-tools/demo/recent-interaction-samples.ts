@@ -21,9 +21,12 @@ export interface PersistedInteractionRow {
   is_error: boolean | null;
 }
 
+function isObjectArgs(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 function objectArgs(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  return value as Record<string, unknown>;
+  return isObjectArgs(value) ? value : null;
 }
 
 function baseAsk(
