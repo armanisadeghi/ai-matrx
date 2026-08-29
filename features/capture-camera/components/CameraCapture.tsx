@@ -99,6 +99,9 @@ export function CameraCapture({
   const [aspect, setAspect] = useState<CaptureAspect>("full");
   const [exposureOpen, setExposureOpen] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  // The blocked sheet is dismissible — uploads and the system camera keep
+  // working, so closing it reveals the chrome rather than leaving the page.
+  const [blockedDismissed, setBlockedDismissed] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const controls = useTrackControls(engine.stream);
@@ -392,10 +395,10 @@ export function CameraCapture({
         tiles={tiles}
       />
 
-      {blocked && blockedSheet && (
+      {blocked && blockedSheet && !blockedDismissed && (
         <CaptureSheet
           open
-          onClose={onClose ?? (() => undefined)}
+          onClose={() => setBlockedDismissed(true)}
           body={blockedSheet.body}
           title="Camera unavailable"
           actions={blockedSheet.actions}
