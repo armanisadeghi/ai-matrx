@@ -70,6 +70,8 @@ preserves the infrastructure loss, escaped delivery, and rejection.
 
 - Candidate: `4b06080808465764e280fbfef3cd895abb093c24`
 - Preserved ref: `refs/heads/codex/p11-20260829-repair`
+- Authority projection: `refs/heads/patrol-runs/P11/2026-08-29T161426Z`
+  at `f691b19a8724d5dee632d61e45251ce2f42401fc`
 - Second certifier: `/root/p11_certifier_4b060808`
 - Verdict: **INFRASTRUCTURE BLOCKED** — no candidate-caused defect found
 
@@ -93,6 +95,9 @@ the required exact-worktree viewport/theme matrix could not run.
 - `pnpm check:patrol-contracts`: unchanged baseline failure limited to the
   fleet-health prompt drift.
 - Run record hash verification: PASS.
+- Canonical authority publication: PASS after a fast-forward two-parent
+  reconciliation preserved both the earlier escaped-delivery authority chain
+  and the corrected candidate ancestry.
 
 ## Missing proof and retry contract
 
