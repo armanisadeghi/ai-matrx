@@ -121,22 +121,36 @@ export function memoizedRegionEnvelope(
   const cached = memo.get(source);
   if (cached) return cached;
 
-  // Kick the warm tiers once (memoized, non-blocking) so user kinds — and
-  // their kind_component resolver rows (the render gate's DB tier) — resolve
-  // on subsequent splits; system kinds are always available synchronously.
+  // Kick the warm tiers once (memoized, non-blocking) — under the LAZY
+  // registry these are the cheap slug catalogs, not bulk reads.
   void kindRegistry.ensureWarm();
   void componentRegistry.ensureWarm();
 
   // `existing` is the persisted-envelope fast path: when a seeded envelope's
   // fingerprint exactly matches this region source, normalizeJsonRegion
   // returns it BY REFERENCE (reuseEnvelopeIfCurrent) — nothing parses.
+  // `schemas` is the live RESOLVER, not a static snapshot: the lazy registry
+  // holds only sighted kinds, and the resolver's `request` fires the cold
+  // fetch for a missing one — the static-map path could never even ask.
   const envelope = normalizeJsonRegion(source, {
-    schemas: kindRegistry.snapshotSchemas(),
+    schemas: kindRegistry.resolver(),
     existing: seededEnvelopeFor(source),
   });
 
-  if (memo.size >= MEMO_CAP) memo.clear();
-  memo.set(source, envelope);
+  // Never memoize an envelope whose root kind's SCHEMA is still unknown —
+  // caching it froze a pre-warm parse as this source's permanent answer
+  // (2026-08-29 audit, crack #17: the "renders after you come back" class).
+  // Once the cold fetch lands, the next split re-parses and caches resolved.
+  const rootKind = envelope.root.kind;
+  const schemaStillUnknown =
+    envelope.root.kindState === "pending_schema" ||
+    (envelope.root.kindState === "raw" &&
+      !!rootKind &&
+      kindRegistry.getSchema(rootKind) === undefined);
+  if (!schemaStillUnknown) {
+    if (memo.size >= MEMO_CAP) memo.clear();
+    memo.set(source, envelope);
+  }
   return envelope;
 }
 

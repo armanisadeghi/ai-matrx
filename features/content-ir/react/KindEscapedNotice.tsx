@@ -45,15 +45,10 @@ export function KindEscapedNotice({
   // render path gets from ensure-kind-renderable.
   useEnsureKindRenderable(slug);
   useContentIrKindVersion(slug);
-  // "Registered" = a definition OR an emitted contract: Python-owned kinds
-  // leave `data` NULL so they never mint a KindDefinition, but their
-  // emitted_json_schema rides the warm entries — without the second check
-  // every one of them would misread as "not ours" here.
-  const registered = Boolean(
-    slug &&
-      (kindRegistry.getDefinition(slug) ||
-        kindRegistry.getEmittedJsonSchema(slug)),
-  );
+  // "Registered" = catalog membership (`isKnownKind`) — the lazy registry's
+  // one predicate, covering compiled kinds, every catalog row (Python-owned
+  // included), and anything a cold fetch landed.
+  const registered = Boolean(slug && kindRegistry.isKnownKind(slug));
 
   useEffect(() => {
     if (!slug || !registered) return;

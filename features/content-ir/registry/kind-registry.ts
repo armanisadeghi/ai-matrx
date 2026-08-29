@@ -1,17 +1,22 @@
 /**
  * The canonical kind registry — ONE key (the kind slug), many facets.
  *
- * Loading tiers:
+ * Loading tiers (LAZY since 2026-08-29 — Arman's ruling: never fetch until
+ * needed; a list fetch is names only; the DB is the only truth):
  * - eager: compiled-in system kinds (system-kinds.ts) — the pre-warm
  *          BOOTSTRAP FALLBACK, available at import so speculation and
  *          validation work from the first streamed byte.
- * - warm:  one flexible_data list fetch per app session (ensureWarm), fired
- *          by the first host that expects streamed content. DB rows are the
- *          schema source of truth: they OVERRIDE compiled schemas while the
- *          compiled facets (legacyBlockType, toLegacyServerData, toMarkdown,
- *          artifact, persistence) are preserved.
- * - cold:  unknown kind sighted mid-stream → single-row fetch by slug →
- *          `onSchemaArrived` waiters (ParseSessions) upgrade in place.
+ * - warm:  ONE LIGHT CATALOG fetch per app session (ensureWarm/refresh):
+ *          slug + declared loading slug per non-deleted kind, a few KB. No
+ *          schemas, no emitted contracts — the old ~1.9 MB bulk sweep is
+ *          retired. The catalog powers `isKnownKind` and the loading layer's
+ *          first look.
+ * - cold:  ANY kind sighted (unknown OR compiled) → single-row fetch by slug
+ *          → schema + emitted contract + loading slug land per kind;
+ *          `onSchemaArrived` waiters (ParseSessions) upgrade in place. DB
+ *          rows remain the schema source of truth: the cold fetch OVERRIDES
+ *          a compiled schema while compiled facets (legacyBlockType,
+ *          toLegacyServerData, toMarkdown, artifact, persistence) survive.
  *
  * Module singleton: the registry is app-global state like the store — every
  * host and session shares one instance.
@@ -29,7 +34,7 @@ import {
 } from "@ai-matrx/content-ir";
 import {
   getKindSchemaAndMetaBySlugFromTables,
-  listKindSchemasFromTables,
+  listKindCatalogFromTables,
 } from "./schema-source-kind-tables";
 import { SYSTEM_KIND_DEFINITIONS } from "./system-kinds";
 import { getSurfaceForJsonRootKey } from "./surface-registry";
@@ -55,7 +60,7 @@ function reportFieldlessWarmSchema(kind: string): void {
       message,
       operation: "select",
       relation: kind,
-      callSite: "KindRegistry.ensureWarm",
+      callSite: "KindRegistry.requestSchema",
       hint: "The content_ir schema source must omit unavailable object schemas instead of returning an empty field map.",
       raw: { kind, recovery: "compiled_schema_retained" },
     });
@@ -112,6 +117,12 @@ class KindRegistry {
   private readonly emittedSchemas = new Map<string, unknown>();
   /** Declared `metadata.loading_component` per kind — same reason as above. */
   private readonly declaredLoading = new Map<string, string>();
+  /**
+   * Every non-deleted `kind_definition` slug, from the LIGHT catalog — the
+   * lazy design's membership set. Replaces "is it in the warm defs?" as the
+   * registered-kind predicate now that warm no longer ingests schemas.
+   */
+  private catalogSlugs = new Set<string>();
 
   constructor(systemKinds: KindDefinition[]) {
     for (const def of systemKinds) {
@@ -179,6 +190,20 @@ class KindRegistry {
     this.bumpKind(kind);
   }
 
+  /**
+   * Is this slug OURS — a compiled kind, a catalog row, or anything a cold
+   * fetch has landed? The registered-kind predicate for save-from-chat, the
+   * JsonBlock tripwire, and every other "do we know this shape?" question.
+   * Call after `ensureWarm()` (cheap — the light catalog) for DB coverage.
+   */
+  isKnownKind(kind: string): boolean {
+    return (
+      this.defs.has(kind) ||
+      this.catalogSlugs.has(kind) ||
+      this.emittedSchemas.has(kind)
+    );
+  }
+
   listDefinitions(): KindDefinition[] {
     return [...this.defs.values()];
   }
@@ -244,7 +269,7 @@ class KindRegistry {
     for (const listener of this.versionListeners) listener();
   }
 
-  /** One list fetch per app session — resolves when user kinds are loaded. */
+  /** One LIGHT catalog fetch per app session (slugs + loading slugs only). */
   ensureWarm(): Promise<void> {
     if (!this.warmPromise) {
       this.warmPromise = this.loadWarm();
@@ -268,58 +293,30 @@ class KindRegistry {
     return this.warmPromise;
   }
 
+  /**
+   * THE LAZY WARM TIER (Arman's ruling, 2026-08-29: never fetch until
+   * needed; a list fetch is NAMES ONLY, a quick cheap first look — the DB
+   * is the only truth). This loads the light catalog (slug + declared
+   * loading slug, a few KB) so `isKnownKind` and the loading layer have
+   * their first look. Schemas, emitted contracts, and everything heavy load
+   * PER KIND through the cold tier when a kind is actually sighted — the
+   * old bulk read (~1.9 MB of every `data` + `emitted_json_schema` per
+   * session) is gone.
+   */
   private loadWarm(): Promise<void> {
-    return listKindSchemasFromTables()
-        .then(({ schemas, entries }) => {
-          const loadingBySlug = new Map<string, string | null>();
+    return listKindCatalogFromTables()
+        .then((entries) => {
+          this.catalogSlugs = new Set(entries.map((e) => e.slug));
           for (const entry of entries) {
-            loadingBySlug.set(entry.slug, entry.loadingComponent ?? null);
-            // Capture from the ENTRY list, which covers every catalog kind —
-            // including the Python-owned ones whose `data` is NULL and which
-            // therefore never reach the definition loop below. Without this
-            // their declared loading slug is silently lost and the shape
-            // renders the generic skeleton no matter what its owner chose.
-            this.setDeclaredLoadingComponent(entry.slug, entry.loadingComponent ?? null);
-            this.setEmittedJsonSchema(entry.slug, entry.emittedJsonSchema);
-          }
-          for (const [kind, schema] of Object.entries(schemas)) {
-            const existing = this.defs.get(kind);
-            // Defensive invariant: the content_ir adapter omits Python-owned
-            // object contracts that cannot be faithfully flattened from
-            // `emitted_json_schema` into KindSchema. If any source still
-            // returns a fieldless override, keep the compiled floor and report
-            // the adapter defect before it can collapse every payload field
-            // into residue and render an empty component.
-            // `root` is the OTHER legal shape of an empty field map (a
-            // non-object root form), so a row carrying one is a real schema.
-            if (
-              !schema.root &&
-              Object.keys(schema.fields).length === 0 &&
-              existing?.schema != null &&
-              (existing.schema.root !== undefined ||
-                Object.keys(existing.schema.fields).length > 0)
-            ) {
-              reportFieldlessWarmSchema(kind);
-              continue;
-            }
-            // DB rows override the SCHEMA (content_ir is the source of
-            // truth once warm); compiled facets — legacyBlockType,
-            // toLegacyServerData, toMarkdown, artifact, persistence —
-            // survive via the spread. The compiled schema is only the
-            // pre-warm bootstrap.
-            this.defs.set(kind, {
-              ...existing,
-              kind,
-              schema,
-              schemaSource: "content_ir",
-              tier: existing?.tier ?? "warm",
-              loadingComponent: loadingBySlug.get(kind) ?? null,
-            });
-            this.bumpKind(kind);
+            this.setDeclaredLoadingComponent(
+              entry.slug,
+              entry.loadingComponent ?? null,
+            );
           }
           this.lastWarmAt = Date.now();
-          // A completed warm sweep is fresh truth: every latched cold-fetch
-          // miss is stale by definition, so the slugs become fetchable again.
+          // A completed catalog sweep is fresh truth: every latched
+          // cold-fetch miss is stale by definition, so the slugs become
+          // fetchable again.
           this.misses.clear();
           this.bumpVersion();
         })
@@ -341,7 +338,11 @@ class KindRegistry {
 
   /** Cold fetch, fire-and-forget (the parser's SchemaResolver.request). */
   requestSchema(kind: string): void {
-    if (this.getSchema(kind)) return;
+    // Already carrying DB truth for this kind — nothing to fetch. A COMPILED
+    // schema is only the bootstrap floor, not truth: under the lazy design
+    // the DB override that the bulk warm sweep used to deliver arrives
+    // through THIS path instead, so a compiled kind still fetches once.
+    if (this.defs.get(kind)?.schemaSource === "content_ir") return;
     if (this.inFlight.has(kind)) return;
     // A miss is a lease, not a verdict: past its TTL the slug is fetchable
     // again, so a shape created seconds after its first sighting renders on
@@ -355,24 +356,48 @@ class KindRegistry {
 
     void (async () => {
       try {
-        // The warm sweep may already be carrying it.
+        // The light catalog first (cheap, memoized): an unknown slug skips
+        // the per-kind read entirely; a known one proceeds.
         await this.ensureWarm();
-        let schema = this.getSchema(kind) ?? null;
+        const compiled = this.defs.get(kind);
+        let schema = compiled?.schema ?? null;
 
-        if (!schema) {
+        if (this.catalogSlugs.size === 0 || this.isKnownKind(kind)) {
           const result = await getKindSchemaAndMetaBySlugFromTables(kind);
-          schema = result?.schema ?? null;
-          if (schema) {
+          if (result) {
+            this.setDeclaredLoadingComponent(kind, result.loadingComponent);
+            this.setEmittedJsonSchema(kind, result.emittedJsonSchema);
+          }
+          const dbSchema = result?.schema ?? null;
+          // Defensive invariant (ported from the retired bulk warm sweep): a
+          // FIELDLESS DB schema must never override a real compiled one — it
+          // would collapse every payload field into residue and render the
+          // component empty. `root` is the other legal shape of an empty
+          // field map, so a row carrying one is a real schema.
+          const fieldlessOverride =
+            dbSchema !== null &&
+            !dbSchema.root &&
+            Object.keys(dbSchema.fields).length === 0 &&
+            compiled?.schema != null &&
+            (compiled.schema.root !== undefined ||
+              Object.keys(compiled.schema.fields).length > 0);
+          if (fieldlessOverride) {
+            reportFieldlessWarmSchema(kind);
+          } else if (dbSchema) {
+            schema = dbSchema;
             this.upsertDefinition({
+              ...compiled,
               kind,
-              schema,
+              schema: dbSchema,
               schemaSource: "content_ir",
-              tier: "cold",
+              tier: compiled?.tier ?? "cold",
               loadingComponent: result?.loadingComponent ?? null,
             });
-          } else {
+          } else if (!schema) {
             this.misses.set(kind, Date.now());
           }
+        } else if (!schema) {
+          this.misses.set(kind, Date.now());
         }
 
         this.notifyArrival(kind, schema);

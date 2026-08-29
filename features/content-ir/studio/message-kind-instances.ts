@@ -41,7 +41,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /**
  * All REGISTERED kind blocks in the text, in document order. Warms the kind
- * registry first so DB user kinds resolve. Unregistered kinds are skipped.
+ * registry first (the LIGHT catalog — membership, not schemas) so DB user
+ * kinds resolve via `isKnownKind`. Unregistered kinds are skipped.
  */
 export async function extractRegisteredKindBlocks(
   text: string,
@@ -57,7 +58,7 @@ export async function extractRegisteredKindBlocks(
       envelope.root.kindState === "resolved" &&
       envelope.root.status === "complete"
     ) {
-      if (kindRegistry.getDefinition(envelope.root.kind)) {
+      if (kindRegistry.isKnownKind(envelope.root.kind)) {
         out.push({
           kind: envelope.root.kind,
           value: reconstructRegionValue(envelope),
@@ -77,7 +78,7 @@ export async function extractRegisteredKindBlocks(
     }
     if (!isRecord(parsed)) continue;
     const kind = readObjectKind(parsed);
-    if (!kind || !kindRegistry.getDefinition(kind)) continue;
+    if (!kind || !kindRegistry.isKnownKind(kind)) continue;
     out.push({ kind, value: parsed });
   }
   return out;
