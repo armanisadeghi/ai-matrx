@@ -55260,6 +55260,107 @@ export type Database = {
           },
         ]
       }
+      continued_access: {
+        Row: {
+          access_cutoff_at: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          departed_at: string
+          id: string
+          membership_id: string | null
+          metadata: Json
+          organization_id: string
+          origin: string | null
+          origin_id: string | null
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          subject_user_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          access_cutoff_at?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          departed_at?: string
+          id?: string
+          membership_id?: string | null
+          metadata?: Json
+          organization_id: string
+          origin?: string | null
+          origin_id?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          subject_user_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          access_cutoff_at?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          departed_at?: string
+          id?: string
+          membership_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          origin?: string | null
+          origin_id?: string | null
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          subject_user_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "continued_access_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "continued_access_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "continued_access_subject_user_id_fkey"
+            columns: ["subject_user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "continued_access_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_entity_definition: {
         Row: {
           ai_exposure: string
@@ -59348,6 +59449,14 @@ export type Database = {
       clear_output_feedback: {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: boolean
+      }
+      continued_access_allows: {
+        Args: { p_feature_key: string; p_org: string; p_user: string }
+        Returns: boolean
+      }
+      continued_access_state: {
+        Args: { p_org: string; p_user: string }
+        Returns: Json
       }
       create_entity_table: {
         Args: {
@@ -63690,6 +63799,32 @@ export type Database = {
           n: number
           resource_key: string
         }[]
+      }
+      continued_access_depart: {
+        Args: {
+          p_access_cutoff_at?: string
+          p_contact_email?: string
+          p_contact_phone?: string
+          p_organization_id: string
+          p_origin?: string
+          p_origin_id?: string
+          p_subject_user_id: string
+        }
+        Returns: Json
+      }
+      continued_access_portal: {
+        Args: { p_organization_id?: string }
+        Returns: Json
+      }
+      continued_access_set_window: {
+        Args: {
+          p_access_cutoff_at?: string
+          p_organization_id: string
+          p_reason?: string
+          p_revoke?: boolean
+          p_subject_user_id: string
+        }
+        Returns: Json
       }
       conversation_file_add: {
         Args: {
