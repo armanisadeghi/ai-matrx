@@ -48992,6 +48992,10 @@ export type Database = {
         }
         Returns: Json
       }
+      sync_positions_to_employment: {
+        Args: { p_employment_id: string }
+        Returns: Json
+      }
       time_adjustment_create: {
         Args: {
           p_amount_delta?: number
