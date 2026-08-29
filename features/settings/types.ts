@@ -11,7 +11,7 @@ import type { LucideIcon } from "lucide-react";
  * Tabs can surface this info to the user ("Changes saved automatically" vs
  * "This setting resets on refresh").
  */
-export type SettingsPersistence = "synced" | "local-only" | "session";
+export type SettingsPersistence = "synced" | "local-only" | "session" | "server";
 
 /**
  * A dotted path identifying a specific setting: `slice.key` or `slice.module.preference`.

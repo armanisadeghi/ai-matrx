@@ -127,6 +127,12 @@ export function OrgManage({
       show: canManageSettings,
     },
     {
+      id: "configuration",
+      label: "Configuration",
+      icon: SlidersHorizontal,
+      show: canManageSettings,
+    },
+    {
       id: "change-policy",
       label: "Change policy",
       icon: ShieldCheck,
@@ -407,6 +413,29 @@ export function OrgManage({
                 orgId={displayOrganization.id}
                 canEdit={canManageSettings}
               />
+            </SectionCard>
+          )}
+
+          {/* Configuration — the org rung of Code → System → Org → User */}
+          {canManageSettings && (
+            <SectionCard
+              id="configuration"
+              icon={SlidersHorizontal}
+              title="Configuration"
+              description="Every platform setting this organization may override — the platform default stays visible, your value wins, one click inherits it back."
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <p className="text-sm text-muted-foreground flex-1">
+                  Overrides take effect within a minute, with no deploy. HR
+                  settings keep their own page under HR.
+                </p>
+                <Button asChild variant="outline" size="sm">
+                  <Link href={`/organizations/${slug}/settings/configuration`}>
+                    Open configuration
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Link>
+                </Button>
+              </div>
             </SectionCard>
           )}
 

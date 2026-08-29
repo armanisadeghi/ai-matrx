@@ -12,7 +12,7 @@ export interface FeatureKnob {
   key: string;
   value: unknown;
   default_value: unknown;
-  value_type: "number" | "integer" | "boolean" | "string" | "enum";
+  value_type: "number" | "integer" | "boolean" | "string" | "enum" | "json";
   unit: string | null;
   min_value: number | null;
   max_value: number | null;
@@ -23,6 +23,11 @@ export interface FeatureKnob {
   set_by: "agent" | "human";
   basis: string | null;
   review_due: string | null;
+  /** Scope kinds permitted to override this knob; `[]` = platform-locked. */
+  overridable_by: string[];
+  override_direction: "any" | "lower_only" | "raise_only";
+  /** Statutory floor an override may never cross, distinct from the default. */
+  bound_value: unknown;
 }
 
 /** One plan's allowance for one metered capability. */

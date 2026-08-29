@@ -42,6 +42,7 @@ import { Chrome } from "@/components/icons/brand-icons";
 import Placeholder from "./tabs/PlaceholderTab";
 import MessagingTab from "./tabs/MessagingTab";
 import NotificationsTab from "./tabs/NotificationsTab";
+import PersonalConfigTab from "./tabs/PersonalConfigTab";
 import PlanUsageTab from "./tabs/PlanUsageTab";
 import AppearanceTab from "./tabs/AppearanceTab";
 import VoiceTab from "./tabs/VoiceTab";
@@ -117,6 +118,17 @@ export const settingsRegistry: SettingsTabDef[] = [
     searchKeywords: ["alerts", "email", "notifications", "form submissions", "events"],
     component: NotificationsTab, // canonical Notification System preferences (communication.notification_*)
     persistence: "local-only",
+  },
+  {
+    id: "general.personalConfig",
+    label: "Personal configuration",
+    icon: Gauge,
+    parentId: "general",
+    description:
+      "Platform settings your organization opened to per-person override. The server resolves exactly what you set here.",
+    searchKeywords: ["configuration", "override", "knob", "organization", "personal"],
+    component: PersonalConfigTab, // USER rung of scoped configuration (platform.knob_override)
+    persistence: "server",
   },
   {
     id: "general.language",

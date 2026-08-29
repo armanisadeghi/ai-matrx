@@ -14,10 +14,11 @@
 //     one rather than living in a doc nobody re-reads.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, RotateCcw, Save } from "lucide-react";
+import { AlertTriangle, Lock, RotateCcw, Save } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { fetchKnobOverrideCounts } from "@/lib/scoped-config/service";
 import { toast } from "@/lib/toast";
 import { fetchFeatureKnobs, setFeatureKnob } from "../service";
 import type { FeatureKnob } from "../types";
@@ -46,6 +47,7 @@ function rangeHint(knob: FeatureKnob): string | null {
 
 export function FeatureKnobsPanel() {
   const [knobs, setKnobs] = useState<FeatureKnob[]>([]);
+  const [overrideCounts, setOverrideCounts] = useState<Record<string, number>>({});
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,8 +57,16 @@ export function FeatureKnobsPanel() {
     setLoading(true);
     setError(null);
     try {
-      const rows = await fetchFeatureKnobs();
+      const [rows, counts] = await Promise.all([
+        fetchFeatureKnobs(),
+        fetchKnobOverrideCounts(),
+      ]);
       setKnobs(rows);
+      setOverrideCounts(
+        Object.fromEntries(
+          counts.map((c) => [`${c.feature}.${c.key}`, c.total_count]),
+        ),
+      );
       setDrafts(
         Object.fromEntries(rows.map((k) => [knobId(k), displayValue(k.value)])),
       );
@@ -181,6 +191,39 @@ export function FeatureKnobsPanel() {
                       {isOverdue(knob) && (
                         <Badge variant="destructive" className="text-xs">
                           review overdue
+                        </Badge>
+                      )}
+                      {knob.overridable_by.length === 0 ? (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 text-xs"
+                          title="No organization or user may override this value."
+                        >
+                          <Lock className="h-3 w-3" />
+                          platform-locked
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-xs"
+                          title={`Overridable by: ${knob.overridable_by.join(", ")}${
+                            knob.override_direction !== "any"
+                              ? ` (${knob.override_direction.replace("_", " ")})`
+                              : ""
+                          }`}
+                        >
+                          {knob.overridable_by.includes("user")
+                            ? "org + user"
+                            : "org"}
+                          {knob.override_direction !== "any"
+                            ? ` · ${knob.override_direction.replace("_", " ")}`
+                            : ""}
+                        </Badge>
+                      )}
+                      {(overrideCounts[id] ?? 0) > 0 && (
+                        <Badge variant="default" className="text-xs tabular-nums">
+                          {overrideCounts[id]} override
+                          {overrideCounts[id] === 1 ? "" : "s"}
                         </Badge>
                       )}
                     </div>
