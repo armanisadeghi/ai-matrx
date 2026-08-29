@@ -43030,6 +43030,17 @@ export type Database = {
         Args: { p_action: string; p_org: string; p_token: string }
         Returns: Json
       }
+      _l1_subject_write_gate: {
+        Args: {
+          p_action: string
+          p_capability: string
+          p_employee_id: string
+          p_org: string
+          p_purpose?: string
+          p_token: string
+        }
+        Returns: Record<string, unknown>
+      }
       _l1_viewer: {
         Args: { p_at: string; p_employee_id: string; p_user: string }
         Returns: Json
@@ -44941,6 +44952,14 @@ export type Database = {
       stamp_retention_triggers: {
         Args: { p_employment_id: string }
         Returns: number
+      }
+      subject_employment_as_of: {
+        Args: {
+          p_at?: string
+          p_employee_id: string
+          p_organization_id?: string
+        }
+        Returns: string
       }
       time_adjustment_create: {
         Args: {
