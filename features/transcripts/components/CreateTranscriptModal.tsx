@@ -38,10 +38,20 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/utils/supabase/client";
 import { RecordingInterface } from "./RecordingInterface";
 import { RecordingPreview } from "./RecordingPreview";
-import { saveAudioToStorage, getAudioUrl, downloadAudioBlob } from "../service/audioStorageService";
+import {
+  saveAudioToStorage,
+  getAudioUrl,
+  downloadAudioBlob,
+} from "../service/audioStorageService";
 import { saveDraftTranscript } from "../service/transcriptsService";
 import { TranscriptSegment } from "../types";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import {
+  createDeterministicRecordingCanary,
+  TRANSCRIPT_RECORDING_CANARY,
+} from "../qa/deterministicRecordingCanary";
 
 interface CreateTranscriptModalProps {
   isOpen: boolean;
@@ -76,6 +86,7 @@ export function CreateTranscriptModal({
     reset: resetTranscription,
   } = useAudioTranscription();
   const toast = useToastManager("transcripts");
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
 
   const [inputMethod, setInputMethod] = useState<InputMethod>("upload");
   const [step, setStep] = useState<Step>("choose");
@@ -159,6 +170,30 @@ export function CreateTranscriptModal({
 
   // ============ RECORDING HANDLERS ============
 
+  const storeRecordedAudio = async (
+    audioBlob: Blob,
+    duration: number,
+    recordingTitle: string,
+  ) => {
+    setRecordedAudioBlob(audioBlob);
+    setRecordedDuration(duration);
+    setTitle(recordingTitle);
+    setStep("saving-audio");
+
+    const userId = requireUserId();
+    const uploadResult = await saveAudioToStorage(
+      audioBlob,
+      userId,
+      (percent, status) => {
+        setUploadProgress({ percent, status });
+      },
+    );
+
+    setAudioStoragePath(uploadResult.fileId);
+    setAudioUrl(await getAudioUrl(uploadResult.fileId));
+    return uploadResult;
+  };
+
   const handleRecordingComplete = async (audioBlob: Blob, duration: number) => {
     try {
       // Validate that we have audio
@@ -168,32 +203,13 @@ export function CreateTranscriptModal({
         return;
       }
 
-      // Store recording in state and backup to session
-      setRecordedAudioBlob(audioBlob);
-      setRecordedDuration(duration);
-      // Generate default title
       const now = new Date();
-      setTitle(`Recording - ${now.toLocaleString()}`);
-
-      // Move to saving audio step
-      setStep("saving-audio");
-
-      // CRITICAL STEP 1: Save audio to storage FIRST (NEVER skip this)
-      const userId = requireUserId();
-
-      const uploadResult = await saveAudioToStorage(
+      const recordingTitle = `Recording - ${now.toLocaleString()}`;
+      const uploadResult = await storeRecordedAudio(
         audioBlob,
-        userId,
-        (percent, status) => {
-          setUploadProgress({ percent, status });
-        },
+        duration,
+        recordingTitle,
       );
-
-      setAudioStoragePath(uploadResult.fileId);
-
-      // Get a signed URL for preview through the universal handler.
-      const previewUrl = await getAudioUrl(uploadResult.fileId);
-      setAudioUrl(previewUrl);
 
       // CRITICAL STEP 2: Transcribe the audio
       setStep("process");
@@ -222,7 +238,7 @@ export function CreateTranscriptModal({
 
       // CRITICAL STEP 3: Save draft to database IMMEDIATELY
       const draft = await saveDraftTranscript({
-        title,
+        title: recordingTitle,
         description,
         segments,
         folder_name: folder,
@@ -249,6 +265,58 @@ export function CreateTranscriptModal({
       toast.error(error.message || "Failed to process recording");
       // Audio is still in audioBlob and session backup
       setStep("record"); // Go back to recording
+    }
+  };
+
+  const handleDeterministicRecordingCanary = async () => {
+    const audioBlob = createDeterministicRecordingCanary();
+    const duration = TRANSCRIPT_RECORDING_CANARY.durationSeconds;
+    const recordingTitle = `${TRANSCRIPT_RECORDING_CANARY.titlePrefix} ${new Date().toISOString()}`;
+
+    try {
+      const uploadResult = await storeRecordedAudio(
+        audioBlob,
+        duration,
+        recordingTitle,
+      );
+      const segments: TranscriptSegment[] = [
+        {
+          id: crypto.randomUUID(),
+          timecode: "0:00",
+          seconds: 0,
+          text: TRANSCRIPT_RECORDING_CANARY.transcriptText,
+          speaker: "QA fixture",
+        },
+      ];
+      setTranscriptSegments(segments);
+
+      const draft = await saveDraftTranscript({
+        title: recordingTitle,
+        description: TRANSCRIPT_RECORDING_CANARY.description,
+        segments,
+        folder_name: "Recordings",
+        source_type: "audio",
+        tags: ["qa-canary"],
+        metadata: {
+          duration,
+          language: "en",
+          qa_fixture: TRANSCRIPT_RECORDING_CANARY.version,
+        },
+        audio_file_path: uploadResult.fileId,
+      });
+
+      setDraftTranscriptId(draft.id);
+      await refreshTranscripts();
+      setStep("preview");
+      toast.success("Safe recording canary saved as draft");
+    } catch (error) {
+      console.error("Recording canary failed:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to run recording canary",
+      );
+      setStep("record");
     }
   };
 
@@ -462,6 +530,9 @@ export function CreateTranscriptModal({
               <RecordingInterface
                 onRecordingComplete={handleRecordingComplete}
                 onError={handleRecordingError}
+                onRunDeterministicCanary={
+                  isSuperAdmin ? handleDeterministicRecordingCanary : undefined
+                }
               />
             </div>
           )}
