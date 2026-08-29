@@ -69,7 +69,8 @@ If a precondition fails, update the exact blocker and stop before changing provi
   sessions before asking Arman to log in.
 - Use only Codex's separate in-app Browser for UI work. Use `info@aimatrx.com` as the default
   AI Matrx-owned provider identity and Google SSO where supported; never borrow Arman's Chrome tabs,
-  profile, cookies, or saved passwords.
+  profile, cookies, or saved passwords. A Google/Microsoft campaign ownership exclusion does not
+  prohibit using Google SSO merely to authenticate an eligible non-Google/non-Microsoft provider.
 - Continue through ordinary login, account choosers, existing-session SSO, OAuth consent, and
   email-link flows the agent can access. Standing-authorized free, reversible identity disclosure
   and persistent grants proceed without another permission request.

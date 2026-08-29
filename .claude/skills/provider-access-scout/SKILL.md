@@ -51,6 +51,9 @@ Answer all of these:
    MFA, Vault metadata, recovery, and standing-authorized execution plan lets the agent complete the
    account without returning clerical work to Arman? Name an owner interruption only when the live
    flow introduces an explicitly excluded boundary.
+
+Using Google SSO solely to authenticate an eligible non-Google provider is not work on a Google
+campaign and remains standing-authorized even when Google-family campaigns have a dedicated owner.
 8. Which redirects, domains, privacy/terms/support URLs, screenshots, videos, test credentials, or
    reviewer instructions are needed?
 9. What confirmation/case ID will result, how long does the provider say review takes, where is
