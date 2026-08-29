@@ -54,6 +54,11 @@ import type {
   LeaveEnrollSkip,
   LeavePolicy,
 } from "../manager/api/types";
+import {
+  LeaveAfterPendingCell,
+  LeaveAfterPendingHeader,
+  LeaveBookableCell,
+} from "../manager/balanceFigures";
 import { leaveLedgerHrefFrom, leavePolicyHref } from "../manager/routes";
 
 /** The one page size this surface asks for. Paired with the honest "there are more" notice. */
@@ -272,20 +277,30 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
         );
       },
     },
+    /*
+      🚨 THE THIRD SCREEN THE WORD "AVAILABLE" APPEARS ON, AND IT NOW MEANS THE SAME THING.
+
+      This roster is `LeaveBalanceRow` — the same shape the balances desk and the employee's own
+      tile render — and it was rendering `row.available`, §5's accounting identity, under the
+      caption the other two use for `bookable_now`. It was also the least honest of the three: no
+      rounding, and a negative identity would have printed as a plain `-24 h` in ordinary body
+      text with nothing to mark it. Both cells are now the shared ones.
+    */
     {
       id: "available",
-      accessorFn: (row) => row.available ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => row.bookableNow ?? Number.NEGATIVE_INFINITY,
       header: "Available",
       sortable: true,
       filter: false,
-      cell: (row) =>
-        row.unlimited === true ? (
-          <span className="text-foreground">Unlimited</span>
-        ) : row.available === null ? (
-          <span className="text-muted-foreground">Not provided</span>
-        ) : (
-          <span className="tabular-nums text-foreground">{row.available} h</span>
-        ),
+      cell: (row) => <LeaveBookableCell row={row} />,
+    },
+    {
+      id: "after-pending",
+      accessorFn: (row) => row.available ?? Number.NEGATIVE_INFINITY,
+      header: <LeaveAfterPendingHeader />,
+      sortable: true,
+      filter: false,
+      cell: (row) => <LeaveAfterPendingCell row={row} />,
     },
   ];
 
