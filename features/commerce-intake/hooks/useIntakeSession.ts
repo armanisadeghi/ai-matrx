@@ -367,13 +367,21 @@ export function useIntakeSession(
    * the notes flush lands FIRST, then the `pipeline_state='captured'` status
    * write — and NOTHING else — is the pipeline handoff.
    */
-  /** Returns false when the notes flush failed — the draft is kept, the item
-   *  stays open (policy 4: the flush lands BEFORE the close, or no close). */
-  const finishCurrentAsset = useCallback(async (): Promise<boolean> => {
+  /** Three outcomes, and callers must NOT conflate them:
+   *  - "failed": the notes flush failed — draft kept, item stays open
+   *    (policy 4: the flush lands BEFORE the close, or no close).
+   *  - "superseded": a DIFFERENT item was adopted while the flush was in
+   *    flight — the closed item is captured, but the session now belongs to
+   *    the adopted item and was NOT cleared. The session is not idle.
+   *  - "finished": the item closed and the session was cleared (or there was
+   *    nothing to finish). */
+  const finishCurrentAsset = useCallback(async (): Promise<
+    "finished" | "failed" | "superseded"
+  > => {
     const asset = currentAssetRef.current;
     if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
     const flushed = await flushNotes(asset);
-    if (!flushed) return false;
+    if (!flushed) return "failed";
     if (asset) {
       void finishAsset(asset).catch((err: unknown) => {
         console.error("[commerce-intake] item close failed", err);
@@ -384,7 +392,7 @@ export function useIntakeSession(
     // (e.g. a capture started right after a mode switch). Session state now
     // belongs to that item — never clear it from this late-resolving finish.
     if ((currentAssetRef.current?.id ?? null) !== (asset?.id ?? null)) {
-      return true;
+      return "superseded";
     }
     persistResume({ assetId: null });
     previewUrlsRef.current.forEach((url) => revokeTrackedObjectUrl(url));
@@ -395,7 +403,7 @@ export function useIntakeSession(
     notesRef.current = "";
     notesDirtyRef.current = false;
     setNotesState("");
-    return true;
+    return "finished";
   }, [flushNotes, persistResume]);
 
   const nextItem = useCallback(() => {
@@ -409,8 +417,10 @@ export function useIntakeSession(
         toast.error("That item no longer exists.");
         return;
       }
-      const finished = await finishCurrentAsset();
-      if (!finished) return; // draft kept; the failure is already toasted
+      const outcome = await finishCurrentAsset();
+      if (outcome === "failed") return; // draft kept; the failure is already toasted
+      // "superseded" is fine here: resume is an explicit switch to a named
+      // asset, so the adopt below deliberately replaces whatever is current.
       const b = batchRef.current;
       if (!b || b.id !== asset.batchId) {
         const loaded = await loadBatch(asset.batchId);
@@ -510,8 +520,12 @@ export function useIntakeSession(
           // resolve late and wipe an item adopted in the NEW mode. On a
           // failed flush (already toasted) the item stays open and the mode
           // stays put.
-          const finished = await finishCurrentAsset();
-          if (!finished) return;
+          const outcome = await finishCurrentAsset();
+          // Flip ONLY on a clean finish. "failed" keeps the item open;
+          // "superseded" means a new item was adopted mid-flush — the user
+          // is mid-capture in the OLD mode and its resume state must not be
+          // nulled by this toggle.
+          if (outcome !== "finished") return;
           modeRef.current = mode;
           setCaptureModeState(mode);
           batchRef.current = null;
@@ -548,9 +562,10 @@ export function useIntakeSession(
     async (code: string): Promise<"assigned" | "switched"> => {
       const trimmed = code.trim();
       if (!trimmed) return "assigned";
-      const asset = currentAssetRef.current;
-      // An untouched, code-less current item just takes the code.
-      if (isCurrentAssetEmpty() && (!asset || !asset.qrCode)) {
+      const assignToCurrent = async (): Promise<boolean> => {
+        const asset = currentAssetRef.current;
+        // An untouched, code-less current item just takes the code.
+        if (!(isCurrentAssetEmpty() && (!asset || !asset.qrCode))) return false;
         if (!asset) {
           await ensureAsset({ qrCode: trimmed });
         } else if (organizationId) {
@@ -566,15 +581,27 @@ export function useIntakeSession(
           currentAssetRef.current = next;
           setCurrentAsset(next);
         }
-        return "assigned";
-      }
+        return true;
+      };
+      if (await assignToCurrent()) return "assigned";
       // Anything else — including a deliberate re-scan of the SAME code
       // after 4 s out of frame (the next unit of the same product) — closes
-      // the current item and opens a new one carrying the code.
-      const finished = await finishCurrentAsset();
-      if (!finished) return "assigned"; // notes flush failed — stay on the item
-      await ensureAsset({ qrCode: trimmed });
-      return "switched";
+      // the current item and opens a new one carrying the code. Bounded loop:
+      // a "superseded" finish means a different item was adopted mid-flush —
+      // that adopted item either takes the code (if fresh) or gets finished
+      // too; the code is never silently dropped.
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const outcome = await finishCurrentAsset();
+        if (outcome === "failed") return "assigned"; // flush failed — stay on the item
+        if (outcome === "finished") {
+          await ensureAsset({ qrCode: trimmed });
+          return "switched";
+        }
+        // superseded: the session now holds a different, freshly adopted item
+        if (await assignToCurrent()) return "assigned";
+      }
+      toast.error("Could not switch items — scan the code again.");
+      return "assigned";
     },
     [
       isCurrentAssetEmpty,
