@@ -1,4 +1,8 @@
--- hr_l1_60_an_unestablished_population_is_not_membership.sql
+-- hr_l1_61_an_unestablished_population_is_not_membership.sql
+--
+-- (Numbered 61, not 60: a concurrent lane had already applied
+--  hr_l1_60_a_status_with_no_writer_is_not_a_status. Two migrations sharing one number
+--  is the kind of thing that costs the next agent an hour, so this one moved.)
 --
 -- The two residuals left open by hr_l1_59, both ruled by the coordinator.
 --
@@ -55,7 +59,7 @@ begin
   if (select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'hr' and p.proname = '_l1_viewer')
      ~ 'AN UNESTABLISHED POPULATION IS NOT MEMBERSHIP' then
-    raise notice 'hr_l1_60: already applied';
+    raise notice 'hr_l1_61: already applied';
     return;
   end if;
 
@@ -66,7 +70,7 @@ begin
     v_def := pg_get_functiondef(p_fn::regprocedure);
     v_cnt := (length(v_def) - length(replace(v_def, p_old, ''))) / length(p_old);
     if v_cnt <> p_expect then
-      raise exception 'hr_l1_60: % — expected % occurrence(s) of the anchor, found %. REFUSING to '
+      raise exception 'hr_l1_61: % — expected % occurrence(s) of the anchor, found %. REFUSING to '
                       'guess at a body that has moved underneath this migration.',
                       p_fn, p_expect, v_cnt;
     end if;
@@ -167,7 +171,7 @@ end $mig$;
 insert into hr.function_contract
   (schema_name, function_name, home_migration, must_contain, must_not_contain, reason)
 values
-  ('hr', '_l1_viewer', 'hr_l1_60_an_unestablished_population_is_not_membership.sql',
+  ('hr', '_l1_viewer', 'hr_l1_61_an_unestablished_population_is_not_membership.sql',
    array['AN UNESTABLISHED POPULATION IS NOT MEMBERSHIP',
          'case when em.hire_date > p_at then em.hire_date end asc nulls last'],
    array[]::text[],
@@ -177,7 +181,7 @@ values
    || 'the subject''s nearest employment spell so the population can be asked at all. Removing the '
    || 'fallback restores a blank cheque for every scope-restricted grant.'),
 
-  ('hr', 'capability', 'hr_l1_60_an_unestablished_population_is_not_membership.sql',
+  ('hr', 'capability', 'hr_l1_61_an_unestablished_population_is_not_membership.sql',
    array['THE POPULATION IS ASKED ON A DATE THE SUBJECT ACTUALLY HOLDS A POSITION',
          'p_subject_employment, v_pop_at,'],
    array['p_subject_employment, p_at,'],
@@ -186,7 +190,7 @@ values
    || 'incoming hire even though the intended department is on the record. v_pop_at equals p_at '
    || 'for every subject who holds a position today, so this narrows nothing that already worked.'),
 
-  ('hr', 'wf_inbox', 'hr_l1_60_an_unestablished_population_is_not_membership.sql',
+  ('hr', 'wf_inbox', 'hr_l1_61_an_unestablished_population_is_not_membership.sql',
    array['THE ITEMS BIND TO WHERE THE GRANT IS, NOT ONLY TO WHERE THE CALLER WORKS',
          'THIS CHECK IS AN AFFORDANCE GATE AND IS ORG-LESS ON PURPOSE',
          'and hr.capability(v_uid, ''workflow.view_queue'', null, current_date, i.organization_id)'],
@@ -205,7 +209,7 @@ begin
   select count(*), string_agg(qname || ' / ' || clause || ' / ' || missing_or_present, '; ')
     into v_broken, v_bad from hr.function_contracts_broken();
   if v_broken > 0 then
-    raise exception 'hr_l1_60: % contract clause(s) broken after apply (INCLUDING hr_l1_59''s, '
+    raise exception 'hr_l1_61: % contract clause(s) broken after apply (INCLUDING hr_l1_59''s, '
                     'which must survive this migration untouched): %', v_broken, v_bad;
   end if;
 end $verify$;
