@@ -44,6 +44,12 @@ You may not write a new implementation until you have actually searched. Minimum
   lifecycle (its own create/update/delete story, its own foreign keys pointing at it).
 - Never create a parallel table that overlaps an existing one because modifying the existing
   one felt risky. Migrations on existing tables are normal work here.
+- 🚨 **Configuration is a PRIMITIVE, never a table.** Any setting/limit/mode/default a
+  platform admin, org, or user should change = a `platform.feature_knob` row (+
+  `platform.knob_override` for the org/user rungs) — never a `*_config`/`*_settings` table,
+  a settings jsonb blob, or a bespoke resolver. The admin, org, and personal surfaces come
+  free with the row. db-rules non-negotiable #10; SoR
+  `../common-docs/systems/platform/feature-knobs/FEATURE.md`.
 
 ## Write Importable Code (even for code used once — for now)
 
@@ -257,6 +263,7 @@ this section exists to stop. Campaign: `docs/handoffs/inventory-law-sweep.md`.
 | Parameterized message authoring + strict real-record rendering | `agent.message_template`, `features/message-templates/`, aidream `services/message_templates` | `features/message-templates/FEATURE.md` + common-docs `systems/communications/message-templates/FEATURE.md`        |
 | One human-reviewed Lane B email                                | planned `crm.interaction` + aidream `services/outreach_single_send`                           | `features/crm/components/outreach-lists/SingleSendDialog.tsx` + aidream `services/outreach_single_send/FEATURE.md` |
 | Canonical entity list shell                                    | `lib/entity-list/`                                                                            | `lib/entity-list/FEATURE.md` — write a config, never a bespoke table                                               |
+| Scoped configuration (platform → org → user setting/limit/mode) | `platform.feature_knob` + `platform.knob_override`, client `lib/scoped-config/`               | `../common-docs/systems/platform/feature-knobs/FEATURE.md` — a knob row, never a `*_config` table or settings blob |
 | Per-entity record actions                                      | `components/official/item/`                                                                   | one `ItemMenuConfig` builder per entity; three rival lists for one entity is the defect this kills                 |
 | Universal right-click                                          | `features/context-menu-v3/`                                                                   | `features/context-menu-v3/FEATURE.md` + `context-menu-v3` skill                                                    |
 | AI assists everywhere                                          | `features/assists/`                                                                           | `features/assists/FEATURE.md` — never fork a second chip, table, or accept handler                                 |
