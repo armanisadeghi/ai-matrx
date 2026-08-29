@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P9",
   "runId": "019ff9f6-6062-78f0-a8d2-e96ec520f635",
-  "state": "certified",
-  "updatedAt": "2026-08-29T14:34:35.518Z",
-  "summary": "Corrected P9 candidate is independently CERTIFIED with no batch-caused defect.",
+  "state": "delivered",
+  "updatedAt": "2026-08-29T14:50:09.472Z",
+  "summary": "Corrected certified P9 repair delivered; original escaped candidate shipped as v0.4.561 and was reconciled without redundant re-release.",
   "source": "019ff9f6-6062-78f0-a8d2-e96ec520f635.json",
-  "eventHash": "4de44cfd92fea1745870dd39aaeb10e4b1c7304038858f7444af8b12fe8ba23f"
+  "eventHash": "8bdc54dde7c4902a6e82c71a31bb84c8c7b223bbe78b55063c06454f89efa86f"
 }

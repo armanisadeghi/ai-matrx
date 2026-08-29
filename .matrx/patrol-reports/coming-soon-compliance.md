@@ -1,63 +1,53 @@
 # P9 — Coming-soon compliance patrol
 
-**Run:** 2026-08-13 00:35 PDT
-**Repository:** `/Users/armanisadeghi/.codex/worktrees/e397/matrx-frontend`
-**Base commit:** `01cb3bed4`
-**Pass:** first run / required full pass
-**Tier:** M for clear registry + handler wiring; R for ambiguous disabled/static surfaces
-**Final batch state:** **INFRASTRUCTURE BLOCKED** — corrected diff preserved; not released
+**Retry:** 2026-08-29
+**Run ID:** `019ff9f6-6062-78f0-a8d2-e96ec520f635`
+**Original candidate:** `5bf578b45e084d57beeeb6eb5198f58a90bd9c0d` (escaped certification and shipped in `v0.4.561`)
+**Corrected candidate:** `e8ea694e74a39b7a1d7253737a62278d00196e3d`
+**Corrected release:** `v0.4.1442` at `bed0f23a91e60267224daf164cef040c1e945975`
+**Final state:** **CERTIFIED · DELIVERED**
 
-## Immutable baseline
+## Scope and immutable baseline
 
-- Worktree isolation: dedicated Codex worktree, clean before mutation.
-- Dependencies: worktree-local `pnpm install --offline --frozen-lockfile` completed; no dependency changes.
-- `pnpm type-check`: PASS.
-- Dedicated P9 static gate: absent.
-- Case-insensitive runtime TS/JS literal scan outside `lib/coming-soon/**`: **105 files / 165 lines**.
-- Registered backlog: **33** registry entries.
-- Managed preview: lease owned by `/Users/armanisadeghi/code/matrx-frontend`, not this worktree.
+- Recovered the exact original candidate in isolated checkout `/Users/armanisadeghi/.codex/worktrees/p9-coming-soon-retry`; no shared-checkout mutation occurred.
+- Verified the original candidate is an ancestor of both `v0.4.561` and `origin/main`.
+- Installed worktree-local dependencies offline with a frozen lockfile; no dependency or generated-file changes.
+- Pre-edit gates: type-check PASS; scoped ESLint 0 errors/8 warnings; doctrine, reuse-index, and tsconfig PASS.
+- Required full detector pass used the P9 registry recipe, not git churn. Corrected-candidate snapshot: **103 runtime literal files / 158 lines**, **9 direct toast lines**, **38 registry entries**.
+- Live `origin/main` after serialized delivery contains later structural novelty: **120 runtime literal files / 185 lines** and **82 registry entries**. Those later additions are the next patrol baseline, not evidence against this frozen batch.
 
-## Scope scanned
+## Findings and repair
 
-Because the prior report was absent, this run performed the required first/full pass:
+The bounded interaction fallback initially passed 3/3, but the first fresh adversarial certifier **REJECTED** the original candidate for concrete defects:
 
-```sh
-rg -i -n --glob '*.{ts,tsx,js,jsx}' --glob '!lib/coming-soon/**' 'coming soon' .
-rg -i -n --glob '*.{ts,tsx,js,jsx}' --glob '!lib/coming-soon/**' 'toast\\.(info|success|warning|error)\\([^\\n]*coming[ -]?soon' .
-rg -n --glob '*.{ts,tsx,js,jsx}' 'announceComingSoon|getComingSoon|listComingSoon' .
-```
+1. `chat.add-to-docs` was registered as planned even though canonical Save to Document already exists.
+2. `image-studio.edit-suggestions`, `image-studio.prompt-edit`, and `image-studio.face-detection` announced from handler branches hidden by the same false capability flag, so those promises were unreachable.
 
-The open sightings ledger contained no prior P9 sighting. Structural-novelty comparison was unavailable because this was the first report, so the full pass establishes the next run's route/feature baseline: **1,004 route page leaves** and **121 top-level feature directories**.
+The five-file repair removed those four false registry entries and restored their exact pre-batch handlers. It preserved the six clear, reachable promise registrations. It did not wire the already-built document action because that would change behavior and build-chunk ownership beyond P9's approved mechanical recipe.
 
 ## Routed report
 
-### Auto-fixed now — corrected diff preserved, certification incomplete
+### Auto-fixed now
 
-**10 verified promise cases / 14 handler occurrences** use the approved existing primitive. Nine new registry rows were added; `agents.save-as-template` reused its existing row.
+Six clear cases, covering nine handler occurrences, remain registered and wired through the approved primitive:
 
-1. `agents.save-as-template` — `features/agents/components/agent-listings/AgentListItem.tsx:183`.
-2. `rich-document.convert-to-broker` — rich-document, authenticated-chat, and public-chat action handlers.
-3. `chat.add-to-docs` — authenticated-chat and public-chat action handlers.
-4. `image-studio.smart-crop` — capability guard and 404 fallback.
-5. `image-studio.edit-suggestions` — disabled-capability action.
-6. `image-studio.prompt-edit` — disabled-capability action.
-7. `image-studio.suggest-annotations` — annotate-mode action.
-8. `image-studio.pii-redaction` — annotate-mode action.
-9. `image-studio.face-detection` — disabled-capability action.
-10. `education.premium-checkout` — Stripe 503 fallback.
-
-All six existing-but-gated Image Studio controls and Education checkout are `blocked` with explicit `blockedBy`; planned chat/document promises remain `planned`.
+1. `agents.save-as-template`
+2. `rich-document.convert-to-broker`
+3. `image-studio.smart-crop`
+4. `image-studio.suggest-annotations`
+5. `image-studio.pii-redaction`
+6. `education.premium-checkout`
 
 ### Manual approval requested
 
-1. `features/image-studio/modes/edit/EditAiToolbar.tsx:348` — after suggestions eventually run, the success toast promises a future one-click apply action. Why it matters: it creates a second untracked promise after the registered suggestions promise. Safe fix: register `image-studio.apply-suggestion` and replace the promise-language success outcome with `announceComingSoon` (or build the apply action). Approval is requested because the desired post-suggestion interaction is a product choice.
-2. `features/whatsapp-clone/chat-view/MessageInputAttachMenu.tsx:62` — the Camera attachment action emits a bare coming-soon toast. Why it matters: the promise is user-triggerable and absent from the registry. Safe fix: register `whatsapp.camera-attachment` and call `announceComingSoon` from the existing click branch. Approval is requested because this demo/clone surface may be intentionally disposable.
+1. `features/image-studio/modes/edit/EditAiToolbar.tsx:347` — after suggestions run, the success toast promises a future one-click apply action. This matters because it creates an untracked product promise. Safe fix: either register `image-studio.apply-suggestion` and use `announceComingSoon`, or build the apply action. Arman must choose the intended post-suggestion interaction.
+2. `features/whatsapp-clone/chat-view/MessageInputAttachMenu.tsx:62` — Camera attachment emits a bare coming-soon toast. This matters because the user-triggerable promise is absent from the registry. Safe fix: register `whatsapp.camera-attachment` and call `announceComingSoon`, or deliberately retire the demo action. Arman must decide whether the clone surface is supported.
 
-No exception is proposed or approved.
+No exception was proposed, approved, suppressed, or allowlisted.
 
-### Backlog retained — missing rendered-context evidence or product decision
+### Backlog retained
 
-The other **99 post-batch detector files** remain open detector candidates. They mix comments/types, registry-backed marketing/status consumers, static placeholder pages, badges, tooltips, disabled controls, and stub modals. The scan alone cannot safely decide whether to register an actionable promise, replace a display with registry-derived copy, build the feature, or delete a stale fallback. They require stable route/reproduction evidence and per-surface ownership decisions; no suppression or exception was added.
+The remaining **101 exact corrected-candidate detector files** lack rendered-context evidence, a stable reproduction, or a product decision. They remain Tier R/report-only:
 
 - `app/(admin)/administration/ui/official-components/component-displays/advanced-menu.tsx`
 - `app/(core)/files/activity/page.tsx`
@@ -118,6 +108,7 @@ The other **99 post-batch detector files** remain open detector candidates. They
 - `features/cms/utils/__tests__/contentVolume.test.ts`
 - `features/cms/utils/contentVolume.ts`
 - `features/code/views/PlaceholderPanel.tsx`
+- `features/cx-chat/actions/messageActionRegistry.ts`
 - `features/cx-chat/components/sidebar/SidebarActions.tsx`
 - `features/education/components/ExamCuratedLibrary.tsx`
 - `features/education/components/landing/EducationHub.tsx`
@@ -140,6 +131,7 @@ The other **99 post-batch detector files** remain open detector candidates. They
 - `features/flashcards/fast-fire/components/FastFireSetup.tsx`
 - `features/image-manager/components/AIGenerateHero.tsx`
 - `features/image-studio/constants/backend-capabilities.ts`
+- `features/image-studio/modes/annotate/AnnotateModeShell.tsx`
 - `features/legal/components/landing/LegalLanding.tsx`
 - `features/marketing/components/MarketingHub.tsx`
 - `features/marketing/components/media/SiteVideosView.tsx`
@@ -159,41 +151,27 @@ The other **99 post-batch detector files** remain open detector candidates. They
 - `features/surfaces/manifests/image-edit.manifest.ts`
 - `features/surfaces/manifests/marketing.manifest.ts`
 
-## Verification and certification
+Important retained classes:
 
-Post-edit checks on the frozen 10-file batch:
+- Add-to-docs stubs remain bare in authenticated/public chat. Canonical `pushMarkdownToDocument` exists, but wiring it is a behavior and chunk-contract change for a focused non-patrol task.
+- Image edit suggestions, prompt edit, and face detection handlers remain report-only until their capability-hidden controls become reachable.
 
-- `pnpm type-check`: PASS → PASS.
-- Scoped ESLint: 0 errors; 8 unchanged baseline warnings.
-- `git diff --check`: PASS.
-- Marketing registry Jest: 7/7 PASS.
-- Registry integrity: 42 key/id rows, 17 literal calls, no missing calls, duplicates, key/id mismatches, or blocked entries without `blockedBy`.
-- `pnpm check:doctrine`: PASS; `pnpm check:reuse-index`: PASS; `pnpm check:tsconfig`: PASS with two unchanged inert `.next*` include notes.
-- `pnpm check:migrations`: command completed but the ledger check was skipped because Supabase credentials are absent in this isolated worktree; no migration files changed.
-- `pnpm sync-types`: intentionally not run because this patrol cannot touch generated files; the authoritative non-generating `pnpm type-check` passed before and after.
-- Detector: **105 files / 165 lines → 101 files / 153 lines**.
-- Direct coming-soon toast detector: 4 remaining; two routed for manual approval and two retained for contextual review.
+## Certification
 
-Adversarial verdict history:
+- Exact-candidate managed preview was owned by the isolated checkout and stopped when compilation reached **14.9 GB RSS**, exceeding the 8 GB patrol cap.
+- The in-app Browser control provider was unavailable; after the bounded infrastructure retry, the constitutional focused fallback rendered the actual `PublicMessageOptionsMenu`, actual `AnnotateModeShell`, and canonical coming-soon dialog.
+- Corrected focused interaction harness: **4/4 PASS**.
+- Corrected source gates: type-check PASS; scoped ESLint 0 errors/7 baseline warnings; doctrine, reuse-index, tsconfig, registry integrity, marketing registry tests 7/7, literal-ID coverage, and diff check PASS.
+- Fresh adversarial certifier verdict: **CERTIFIED** for the corrected candidate; no batch-caused defect.
+- Current-main source comparison surfaced later unrelated baseline debt (two promoted icon lint errors and 17 reuse-index paths). These were unchanged outside the frozen P9 batch and did not reject certification.
+- Release quality gates completed in advisory mode after the push and reported unrelated repository/database debt; P9 type-check, doctrine, manifest contracts, and corrected interaction proof remained green.
 
-1. **REJECTED** — false `image-studio.generate` promise for a live feature and an awaited dialog that kept an agent row disabled. Both defects were removed.
-2. **REJECTED** — six built-but-gated Image Studio entries were marked `planned`. All six now use `blocked` plus named blockers.
-3. **INFRASTRUCTURE BLOCKED** — no concrete defect remained, but interaction proof could not finish because the managed preview lease belongs to another checkout. The foreign preview reported **29.3 GB RSS**, above the patrol cap; this worktree neither reused nor stopped it.
+## Delivery reconciliation
 
-The corrected diff is preserved for retry. It is **not CERTIFIED and not released**.
+- `v0.4.561` permanently records the original escaped candidate; that fact was not erased or rewritten.
+- The corrected certified repair shipped once as `v0.4.1442`; no redundant release was created.
+- Permanent run record now contains **12 events** ending `delivered`; authority ref: `refs/heads/patrol-runs/P9/019ff9f6-6062-78f0-a8d2-e96ec520f635`.
 
-## New baseline lists
+## Cadence health and candidates
 
-- Runtime literal candidates after the batch: **101 files / 153 lines** (the 99-file retained list above plus the two manual proposals).
-- Registry: **42 entries**.
-- Route page leaves: **1,004**.
-- Top-level feature directories: **121**.
-- Next run scope: structural novelty against these lists + ledger; periodic full pass remains required by the registry cadence.
-
-## Cadence health
-
-First run; there is no preceding-month P9 report history to evaluate. No cadence change proposed.
-
-## Candidates noticed
-
-No distinct new Pattern Patrol class was evidenced. The unregistered placeholder primitives are part of P9 itself, not a separate candidate.
+The preceding month is not all clean: this is the repaired completion of the first P9 run. No longer cadence is proposed. Infrastructure blocks do not count as rejections; the one concrete rejection was repaired, so mutation is not paused. No recurring unregistered class met the evidence threshold for a Candidate-bench nomination.

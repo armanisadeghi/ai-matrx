@@ -168,6 +168,43 @@
       },
       "previousEventHash": "644d41d1ff100e39ed88ed7592e2097d50166d5b0dfa483456676c4ac9375c40",
       "eventHash": "4de44cfd92fea1745870dd39aaeb10e4b1c7304038858f7444af8b12fe8ba23f"
+    },
+    {
+      "sequence": 11,
+      "state": "delivery_queued",
+      "at": "2026-08-29T14:49:58.891Z",
+      "actor": "pattern-patrol-p9-retry",
+      "summary": "Corrected certified repair entered the serialized delivery lane after reconciling the original v0.4.561 escape.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P9/019ff9f6-6062-78f0-a8d2-e96ec520f635"
+      ],
+      "delivery": {
+        "candidateSha": "e8ea694e74a39b7a1d7253737a62278d00196e3d",
+        "preservedRef": "refs/heads/patrol-runs/P9/019ff9f6-6062-78f0-a8d2-e96ec520f635"
+      },
+      "previousEventHash": "4de44cfd92fea1745870dd39aaeb10e4b1c7304038858f7444af8b12fe8ba23f",
+      "eventHash": "3dc41a7bded30cf148520bd9146d0aa07cb881523ac8c38cdd8e7d594fcd9340"
+    },
+    {
+      "sequence": 12,
+      "state": "delivered",
+      "at": "2026-08-29T14:50:09.472Z",
+      "actor": "pattern-patrol-p9-retry",
+      "summary": "Corrected certified P9 repair delivered; original escaped candidate shipped as v0.4.561 and was reconciled without redundant re-release.",
+      "evidence": [
+        "release:v0.4.561-original-escape",
+        "release:v0.4.1442-corrected-repair",
+        "certifier:CERTIFIED",
+        "proof:focused-interaction-4-of-4"
+      ],
+      "delivery": {
+        "candidateSha": "e8ea694e74a39b7a1d7253737a62278d00196e3d",
+        "preservedRef": "refs/heads/patrol-runs/P9/019ff9f6-6062-78f0-a8d2-e96ec520f635",
+        "integratedSha": "bed0f23a91e60267224daf164cef040c1e945975",
+        "release": "v0.4.1442"
+      },
+      "previousEventHash": "3dc41a7bded30cf148520bd9146d0aa07cb881523ac8c38cdd8e7d594fcd9340",
+      "eventHash": "8bdc54dde7c4902a6e82c71a31bb84c8c7b223bbe78b55063c06454f89efa86f"
     }
   ]
 }
