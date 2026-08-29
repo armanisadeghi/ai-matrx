@@ -42,7 +42,8 @@ independently.
   toast), same fileHandler folder, same `intake_artifact` rows, same monotonic
   `sequence_index` (untracked delineator semantics untouched). Uploaded videos get their
   `duration_ms` probed client-side (the artifact CHECK requires it). The control is the
-  equal-width Photo · Video · Upload row (product-capture pattern); the picker input carries
+  equal-width Photo · Video · Upload row (the shared animated
+  `features/media-capture/components/CaptureModeBar.tsx`); the picker input carries
   NO `capture` attribute (that is what opens the gallery instead of the camera), and the
   camera-blocked overlay offers Upload alongside the OS camera.
 - **Instant lane** (`/commerce/intake/instant`, serialized mode only): the Process button runs
@@ -218,12 +219,16 @@ On a phone, logged into an org:
 
 ## Change log
 
+<<<<<<< Updated upstream
 - 2026-08-29 — **Registered `commerce` with PostgREST.**
   `migrations/expose_commerce_schema_postgrest_2026_08_29.sql` appends the schema to the
   authenticator's live `pgrst.db_schemas` value and reloads PostgREST. The migration reads and
   preserves the live fleet-wide list; it never restates a stale snapshot. This closes the
   `PGRST106 Invalid schema: commerce` boundary that prevented every direct-Supabase intake read.
 
+=======
+- 2026-08-29 — **Permission + capture-bar pass (shared with product-capture).** IntakeCaptureScreen pre-checks `queryCameraPermission()` (known-denied → inline how-to-re-enable explainer instead of another getUserMedia), acquires with `{ combineMicPrompt: true }` (ONE combined camera+mic browser prompt covering video + voice notes), warm-holds the shared mic while in video mode, and persists the switched camera via `useAudioDevices().setCamera` so the same camera returns on the next open. The inline Photo·Video·Upload row is replaced by the shared animated `features/media-capture/components/CaptureModeBar.tsx` (spring-slide thumb, reduced-motion snap) — instant lane included (same component). Navigating to `/commerce/intake/assets` still releases the lease by camera-runtime law (camera light never outlives a consumer); iOS Safari's per-session re-prompt is by browser design — the standalone-PWA manifest is the durable-grant path (see `features/media-capture/FEATURE.md`). type-check green.
+>>>>>>> Stashed changes
 - 2026-08-29 — **The label pool + claim-on-scan** (the DB/workflow half of the commerce QR
   system). DB: `commerce.label_batch` + `commerce.label_code` via `platform.create_entity_table`
   (both `iam.canonical_certify_ok` in-migration), plus THE uniqueness fix — partial unique

@@ -8,19 +8,39 @@
  */
 
 const noteCameraPermissionOutcome = jest.fn();
+const noteMicPermissionOutcome = jest.fn();
 const registerCameraPermissionAcquirer = jest.fn();
+/** The mic permission state the mocked device manager reports. */
+let micPermissionState = "prompt";
 
 jest.mock("@/features/media-devices/deviceManager", () => ({
   noteCameraPermissionOutcome: (...args: unknown[]) =>
     noteCameraPermissionOutcome(...args),
+  noteMicPermissionOutcome: (...args: unknown[]) =>
+    noteMicPermissionOutcome(...args),
   registerCameraPermissionAcquirer: (...args: unknown[]) =>
     registerCameraPermissionAcquirer(...args),
+  getMediaDevicesSnapshot: () => ({
+    permissionState: micPermissionState,
+    cameraPermissionState: "unknown",
+    inputs: [],
+    outputs: [],
+    cameras: [],
+  }),
+}));
+
+const adoptWarmAudioStream = jest.fn();
+const buildWarmMicConstraints = jest.fn(() => ({ echoCancellation: true }));
+
+jest.mock("@/features/audio/micStream", () => ({
+  adoptWarmAudioStream: (...args: unknown[]) => adoptWarmAudioStream(...args),
+  buildWarmMicConstraints: () => buildWarmMicConstraints(),
 }));
 
 // ─── Fakes ───────────────────────────────────────────────────────────────────
 
 interface FakeTrack {
-  kind: "video";
+  kind: "video" | "audio";
   readyState: "live" | "ended";
   stop: jest.Mock;
   getSettings: () => MediaTrackSettings;
@@ -30,9 +50,9 @@ interface FakeTrack {
   onunmute: (() => void) | null;
 }
 
-function makeTrack(): FakeTrack {
+function makeTrack(kind: "video" | "audio" = "video"): FakeTrack {
   const track: FakeTrack = {
-    kind: "video",
+    kind,
     readyState: "live",
     stop: jest.fn(() => {
       track.readyState = "ended";
@@ -61,7 +81,13 @@ class FakeStream {
     return this.tracks;
   }
   getVideoTracks(): FakeTrack[] {
-    return this.tracks;
+    return this.tracks.filter((t) => t.kind === "video");
+  }
+  getAudioTracks(): FakeTrack[] {
+    return this.tracks.filter((t) => t.kind === "audio");
+  }
+  removeTrack(track: FakeTrack): void {
+    this.tracks = this.tracks.filter((t) => t !== track);
   }
 }
 
@@ -76,11 +102,19 @@ async function loadManager(): Promise<Manager> {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  getUserMedia.mockImplementation(async () => new FakeStream([makeTrack()]));
+  micPermissionState = "prompt";
+  getUserMedia.mockImplementation(async (req: MediaStreamConstraints) =>
+    req && typeof req === "object" && req.audio
+      ? new FakeStream([makeTrack("video"), makeTrack("audio")])
+      : new FakeStream([makeTrack("video")]),
+  );
   Object.defineProperty(navigator, "mediaDevices", {
     configurable: true,
     value: { getUserMedia },
   });
+  // The combined path wraps split-off audio tracks in `new MediaStream(...)`;
+  // jsdom has none, so the fake stands in.
+  (globalThis as { MediaStream?: unknown }).MediaStream = FakeStream;
 });
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -280,5 +314,99 @@ describe("camera-stream-manager", () => {
     });
     a.release();
     expect(a.getTrackSummary()).toBeNull();
+  });
+
+  test("shouldCombineMicPrompt: only 'prompt'/'unknown' fold the mic into the camera call", async () => {
+    const mgr = await loadManager();
+    expect(mgr.shouldCombineMicPrompt("prompt")).toBe(true);
+    expect(mgr.shouldCombineMicPrompt("unknown")).toBe(true);
+    expect(mgr.shouldCombineMicPrompt("granted")).toBe(false); // no prompt to combine
+    expect(mgr.shouldCombineMicPrompt("denied")).toBe(false); // audio would fail the whole call
+  });
+
+  test("combineMicPrompt + mic 'prompt': ONE gUM requests video+audio, audio adopted by the mic singleton, both outcomes reported", async () => {
+    micPermissionState = "prompt";
+    const mgr = await loadManager();
+    const a = await mgr.acquireCameraLease(
+      { profile: "720p" },
+      { combineMicPrompt: true },
+    );
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    const req = getUserMedia.mock.calls[0][0] as MediaStreamConstraints;
+    expect(req.video).toBeTruthy();
+    expect(req.audio).toEqual({ echoCancellation: true }); // buildWarmMicConstraints()
+    expect(noteCameraPermissionOutcome).toHaveBeenCalledWith(true);
+    expect(noteMicPermissionOutcome).toHaveBeenCalledWith(true);
+    // Audio split off into the mic singleton; the camera stream keeps video only.
+    expect(adoptWarmAudioStream).toHaveBeenCalledTimes(1);
+    const adopted = adoptWarmAudioStream.mock.calls[0][0] as FakeStream;
+    expect(adopted.getAudioTracks()).toHaveLength(1);
+    expect((a.stream as unknown as FakeStream).getAudioTracks()).toHaveLength(0);
+    expect((a.stream as unknown as FakeStream).getVideoTracks()).toHaveLength(1);
+    a.release();
+  });
+
+  test("combineMicPrompt with mic already granted or denied stays video-only", async () => {
+    micPermissionState = "granted";
+    let mgr = await loadManager();
+    let a = await mgr.acquireCameraLease(
+      { profile: "720p" },
+      { combineMicPrompt: true },
+    );
+    expect(
+      (getUserMedia.mock.calls[0][0] as MediaStreamConstraints).audio,
+    ).toBeUndefined();
+    expect(adoptWarmAudioStream).not.toHaveBeenCalled();
+    a.release();
+
+    jest.clearAllMocks();
+    getUserMedia.mockImplementation(
+      async () => new FakeStream([makeTrack("video")]),
+    );
+    micPermissionState = "denied";
+    mgr = await loadManager();
+    a = await mgr.acquireCameraLease(
+      { profile: "720p" },
+      { combineMicPrompt: true },
+    );
+    expect(
+      (getUserMedia.mock.calls[0][0] as MediaStreamConstraints).audio,
+    ).toBeUndefined();
+    a.release();
+  });
+
+  test("combined-call denial retries ONCE video-only; success means the mic was the denial", async () => {
+    micPermissionState = "prompt";
+    const mgr = await loadManager();
+    const denied = Object.assign(new Error("denied"), {
+      name: "NotAllowedError",
+    });
+    getUserMedia
+      .mockRejectedValueOnce(denied) // the combined call
+      .mockImplementationOnce(async () => new FakeStream([makeTrack("video")]));
+    const a = await mgr.acquireCameraLease(
+      { profile: "720p" },
+      { combineMicPrompt: true },
+    );
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+    expect(
+      (getUserMedia.mock.calls[1][0] as MediaStreamConstraints).audio,
+    ).toBeUndefined();
+    expect(noteCameraPermissionOutcome).toHaveBeenCalledWith(true);
+    expect(noteMicPermissionOutcome).toHaveBeenCalledWith(false);
+    a.release();
+
+    // Both denied: the video-only retry also rejects → camera denial reported,
+    // and no third gUM call (single bounded retry, never a loop).
+    jest.clearAllMocks();
+    micPermissionState = "prompt";
+    const mgr2 = await loadManager();
+    getUserMedia.mockRejectedValue(denied);
+    await expect(
+      mgr2.acquireCameraLease({ profile: "720p" }, { combineMicPrompt: true }),
+    ).rejects.toBe(denied);
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+    expect(noteCameraPermissionOutcome).toHaveBeenCalledWith(false);
+    expect(noteMicPermissionOutcome).not.toHaveBeenCalledWith(false);
   });
 });

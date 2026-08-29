@@ -229,6 +229,58 @@ function streamIsLive(stream: MediaStream | null): stream is MediaStream {
 }
 
 /**
+ * The default audio constraints this manager acquires with — exported so the
+ * camera stream manager's COMBINED `getUserMedia({video, audio})` prompt (one
+ * browser prompt for both permissions instead of camera-then-mic) requests the
+ * mic with exactly the same processing + preferred-device shape the singleton
+ * itself would use.
+ */
+export function buildWarmMicConstraints(): MediaTrackConstraints {
+  const audio: MediaTrackConstraints = {
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+  };
+  if (m.preferredInputDeviceId) {
+    audio.deviceId = { ideal: m.preferredInputDeviceId };
+  }
+  return audio;
+}
+
+/**
+ * Adopt an audio stream acquired ELSEWHERE (the camera stream manager's
+ * combined camera+mic prompt) as this manager's warm stream, so the grant that
+ * combined prompt just earned is banked exactly like one of our own: the next
+ * `acquireMicStream()` inside the keepalive window reuses it with no second
+ * prompt. If a warm stream already exists (or one is being acquired), the
+ * incoming tracks are stopped immediately — never two live mic streams.
+ * With zero holders the adopted stream is parked in the keepalive window, so
+ * the mic light clears on the normal schedule.
+ */
+export function adoptWarmAudioStream(stream: MediaStream): void {
+  if (streamIsLive(m.stream) || m.inFlight) {
+    for (const t of stream.getTracks()) {
+      try {
+        t.stop();
+      } catch {
+        // ignore
+      }
+    }
+    return;
+  }
+  if (!streamIsLive(stream)) return; // dead on arrival — nothing to bank
+  clearReleaseTimer();
+  m.stream = stream;
+  attachTrackHealth(stream);
+  watchPageLifecycle();
+  if (m.refCount > 0) {
+    setState("active");
+  } else {
+    armKeepaliveStop();
+  }
+}
+
+/**
  * Acquire the shared mic stream, incrementing the holder count. The returned
  * stream is shared — DO NOT stop its tracks. Call `releaseMicStream()` when
  * done. If a warm stream exists (active or in its keepalive window) it is
@@ -255,11 +307,7 @@ export async function acquireMicStream(
   }
 
   setState("acquiring");
-  const audio: MediaTrackConstraints = constraints ?? {
-    echoCancellation: true,
-    noiseSuppression: true,
-    autoGainControl: true,
-  };
+  const audio: MediaTrackConstraints = constraints ?? buildWarmMicConstraints();
   // Apply the user's chosen mic as an `{ideal}` constraint (graceful — the
   // browser falls back to default if the device is gone; no NotFoundError to
   // handle, per the Chrome/Safari lifecycle homework). An explicit per-call

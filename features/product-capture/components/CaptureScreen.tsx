@@ -51,7 +51,6 @@ import {
   ScanLine,
   SwitchCamera,
   Trash2,
-  Video,
   X,
 } from "lucide-react";
 
@@ -61,13 +60,20 @@ import { toast } from "@/lib/toast";
 import {
   getMediaDevicesSnapshot,
   listDevices,
+  queryCameraPermission,
   subscribeMediaDevices,
 } from "@/features/media-devices/deviceManager";
+import { useAudioDevices } from "@/features/audio/useAudioDevices";
+import {
+  acquireMicStream,
+  releaseMicStream,
+} from "@/features/audio/micStream";
 import {
   acquireCameraLease,
   type CameraLease,
 } from "@/features/media-capture/runtime/camera-stream-manager";
 import { CameraPreview } from "@/features/media-capture/components/CameraPreview";
+import { CaptureModeBar } from "@/features/media-capture/components/CaptureModeBar";
 import { capturePhotoFromVideo } from "@/features/media-capture/hooks/usePhotoCapture";
 import {
   startVideoRecording,
@@ -198,11 +204,30 @@ export function CaptureScreen({
     let myLease: CameraLease | null = null;
     let unsubscribe: (() => void) | null = null;
 
-    acquireCameraLease({
-      profile: "maximum-available",
-      ...(deviceId ? { deviceId } : { facingMode: "environment" as const }),
-    })
-      .then((lease) => {
+    void (async () => {
+      // Known-denied (Chromium Permissions API / prior Safari inference):
+      // show the inline explainer instead of calling getUserMedia again —
+      // the browser owns the block; only its site settings can lift it.
+      const known = await queryCameraPermission();
+      if (cancelled) return;
+      if (known === "denied") {
+        setPermissionDenied(true);
+        return;
+      }
+      try {
+        // ONE combined camera+mic browser prompt when the mic isn't granted
+        // yet — this surface records video and voice notes, so the mic is
+        // part of the job; a separate mic prompt mid-action is the classic
+        // double-prompt annoyance (every session on iOS Safari).
+        const lease = await acquireCameraLease(
+          {
+            profile: "maximum-available",
+            ...(deviceId
+              ? { deviceId }
+              : { facingMode: "environment" as const }),
+          },
+          { combineMicPrompt: true },
+        );
         if (cancelled) {
           lease.release();
           return;
@@ -214,8 +239,7 @@ export function CaptureScreen({
         setNotSupported(false);
         unsubscribe = lease.on("reconfigured", (next) => setStream(next));
         void listDevices();
-      })
-      .catch((err: unknown) => {
+      } catch (err: unknown) {
         if (cancelled) return;
         const name =
           err && typeof err === "object" && "name" in err
@@ -226,7 +250,8 @@ export function CaptureScreen({
         } else {
           setNotSupported(true);
         }
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
@@ -241,6 +266,7 @@ export function CaptureScreen({
 
   const cameraBlocked = notSupported || permissionDenied;
 
+  const { setCamera } = useAudioDevices();
   const switchCamera = useCallback(() => {
     const cams = getMediaDevicesSnapshot().cameras;
     if (cams.length < 2) return;
@@ -253,8 +279,14 @@ export function CaptureScreen({
               .deviceId,
         );
     const next = cams[(Math.max(currentIdx, 0) + 1) % cams.length];
-    if (next) setDeviceId(next.deviceId);
-  }, [deviceId]);
+    if (next) {
+      setDeviceId(next.deviceId);
+      // Persist id + label (labels survive iOS deviceId regeneration) so the
+      // SAME camera comes back on the next open — the preferred-camera
+      // resolver applies it as `{ideal}` with no renegotiation or prompt.
+      setCamera(next.deviceId, next.label);
+    }
+  }, [deviceId, setCamera]);
 
   // ── Capture modes ────────────────────────────────────────────────────────
   const [mediaMode, setMediaMode] = useState<"photo" | "video">("photo");
@@ -262,6 +294,33 @@ export function CaptureScreen({
   const [recordElapsed, setRecordElapsed] = useState(0);
   const recordingRef = useRef<CaptureRecordingHandle | null>(null);
   const [voiceActive, setVoiceActive] = useState(false);
+
+  // Warm-hold the shared mic while in VIDEO mode so tapping record starts
+  // instantly with no mic prompt mid-action (iOS Safari re-prompts once a
+  // fully torn-down grant is re-acquired). Released on leaving video mode /
+  // unmount; the singleton's short keepalive clears the mic light. Skipped
+  // when the mic is known-denied — re-asking would hammer, not help.
+  useEffect(() => {
+    if (mediaMode !== "video" || cameraBlocked) return;
+    if (getMediaDevicesSnapshot().permissionState === "denied") return;
+    let cancelled = false;
+    let held = false;
+    acquireMicStream()
+      .then(() => {
+        if (cancelled) {
+          releaseMicStream();
+          return;
+        }
+        held = true;
+      })
+      .catch(() => {
+        // Denied/unavailable — the record path surfaces its own error.
+      });
+    return () => {
+      cancelled = true;
+      if (held) releaseMicStream();
+    };
+  }, [mediaMode, cameraBlocked]);
 
   useEffect(() => {
     if (!recording) return;
@@ -592,12 +651,23 @@ export function CaptureScreen({
 
       {cameraBlocked && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80 px-8 text-center">
-          <p className="text-sm text-white/90">
-            The in-page camera isn&apos;t available here. Use your device camera
-            instead, or upload photos and videos you already have — either way
-            they are added the moment you pick them. Notes, SKU and voice notes
-            keep working.
-          </p>
+          {permissionDenied ? (
+            <p className="text-sm text-white/90">
+              Camera access is blocked for this site, so asking again
+              won&apos;t help — re-enable it in the browser: tap the icon by
+              the address bar (on iPhone the &ldquo;AA&rdquo;/page menu →
+              Website Settings), allow Camera and Microphone, then reload.
+              Meanwhile your device camera and uploads work — and notes, SKU
+              and voice notes keep working.
+            </p>
+          ) : (
+            <p className="text-sm text-white/90">
+              The in-page camera isn&apos;t available here. Use your device
+              camera instead, or upload photos and videos you already have —
+              either way they are added the moment you pick them. Notes, SKU
+              and voice notes keep working.
+            </p>
+          )}
           <div className="flex flex-wrap items-center justify-center gap-2">
             <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
               <CameraIcon className="mr-1.5 h-4 w-4" />
@@ -698,51 +768,17 @@ export function CaptureScreen({
           />
         </div>
 
-        {/* Capture source control: one stable, equal-width row. Upload is an
-            immediate action; Photo and Video remain the persistent modes. */}
+        {/* Capture source control: one stable, equal-width row with the
+            springy sliding thumb. Upload is an immediate action; Photo and
+            Video remain the persistent modes. */}
         <div className="flex justify-center px-2 pb-1">
-          <div className="grid w-full max-w-sm grid-cols-3 rounded-full bg-white/10 p-1">
-            <button
-              type="button"
-              onClick={() => setMediaMode("photo")}
-              disabled={recording}
-              aria-pressed={mediaMode === "photo"}
-              className={cn(
-                "flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-40",
-                mediaMode === "photo"
-                  ? "bg-white text-black"
-                  : "text-white/80 hover:bg-white/10 hover:text-white",
-              )}
-            >
-              <CameraIcon className="h-4 w-4 shrink-0" />
-              Photo
-            </button>
-            <button
-              type="button"
-              onClick={() => setMediaMode("video")}
-              disabled={recording}
-              aria-pressed={mediaMode === "video"}
-              className={cn(
-                "flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-40",
-                mediaMode === "video"
-                  ? "bg-white text-black"
-                  : "text-white/80 hover:bg-white/10 hover:text-white",
-              )}
-            >
-              <Video className="h-4 w-4 shrink-0" />
-              Video
-            </button>
-            <button
-              type="button"
-              onClick={() => uploadInputRef.current?.click()}
-              disabled={recording || session.organizationId === null}
-              aria-label="Upload photos or videos from this device"
-              className="flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-40"
-            >
-              <ImagePlus className="h-4 w-4 shrink-0" />
-              Upload
-            </button>
-          </div>
+          <CaptureModeBar
+            mediaMode={mediaMode}
+            onModeChange={setMediaMode}
+            onUpload={() => uploadInputRef.current?.click()}
+            modeDisabled={recording}
+            uploadDisabled={session.organizationId === null}
+          />
         </div>
 
         {/* Instant lane: the Process affordance (mode="instant" only) */}
