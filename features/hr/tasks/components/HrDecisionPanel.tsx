@@ -21,6 +21,8 @@ import {
     withdrawInstance,
 } from "@/features/hr/tasks/service";
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
+import { hrTasksHref } from "@/features/hr/routes";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import type {
     HrDecisionIntent,
@@ -90,6 +92,17 @@ export function HrDecisionPanel({
     /** Lets a host list (the task table's window) refresh after a decision is recorded here. */
     onDecided?: () => void;
 }) {
+    /*
+      🚨 THE BACK LINK CARRIES THE EMPLOYER. It used to be `<Link href="/hr/tasks">`, and this
+      panel is the body of EVERY task detail page — so the one control most likely to be pressed
+      on the whole surface was the one that dropped `?org=`. `routes.ts` made all 49 builders
+      require `org` on 2026-08-28, which cannot reach a string literal: `hrTasksHref()` is a
+      compile error, `"/hr/tasks"` is a valid string. The tasks lane does not scope its rows by
+      employer TODAY, so this dropped the param without yet changing what was listed — a latent
+      defect that becomes a live one the day that lane scopes, and a visibly wrong URL either way.
+    */
+    const { orgRef } = useHrContext();
+
     const [detail, setDetail] = useState<HrInstanceDetail | null>(null);
     const [refusal, setRefusal] = useState<HrRefusal | null>(null);
     const [actionRefusal, setActionRefusal] = useState<HrRefusal | null>(null);
@@ -278,7 +291,7 @@ export function HrDecisionPanel({
                 <div className="flex items-center gap-2 border-b border-border px-4 py-3">
                     {embedded ? null : (
                         <Button size="sm" variant="ghost" asChild>
-                            <Link href="/hr/tasks">
+                            <Link href={hrTasksHref(orgRef)}>
                                 <ArrowLeft className="mr-1 h-4 w-4" />
                                 All HR tasks
                             </Link>
