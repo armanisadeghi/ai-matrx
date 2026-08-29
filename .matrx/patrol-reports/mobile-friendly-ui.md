@@ -198,8 +198,9 @@ Independent adversarial review also **CERTIFIED** lifecycle candidate
 `9d168957618fbabc876239fdee736fc6184d4ae7`, after rejecting its predecessor
 for checking authorization too late. That candidate checked local and remote
 source authorization before release-lane mutation and preserved exact history
-across divergence or push races; the current fleet release remains explicitly
-fail-forward for advisory patrol findings.
+across divergence or push races. Later concurrent merges temporarily restored
+fail-forward behavior, as recorded below; the final main descendants are
+verified fail-closed.
 
 After a parallel fail-forward commit was subsequently merged into main,
 independent adversarial review **CERTIFIED** exact follow-up
@@ -214,9 +215,9 @@ independent adversarial review **CERTIFIED** final exact follow-up
 pre-mutation authorization checks, the post-ship hard checkpoint, no rebase,
 and the complete focused gate set.
 
-Final integration `c4a2f09dfd4202d8b4e3d7eb807e3fde495ed0cc` preserves that
-certified SHA as an ancestor on `origin/main`. No release was created for the
-retry.
+Code integration `c4a2f09dfd4202d8b4e3d7eb807e3fde495ed0cc` and final projection
+`b0a9943d6cf3301914587207a2da00517edd6afb` preserve that certified SHA as an
+ancestor on `origin/main`. No release was created for the retry.
 
 ## Recursive learning
 
