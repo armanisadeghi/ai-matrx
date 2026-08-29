@@ -320,6 +320,20 @@ export function noteCameraPermissionOutcome(granted: boolean): void {
 }
 
 /**
+ * Report the outcome of a REAL mic `getUserMedia` result observed OUTSIDE the
+ * mic singleton — today that is only the camera stream manager's combined
+ * `getUserMedia({video, audio})` prompt (one browser prompt for both
+ * permissions). The mic twin of `noteCameraPermissionOutcome`: it is the
+ * Safari inference input (its Permissions API is untrusted for the mic) and
+ * keeps Chromium in sync between permissionchange events. Refreshes the device
+ * list on a grant (labels unlock).
+ */
+export function noteMicPermissionOutcome(granted: boolean): void {
+  setPermissionState(granted ? "granted" : "denied");
+  if (granted) void listDevices();
+}
+
+/**
  * The camera stream manager (media-capture Phase 3) registers its acquirer
  * here. The acquirer must perform a real, immediately-released camera stream
  * acquisition (or reuse a live lease) and report the outcome via

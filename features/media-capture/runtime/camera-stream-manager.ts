@@ -32,6 +32,13 @@
 // with no consumer is never acceptable (plan §5 invariant 4). No boot-time
 // prompt, ever — acquisition only happens inside `acquireCameraLease`.
 //
+// COMBINED PERMISSION PROMPT (`options.combineMicPrompt`): recording surfaces
+// where the mic is first-class can fold a not-yet-granted mic permission into
+// the SAME getUserMedia call — one browser prompt for camera+mic instead of a
+// camera prompt at open plus a mic prompt mid-action. The audio tracks go
+// straight to the mic singleton (`adoptWarmAudioStream`); this manager still
+// never holds audio. See `shouldCombineMicPrompt` / `performGetUserMedia`.
+//
 // Preferred device/facing comes from an INJECTED resolver
 // (`setPreferredCameraResolver`) — preferences live in Redux, which this
 // framework-free module must not import (Phase 4 wires the resolver). Applied
@@ -47,9 +54,16 @@
 // by the provider layer, never an import side effect.
 
 import {
+  getMediaDevicesSnapshot,
   noteCameraPermissionOutcome,
+  noteMicPermissionOutcome,
   registerCameraPermissionAcquirer,
+  type MediaPermissionState,
 } from "@/features/media-devices/deviceManager";
+import {
+  adoptWarmAudioStream,
+  buildWarmMicConstraints,
+} from "@/features/audio/micStream";
 import type { CaptureQualityProfile } from "@/features/media-capture/core/capture-types";
 import {
   buildVideoConstraints,
@@ -64,6 +78,30 @@ export interface CameraLeaseSpec {
   deviceId?: string;
   facingMode?: "user" | "environment";
   profile: CaptureQualityProfile;
+}
+
+export interface CameraAcquireOptions {
+  /**
+   * Surfaces where the microphone is a first-class part of the job (video
+   * recording, voice notes) set this so a NOT-YET-GRANTED mic permission is
+   * requested in the SAME `getUserMedia({video, audio})` call as the camera —
+   * ONE combined browser prompt instead of a camera prompt at open plus a mic
+   * prompt mid-action (the classic double-prompt annoyance; on iOS Safari it
+   * recurs every session). The audio tracks are handed straight to the mic
+   * singleton as its warm stream (`adoptWarmAudioStream`), never kept here.
+   * When the mic is already granted (no prompt would appear) or already denied
+   * (audio would fail the WHOLE call) the acquisition stays video-only.
+   */
+  combineMicPrompt?: boolean;
+}
+
+/** Pure decision for the combined prompt: only worth it when a mic prompt
+ *  would actually appear ("prompt"/"unknown"). "granted" needs no prompt;
+ *  "denied" would reject the whole combined call and take the camera with it. */
+export function shouldCombineMicPrompt(
+  micPermissionState: MediaPermissionState,
+): boolean {
+  return micPermissionState === "prompt" || micPermissionState === "unknown";
 }
 
 /** Fired to a lease when the shared stream was reacquired at a different spec
@@ -322,33 +360,77 @@ function watchPageLifecycle(): void {
   });
 }
 
+function isDenialError(err: unknown): boolean {
+  const name =
+    err && typeof err === "object" && "name" in err
+      ? String((err as { name: unknown }).name)
+      : "";
+  return name === "NotAllowedError" || name === "SecurityError";
+}
+
 /** The one real acquisition. Reports the outcome to the device manager
  *  (Safari permission inference) — grant on success, denial ONLY for
- *  NotAllowedError/SecurityError (a missing device is not a denial). */
+ *  NotAllowedError/SecurityError (a missing device is not a denial).
+ *
+ *  With `includeMic`, the SAME call also requests the microphone (one combined
+ *  browser prompt); the audio tracks are split off into the mic singleton's
+ *  warm stream immediately, and a combined-call denial is retried ONCE
+ *  video-only — a mic denial must never take the camera down (and this is a
+ *  single bounded retry on the denial path, never a constraint-fallback loop). */
 async function performGetUserMedia(
   constraints: MediaTrackConstraints,
+  includeMic: boolean,
 ): Promise<MediaStream> {
   try {
-    // The ONE legal getUserMedia({video}) in the repo (see file header).
-    const stream = await navigator.mediaDevices.getUserMedia({
-      // eslint-disable-next-line no-restricted-syntax -- this IS the camera-stream-manager chokepoint the ban protects
-      video: constraints,
-    });
+    // The ONE legal getUserMedia({video}) in the repo (see file header). Two
+    // literal call shapes (not one conditional argument) so the ESLint
+    // chokepoint selector still matches both — never teach an evading shape.
+    let stream: MediaStream;
+    if (includeMic) {
+      stream = await navigator.mediaDevices.getUserMedia({
+        // eslint-disable-next-line no-restricted-syntax -- this IS the camera-stream-manager chokepoint the ban protects (combined camera+mic prompt)
+        video: constraints,
+        audio: buildWarmMicConstraints(),
+      });
+    } else {
+      stream = await navigator.mediaDevices.getUserMedia({
+        // eslint-disable-next-line no-restricted-syntax -- this IS the camera-stream-manager chokepoint the ban protects
+        video: constraints,
+      });
+    }
     noteCameraPermissionOutcome(true);
+    if (includeMic) {
+      // Bank the mic half of the combined grant: hand the audio tracks to the
+      // mic singleton (keepalive-managed — the mic light clears on its normal
+      // schedule; the grant stays warm for the first recording/voice note).
+      noteMicPermissionOutcome(true);
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks.length > 0) {
+        for (const t of audioTracks) stream.removeTrack(t);
+        adoptWarmAudioStream(new MediaStream(audioTracks));
+      }
+    }
     return stream;
   } catch (err) {
-    const name =
-      err && typeof err === "object" && "name" in err
-        ? String((err as { name: unknown }).name)
-        : "";
-    if (name === "NotAllowedError" || name === "SecurityError") {
+    if (includeMic && isDenialError(err)) {
+      // Ambiguous denial of the combined call. Retry ONCE video-only: if the
+      // camera half succeeds, the denial was the mic's — record that so no
+      // surface hammers the mic again this session.
+      const videoOnly = await performGetUserMedia(constraints, false);
+      noteMicPermissionOutcome(false);
+      return videoOnly;
+    }
+    if (isDenialError(err)) {
       noteCameraPermissionOutcome(false);
     }
     throw err;
   }
 }
 
-async function acquireStreamForSpec(spec: CameraLeaseSpec): Promise<MediaStream> {
+async function acquireStreamForSpec(
+  spec: CameraLeaseSpec,
+  includeMic: boolean,
+): Promise<MediaStream> {
   const request: VideoConstraintRequest = {
     profile: spec.profile,
     ...(spec.deviceId ? { deviceId: spec.deviceId } : {}),
@@ -358,7 +440,7 @@ async function acquireStreamForSpec(spec: CameraLeaseSpec): Promise<MediaStream>
   setState("acquiring");
   const inFlight = (async () => {
     try {
-      const stream = await performGetUserMedia(constraints);
+      const stream = await performGetUserMedia(constraints, includeMic);
       m.stream = stream;
       m.activeSpec = spec;
       m.requestedConstraints = constraints;
@@ -414,6 +496,7 @@ function hardStopCamera(): void {
  */
 export async function acquireCameraLease(
   spec: CameraLeaseSpec,
+  options?: CameraAcquireOptions,
 ): Promise<CameraLease> {
   if (typeof navigator === "undefined" || !navigator.mediaDevices) {
     throw new Error(
@@ -422,6 +505,9 @@ export async function acquireCameraLease(
   }
 
   const resolved = resolveSpec(spec);
+  const includeMic =
+    options?.combineMicPrompt === true &&
+    shouldCombineMicPrompt(getMediaDevicesSnapshot().permissionState);
 
   // A pinned recording blocks any incompatible acquisition — typed, explained.
   if (
@@ -443,7 +529,9 @@ export async function acquireCameraLease(
       // Incompatible + not pinned → reacquire at the new spec and tell every
       // existing holder. Never silently hand out a wrong-spec stream.
       const old = m.stream;
-      const next = await acquireStreamForSpec(resolved);
+      // Reconfigure of an already-live camera: the grant exists, so a combined
+      // prompt could only surface a lone mic prompt mid-reconfigure — never.
+      const next = await acquireStreamForSpec(resolved, false);
       stopStreamTracks(old);
       notifyReconfigured(next);
     }
@@ -452,7 +540,7 @@ export async function acquireCameraLease(
     // Coalesce onto the compatible in-flight acquisition.
     await m.inFlight;
   } else {
-    await acquireStreamForSpec(resolved);
+    await acquireStreamForSpec(resolved, includeMic);
   }
 
   m.leases.set(lease.id, lease);
