@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { ProInput } from "@/components/official/ProInput";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import {
@@ -291,6 +292,22 @@ export function PipelineGraph() {
     ],
   );
 
+  // THE DESTRUCTIVE/EXPENSIVE CLICK LAW: every one of these buttons spends real
+  // money and real minutes on live search/scrape/LLM calls. None of them is
+  // destructive — the pipeline skips what is already done — but the cost and
+  // the wait must be named before the run starts, not discovered afterwards.
+  // ONE helper so every trigger tells the same truth.
+  const confirmRun = useCallback(
+    async (title: string, what: string, scale: string) => {
+      return confirm({
+        title,
+        description: `${what} This spends real money on live providers and AI models — a deep run can cost tens of dollars and take around ten minutes. ${scale} Nothing you already have is deleted: steps that are already complete are skipped.`,
+        confirmLabel: "Run it",
+      });
+    },
+    [],
+  );
+
   const handleRunAll = useCallback(async () => {
     if (!topic) {
       toast.error(
@@ -298,6 +315,12 @@ export function PipelineGraph() {
       );
       return;
     }
+    const ok = await confirmRun(
+      "Run the full research pipeline?",
+      "Searches the web, reads every new source, analyzes it, then writes the report.",
+      "It runs until the whole pipeline is done — you can stop it, but work already spent is not refunded.",
+    );
+    if (!ok) return;
     const controller = new AbortController();
     const response = await api.runPipeline(
       topicId,
@@ -305,21 +328,39 @@ export function PipelineGraph() {
       controller.signal,
     );
     await startStream(response, "pipeline", controller);
-  }, [api, topicId, topic, startStream]);
+  }, [api, topicId, topic, startStream, confirmRun]);
 
   const handleSearch = useCallback(async () => {
+    const ok = await confirmRun(
+      "Run a web search for every keyword?",
+      "Sends each keyword to the live search provider and records the results.",
+      "Search is the cheapest step, but it is billed per query and can take a few minutes across many keywords.",
+    );
+    if (!ok) return;
     const controller = new AbortController();
     const response = await api.triggerSearch(topicId, controller.signal);
     await startStream(response, "search", controller);
-  }, [api, topicId, startStream]);
+  }, [api, topicId, startStream, confirmRun]);
 
   const handleScrape = useCallback(async () => {
+    const ok = await confirmRun(
+      "Read every unread source?",
+      "Fetches and extracts the full text of each source found by search.",
+      "Reading many pages is billed per page and is usually the slowest step.",
+    );
+    if (!ok) return;
     const controller = new AbortController();
     const response = await api.triggerScrape(topicId, controller.signal);
     await startStream(response, "scrape", controller);
-  }, [api, topicId, startStream]);
+  }, [api, topicId, startStream, confirmRun]);
 
   const handleAnalyze = useCallback(async () => {
+    const ok = await confirmRun(
+      "Analyze every unanalyzed source?",
+      "Runs a paid AI analysis over each source that has been read but not yet analyzed.",
+      "Analysis is an LLM call per source, so cost scales directly with how many sources you have.",
+    );
+    if (!ok) return;
     const controller = new AbortController();
     const response = await api.analyzeAll(
       topicId,
@@ -327,7 +368,7 @@ export function PipelineGraph() {
       controller.signal,
     );
     await startStream(response, "analyze-all", controller);
-  }, [api, topicId, startStream]);
+  }, [api, topicId, startStream, confirmRun]);
 
   const handleSynthesize = useCallback(async () => {
     const controller = new AbortController();
@@ -374,7 +415,18 @@ export function PipelineGraph() {
     }
   }, [api, topicId, startStream]);
 
+  // DESTRUCTIVE: "rebuild" throws the current synthesized report away and
+  // writes a new one from scratch. "Update report" is the additive sibling —
+  // name it inside the confirm so the safe path is one click away.
   const handleRebuildReport = useCallback(async () => {
+    const ok = await confirm({
+      title: "Rewrite the report from scratch?",
+      description:
+        "The report you have now is discarded — every edit and every sentence in the current text is thrown away and written again from the included sources. This is a fresh paid LLM run and takes a few minutes. If you only want new sources folded in, close this and use “Update report” instead — it keeps what you have.",
+      confirmLabel: "Discard and rewrite",
+      variant: "destructive",
+    });
+    if (!ok) return;
     const controller = new AbortController();
     const response = await api.synthesize(
       topicId,

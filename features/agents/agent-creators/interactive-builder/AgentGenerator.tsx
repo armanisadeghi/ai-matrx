@@ -32,6 +32,7 @@ import { useAgentBuilder } from "../services/agentBuilderService";
 import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
 import { useDebugContext } from "@/hooks/useDebugContext";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 const GENERATOR_SHORTCUT = getSystemShortcut("agent-generator-01");
@@ -398,7 +399,18 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
     }
   }, [extractedValue, agentName, createAgent]);
 
-  const handleRegenerate = useCallback(() => {
+  // THE DESTRUCTIVE/EXPENSIVE CLICK LAW: this throws away the entire agent the
+  // AI just generated — system prompt, tools, config — and starts over. Name
+  // the loss before doing it; never let the click silently destroy the work.
+  const handleRegenerate = useCallback(async () => {
+    const ok = await confirm({
+      title: "Discard this generated agent?",
+      description:
+        "The agent that was just generated — its system prompt, tools, and configuration — is discarded and cannot be recovered. You will have to describe what you want and generate it again from scratch.",
+      confirmLabel: "Discard and start over",
+      variant: "destructive",
+    });
+    if (!ok) return;
     if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     setConversationId(null);
     setAgentName("");
