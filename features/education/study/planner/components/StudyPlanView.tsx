@@ -24,6 +24,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { planService } from "../../service/planService";
 import { studyService } from "../../service/studyService";
 import { collectPlanSummary } from "../collectSummary";
@@ -174,8 +175,19 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
     }
   };
 
+  // DESTRUCTIVE: `regeneratePlan` DELETES every day and every block on the plan
+  // before writing the new schedule, so the blocks the user has already ticked
+  // off go with them. Say that before the click, not after.
   const handleReplan = async () => {
     if (!plan) return;
+    const ok = await confirm({
+      title: "Re-plan around your latest performance?",
+      description:
+        "Every day and every study block in your current plan is deleted and replaced by a newly generated schedule. The progress tracked on those blocks — everything you have marked done or skipped — is deleted with them and cannot be restored. Your cards, sessions, and review history are untouched; only the schedule is rewritten.",
+      confirmLabel: "Delete and re-plan",
+      variant: "destructive",
+    });
+    if (!ok) return;
     setGenerating(true);
     try {
       const input: PlanInput = {
@@ -209,6 +221,14 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
    */
   const handleRecovery = async () => {
     if (!plan) return;
+    const ok = await confirm({
+      title: "Build a recovery plan?",
+      description:
+        "Every day and every study block in your current plan is deleted and replaced by a gentler catch-up schedule. The progress tracked on those blocks — everything you have marked done or skipped — is deleted with them and cannot be restored. Your cards, sessions, and review history are untouched; only the schedule is rewritten.",
+      confirmLabel: "Delete and rebuild",
+      variant: "destructive",
+    });
+    if (!ok) return;
     setGenerating(true);
     try {
       const summary = liveSummary ?? (await collectPlanSummary(

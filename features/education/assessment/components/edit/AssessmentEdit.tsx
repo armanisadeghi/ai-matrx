@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRun";
 import { useAccess } from "@/utils/permissions/access";
@@ -161,7 +162,16 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
     else toast.success("Question saved");
   };
 
+  // DESTRUCTIVE: this deletes the saved question row, not a draft in the form.
+  // Name what goes and that it does not come back.
   const removeItem = async (id: string) => {
+    const ok = await confirm({
+      title: "Delete this question?",
+      description: `The question is permanently removed from this ${config.noun.toLowerCase()} — its prompt, answer choices, correct answer, and explanation are deleted and cannot be recovered. Everyone who takes this ${config.noun.toLowerCase()} from now on gets it without this question.`,
+      confirmLabel: "Delete question",
+      variant: "destructive",
+    });
+    if (!ok) return;
     const res = await assessmentService.deleteItem(id);
     if (res.error) {
       toast.error(res.error);
