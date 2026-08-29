@@ -30,7 +30,9 @@ export function AutomationButton({
   running: boolean;
   onRun: () => void;
 }) {
-  const { mandate, loading } = useMandate(mandateKey);
+  // optional: an absent automation mandate is the expected starting state —
+  // the button says so; it is not a console error.
+  const { mandate, loading } = useMandate(mandateKey, { optional: true });
   const available = mandate !== null;
 
   const button = (

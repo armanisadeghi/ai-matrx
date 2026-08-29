@@ -279,7 +279,10 @@ function FulfillmentSection({
   onChanged: () => void;
 }) {
   const { copying, copyAndOpen } = useCopyMandateAgent();
-  const { agent, layer, useLatest, pinned, drift } = resolution;
+  const { agent, agentId, layer, useLatest, pinned, drift } = resolution;
+  // A mandate may exist before its intelligence does (user-created, no Holder
+  // yet). That is a normal state, not a read failure — say so plainly.
+  const holderless = agentId === null && holderOfMandate(data.mandate).versionId === null;
 
   return (
     <Section title="Fulfilled by">
@@ -293,6 +296,11 @@ function FulfillmentSection({
               name={agent.name}
               className="text-[13.5px] font-medium"
             />
+          ) : holderless ? (
+            <span className="text-[13px] text-muted-foreground">
+              No Holder bound yet — this job is waiting for its intelligence.
+              Bind one below.
+            </span>
           ) : (
             <span className="text-[13px] text-destructive">
               The effective agent could not be read — it may be deleted or not
