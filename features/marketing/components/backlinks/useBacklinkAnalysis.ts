@@ -13,7 +13,9 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectApiServiceTargets } from "@/lib/redux/slices/apiConfigSlice";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { supabase } from "@/utils/supabase/client";
+import { isBacklinkAlreadyReviewed } from "./lib/enrichment";
 import {
   applyBacklinkEnrichmentEvent,
   failBacklinkEnrichmentRun,
@@ -186,6 +188,19 @@ export function useBacklinkAnalysis({
   const analyzeBacklink = useCallback(
     async (row: BacklinkObservationRow) => {
       if (runningIds.current.has(row.id)) return;
+      // Re-reviewing a link we have already assessed spends another paid AI
+      // page read and overwrites the assessment on screen — so the "Review
+      // again" state asks first, while a first review does not.
+      // Law: destructive-and-expensive-actions.
+      if (isBacklinkAlreadyReviewed(row.enrichment_status)) {
+        const ok = await confirm({
+          title: "Review this page again?",
+          description: `We already have an assessment for ${row.source_domain ?? row.source_url}. Reviewing again runs a fresh paid AI read of that page and replaces the current assessment, which cannot be recovered.`,
+          confirmLabel: "Review it again",
+          variant: "destructive",
+        });
+        if (!ok) return;
+      }
       if (!seoTargetUrl) {
         reportMissingSeoTarget("useBacklinkAnalysis.analyzeRow");
         return;

@@ -3,6 +3,7 @@
 import { BrainCircuit, Loader2, RefreshCw } from "lucide-react";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { Badge } from "@/components/ui/badge";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { type PageAnalyzerState } from "@/features/marketing/components/pages/usePageAnalyzer";
 import type { MarketingPage } from "@/features/marketing/types";
 import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-page.manifest";
@@ -41,6 +42,27 @@ export function PageAnalyzerCard({
 }) {
   const artifact = state.result?.artifact;
 
+  /**
+   * The header icon re-runs the analyzer with `forceRefresh` once there IS an
+   * analysis, which spends a fresh paid agent run and replaces the keyword
+   * picture on screen. The first run has nothing to replace and is not gated.
+   * Law: destructive-and-expensive-actions.
+   */
+  const runAnalyzer = async () => {
+    const rerun = state.status === "done";
+    if (rerun) {
+      const ok = await confirm({
+        title: "Analyze this page again?",
+        description:
+          "This runs the Page Analyzer agent again — a fresh paid run — and replaces the keyword picture shown here, which cannot be recovered.",
+        confirmLabel: "Analyze again",
+        variant: "destructive",
+      });
+      if (!ok) return;
+    }
+    await run(rerun);
+  };
+
   const copy = webCopy({
     kind: "web-page-analyzer",
     label: "Page Analyzer",
@@ -70,7 +92,7 @@ export function PageAnalyzerCard({
       headerExtra={
         <button
           type="button"
-          onClick={() => void run(state.status === "done")}
+          onClick={() => void runAnalyzer()}
           disabled={state.status === "running"}
           aria-label="Run Page Analyzer"
           title="Run the Page Analyzer agent for this page"

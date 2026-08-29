@@ -51,6 +51,16 @@ export function hasBacklinkAssessment(value: Json | null): boolean {
   return Object.keys(jsonRecord(value)).length > 0;
 }
 
+/**
+ * Whether a re-review would throw away an assessment we already paid for —
+ * the same predicate that turns the button's label into "Review again". The
+ * confirmation in `useBacklinkAnalysis` reads it so the gate and the label can
+ * never disagree.
+ */
+export function isBacklinkAlreadyReviewed(enrichmentStatus: string): boolean {
+  return enrichmentStatus === "completed" || enrichmentStatus === "dead_letter";
+}
+
 export interface BacklinkAnalysisDirectiveState {
   disabled: boolean;
   inProgress: boolean;
@@ -69,8 +79,7 @@ export function backlinkAnalysisDirectiveState(
 ): BacklinkAnalysisDirectiveState {
   const inProgress =
     enrichmentStatus === "capturing" || enrichmentStatus === "analyzing";
-  const rerun =
-    enrichmentStatus === "completed" || enrichmentStatus === "dead_letter";
+  const rerun = isBacklinkAlreadyReviewed(enrichmentStatus);
 
   return {
     disabled: globallyDisabled || running || inProgress,

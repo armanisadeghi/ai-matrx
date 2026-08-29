@@ -107,6 +107,17 @@ export function LoopBlockerCard({
             </Button>
             {skipping ? (
               <>
+                {/* The two-step IS the confirmation — but it has to name the
+                    consequence, not just ask twice (destructive-and-expensive
+                    -actions law). Skipping marks THIS cycle's stage skipped
+                    and moves the loop on; the stage comes back around on the
+                    next cycle, so nothing is lost forever. */}
+                <p className="w-full text-sm text-foreground">
+                  {stageTitle(open.stage)} is marked skipped for this cycle and
+                  the loop moves straight on to the next step — this cycle does
+                  no work for it, and the skip stays in the loop history. The
+                  step comes back around on the loop&apos;s next cycle.
+                </p>
                 <Button
                   size="sm"
                   variant="outline"
