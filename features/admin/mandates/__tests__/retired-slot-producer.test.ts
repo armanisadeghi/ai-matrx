@@ -10,6 +10,10 @@ function source(path: string): string {
 describe("retired Mandate producer contract", () => {
   it("keeps runtime reads and writes on the canonical Mandate tables and API", () => {
     const runtimeSource = [
+      // The tables are NAMED in one place now — the Phase 1W storage router —
+      // and the services reach them through it. Both of the router's branches
+      // are real compiled code, so this guard keeps holding across the cutover.
+      "lib/supabase/mandateStorage.ts",
       "features/admin/mandates/service.ts",
       "features/agents/mandates/service.ts",
       "features/agents/mandates/service.server.ts",
