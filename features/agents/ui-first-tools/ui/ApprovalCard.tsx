@@ -5,14 +5,14 @@
  *
  * States the change ONCE: a compact "{Verb} · {title}" header, optional details,
  * a fully reviewable before→after diff body, and one compact action row
- * (Approve · Decline · Respond) with an opt-in "always approve {noun}". Built
+ * (Apply · Keep as is · Respond) with an opt-in "always approve {noun}". Built
  * on the shared `<AgentCardShell>` + `<ChangeDiff>`, so it shares its look with
  * every other inline agent card and its diff with every other change surface.
  *
  * Resolution mirrors <AskCard>: it routes through the same ask-resolver registry
  * + pendingAsks slice, so the war-room dispatcher's awaiting promise unblocks
- * exactly once. Approve packs `confirmed:true` (and the REMEMBER_SENTINEL when
- * "always approve" is on); Decline packs `confirmed:false`; Respond packs the
+ * exactly once. Apply packs `confirmed:true` (and the REMEMBER_SENTINEL when
+ * "always approve" is on); Keep as is packs `confirmed:false`; Respond packs the
  * typed `freeform`; the × minimizes without resolving the tool call.
  */
 
@@ -161,7 +161,7 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
           className="min-h-11 flex-1 gap-1.5 px-2.5 sm:min-h-8 sm:flex-none"
         >
           <Check className="size-4" />
-          Approve
+          Apply
         </Button>
         <Button
           size="sm"
@@ -169,7 +169,7 @@ export function ApprovalCard({ ask }: ApprovalCardProps) {
           onClick={decline}
           className="min-h-11 flex-1 px-2.5 sm:min-h-8 sm:flex-none"
         >
-          Decline
+          Keep as is
         </Button>
         <Button
           size="sm"

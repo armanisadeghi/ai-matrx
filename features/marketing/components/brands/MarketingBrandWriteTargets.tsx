@@ -28,10 +28,6 @@ import {
   mergeBrandProfileWrite,
   validateBrandIdentityWrite,
 } from "@/features/marketing/lib/brand-write-targets";
-import {
-  brandProfileToJson,
-  parseBrandProfile,
-} from "@/features/marketing/types";
 import type { MarketingBrand } from "@/features/marketing/types";
 
 export const MARKETING_BRAND_SURFACE_NAME = "matrx-user/marketing-brand";
@@ -55,14 +51,11 @@ export function MarketingBrandWriteTargets({
 
   useSurfaceWriteHandlers(MARKETING_BRAND_SURFACE_NAME, {
     brand_profile: async (value: unknown) => {
-      const merged = mergeBrandProfileWrite(
-        parseBrandProfile(brand.profile),
-        value,
-      );
+      const merged = mergeBrandProfileWrite(brand.profile, value);
       const updated = await updateMutation.mutateAsync({
         brandId: brand.id,
         expectedVersion: versionRef.current,
-        patch: { profile: brandProfileToJson(merged) },
+        patch: { profile: merged },
       });
       versionRef.current = Math.max(versionRef.current, updated.version);
     },

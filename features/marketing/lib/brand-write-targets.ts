@@ -17,7 +17,8 @@
  * the canonical `updateBrand` under the version guard.
  */
 
-import type { BrandProfile } from "@/features/marketing/types";
+import { isJsonRecord } from "@/features/marketing/types";
+import type { Json } from "@/types/database.types";
 
 export const BRAND_PROFILE_WRITE_STRING_KEYS = [
   "audience",
@@ -44,13 +45,13 @@ function asRecord(value: unknown, target: string): Record<string, unknown> {
 
 /**
  * Validate a `brand_profile` write value and merge it over the CURRENT
- * parsed profile. Returns the merged BrandProfile ready for
- * `brandProfileToJson`. Throws on any contract break.
+ * stored profile. Returns the complete JSON object with the allowed editorial
+ * patch applied. Throws on any contract break.
  */
 export function mergeBrandProfileWrite(
-  current: BrandProfile,
+  current: Json | null | undefined,
   value: unknown,
-): BrandProfile {
+): { [key: string]: Json } {
   const obj = asRecord(value, "brand_profile");
   const allowed = new Set<string>([
     ...BRAND_PROFILE_WRITE_STRING_KEYS,
@@ -65,7 +66,11 @@ export function mergeBrandProfileWrite(
   if (Object.keys(obj).length === 0) {
     throw new Error("brand_profile: provide at least one profile field.");
   }
-  const merged: BrandProfile = { ...current };
+  // Preserve the complete stored object, including legacy or independently
+  // managed keys outside the ten editorial fields this target may change.
+  // Narrowing through BrandProfile here would silently erase those siblings.
+  const merged: { [key: string]: Json } =
+    current && isJsonRecord(current) ? { ...current } : {};
   for (const key of BRAND_PROFILE_WRITE_STRING_KEYS) {
     const raw = obj[key];
     if (raw === undefined || raw === null) continue;

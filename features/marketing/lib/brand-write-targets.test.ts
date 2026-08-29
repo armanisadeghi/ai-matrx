@@ -9,7 +9,9 @@ import {
   mergeBrandProfileWrite,
   validateBrandIdentityWrite,
 } from "@/features/marketing/lib/brand-write-targets";
+import { brandProfileToJson } from "@/features/marketing/types";
 import type { BrandProfile } from "@/features/marketing/types";
+import type { Json } from "@/types/database.types";
 
 const EXISTING: BrandProfile = {
   audience: "Homeowners in the East Bay",
@@ -23,10 +25,11 @@ const EXISTING: BrandProfile = {
   content_guidelines: "Never promise arrival times.",
   notes: "Owner prefers 'technician', not 'guy'.",
 };
+const EXISTING_JSON = brandProfileToJson(EXISTING) as Record<string, Json>;
 
 describe("mergeBrandProfileWrite", () => {
   it("preserves every unmentioned field when one field is written", () => {
-    const merged = mergeBrandProfileWrite(EXISTING, {
+    const merged = mergeBrandProfileWrite(EXISTING_JSON, {
       voice_tone: "Direct and technical",
     });
     expect(merged.voice_tone).toBe("Direct and technical");
@@ -35,7 +38,7 @@ describe("mergeBrandProfileWrite", () => {
   });
 
   it("replaces a list field wholesale", () => {
-    const merged = mergeBrandProfileWrite(EXISTING, {
+    const merged = mergeBrandProfileWrite(EXISTING_JSON, {
       offerings: ["Sewer inspection"],
     });
     expect(merged.offerings).toEqual(["Sewer inspection"]);
@@ -43,7 +46,7 @@ describe("mergeBrandProfileWrite", () => {
   });
 
   it("clears a string field on empty string and a list on empty array", () => {
-    const merged = mergeBrandProfileWrite(EXISTING, {
+    const merged = mergeBrandProfileWrite(EXISTING_JSON, {
       notes: "",
       competitors: [],
     });
@@ -53,7 +56,7 @@ describe("mergeBrandProfileWrite", () => {
   });
 
   it("trims values and drops empty list entries", () => {
-    const merged = mergeBrandProfileWrite(EXISTING, {
+    const merged = mergeBrandProfileWrite(EXISTING_JSON, {
       audience: "  Facility managers  ",
       value_props: ["  Certified destruction ", "", "  "],
     });
@@ -62,22 +65,39 @@ describe("mergeBrandProfileWrite", () => {
   });
 
   it("throws on unknown keys instead of coercing", () => {
-    expect(() => mergeBrandProfileWrite(EXISTING, { voice: "x" })).toThrow(
+    expect(() => mergeBrandProfileWrite(EXISTING_JSON, { voice: "x" })).toThrow(
       /unknown field/,
     );
   });
 
   it("throws on wrong shapes and non-objects", () => {
-    expect(() => mergeBrandProfileWrite(EXISTING, { offerings: "one" })).toThrow(
-      /string array/,
-    );
     expect(() =>
-      mergeBrandProfileWrite(EXISTING, { audience: 42 }),
+      mergeBrandProfileWrite(EXISTING_JSON, { offerings: "one" }),
+    ).toThrow(/string array/);
+    expect(() =>
+      mergeBrandProfileWrite(EXISTING_JSON, { audience: 42 }),
     ).toThrow(/must be a string/);
-    expect(() => mergeBrandProfileWrite(EXISTING, [])).toThrow(/object value/);
-    expect(() => mergeBrandProfileWrite(EXISTING, {})).toThrow(
+    expect(() => mergeBrandProfileWrite(EXISTING_JSON, [])).toThrow(
+      /object value/,
+    );
+    expect(() => mergeBrandProfileWrite(EXISTING_JSON, {})).toThrow(
       /at least one/,
     );
+  });
+
+  it("preserves stored sibling keys outside the writable editorial contract", () => {
+    const current = {
+      ...EXISTING_JSON,
+      brand_aliases: ["Data Destruction Inc."],
+      imported_profile_version: 2,
+    };
+
+    expect(
+      mergeBrandProfileWrite(current, { positioning: "Audit-ready disposal" }),
+    ).toEqual({
+      ...current,
+      positioning: "Audit-ready disposal",
+    });
   });
 });
 
