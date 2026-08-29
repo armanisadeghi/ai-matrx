@@ -157,17 +157,61 @@ BEGIN
                p.null_org, v_total;
 END $$;
 
--- ── 4. The make-it-impossible layer: backstop + NOT NULL, one transaction ───
--- db-rules §2 law: the backstop and the flip land TOGETHER, so a deployed writer
--- that still omits organization_id keeps working across the deploy window
--- instead of turning into a 23502 in production.
+-- ── 4. The make-it-impossible layer: backstops + NOT NULL, one transaction ──
+-- db-rules §2 law: the backstops and the flip land TOGETHER, so a deployed
+-- writer that still omits organization_id keeps working across the deploy
+-- window instead of turning into a 23502 in production. That matters here more
+-- than usual: EVERY live writer omits the column today. Traced 2026-08-29 —
+-- `public.add_column_to_user_table`, `public.create_new_user_table_dynamic`,
+-- `public.create_user_table_with_fields` (which takes p_organization_id, stamps
+-- the PARENT with it, and then omits it on the child — the clearest bug of the
+-- three), aidream's `ADD_TABLE_FIELD_QUERY` / `ADD_FIELD_TO_EXISTING_TABLE_QUERY`
+-- and their service call sites, which discard an `AppContext.organization_id`
+-- that is right there. Only `context.provision_scope_dataset` gets it right.
+-- Inheritance makes all of them correct without touching another lane's code.
+--
+-- 🚨 TRIGGER NAME ORDER IS LOAD-BEARING (migration 0441's lesson, restated by
+-- 0446). Both `platform.inherit_org_from_parent` and `public._stamp_org_default`
+-- bail out the moment organization_id is already set, so on a BEFORE INSERT the
+-- one that fires FIRST wins — and Postgres fires them in NAME order. Nine tables
+-- shipped with `trg_inherit_org`, which sorts AFTER `_stamp_org_default`, and
+-- silently lost that race for months: a field added to a SHARED dataset by any
+-- member would be scoped into THAT MEMBER'S PERSONAL org, splitting one
+-- dataset's columns across orgs while all of them still render under the
+-- dataset. Hence `_0_inherit_org`, which cannot lose.
 DROP TRIGGER IF EXISTS _inherit_org ON workbench.udt_dataset_fields;
-CREATE TRIGGER _inherit_org
+DROP TRIGGER IF EXISTS _0_inherit_org ON workbench.udt_dataset_fields;
+CREATE TRIGGER _0_inherit_org
   BEFORE INSERT OR UPDATE OF table_id ON workbench.udt_dataset_fields
   FOR EACH ROW EXECUTE FUNCTION platform.inherit_org_from_parent('workbench', 'udt_datasets', 'table_id');
 
+-- `_stamp_org_default` is attached BESIDE it, not instead of it: once the column
+-- is NOT NULL this table enters the qualifying set of
+-- aidream/scripts/validate_org_backstop_coverage.py (NOT NULL org + an owner
+-- column), which looks for this trigger by name — a table that becomes NOT NULL
+-- without it turns that gate red. After the inheritor runs it should never have
+-- anything left to do, which is what a backstop is for.
+DROP TRIGGER IF EXISTS _stamp_org_default ON workbench.udt_dataset_fields;
+CREATE TRIGGER _stamp_org_default
+  BEFORE INSERT ON workbench.udt_dataset_fields
+  FOR EACH ROW EXECUTE FUNCTION public._stamp_org_default();
+
 ALTER TABLE workbench.udt_dataset_fields
   ALTER COLUMN organization_id SET NOT NULL;
+
+-- 🚨 THE FK MUST LOSE `ON DELETE SET NULL` IN THE SAME BREATH AS THE FLIP.
+-- The column shipped `udt_dataset_fields_organization_id_fkey ... ON DELETE SET
+-- NULL NOT VALID`. Against a NOT NULL column that is a rule which can only ever
+-- raise: deleting an organization would try to NULL its field rows and hit the
+-- constraint, so the delete fails at an unrelated call site with an unrelated
+-- message. Deleting an organization must not silently orphan its dataset fields
+-- either — the default (RESTRICT) says exactly that, and says it up front. This
+-- is the trap 0446 documented for the sibling table; same trap, same fix.
+ALTER TABLE workbench.udt_dataset_fields
+  DROP CONSTRAINT IF EXISTS udt_dataset_fields_organization_id_fkey;
+ALTER TABLE workbench.udt_dataset_fields
+  ADD CONSTRAINT udt_dataset_fields_organization_id_fkey
+  FOREIGN KEY (organization_id) REFERENCES iam.organizations(id);
 
 -- ── 5. FALSIFICATION — red-then-green, on a self-contained probe ────────────
 -- Everything created here is deleted before COMMIT. The probe lives in the
@@ -188,7 +232,10 @@ BEGIN
   END IF;
 
   INSERT INTO workbench.udt_datasets (table_name, user_id, created_by, organization_id, visibility)
-  VALUES ('_zz_org_null_probe_dataset', v_user, v_user, v_sys, 'personal')
+  -- 'internal', not 'personal': the probe belongs to the system org, and
+  -- reaching for 'personal' by reflex is the habit db-rules §6a-1 warns about.
+  -- (platform.visibility = personal | internal | link | public.)
+  VALUES ('_zz_org_null_probe_dataset', v_user, v_user, v_sys, 'internal')
   RETURNING id INTO v_ds;
 
   -- GREEN: an INSERT that OMITS organization_id must come out carrying the
@@ -207,7 +254,7 @@ BEGIN
   -- is genuinely load-bearing and not merely masked by the trigger.
   BEGIN
     INSERT INTO workbench.udt_dataset_fields (table_id, field_name, display_name, data_type, field_order, user_id)
-    VALUES (NULL, 'zz_probe_field_null', 'ZZ Probe Null', 'text', 1, v_user);
+    VALUES (NULL, 'zz_probe_field_null', 'ZZ Probe Null', 'string', 1, v_user);
   EXCEPTION WHEN not_null_violation THEN
     v_raised := true;
     RAISE NOTICE 'FALSIFIED (red): a parentless row was refused by NOT NULL, as designed.';
