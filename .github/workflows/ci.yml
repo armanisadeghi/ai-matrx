@@ -219,7 +219,7 @@ jobs:
         # pnpm hr:mock-walk (scripts/hr/hrb012_mock_walk.ts, NEXT_PUBLIC_HR_MOCK=1,
         # fixtures on disk). 383 assertions over 60 operations. Its only reference
         # anywhere was a usage comment in its own header.
-        run: echo SABOTAGE-job-deleted
+        run: pnpm hr:mock-walk
 
       - name: HR exports — four cases, and no download for a superseded row
         if: always()
@@ -275,7 +275,7 @@ jobs:
             echo "::error title=UNMEASURED — the migration slot guard was NOT verified::SUPABASE_SECRET_KEY is not configured for this repo, so pnpm check:migration-slot-guard:strict could not run and the BEFORE INSERT trigger on public._schema_migrations may be dropped or disabled without anything noticing. This job reports UNMEASURED, never success: a gate that cannot reach its dependency fails, it does not degrade to a warning that reads as a pass (THE STRICTNESS LAW clause 7). Fix: add the SUPABASE_SECRET_KEY and NEXT_PUBLIC_SUPABASE_URL repo secrets."
             exit 2
           fi
-          echo SABOTAGE-slot-job-deleted
+          pnpm check:migration-slot-guard:strict
 
   # ---------------------------------------------------------------------------
   # type-check — `next.config.js` sets `ignoreBuildErrors: true`, so a green
