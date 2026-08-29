@@ -13,6 +13,7 @@
 import { createClient } from "@/utils/supabase/client";
 import type { McpToolSchema } from "@/features/agents/services/mcp-client/tool-discovery";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import type { components } from "@/types/python-generated/api-types";
 
 function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
@@ -69,14 +70,8 @@ export interface McpConnectionSummary {
   last_error: string | null;
 }
 
-export interface McpCatalogRefreshResult {
-  server_id: string;
-  server_slug: string;
-  inserted: string[];
-  updated: string[];
-  deactivated: string[];
-  duration_ms: number;
-}
+export type McpCatalogRefreshResult =
+  components["schemas"]["McpCatalogRefreshResult"];
 
 interface WireTool {
   name: string;
