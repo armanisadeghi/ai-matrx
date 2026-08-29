@@ -33,6 +33,56 @@
       ],
       "previousEventHash": "6575dcd7c77b7c5e91b49be67ce97007309793b006dd3f4efe8e14d2499bd17f",
       "eventHash": "4a55b81b92c48f7501a09264185f0301d87b2142cb0d8fb9ec0e4b3cee3fab74"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-29T16:16:52.197Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Candidate 81508305e1241e81803824dbe8cd27520390dc87 preserved for independent adversarial certification",
+      "evidence": [
+        "Candidate pushed to origin/codex/p11-20260829-161426",
+        "Post type-check PASS; core-only page-header strict PASS; scroll-chain strict PASS",
+        "Full page-header warnings and fleet-health prompt drift unchanged from baseline"
+      ],
+      "previousEventHash": "4a55b81b92c48f7501a09264185f0301d87b2142cb0d8fb9ec0e4b3cee3fab74",
+      "eventHash": "7e4799dc2d503ec847d33452817b4080c625483f15f135207cb3a0dc9dd106e8"
+    },
+    {
+      "sequence": 4,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-29T16:21:32.496Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Automation worktree was removed externally during certification and restored from origin/main",
+      "evidence": [
+        "Candidate bytes remained available as immutable Git object and ancestor of origin/main",
+        "No testing or editing continued in the shared canonical checkout"
+      ],
+      "blocker": {
+        "prerequisite": "Restore the exact isolated automation worktree before continuing certification",
+        "preservedRef": "refs/heads/main",
+        "preservedSha": "81508305e1241e81803824dbe8cd27520390dc87"
+      },
+      "previousEventHash": "7e4799dc2d503ec847d33452817b4080c625483f15f135207cb3a0dc9dd106e8",
+      "eventHash": "3e9c1e7368e2ca068673be9cb4d7aaf7d77a0180a87040d59acf3fc4e9c270ed"
+    },
+    {
+      "sequence": 5,
+      "state": "escaped_delivery",
+      "at": "2026-08-29T16:21:33.028Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Recorded uncertified candidate integration on origin/main before the adversarial verdict",
+      "evidence": [
+        "Merge fea935abb8 contains candidate 81508305e1 and the certifying-state record; no release was requested"
+      ],
+      "escape": {
+        "candidateSha": "81508305e1241e81803824dbe8cd27520390dc87",
+        "integratedSha": "fea935abb84ed622789775626c2124553a89b8dd",
+        "release": "unreleased",
+        "reason": "Automatic branch integration merged the candidate and removed its worktree before independent certification completed."
+      },
+      "previousEventHash": "3e9c1e7368e2ca068673be9cb4d7aaf7d77a0180a87040d59acf3fc4e9c270ed",
+      "eventHash": "3b99a3988fac3fcc91e48a128865fe551f93fdccadce365ba0d57ac4faef5e49"
     }
   ]
 }

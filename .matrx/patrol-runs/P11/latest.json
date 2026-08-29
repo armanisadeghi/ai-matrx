@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "2026-08-29T161426Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-29T16:16:09.084Z",
-  "summary": "Removed five redundant PageHeader avatar-clearance paddings and hardened the canonical detector",
+  "state": "escaped_delivery",
+  "updatedAt": "2026-08-29T16:21:33.028Z",
+  "summary": "Recorded uncertified candidate integration on origin/main before the adversarial verdict",
   "source": "2026-08-29T161426Z.json",
-  "eventHash": "4a55b81b92c48f7501a09264185f0301d87b2142cb0d8fb9ec0e4b3cee3fab74"
+  "eventHash": "3b99a3988fac3fcc91e48a128865fe551f93fdccadce365ba0d57ac4faef5e49"
 }
