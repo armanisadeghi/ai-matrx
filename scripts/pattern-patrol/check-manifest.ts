@@ -61,7 +61,7 @@ function validateManifest(): string[] {
 
   for (const spec of automationUpdateSpecs()) {
     for (const contract of [
-      "WORKTREE ISOLATION",
+      "SHARED-CHECKOUT OWNERSHIP CONTRACT",
       "BASELINE-DELTA CERTIFICATION CONTRACT",
       "ENFORCED PREVIEW LEASE",
       "FAST INTEGRATION CONTRACT",
@@ -75,7 +75,7 @@ function validateManifest(): string[] {
       "NO DETECTION-ONLY TERMINAL STATE",
     ]) {
       if (
-        spec.executionEnvironment === "worktree" &&
+        spec.id !== FLEET_HEALTH.automationId &&
         !spec.prompt.includes(contract)
       ) {
         problems.push(`${spec.id} generated prompt is missing ${contract}`);

@@ -31,8 +31,8 @@ export interface AutomationUpdateSpec {
   status: "ACTIVE" | "PAUSED";
   model: "gpt-5.6-sol";
   reasoningEffort: "high";
-  executionEnvironment: "worktree" | "local";
-  destination: "worktree" | "local";
+  executionEnvironment: "local";
+  destination: "local";
   projectId: string;
   localEnvironmentConfigPath?: null;
 }
@@ -287,9 +287,9 @@ RUN CONTRACT:
 - MAINTENANCE CONTRACT: maintenance mode is allowed only after an independent full pass proves zero actionable backlog. Run the scoped check plus its scheduled full rotation. Zero stays a one-line result. The first verified finding switches this same run immediately to ERADICATION: repair it and every other ready item; never end by announcing that defects were found.
 - NO DETECTION-ONLY TERMINAL STATE: classify each verified item as repair-now, genuine-human-decision, or hard-blocked. Repair-now items execute now. A decision or blocker stays open, but it never prevents the patrol from taking the next independent repair-now item. Known actionable backlog may not be marked closed, clean, or complete.
 - Scope from the registry's structural-novelty recipe plus open sightings and its periodic full pass. Never scope by raw git churn. Route every verified finding to a standing-authority fix, genuine human decision, or unresolved missing-evidence/machinery task.
-- WORKTREE ISOLATION: run only in the automation worktree. Capture git status, type-check, and relevant detector diagnostics before editing. Never treat unrelated baseline debt as patrol evidence. Use a real worktree-local offline install when dependencies are absent; never symlink node_modules or expose env contents.
+- SHARED-CHECKOUT OWNERSHIP CONTRACT: run in the canonical ${repoRoot} checkout. Worktrees are forbidden. Capture git status, the exact base SHA, type-check, and relevant detector diagnostics before editing. Treat unrelated dirty files as other owners' work: never stage, rewrite, revert, stash, or clean them. Claim disjoint repair units, use path-scoped Git commands, commit only owned files, and re-read an owned file before each edit so concurrent changes are preserved. Never treat unrelated baseline debt as patrol evidence.
 - BASELINE-DELTA CERTIFICATION CONTRACT: every Tier-M batch is at most 15 files and gets a second adversarial agent for the exact candidate. REJECTED requires a concrete new batch-caused defect. Unchanged baseline failures cannot reject. INFRASTRUCTURE BLOCKED preserves and pushes the candidate for retry; never revert valid work because preview, browser, or an unrelated gate failed.
-- ENFORCED PREVIEW LEASE: use only pnpm preview:start/status/stop from this exact worktree. Never reuse another worktree's URL. Read the active memory cap from launcher status; a cap termination is infrastructure evidence, not product rejection.
+- ENFORCED PREVIEW LEASE: use only pnpm preview:start/status/stop from the canonical shared checkout. Reuse only that checkout's managed preview and never stop a preview another task is actively verifying against. Read the active memory cap from launcher status; a cap termination is infrastructure evidence, not product rejection.
 - FAST INTEGRATION CONTRACT: commit every coherent batch immediately and push the candidate to a remote ref within ${PATROL_DELIVERY_POLICY.candidateRemoteDeadlineMinutes} minutes so no work is stranded locally. After independent certification records the exact candidate SHA, integrate and push it to origin/main through the normal fast integration workflow within ${PATROL_DELIVERY_POLICY.certifiedMainDeadlineMinutes} minutes. Direct integration is normal in pre-production; do not wait for a special controller or any repository restriction. Preserve the certified candidate as an ancestor when integrating so its evidence still names real code.
 - SERIALIZED RELEASE LANE: deployment and versioned release remain serialized through ./scripts/release.sh. Integration to main is not the release lane. If a newer release already contains the candidate, record that version instead of bumping again.
 - PERMANENT RUN RECORD: append lifecycle events through pnpm patrol:run. The hash-chained run record is history; report, memory, inbox, Git ancestry, and release are projections that must agree. A product change must have independent CERTIFIED evidence before integration. Commit and push the run record with the work so other machines receive it.
@@ -314,7 +314,7 @@ CHECK:
 - Verify run records with pnpm patrol:run verify. Reports, memory, inbox, Git ancestry, release tags, and deployment must agree with the hash-chained record.
 - FAST INTEGRATION IS HEALTH: direct or frequent origin/main integration is normal in pre-production and must never be flagged merely for bypassing a controller. Flag owned candidate commits absent from every remote after ${PATROL_DELIVERY_POLICY.candidateRemoteDeadlineMinutes} minutes, certified candidates absent from origin/main after ${PATROL_DELIVERY_POLICY.certifiedMainDeadlineMinutes} minutes, uncommitted patrol work at task end, or any product change integrated without independent CERTIFIED evidence for its exact ancestor.
 - Deployment/version releases remain serialized through release.sh. Run pnpm patrol:delivery:check for release-record consistency, but never recommend slowing or restricting main integration before production readiness.
-- Verify exact-worktree preview ownership and the launcher-reported cap. A preview cap event is INFRASTRUCTURE BLOCKED, never REJECTED. Flag cross-worktree reuse, cap enforcement failure, or valid work reverted because proof infrastructure failed.
+- Verify canonical-checkout preview ownership and the launcher-reported cap. A preview cap event is INFRASTRUCTURE BLOCKED, never REJECTED. Flag noncanonical preview use, cap enforcement failure, or valid work reverted because proof infrastructure failed.
 - BACKLOG GOVERNOR CONTRACT: every patrol declares ERADICATION or MAINTENANCE. ERADICATION with actionable backlog and no active repair wave is fleet failure. Wake or continue the existing patrol task with its exact next queue assignment; use parallel repair agents up to the executor limit and never more than ten. A run that only detects, ranks, inventories, or improves machinery while ready product repairs remain is degraded. MAINTENANCE is valid only after independent zero-backlog proof; any new finding flips that patrol to ERADICATION in the same run.
 - Unchanged baseline debt cannot reject a repair batch. REJECTED names a concrete batch-caused defect. Human approval and hard infrastructure blocks are distinct states, and neither permits independent ready work to stop.
 - Flag a patrol that withholds a verified clearly superior bounded repair or asks Arman to approve an obvious professional improvement. Missing evidence should create a focused task; only genuine product choices and exceptions belong in Arman's queue.
@@ -342,8 +342,8 @@ export function automationUpdateSpecs(): AutomationUpdateSpec[] {
       status: patrol.status,
       prompt: patrolPrompt(patrol),
       rrule: patrol.rrule,
-      executionEnvironment: "worktree" as const,
-      destination: "worktree" as const,
+      executionEnvironment: "local" as const,
+      destination: "local" as const,
       localEnvironmentConfigPath: null,
     })),
     {

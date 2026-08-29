@@ -22,10 +22,10 @@ describe("Pattern Patrol typed manifest", () => {
 
   it("generates every required common contract once per product prompt", () => {
     for (const spec of automationUpdateSpecs().filter(
-      (candidate) => candidate.executionEnvironment === "worktree",
+      (candidate) => candidate.id !== FLEET_HEALTH.automationId,
     )) {
       for (const contract of [
-        "WORKTREE ISOLATION",
+        "SHARED-CHECKOUT OWNERSHIP CONTRACT",
         "BASELINE-DELTA CERTIFICATION CONTRACT",
         "ENFORCED PREVIEW LEASE",
         "FAST INTEGRATION CONTRACT",
@@ -58,7 +58,7 @@ describe("Pattern Patrol typed manifest", () => {
   it("grants standing authority for obvious professional improvements", () => {
     const specs = automationUpdateSpecs();
     const productPrompts = specs.filter(
-      (candidate) => candidate.executionEnvironment === "worktree",
+      (candidate) => candidate.id !== FLEET_HEALTH.automationId,
     );
     for (const spec of productPrompts) {
       expect(spec.prompt).toContain(
@@ -78,13 +78,14 @@ describe("Pattern Patrol typed manifest", () => {
       expect(patrol.mode).toBe("ERADICATION");
     }
     for (const prompt of automationUpdateSpecs()
-      .filter((candidate) => candidate.executionEnvironment === "worktree")
+      .filter((candidate) => candidate.id !== FLEET_HEALTH.automationId)
       .map((candidate) => candidate.prompt)) {
       expect(prompt).toContain("Every worker implements and verifies");
       expect(prompt).toContain(
         "Known actionable backlog may not be marked closed, clean, or complete",
       );
       expect(prompt).not.toContain("Remain report-only");
+      expect(prompt).toContain("Worktrees are forbidden");
     }
   });
 

@@ -74,19 +74,15 @@ system doc). The repo-specific facts it needs:
   certification names the exact candidate SHA, integrate it through the normal
   fast `origin/main` workflow within 45 minutes. Only deployment/release stays
   serialized.
-- **Isolation:** scheduled patrols run in an isolated Codex worktree. If this
-  run is in the shared checkout or sees unrelated dirty files, stop before
-  mutation and repair the execution environment; do not treat concurrent work
-  as patrol gate evidence. Patrols never change dependencies; when a fresh
-  worktree lacks them, run `pnpm install --offline --frozen-lockfile`. Never
-  symlink `node_modules` from the canonical checkout — Turbopack rejects it.
-  Link ignored local env files when preview needs them; never print or track
-  their contents.
-- **Exclusive preview lease:** `pnpm preview:start` may reuse only a server
-  owned by this exact checkout. If another worktree owns the machine-wide slot,
-  the command fails and this patrol queues; never certify against the other
-  worktree's URL. `pnpm preview:status` reports the global owner, and only that
-  checkout may stop it. Read the machine-profile RSS cap from launcher status;
+- **Shared-checkout ownership:** scheduled patrols run in the canonical shared
+  checkout; worktrees are forbidden. Capture exact base SHA, dirty paths, and
+  baseline diagnostics before editing. Unrelated dirty files belong to other
+  owners: never stage, rewrite, revert, stash, or clean them. Claim disjoint
+  repair units, re-read an owned file before editing, use path-scoped Git, and
+  commit only owned files. Concurrent unrelated work is not patrol evidence.
+- **Exclusive preview lease:** `pnpm preview:start` uses only the canonical
+  checkout's managed server. Never stop it while another task is actively
+  verifying. `pnpm preview:status` reports ownership. Read the machine-profile RSS cap from launcher status;
   the five-minute startup-progress cap remains fixed. The launcher never
   restarts automatically.
 - **Certification (Tier M):** a second adversarial agent ("assume this batch
@@ -99,8 +95,8 @@ system doc). The repo-specific facts it needs:
   REJECTED requires a concrete batch defect and is fixed/reverted;
   INFRASTRUCTURE BLOCKED preserves the approved diff for retry. A broken preview
   is never proof that product code broke. Only one managed preview runs
-  machine-wide; concurrent patrols queue and never reuse a different
-  worktree's build. No independent verdict → invalid run.
+  machine-wide; concurrent patrols queue instead of starting a second build.
+  No independent verdict → invalid run.
 - **Fast integration, serialized release:** push the candidate immediately.
   After an independent certifier records `CERTIFIED` for the exact candidate
   SHA, integrate it into `origin/main` through the normal shared workflow;
@@ -156,7 +152,7 @@ patterns.
 - Giving a polished normal-looking summary for a degraded or incomplete run.
 - Rejecting or reverting valid work because an unrelated baseline gate or the
   preview harness failed.
-- Reusing a preview from another worktree, leaving owned work uncommitted or
+- Using a noncanonical preview, leaving owned work uncommitted or
   unpushed, or delaying certified work behind a fictitious integration gate.
 - Treating a Markdown report or automation memory as more authoritative than
   the permanent run record, or rewriting an earlier lifecycle event.
