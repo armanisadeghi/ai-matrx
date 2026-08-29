@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 652 active entity tokens. A token here is FK-valid for
+// 653 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -570,6 +570,7 @@ export type EntityTypeToken =
   | "seo_topic"
   | "seo_web_analytics_daily"
   | "shared_canvas_item"
+  | "short_link"
   | "skill"
   | "skill_render_definition"
   | "sms_consent"
@@ -1634,6 +1635,7 @@ export type ScopeableEntityToken =
   | "seo_topic"
   | "seo_web_analytics_daily"
   | "shared_canvas_item"
+  | "short_link"
   | "skill"
   | "skill_render_definition"
   | "sms_consent"
@@ -2386,6 +2388,7 @@ export const ENTITY_TYPE_METADATA = {
   "seo_topic": { token: "seo_topic", schema: "seo", table: "topic", label: "SEO Topic", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "seo_web_analytics_daily": { token: "seo_web_analytics_daily", schema: "seo", table: "web_analytics_daily", label: "Web Analytics Daily", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "shared_canvas_item": { token: "shared_canvas_item", schema: "canvas", table: "shared_canvas_items", label: "Shared Canvas Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
+  "short_link": { token: "short_link", schema: "platform", table: "short_links", label: "Short Link", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "skill": { token: "skill", schema: "skill", table: "definition", label: "Skill", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Skills", referencePickable: true, titleColumn: "label", contentRole: "utility", referenceCategory: null },
   "skill_render_definition": { token: "skill_render_definition", schema: "skill", table: "render_definition", label: "Skill Render Definition", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Skills", referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "sms_consent": { token: "sms_consent", schema: "communication", table: "sms_consent", label: "SMS Consent", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -3042,6 +3045,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "seo_topic",
   "seo_web_analytics_daily",
   "shared_canvas_item",
+  "short_link",
   "skill",
   "skill_render_definition",
   "sms_consent",

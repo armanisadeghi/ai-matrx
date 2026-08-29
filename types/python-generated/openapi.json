@@ -15766,6 +15766,50 @@
         }
       }
     },
+    "/coursera/public/course": {
+      "get": {
+        "tags": [
+          "Coursera Integrations"
+        ],
+        "summary": "Public Course",
+        "operationId": "public_course_coursera_public_course_get",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseraPublicCourse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/canvas-integrations/read-proof": {
       "get": {
         "tags": [
@@ -95868,6 +95912,93 @@
           "label"
         ],
         "title": "CostBreakdownItem"
+      },
+      "CourseraPublicCourse": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "coursera_public_course",
+            "title": "Kind",
+            "default": "coursera_public_course"
+          },
+          "provider": {
+            "type": "string",
+            "const": "coursera",
+            "title": "Provider",
+            "default": "coursera"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "course_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Course Id"
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "course_type": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Course Type"
+          },
+          "course_url": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Course Url"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "Description"
+          },
+          "primary_languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Primary Languages"
+          },
+          "domains": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Domains"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "course_id",
+          "slug",
+          "name",
+          "course_type",
+          "course_url",
+          "description",
+          "primary_languages",
+          "domains"
+        ],
+        "title": "CourseraPublicCourse",
+        "description": "Safe bounded projection of one public Coursera course."
       },
       "CourtListenerWebhookAccepted": {
         "properties": {

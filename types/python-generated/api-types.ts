@@ -6166,6 +6166,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coursera/public/course": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Course */
+        get: operations["public_course_coursera_public_course_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/canvas-integrations/read-proof": {
         parameters: {
             query?: never;
@@ -36992,6 +37009,46 @@ export interface components {
              * @default 0
              */
             estimated_cost_usd?: number;
+        };
+        /**
+         * CourseraPublicCourse
+         * @description Safe bounded projection of one public Coursera course.
+         */
+        CourseraPublicCourse: {
+            /**
+             * Kind
+             * @default coursera_public_course
+             * @constant
+             */
+            __kind?: "coursera_public_course";
+            /**
+             * Provider
+             * @default coursera
+             * @constant
+             */
+            provider?: "coursera";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Course Id */
+            course_id: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Course Type */
+            course_type: string;
+            /** Course Url */
+            course_url: string;
+            /** Description */
+            description: string;
+            /** Primary Languages */
+            primary_languages: string[];
+            /** Domains */
+            domains: string[];
         };
         /** CourtListenerWebhookAccepted */
         CourtListenerWebhookAccepted: {
@@ -87252,6 +87309,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RubyGemsPublicGem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_course_coursera_public_course_get: {
+        parameters: {
+            query: {
+                slug: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseraPublicCourse"];
                 };
             };
             /** @description Validation Error */

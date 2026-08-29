@@ -46713,6 +46713,7 @@ export type Database = {
         Row: {
           acted_at: string | null
           attempt_count: number | null
+          body: string | null
           channel: string | null
           deep_link: string | null
           delivered_at: string | null
@@ -46737,6 +46738,7 @@ export type Database = {
         Insert: {
           acted_at?: string | null
           attempt_count?: number | null
+          body?: string | null
           channel?: string | null
           deep_link?: string | null
           delivered_at?: string | null
@@ -46761,6 +46763,7 @@ export type Database = {
         Update: {
           acted_at?: string | null
           attempt_count?: number | null
+          body?: string | null
           channel?: string | null
           deep_link?: string | null
           delivered_at?: string | null
@@ -47182,7 +47185,12 @@ export type Database = {
         }[]
       }
       _notify_channels: {
-        Args: { p_event_key: string; p_organization_id: string }
+        Args: {
+          p_event_key: string
+          p_flow_policy: Json
+          p_organization_id: string
+          p_user: string
+        }
         Returns: string[]
       }
       _org_row_less_protective: {
@@ -47242,6 +47250,10 @@ export type Database = {
           p_employment_id: string
           p_void_ids: string[]
         }
+        Returns: string
+      }
+      _punch_change_words: {
+        Args: { p_change: Json; p_tz: string }
         Returns: string
       }
       _punch_elapsed: {
@@ -58737,6 +58749,72 @@ export type Database = {
         }
         Relationships: []
       }
+      short_links: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          metadata: Json
+          organization_id: string
+          source: string
+          target_path: string
+          token: string
+          updated_at: string
+          updated_by: string | null
+          use_count: number
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          last_used_at?: string | null
+          metadata?: Json
+          organization_id: string
+          source: string
+          target_path: string
+          token: string
+          updated_at?: string
+          updated_by?: string | null
+          use_count?: number
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          source?: string
+          target_path?: string
+          token?: string
+          updated_at?: string
+          updated_by?: string | null
+          use_count?: number
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "short_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "short_links_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       source_authority: {
         Row: {
           blurb: string
@@ -59553,6 +59631,16 @@ export type Database = {
           p_variant: string
           p_versioned: boolean
           p_visibility: string
+        }
+        Returns: string
+      }
+      create_short_link: {
+        Args: {
+          p_expires_at: string
+          p_metadata?: Json
+          p_organization_id: string
+          p_source: string
+          p_target_path: string
         }
         Returns: string
       }
@@ -68878,6 +68966,7 @@ export type Database = {
           url_path_template: string
         }[]
       }
+      resolve_short_link: { Args: { p_token: string }; Returns: Json }
       resolve_with_testing: {
         Args: {
           p_id: string
