@@ -75,6 +75,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
+import { hrSettingsHref } from "@/features/hr/routes";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { useHrSettingsStructure } from "@/features/hr/settings/hooks/useHrSettingsStructure";
 import { HrSettingsShell } from "@/features/hr/settings/HrSettingsShell";
@@ -548,7 +549,7 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
               <Button asChild variant="ghost" size="sm" className="-ml-2 h-8">
-                <Link href={`/hr/settings/leave-policies${orgRef ? `?org=${orgRef}` : ""}`}>
+                <Link href={hrSettingsHref("leave-policies", { org: orgRef })}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   All leave policies
                 </Link>

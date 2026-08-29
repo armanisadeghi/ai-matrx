@@ -37,7 +37,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { toast } from "@/lib/toast";
-import { hrPunchesHref, hrTimeExceptionsHref, hrTimePeriodHref } from "@/features/hr/routes";
+import {
+  hrPunchesHref,
+  hrTasksHref,
+  hrTimeExceptionsHref,
+  hrTimePeriodHref,
+} from "@/features/hr/routes";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import { getTimesheet } from "../api/service";
@@ -171,7 +176,12 @@ function DetailBody({
         onResolved={onChanged}
       />
 
-      <DecisionBar timesheet={timesheet} mockCase={mockCase} onDecided={onChanged} />
+      <DecisionBar
+        timesheet={timesheet}
+        orgRef={orgRef}
+        mockCase={mockCase}
+        onDecided={onChanged}
+      />
 
       <TimesheetWeeks timesheet={timesheet} viewer="manager" />
 
@@ -219,10 +229,15 @@ function DetailBody({
 /** Approve or reject THIS timecard. Never the period — that is a separate deliberate act. */
 function DecisionBar({
   timesheet,
+  orgRef,
   mockCase,
   onDecided,
 }: {
   timesheet: Timesheet;
+  /* Threaded in rather than re-resolved: the stuck-workflow door below is the only way off a
+     jammed timecard, and it used to be `"/hr/tasks?scope=queue"` — a hand-spelled URL that
+     dropped the employer on the one click an administrator has to make. */
+  orgRef: ReturnType<typeof useHrContext>["orgRef"];
   mockCase: ReturnType<typeof useHrMockCase>;
   onDecided: () => void;
 }) {
@@ -354,7 +369,7 @@ function DecisionBar({
             It will not move on its own — an HR administrator has to resolve the failure.
           </p>
           <Link
-            href="/hr/tasks?scope=queue"
+            href={hrTasksHref(orgRef, { scope: "queue" })}
             className="mt-1 inline-flex font-medium underline underline-offset-4"
           >
             Open the workflow queue

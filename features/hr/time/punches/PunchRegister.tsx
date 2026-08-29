@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/button";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { toast } from "@/lib/toast";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
-import { hrTimesheetHref } from "@/features/hr/routes";
+import { hrTimePeriodsHref, hrTimesheetHref } from "@/features/hr/routes";
 
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 
@@ -221,7 +221,7 @@ export function PunchRegister({
         onOpenChange={(next) => (next ? undefined : setCorrecting(null))}
         punches={correcting?.punches ?? []}
         mode={correcting?.mode ?? "correct"}
-        adjustmentHref="/hr/time/periods"
+        adjustmentHref={hrTimePeriodsHref(orgRef)}
         mockCase={mockCase}
         onCommitted={() => {
           setSelectedIds([]);

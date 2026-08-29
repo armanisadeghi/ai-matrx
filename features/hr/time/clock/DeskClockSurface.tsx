@@ -23,6 +23,7 @@ import { UserRoundX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HR_MOCK_ENABLED, type HrFixtureCase } from "@/features/hr/mock/transport";
 import { HrPageState } from "@/features/hr/shared/HrStates";
+import { hrHref } from "@/features/hr/routes";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { webPunchSessionSegment } from "@/features/hr/time/api/idempotencyKey";
 
@@ -65,7 +66,7 @@ export function DeskClockSurface({
         along with module-off and not-yet-activated. Reproducing two of five states by hand is how
         the other three go missing.
       */}
-      <HrPageState operation="The shared time clock" personaHomeHref="/hr">
+      <HrPageState operation="The shared time clock" personaHomeHref={hrHref(hr.orgRef)}>
         {hr.active && (
         <>
           {!subject && (

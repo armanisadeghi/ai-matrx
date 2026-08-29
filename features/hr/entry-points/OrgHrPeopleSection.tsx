@@ -32,7 +32,7 @@ import { ChevronRight, Loader2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { enableHrModule } from "@/features/hr/service";
-import { hrHref, hrPeopleHref, hrSettingsHref } from "@/features/hr/routes";
+import { hrHref, hrPeopleHref, hrSettingsHref, hrTasksHref } from "@/features/hr/routes";
 
 import { useHrOrgSummary } from "./useHrOrgSummary";
 
@@ -107,7 +107,9 @@ export function OrgHrPeopleSection({
           <SummaryTile
             label="Waiting on a decision"
             value={summary.pending_approvals}
-            href={`/hr/tasks?org=${encodeURIComponent(orgSlugOrId)}`}
+            /* `?org=` appended by hand is banned by name in `routes.ts`'s header — this tile
+               was the one place still doing it, and it also double-encoded nothing only by luck. */
+            href={hrTasksHref(orgSlugOrId)}
           />
         ) : null}
       </div>

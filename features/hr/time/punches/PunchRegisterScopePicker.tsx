@@ -86,6 +86,10 @@ export function PunchRegisterScopePicker({
     query.delete("scope");
     if (next.employment) query.set("employment", next.employment);
     if (next.scope) query.set("scope", next.scope);
+    // hr-url-exempt: `query` starts as a COPY of the current search params, so `org`
+    // survives untouched — this rebuild preserves the employer rather than dropping it.
+    // A builder call here would have to re-list every filter this picker does not own.
+    // See `features/hr/__tests__/no-hand-built-hr-urls.test.ts`.
     router.push(`/hr/time/punches?${query.toString()}`);
     setOpen(false);
   }
@@ -208,6 +212,8 @@ export function PunchRegisterScopePicker({
                           // employer it is the deliberate full context change §1 requires.
                           query.set("org", employer.slug ?? employer.organization_id);
                           query.set("scope", "org");
+                          // hr-url-exempt: the same copy-then-amend rebuild, and this branch explicitly
+                          // RE-SETS `org` above for the employer being switched to (§1's full context change).
                           router.push(`/hr/time/punches?${query.toString()}`);
                           setOpen(false);
                         }}
