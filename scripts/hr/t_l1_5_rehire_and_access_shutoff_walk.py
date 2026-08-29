@@ -237,6 +237,12 @@ async def main():
     rec("the refusal hands back the prior spells", True,
         bool(((refuse.get("existing") or {}).get("spells"))))
 
+    # the rule, asked BEFORE the rehire lands — a prediction the written row must then match
+    rule = await conn.fetchval(
+        "select hr.rehire_service_dates($1::uuid, $2::date, $3::uuid)",
+        employee_id, date.fromisoformat(SPELL2_HIRE), ORG)
+    rec("the org rule says service CARRIES across this gap", True, json.loads(rule).get("carried"), rule)
+
     st, ack2 = await rpc(hr_tok, "hr_employee_create", {"p_payload": {
         "organization_id": ORG, "link_user_id": SUBJECT_UID, "is_rehire": True,
         "legal_first_name": "Zzzrehire", "legal_last_name": "Walkme",
@@ -258,9 +264,6 @@ async def main():
     rec("spell 2 hire date is the rehire date", SPELL2_HIRE, s2["hire_date"].isoformat())
     rec("spell 2 has an ADJUSTED SERVICE DATE (org rule carry_if_gap_under_months:12)",
         SPELL1_HIRE, s2["adjusted_service_date"].isoformat() if s2["adjusted_service_date"] else None)
-    rule = await conn.fetchval(
-        "select hr.rehire_service_dates($1::uuid, $2::date, $3::uuid)", employee_id, date.fromisoformat(SPELL2_HIRE), ORG)
-    rec("the rule states its own working", True, json.loads(rule).get("carried"), rule)
 
     snap1b = await conn.fetchrow(
         "select spell_number, hire_date, termination_date, last_day_worked, status, separation_id "
