@@ -271,7 +271,7 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
   agents on the final `rs_document`, so stopping after the pipeline would leave
   an attachment that grounds nothing. The
   page's values carry through: the topic is named `"{page label} — page
-  research"` and keyword #1 is the page's target query; at most ONE more is
+research"` and keyword #1 is the page's target query; at most ONE more is
   allowed (Arman, `common-docs/projects/content-engine/STATE.md` §2.14). The
   new topic is attached to the plan node through the one association write
   (`useContainerLinks.attach`) BEFORE the run starts, so a dead run still
@@ -339,7 +339,7 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
 2. **Node panel** (`NodePanel.tsx`) — **THE PIPELINE IS THE PAGE (Arman
    ruling, 2026-08-17; restructured in the same change).** The `NodeStepRail`
    chips ARE the panel's tab strip: `Page | Keywords | Research | Family |
-   Write | Review | Build | Publish`. Every chip is always clickable — an
+Write | Review | Build | Publish`. Every chip is always clickable — an
    un-run step is a place to GO, never a dimmed dead control — and the run
    arrows stay beside the chips. Content lives INSIDE its step, in flow
    order: **Page** = label/slug/type, page-type + status pickers, priority,
@@ -498,12 +498,13 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
    (both are pinned by tests). The old "Review + fact-check each page"
    checkbox is GONE: review is what separates Thorough from Advanced.
 
-     CMS reads obey the same prerequisite: plan-bearing views first resolve the
-     recorded `settings.cms` choice (then the existing domain match) through
-     `useCmsLink`; only a concrete CMS id enables `useCmsPageMap`, and that id is
-     sent as `cms_site`. A genuinely unlinked plan therefore makes no doomed
-     `/cms-pages` request, while a half-linked plan uses the choice it already
-     has instead of raising `content_plan_cms_unpaired`.
+   CMS reads obey the same prerequisite: plan-bearing views first resolve the
+   recorded `settings.cms` choice (then the existing domain match) through
+   `useCmsLink`; only a concrete CMS id enables `useCmsPageMap`, and that id is
+   sent as `cms_site`. A genuinely unlinked plan therefore makes no doomed
+   `/cms-pages` request, while a half-linked plan uses the choice it already
+   has instead of raising `content_plan_cms_unpaired`.
+
 4. **Entities** (`EntityManager.tsx`): two halves — People &amp; companies
    (linked crm parties: create via the canonical `PartyCreateForm`, link
    existing via CRM name search, unlink, every name a door to `/crm/[id]`)
@@ -821,8 +822,10 @@ workspace can never disagree. Six measured values (clicks / impressions /
 average position 28d, page score with failing checks, open findings as a door,
 last captured) and, on demand, the whole canonical AFTER surface: **Open
 measurement** mounts `CmsPageMeasure` — i.e. `PageWorkspace` wholesale — in a
-`WindowPanel` beside the panel (lazy, in-gate), with new-tab doors to the page
-workspace and the CMS Measure tab. Nothing here re-implements a card
+`WindowPanel` beside the panel through the one user-gated `NodeMeasureWindow`
+dynamic front door; route-shared `NodeMeasureCard` never imports either heavy
+graph. New-tab doors go to the page workspace and the CMS Measure tab. Nothing
+here re-implements a card
 (Inventory Law). Every absent-join state says which one it is and offers no fake
 CTA: unbuilt · unpublished · resolving · **live but not joined to a crawled page**
 · loading · read-failed (`InlineQueryError`, never "no data") · measured-but-not-in-GSC-yet.
@@ -872,6 +875,11 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-29 — **The measurement window stays behind its user-action bundle
+  boundary.** `NodeMeasureCard` no longer statically imports `WindowPanel` into
+  the Content Plan route. One dynamic `NodeMeasureWindow` front door now owns
+  both the window shell and canonical `CmsPageMeasure`; a source contract
+  prevents the eager edge from returning.
 - 2026-08-29 — **Shape recommendations route through their registered UI.**
   The python-owned `plan_shape_recommendation` row has a complete emitted JSON
   schema and an active DB component, but its unflattened `data[]` is null. The

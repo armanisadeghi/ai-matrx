@@ -16,7 +16,8 @@
  * file owns exactly one thing: the six-number strip and the honest state
  * sentence for every way the join can be absent.
  */
-import { lazy, Suspense, useState } from "react";
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { BarChart3, ExternalLink, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,15 +29,17 @@ import {
   MetricCell,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
 import type { CmsPageMapEntry } from "../setup/bridge";
 import type { NodeMeasurement } from "../hooks/useNodeMeasurement";
 
-/** In-gate lazy: the measured workspace is heavy and opens on user action. */
-const CmsPageMeasure = lazy(
-  () => import("@/features/cms/components/measure/CmsPageMeasure"),
-);
+// This one-at-a-time window owns the heavy measured-page workspace. Keep its
+// WindowPanel import behind the user-action gate so the Content Plan route does
+// not pull the entire window stack into its initial graph.
+const NodeMeasureWindow = dynamic(() => import("./NodeMeasureWindow"), {
+  ssr: false,
+  loading: () => null,
+});
 
 export function NodeMeasureCard({
   measurement,
@@ -196,27 +199,11 @@ export function NodeMeasureCard({
       </div>
 
       {windowOpen && webPageId ? (
-        <WindowPanel
-          id={`plan-node-measure-${webPageId}`}
-          title={`Measurement — ${nodeLabel}`}
+        <NodeMeasureWindow
+          webPageId={webPageId}
+          nodeLabel={nodeLabel}
           onClose={() => setWindowOpen(false)}
-          width="70vw"
-          height="82dvh"
-          minWidth={420}
-          minHeight={320}
-          bodyClassName="flex min-h-0 flex-col overflow-auto p-0"
-        >
-          <Suspense
-            fallback={
-              <p className="inline-flex items-center gap-1.5 p-4 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Loading the measured page…
-              </p>
-            }
-          >
-            <CmsPageMeasure webPageId={webPageId} />
-          </Suspense>
-        </WindowPanel>
+        />
       ) : null}
     </div>
   );
