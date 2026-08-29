@@ -25,6 +25,7 @@ import {
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
 import { EmbeddedImageStudio } from "@/features/image-studio/components/EmbeddedImageStudio";
+import { confirmResetToOriginal } from "@/features/html-pages/utils/confirm-destructive";
 
 export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
   const previewUrl = actions.getCurrentPreviewUrl();
@@ -377,7 +378,11 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    onClick={() => {
+                    onClick={async () => {
+                      // Same wipe as "Reset All to Original" on the code tab,
+                      // so it states the same consequence from one helper.
+                      const ok = await confirmResetToOriginal(state);
+                      if (!ok) return;
                       actions.handleRefreshMarkdown();
                       setTimeout(() => setIframeKey((prev) => prev + 1), 500);
                     }}

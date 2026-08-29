@@ -16,6 +16,10 @@ import {
 } from "@/components/ui/tooltip";
 import type { HtmlPreviewState, HtmlPreviewActions } from "../types";
 import { formatMetadataAsJson } from "@/features/html-pages/utils/html-source-files-utils";
+import {
+  confirmRegenerateFromMarkdown,
+  confirmResetToOriginal,
+} from "@/features/html-pages/utils/confirm-destructive";
 
 interface HtmlCodeFilesTabProps {
   state: HtmlPreviewState;
@@ -58,7 +62,12 @@ export function HtmlCodeFilesTab({
     return actions.generateCompleteHtmlFromSources();
   }, [state.contentHtml, state.wordPressCSS, state.metadata]);
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
+    // Regenerating from markdown overwrites content.html / CSS — only a
+    // consequence when those were hand-edited, so only then does it ask.
+    if (state.isContentDirty && !(await confirmRegenerateFromMarkdown())) {
+      return;
+    }
     setIsUpdating(true);
     setTimeout(() => {
       actions.handleUpdateFromMarkdown();
@@ -66,7 +75,9 @@ export function HtmlCodeFilesTab({
     }, 100);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
+    const ok = await confirmResetToOriginal(state);
+    if (!ok) return;
     setIsResetting(true);
     setTimeout(() => {
       actions.handleRefreshMarkdown();
