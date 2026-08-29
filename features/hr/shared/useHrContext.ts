@@ -154,14 +154,29 @@ export function useHrContextResolver(
           }
         }
 
-        // Rule 3, for the case the server could not apply it: we asked for an org
-        // that is not HR-reachable (the picker's org), so the server returned no
-        // active employer even though exactly one exists.
-        if (!resolved.active && resolved.employers.length === 1) {
-          const only = resolved.employers[0];
-          const third = await fetchHrContext(only.organization_id);
-          if (cancelled) return;
-          if (third.ok) resolved = third.data;
+        // 🚨 SCOPE TO THE PERSON'S REAL HR EMPLOYER, OR AN ADMIN IS LOCKED OUT.
+        // `useHrPersona().can` reads `active.capabilities`, so if `active` is null OR resolved
+        // to an org where HR is OFF, every HR control is hidden — the inverse of a leak. This
+        // bit a real admin (Priya): her global `activeOrgId` was her personal workspace
+        // (module off), so `active` came back with an EMPTY capability set while she holds 21
+        // capabilities in her actual workplace. When exactly ONE of her employers has HR on,
+        // that is unambiguously her HR context — re-fetch for it. (The server applies the same
+        // default when asked with no org; this covers the case where the client asked for the
+        // wrong org.) Zero or many HR-enabled employers stays as-is — the picker decides.
+        const activeIsHrReachable = resolved.active?.module_enabled === true;
+        if (!activeIsHrReachable) {
+          const hrEmployers = resolved.employers.filter((e) => e.module_enabled);
+          const target =
+            hrEmployers.length === 1
+              ? hrEmployers[0].organization_id
+              : !resolved.active && resolved.employers.length === 1
+                ? resolved.employers[0].organization_id
+                : null;
+          if (target && target !== resolved.active?.organization_id) {
+            const scoped = await fetchHrContext(target);
+            if (cancelled) return;
+            if (scoped.ok) resolved = scoped.data;
+          }
         }
 
         setContext(resolved);

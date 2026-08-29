@@ -167,6 +167,11 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-08-29 (single enabled employer default)** — HR context now resolves to the
+  person's sole module-enabled employer when their global organization is a module-off
+  personal workspace. The live `hr_my_context` contract and the client fallback agree:
+  zero or multiple enabled employers remain unresolved for the employer picker, while
+  one enabled employer restores the person's actual capability set.
 - **2026-08-28 (HR SMS contact graph)** — `work_phone` and `personal_phone` now feed the
   employee party's CRM contact graph as unverified `work`/`mobile` points. The existing Twilio
   Verify success path upgrades that graph to verified/mobile; the SMS resolver still refuses
