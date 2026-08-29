@@ -542,6 +542,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ebay/oauth/connect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Start Seller Oauth */
+        get: operations["start_seller_oauth_ebay_oauth_connect_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ebay/oauth/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Seller Oauth Callback */
+        get: operations["seller_oauth_callback_ebay_oauth_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai-models": {
         parameters: {
             query?: never;
@@ -5930,6 +5964,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/oracle-health-integrations/open-sandbox/capability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Open Sandbox Capability
+         * @description Return a safe projection of the open-sandbox CapabilityStatement.
+         */
+        get: operations["read_open_sandbox_capability_oracle_health_integrations_open_sandbox_capability_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oracle-health-integrations/open-sandbox/patient-canary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Synthetic Patient Canary
+         * @description Return only non-demographic receipt fields for Oracle's fixed test patient.
+         */
+        get: operations["read_synthetic_patient_canary_oracle_health_integrations_open_sandbox_patient_canary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/aws-pricing-integrations/public/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Public Service Catalog
+         * @description Return a bounded projection of AWS's public service index.
+         */
+        get: operations["read_public_service_catalog_aws_pricing_integrations_public_services_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bitbucket-integrations/public/repositories/{workspace}/{repo_slug}": {
         parameters: {
             query?: never;
@@ -5962,6 +6056,40 @@ export interface paths {
          * @description Return bounded pipeline history for one public Bitbucket repository.
          */
         get: operations["read_public_pipelines_bitbucket_integrations_public_repositories__workspace___repo_slug__pipelines_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bluesky/public/author-feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Author Feed */
+        get: operations["public_author_feed_bluesky_public_author_feed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev-community/public/articles/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Latest Public Articles */
+        get: operations["latest_public_articles_dev_community_public_articles_latest_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -28261,6 +28389,48 @@ export interface components {
             max_calls?: number | null;
         };
         /**
+         * AwsPriceListCatalog
+         * @description Bounded AWS service catalog receipt.
+         */
+        AwsPriceListCatalog: {
+            /**
+             * Provider
+             * @default aws
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default official_no_auth_price_list_file
+             */
+            access?: string;
+            /** Format Version */
+            format_version: string;
+            /** Publication Date */
+            publication_date: string;
+            /** Total Offer Count */
+            total_offer_count: number;
+            /** Returned Count */
+            returned_count: number;
+            /** Query */
+            query?: string | null;
+            /** Offers */
+            offers: components["schemas"]["AwsPriceListOffer"][];
+        };
+        /**
+         * AwsPriceListOffer
+         * @description Safe projection of one AWS Price List service offer.
+         */
+        AwsPriceListOffer: {
+            /** Offer Code */
+            offer_code: string;
+            /** Version Index Path */
+            version_index_path: string;
+            /** Current Version Path */
+            current_version_path: string;
+            /** Current Region Index Path */
+            current_region_index_path: string;
+        };
+        /**
          * BackfillPassResult
          * @description What one pass actually did. Every field is measured, never assumed.
          */
@@ -29047,6 +29217,78 @@ export interface components {
          * @enum {string}
          */
         BlockerKind: "human_decision" | "approval" | "rate_limit" | "quota" | "external_data" | "schedule" | "upstream_failure" | "dependency" | "manual_hold";
+        /**
+         * BlueskyPublicAuthorFeed
+         * @description Bounded public feed response for one actor.
+         */
+        BlueskyPublicAuthorFeed: {
+            /**
+             * Kind
+             * @default bluesky_public_author_feed
+             * @constant
+             */
+            __kind?: "bluesky_public_author_feed";
+            /**
+             * Provider
+             * @default bluesky
+             * @constant
+             */
+            provider?: "bluesky";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Actor */
+            actor: string;
+            /** Posts */
+            posts: components["schemas"]["BlueskyPublicPost"][];
+        };
+        /**
+         * BlueskyPublicPost
+         * @description Safe projection of one public Bluesky post.
+         */
+        BlueskyPublicPost: {
+            /**
+             * Kind
+             * @default bluesky_public_post
+             * @constant
+             */
+            __kind?: "bluesky_public_post";
+            /** Uri */
+            uri: string;
+            /** Cid */
+            cid: string;
+            /** Author Did */
+            author_did: string;
+            /** Author Handle */
+            author_handle: string;
+            /** Author Display Name */
+            author_display_name?: string | null;
+            /** Text */
+            text: string;
+            /** Languages */
+            languages: string[];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Indexed At
+             * Format: date-time
+             */
+            indexed_at: string;
+            /** Reply Count */
+            reply_count: number;
+            /** Repost Count */
+            repost_count: number;
+            /** Like Count */
+            like_count: number;
+            /** Quote Count */
+            quote_count: number;
+        };
         /** Body_add_attachment_vault_items__item_id__attachments_post */
         Body_add_attachment_vault_items__item_id__attachments_post: {
             /** File */
@@ -38821,6 +39063,63 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /**
+         * DevCommunityArticle
+         * @description Safe projection of one public DEV article summary.
+         */
+        DevCommunityArticle: {
+            /**
+             * Kind
+             * @default dev_community_public_article
+             * @constant
+             */
+            __kind?: "dev_community_public_article";
+            /** Article Id */
+            article_id: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Url */
+            url: string;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            /** Reading Time Minutes */
+            reading_time_minutes: number;
+            /** Tags */
+            tags: string[];
+            /** Author Username */
+            author_username: string;
+        };
+        /**
+         * DevCommunityArticleList
+         * @description Bounded public-article response.
+         */
+        DevCommunityArticleList: {
+            /**
+             * Kind
+             * @default dev_community_public_article_list
+             * @constant
+             */
+            __kind?: "dev_community_public_article_list";
+            /**
+             * Provider
+             * @default dev_community
+             * @constant
+             */
+            provider?: "dev_community";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Articles */
+            articles: components["schemas"]["DevCommunityArticle"][];
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -53067,6 +53366,88 @@ export interface components {
             events_24h: number;
             /** Unrecovered 24H */
             unrecovered_24h: number;
+        };
+        /**
+         * OracleHealthCapability
+         * @description Safe projection of the open sandbox CapabilityStatement.
+         */
+        OracleHealthCapability: {
+            /**
+             * Provider
+             * @default oracle_health
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default official_no_auth_open_sandbox
+             */
+            access?: string;
+            /**
+             * Sandbox
+             * @default true
+             */
+            sandbox?: boolean;
+            /**
+             * Read Only
+             * @default true
+             */
+            read_only?: boolean;
+            /**
+             * Resource Type
+             * @default CapabilityStatement
+             */
+            resource_type?: string;
+            /** Status */
+            status: string;
+            /** Fhir Version */
+            fhir_version: string;
+            /** Implementation Description */
+            implementation_description: string;
+            /** Implementation Url */
+            implementation_url: string;
+            /** Rest Mode */
+            rest_mode: string;
+            /** Supported Resource Count */
+            supported_resource_count: number;
+        };
+        /**
+         * OracleHealthSyntheticPatient
+         * @description Non-demographic receipt for Oracle's fixed synthetic patient canary.
+         */
+        OracleHealthSyntheticPatient: {
+            /**
+             * Provider
+             * @default oracle_health
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default official_no_auth_open_sandbox
+             */
+            access?: string;
+            /**
+             * Sandbox
+             * @default true
+             */
+            sandbox?: boolean;
+            /**
+             * Synthetic
+             * @default true
+             */
+            synthetic?: boolean;
+            /**
+             * Resource Type
+             * @default Patient
+             */
+            resource_type?: string;
+            /** Patient Id */
+            patient_id: string;
+            /** Active */
+            active: boolean;
+            /** Version Id */
+            version_id: string;
+            /** Last Updated */
+            last_updated: string;
         };
         /**
          * OrchestraBadge
@@ -76431,6 +76812,61 @@ export interface operations {
             };
         };
     };
+    start_seller_oauth_ebay_oauth_connect_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
+    seller_oauth_callback_ebay_oauth_callback_get: {
+        parameters: {
+            query?: {
+                code?: string | null;
+                state?: string | null;
+                error?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_all_ai_models_ai_models_get: {
         parameters: {
             query?: never;
@@ -85971,6 +86407,78 @@ export interface operations {
             };
         };
     };
+    read_open_sandbox_capability_oracle_health_integrations_open_sandbox_capability_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OracleHealthCapability"];
+                };
+            };
+        };
+    };
+    read_synthetic_patient_canary_oracle_health_integrations_open_sandbox_patient_canary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OracleHealthSyntheticPatient"];
+                };
+            };
+        };
+    };
+    read_public_service_catalog_aws_pricing_integrations_public_services_get: {
+        parameters: {
+            query?: {
+                query?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AwsPriceListCatalog"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_public_repository_bitbucket_integrations_public_repositories__workspace___repo_slug__get: {
         parameters: {
             query?: never;
@@ -86022,6 +86530,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BitbucketPublicPipelines"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_author_feed_bluesky_public_author_feed_get: {
+        parameters: {
+            query: {
+                actor: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlueskyPublicAuthorFeed"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    latest_public_articles_dev_community_public_articles_latest_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevCommunityArticleList"];
                 };
             };
             /** @description Validation Error */

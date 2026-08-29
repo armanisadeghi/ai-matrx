@@ -1019,6 +1019,110 @@
         }
       }
     },
+    "/ebay/oauth/connect": {
+      "get": {
+        "tags": [
+          "eBay OAuth"
+        ],
+        "summary": "Start Seller Oauth",
+        "operationId": "start_seller_oauth_ebay_oauth_connect_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Start Seller Oauth Ebay Oauth Connect Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ebay/oauth/callback": {
+      "get": {
+        "tags": [
+          "eBay OAuth"
+        ],
+        "summary": "Seller Oauth Callback",
+        "operationId": "seller_oauth_callback_ebay_oauth_callback_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai-models": {
       "get": {
         "tags": [
@@ -15177,6 +15281,113 @@
         }
       }
     },
+    "/oracle-health-integrations/open-sandbox/capability": {
+      "get": {
+        "tags": [
+          "Oracle Health Integrations"
+        ],
+        "summary": "Read Open Sandbox Capability",
+        "description": "Return a safe projection of the open-sandbox CapabilityStatement.",
+        "operationId": "read_open_sandbox_capability_oracle_health_integrations_open_sandbox_capability_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OracleHealthCapability"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/oracle-health-integrations/open-sandbox/patient-canary": {
+      "get": {
+        "tags": [
+          "Oracle Health Integrations"
+        ],
+        "summary": "Read Synthetic Patient Canary",
+        "description": "Return only non-demographic receipt fields for Oracle's fixed test patient.",
+        "operationId": "read_synthetic_patient_canary_oracle_health_integrations_open_sandbox_patient_canary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OracleHealthSyntheticPatient"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/aws-pricing-integrations/public/services": {
+      "get": {
+        "tags": [
+          "AWS Pricing Integrations"
+        ],
+        "summary": "Read Public Service Catalog",
+        "description": "Return a bounded projection of AWS's public service index.",
+        "operationId": "read_public_service_catalog_aws_pricing_integrations_public_services_get",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Query"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 25,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AwsPriceListCatalog"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/bitbucket-integrations/public/repositories/{workspace}/{repo_slug}": {
       "get": {
         "tags": [
@@ -15264,6 +15475,107 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BitbucketPublicPipelines"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bluesky/public/author-feed": {
+      "get": {
+        "tags": [
+          "Bluesky Integrations"
+        ],
+        "summary": "Public Author Feed",
+        "operationId": "public_author_feed_bluesky_public_author_feed_get",
+        "parameters": [
+          {
+            "name": "actor",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 512,
+              "title": "Actor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlueskyPublicAuthorFeed"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev-community/public/articles/latest": {
+      "get": {
+        "tags": [
+          "DEV Community Integrations"
+        ],
+        "summary": "Latest Public Articles",
+        "operationId": "latest_public_articles_dev_community_public_articles_latest_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevCommunityArticleList"
                 }
               }
             }
@@ -73203,6 +73515,100 @@
         "title": "AutoTagPassRequest",
         "description": "Trigger the WHOLE auto-tag pass on demand (the \"Run now\" button).\n\n`max_calls` overrides how many included+scraped sources the pass tags this\nrun. When omitted, the topic's `rs_topic.max_auto_tag_calls` is used; if\nthat is 0 (the auto-pipeline default = OFF), the on-demand pass instead\ntags ALL eligible sources — the user explicitly asked for it, so it must\nnever silently no-op."
       },
+      "AwsPriceListCatalog": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "aws"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "official_no_auth_price_list_file"
+          },
+          "format_version": {
+            "type": "string",
+            "title": "Format Version"
+          },
+          "publication_date": {
+            "type": "string",
+            "title": "Publication Date"
+          },
+          "total_offer_count": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Total Offer Count"
+          },
+          "returned_count": {
+            "type": "integer",
+            "maximum": 50,
+            "minimum": 0,
+            "title": "Returned Count"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Query"
+          },
+          "offers": {
+            "items": {
+              "$ref": "#/components/schemas/AwsPriceListOffer"
+            },
+            "type": "array",
+            "title": "Offers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "format_version",
+          "publication_date",
+          "total_offer_count",
+          "returned_count",
+          "offers"
+        ],
+        "title": "AwsPriceListCatalog",
+        "description": "Bounded AWS service catalog receipt."
+      },
+      "AwsPriceListOffer": {
+        "properties": {
+          "offer_code": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Offer Code"
+          },
+          "version_index_path": {
+            "type": "string",
+            "title": "Version Index Path"
+          },
+          "current_version_path": {
+            "type": "string",
+            "title": "Current Version Path"
+          },
+          "current_region_index_path": {
+            "type": "string",
+            "title": "Current Region Index Path"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "offer_code",
+          "version_index_path",
+          "current_version_path",
+          "current_region_index_path"
+        ],
+        "title": "AwsPriceListOffer",
+        "description": "Safe projection of one AWS Price List service offer."
+      },
       "BackfillPassResult": {
         "properties": {
           "result_kind": {
@@ -75050,6 +75456,153 @@
         ],
         "title": "BlockerKind",
         "description": "Why a stage attempt is sitting still.\n\nThis is the answer to \"what is blocking it\" — the question the loop object\nexists to make answerable. Mirrors the ``blocker_kind`` CHECK constraint."
+      },
+      "BlueskyPublicAuthorFeed": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "bluesky_public_author_feed",
+            "title": "Kind",
+            "default": "bluesky_public_author_feed"
+          },
+          "provider": {
+            "type": "string",
+            "const": "bluesky",
+            "title": "Provider",
+            "default": "bluesky"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "actor": {
+            "type": "string",
+            "title": "Actor"
+          },
+          "posts": {
+            "items": {
+              "$ref": "#/components/schemas/BlueskyPublicPost"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "title": "Posts"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "actor",
+          "posts"
+        ],
+        "title": "BlueskyPublicAuthorFeed",
+        "description": "Bounded public feed response for one actor."
+      },
+      "BlueskyPublicPost": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "bluesky_public_post",
+            "title": "Kind",
+            "default": "bluesky_public_post"
+          },
+          "uri": {
+            "type": "string",
+            "title": "Uri"
+          },
+          "cid": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Cid"
+          },
+          "author_did": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Author Did"
+          },
+          "author_handle": {
+            "type": "string",
+            "maxLength": 253,
+            "minLength": 3,
+            "title": "Author Handle"
+          },
+          "author_display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Author Display Name"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 30000,
+            "title": "Text"
+          },
+          "languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Languages"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "indexed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Indexed At"
+          },
+          "reply_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Reply Count"
+          },
+          "repost_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Repost Count"
+          },
+          "like_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Like Count"
+          },
+          "quote_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Quote Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "uri",
+          "cid",
+          "author_did",
+          "author_handle",
+          "text",
+          "languages",
+          "created_at",
+          "indexed_at",
+          "reply_count",
+          "repost_count",
+          "like_count",
+          "quote_count"
+        ],
+        "title": "BlueskyPublicPost",
+        "description": "Safe projection of one public Bluesky post."
       },
       "Body_add_attachment_vault_items__item_id__attachments_post": {
         "properties": {
@@ -100715,6 +101268,112 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevCommunityArticle": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dev_community_public_article",
+            "title": "Kind",
+            "default": "dev_community_public_article"
+          },
+          "article_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Article Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Description"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "published_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Published At"
+          },
+          "reading_time_minutes": {
+            "type": "integer",
+            "maximum": 10000,
+            "minimum": 0,
+            "title": "Reading Time Minutes"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Tags"
+          },
+          "author_username": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Author Username"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "article_id",
+          "title",
+          "description",
+          "url",
+          "published_at",
+          "reading_time_minutes",
+          "tags",
+          "author_username"
+        ],
+        "title": "DevCommunityArticle",
+        "description": "Safe projection of one public DEV article summary."
+      },
+      "DevCommunityArticleList": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "dev_community_public_article_list",
+            "title": "Kind",
+            "default": "dev_community_public_article_list"
+          },
+          "provider": {
+            "type": "string",
+            "const": "dev_community",
+            "title": "Provider",
+            "default": "dev_community"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "articles": {
+            "items": {
+              "$ref": "#/components/schemas/DevCommunityArticle"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "title": "Articles"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "articles"
+        ],
+        "title": "DevCommunityArticleList",
+        "description": "Bounded public-article response."
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -137113,6 +137772,127 @@
           "unrecovered_24h"
         ],
         "title": "OpsSummaryResponse"
+      },
+      "OracleHealthCapability": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "oracle_health"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "official_no_auth_open_sandbox"
+          },
+          "sandbox": {
+            "type": "boolean",
+            "title": "Sandbox",
+            "default": true
+          },
+          "read_only": {
+            "type": "boolean",
+            "title": "Read Only",
+            "default": true
+          },
+          "resource_type": {
+            "type": "string",
+            "title": "Resource Type",
+            "default": "CapabilityStatement"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "fhir_version": {
+            "type": "string",
+            "title": "Fhir Version"
+          },
+          "implementation_description": {
+            "type": "string",
+            "title": "Implementation Description"
+          },
+          "implementation_url": {
+            "type": "string",
+            "title": "Implementation Url"
+          },
+          "rest_mode": {
+            "type": "string",
+            "title": "Rest Mode"
+          },
+          "supported_resource_count": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Supported Resource Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status",
+          "fhir_version",
+          "implementation_description",
+          "implementation_url",
+          "rest_mode",
+          "supported_resource_count"
+        ],
+        "title": "OracleHealthCapability",
+        "description": "Safe projection of the open sandbox CapabilityStatement."
+      },
+      "OracleHealthSyntheticPatient": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "oracle_health"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "official_no_auth_open_sandbox"
+          },
+          "sandbox": {
+            "type": "boolean",
+            "title": "Sandbox",
+            "default": true
+          },
+          "synthetic": {
+            "type": "boolean",
+            "title": "Synthetic",
+            "default": true
+          },
+          "resource_type": {
+            "type": "string",
+            "title": "Resource Type",
+            "default": "Patient"
+          },
+          "patient_id": {
+            "type": "string",
+            "title": "Patient Id"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "version_id": {
+            "type": "string",
+            "title": "Version Id"
+          },
+          "last_updated": {
+            "type": "string",
+            "title": "Last Updated"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "patient_id",
+          "active",
+          "version_id",
+          "last_updated"
+        ],
+        "title": "OracleHealthSyntheticPatient",
+        "description": "Non-demographic receipt for Oracle's fixed synthetic patient canary."
       },
       "OrchestraBadge": {
         "properties": {
