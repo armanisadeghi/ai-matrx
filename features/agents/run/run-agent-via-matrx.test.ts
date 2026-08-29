@@ -61,7 +61,7 @@ const baseArgs = {
   agentId: "agent-1",
   userInput: "Do the thing",
   sourceApp: "matrx-frontend",
-  sourceFeature: "test-suite",
+  sourceFeature: "agent-runner",
 };
 
 beforeEach(() => {
@@ -103,7 +103,7 @@ describe("runAgentViaMatrxClient", () => {
       store: false,
       user_input: "Do the thing",
       source_app: "matrx-frontend",
-      source_feature: "test-suite",
+      source_feature: "agent-runner",
     });
     expect(typeof request.conversation_id).toBe("string");
   });
