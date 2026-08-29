@@ -423,10 +423,37 @@ export function hrComplianceHref(org: HrOrgRef): string {
 export function hrComplianceLawsHref(org: HrOrgRef): string {
   return hrUrl("/hr/compliance/laws", org);
 }
-/** Route 65 — THE one HR task inbox. HR never builds a second task store. */
-export function hrTasksHref(org: HrOrgRef): string {
-  return hrUrl("/hr/tasks", org);
+/**
+ * Route 65 — THE one HR task inbox. HR never builds a second task store.
+ *
+ * `scope` is the inbox's own filter (`queue`, `mine`, …), read straight off the URL
+ * by `HrTaskInbox`. It lives here rather than being appended by callers for the
+ * reason at the top of this file: an href assembled anywhere else is an href that
+ * can forget the employer, and three call sites had already done exactly that.
+ */
+export function hrTasksHref(org: HrOrgRef, options?: { scope?: string | null }): string {
+  return hrUrl("/hr/tasks", org, { scope: options?.scope });
 }
+
+/**
+ * Route 65a — ONE task, opened on its decision (SPEC-WORKFLOW-ENGINE §6.2).
+ *
+ * `step` / `failure` / `notice` are the three deep-link targets
+ * `app/(core)/hr/tasks/[instanceId]/page.tsx` actually reads; anything else it
+ * ignores, so nothing else is offered here.
+ */
+export function hrTaskHref(
+  instanceId: string,
+  org: HrOrgRef,
+  options?: { step?: string | null; failure?: string | null; notice?: string | null },
+): string {
+  return hrUrl(`/hr/tasks/${encodeURIComponent(instanceId)}`, org, {
+    step: options?.step,
+    failure: options?.failure,
+    notice: options?.notice,
+  });
+}
+
 export function hrReportsHref(org: HrOrgRef): string {
   return hrUrl("/hr/reports", org);
 }
