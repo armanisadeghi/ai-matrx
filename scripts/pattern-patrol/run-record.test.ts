@@ -47,6 +47,74 @@ function certifiedRun() {
   });
 }
 
+function escapedDeliveredClosedRun() {
+  const fixing = appendPatrolRunEvent(run(), {
+    state: "fixing",
+    at: "2026-08-14T12:01:00.000Z",
+    actor: "patrol-worker",
+    summary: "Repairing verified promises",
+  });
+  const blocked = appendPatrolRunEvent(fixing, {
+    state: "infrastructure_blocked",
+    at: "2026-08-14T12:02:00.000Z",
+    actor: "patrol-worker",
+    summary: "Preview unavailable",
+    blocker: {
+      prerequisite: "exact-checkout browser proof",
+      preservedRef: "refs/heads/patrol-runs/P9/run-1",
+      preservedSha: CANDIDATE,
+    },
+  });
+  const escaped = appendPatrolRunEvent(blocked, {
+    state: "escaped_delivery",
+    at: "2026-08-14T12:03:00.000Z",
+    actor: "delivery-controller",
+    summary: "Release ordering escaped",
+    escape: {
+      candidateSha: CANDIDATE,
+      integratedSha: "d".repeat(40),
+      release: "v0.4.700",
+      reason: "release gate was advisory",
+    },
+  });
+  const certifying = appendPatrolRunEvent(escaped, {
+    state: "certifying",
+    at: "2026-08-14T12:04:00.000Z",
+    actor: "certifier-task",
+    summary: "Exact candidate review started",
+  });
+  const certified = appendPatrolRunEvent(certifying, {
+    state: "certified",
+    at: "2026-08-14T12:05:00.000Z",
+    actor: "certifier-task",
+    summary: "Exact candidate certified",
+    certification: {
+      verdict: "CERTIFIED",
+      certifierTaskId: "certifier-task",
+      candidateSha: CANDIDATE,
+      checks: ["focused tests"],
+    },
+  });
+  const delivered = appendPatrolRunEvent(certified, {
+    state: "delivered",
+    at: "2026-08-14T12:06:00.000Z",
+    actor: "delivery-controller",
+    summary: "Existing release recorded",
+    delivery: {
+      candidateSha: CANDIDATE,
+      preservedRef: "refs/heads/patrol-runs/P9/run-1",
+      integratedSha: "d".repeat(40),
+      release: "v0.4.700",
+    },
+  });
+  return appendPatrolRunEvent(delivered, {
+    state: "closed",
+    at: "2026-08-14T12:07:00.000Z",
+    actor: "delivery-controller",
+    summary: "Closed before missing proof was recovered",
+  });
+}
+
 describe("Pattern Patrol permanent run record", () => {
   it("builds a hash-chained valid history", () => {
     const record = certifiedRun();
@@ -121,7 +189,44 @@ describe("Pattern Patrol permanent run record", () => {
   it("keeps certification and delivery out of generic worker transitions", () => {
     expect(isPrivilegedPatrolState("certified")).toBe(true);
     expect(isPrivilegedPatrolState("delivery_queued")).toBe(true);
+    expect(isPrivilegedPatrolState("reconciled")).toBe(true);
     expect(isPrivilegedPatrolState("fixing")).toBe(false);
+  });
+
+  it("appends proof reconciliation without rewriting the escaped ordering", () => {
+    const closed = escapedDeliveredClosedRun();
+    const escaped = closed.events.find((event) => event.state === "escaped_delivery");
+    const reconciled = appendPatrolRunEvent(closed, {
+      state: "reconciled",
+      at: "2026-08-14T12:08:00.000Z",
+      actor: "fleet-health",
+      summary: "Recovered exact-checkout representative proof",
+      reconciliation: {
+        candidateSha: CANDIDATE,
+        escapedEventHash: escaped!.eventHash,
+        checks: ["exact checkout at 375x812", "desktop behavior unchanged"],
+      },
+    });
+
+    expect(validatePatrolRunRecord(reconciled)).toEqual([]);
+    expect(reconciled.events.map((event) => event.state)).toContain("escaped_delivery");
+    expect(reconciled.events.at(-1)?.state).toBe("reconciled");
+  });
+
+  it("refuses reconciliation that does not name the exact escaped event", () => {
+    expect(() =>
+      appendPatrolRunEvent(escapedDeliveredClosedRun(), {
+        state: "reconciled",
+        at: "2026-08-14T12:08:00.000Z",
+        actor: "fleet-health",
+        summary: "Claimed reconciliation",
+        reconciliation: {
+          candidateSha: CANDIDATE,
+          escapedEventHash: "0".repeat(64),
+          checks: ["claimed proof"],
+        },
+      }),
+    ).toThrow("exact prior escaped-delivery event");
   });
 
   it("refuses a certifier identity that also performed the fix", () => {
