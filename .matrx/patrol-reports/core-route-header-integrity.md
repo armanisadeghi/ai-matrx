@@ -1,97 +1,117 @@
 # P11 — Core-route header integrity
 
-- **Run date:** 2026-08-26 (America/Los_Angeles)
-- **Run id:** `2026-08-26T161415Z`
-- **Base:** `83129f3884fd22bade6163e114aee32b578cd156`
-- **Run kind:** first permanent P11 run; full static scan plus complete Education route-family rotation
-- **Current state:** closed clean
-- **Findings:** 0
-- **Fixed:** 0
+- **Run date:** 2026-08-29 (America/Los_Angeles)
+- **Run id:** `2026-08-29T161426Z`
+- **Base:** `20551a187a25e2f58d83d6d35c610cc0f0618770`
+- **Current state:** infrastructure blocked
+- **Findings:** 6
+- **Fixed in source:** 6
 - **Approvals needed:** 0
-- **Degradation:** none
+- **Degradation:** required exact-worktree visual certification incomplete
 
 ## Resume and configuration reconciliation
 
-No prior `.matrx/patrol-runs/P11/latest.json`, P11 report, automation memory,
-or open P11 sighting existed, so there was no unfinished candidate to resume.
-The generated prompt matches the canonical manifest's P11 automation id, name,
-M/R tier, recipe, cadence, report slug, and run instruction.
+The prior P11 run `2026-08-26T161415Z` was hash-valid, closed clean, and
+already reconciled on `origin/main`; no candidate or human decision remained to
+resume. The live P11 automation id, name, M/R tier, recipe, report slug,
+schedule, and run instruction match `scripts/pattern-patrol/manifest.ts`.
+`pnpm check:patrol-contracts` continues to report only the unrelated
+`pattern-patrol-fleet-health` prompt drift.
 
 ## Scope scanned
 
-- Full `pnpm check:page-headers` detector pass.
-- Full strict route scroll-chain pass.
-- Scoped search across `app/(core)/education` and `features/education` for
-  viewport-minus-header wrappers, faux body headers, hardcoded header offsets,
-  and shell-height ownership.
-- All open sighting-ledger entries; none belonged to P11.
-- First complete Education family rotation, including every route involved in
-  the original five-file viewport-height finding class.
+- Structural novelty since the prior run base: 98 added `(core)` route leaves,
+  led by the HR, Commerce, Product Capture, and Workflow families.
+- Full `pnpm check:page-headers` and strict route scroll-chain passes.
+- Focused source scan for viewport-minus-header math, hardcoded header offsets,
+  faux body headers, and avatar-clearance padding in route and feature-owned
+  `PageHeader` consumers.
+- The sighting ledger contained no open P11 item.
+- The exact-worktree preview lease was checked repeatedly and remained owned
+  by `/Users/armanisadeghi/code/matrx-frontend`; it was never reused or stopped.
 
-## Static verification
+## Findings and standing-authority repairs
 
-- `pnpm type-check`: **PASS** before and after the scan.
-- `pnpm check:scroll-chain:strict`: **PASS** across 7,453 files, 909 route
-  pages, and 255 layouts.
-- `pnpm check:page-headers`: **0 `(core)` findings**. Its seven current
-  warnings are unchanged `(dev)`/`(public)` routes outside P11's AppShell
-  contract.
-- Education has no remaining `calc(100dvh...)`, `calc(100vh...)`, `h-page`,
-  `h-screen`, `min-h-screen`, or `h-dvh` route wrapper. The shared Education
-  layout owns top clearance once with `h-full min-h-0` and
-  `pt-[var(--shell-header-h)]`.
+The shell already bounds `#shell-header-center` between its left and right
+controls, so `pr-12`/`pr-14` inside a `PageHeader` center row reserves the
+avatar width twice. Six verified callsites used that obsolete clearance hack:
 
-## Browser rotation
+1. `app/(core)/marketing/email/page.tsx`
+2. `app/(core)/marketing/monitoring/page.tsx`
+3. `app/(core)/marketing/outreach/page.tsx`
+4. `app/(core)/marketing/pr/page.tsx`
+5. `app/(core)/workflows/bakeoff/page.tsx`
+6. `features/pdf/scanner/components/ScannerSurface.tsx` (`/tools/scanner`)
 
-The exact-worktree managed preview lease was occupied by
-`/Users/armanisadeghi/code/matrx-frontend`; this patrol did not reuse or stop
-that server. Because there was no candidate diff, the visual scan used the
-authenticated live Education surface as bounded current-UI evidence while the
-isolated worktree supplied source and gate evidence.
+All six paddings were removed without changing header ownership, navigation,
+actions, or route behavior. `scripts/check-page-headers.ts` now supports a
+`--core-only` patrol view and follows literal feature-owned `PageHeader`
+consumers in addition to route leaves and named header/nav components.
 
-The following routes passed at 1280x800, 800x800, and 375x812:
+## Candidate lifecycle and adversarial verdicts
 
-- `/education/overview`
-- `/education/fastfire`
-- `/education/fastfire/capture-test`
-- `/education/grade-work`
-- `/education/practice-oral`
-- `/education/subjects/quick-math`
-- one live `/education/subjects/quick-math/[id]` detail
+### First candidate — rejected after escaped integration
 
-`/education/overview` also passed the complete light/dark matrix at all three
-widths. In every measured state, the shell header and route center were 44px
-high, the center slot ended before the avatar, `.shell-main` matched the full
-viewport height, `scrollWidth` equaled `clientWidth`, and the first body action
-began below the glass header. Mobile navigation collapsed to the shared menu
-without losing route access.
+- Candidate: `81508305e1241e81803824dbe8cd27520390dc87`
+- First certifier: `/root/p11_certifier_81508305`
+- Verdict: **REJECTED**
+- Concrete defect: the new rule scanned only `app/**` route files, so the
+  feature-owned scanner `PageHeader` retained `pr-12` while `--core-only`
+  falsely reported clean.
 
-## Outcome and certification
+Automatic branch integration moved that uncertified candidate onto
+`origin/main` through `fea935abb84ed622789775626c2124553a89b8dd` and removed
+the automation worktree during certification. The worktree was restored at the
+same isolated path; no work continued in the shared checkout. Scheduled release
+`v0.4.1448` contains this escaped first candidate. The append-only run record
+preserves the infrastructure loss, escaped delivery, and rejection.
 
-No product or detector file changed. There was therefore no Tier-M mutation
-batch and no candidate SHA for an independent certifier.
+### Corrected candidate — infrastructure blocked
 
-- **Certifier verdict:** NOT APPLICABLE — zero-finding, zero-mutation run.
+- Candidate: `4b06080808465764e280fbfef3cd895abb093c24`
+- Preserved ref: `refs/heads/codex/p11-20260829-repair`
+- Second certifier: `/root/p11_certifier_4b060808`
+- Verdict: **INFRASTRUCTURE BLOCKED** — no candidate-caused defect found
+
+The corrected candidate fixes the scanner callsite and detector scope. It
+remains preserved off `origin/main`; it was not reverted or integrated because
+the required exact-worktree viewport/theme matrix could not run.
+
+## Baseline-to-candidate verification
+
+- `pnpm type-check`: PASS before and after.
+- `pnpm check:scroll-chain:strict`: PASS before and after across 7,873 files,
+  1,021 route pages, and 272 layouts.
+- `pnpm check:page-headers -- --core-only --strict`: PASS after the corrected
+  batch; the scanner consumer is now in detector scope.
+- Full `pnpm check:page-headers`: exactly seven unchanged `(dev)`/`(public)`
+  warnings before and after; none is a P11 `(core)` finding.
+- `git diff --check`: PASS.
+- `pnpm check:doctrine`: PASS.
+- `pnpm check:migrations`: command PASS with the ledger check skipped because
+  this isolated worktree has no Supabase credentials; no migration was touched.
+- `pnpm check:patrol-contracts`: unchanged baseline failure limited to the
+  fleet-health prompt drift.
+- Run record hash verification: PASS.
+
+## Missing proof and retry contract
+
+Required browser proof remains desktop 1280×800, intermediate 700–900px,
+mobile 375×812, and both light/dark themes on representative Marketing,
+Workflow Bake-off, and Scanner surfaces. The retry must acquire the managed
+preview lease from this exact worktree, use the isolated in-app Browser, and
+certify candidate `4b06080808465764e280fbfef3cd895abb093c24` before integration.
+
+## Decisions and exceptions
+
 - **Human decisions:** none.
 - **Exceptions:** none proposed, approved, suppressed, or allowlisted.
 - **Sighting outcomes:** no open P11 sighting existed to update.
 
-## Unrelated baseline diagnostics
-
-- `pnpm check:patrol-contracts` continues to report eight non-P11 automation
-  status/prompt drifts; the P11 prompt itself matches its manifest.
-- `pnpm check:doc-claims` reports two stale execution-runtime pointers in
-  `CLAUDE.md`; the sibling history confirms those documents were consolidated.
-- `pnpm check:migrations` reports the existing non-blocking 50-file drift
-  baseline. P11 changed no migration or database state.
-
-These diagnostics are retained as baseline evidence and were not counted as
-P11 findings or used to reject a clean header scan.
-
 ## Recursive learning
 
-This run proved that a shared family-level clearance owner plus a route matrix
-over the formerly affected leaf archetypes gives cheap, high-confidence P11
-coverage. The smallest detector improvement is a `(core)`-only reporting mode
-for `check:page-headers`, so unrelated public/demo warnings cannot obscure the
-patrol's actual zero-finding result.
+This run proved that P11 detector scope must follow the canonical `PageHeader`
+portal consumer, not route-file location or component naming. The smallest next
+improvement is a focused detector fixture containing one route-owned and one
+feature-owned `PageHeader` clearance hack so this exact false-clean regression
+cannot recur.

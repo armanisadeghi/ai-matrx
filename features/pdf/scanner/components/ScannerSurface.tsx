@@ -98,7 +98,7 @@ export default function ScannerSurface() {
       <div className="flex h-full min-h-0 flex-col">
         {/* Route chrome — portals into the shell header row */}
         <PageHeader>
-          <div className="flex w-full min-w-0 items-center gap-2 pr-12">
+          <div className="flex w-full min-w-0 items-center gap-2">
             <HeaderBack onClick={() => router.back()} />
             <ScanLine className="h-4 w-4 shrink-0 text-primary" />
             <h1 className="truncate text-sm font-semibold">Scan to PDF</h1>

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "2026-08-29T161426Z",
-  "state": "escaped_delivery",
-  "updatedAt": "2026-08-29T16:21:33.028Z",
-  "summary": "Recorded uncertified candidate integration on origin/main before the adversarial verdict",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-29T16:26:03.128Z",
+  "summary": "Corrected candidate 4b060808 passed static adversarial checks but required visual certification is infrastructure blocked",
   "source": "2026-08-29T161426Z.json",
-  "eventHash": "3b99a3988fac3fcc91e48a128865fe551f93fdccadce365ba0d57ac4faef5e49"
+  "eventHash": "1683f84304f77fdf4d1d9379f4481dc25abf2e7cad32bd5cca6bf5845c4aa21c"
 }
