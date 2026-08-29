@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp, Loader2, RotateCcw, Save } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -157,6 +158,15 @@ function SlotRow({
   };
 
   const handleReset = async () => {
+    // Reset overwrites the saved custom slot code with the generic stub —
+    // there is no undo and no copy kept, so the click says whose code dies.
+    const ok = await confirm({
+      title: `Replace the ${slotLabel} code with the generic stub?`,
+      description: `The custom React code saved for the ${slotLabel} slot is overwritten by the default stub. It is not kept anywhere and cannot be recovered — copy it out first if you might want it back.`,
+      confirmLabel: "Reset to stub",
+      variant: "destructive",
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       await onResetCode();

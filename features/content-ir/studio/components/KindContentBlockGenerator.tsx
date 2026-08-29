@@ -15,6 +15,7 @@
 import { useMemo, useState } from "react";
 import { Braces, Check, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import type { Json } from "@/types/database.types";
 import {
@@ -82,6 +83,17 @@ export default function KindContentBlockGenerator({
   );
 
   async function persist(): Promise<void> {
+    // The amber "already stored" badge is a label, not a gate: an upsert over
+    // a stored block silently overwrites it, so the click names that first.
+    if (alreadyStored) {
+      const ok = await confirm({
+        title: "Replace the stored content block?",
+        description: `Overwrites the block currently stored as “${block.blockId}” with a freshly derived one. Any change made to the stored block outside this generator is lost and cannot be recovered.`,
+        confirmLabel: "Replace stored block",
+        variant: "destructive",
+      });
+      if (!ok) return;
+    }
     setSaving(true);
     try {
       await store(block);
