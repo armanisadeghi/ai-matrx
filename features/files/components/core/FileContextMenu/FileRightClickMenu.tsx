@@ -37,6 +37,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useFileMenuActions } from "./useFileMenuActions";
+import { buildEmbeddedFileContextData } from "@/features/files/agent-context/buildFilesContextData";
 
 export interface FileRightClickMenuProps {
   fileId: string;
@@ -61,6 +62,12 @@ export function FileRightClickMenu({
   const a = useFileMenuActions(fileId);
   const filesById = useAppSelector(selectAllFilesMap);
   const file = filesById[fileId];
+  const contextData = file
+    ? buildEmbeddedFileContextData(file)
+    : {
+        content: "",
+        active_file_id: fileId,
+      };
   const [contextOpen, setContextOpen] = useState(false);
 
   if (disabled) return <>{children}</>;
@@ -176,13 +183,8 @@ export function FileRightClickMenu({
     <>
       <NonEditableContextMenu
         sourceFeature="files"
-        surfaceName="matrx-user/files"
-        contextData={{
-          content: file?.fileName ?? "",
-          active_file_id: fileId,
-          active_file_name: file?.fileName ?? "",
-          active_file_mime_type: file?.mimeType ?? "",
-        }}
+        surfaceName={file ? "matrx-user/files" : undefined}
+        contextData={contextData}
         entity={
           file
             ? {

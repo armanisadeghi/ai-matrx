@@ -91,6 +91,8 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- 2026-08-29 — File preview tab and action rails now scroll horizontally at constrained mobile widths; tab/action labels remain intact instead of collapsing into one-character columns. `FileResourceChip` now gives the universal file menu a real DOM trigger, so nested message-level menus cannot steal file-chip right clicks. Embedded file menus emit a complete canonical Files scope, eliminating the menu guard error caused by declaring always-available browser values without supplying them.
+
 - **2026-08-29 — File selection becomes a reusable preview/menu primitive.**
   `SelectableFileThumbnail` composes the existing metadata hydration, `MediaThumbnail`, File Preview
   WindowPanel opener, universal `FileRightClickMenu`, and a distinct 44px selection control. Product

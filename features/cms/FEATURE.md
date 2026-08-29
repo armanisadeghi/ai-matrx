@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-24` (seeded Settings review accessibility and mobile navigation repair)
+**Last updated:** `2026-08-28` (collection actions and refusal doors meet the responsive touch contract)
 
 ---
 
@@ -519,6 +519,7 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- **2026-08-28:** Collection item controls now opt into the shared 44px responsive touch floor, and the per-row Edit column stays pinned at the tablet/mobile edge. Generic not-found and Access Gate exit actions use the same floor, so stale CMS links retain ordinary touch access at every declared breakpoint.
 - **2026-08-25:** Updated CMS agent-surface guidance to the consolidated `surface-authoring` lifecycle and the separately owned `context-menu-v3` contract.
 - `2026-08-24` — `/cms/[siteId]/settings` now has a visible semantic Settings
   heading, a mobile section jump rail, explicit General/Global CSS versus

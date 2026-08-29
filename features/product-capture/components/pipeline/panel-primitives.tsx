@@ -34,9 +34,9 @@ export function PanelSection({
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-2 text-sm font-semibold">
-          {title}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex min-w-40 flex-1 items-center gap-2 text-sm font-semibold">
+          <span className="min-w-0 break-words">{title}</span>
           {badge}
         </h3>
         {actions}

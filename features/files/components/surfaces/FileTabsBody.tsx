@@ -145,28 +145,32 @@ export function FileTabsBody({
   // `/files/{id}/analysis`, `/annotations`, and `/knowledge-status` on a plain
   // preview click — three server round-trips for tabs the user never saw.
   //
-  // `mountedTabs` grows monotonically: it starts with whatever tab is active
-  // on first paint (honours `?tab=` deep links + the active-tab change effect
-  // below) and never shrinks, so the keep-alive guarantee holds.
-  const [mountedTabs, setMountedTabs] = useState<ReadonlySet<FileTab>>(
-    () => new Set<FileTab>([activeTab]),
-  );
-  useEffect(() => {
-    setMountedTabs((prev) => {
-      if (prev.has(activeTab)) return prev;
-      const next = new Set(prev);
-      next.add(activeTab);
-      return next;
-    });
-  }, [activeTab]);
+  // `mountedTabs` grows monotonically for one file: it starts with whatever
+  // tab is active on first paint and resets when `fileId` changes, so a newly
+  // opened file never inherits eager tab fetches from the previous file.
+  const [mountedState, setMountedState] = useState<{
+    fileId: string;
+    tabs: ReadonlySet<FileTab>;
+  }>(() => ({ fileId, tabs: new Set<FileTab>([activeTab]) }));
+  const mountedTabs =
+    mountedState.fileId === fileId
+      ? mountedState.tabs
+      : new Set<FileTab>([activeTab]);
+  if (mountedState.fileId !== fileId || !mountedTabs.has(activeTab)) {
+    const next = new Set(mountedTabs);
+    next.add(activeTab);
+    setMountedState({ fileId, tabs: next });
+  }
   const isMounted = (tab: FileTab) => mountedTabs.has(tab);
 
   // Honour `?tab=` on remount (file id change or first paint with deep link).
   // Controlled mode skips this — the parent owns the URL contract.
-  useEffect(() => {
-    if (isControlled) return;
+  const initialKey = `${fileId}:${initialTab ?? ""}:${deepLink.tab ?? ""}`;
+  const [lastInitialKey, setLastInitialKey] = useState(initialKey);
+  if (!isControlled && lastInitialKey !== initialKey) {
+    setLastInitialKey(initialKey);
     setInternalTab(initialTab ?? deepLink.tab ?? "preview");
-  }, [fileId, deepLink.tab, initialTab, isControlled]);
+  }
 
   // Listen for "open preview tab" hints from context menus, the lineage chip,
   // and citation links elsewhere in the app. CustomEvent over Redux because
@@ -177,24 +181,21 @@ export function FileTabsBody({
         .detail;
       if (!detail || detail.fileId !== fileId) return;
       if (isFileTab(detail.tab ?? null)) {
-        setActiveTab(detail.tab as FileTab);
+        if (!isControlled) setInternalTab(detail.tab as FileTab);
+        onTabChange?.(detail.tab as FileTab);
       }
     };
     window.addEventListener("cloud-files:open-preview-tab", handler);
     return () =>
       window.removeEventListener("cloud-files:open-preview-tab", handler);
-    // setActiveTab closes over `isControlled` + `onTabChange` but those are
-    // stable for the lifetime of a render pass, and we re-bind on fileId
-    // change which is what matters semantically.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fileId]);
+  }, [fileId, isControlled, onTabChange]);
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {/* Tabs strip — `compact` is the default (PreviewPane sizing);
        * `comfortable` adds a hair more padding for the dedicated shell. */}
       <div
-        className="flex items-center gap-0 border-b border-border bg-card shrink-0"
+        className="flex shrink-0 items-center gap-0 overflow-x-auto border-b border-border bg-card"
         role="tablist"
         aria-label="File tabs"
       >
@@ -505,7 +506,7 @@ function TabButton({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "flex max-lg:min-h-11 items-center gap-1.5 border-b-2 text-xs font-medium transition-colors",
+        "flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 text-xs font-medium transition-colors max-lg:min-h-11",
         density === "compact" ? "px-3 py-1.5" : "px-4 py-2",
         active
           ? "border-primary text-foreground"

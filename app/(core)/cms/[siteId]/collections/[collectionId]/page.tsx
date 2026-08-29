@@ -492,7 +492,7 @@ export default function CollectionItemsPage() {
   }
 
   return (
-    <div className="h-full overflow-auto">
+    <div className="matrx-touch-targets h-full overflow-auto">
       <div className="px-4 sm:px-6 py-4 space-y-4">
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-2">
@@ -769,7 +769,7 @@ export default function CollectionItemsPage() {
                     </div>
                   </TableHead>
                   <TableHead className="text-xs w-20">Status</TableHead>
-                  <TableHead className="text-xs w-10">
+                  <TableHead className="text-xs w-10 max-lg:sticky max-lg:right-0 max-lg:z-20 max-lg:bg-background">
                     <span className="sr-only">Edit</span>
                   </TableHead>
                 </TableRow>
@@ -869,7 +869,7 @@ export default function CollectionItemsPage() {
                         </div>
                       </TableCell>
                       <TableCell
-                        className="w-10"
+                        className="w-10 max-lg:sticky max-lg:right-0 max-lg:z-10 max-lg:bg-background"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Button
