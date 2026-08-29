@@ -52122,6 +52122,7 @@ export type Database = {
         Row: {
           allowed_values: Json | null
           basis: string | null
+          bound_value: Json | null
           created_at: string
           default_value: Json
           description: string
@@ -52130,6 +52131,8 @@ export type Database = {
           label: string
           max_value: number | null
           min_value: number | null
+          overridable_by: string[]
+          override_direction: string
           review_due: string | null
           set_by: string
           unit: string | null
@@ -52141,6 +52144,7 @@ export type Database = {
         Insert: {
           allowed_values?: Json | null
           basis?: string | null
+          bound_value?: Json | null
           created_at?: string
           default_value: Json
           description: string
@@ -52149,6 +52153,8 @@ export type Database = {
           label: string
           max_value?: number | null
           min_value?: number | null
+          overridable_by?: string[]
+          override_direction?: string
           review_due?: string | null
           set_by?: string
           unit?: string | null
@@ -52160,6 +52166,7 @@ export type Database = {
         Update: {
           allowed_values?: Json | null
           basis?: string | null
+          bound_value?: Json | null
           created_at?: string
           default_value?: Json
           description?: string
@@ -52168,6 +52175,8 @@ export type Database = {
           label?: string
           max_value?: number | null
           min_value?: number | null
+          overridable_by?: string[]
+          override_direction?: string
           review_due?: string | null
           set_by?: string
           unit?: string | null
@@ -52451,6 +52460,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      knob_override: {
+        Row: {
+          created_at: string
+          feature: string
+          key: string
+          organization_id: string
+          scope_id: string
+          scope_kind: string
+          set_note: string | null
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          key: string
+          organization_id: string
+          scope_id: string
+          scope_kind: string
+          set_note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          key?: string
+          organization_id?: string
+          scope_id?: string
+          scope_kind?: string
+          set_note?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knob_override_knob_fkey"
+            columns: ["feature", "key"]
+            isOneToOne: false
+            referencedRelation: "feature_knob"
+            referencedColumns: ["feature", "key"]
+          },
+          {
+            foreignKeyName: "knob_override_scope_kind_fkey"
+            columns: ["scope_kind"]
+            isOneToOne: false
+            referencedRelation: "knob_scope_kind"
+            referencedColumns: ["kind"]
+          },
+        ]
+      }
+      knob_scope_kind: {
+        Row: {
+          description: string
+          kind: string
+          precedence: number
+          scope_schema: string | null
+          scope_table: string | null
+        }
+        Insert: {
+          description: string
+          kind: string
+          precedence: number
+          scope_schema?: string | null
+          scope_table?: string | null
+        }
+        Update: {
+          description?: string
+          kind?: string
+          precedence?: number
+          scope_schema?: string | null
+          scope_table?: string | null
+        }
+        Relationships: []
       }
       lifecycle_archive: {
         Row: {
@@ -55289,6 +55376,41 @@ export type Database = {
       }
       get_change_policy_divergence: { Args: never; Returns: Json }
       heal_reachability_drift: { Args: never; Returns: Json }
+      knob_index: {
+        Args: {
+          p_organization_id: string
+          p_feature_prefix?: string
+          p_user_id?: string
+          p_overridden_only?: boolean
+        }
+        Returns: Json
+      }
+      knob_override_count: {
+        Args: { p_feature_prefix?: string }
+        Returns: Json
+      }
+      knob_override_set: {
+        Args: {
+          p_feature: string
+          p_key: string
+          p_scope_kind: string
+          p_scope_id: string
+          p_organization_id: string
+          p_value: Json
+          p_note?: string
+        }
+        Returns: Json
+      }
+      knob_resolve: {
+        Args: {
+          p_feature: string
+          p_key: string
+          p_organization_id: string
+          p_user_id?: string
+          p_scopes?: Json
+        }
+        Returns: Json
+      }
       lifecycle_archive_candidates: {
         Args: {
           p_entity_token: string
