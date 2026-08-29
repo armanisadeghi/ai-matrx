@@ -79,6 +79,24 @@
       },
       "previousEventHash": "d82d66c299a3c5c1b0da882102d1d5f75d3f6943cdee7cb7dd2ca19380434276",
       "eventHash": "6c3a6bbfbcba0e1d878d227a5e15e06b277a467b09f9e45d0fcc790e09f947c9"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-29T19:22:47.428Z",
+      "actor": "/root",
+      "summary": "Batch 1 delivered to origin/main without invoking the serialized release lane.",
+      "evidence": [
+        "origin/main:1c9784e9a671ee5c31f9dfa2ce17f500140b3057"
+      ],
+      "delivery": {
+        "candidateSha": "fb8e110a2f715f727ab21706a874ca44c16a3354",
+        "preservedRef": "refs/heads/patrol-runs/P10/2026-08-29T191203Z",
+        "integratedSha": "1c9784e9a671ee5c31f9dfa2ce17f500140b3057",
+        "release": "unreleased"
+      },
+      "previousEventHash": "6c3a6bbfbcba0e1d878d227a5e15e06b277a467b09f9e45d0fcc790e09f947c9",
+      "eventHash": "78d5145fc5105cdffd3cc964720604284c0a5a9ce7d8cd1d3f3e1621367daf40"
     }
   ]
 }
