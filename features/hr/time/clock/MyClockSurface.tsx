@@ -81,14 +81,22 @@ export function MyClockSurface({
               deviceOrSession={webPunchSessionSegment()}
               mockCase={HR_MOCK_ENABLED ? mockCase : undefined}
               punchMockCase={HR_MOCK_ENABLED ? punchMockCase : undefined}
+              /*
+                R3: `hr_set_employment_pin` had NO caller anywhere, so no employment could ever hold
+                a PIN and the whole kiosk chain was unusable however well a tablet was paired. The
+                door's own authority check is "an HR writer OR the subject themselves", so
+                self-service is sanctioned — and this is the one route an hourly employee already
+                opens for their time.
+
+                🚨 IT IS NOW THE WIDGET'S FOOTER, NOT A SIBLING (D12c). As a sibling it rendered
+                unconditionally, so a contractor whose clock is gated off by worker class read "you
+                cannot clock here" and, directly underneath, **"Set my time clock PIN"** — an offer
+                of the kiosk credential for a clock that will refuse them. Absent machinery is
+                ABSENT. `PunchWidget` owns the one `hr_clock_state` read and is the only place that
+                knows; deciding it here would need a second read of the same fact.
+              */
+              clockUsableFooter={<SetKioskPinCard employmentId={employmentId} />}
             />
-            {/*
-              R3: `hr_set_employment_pin` had NO caller anywhere, so no employment could ever hold a
-              PIN and the whole kiosk chain was unusable however well a tablet was paired. The door's
-              own authority check is "an HR writer OR the subject themselves", so self-service is
-              sanctioned — and this is the one route an hourly employee already opens for their time.
-            */}
-            <SetKioskPinCard employmentId={employmentId} />
           </div>
         ) : (
           /*

@@ -63,12 +63,32 @@ export function HrDecisionPanel({
     stepId,
     noticeId,
     failureId,
+    embedded = false,
+    onDecided,
 }: {
     instanceId: string;
     stepId: string | null;
     noticeId: string | null;
     /** From `?failure=` — the inbox's failure rows deep-link straight to their terminal. */
     failureId: string | null;
+    /**
+     * 🚨 THE SAME PANEL, HOSTED SOMEWHERE ELSE — NOT A SECOND ONE (hr_c4_55 / D9).
+     *
+     * `/hr/tasks` has a small window control beside each row, and it opened `DataRowInspector`:
+     * a floating window titled "Leave request — Tomo Iversen-G32" whose entire body was
+     * `STEP_ID … / INSTANCE_ID … / FLOW_KEY leave_request / STEP_KEY manager_approval / DUE_AT …
+     * / AUTONOMY_MODE 4 / RESOLUTION_PATH authority`, with no Approve and no Reject. A raw field
+     * dump handed to a manager as the item's detail.
+     *
+     * The fix is to host THIS component there, because the alternative — rebuilding the summary
+     * and the four controls inside the table — forks the reason rules, the refusal rendering, the
+     * quorum counter and the never-approve-yourself guard, and this lane has already paid for a
+     * forked decision path once. `embedded` only drops the "All HR tasks" back link, which is
+     * meaningless in a window opened from that very list.
+     */
+    embedded?: boolean;
+    /** Lets a host list (the task table's window) refresh after a decision is recorded here. */
+    onDecided?: () => void;
 }) {
     const [detail, setDetail] = useState<HrInstanceDetail | null>(null);
     const [refusal, setRefusal] = useState<HrRefusal | null>(null);
@@ -228,6 +248,8 @@ export function HrDecisionPanel({
             toast.success(`Recorded: ${decision}`);
             setReason("");
             await load();
+            // A decided row must not sit in the queue behind the window that decided it.
+            onDecided?.();
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "The decision could not be recorded");
         } finally {
@@ -249,20 +271,27 @@ export function HrDecisionPanel({
 
     return (
         <div className="flex h-full flex-col overflow-hidden">
-            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-                <Button size="sm" variant="ghost" asChild>
-                    <Link href="/hr/tasks">
-                        <ArrowLeft className="mr-1 h-4 w-4" />
-                        All HR tasks
-                    </Link>
-                </Button>
-                {restricted ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <EyeOff className="h-3 w-3" />
-                        Restricted — the record itself is the only place its details render
-                    </span>
-                ) : null}
-            </div>
+            {/* Embedded, the back link points at the list this window was opened FROM, so it is
+                dropped — but the restricted banner is a disclosure fact and is never dropped, so
+                the bar survives whenever there is something in it. */}
+            {embedded && !restricted ? null : (
+                <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+                    {embedded ? null : (
+                        <Button size="sm" variant="ghost" asChild>
+                            <Link href="/hr/tasks">
+                                <ArrowLeft className="mr-1 h-4 w-4" />
+                                All HR tasks
+                            </Link>
+                        </Button>
+                    )}
+                    {restricted ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <EyeOff className="h-3 w-3" />
+                            Restricted — the record itself is the only place its details render
+                        </span>
+                    ) : null}
+                </div>
+            )}
 
             <div className="flex-1 min-h-0 space-y-6 overflow-y-auto p-4">
                 {refusal ? <HrRefusalNotice refusal={refusal} action="Opening this request" /> : null}

@@ -1470,6 +1470,71 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
   // in this whole feature — the overtime row that was worked without approval and is PAID.
   // ═════════════════════════════════════════════════════════════════════════════════════════════
 
+  /*
+    Route 5's self/current resolver. The four cases are the four answers a real person gets, and
+    `empty`/`edge` are the two that used to render as *"that link is not wired up yet"*:
+    a worker class with no pay group at all, and somebody whose last period closed yesterday.
+  */
+  hr_my_timesheet_context: {
+    happy: {
+      ok: true,
+      data: {
+        employment_id: EMPLOYMENT,
+        pay_group_id: "44444444-0000-4000-8000-000000000001",
+        pay_period_id: PERIOD,
+        period_start_on: "2026-03-01",
+        period_end_on: "2026-03-15",
+        period_state: "open",
+        basis: "current",
+        period_note: null,
+        no_period_reason: null,
+      },
+    },
+    empty: {
+      ok: true,
+      data: {
+        employment_id: EMPLOYMENT,
+        pay_group_id: null,
+        pay_period_id: null,
+        period_start_on: null,
+        period_end_on: null,
+        period_state: null,
+        basis: "none",
+        period_note: null,
+        no_period_reason:
+          "You are not in a pay group yet, so no pay periods have been created for you and there " +
+          "is no timesheet to total. HR sets this up on your position.",
+      },
+    },
+    error: {
+      ok: false,
+      error: "hr_timesheet_context_not_self",
+      message:
+        "This page only ever works out your own timesheet. A manager opens a report's hours from " +
+        "their team list instead.",
+      user_message:
+        "This page only ever works out your own timesheet. A manager opens a report's hours from " +
+        "their team list instead.",
+      details: { checked: "the employment belongs to the signed-in person" },
+    },
+    edge: {
+      ok: true,
+      data: {
+        employment_id: EMPLOYMENT,
+        pay_group_id: "44444444-0000-4000-8000-000000000001",
+        pay_period_id: PERIOD,
+        period_start_on: "2026-02-16",
+        period_end_on: "2026-02-28",
+        period_state: "submitted",
+        basis: "most_recent",
+        period_note:
+          "No pay period is open for today. These are your hours for Feb 16 to Feb 28, 2026, the " +
+          "most recent period you were in.",
+        no_period_reason: null,
+      },
+    },
+  },
+
   hr_pay_period_list: {
     happy: {
       ok: true,

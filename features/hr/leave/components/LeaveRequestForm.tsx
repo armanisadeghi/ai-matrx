@@ -582,9 +582,29 @@ export function LeaveRequestForm({
               ledgerHref={null}
             />
 
-            {shownPreview.projection?.projectionNote ? (
-              <p className="text-xs text-muted-foreground">
-                {shownPreview.projection.projectionNote}
+            {/*
+              🚨 WHAT THIS REQUEST IS SPENT AGAINST — SAID BEFORE THE BUTTON, NOT AFTER (D3).
+
+              Round 42: an employee with 24 hours available sent a 40-hour September request, got
+              NO warning on this preview, was accepted silently, and then read `Available −16 h`
+              on their own panel. The engine was right — `hr.leave_wf_validate` decides on the
+              PROJECTED balance at the start date, and 40 hours were affordable by September — but
+              nothing on this screen said which balance it was about to be judged against.
+
+              The number was already here. `hr.leave_request_preview` makes the identical
+              `hr.leave_project_balance(…, greatest(starts_on, current_date))` call the validator
+              makes, and this block used to render only `projection.projectionNote`, which is
+              non-null ONLY for policies that do not project at all. So on every accruing policy
+              the engine's own figure was fetched and dropped.
+
+              `projectionSentence` is the server's, verbatim (§5 — a client that composes policy
+              prose is a second implementation of policy). It covers the not-projected case too,
+              which is why `projectionNote` is no longer rendered separately: two lines saying the
+              same thing is how they drift.
+            */}
+            {shownPreview.projectionSentence ? (
+              <p className="rounded-md border border-border bg-card p-3 text-sm text-foreground">
+                {shownPreview.projectionSentence}
               </p>
             ) : null}
 

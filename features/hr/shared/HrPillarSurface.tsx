@@ -48,14 +48,10 @@ import { useHrContext } from "./useHrContext";
 
 export function HrPillarSurface({
   promiseKey,
-  /** The nav label this page was reached by. Kept identical so the breadcrumb
-      leaf and the item the user clicked are the same word. */
-  title,
   /** The pillar spec that owes this. Named, so nobody rebuilds it somewhere else. */
   owner,
 }: {
   promiseKey: keyof typeof COMING_SOON;
-  title: string;
   owner: string;
 }) {
   const { orgRef } = useHrContext();
@@ -63,7 +59,14 @@ export function HrPillarSurface({
   const stageLine = STAGE_LINE[promise.stage] ?? "";
 
   return (
-    <HrShell title={title}>
+    /*
+      🚨 NO `title` PASSED TO THE SHELL, DELIBERATELY. `buildCrumbs` already
+      derives a crumb from the matching NAV item, and a pillar route is reached
+      by exactly one nav item whose label is this promise's label — so passing
+      the same word again rendered "HR / Hiring / Hiring". The registry label is
+      the page's heading below; the breadcrumb keeps the nav's copy of it.
+    */
+    <HrShell>
       <div className="mx-auto w-full max-w-xl p-4 sm:p-6">
         <div
           className="rounded-lg border border-border bg-card p-4 sm:p-6"

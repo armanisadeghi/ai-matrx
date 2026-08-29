@@ -15,6 +15,6 @@ export const metadata = createRouteMetadata("/hr/hiring", {
 
 export default function HrHiringPage() {
   return (
-    <HrPillarSurface promiseKey="hr.hiring" title="Hiring" owner="Hiring" />
+    <HrPillarSurface promiseKey="hr.hiring" owner="Hiring" />
   );
 }

@@ -15,6 +15,6 @@ export const metadata = createRouteMetadata("/hr/engagement", {
 
 export default function HrEngagementPage() {
   return (
-    <HrPillarSurface promiseKey="hr.engagement" title="Engagement" owner="Engagement" />
+    <HrPillarSurface promiseKey="hr.engagement" owner="Engagement" />
   );
 }

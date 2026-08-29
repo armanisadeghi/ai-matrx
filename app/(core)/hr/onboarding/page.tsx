@@ -15,6 +15,6 @@ export const metadata = createRouteMetadata("/hr/onboarding", {
 
 export default function HrOnboardingPage() {
   return (
-    <HrPillarSurface promiseKey="hr.onboarding" title="Onboarding" owner="Onboarding \& Offboarding" />
+    <HrPillarSurface promiseKey="hr.onboarding" owner="Onboarding & Offboarding" />
   );
 }

@@ -15,6 +15,6 @@ export const metadata = createRouteMetadata("/hr/schedule", {
 
 export default function HrSchedulePage() {
   return (
-    <HrPillarSurface promiseKey="hr.schedule" title="Schedule" owner="Scheduling" />
+    <HrPillarSurface promiseKey="hr.schedule" owner="Scheduling" />
   );
 }

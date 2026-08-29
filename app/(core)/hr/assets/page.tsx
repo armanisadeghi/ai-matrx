@@ -15,6 +15,6 @@ export const metadata = createRouteMetadata("/hr/assets", {
 
 export default function HrAssetsPage() {
   return (
-    <HrPillarSurface promiseKey="hr.assets" title="Assets" owner="Assets" />
+    <HrPillarSurface promiseKey="hr.assets" owner="Assets" />
   );
 }

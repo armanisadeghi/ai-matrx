@@ -726,7 +726,36 @@ as $function$
   select hr.my_timesheet_context($1);
 $function$;
 
+/*
+  🚨 THE DOOR IS DECLARED BEFORE IT IS GRANTED, AND THE ORDER IS LOAD-BEARING.
+
+  `enforce_definer_client_grants` is a live `ddl_command_end` event trigger on CREATE FUNCTION and
+  GRANT: any SECURITY DEFINER function outside the exempt schemas that is not registered in
+  `platform.client_callable_door` (or grandfathered) has its `public`/`anon`/`authenticated` EXECUTE
+  silently revoked, INSIDE the same statement. The first cut of this migration granted without
+  declaring, and the guard took the grant straight back off — the door existed, the client got a
+  403, and nothing said why. The existing `hr_*` wrappers are in the grandfather snapshot rather
+  than this register, which is why the pattern is not visible from any of them.
+*/
+insert into platform.client_callable_door
+  (schema_name, function_name, identity_args, declared_by, reason)
+values
+  ('public', 'hr_my_timesheet_context', 'p_employment_id uuid',
+   'hr_c4_55',
+   'Route 5 (/hr/me/timesheet) resolves the caller''s own employment and current pay period through '
+   || 'this wrapper. It is deliberately client-callable by `authenticated` and NEVER by `anon`: it '
+   || 'answers only about employments returned by hr.employments_of(auth.uid()), refuses an explicit '
+   || 'employment the caller does not hold (hr_timesheet_context_not_self), and returns two ids plus '
+   || 'a sentence — no hours, no money, no other person''s row. It exists because the previous '
+   || 'resolution ran through hr_pay_period_list, a payroll-authority door, which returns nothing '
+   || 'for the ordinary employees this route serves.')
+on conflict (schema_name, function_name, identity_args) do update
+  set declared_by = excluded.declared_by,
+      reason      = excluded.reason,
+      declared_at = now();
+
 revoke all on function public.hr_my_timesheet_context(uuid) from public;
+revoke all on function public.hr_my_timesheet_context(uuid) from anon;
 grant execute on function public.hr_my_timesheet_context(uuid) to authenticated, service_role;
 
 -- =====================================================================================
@@ -934,6 +963,17 @@ begin
   v_ctx := hr.my_timesheet_context(null);
   if coalesce((v_ctx ->> 'ok')::boolean, false) then
     raise exception 'hr_c4_55: the resolver answered with no authenticated caller';
+  end if;
+
+  -- B: THE GRANT SURVIVED THE GUARD, AND anon STILL CANNOT REACH IT.
+  -- Asserted rather than assumed: `enforce_definer_client_grants` revokes inside the GRANT
+  -- statement itself, so a door can be created, granted, and unreachable with no error anywhere.
+  if not has_function_privilege('authenticated',
+        'public.hr_my_timesheet_context(uuid)', 'EXECUTE') then
+    raise exception 'hr_c4_55: authenticated cannot execute the door the route calls — the definer grant guard took the grant back (declare it in platform.client_callable_door BEFORE granting)';
+  end if;
+  if has_function_privilege('anon', 'public.hr_my_timesheet_context(uuid)', 'EXECUTE') then
+    raise exception 'hr_c4_55: anon can execute a self-scoped employee door';
   end if;
 
   select coalesce(count(*), 0) into v_bad from hr.function_contracts_broken();

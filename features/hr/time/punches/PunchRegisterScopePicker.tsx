@@ -90,7 +90,15 @@ export function PunchRegisterScopePicker({
     setOpen(false);
   }
 
+  /*
+   * The employer `?org=` resolved to. `useHrContext` applies SPEC-UI-IA §1 rule 1, so when the URL
+   * carries an employer this IS that employer — which is exactly why this control may state it
+   * rather than ask for it.
+   */
   const activeEmployer = employers.find((e) => e.organization_id === active?.organization_id);
+  const orderedEmployers = activeEmployer
+    ? [activeEmployer, ...employers.filter((e) => e !== activeEmployer)]
+    : employers;
 
   return (
     <div className="rounded-lg border border-border bg-card">

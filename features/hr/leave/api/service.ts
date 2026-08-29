@@ -126,8 +126,14 @@ function countsToward(value: unknown): LeaveCountsToward | null {
  * stops — no five figures, no `ledger_balance`, no `identity_holds`. Everything below
  * therefore resolves to `null` on an unlimited policy, which is exactly right: the block
  * renders the word and no numbers.
+ *
+ * 🚨 EXPORTED, AND IT IS THE ONLY ONE. `features/hr/leave/manager/api/service.ts` used to keep a
+ * key-for-key copy of this function. When `hr.leave_figures` grew `bookable_now` /
+ * `pending_beyond_balance` the copy would have kept withholding them, so the manager's team view
+ * and `/hr/leave/balances` would have rendered "Not provided" under the tile the employee's page
+ * renders a number in. One door, one mapper — import this, never re-type it.
  */
-function toFigures(raw: unknown): LeaveFigures {
+export function toFigures(raw: unknown): LeaveFigures {
   const r = bag(raw);
   return {
     ok: bool(r.ok),
@@ -143,6 +149,16 @@ function toFigures(raw: unknown): LeaveFigures {
     approvedUpcoming: num(r.approvedUpcoming),
     pendingApproval: num(r.pendingApproval),
     available: num(r.available),
+    /*
+      🚨 NO `?? available` FALLBACK, DELIBERATELY. §5's rule 3 is that a figure the server did not
+      send renders dark with the reason — `0.0` hours and "we were not told" are different facts.
+      Falling back to `available` here would put the negative number this pair exists to remove
+      straight back under the caption "What you can book right now" on any payload that predates
+      `hr_c4_55`.
+    */
+    bookableNow: num(r.bookableNow),
+    pendingBeyondBalance: num(r.pendingBeyondBalance),
+    pendingLatestStart: str(r.pendingLatestStart),
 
     ledgerBalance: num(r.ledgerBalance),
     removed: num(r.removed),
@@ -407,6 +423,8 @@ export async function previewLeaveRequest(
       breakdownSentence: str(r.breakdownSentence),
       figures: toFigures(r.figures),
       projection: toProjection(r.projection),
+      /* Server-composed, rendered verbatim — see `LeaveRequestPreview.projectionSentence`. */
+      projectionSentence: str(r.projectionSentence),
       policyName: str(r.policyName),
       incrementMinutes: num(r.incrementMinutes),
       mandatedUses: strList(r.mandatedUses),

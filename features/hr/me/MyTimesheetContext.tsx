@@ -3,72 +3,58 @@
 // Route 5's missing half: resolving "MY employment" and "the period I am in" so
 // `/hr/me/timesheet` works when somebody simply clicks it.
 //
-// 🚨 WHY THIS IS L1's AND NOT THE TIME LANE'S. SPEC-EMPLOYEES §2.1 fixes exactly this for routes
-// 4–9: they "mount inside `HrShell` with the same persona resolution, the same employer context,
-// and the same identity header as route 2; they resolve the viewer's `employment_id` through
-// `hr.employment_as_of(employee_id, current_date)` and **never** through
-// `hr.employee.current_employment_id`". That resolution is the shell contract this lane owes the
-// sibling pillars — the timesheet GRID is L3's and is not touched here.
+// 🚨 WHAT WAS ACTUALLY WRONG, MEASURED — NOT "IT WAS NEVER WIRED".
+// Round 42 found this route dead for EVERY employee, including ones whose hours exist: priya's
+// employment had an `hr.pay_period_employment` row for the current period, punch's for the one
+// that closed yesterday, and all three personas read *"That link is not wired up yet."* The
+// resolution code was here. It was pointed at a door that cannot answer, in a shape it could not
+// read, with filters that door does not have — three faults, each fatal on its own:
 //
-// SPEC-TIME §2.2 writes the read as `hr.timesheet_get(self, current_period)`; the live door takes
-// two concrete uuids. Rather than change a frozen contract, the two ids are resolved here and
-// handed down.
+//   1. AUTHORITY. It resolved the period through `hr_pay_period_list`, whose every branch is gated
+//      on `hr.capability(uid,'payroll.read',…) or hr._time_has_timecard_approve(…)`. That is a
+//      MANAGER/PAYROLL door. An ordinary employee holds neither capability, so it returned zero
+//      rows for exactly the people this route exists for.
+//   2. ENVELOPE. `hr.pay_period_list` answers through `hr._time_ok`, which nests the payload under
+//      `data`. This file read `envelope.rows` — `undefined` on every response — so even a payroll
+//      admin walking the route resolved nothing.
+//   3. FILTERS. It passed `{employment_id, contains}`. That door honours `pay_group_id`,
+//      `organization_id`, `state`, `from`, `to` and ignores the rest, so "the current period for
+//      this employment" was never the question being asked.
 //
-// 🚨 IT READS THE PROVIDER, NOT THE DOOR. `hr_my_context` is already resolved once for the whole
-// `/hr` tree by `<HrProvider>` in `app/(core)/hr/layout.tsx`. Calling it again here would be a
-// second round trip and — worse — a second answer, which in a strictly single-employer module is
-// a data-integrity problem rather than a performance one. `employment_id` on the active employer
-// is the SERVER's as-of resolution (`hr._l1_self_employment` reads the live spell, never
-// `current_employment_id`), so §2.1's rule is honoured at the source.
+// The fix is `hr_my_timesheet_context` (`hr_c4_55`): SELF-scoped through `hr.employments_of`, with
+// period membership proved by the person's OWN `hr.pay_period_employment` row, and the employment's
+// own pay group disambiguating the several overlapping calendars an org can run.
+//
+// ♻️ IT GOES THROUGH THE TIME LANE'S ONE DOOR (`callHrTimeRpc`), which unwraps `_time_ok`'s `data`,
+// camelizes, and THROWS a typed `HrRpcError` on a refusal. Calling `supabase.rpc` here by hand is
+// what let fault 2 above live undetected: a hand-rolled unwrap has no shape to be wrong against.
 //
 // 🚨 SEARCH PARAMS STILL WIN. A manager following a deep link, or anybody re-opening a specific
 // period, passes `?employment=…&period=…` and gets exactly that. Resolution is the FALLBACK for
-// the bare route, never an override of an explicit request.
+// the bare route, never an override of an explicit request. An `?employment=` that is NOT the
+// caller's own is refused BY NAME by the door (`hr_timesheet_context_not_self`) and that sentence
+// is what renders — route 5 is self-only by construction (SPEC-TIME §2.2) and route 29 is where a
+// manager reads a report's hours.
 
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
-import { supabase } from "@/utils/supabase/client";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { HrLoading } from "@/features/hr/shared/HrStates";
+import { hrMeHref } from "@/features/hr/routes";
+import { getMyTimesheetContext } from "@/features/hr/time/api/service";
+import { HrRpcError } from "@/features/hr/time/api/rpc";
 import { MyTimesheet } from "@/features/hr/time/timesheet/MyTimesheet";
 
 type Resolution =
   | { state: "resolving" }
-  | { state: "ready"; employmentId: string; payPeriodId: string | null }
-  | { state: "no-employment" }
-  | { state: "no-period"; employmentId: string };
-
-/**
- * The current pay period for one employment.
- *
- * `hr_pay_period_list` is the Time lane's own door, filtered to the employment and to the period
- * containing today. Returning `null` is a real answer — a brand-new hire whose first period has
- * not opened has no timesheet yet, and §2.2's `no-timesheet` state says so far better than an
- * error would.
- */
-async function resolveCurrentPeriod(employmentId: string): Promise<string | null> {
-  const { data, error } = await supabase.rpc("hr_pay_period_list" as never, {
-    p_filters: { employment_id: employmentId, contains: new Date().toISOString().slice(0, 10) },
-    p_page: { page: 1, pageSize: 1 },
-  } as never);
-  if (error) return null;
-
-  const envelope =
-    data && typeof data === "object" && !Array.isArray(data)
-      ? (data as Record<string, unknown>)
-      : {};
-  // A refusal is data, not a throw — and here it is indistinguishable from "no period", which is
-  // the honest thing to render either way.
-  if (envelope.ok === false) return null;
-
-  const rows = Array.isArray(envelope.rows) ? envelope.rows : [];
-  const first = rows[0];
-  if (!first || typeof first !== "object") return null;
-  const id = (first as Record<string, unknown>).id;
-  return typeof id === "string" ? id : null;
-}
+  | { state: "ready"; employmentId: string; payPeriodId: string; periodNote: string | null }
+  /** A real employment, and a real reason there is no period. The server's sentence, verbatim. */
+  | { state: "no-period"; reason: string }
+  /** The door refused. `userMessage` is the page text (SPEC-ACCESS §4.2: a denial names what failed). */
+  | { state: "refused"; sentence: string };
 
 export function MyTimesheetContext({
   employmentId: employmentParam,
@@ -77,74 +63,118 @@ export function MyTimesheetContext({
   employmentId: string | null;
   payPeriodId: string | null;
 }) {
-  const { active, isLoading } = useHrContext();
+  const { orgRef, isLoading } = useHrContext();
   const [resolved, setResolved] = useState<Resolution>({ state: "resolving" });
 
   // Params win, always. When both are present nothing is resolved and nothing is fetched.
   const bothFromParams = Boolean(employmentParam && periodParam);
-  const employmentId = employmentParam ?? active?.employment_id ?? null;
 
   useEffect(() => {
     if (bothFromParams) {
       setResolved({
         state: "ready",
         employmentId: employmentParam as string,
-        payPeriodId: periodParam,
+        payPeriodId: periodParam as string,
+        periodNote: null,
       });
       return;
     }
+    /*
+      The employer context is still resolving. The door does not need it — it resolves from the
+      SESSION, not from `?org=` — but rendering a resolved answer before the shell has settled
+      would flash a timesheet under the wrong employer heading.
+    */
     if (isLoading) {
       setResolved({ state: "resolving" });
       return;
     }
-    if (!employmentId) {
-      // No active spell today. §2.1: a persona with no active spell sees the nav item ABSENT, and
-      // reaching the route directly gets an honest sentence — never an empty grid.
-      setResolved({ state: "no-employment" });
-      return;
-    }
-    if (periodParam) {
-      setResolved({ state: "ready", employmentId, payPeriodId: periodParam });
-      return;
-    }
 
     let cancelled = false;
+    const controller = new AbortController();
     setResolved({ state: "resolving" });
-    void resolveCurrentPeriod(employmentId).then((periodId) => {
-      if (cancelled) return;
-      setResolved(
-        periodId
-          ? { state: "ready", employmentId, payPeriodId: periodId }
-          : { state: "no-period", employmentId },
-      );
-    });
+
+    void getMyTimesheetContext(employmentParam, { signal: controller.signal })
+      .then((ctx) => {
+        if (cancelled) return;
+        const employment = employmentParam ?? ctx.employmentId;
+        // An explicit `?period=` still wins over the resolved one.
+        const period = periodParam ?? ctx.payPeriodId;
+        if (!employment || !period) {
+          setResolved({
+            state: "no-period",
+            reason:
+              ctx.noPeriodReason ??
+              "There is no pay period covering your hours yet, so there is nothing to show here.",
+          });
+          return;
+        }
+        setResolved({
+          state: "ready",
+          employmentId: employment,
+          payPeriodId: period,
+          // Only `most_recent` carries one, and it is the server's sentence, printed not summarised.
+          periodNote: periodParam ? null : ctx.periodNote,
+        });
+      })
+      .catch((err: unknown) => {
+        if (cancelled || controller.signal.aborted) return;
+        setResolved({
+          state: "refused",
+          sentence:
+            err instanceof HrRpcError
+              ? err.userMessage
+              : "We could not reach your timesheet just now. Try again in a moment.",
+        });
+      });
+
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [bothFromParams, employmentParam, periodParam, employmentId, isLoading]);
+  }, [bothFromParams, employmentParam, periodParam, isLoading]);
 
   if (resolved.state === "resolving") return <HrLoading variant="panel" rows={5} />;
 
-  if (resolved.state === "no-employment") {
+  if (resolved.state === "no-period" || resolved.state === "refused") {
     return (
       <div className="mx-auto w-full max-w-5xl px-3 py-4 sm:px-4">
         <section className="rounded-lg border border-border bg-card p-6">
-          <h1 className="text-base font-semibold">You have no timesheet here</h1>
+          <h1 className="text-base font-semibold">
+            {resolved.state === "no-period"
+              ? "No timesheet for you yet"
+              : "We cannot show you this timesheet"}
+          </h1>
+          {/*
+            🚨 THE SERVER'S SENTENCE, PRINTED — NOT SUMMARISED, AND NEVER "not wired up yet".
+            §2.2's `no-timesheet` law is that a person who opens this route reads WHY there is
+            nothing here. A product that tells someone it is unfinished, when the true answer is a
+            fact about their own record, teaches them the whole module is broken.
+          */}
           <p className="mt-2 text-sm text-muted-foreground">
-            You are not set up as an employee in this organization today, so there are no hours to
-            show. If that looks wrong, HR can check how your record is set up.
+            {resolved.state === "no-period" ? resolved.reason : resolved.sentence}
           </p>
+          {/*
+            ♻️ THE ORG TRAVELS ON THE LINK. `hrMeHref(orgRef)` and never a bare "/hr/me" — HR is
+            strictly single-employer and a link that drops `?org=` silently lands the person in a
+            different employer (`features/hr/routes.ts`). This link used to be a hardcoded
+            "/hr/me": the same org-dropping class fixed elsewhere in this module.
+          */}
+          <Link
+            href={hrMeHref(orgRef)}
+            className="mt-3 inline-flex text-sm font-medium underline underline-offset-4"
+          >
+            Open my HR profile
+          </Link>
         </section>
       </div>
     );
   }
 
-  // A real employment with no open period: hand it to L3 with a null period so its own
-  // `no-timesheet` state — which says why, in its own words — is what renders.
   return (
     <MyTimesheet
       employmentId={resolved.employmentId}
-      payPeriodId={resolved.state === "ready" ? resolved.payPeriodId : null}
+      payPeriodId={resolved.payPeriodId}
+      periodNote={resolved.periodNote}
     />
   );
 }

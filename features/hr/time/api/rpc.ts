@@ -51,6 +51,17 @@ export type HrTimeRpcName =
   | "hr_punch_register"
   // timesheet / period lane (SQL-2)
   | "hr_timesheet_get"
+  /**
+   * 🚨 THE SELF/CURRENT RESOLVER `hr_timesheet_get` HAS NEVER HAD (`hr_c4_55`).
+   *
+   * SPEC-TIME §2.2 writes route 5's read as `hr.timesheet_get(self, current_period)`; the frozen
+   * door takes two concrete uuids. Producing them was left to the page, which asked
+   * `hr_pay_period_list` — a **payroll/timecard-approve** door — so every ordinary employee got
+   * zero rows and `/hr/me/timesheet` said *"that link is not wired up yet"* to people whose hours
+   * were sitting in the database. This door answers only about the CALLER'S OWN employments and
+   * proves period membership through their own `hr.pay_period_employment` row.
+   */
+  | "hr_my_timesheet_context"
   | "hr_timesheet_period_grid"
   | "hr_pay_period_list"
   | "hr_pay_period_get"

@@ -44,6 +44,7 @@ import type {
   KioskPersonSession,
   KioskTrustState,
   KioskPunchResult,
+  MyTimesheetContext,
   Paged,
   PayPeriodState,
   PeriodGridRow,
@@ -429,6 +430,31 @@ export function getPunchRegister(
 // ---------------------------------------------------------------------------------------------
 // Timesheet, period, adjustment, exception
 // ---------------------------------------------------------------------------------------------
+
+/**
+ * Route 5's missing half: WHICH timesheet is mine, and WHICH period am I in.
+ *
+ * 🚨 WHY THIS IS A DOOR AND NOT A PAGE-SIDE LOOKUP. `/hr/me/timesheet` resolved its period through
+ * `hr_pay_period_list` — gated on `payroll.read` or timecard-approve authority — so every ordinary
+ * employee resolved nothing and the route rendered *"that link is not wired up yet"* even for
+ * people whose `hr.pay_period_employment` row for the current period existed. Widening that door
+ * would hand every employee the org's whole pay calendar; the answer is a door for the other
+ * question, self-scoped, which is `hr.my_timesheet_context`.
+ *
+ * A refusal THROWS as `HrRpcError` like every call in this lane — `hr_timesheet_context_not_self`
+ * is the one a deep link to somebody else's employment raises, and its `userMessage` is the page
+ * text.
+ */
+export function getMyTimesheetContext(
+  employmentId: string | null,
+  opts?: HrRpcOptions,
+): Promise<MyTimesheetContext> {
+  return callHrTimeRpc<MyTimesheetContext>(
+    "hr_my_timesheet_context",
+    { p_employment_id: employmentId },
+    opts,
+  );
+}
 
 /** The single read behind the employee's own timesheet and the manager's per-person detail. */
 export function getTimesheet(

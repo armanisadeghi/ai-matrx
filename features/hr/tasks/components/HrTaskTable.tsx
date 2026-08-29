@@ -7,6 +7,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 import { Button } from "@/components/ui/button";
 
+import { HrDecisionPanel } from "@/features/hr/tasks/components/HrDecisionPanel";
 import { HrDeliveryState } from "@/features/hr/tasks/components/HrDeliveryState";
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import type { HrInboxRow } from "@/features/hr/tasks/types";
@@ -27,6 +28,7 @@ export function HrTaskTable({
     emptyTitle,
     emptyDescription,
     showDelivery = true,
+    onRowDecided,
 }: {
     rows: HrInboxRow[];
     isLoading?: boolean;
@@ -36,6 +38,8 @@ export function HrTaskTable({
     emptyTitle: string;
     emptyDescription?: string;
     showDelivery?: boolean;
+    /** Reload the queue after a decision taken in the row window. */
+    onRowDecided?: () => void;
 }) {
     const columns: MatrxColumnDef<HrInboxRow>[] = [
         {
@@ -168,6 +172,42 @@ export function HrTaskTable({
             isLoading={isLoading}
             pageSize={25}
             emptyState={{ title: emptyTitle, description: emptyDescription }}
+            /*
+                🚨 THE WINDOW CONTROL OPENED A RAW FIELD DUMP (hr_c4_55 / D9).
+                `MatrxDataTable`'s panel icon falls back to `DataRowInspector` when a table
+                declares no window body — so the small window beside each HR row opened
+                "Leave request — Tomo Iversen-G32" whose ENTIRE contents were `STEP_ID … /
+                INSTANCE_ID … / FLOW_KEY leave_request / STEP_KEY manager_approval / DUE_AT … /
+                PRIORITY normal / URGENT false / RESOLUTION_PATH authority / AUTONOMY_MODE 4`,
+                with no Approve and no Reject. The neighbouring `Open` link was fine the whole
+                time, which is what made this a trap: two controls, one row, and the smaller one
+                silently downgraded the item to its own primary key.
+
+                So the window hosts the DECISION SURFACE ITSELF — the same `HrDecisionPanel` the
+                `Open` link renders, at the same step, with its summary, its change list, its
+                delivery evidence and its real controls. Not a summary rebuilt here: a second
+                implementation of the decision controls would fork the reason rules, the refusal
+                rendering, the quorum counter and the never-approve-yourself guard.
+
+                `renderEdit: false` keeps it one body with no View/Edit tabs — there is no
+                separate "edit" of an approval, and the panel already owns every write.
+            */
+            window={{
+                title: (row) => row.title ?? row.flow_label ?? row.flow_key,
+                renderEdit: false,
+                width: 860,
+                height: 640,
+                renderView: (row) => (
+                    <HrDecisionPanel
+                        instanceId={row.instance_id}
+                        stepId={row.step_id}
+                        noticeId={null}
+                        failureId={null}
+                        embedded
+                        onDecided={onRowDecided}
+                    />
+                ),
+            }}
             rowActions={(row) => (
                 <Button asChild size="sm" variant="ghost">
                     <Link href={row.deep_link}>Open</Link>

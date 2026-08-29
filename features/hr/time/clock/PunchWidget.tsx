@@ -58,6 +58,15 @@ export interface PunchWidgetProps {
    * (`hr_manager_entry_is_self`).
    */
   allowBackdating?: boolean;
+  /**
+   * Rendered BELOW the widget, and only when this person's clock is actually usable.
+   *
+   * 🚨 The offer of machinery for a clock somebody has been told they cannot use is the defect
+   * this prop exists to make impossible — see the comment at the render site. A host cannot make
+   * this call itself: `hr_clock_state` is read here, once, and a second read of the same fact is
+   * how two surfaces come to disagree about one person.
+   */
+  clockUsableFooter?: React.ReactNode;
 }
 
 export function PunchWidget({
@@ -68,6 +77,7 @@ export function PunchWidget({
   mockCase,
   punchMockCase,
   allowBackdating = false,
+  clockUsableFooter = null,
 }: PunchWidgetProps) {
   const clock = usePunchClock({
     employmentId,
@@ -192,6 +202,27 @@ export function PunchWidget({
           />
         </>
       )}
+
+      {/*
+        🚨 MACHINERY FOR A CLOCK THIS PERSON CANNOT USE IS ABSENT, NOT OFFERED (D12c).
+
+        Round 42 found a contractor whose clock is blocked by worker class being offered
+        **"Set my time clock PIN"** underneath the sentence telling them they cannot clock. A PIN
+        is the credential for the kiosk lane — machinery that, for this person, leads nowhere. The
+        absence law is the same one that governs the punch buttons themselves (§2.1: *"Illegal
+        transitions are not rendered"*); it does not stop at the buttons.
+
+        This slot exists so the decision is made HERE, against the exhaustive `PunchClockView`
+        union, from the ONE `hr_clock_state` read this widget already owns. A host that rendered the
+        card as a sibling — which `MyClockSurface` did — has no way to know the clock is blocked
+        without a second read of the same fact, and a second read is how the two disagree.
+
+        `loading` and `no-subject` withhold it too: an offer that appears, vanishes and reappears
+        while a read settles is its own small lie.
+      */}
+      {view.kind !== "blocked" && view.kind !== "loading" && view.kind !== "no-subject"
+        ? clockUsableFooter
+        : null}
     </div>
   );
 }

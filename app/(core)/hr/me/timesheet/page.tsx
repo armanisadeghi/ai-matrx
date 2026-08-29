@@ -10,10 +10,14 @@ import { MyTimesheetContext } from "@/features/hr/me/MyTimesheetContext";
  * correction. Self-only by construction — a manager reviewing a report uses route 29.
  *
  * SPEC-TIME §2.2 writes the read as `hr.timesheet_get(self, current_period)`; the live door takes
- * two concrete uuids. `MyTimesheetContext` resolves both — the employment from the ONE
- * `hr_my_context` the `/hr` layout already resolved (the server's as-of spell, never
- * `current_employment_id`, per SPEC-EMPLOYEES §2.1), and the current period from
- * `hr_pay_period_list`.
+ * two concrete uuids. `MyTimesheetContext` resolves both through `hr_my_timesheet_context`
+ * (`hr_c4_55`) — a SELF-scoped resolver that reads the caller's own employment from the session and
+ * proves period membership through their own `hr.pay_period_employment` row.
+ *
+ * 🚨 IT DOES NOT ASK `hr_pay_period_list`, AND MUST NOT AGAIN. That door is gated on
+ * `payroll.read` / timecard-approve authority, so it returns zero rows for every ordinary employee
+ * — which is how this route came to tell priya, punch and a contractor alike that it "is not wired
+ * up yet" while their hours sat in the database.
  *
  * 🚨 SEARCH PARAMS STILL WIN. `?employment=…&period=…` is an explicit request — a manager
  * following a deep link, or anybody re-opening a specific period — and resolution is the fallback
