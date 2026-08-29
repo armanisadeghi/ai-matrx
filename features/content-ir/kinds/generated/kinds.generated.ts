@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 490 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 501 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,12 +21,26 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "a027707e25f5";
+export const KIND_REGISTRY_FINGERPRINT = "39133e820e08";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
 // identical `$defs` entry carried by many kinds is ONE interface here.
 // ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * * From kind `item_vision_extraction`.
+ */
+export interface AccessoryComponent {
+  notes?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  description: string;
+  part_number?: string | null;
+  serial_number?: string | null;
+}
 
 /**
  * One context policy, as the live column actually stores it (rich objects,
@@ -440,6 +454,23 @@ export interface Analogy {
 }
 
 /**
+ * A cheap, early impression — 🚨 NOT a certified grade (that is M6).
+ *  *
+ *  * From kind `item_vision_extraction`.
+ */
+export interface ApparentCondition {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  extremity: string;
+  impression?: string | null;
+  damage_flags?: DamageFlag[];
+  positive_flags?: PositiveFlag[];
+  condition_notes?: string | null;
+}
+
+/**
  * One rendered flavour of an asset — its file, its dimensions, its URLs.
  *  *
  *  * From kind `uploaded_asset`.
@@ -747,6 +778,18 @@ export interface BasicCard {
 }
 
 /**
+ * * From kind `pricing_proposal`.
+ */
+export interface BestOffer {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  auto_accept?: number | null;
+  auto_decline?: number | null;
+}
+
+/**
  * * From kind `research_page_analysis`.
  */
 export interface BiasRiskSignals {
@@ -805,6 +848,58 @@ export interface CannibalizationRisk {
   __kind?: "cannibalization_v1";
   sibling_url: string;
   shared_query?: string;
+}
+
+/**
+ * * From kind `enrichment_verification`.
+ */
+export interface ChangedConclusion {
+  now: string;
+  was: string;
+  field: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  because: string;
+}
+
+/**
+ * * From kind `asset_grading`.
+ */
+export interface ChannelConditionMapping {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  channel: string;
+  condition: string;
+  condition_descriptors?: OtherIdentifier[];
+}
+
+/**
+ * * From kind `product_research`.
+ */
+export interface ChannelRef {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  channel: string;
+  ref_kind: string;
+  ref_value: string;
+}
+
+/**
+ * * From kind `listing_draft`.
+ */
+export interface ClaimEvidence_ListingDraft {
+  claim: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  source: string;
 }
 
 /**
@@ -1191,6 +1286,21 @@ export interface DailySpendPoint {
 }
 
 /**
+ * * From kind `item_vision_extraction`.
+ */
+export interface DamageFlag {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  location?: string | null;
+  severity?: string | null;
+  damage_type: string;
+  description: string;
+  image_indices?: number[];
+}
+
+/**
  * One column: what it is called, and — when anyone knows — what it holds.
  *  *
  *  * From kind `data_table`.
@@ -1239,6 +1349,18 @@ export interface DayHours {
    * Closing time, 24h 'HH:MM'.
    */
   closes: string;
+}
+
+/**
+ * * From kind `pricing_proposal`.
+ */
+export interface DaysToSell {
+  basis: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  estimate: number;
 }
 
 /**
@@ -1507,6 +1629,21 @@ export interface EpisodeTitleOption {
 }
 
 /**
+ * * Shared by 2 kinds (enrichment_verification, value_assessment).
+ */
+export interface EstimatedValue {
+  max: number;
+  min: number;
+  basis: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  currency?: string;
+  per_unit?: boolean;
+}
+
+/**
  * * From kind `competitor_opportunity_autopsy_v1`.
  */
 export interface EvidenceCoverage_CompetitorOpportunityAutopsyV1 {
@@ -1574,6 +1711,27 @@ export interface EvidenceSignals {
   has_publication_date?: boolean;
   has_author_credentials?: boolean;
   has_quotes_from_experts?: boolean;
+}
+
+/**
+ * * From kind `item_vision_extraction`.
+ */
+export interface ExtractedProduct {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  unseen?: UnseenItem[];
+  quantity?: ProductQuantity | null;
+  analyst_notes?: string | null;
+  best_image_id?: string | null;
+  image_indices?: number[];
+  product_index: number;
+  identification: ProductIdentification_ItemVisionExtraction;
+  not_assessable?: string[];
+  photo_coverage?: PhotoCoverage | null;
+  apparent_condition?: ApparentCondition | null;
+  accessories_and_components?: AccessoryComponent[];
 }
 
 /**
@@ -1923,6 +2081,36 @@ export interface GradeRubric {
 }
 
 /**
+ * * From kind `item_vision_extraction`.
+ */
+export interface IdentifierConflict {
+  claim: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  reasoning?: string | null;
+  adjudication?: string | null;
+  contradicted_by?: string[];
+}
+
+/**
+ * One transcribed identifier — character-faithful, ambiguity as alternatives.
+ *  *
+ *  * From kind `item_vision_extraction`.
+ */
+export interface IdentifierReading {
+  value: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  photo_id?: string | null;
+  confidence?: number | null;
+  alternatives?: string[];
+}
+
+/**
  * One visual idea from ``ai.image.concept_generate``.
  *  *
  *  * From kind `image_concepts_result`.
@@ -2148,6 +2336,19 @@ export interface InterviewRoundContext {
   session_id?: string;
   open_question_count?: number;
   arbitration_hole_ids?: string[];
+}
+
+/**
+ * * From kind `listing_draft`.
+ */
+export interface ItemSpecific {
+  value: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  aspect: string;
+  source: string;
 }
 
 /**
@@ -2416,6 +2617,18 @@ export interface Mnemonic {
 }
 
 /**
+ * * From kind `pricing_proposal`.
+ */
+export interface Money {
+  value: number;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  currency?: string;
+}
+
+/**
  * * From kind `digital_pr_reputation_brief_v1`.
  */
 export interface Narrative {
@@ -2442,6 +2655,18 @@ export interface NavLinkItem {
    * The registered kind this payload is an instance of.
    */
   __kind?: "cms_nav_link";
+}
+
+/**
+ * * From kind `listing_draft`.
+ */
+export interface NeedsHuman {
+  why: string;
+  field: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
 }
 
 /**
@@ -2541,6 +2766,33 @@ export interface OpportunityAssessment {
 }
 
 /**
+ * * Shared by 2 kinds (asset_grading, item_vision_extraction).
+ */
+export interface OtherIdentifier {
+  label: string;
+  value: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  photo_id?: string | null;
+  confidence?: number | null;
+}
+
+/**
+ * * From kind `review_verdict`.
+ */
+export interface OverruledFinding {
+  lens: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  finding: string;
+  reasoning: string;
+}
+
+/**
  * * From kind `page_keyword_map_v1`.
  */
 export interface PageConflict {
@@ -2600,6 +2852,46 @@ export interface PdfTableBbox {
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
+}
+
+/**
+ * * From kind `pricing_proposal`.
+ */
+export interface PerUnitVsLot {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  reasoning?: string | null;
+  per_lot_price: Money;
+  per_unit_price: Money;
+  recommendation: string;
+}
+
+/**
+ * * From kind `item_vision_extraction`.
+ */
+export interface PhotoCoverage {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  sufficient: boolean;
+  missing_shots?: string[];
+}
+
+/**
+ * * From kind `intake_photo_grouping`.
+ */
+export interface PhotoGroup {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  photo_ids: string[];
+  suspected_lot?: boolean;
+  boundary_source: string;
+  boundary_confidence?: number | null;
 }
 
 /**
@@ -2804,6 +3096,32 @@ export interface PodcastSpeaker {
 }
 
 /**
+ * * From kind `item_vision_extraction`.
+ */
+export interface PositiveFlag {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  flag_type: string;
+  description: string;
+}
+
+/**
+ * * From kind `publish_preflight`.
+ */
+export interface PreflightFailure {
+  fix?: string | null;
+  rule: string;
+  field: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  message: string;
+}
+
+/**
  * What happened to ONE (request, site) pairing during an ingest run.
  *
  * A plain ``extra="forbid"`` sub-model, not an independent kind: this row
@@ -2828,6 +3146,36 @@ export interface PressSourceRequestOutcome {
 }
 
 /**
+ * One price factor — a comparable, an own-history row, or an adjustment.
+ *
+ * Every item must be reachable from a permitted source; a hallucinated
+ * comparable is this mandate's gravest failure.
+ *  *
+ *  * From kind `pricing_proposal`.
+ */
+export interface PriceEvidence {
+  ref: string;
+  type: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  weight?: string | null;
+}
+
+/**
+ * * From kind `pricing_proposal`.
+ */
+export interface PriceRange {
+  max: number;
+  min: number;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+}
+
+/**
  * * From kind `web_result`.
  */
 export interface ProductDetails {
@@ -2842,6 +3190,27 @@ export interface ProductDetails {
   offers?: ProductOffer[];
   thumbnail?: ProductImage | null;
   description?: string | null;
+}
+
+/**
+ * * From kind `item_vision_extraction`.
+ */
+export interface ProductIdentification_ItemVisionExtraction {
+  brand?: IdentifierReading | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  summary: string;
+  category?: string | null;
+  model_name?: IdentifierReading | null;
+  part_number?: IdentifierReading | null;
+  model_number?: IdentifierReading | null;
+  serial_number?: IdentifierReading | null;
+  manufacture_year?: IdentifierReading | null;
+  version_revision?: IdentifierReading | null;
+  other_identifiers?: OtherIdentifier[];
+  identifier_conflicts?: IdentifierConflict[];
 }
 
 /**
@@ -2867,6 +3236,19 @@ export interface ProductOffer {
    */
   __kind?: string;
   priceCurrency?: string | null;
+}
+
+/**
+ * * From kind `item_vision_extraction`.
+ */
+export interface ProductQuantity {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  unit_type: string;
+  quantity_notes?: string | null;
+  estimated_count?: QuantityRange | null;
 }
 
 /**
@@ -3020,6 +3402,18 @@ export interface QualitySummary {
   overall_confidence: number;
   accepted_publication_opportunities?: number;
   rejected_publication_opportunities?: number;
+}
+
+/**
+ * * Shared by 2 kinds (item_vision_extraction, lot_detection).
+ */
+export interface QuantityRange {
+  max: number;
+  min: number;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
 }
 
 /**
@@ -3313,6 +3707,18 @@ export interface RecipeStep {
 }
 
 /**
+ * * From kind `product_research`.
+ */
+export interface RejectedCandidate {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  reason: string;
+  candidate: string;
+}
+
+/**
  * * From kind `digital_pr_reputation_brief_v1`.
  */
 export interface ReputationCase {
@@ -3421,6 +3827,35 @@ export interface ResearchTheme {
 }
 
 /**
+ * * From kind `product_research`.
+ */
+export interface ResolvedIdentity {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  family?: string | null;
+  confidence?: number | null;
+  part_number?: string | null;
+  manufacturer?: string | null;
+  product_name?: string | null;
+}
+
+/**
+ * * From kind `enrichment_verification`.
+ */
+export interface ResolvedUnknown {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  answer: string;
+  question: string;
+  field_key?: string | null;
+  answer_source: string;
+}
+
+/**
  * * From kind `resource_collection`.
  */
 export interface ResourceCategory {
@@ -3453,6 +3888,19 @@ export interface ResourceItem {
   isFavorite?: boolean;
   description?: string;
   isCompleted?: boolean;
+}
+
+/**
+ * * From kind `review_verdict`.
+ */
+export interface ReviewFinding {
+  issue: string;
+  quote: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  suggestion?: string | null;
 }
 
 /**
@@ -4703,6 +5151,19 @@ export interface SourceLocator {
 }
 
 /**
+ * * From kind `product_research`.
+ */
+export interface SourcedSpec {
+  field: string;
+  value: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  source: string;
+}
+
+/**
  * * From kind `cms_starter_kit_result`.
  */
 export interface StarterKitComponent {
@@ -4874,6 +5335,19 @@ export interface TaskItem {
   checked?: boolean;
   children?: TaskItem[];
   item_type?: "section" | "task" | "subtask";
+}
+
+/**
+ * * From kind `asset_grading`.
+ */
+export interface TestResult {
+  test: string;
+  notes?: string | null;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  outcome: string;
 }
 
 /**
@@ -5075,6 +5549,30 @@ export interface TroubleshootingStep {
 }
 
 /**
+ * * From kind `product_research`.
+ */
+export interface UnresolvedIdentity {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  candidates?: RejectedCandidate[];
+}
+
+/**
+ * * From kind `item_vision_extraction`.
+ */
+export interface UnseenItem {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  reason?: string | null;
+  value_impact?: string | null;
+  what_is_needed: string;
+}
+
+/**
  * Mirrors ``VerificationSummary.as_dict()`` in
  * ``matrx_scraper.web_crawl.url_verify`` — the fixed key set the node's
  * ``summary`` dict always carries.
@@ -5107,6 +5605,20 @@ export interface UrlVerificationSummary {
   terminal_failures?: number;
   unknown_content_type?: number;
   redirected_materially?: number;
+}
+
+/**
+ * * Shared by 2 kinds (enrichment_verification, value_assessment).
+ */
+export interface ValueUnknown {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  question: string;
+  field_key?: string | null;
+  value_impact: string;
+  resolution_method: string;
 }
 
 /**
@@ -5677,6 +6189,33 @@ export interface AssertionResult {
    * Always true when the node succeeds — a falsy predicate fails the run instead of returning false.
    */
   passed?: boolean;
+}
+
+/**
+ * M6 output: the complete grading superset (mirrors
+ * ``commerce.asset_grading.grading_payload``). Never fulfilled by inference
+ * from photos — a grade is a statement about a physically handled unit;
+ * ``fulfillment_source`` is ``human`` or ``external_system``, never
+ * ``agent``.
+ *  *
+ *  * Kind `asset_grading` (registry v2).
+ */
+export interface AssetGrading {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "asset_grading";
+  standard?: string;
+  reasoning?: string | null;
+  confidence?: number | null;
+  test_results?: TestResult[];
+  cosmetic_grade?: string | null;
+  is_data_bearing?: boolean | null;
+  functional_grade?: string | null;
+  channel_conditions?: ChannelConditionMapping[];
+  fulfillment_source: string;
+  missing_components?: string[];
+  data_sanitization_status?: string | null;
 }
 
 /**
@@ -7153,6 +7692,27 @@ export interface ElectronicsIntakeAnalysis {
 }
 
 /**
+ * M7 output: the DELTA after gate-1 human answers — which conclusions
+ * changed, which stand, and why. Never a silent full regeneration.
+ * ``updated_value_assessment`` is a nested ``value_assessment`` kind, present
+ * only when an answer changed the valuation.
+ *  *
+ *  * Kind `enrichment_verification` (registry v2).
+ */
+export interface EnrichmentVerification {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "enrichment_verification";
+  reasoning?: string | null;
+  confidence?: number | null;
+  resolved_unknowns?: ResolvedUnknown[];
+  unchanged_summary: string;
+  changed_conclusions?: ChangedConclusion[];
+  updated_value_assessment?: ValueAssessment | null;
+}
+
+/**
  * Kind `entity_card` (registry v15).
  */
 export interface EntityCard {
@@ -8186,6 +8746,27 @@ export interface IngestedSources {
 }
 
 /**
+ * M1 output: partition of an untracked photo stream into per-item groups.
+ *
+ * Every input photo appears in exactly one group or in
+ * ``unassignable_photo_ids`` — a silently dropped photo is the mandate's
+ * named failure. Over-merge beats over-split by design.
+ *  *
+ *  * Kind `intake_photo_grouping` (registry v2).
+ */
+export interface IntakePhotoGrouping {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "intake_photo_grouping";
+  groups?: PhotoGroup[];
+  reasoning?: string | null;
+  confidence?: number | null;
+  sequence_warnings?: string[];
+  unassignable_photo_ids?: string[];
+}
+
+/**
  * Output of ``interview.finalize`` — the closed session and its deliverables.
  *  *
  *  * Kind `interview_finalize_result` (registry v5).
@@ -8331,6 +8912,24 @@ export interface ItemPresentation {
      */
     __kind?: string;
   };
+}
+
+/**
+ * M2 output: photos → metadata complete enough that nothing downstream
+ * reopens the images. ``products`` normally holds exactly one entry; it is an
+ * array only so a mid-extraction discovery of a second product is expressible.
+ *  *
+ *  * Kind `item_vision_extraction` (registry v2).
+ */
+export interface ItemVisionExtraction {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "item_vision_extraction";
+  status: string;
+  products?: ExtractedProduct[];
+  status_notes?: string | null;
+  image_count_received: number;
 }
 
 /**
@@ -8752,6 +9351,28 @@ export interface LinkBuckets {
 }
 
 /**
+ * M9 output: the listing draft that never reads as AI. Every item specific
+ * and factual claim carries a source; a missing sourced value is emitted as
+ * ``needs_human``, never invented; every known flaw is stated plainly.
+ *  *
+ *  * Kind `listing_draft` (registry v2).
+ */
+export interface ListingDraft {
+  title: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "listing_draft";
+  evidence?: ClaimEvidence_ListingDraft[];
+  reasoning?: string | null;
+  confidence?: number | null;
+  needs_human?: NeedsHuman[];
+  item_specifics?: ItemSpecific[];
+  description_html: string;
+  condition_statement: string;
+}
+
+/**
  * In-study answer to a learner's 'I'm confused' on the current flashcard: the answer text, how much it gives away, optional followup questions, and an embedded trust_envelope.
  *  *
  *  * Kind `live_help_answer` (registry v6).
@@ -8889,6 +9510,34 @@ export interface LoopIterationResult {
    * The value carried to the next iteration, or the final result when done.
    */
   accumulator?: JsonValue;
+}
+
+/**
+ * The ``lot_detection`` ledger row's payload — MATCHES W5'S EMITTER
+ * (``commerce_intake/pipeline.py::_do_extraction``), which materialises this
+ * from the M2 extraction's per-product ``quantity`` block (M3 folded into M2
+ * per the review; ``fulfillment_source`` stays ``agent``, ``mandate_key``
+ * stays the extraction's).
+ *
+ * MANDATES.md drift (its shapes LOSE to W5's live code): the M3 contract
+ * still specifies a richer standalone shape — three-valued
+ * ``is_lot: true|false|suspected``, ``quantity_estimate.basis``,
+ * ``homogeneity``, ``mix_dimensions``, ``recommended_tracking_mode``,
+ * required ``reasoning``. If a standalone M3 mandate is ever revived, those
+ * fields return as optional-with-default (additive supersede).
+ *  *
+ *  * Kind `lot_detection` (registry v2).
+ */
+export interface LotDetection {
+  notes?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "lot_detection";
+  is_lot: boolean;
+  unit_type?: string;
+  folded_from?: string | null;
+  quantity_estimate?: QuantityRange | null;
 }
 
 /**
@@ -10993,6 +11642,31 @@ export interface PressStoryAngleRulingResult {
 }
 
 /**
+ * M8 output: asking price with a full evidence trail (the price factors),
+ * floor, expected days-to-sell. Thin evidence → wide range +
+ * ``evidence_quality='weak'`` — a wide honest range beats a narrow invented
+ * one.
+ *  *
+ *  * Kind `pricing_proposal` (registry v2).
+ */
+export interface PricingProposal {
+  floor?: Money | null;
+  price: Money;
+  range: PriceRange;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "pricing_proposal";
+  evidence?: PriceEvidence[];
+  reasoning?: string | null;
+  best_offer?: BestOffer | null;
+  confidence?: number | null;
+  per_unit_vs_lot?: PerUnitVsLot | null;
+  evidence_quality: string;
+  expected_days_to_sell?: DaysToSell | null;
+}
+
+/**
  * Kind `product_entry` (registry v2).
  */
 export interface ProductEntry {
@@ -11096,6 +11770,28 @@ export interface ProductIdentification {
     __kind: "identifier_entry";
     confidence?: string;
   })[];
+}
+
+/**
+ * M4 output: definitive identity with cited sources. Exactly one of
+ * ``identity`` / ``identity_unresolved`` is set — an unresolved identity with
+ * the candidates considered is a legal, useful output, not a failure.
+ *  *
+ *  * Kind `product_research` (registry v2).
+ */
+export interface ProductResearch {
+  specs?: SourcedSpec[];
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "product_research";
+  sources?: string[];
+  identity?: ResolvedIdentity | null;
+  reasoning?: string | null;
+  confidence?: number | null;
+  channel_refs?: ChannelRef[];
+  identity_unresolved?: UnresolvedIdentity | null;
+  undetermined_by_part_number?: string[];
 }
 
 /**
@@ -11294,6 +11990,23 @@ export interface ProviderRunReceipt {
    * How long this result is considered fresh.
    */
   freshness_ttl_seconds?: number | null;
+}
+
+/**
+ * M11 output: deterministic will-this-publish verdict against the eBay
+ * metadata cache (``aidream/services/ebay_metadata/`` validator). The
+ * verdict is rule-based and reproducible; only ``fix`` suggestions are AI.
+ *  *
+ *  * Kind `publish_preflight` (registry v2).
+ */
+export interface PublishPreflight {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "publish_preflight";
+  verdict: string;
+  failures?: PreflightFailure[];
+  warnings?: string[];
 }
 
 /**
@@ -12333,6 +13046,28 @@ export interface RetrievedChunk {
   derivation_kind?: string | null;
   parent_chunk_id?: string | null;
   extraction_run_id?: string | null;
+}
+
+/**
+ * M10a/b/c shared output shape: one lens's verdict on a listing draft.
+ * ``lens`` is ``human_voice`` | ``pricing`` | ``overall`` (extensible — the
+ * 0548 ``asset_review.lens`` column is deliberately unchecked).
+ * ``overruled_findings`` is populated only by the final arbiter (M10c), which
+ * may overrule a lens only with explicit reasoning naming the finding.
+ *  *
+ *  * Kind `review_verdict` (registry v2).
+ */
+export interface ReviewVerdict {
+  lens: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "review_verdict";
+  verdict: string;
+  findings?: ReviewFinding[];
+  reasoning: string;
+  confidence?: number | null;
+  overruled_findings?: OverruledFinding[];
 }
 
 /**
@@ -15567,6 +16302,31 @@ export interface Value {
    */
   __kind: "value";
   archetype?: "value";
+}
+
+/**
+ * M5 output — the recall-critical mandate. ``bucket`` is one of
+ * definite_value | conditional_value | possible_value | no_value | unknown
+ * (the DB column vocabulary calls this the value bucket). A ``no_value``
+ * verdict must carry item-and-quantity-specific reasoning and, by contract,
+ * never ships with confidence < 0.8 — below that the bucket is ``unknown``
+ * by construction.
+ *  *
+ *  * Kind `value_assessment` (registry v2).
+ */
+export interface ValueAssessment {
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "value_assessment";
+  bucket: string;
+  unknowns?: ValueUnknown[];
+  reasoning?: string | null;
+  confidence: number;
+  gem_reasoning?: string | null;
+  estimated_value?: EstimatedValue | null;
+  bucket_reasoning: string;
+  is_gem_candidate?: boolean;
 }
 
 /**
@@ -19226,6 +19986,7 @@ export type GeneratedKindSlug =
   | "arman_video_prompt"
   | "artisan_demo_reading_list"
   | "assertion_result"
+  | "asset_grading"
   | "authority_newsjacking_article"
   | "batch_review"
   | "batched_list_result"
@@ -19281,6 +20042,7 @@ export type GeneratedKindSlug =
   | "document_quad_detection"
   | "domain_fold_report"
   | "electronics_intake_analysis"
+  | "enrichment_verification"
   | "entity_card"
   | "entity_mention"
   | "episode_title_options"
@@ -19330,6 +20092,7 @@ export type GeneratedKindSlug =
   | "image_qc_result"
   | "image_qc_verdict"
   | "ingested_sources"
+  | "intake_photo_grouping"
   | "interview_finalize_result"
   | "interview_gate_decision"
   | "interview_hole_set"
@@ -19338,6 +20101,7 @@ export type GeneratedKindSlug =
   | "interview_session_hydration"
   | "interview_tracker_apply_result"
   | "item_presentation"
+  | "item_vision_extraction"
   | "items"
   | "json"
   | "json_path_result"
@@ -19352,9 +20116,11 @@ export type GeneratedKindSlug =
   | "kit_title"
   | "lesson_script_set"
   | "link_buckets"
+  | "listing_draft"
   | "live_help_answer"
   | "local_place"
   | "loop_iteration_result"
+  | "lot_detection"
   | "map_result"
   | "mapped_list_result"
   | "markdown"
@@ -19433,13 +20199,16 @@ export type GeneratedKindSlug =
   | "press_source_request_ingest_result"
   | "press_story_angle_generation_result"
   | "press_story_angle_ruling_result"
+  | "pricing_proposal"
   | "product_entry"
   | "product_identification"
+  | "product_research"
   | "product_research_report"
   | "progress_tracker"
   | "proof_attestation"
   | "proof_check_status"
   | "provider_run_receipt"
+  | "publish_preflight"
   | "quantity_assessment"
   | "questionnaire"
   | "quiz_item"
@@ -19478,6 +20247,7 @@ export type GeneratedKindSlug =
   | "resell_research_report"
   | "resource_collection"
   | "retrieved_chunk"
+  | "review_verdict"
   | "reviewer_result_card"
   | "rule_governed_variant_set"
   | "run_result"
@@ -19601,6 +20371,7 @@ export type GeneratedKindSlug =
   | "user_inputs"
   | "uuid_value"
   | "value"
+  | "value_assessment"
   | "video_prompt_options"
   | "video_result"
   | "video_transcript_research"
@@ -19719,6 +20490,7 @@ export interface KindPayloadBySlug {
   "arman_video_prompt": ArmanVideoPrompt;
   "artisan_demo_reading_list": ArtisanDemoReadingList;
   "assertion_result": AssertionResult;
+  "asset_grading": AssetGrading;
   "authority_newsjacking_article": AuthorityNewsjackingArticle;
   "batch_review": BatchReview;
   "batched_list_result": BatchedListResult;
@@ -19774,6 +20546,7 @@ export interface KindPayloadBySlug {
   "document_quad_detection": DocumentQuadDetection;
   "domain_fold_report": DomainFoldReport;
   "electronics_intake_analysis": ElectronicsIntakeAnalysis;
+  "enrichment_verification": EnrichmentVerification;
   "entity_card": EntityCard;
   "entity_mention": EntityMention;
   "episode_title_options": EpisodeTitleOptions;
@@ -19823,6 +20596,7 @@ export interface KindPayloadBySlug {
   "image_qc_result": ImageQcResult;
   "image_qc_verdict": ImageQcVerdict;
   "ingested_sources": IngestedSources;
+  "intake_photo_grouping": IntakePhotoGrouping;
   "interview_finalize_result": InterviewFinalizeResult;
   "interview_gate_decision": InterviewGateDecision;
   "interview_hole_set": InterviewHoleSet;
@@ -19831,6 +20605,7 @@ export interface KindPayloadBySlug {
   "interview_session_hydration": InterviewSessionHydration;
   "interview_tracker_apply_result": InterviewTrackerApplyResult;
   "item_presentation": ItemPresentation;
+  "item_vision_extraction": ItemVisionExtraction;
   "items": Items;
   "json": Json;
   "json_path_result": JsonPathResult;
@@ -19845,9 +20620,11 @@ export interface KindPayloadBySlug {
   "kit_title": KitTitle;
   "lesson_script_set": LessonScriptSet;
   "link_buckets": LinkBuckets;
+  "listing_draft": ListingDraft;
   "live_help_answer": LiveHelpAnswer;
   "local_place": LocalPlace;
   "loop_iteration_result": LoopIterationResult;
+  "lot_detection": LotDetection;
   "map_result": MapResult;
   "mapped_list_result": MappedListResult;
   "markdown": Markdown;
@@ -19926,13 +20703,16 @@ export interface KindPayloadBySlug {
   "press_source_request_ingest_result": PressSourceRequestIngestResult;
   "press_story_angle_generation_result": PressStoryAngleGenerationResult;
   "press_story_angle_ruling_result": PressStoryAngleRulingResult;
+  "pricing_proposal": PricingProposal;
   "product_entry": ProductEntry;
   "product_identification": ProductIdentification;
+  "product_research": ProductResearch;
   "product_research_report": ProductResearchReport;
   "progress_tracker": ProgressTracker;
   "proof_attestation": ProofAttestation;
   "proof_check_status": ProofCheckStatus;
   "provider_run_receipt": ProviderRunReceipt;
+  "publish_preflight": PublishPreflight;
   "quantity_assessment": QuantityAssessment;
   "questionnaire": Questionnaire;
   "quiz_item": QuizItem;
@@ -19971,6 +20751,7 @@ export interface KindPayloadBySlug {
   "resell_research_report": ResellResearchReport;
   "resource_collection": ResourceCollection;
   "retrieved_chunk": RetrievedChunk;
+  "review_verdict": ReviewVerdict;
   "reviewer_result_card": ReviewerResultCard;
   "rule_governed_variant_set": RuleGovernedVariantSet;
   "run_result": RunResult;
@@ -20094,6 +20875,7 @@ export interface KindPayloadBySlug {
   "user_inputs": UserInputs;
   "uuid_value": UuidValue;
   "value": Value;
+  "value_assessment": ValueAssessment;
   "video_prompt_options": VideoPromptOptions;
   "video_result": VideoResult;
   "video_transcript_research": VideoTranscriptResearch;
@@ -20216,6 +20998,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "arman_video_prompt",
   "artisan_demo_reading_list",
   "assertion_result",
+  "asset_grading",
   "authority_newsjacking_article",
   "batch_review",
   "batched_list_result",
@@ -20271,6 +21054,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "document_quad_detection",
   "domain_fold_report",
   "electronics_intake_analysis",
+  "enrichment_verification",
   "entity_card",
   "entity_mention",
   "episode_title_options",
@@ -20320,6 +21104,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "image_qc_result",
   "image_qc_verdict",
   "ingested_sources",
+  "intake_photo_grouping",
   "interview_finalize_result",
   "interview_gate_decision",
   "interview_hole_set",
@@ -20328,6 +21113,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "interview_session_hydration",
   "interview_tracker_apply_result",
   "item_presentation",
+  "item_vision_extraction",
   "items",
   "json",
   "json_path_result",
@@ -20342,9 +21128,11 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "kit_title",
   "lesson_script_set",
   "link_buckets",
+  "listing_draft",
   "live_help_answer",
   "local_place",
   "loop_iteration_result",
+  "lot_detection",
   "map_result",
   "mapped_list_result",
   "markdown",
@@ -20423,13 +21211,16 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "press_source_request_ingest_result",
   "press_story_angle_generation_result",
   "press_story_angle_ruling_result",
+  "pricing_proposal",
   "product_entry",
   "product_identification",
+  "product_research",
   "product_research_report",
   "progress_tracker",
   "proof_attestation",
   "proof_check_status",
   "provider_run_receipt",
+  "publish_preflight",
   "quantity_assessment",
   "questionnaire",
   "quiz_item",
@@ -20468,6 +21259,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "resell_research_report",
   "resource_collection",
   "retrieved_chunk",
+  "review_verdict",
   "reviewer_result_card",
   "rule_governed_variant_set",
   "run_result",
@@ -20591,6 +21383,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "user_inputs",
   "uuid_value",
   "value",
+  "value_assessment",
   "video_prompt_options",
   "video_result",
   "video_transcript_research",

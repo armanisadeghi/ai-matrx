@@ -456,6 +456,17 @@ export type FeSynthesizedBlockType =
   | "seo_rank_portfolio"
   | "seo_rank_target_removal"
   | "provider_run_receipt"
+  | "intake_photo_grouping"
+  | "item_vision_extraction"
+  | "lot_detection"
+  | "product_research"
+  | "value_assessment"
+  | "asset_grading"
+  | "enrichment_verification"
+  | "pricing_proposal"
+  | "listing_draft"
+  | "review_verdict"
+  | "publish_preflight"
   | "data_table"
   | "source_ref"
   | "retrieved_chunk"
@@ -603,6 +614,17 @@ export type ShapeBlockType =
   | "seo_rank_portfolio"
   | "seo_rank_target_removal"
   | "provider_run_receipt"
+  | "intake_photo_grouping"
+  | "item_vision_extraction"
+  | "lot_detection"
+  | "product_research"
+  | "value_assessment"
+  | "asset_grading"
+  | "enrichment_verification"
+  | "pricing_proposal"
+  | "listing_draft"
+  | "review_verdict"
+  | "publish_preflight"
   | "data_table"
   | "source_ref"
   | "retrieved_chunk"
@@ -2042,8 +2064,12 @@ const SHAPE_BLOCK_DISPATCH = {
   // Kind-routed scraper / web_page family (Scraper Kinds Run): same uniform
   // `{ value, isComplete }` bridge, so the SAME entry shape serves it.
   scraped_page: searchKindEntry(BlockComponents.ScrapedPageBlock),
-  scraper_batch_result: searchKindEntry(BlockComponents.ScraperBatchResultBlock),
-  scraper_crawl_result: searchKindEntry(BlockComponents.ScraperCrawlResultBlock),
+  scraper_batch_result: searchKindEntry(
+    BlockComponents.ScraperBatchResultBlock,
+  ),
+  scraper_crawl_result: searchKindEntry(
+    BlockComponents.ScraperCrawlResultBlock,
+  ),
   page_link: searchKindEntry(BlockComponents.PageLinkBlock),
   link_buckets: searchKindEntry(BlockComponents.LinkBucketsBlock),
   page_image: searchKindEntry(BlockComponents.PageImageBlock),
@@ -2058,7 +2084,9 @@ const SHAPE_BLOCK_DISPATCH = {
   content_fingerprint: searchKindEntry(BlockComponents.ContentFingerprintBlock),
   page_metadata: searchKindEntry(BlockComponents.PageMetadataBlock),
   page_removal: searchKindEntry(BlockComponents.PageRemovalBlock),
-  page_cleaning_report: searchKindEntry(BlockComponents.PageCleaningReportBlock),
+  page_cleaning_report: searchKindEntry(
+    BlockComponents.PageCleaningReportBlock,
+  ),
   web_search_results: searchKindEntry(BlockComponents.WebSearchResultsBlock),
   web_result: searchKindEntry(BlockComponents.WebResultBlock),
   news_result: searchKindEntry(BlockComponents.NewsResultBlock),
@@ -2086,7 +2114,29 @@ const SHAPE_BLOCK_DISPATCH = {
   seo_rank_target_removal: searchKindEntry(
     BlockComponents.SeoRankTargetRemovalBlock,
   ),
-  provider_run_receipt: searchKindEntry(BlockComponents.ProviderRunReceiptBlock),
+  provider_run_receipt: searchKindEntry(
+    BlockComponents.ProviderRunReceiptBlock,
+  ),
+
+  // Kind-routed commerce family. The former skeptic_challenge draft is not a
+  // second shape: its emitter returns value_assessment and dispatches there.
+  intake_photo_grouping: searchKindEntry(
+    BlockComponents.IntakePhotoGroupingBlock,
+  ),
+  item_vision_extraction: searchKindEntry(
+    BlockComponents.ItemVisionExtractionBlock,
+  ),
+  lot_detection: searchKindEntry(BlockComponents.LotDetectionBlock),
+  product_research: searchKindEntry(BlockComponents.ProductResearchBlock),
+  value_assessment: searchKindEntry(BlockComponents.ValueAssessmentBlock),
+  asset_grading: searchKindEntry(BlockComponents.AssetGradingBlock),
+  enrichment_verification: searchKindEntry(
+    BlockComponents.EnrichmentVerificationBlock,
+  ),
+  pricing_proposal: searchKindEntry(BlockComponents.PricingProposalBlock),
+  listing_draft: searchKindEntry(BlockComponents.ListingDraftBlock),
+  review_verdict: searchKindEntry(BlockComponents.ReviewVerdictBlock),
+  publish_preflight: searchKindEntry(BlockComponents.PublishPreflightBlock),
 
   // Kind-routed tabular primitive (Table Kinds Run): same uniform
   // `{ value, isComplete }` bridge, so the SAME three-branch entry serves it.

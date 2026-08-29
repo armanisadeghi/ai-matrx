@@ -313,6 +313,16 @@ reset role;
 
 do $$
 begin
+  if not exists (
+    select 1
+    from platform.client_callable_door
+    where schema_name = 'public'
+      and function_name = 'get_user_file_tree'
+      and identity_args =
+        'p_user_id uuid, p_limit integer, p_offset integer, p_include_folders boolean, p_include_deleted boolean, p_order_by text'
+  ) then
+    raise exception 'user file-tree RPC is absent from platform.client_callable_door';
+  end if;
   if not has_function_privilege(
        'authenticated',
        'public.get_user_file_tree(uuid,integer,integer,boolean,boolean,text)',

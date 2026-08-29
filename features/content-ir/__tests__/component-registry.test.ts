@@ -88,92 +88,107 @@ describe("compiled bootstrap (system-components)", () => {
     // This is the named legacy-bridge contract. New compiled bridges are
     // covered exhaustively by the preceding mirror test and must not make this
     // historical name check stale every time a purpose-built renderer lands.
-    expect(Object.fromEntries(byKind)).toEqual(expect.objectContaining({
-      flashcard_set: "flashcards",
-      quiz_set: "quiz",
-      presentation_deck: "presentation",
-      decision_tree: "decision_tree",
-      comparison_set: "comparison_table",
-      diagram_spec: "diagram",
-      math_problem: "math_problem",
-      item_presentation: "item_presentation",
-      schema_proposal: "schema_proposal",
-      // Gold-mine sweep
-      mermaid_diagram: "mermaid",
-      task_list: "tasks",
-      resource_collection: "resources",
-      progress_tracker: "progress_tracker",
-      timeline: "timeline",
-      structured_info: "structured_info",
-      transcript: "transcript",
-      troubleshooting_guide: "troubleshooting",
-      cooking_recipe: "cooking_recipe",
-      research_report: "research",
-      questionnaire: "questionnaire",
-      video_prompt_options: "video_prompt_options",
-      keyword_relationship_research: "keyword_research",
-      seo_keyword_relationship_research_result: "seo_keyword_research_result",
-      keyword_classification_batch_v1: "keyword_classification_batch",
-      page_brief: "page_brief",
-      media_chapters: "media_chapters",
-      generated_image_set: "generated_image_set",
-      generated_video_set: "generated_video_set",
-      generated_audio: "generated_audio",
-      podcast_episode: "podcast_episode",
-      episode_title_options: "episode_title_options",
-      masterwork_checkup_finding: "masterwork_checkup_finding",
-      agent_result: "agent_result",
-      ingested_sources: "ingested_sources",
-      study_notes: "study_notes",
-      // study_pack_v2: the spoken lessons + the composed pack root.
-      lesson_script_set: "lesson_scripts",
-      study_pack_set: "study_pack",
-      seo_package: "seo_package",
-      keyword_serp_intent_analysis_v1: "keyword_serp_intent_analysis",
-      memory_aid: "memory_aid",
-      memory_hint: "memory_hint",
-      plan_page_research: "plan_page_research",
-      plan_page_outline: "plan_page_outline",
-      plan_page_draft: "plan_page_draft",
-      plan_page_review: "plan_page_review",
-      cms_page_build: "cms_page_build",
-      // Workflow run surfaces — a node's outcome and a run's result render
-      // through the registry like any other kind, never as a JSON dump.
-      node_outcome: "node_outcome",
-      run_result: "run_result",
-      // Search kind family (Search Kinds Pilot)
-      web_search_results: "web_search_results",
-      web_result: "web_result",
-      news_result: "news_result",
-      video_result: "video_result",
-      faq_item: "faq_item",
-      discussion_result: "discussion_result",
-      local_place: "local_place",
-      entity_card: "entity_card",
-      ai_answer: "ai_answer",
-      rating: "rating",
-      opening_hours: "opening_hours",
-      postal_address: "postal_address",
-      geo_coordinates: "geo_coordinates",
-      // Rank / SERP-landscape family (Rank Kinds Run)
-      seo_rank_serp_landscape: "seo_rank_serp_landscape",
-      serp_placement: "serp_placement",
-      seo_rank_reading: "seo_rank_reading",
-      seo_rank_target: "seo_rank_target",
-      seo_rank_portfolio: "seo_rank_portfolio",
-      seo_rank_target_removal: "seo_rank_target_removal",
-      provider_run_receipt: "provider_run_receipt",
-      // Tabular primitive (Table Kinds Run)
-      data_table: "data_table",
-      // RAG retrieval + citation family (RAG Kinds Run). `source_ref` is a
-      // SYSTEM-WIDE primitive, not a RAG kind — the platform's cited-source
-      // shape, nested by every family that says where something came from.
-      source_ref: "source_ref",
-      retrieved_chunk: "retrieved_chunk",
-      rag_search_result: "rag_search_result",
-      rag_cross_doc_search_result: "rag_cross_doc_search_result",
-      rag_synthesize_result: "rag_synthesize_result",
-    }));
+    expect(Object.fromEntries(byKind)).toEqual(
+      expect.objectContaining({
+        flashcard_set: "flashcards",
+        quiz_set: "quiz",
+        presentation_deck: "presentation",
+        decision_tree: "decision_tree",
+        comparison_set: "comparison_table",
+        diagram_spec: "diagram",
+        math_problem: "math_problem",
+        item_presentation: "item_presentation",
+        schema_proposal: "schema_proposal",
+        // Gold-mine sweep
+        mermaid_diagram: "mermaid",
+        task_list: "tasks",
+        resource_collection: "resources",
+        progress_tracker: "progress_tracker",
+        timeline: "timeline",
+        structured_info: "structured_info",
+        transcript: "transcript",
+        troubleshooting_guide: "troubleshooting",
+        cooking_recipe: "cooking_recipe",
+        research_report: "research",
+        questionnaire: "questionnaire",
+        video_prompt_options: "video_prompt_options",
+        keyword_relationship_research: "keyword_research",
+        seo_keyword_relationship_research_result: "seo_keyword_research_result",
+        keyword_classification_batch_v1: "keyword_classification_batch",
+        page_brief: "page_brief",
+        media_chapters: "media_chapters",
+        generated_image_set: "generated_image_set",
+        generated_video_set: "generated_video_set",
+        generated_audio: "generated_audio",
+        podcast_episode: "podcast_episode",
+        episode_title_options: "episode_title_options",
+        masterwork_checkup_finding: "masterwork_checkup_finding",
+        agent_result: "agent_result",
+        ingested_sources: "ingested_sources",
+        study_notes: "study_notes",
+        // study_pack_v2: the spoken lessons + the composed pack root.
+        lesson_script_set: "lesson_scripts",
+        study_pack_set: "study_pack",
+        seo_package: "seo_package",
+        keyword_serp_intent_analysis_v1: "keyword_serp_intent_analysis",
+        memory_aid: "memory_aid",
+        memory_hint: "memory_hint",
+        plan_page_research: "plan_page_research",
+        plan_page_outline: "plan_page_outline",
+        plan_page_draft: "plan_page_draft",
+        plan_page_review: "plan_page_review",
+        cms_page_build: "cms_page_build",
+        // Workflow run surfaces — a node's outcome and a run's result render
+        // through the registry like any other kind, never as a JSON dump.
+        node_outcome: "node_outcome",
+        run_result: "run_result",
+        // Search kind family (Search Kinds Pilot)
+        web_search_results: "web_search_results",
+        web_result: "web_result",
+        news_result: "news_result",
+        video_result: "video_result",
+        faq_item: "faq_item",
+        discussion_result: "discussion_result",
+        local_place: "local_place",
+        entity_card: "entity_card",
+        ai_answer: "ai_answer",
+        rating: "rating",
+        opening_hours: "opening_hours",
+        postal_address: "postal_address",
+        geo_coordinates: "geo_coordinates",
+        // Rank / SERP-landscape family (Rank Kinds Run)
+        seo_rank_serp_landscape: "seo_rank_serp_landscape",
+        serp_placement: "serp_placement",
+        seo_rank_reading: "seo_rank_reading",
+        seo_rank_target: "seo_rank_target",
+        seo_rank_portfolio: "seo_rank_portfolio",
+        seo_rank_target_removal: "seo_rank_target_removal",
+        provider_run_receipt: "provider_run_receipt",
+        // Commerce pipeline family. skeptic_challenge intentionally retired;
+        // W5 emits the canonical value_assessment shape.
+        intake_photo_grouping: "intake_photo_grouping",
+        item_vision_extraction: "item_vision_extraction",
+        lot_detection: "lot_detection",
+        product_research: "product_research",
+        value_assessment: "value_assessment",
+        asset_grading: "asset_grading",
+        enrichment_verification: "enrichment_verification",
+        pricing_proposal: "pricing_proposal",
+        listing_draft: "listing_draft",
+        review_verdict: "review_verdict",
+        publish_preflight: "publish_preflight",
+        // Tabular primitive (Table Kinds Run)
+        data_table: "data_table",
+        // RAG retrieval + citation family (RAG Kinds Run). `source_ref` is a
+        // SYSTEM-WIDE primitive, not a RAG kind — the platform's cited-source
+        // shape, nested by every family that says where something came from.
+        source_ref: "source_ref",
+        retrieved_chunk: "retrieved_chunk",
+        rag_search_result: "rag_search_result",
+        rag_cross_doc_search_result: "rag_cross_doc_search_result",
+        rag_synthesize_result: "rag_synthesize_result",
+      }),
+    );
   });
 });
 
@@ -349,14 +364,15 @@ describe("unroutable roles — a role this build cannot dispatch is DROPPED, nev
   // rendered. The real rows shared `is_default` and `sort_order`, so only
   // `created_at` separated them.
   beforeEach(async () => {
-    const { resetUnroutableRoleReports } = await import(
-      "../registry/component-registry"
-    );
+    const { resetUnroutableRoleReports } =
+      await import("../registry/component-registry");
     resetUnroutableRoleReports();
   });
 
   it("a loading row NEVER becomes the kind's output component, even when it is fetched FIRST", async () => {
-    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     try {
       // The dangerous order: the loading row arrives ahead of the real output
       // row, which is exactly what happens if the loading component is
@@ -393,7 +409,9 @@ describe("unroutable roles — a role this build cannot dispatch is DROPPED, nev
   });
 
   it("screams ONCE per (kind, role) and names the row, not just the role string", async () => {
-    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     try {
       mockList.mockResolvedValue([
         dbRow({
@@ -426,7 +444,9 @@ describe("unroutable roles — a role this build cannot dispatch is DROPPED, nev
   });
 
   it("routable rows are unaffected — input and output both still resolve", async () => {
-    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    const consoleError = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
     try {
       mockList.mockResolvedValue([
         dbRow({ kind: "adv_ok_kind", componentKey: "adv_out", role: "output" }),
@@ -436,12 +456,12 @@ describe("unroutable roles — a role this build cannot dispatch is DROPPED, nev
       const registry = new ComponentRegistry(() => []);
       await registry.ensureWarm();
 
-      expect(registry.resolve("adv_ok_kind", "web", "output")?.componentKey).toBe(
-        "adv_out",
-      );
-      expect(registry.resolve("adv_ok_kind", "web", "input")?.componentKey).toBe(
-        "adv_in",
-      );
+      expect(
+        registry.resolve("adv_ok_kind", "web", "output")?.componentKey,
+      ).toBe("adv_out");
+      expect(
+        registry.resolve("adv_ok_kind", "web", "input")?.componentKey,
+      ).toBe("adv_in");
       expect(consoleError).not.toHaveBeenCalled();
     } finally {
       consoleError.mockRestore();

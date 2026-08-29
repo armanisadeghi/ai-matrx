@@ -56349,6 +56349,99 @@ export type Database = {
           },
         ]
       }
+      knob_override_audit: {
+        Row: {
+          action: string
+          actor: string | null
+          at: string
+          feature: string
+          id: number
+          key: string
+          new_value: Json | null
+          old_value: Json | null
+          organization_id: string
+          scope_id: string
+          scope_kind: string
+          set_note: string | null
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          at?: string
+          feature: string
+          id?: never
+          key: string
+          new_value?: Json | null
+          old_value?: Json | null
+          organization_id: string
+          scope_id: string
+          scope_kind: string
+          set_note?: string | null
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          at?: string
+          feature?: string
+          id?: never
+          key?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          organization_id?: string
+          scope_id?: string
+          scope_kind?: string
+          set_note?: string | null
+        }
+        Relationships: []
+      }
+      knob_rung_lock: {
+        Row: {
+          created_at: string
+          feature: string
+          key: string
+          locked_kinds: string[]
+          note: string | null
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          feature: string
+          key: string
+          locked_kinds: string[]
+          note?: string | null
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          feature?: string
+          key?: string
+          locked_kinds?: string[]
+          note?: string | null
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knob_rung_lock_knob_fkey"
+            columns: ["feature", "key"]
+            isOneToOne: false
+            referencedRelation: "feature_knob"
+            referencedColumns: ["feature", "key"]
+          },
+          {
+            foreignKeyName: "knob_rung_lock_knob_fkey"
+            columns: ["feature", "key"]
+            isOneToOne: false
+            referencedRelation: "v_feature_knob_overdue"
+            referencedColumns: ["feature", "key"]
+          },
+        ]
+      }
       knob_scope_kind: {
         Row: {
           description: string
@@ -59264,6 +59357,16 @@ export type Database = {
           p_organization_id: string
           p_scopes?: Json
           p_user_id?: string
+        }
+        Returns: Json
+      }
+      knob_rung_lock_set: {
+        Args: {
+          p_feature: string
+          p_key: string
+          p_locked_kinds: string[]
+          p_note?: string
+          p_organization_id: string
         }
         Returns: Json
       }

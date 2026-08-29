@@ -27,8 +27,6 @@
  * resolver, no fallback (no-db-assigned-org doctrine).
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 import { createClient } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { readAllRows } from "@ai-matrx/data/db";
@@ -41,7 +39,6 @@ import type {
   AssetUnknownRow,
   BatchCaptureMode,
   ChoiceOption,
-  CommerceIntakeSchema,
   IdentifierKind,
   IntakeArtifact,
   IntakeArtifactRow,
@@ -52,16 +49,9 @@ import type {
   PipelineState,
 } from "./types";
 
-interface CommerceDatabase {
-  commerce: CommerceIntakeSchema;
-}
-
-/** The supabase client scoped to the `commerce` schema (hand-typed until
- *  `commerce` lands in the generated Database type — see types.ts header). */
+/** The generated Supabase client scoped to the live `commerce` schema. */
 function db() {
-  return (
-    createClient() as unknown as SupabaseClient<CommerceDatabase, "commerce">
-  ).schema("commerce");
+  return createClient().schema("commerce");
 }
 
 const BATCH_COLUMNS =
@@ -118,7 +108,9 @@ type AssetRow = Pick<
   | "version"
 >;
 
-function toAttributes(value: IntakeAssetRow["attributes"]): Record<string, string> {
+function toAttributes(
+  value: IntakeAssetRow["attributes"],
+): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(value)) {
@@ -173,7 +165,12 @@ function toArtifact(row: ArtifactRow): IntakeArtifact {
 
 type IdentifierRow = Pick<
   AssetIdentifierRow,
-  "id" | "intake_asset_id" | "identifier_kind" | "value" | "is_primary" | "replaced_at"
+  | "id"
+  | "intake_asset_id"
+  | "identifier_kind"
+  | "value"
+  | "is_primary"
+  | "replaced_at"
 >;
 
 function toIdentifier(row: IdentifierRow): AssetIdentifier {
@@ -402,8 +399,9 @@ export async function loadAsset(assetId: string): Promise<IntakeAsset | null> {
   if (!data) return null;
   const identifiers = await listIdentifiers(assetId);
   const primary =
-    identifiers.find((i) => i.kind === "our_qr" && i.isPrimary && !i.replacedAt) ??
-    null;
+    identifiers.find(
+      (i) => i.kind === "our_qr" && i.isPrimary && !i.replacedAt,
+    ) ?? null;
   return toAsset(data as AssetRow, primary?.value ?? null);
 }
 
@@ -671,7 +669,9 @@ export async function maxSequenceIndex(batchId: string): Promise<number> {
     .limit(1)
     .maybeSingle();
   if (error) throw error;
-  return (data as { sequence_index: number | null } | null)?.sequence_index ?? 0;
+  return (
+    (data as { sequence_index: number | null } | null)?.sequence_index ?? 0
+  );
 }
 
 /** Soft-delete an artifact row (the retake path — cloud-file removal is the

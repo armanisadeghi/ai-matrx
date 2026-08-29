@@ -98,6 +98,7 @@ import { RANK_KINDS_KIND_DEFINITIONS } from "../kinds/rank-kinds";
 import { RAG_KINDS_KIND_DEFINITIONS } from "../kinds/rag-kinds";
 import { TABLE_KINDS_KIND_DEFINITIONS } from "../kinds/table-kinds";
 import { TRUST_ENVELOPE_KIND_DEFINITIONS } from "../kinds/trust-envelope";
+import { COMMERCE_KINDS_KIND_DEFINITIONS } from "../kinds/commerce-kinds";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // Gold-mine sweep (Stage 6 pulled forward): kinds engineered from existing
@@ -188,6 +189,10 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // cutover and are deliberately not mirrored yet — see the module header.
   // Python-owned models: aidream/aidream/services/table_kinds/models.py.
   ...TABLE_KINDS_KIND_DEFINITIONS,
+  // Commerce intake-to-listing pipeline (2026-08-29). Python-owned models:
+  // aidream/aidream/kinds/commerce.py. The former skeptic_challenge draft is
+  // intentionally absent: its emitter reuses value_assessment.
+  ...COMMERCE_KINDS_KIND_DEFINITIONS,
   // Compiled MIRROR of the already-registered python-owned `trust_envelope` +
   // `citation` kinds (their DB rows carry a NULL `data[]`, so nothing else can
   // resolve them). Registered here so every kind that carries grounding

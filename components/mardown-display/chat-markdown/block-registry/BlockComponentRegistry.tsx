@@ -93,6 +93,19 @@ import {
   SeoRankTargetBlock as SeoRankTargetBlockImpl,
   SeoRankTargetRemovalBlock as SeoRankTargetRemovalBlockImpl,
 } from "../../blocks/rank-kinds/target-blocks";
+import {
+  AssetGradingBlock as AssetGradingBlockImpl,
+  EnrichmentVerificationBlock as EnrichmentVerificationBlockImpl,
+  IntakePhotoGroupingBlock as IntakePhotoGroupingBlockImpl,
+  ItemVisionExtractionBlock as ItemVisionExtractionBlockImpl,
+  ListingDraftBlock as ListingDraftBlockImpl,
+  LotDetectionBlock as LotDetectionBlockImpl,
+  PricingProposalBlock as PricingProposalBlockImpl,
+  ProductResearchBlock as ProductResearchBlockImpl,
+  PublishPreflightBlock as PublishPreflightBlockImpl,
+  ReviewVerdictBlock as ReviewVerdictBlockImpl,
+  ValueAssessmentBlock as ValueAssessmentBlockImpl,
+} from "../../blocks/commerce-kinds/commerce-kind-blocks";
 // RAG retrieval + citation kind family (RAG Kinds Run). `source_ref` is a
 // SYSTEM-WIDE primitive — the platform's cited-source shape — and is nested by
 // every other family that says "here is where this came from". The chunk
@@ -507,17 +520,23 @@ export const BlockComponents = {
     </LazyBlockWrapper>
   ),
   // Scraper / web_page kind family (Scraper Kinds Run).
-  ScrapedPageBlock: (props: React.ComponentProps<typeof ScrapedPageBlockImpl>) => (
+  ScrapedPageBlock: (
+    props: React.ComponentProps<typeof ScrapedPageBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <ScrapedPageBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  ScraperBatchResultBlock: (props: React.ComponentProps<typeof ScraperBatchResultBlockImpl>) => (
+  ScraperBatchResultBlock: (
+    props: React.ComponentProps<typeof ScraperBatchResultBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <ScraperBatchResultBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  ScraperCrawlResultBlock: (props: React.ComponentProps<typeof ScraperCrawlResultBlockImpl>) => (
+  ScraperCrawlResultBlock: (
+    props: React.ComponentProps<typeof ScraperCrawlResultBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <ScraperCrawlResultBlockImpl {...props} />
     </LazyBlockWrapper>
@@ -527,7 +546,9 @@ export const BlockComponents = {
       <PageLinkBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  LinkBucketsBlock: (props: React.ComponentProps<typeof LinkBucketsBlockImpl>) => (
+  LinkBucketsBlock: (
+    props: React.ComponentProps<typeof LinkBucketsBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <LinkBucketsBlockImpl {...props} />
     </LazyBlockWrapper>
@@ -547,12 +568,16 @@ export const BlockComponents = {
       <PageAudioBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  PageHeadingBlock: (props: React.ComponentProps<typeof PageHeadingBlockImpl>) => (
+  PageHeadingBlock: (
+    props: React.ComponentProps<typeof PageHeadingBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <PageHeadingBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  PageSectionBlock: (props: React.ComponentProps<typeof PageSectionBlockImpl>) => (
+  PageSectionBlock: (
+    props: React.ComponentProps<typeof PageSectionBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <PageSectionBlockImpl {...props} />
     </LazyBlockWrapper>
@@ -567,32 +592,44 @@ export const BlockComponents = {
       <PageBlockBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  CodeBlockKindBlock: (props: React.ComponentProps<typeof CodeBlockKindBlockImpl>) => (
+  CodeBlockKindBlock: (
+    props: React.ComponentProps<typeof CodeBlockKindBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <CodeBlockKindBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  RedirectHopBlock: (props: React.ComponentProps<typeof RedirectHopBlockImpl>) => (
+  RedirectHopBlock: (
+    props: React.ComponentProps<typeof RedirectHopBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <RedirectHopBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  ContentFingerprintBlock: (props: React.ComponentProps<typeof ContentFingerprintBlockImpl>) => (
+  ContentFingerprintBlock: (
+    props: React.ComponentProps<typeof ContentFingerprintBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <ContentFingerprintBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  PageMetadataBlock: (props: React.ComponentProps<typeof PageMetadataBlockImpl>) => (
+  PageMetadataBlock: (
+    props: React.ComponentProps<typeof PageMetadataBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <PageMetadataBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  PageRemovalBlock: (props: React.ComponentProps<typeof PageRemovalBlockImpl>) => (
+  PageRemovalBlock: (
+    props: React.ComponentProps<typeof PageRemovalBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <PageRemovalBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
-  PageCleaningReportBlock: (props: React.ComponentProps<typeof PageCleaningReportBlockImpl>) => (
+  PageCleaningReportBlock: (
+    props: React.ComponentProps<typeof PageCleaningReportBlockImpl>,
+  ) => (
     <LazyBlockWrapper>
       <PageCleaningReportBlockImpl {...props} />
     </LazyBlockWrapper>
@@ -712,6 +749,84 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <SeoRankTargetRemovalBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  // Commerce intake-to-listing family — one canonical renderer per shape.
+  IntakePhotoGroupingBlock: (
+    props: React.ComponentProps<typeof IntakePhotoGroupingBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <IntakePhotoGroupingBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  ItemVisionExtractionBlock: (
+    props: React.ComponentProps<typeof ItemVisionExtractionBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <ItemVisionExtractionBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  LotDetectionBlock: (
+    props: React.ComponentProps<typeof LotDetectionBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <LotDetectionBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  ProductResearchBlock: (
+    props: React.ComponentProps<typeof ProductResearchBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <ProductResearchBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  ValueAssessmentBlock: (
+    props: React.ComponentProps<typeof ValueAssessmentBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <ValueAssessmentBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  AssetGradingBlock: (
+    props: React.ComponentProps<typeof AssetGradingBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <AssetGradingBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  EnrichmentVerificationBlock: (
+    props: React.ComponentProps<typeof EnrichmentVerificationBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <EnrichmentVerificationBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PricingProposalBlock: (
+    props: React.ComponentProps<typeof PricingProposalBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <PricingProposalBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  ListingDraftBlock: (
+    props: React.ComponentProps<typeof ListingDraftBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <ListingDraftBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  ReviewVerdictBlock: (
+    props: React.ComponentProps<typeof ReviewVerdictBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <ReviewVerdictBlockImpl {...props} />
+    </LazyBlockWrapper>
+  ),
+  PublishPreflightBlock: (
+    props: React.ComponentProps<typeof PublishPreflightBlockImpl>,
+  ) => (
+    <LazyBlockWrapper>
+      <PublishPreflightBlockImpl {...props} />
     </LazyBlockWrapper>
   ),
   // RAG retrieval + citation kind family (RAG Kinds Run).

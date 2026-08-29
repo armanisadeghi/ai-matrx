@@ -80,6 +80,9 @@ in the same change.
 18. **Docs are updated in the same change as the code.** Stale docs cascade across parallel agents.
 19. **`FileAcquisitionActions` is the one source chooser.** Local file/folder inputs, existing-Matrx-Files selection, and Google Drive connect/import belong there; hosts select a presentation and disable sources with props. Drag/drop and paste remain host gestures, but their resulting `File[]` must enter the same upload callback. Never synthesize an input, query a page-wide file input, or fork a partial source menu.
 20. **A selectable file thumbnail is `SelectableFileThumbnail`.** Its thumbnail opens the canonical File Preview WindowPanel, its independent 44px control changes selection, and `FileRightClickMenu` supplies the universal menu. Hosts provide labels/icons and the selection callback; they never rebuild any of those three behaviors.
+21. **`get_user_file_tree` is an authenticated Data API door.** Keep its exact signature in
+    `platform.client_callable_door` before granting `authenticated`; keep `anon` and `PUBLIC`
+    revoked. `migrations/restore_get_user_file_tree_client_door.sql` asserts both halves.
 
 ## Local commands
 
@@ -91,6 +94,9 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- 2026-08-29 — Registered `get_user_file_tree` as an intentional client-callable definer door so
+  the database-wide grant guard preserves signed-in Files and Vault enumeration while anon remains
+  denied.
 - 2026-08-29 — File preview tab and action rails now scroll horizontally at constrained mobile widths; tab/action labels remain intact instead of collapsing into one-character columns. `FileResourceChip` now gives the universal file menu a real DOM trigger, so nested message-level menus cannot steal file-chip right clicks. Embedded file menus emit a complete canonical Files scope, eliminating the menu guard error caused by declaring always-available browser values without supplying them.
 
 - **2026-08-29 — File selection becomes a reusable preview/menu primitive.**
