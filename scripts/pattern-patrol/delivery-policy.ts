@@ -435,7 +435,10 @@ export function checkContainedPatrolCandidates(input: {
     const validation = validatePatrolRunRecord(record);
     problems.push(...validation.map((problem) => `${path}: ${problem}`));
     if (validation.length > 0) continue;
-    const candidates = record.events.flatMap((event) => {
+    const candidates = record.events.flatMap<{
+      candidateSha: string;
+      state: "infrastructure_blocked" | "escaped_delivery";
+    }>((event) => {
       if (
         event.state === "infrastructure_blocked" &&
         event.blocker?.preservedSha
