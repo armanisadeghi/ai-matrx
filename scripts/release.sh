@@ -59,11 +59,11 @@
 # what is already committed). Only a remote sync that must FF/rebase will refuse
 # a dirty tree. ./ship.sh (--ship) folds the working tree into the release commit.
 #
-# Quality gates (doctrine, UI primitives, patrol certification, …) stay
-# ADVISORY — they scream loudly and never block the ship. A busy delivery lane
-# waits and resumes automatically. Only an inability to create/push a coherent
-# Git release, or a failed migration/contract reconciliation, can stop it.
-# Manual hard-fail: pnpm check:release-gates:strict
+# General quality gates (doctrine, UI primitives, …) stay ADVISORY — they scream
+# loudly and never block the ship. Pattern Patrol delivery authorization is a
+# separate fail-closed lifecycle checkpoint before any release mutation and
+# again after --ship materializes its commit. A busy delivery lane waits and
+# resumes automatically. Manual hard-fail: pnpm check:release-gates:strict
 set -euo pipefail
 
 # ── Failure trap ─────────────────────────────────────────────────────────────
@@ -106,11 +106,9 @@ preview() { echo -e "${CYAN}[DRY]${NC}   $*"; }
 
 verify_patrol_delivery() {
     info "Checking Pattern Patrol certification records..."
-    if pnpm --silent patrol:delivery:check -- --head HEAD; then
-        ok "Pattern Patrol delivery records authorize every patrol commit."
-    else
-        warn "Pattern Patrol delivery records need reconciliation; release remains fail-forward."
-    fi
+    pnpm --silent patrol:delivery:check -- --head HEAD || \
+        fail "Pattern Patrol delivery records are incomplete; release is blocked before any mutation."
+    ok "Pattern Patrol delivery records authorize every patrol commit."
 }
 
 acquire_delivery_lease() {
@@ -477,8 +475,8 @@ sync_protocol_mirror() {
 sync_protocol_mirror
 
 # A source_app/source_feature typo is persisted permanently and corrupts every
-# attribution view downstream. ADVISORY ONLY — no check ever blocks a release;
-# only git (and a failed migration apply above) can stop the ship.
+# attribution view downstream. This source-attribution check is ADVISORY ONLY;
+# the separate Pattern Patrol lifecycle authorization above remains fail-closed.
 info "Validating CX source attribution (advisory, never blocking)..."
 if ! pnpm check:source-attribution; then
     echo "" >&2
@@ -687,8 +685,10 @@ echo -e "  GitHub:  ${CYAN}https://github.com/${GITHUB_REPO}${NC}"
 echo ""
 
 # ── Advisory quality gates (post-push — never block the ship) ────────────────
-# Only git may stop a release. Each gate announces itself before it starts so
-# a slow check never looks hung. Failures scream; the ship already sailed.
+# These post-push gates cannot stop a release; the fail-closed Pattern Patrol
+# authorization already ran before release mutation. Each gate announces itself
+# before it starts so a slow check never looks hung. Failures scream; the ship
+# already sailed.
 if $NO_GATES; then
     warn "Skipping advisory quality gates (--no-gates)."
 else
