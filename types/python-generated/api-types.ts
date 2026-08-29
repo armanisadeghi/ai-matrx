@@ -5374,6 +5374,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mcp-connections/{server_id}/catalog-refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Catalog Refresh
+         * @description Force the server-wide tool catalog sync without touching user auth.
+         */
+        post: operations["catalog_refresh_mcp_connections__server_id__catalog_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mcp-connections/{server_id}": {
         parameters: {
             query?: never;
@@ -5910,6 +5930,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bitbucket-integrations/public/repositories/{workspace}/{repo_slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Public Repository
+         * @description Return bounded metadata for one public Bitbucket Cloud repository.
+         */
+        get: operations["read_public_repository_bitbucket_integrations_public_repositories__workspace___repo_slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bitbucket-integrations/public/repositories/{workspace}/{repo_slug}/pipelines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Public Pipelines
+         * @description Return bounded pipeline history for one public Bitbucket repository.
+         */
+        get: operations["read_public_pipelines_bitbucket_integrations_public_repositories__workspace___repo_slug__pipelines_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ebay-integrations/sandbox/taxonomy/default-category-tree": {
         parameters: {
             query?: never;
@@ -5955,6 +6015,26 @@ export interface paths {
         get: operations["public_video_vimeo_integrations_public_videos__video_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/postmark-integrations/sandbox/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Sandbox
+         * @description Run one synthetic payload validation that Postmark never delivers.
+         */
+        post: operations["validate_sandbox_postmark_integrations_sandbox_validate_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -28835,6 +28915,90 @@ export interface components {
             /** Resource Ref */
             resource_ref: string;
         };
+        /**
+         * BitbucketPublicPipeline
+         * @description A non-secret projection of one public repository pipeline.
+         */
+        BitbucketPublicPipeline: {
+            /** Uuid */
+            uuid: string;
+            /** Build Number */
+            build_number: number;
+            /** State */
+            state: string;
+            /** Created On */
+            created_on?: string | null;
+            /** Completed On */
+            completed_on?: string | null;
+            /** Ref Name */
+            ref_name?: string | null;
+            /** Commit Hash */
+            commit_hash?: string | null;
+        };
+        /**
+         * BitbucketPublicPipelines
+         * @description Bounded pipeline history for a confirmed public repository.
+         */
+        BitbucketPublicPipelines: {
+            /**
+             * Provider
+             * @default bitbucket
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default official_no_auth_public_pipelines
+             */
+            access?: string;
+            /** Repository */
+            repository: string;
+            /** Count */
+            count: number;
+            /** Pipelines */
+            pipelines: components["schemas"]["BitbucketPublicPipeline"][];
+        };
+        /**
+         * BitbucketPublicRepository
+         * @description A deliberately small projection of public repository metadata.
+         */
+        BitbucketPublicRepository: {
+            /**
+             * Provider
+             * @default bitbucket
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default official_no_auth_public_repository
+             */
+            access?: string;
+            /**
+             * Type
+             * @default repository
+             */
+            type?: string;
+            /** Uuid */
+            uuid: string;
+            /** Full Name */
+            full_name: string;
+            /** Name */
+            name: string;
+            /**
+             * Is Private
+             * @default false
+             */
+            is_private?: boolean;
+            /** Scm */
+            scm: string;
+            /** Language */
+            language?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Main Branch */
+            main_branch?: string | null;
+            /** Html Url */
+            html_url: string;
+        };
         /** BlockStageRequest */
         BlockStageRequest: {
             /**
@@ -50246,6 +50410,27 @@ export interface components {
              */
             notes?: string[];
         };
+        /**
+         * McpCatalogRefreshResult
+         * @description Admin-triggered server catalog reconciliation without user credentials.
+         */
+        McpCatalogRefreshResult: {
+            /** Server Id */
+            server_id: string;
+            /** Server Slug */
+            server_slug: string;
+            /** Inserted */
+            inserted?: string[];
+            /** Updated */
+            updated?: string[];
+            /** Deactivated */
+            deactivated?: string[];
+            /**
+             * Duration Ms
+             * @default 0
+             */
+            duration_ms?: number;
+        };
         /** McpDiscoveredTool */
         McpDiscoveredTool: {
             /** Name */
@@ -56311,6 +56496,38 @@ export interface components {
          * @enum {string}
          */
         PostPrepOption: "none" | "translation" | "summarization" | "expansion" | "fact_checking";
+        /**
+         * PostmarkSandboxResult
+         * @description Safe receipt for the official API_TEST non-delivery operation.
+         */
+        PostmarkSandboxResult: {
+            /**
+             * Provider
+             * @default postmark
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default official_public_test_token
+             */
+            access?: string;
+            /**
+             * Delivered
+             * @default false
+             */
+            delivered?: boolean;
+            /**
+             * Error Code
+             * @default 0
+             */
+            error_code?: number;
+            /** Message */
+            message: string;
+            /** Message Id */
+            message_id: string;
+            /** Submitted At */
+            submitted_at: string;
+        };
         /**
          * PreFetchedUrl
          * @description A webpage entry that has already been scraped by the client.
@@ -84761,6 +84978,37 @@ export interface operations {
             };
         };
     };
+    catalog_refresh_mcp_connections__server_id__catalog_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["McpCatalogRefreshResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     disconnect_mcp_connections__server_id__delete: {
         parameters: {
             query?: never;
@@ -85723,6 +85971,70 @@ export interface operations {
             };
         };
     };
+    read_public_repository_bitbucket_integrations_public_repositories__workspace___repo_slug__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace: string;
+                repo_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BitbucketPublicRepository"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_public_pipelines_bitbucket_integrations_public_repositories__workspace___repo_slug__pipelines_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace: string;
+                repo_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BitbucketPublicPipelines"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     default_category_tree_ebay_integrations_sandbox_taxonomy_default_category_tree_get: {
         parameters: {
             query: {
@@ -85815,6 +86127,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    validate_sandbox_postmark_integrations_sandbox_validate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostmarkSandboxResult"];
                 };
             };
         };

@@ -13848,6 +13848,49 @@
         }
       }
     },
+    "/mcp-connections/{server_id}/catalog-refresh": {
+      "post": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Catalog Refresh",
+        "description": "Force the server-wide tool catalog sync without touching user auth.",
+        "operationId": "catalog_refresh_mcp_connections__server_id__catalog_refresh_post",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpCatalogRefreshResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mcp-connections/{server_id}": {
       "delete": {
         "tags": [
@@ -15134,6 +15177,110 @@
         }
       }
     },
+    "/bitbucket-integrations/public/repositories/{workspace}/{repo_slug}": {
+      "get": {
+        "tags": [
+          "Bitbucket Integrations"
+        ],
+        "summary": "Read Public Repository",
+        "description": "Return bounded metadata for one public Bitbucket Cloud repository.",
+        "operationId": "read_public_repository_bitbucket_integrations_public_repositories__workspace___repo_slug__get",
+        "parameters": [
+          {
+            "name": "workspace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace"
+            }
+          },
+          {
+            "name": "repo_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Repo Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BitbucketPublicRepository"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bitbucket-integrations/public/repositories/{workspace}/{repo_slug}/pipelines": {
+      "get": {
+        "tags": [
+          "Bitbucket Integrations"
+        ],
+        "summary": "Read Public Pipelines",
+        "description": "Return bounded pipeline history for one public Bitbucket repository.",
+        "operationId": "read_public_pipelines_bitbucket_integrations_public_repositories__workspace___repo_slug__pipelines_get",
+        "parameters": [
+          {
+            "name": "workspace",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace"
+            }
+          },
+          {
+            "name": "repo_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Repo Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BitbucketPublicPipelines"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ebay-integrations/sandbox/taxonomy/default-category-tree": {
       "get": {
         "tags": [
@@ -15277,6 +15424,28 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/postmark-integrations/sandbox/validate": {
+      "post": {
+        "tags": [
+          "Postmark Integrations"
+        ],
+        "summary": "Validate Sandbox",
+        "description": "Run one synthetic payload validation that Postmark never delivers.",
+        "operationId": "validate_sandbox_postmark_integrations_sandbox_validate_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostmarkSandboxResult"
                 }
               }
             }
@@ -74529,6 +74698,214 @@
         ],
         "title": "BingSiteBindingRequest"
       },
+      "BitbucketPublicPipeline": {
+        "properties": {
+          "uuid": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 3,
+            "title": "Uuid"
+          },
+          "build_number": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Build Number"
+          },
+          "state": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "State"
+          },
+          "created_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created On"
+          },
+          "completed_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed On"
+          },
+          "ref_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ref Name"
+          },
+          "commit_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit Hash"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "uuid",
+          "build_number",
+          "state"
+        ],
+        "title": "BitbucketPublicPipeline",
+        "description": "A non-secret projection of one public repository pipeline."
+      },
+      "BitbucketPublicPipelines": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "bitbucket"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "official_no_auth_public_pipelines"
+          },
+          "repository": {
+            "type": "string",
+            "title": "Repository"
+          },
+          "count": {
+            "type": "integer",
+            "maximum": 10,
+            "minimum": 0,
+            "title": "Count"
+          },
+          "pipelines": {
+            "items": {
+              "$ref": "#/components/schemas/BitbucketPublicPipeline"
+            },
+            "type": "array",
+            "title": "Pipelines"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "repository",
+          "count",
+          "pipelines"
+        ],
+        "title": "BitbucketPublicPipelines",
+        "description": "Bounded pipeline history for a confirmed public repository."
+      },
+      "BitbucketPublicRepository": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "bitbucket"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "official_no_auth_public_repository"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "repository"
+          },
+          "uuid": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 3,
+            "title": "Uuid"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 257,
+            "minLength": 3,
+            "title": "Full Name"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "is_private": {
+            "type": "boolean",
+            "title": "Is Private",
+            "default": false
+          },
+          "scm": {
+            "type": "string",
+            "title": "Scm"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "main_branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Main Branch"
+          },
+          "html_url": {
+            "type": "string",
+            "title": "Html Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "uuid",
+          "full_name",
+          "name",
+          "scm",
+          "html_url"
+        ],
+        "title": "BitbucketPublicRepository",
+        "description": "A deliberately small projection of public repository metadata."
+      },
       "BlockStageRequest": {
         "properties": {
           "organization_id": {
@@ -130448,6 +130825,51 @@
         ],
         "title": "MaskResponse"
       },
+      "McpCatalogRefreshResult": {
+        "properties": {
+          "server_id": {
+            "type": "string",
+            "title": "Server Id"
+          },
+          "server_slug": {
+            "type": "string",
+            "title": "Server Slug"
+          },
+          "inserted": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Inserted"
+          },
+          "updated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Updated"
+          },
+          "deactivated": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Deactivated"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "title": "Duration Ms",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_id",
+          "server_slug"
+        ],
+        "title": "McpCatalogRefreshResult",
+        "description": "Admin-triggered server catalog reconciliation without user credentials."
+      },
       "McpDiscoveredTool": {
         "properties": {
           "name": {
@@ -144749,6 +145171,52 @@
           "fact_checking"
         ],
         "title": "PostPrepOption"
+      },
+      "PostmarkSandboxResult": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "postmark"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "official_public_test_token"
+          },
+          "delivered": {
+            "type": "boolean",
+            "title": "Delivered",
+            "default": false
+          },
+          "error_code": {
+            "type": "integer",
+            "title": "Error Code",
+            "default": 0
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "message_id": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F-]{36}$",
+            "title": "Message Id"
+          },
+          "submitted_at": {
+            "type": "string",
+            "title": "Submitted At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "message",
+          "message_id",
+          "submitted_at"
+        ],
+        "title": "PostmarkSandboxResult",
+        "description": "Safe receipt for the official API_TEST non-delivery operation."
       },
       "PreFetchedUrl": {
         "properties": {
