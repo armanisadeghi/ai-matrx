@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-29T192327Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-29T19:24:46.422Z",
-  "summary": "Independent adversarial certification started for exact Batch 2 candidate.",
+  "state": "closed",
+  "updatedAt": "2026-08-29T19:29:31.163Z",
+  "summary": "Batch 2 lifecycle closed; five schema-backed reads remain assigned to the next P10 wave.",
   "source": "2026-08-29T192327Z.json",
-  "eventHash": "3db2b24ee4fce63afc1440f876cb0b4f79e3c3e896b1a1045f07bda4add17e95"
+  "eventHash": "b8411f2859f637fea78f54658755080490a512180556f9bf3fdd09dedd521061"
 }

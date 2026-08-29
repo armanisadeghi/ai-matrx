@@ -19,7 +19,8 @@
 ### Batch 2 candidate and proof
 
 - Permanent run `2026-08-29T192327Z` owns exact candidate
-  `e50911c1cb1540d437de227662b545addb0dff3f`. The independently certified repair unit is path-scoped
+  `e50911c1cb1540d437de227662b545addb0dff3f`, independently **CERTIFIED** by
+  `/root/p10_batch2_certifier`. The repair unit is path-scoped
   to `features/ai-models/{service.ts,FEATURE.md}` and
   `features/agents/{FEATURE.md,redux/agent-definition/converters.ts}`; a shared-checkout integration
   commit preserved the source edits alongside unrelated work, so unrelated paths are not batch
@@ -28,10 +29,9 @@
   and JSONB ingress plus generated-compatible update builders. Agent-definition conversion removed
   24 of 29 `as unknown as` casts and all four `?? {}` fallbacks by validating model tiers,
   directives, UI gates, skill/tool configuration, and organization identity at the boundary.
-- The four focused suites / 16 tests pass; scoped ESLint has zero errors and one unchanged barrel
-  warning; scoped diff checks and the patrol-manifest contract pass. Full type-check passed before
-  the patrol edits and currently reports only concurrent errors in unowned
-  `features/agent-comparison/modes/*/redux/thunks.ts`; neither candidate source file has a diagnostic.
+- Independent proof passed seven focused suites / 24 tests, the full type-check, exact four-path
+  diff checks, runtime organization-ID cases, and adversarial parser review. Scoped ESLint has zero
+  errors and one unchanged barrel warning; the patrol-manifest contract also passes.
 - Whole-repository ratchet after the repairs remains open at 7,850 hatches. Five categories exceed
   the frozen baseline: `as unknown as` +267, `Record<string, any>` +4, non-null assertions +10,
   `?? {}` +137, and `?? ""` +876. This is not a zero proof and maintenance mode is not allowed.
@@ -46,6 +46,8 @@
   placed at ingress and writes are constructed from generated shapes. The detector should rank
   whole-file disables and concentrated generated-boundary casts separately, and identify groups
   that lack a canonical runtime schema so the next patrol can route them directly to schema work.
+- Permanent run `2026-08-29T192327Z` is closed; its authority is published at
+  `refs/heads/patrol-runs/P10/2026-08-29T192327Z`, and the candidate is an ancestor of `origin/main`.
 
 ---
 

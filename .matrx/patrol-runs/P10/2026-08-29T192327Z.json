@@ -43,6 +43,73 @@
       ],
       "previousEventHash": "deec7ea11fc196bf90f34055897b7a6bba8f4f2841105728dc8945c27b6c2464",
       "eventHash": "3db2b24ee4fce63afc1440f876cb0b4f79e3c3e896b1a1045f07bda4add17e95"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-29T19:29:11.722Z",
+      "actor": "/root/p10_batch2_certifier",
+      "summary": "CERTIFIED exact Batch 2 candidate; no batch-caused defect.",
+      "evidence": [
+        "Exact four-path diff and diff-check PASS"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "e50911c1cb1540d437de227662b545addb0dff3f",
+        "certifierTaskId": "/root/p10_batch2_certifier",
+        "checks": [
+          "Full type-check PASS",
+          "Focused Jest 7 suites and 24 tests PASS",
+          "Scoped ESLint 0 errors; one unchanged barrel warning",
+          "Runtime organization identity and ingress parser contracts PASS"
+        ]
+      },
+      "previousEventHash": "3db2b24ee4fce63afc1440f876cb0b4f79e3c3e896b1a1045f07bda4add17e95",
+      "eventHash": "46f1491b1f86a0679cf1737008451865bed07f4c35899fdd13f53541b607484b"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-29T19:29:16.395Z",
+      "actor": "/root",
+      "summary": "Certified Batch 2 is an ancestor of origin/main; queue delivery record.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P10/2026-08-29T192327Z"
+      ],
+      "delivery": {
+        "candidateSha": "e50911c1cb1540d437de227662b545addb0dff3f",
+        "preservedRef": "refs/heads/patrol-runs/P10/2026-08-29T192327Z"
+      },
+      "previousEventHash": "46f1491b1f86a0679cf1737008451865bed07f4c35899fdd13f53541b607484b",
+      "eventHash": "108f40cfdaac88e9eeda08990da3c8a855384916a0c0271901b05fa8f37c5b96"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-29T19:29:23.300Z",
+      "actor": "/root",
+      "summary": "Batch 2 delivered to origin/main without invoking the serialized release lane.",
+      "evidence": [
+        "origin/main:d6b3d6dc53"
+      ],
+      "delivery": {
+        "candidateSha": "e50911c1cb1540d437de227662b545addb0dff3f",
+        "preservedRef": "refs/heads/patrol-runs/P10/2026-08-29T192327Z",
+        "integratedSha": "d6b3d6dc53",
+        "release": "unreleased"
+      },
+      "previousEventHash": "108f40cfdaac88e9eeda08990da3c8a855384916a0c0271901b05fa8f37c5b96",
+      "eventHash": "58fefd1425b4e57231b96d364e39b03330c05febd2ec6c3cc47bf162ea26e8dd"
+    },
+    {
+      "sequence": 7,
+      "state": "closed",
+      "at": "2026-08-29T19:29:31.163Z",
+      "actor": "/root",
+      "summary": "Batch 2 lifecycle closed; five schema-backed reads remain assigned to the next P10 wave.",
+      "evidence": [],
+      "previousEventHash": "58fefd1425b4e57231b96d364e39b03330c05febd2ec6c3cc47bf162ea26e8dd",
+      "eventHash": "b8411f2859f637fea78f54658755080490a512180556f9bf3fdd09dedd521061"
     }
   ]
 }
