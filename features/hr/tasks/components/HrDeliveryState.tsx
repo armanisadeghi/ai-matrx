@@ -115,7 +115,38 @@ function stateOf(notice: HrInboxNotice): { label: string; tone: "ok" | "warn" | 
     if (sentence) return { label: sentence, tone: "muted" };
     if (notice.status === "deferred") return { label: "deferred — quiet hours", tone: "muted" };
     if (notice.sent_at) return { label: "sent", tone: "muted" };
-    return { label: notice.status || "queued", tone: "muted" };
+    return { label: statusLabel(notice.status), tone: "muted" };
+}
+
+/**
+ * 🚨 THE LAST PLACE A RAW KEY COULD STILL REACH AN HR MANAGER, AND IT DID.
+ *
+ * This fallthrough used to be `notice.status || "queued"` — the one line in this file that
+ * printed one of our own snake_case enum values verbatim, in the same component whose whole
+ * reason for existing is that internal spellings stop at the database. It went unnoticed
+ * because the four statuses it could produce ("pending", "in_progress", …) read almost like
+ * English. `render_pending` does not, and it is a live status the moment the HR workflow
+ * spine writes a notice whose words are still being rendered
+ * (aidream/services/notifications/render_pass.py).
+ *
+ * So the mapping is explicit and the fallthrough is a WORD, not a key. Every one of these
+ * says the same true thing to a person waiting on a notice: it is on its way.
+ */
+const STATUS_LABEL: Record<string, string> = {
+    pending: "queued",
+    in_progress: "sending…",
+    // The notice exists and its words are being written from the event's template. From the
+    // reader's side that is indistinguishable from queued, and saying anything more would be
+    // describing our pipeline to somebody approving a leave request.
+    render_pending: "queued",
+    render_in_progress: "queued",
+    succeeded: "delivered",
+    skipped: "not sent",
+};
+
+function statusLabel(status: string | null | undefined): string {
+    if (!status) return "queued";
+    return STATUS_LABEL[status] ?? "queued";
 }
 
 export function HrDeliveryState({ notices }: { notices: HrInboxNotice[] | undefined }) {
