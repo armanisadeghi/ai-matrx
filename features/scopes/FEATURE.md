@@ -175,6 +175,9 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-08-29 — `conversation_files` now authorizes the actual `chat.conversation`
+  row through `can_view_chat_conversation`; it never routes a chat UUID through
+  the legacy `conversation` entity token registered to `public.cx_conversation`.
 - 2026-08-29 — Quick-assign (target picker + `useSetContextValue`) rewired off the legacy
   scope-system slices onto canonical paths: new `ensureScopeTypeItems` thunk +
   `contextItemsByTypeId` catalogs on `scopesSlice`, new `setContextValue` write thunk over the
