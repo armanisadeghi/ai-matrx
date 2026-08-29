@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260829T142359Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-29T14:30:15.520Z",
-  "summary": "Certified P1 candidate is integrated on origin/main and queued for the serialized release lane.",
+  "state": "closed",
+  "updatedAt": "2026-08-29T14:30:58.733Z",
+  "summary": "P1 retry closed: one verified rule-citation dead end fixed, independently certified, integrated, and released; live automation restored to ACTIVE.",
   "source": "20260829T142359Z.json",
-  "eventHash": "0c3e84e4ee160f4c02969b631651a13b56ef3b0ae364d85bd1bfb2836ebec08d"
+  "eventHash": "fe2ac9a7880aecc55dd10647d231c765118b856a3223be086a01794e2e926f60"
 }
