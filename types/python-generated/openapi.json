@@ -15067,6 +15067,50 @@
         }
       }
     },
+    "/spotify/public-metadata": {
+      "get": {
+        "tags": [
+          "Spotify"
+        ],
+        "summary": "Get Public Metadata",
+        "operationId": "get_public_metadata_spotify_public_metadata_get",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "title": "Url"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpotifyPublicMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/outreach/inbound/gmail/{token}": {
       "post": {
         "tags": [
@@ -129063,6 +129107,33 @@
           "principal": {
             "$ref": "#/components/schemas/MandateTestPrincipal"
           },
+          "holder_type": {
+            "type": "string",
+            "title": "Holder Type",
+            "default": "agent"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Id"
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -168367,6 +168438,120 @@
           "plans"
         ],
         "title": "SplitPlanResponse"
+      },
+      "SpotifyPublicMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "spotify_public_metadata",
+            "title": "Kind",
+            "default": "spotify_public_metadata"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "resource_type": {
+            "type": "string",
+            "enum": [
+              "track",
+              "album",
+              "artist",
+              "playlist",
+              "episode",
+              "show"
+            ],
+            "title": "Resource Type"
+          },
+          "resource_id": {
+            "type": "string",
+            "title": "Resource Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "provider_name": {
+            "type": "string",
+            "const": "Spotify",
+            "title": "Provider Name",
+            "default": "Spotify"
+          },
+          "provider_url": {
+            "type": "string",
+            "title": "Provider Url"
+          },
+          "embed_url": {
+            "type": "string",
+            "title": "Embed Url"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "thumbnail_width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Width"
+          },
+          "thumbnail_height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Height"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_url",
+          "resource_type",
+          "resource_id",
+          "title",
+          "provider_url",
+          "embed_url"
+        ],
+        "title": "SpotifyPublicMetadata",
+        "description": "Safe projection of one public Spotify oEmbed response."
       },
       "SpreadsheetSpec": {
         "properties": {

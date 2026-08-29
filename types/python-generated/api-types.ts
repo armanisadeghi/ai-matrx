@@ -5863,6 +5863,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/spotify/public-metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Public Metadata */
+        get: operations["get_public_metadata_spotify_public_metadata_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/outreach/inbound/gmail/{token}": {
         parameters: {
             query?: never;
@@ -49612,6 +49629,15 @@ export interface components {
             candidate_label: string;
             candidate: components["schemas"]["MandateCandidate"];
             principal: components["schemas"]["MandateTestPrincipal"];
+            /**
+             * Holder Type
+             * @default agent
+             */
+            holder_type?: string;
+            /** Run Id */
+            run_id?: string | null;
+            /** Workflow Id */
+            workflow_id?: string | null;
             /** Agent Id */
             agent_id?: string | null;
             /** Definition Agent Id */
@@ -65825,6 +65851,49 @@ export interface components {
         SplitPlanResponse: {
             /** Plans */
             plans: components["schemas"]["PlanRecord"][];
+        };
+        /**
+         * SpotifyPublicMetadata
+         * @description Safe projection of one public Spotify oEmbed response.
+         */
+        SpotifyPublicMetadata: {
+            /**
+             * Kind
+             * @default spotify_public_metadata
+             * @constant
+             */
+            __kind?: "spotify_public_metadata";
+            /** Source Url */
+            source_url: string;
+            /**
+             * Resource Type
+             * @enum {string}
+             */
+            resource_type: "track" | "album" | "artist" | "playlist" | "episode" | "show";
+            /** Resource Id */
+            resource_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Provider Name
+             * @default Spotify
+             * @constant
+             */
+            provider_name?: "Spotify";
+            /** Provider Url */
+            provider_url: string;
+            /** Embed Url */
+            embed_url: string;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+            /** Thumbnail Width */
+            thumbnail_width?: number | null;
+            /** Thumbnail Height */
+            thumbnail_height?: number | null;
         };
         /**
          * SpreadsheetSpec
@@ -85096,6 +85165,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ZoteroPublicLibraryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_metadata_spotify_public_metadata_get: {
+        parameters: {
+            query: {
+                url: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpotifyPublicMetadata"];
                 };
             };
             /** @description Validation Error */
