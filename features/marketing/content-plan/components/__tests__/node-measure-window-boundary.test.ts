@@ -11,6 +11,17 @@ describe("Node measurement window bundle boundary", () => {
     join(componentsDirectory, "NodeMeasureWindow.tsx"),
     "utf8",
   );
+  const measureHostSource = readFileSync(
+    join(
+      componentsDirectory,
+      "../../../cms/components/measure/CmsPageMeasureLazy.tsx",
+    ),
+    "utf8",
+  );
+  const pageEditorSource = readFileSync(
+    join(componentsDirectory, "../../../cms/components/PageEditor.tsx"),
+    "utf8",
+  );
 
   it("keeps WindowPanel and the measured workspace behind one dynamic edge", () => {
     expect(cardSource).toContain('dynamic(() => import("./NodeMeasureWindow")');
@@ -26,7 +37,17 @@ describe("Node measurement window bundle boundary", () => {
       'from "@/features/window-panels/WindowPanel"',
     );
     expect(windowSource).toContain(
+      'from "@/features/cms/components/measure/CmsPageMeasureLazy"',
+    );
+    expect(windowSource).not.toContain(
       'from "@/features/cms/components/measure/CmsPageMeasure"',
+    );
+    expect(measureHostSource).toContain(
+      'lazy(() => import("./CmsPageMeasure"))',
+    );
+    expect(pageEditorSource).toContain("<CmsPageMeasureLazy");
+    expect(pageEditorSource).not.toContain(
+      'lazy(() => import("./measure/CmsPageMeasure"))',
     );
   });
 });

@@ -8,7 +8,7 @@
  * prevents either heavy graph from entering the Content Plan route at boot.
  */
 
-import CmsPageMeasure from "@/features/cms/components/measure/CmsPageMeasure";
+import { CmsPageMeasureLazy } from "@/features/cms/components/measure/CmsPageMeasureLazy";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
 export default function NodeMeasureWindow({
@@ -31,7 +31,7 @@ export default function NodeMeasureWindow({
       minHeight={320}
       bodyClassName="flex min-h-0 flex-col overflow-auto p-0"
     >
-      <CmsPageMeasure webPageId={webPageId} />
+      <CmsPageMeasureLazy webPageId={webPageId} />
     </WindowPanel>
   );
 }

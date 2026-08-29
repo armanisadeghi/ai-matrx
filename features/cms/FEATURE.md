@@ -50,7 +50,8 @@ build plan this feature is part of (project P5).
   record" when the join is absent. With no node but a paired `web_site_id`, the Plan tab runs the
   real adopt (`bridgeAdopt` → aidream `cms-align`) behind a confirm and prints the server's
   per-item result verbatim; with no pairing it says so and links `/marketing/content-plan`.
-  **Measure** (`components/measure/CmsPageMeasure.tsx`, `React.lazy` in-gate) is the page's AFTER:
+  **Measure** (`components/measure/CmsPageMeasure.tsx`, reached through the one
+  shared `CmsPageMeasureLazy.tsx` React.lazy front door) is the page's AFTER:
   with `web_page_id` set it mounts the canonical `features/marketing/components/pages/PageWorkspace`
   WHOLESALE — Page Analyzer, open findings, snapshots, keyword suggestions, Search Console — by
   supplying the site context that workspace reads (`MarketingSiteProvider` +
@@ -519,6 +520,10 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- **2026-08-29:** CMS and Content Plan now share one
+  `CmsPageMeasureLazy` loading front door for the canonical measured-page
+  workspace. The Content Plan measurement window can stay user-gated without
+  statically importing the workspace or creating a duplicate lazy chunk path.
 - **2026-08-28:** Collection item controls now opt into the shared 44px responsive touch floor, and the per-row Edit column stays pinned at the tablet/mobile edge. Generic not-found and Access Gate exit actions use the same floor, so stale CMS links retain ordinary touch access at every declared breakpoint.
 - **2026-08-25:** Updated CMS agent-surface guidance to the consolidated `surface-authoring` lifecycle and the separately owned `context-menu-v3` contract.
 - `2026-08-24` — `/cms/[siteId]/settings` now has a visible semantic Settings

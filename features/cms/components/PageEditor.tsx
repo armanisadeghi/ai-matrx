@@ -24,6 +24,7 @@ import { useCmsResearchLineage } from "@/features/cms/hooks/useCmsResearchLineag
 import { useCmsPagePlanContext } from "@/features/cms/hooks/useCmsPagePlanContext";
 import { ResearchLineagePanel } from "@/features/cms/components/ResearchLineagePanel";
 import { PageSeoPlanSection } from "@/features/cms/components/PageSeoPlanSection";
+import { CmsPageMeasureLazy } from "@/features/cms/components/measure/CmsPageMeasureLazy";
 import {
   CmsPageAiActionDialog,
   type CmsPageAiIntent,
@@ -129,16 +130,6 @@ type EditorTab = CmsPageEditorTab;
  * FRAGMENTATION LAW).
  */
 const PagePlanTab = lazy(() => import("./PagePlanTab"));
-
-/**
- * The Measure tab is the page's AFTER (docs/handoffs/cms-page-hub.md W2): the
- * measured page this CMS page is joined to — Page Analyzer, open findings,
- * snapshots, Search Console. It mounts the canonical `PageWorkspace` from the
- * marketing route wholesale; a tab that reuses a route component is free, and
- * rebuilding a poorer copy of it is the Inventory Law violation this avoids.
- * `React.lazy` for the same reason as the Plan tab above.
- */
-const CmsPageMeasure = lazy(() => import("./measure/CmsPageMeasure"));
 
 // ── Surface write-target input validation ──────────────────────────────
 // The writeback seam (`features/surfaces/runtime/surface-writeback.ts`)
@@ -994,18 +985,7 @@ export default function PageEditor({
               {activeTab === "measure" && page && (
                 <div className="h-full overflow-hidden">
                   {page.web_page_id ? (
-                    <Suspense
-                      fallback={
-                        <div className="flex h-full items-center justify-center gap-2 text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-sm">
-                            Loading the measured page…
-                          </span>
-                        </div>
-                      }
-                    >
-                      <CmsPageMeasure webPageId={page.web_page_id} />
-                    </Suspense>
+                    <CmsPageMeasureLazy webPageId={page.web_page_id} />
                   ) : (
                     <div className="flex h-full items-center justify-center p-6">
                       <div className="max-w-md text-center">

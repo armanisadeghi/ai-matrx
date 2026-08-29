@@ -824,8 +824,10 @@ last captured) and, on demand, the whole canonical AFTER surface: **Open
 measurement** mounts `CmsPageMeasure` — i.e. `PageWorkspace` wholesale — in a
 `WindowPanel` beside the panel through the one user-gated `NodeMeasureWindow`
 dynamic front door; route-shared `NodeMeasureCard` never imports either heavy
-graph. New-tab doors go to the page workspace and the CMS Measure tab. Nothing
-here re-implements a card
+graph. The window consumes CMS's one shared `CmsPageMeasureLazy` host, so the
+canonical measured workspace still has one loading edge across both surfaces.
+New-tab doors go to the page workspace and the CMS Measure tab. Nothing here
+re-implements a card
 (Inventory Law). Every absent-join state says which one it is and offers no fake
 CTA: unbuilt · unpublished · resolving · **live but not joined to a crawled page**
 · loading · read-failed (`InlineQueryError`, never "no data") · measured-but-not-in-GSC-yet.
@@ -878,8 +880,8 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 - 2026-08-29 — **The measurement window stays behind its user-action bundle
   boundary.** `NodeMeasureCard` no longer statically imports `WindowPanel` into
   the Content Plan route. One dynamic `NodeMeasureWindow` front door now owns
-  both the window shell and canonical `CmsPageMeasure`; a source contract
-  prevents the eager edge from returning.
+  the window shell and reaches canonical `CmsPageMeasure` through the CMS-owned
+  shared lazy host; a source contract prevents either eager edge from returning.
 - 2026-08-29 — **Shape recommendations route through their registered UI.**
   The python-owned `plan_shape_recommendation` row has a complete emitted JSON
   schema and an active DB component, but its unflattened `data[]` is null. The
