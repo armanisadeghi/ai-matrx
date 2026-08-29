@@ -37,8 +37,11 @@ export default async function MyTimesheetPage({
       <PageHeader>
         <h1 className="text-sm font-semibold">My timesheet</h1>
       </PageHeader>
-      {/* `(core)` body law: h-full overflow-hidden, with the scroll owned inside. */}
-      <div className="h-full overflow-y-auto overflow-x-hidden">
+      {/* `(core)` body law: h-full overflow-hidden, with the scroll owned inside — and the
+          route's own `pt-[var(--shell-header-h)]`, because `.shell-main` starts BEHIND the
+          transparent shell header. Without it this page's first row was painted across the
+          injected "My timesheet" title. */}
+      <div className="h-full overflow-y-auto overflow-x-hidden pt-[var(--shell-header-h)]">
         <Suspense
           fallback={
             <div className="h-full animate-pulse bg-card/40" aria-label="Loading your timesheet" />

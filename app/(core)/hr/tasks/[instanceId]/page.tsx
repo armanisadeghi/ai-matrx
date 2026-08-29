@@ -34,7 +34,13 @@ export default async function HrTaskInstancePage({
             <PageHeader>
                 <h1 className="text-sm font-semibold">HR request</h1>
             </PageHeader>
-            <div className="h-full overflow-hidden">
+            {/*
+              The shell-header offset every `(core)` route owns for itself. Without it the
+              panel's own top row — the "← All HR tasks" link and the restricted-record
+              notice — was drawn inside the header band, behind `.shell-header-inject`, so
+              the back link rendered perfectly and could not be clicked.
+            */}
+            <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
                 <Suspense
                     fallback={
                         <div className="h-full animate-pulse bg-card/40" aria-label="Loading this request" />

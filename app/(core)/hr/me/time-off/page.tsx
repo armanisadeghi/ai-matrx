@@ -25,7 +25,7 @@ export default function HrMeTimeOffPage() {
       <PageHeader>
         <h1 className="text-sm font-semibold">My time off</h1>
       </PageHeader>
-      <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex h-full flex-col overflow-hidden pt-[var(--shell-header-h)]">
         <div className="min-h-0 flex-1 overflow-y-auto">
           <MyTimeOffSurface />
         </div>
