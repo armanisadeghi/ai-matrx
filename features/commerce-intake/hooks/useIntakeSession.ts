@@ -558,7 +558,23 @@ export function useIntakeSession(
     artifactsCountRef.current = artifacts.length;
   }, [artifacts]);
 
+  // Scans are SERIALIZED: two rapid codes must never interleave (an
+  // overlapping call's freshly created item being closed photo-less by the
+  // other's superseded retry was the failure mode). Each call chains behind
+  // the previous one.
+  const qrChainRef = useRef<Promise<unknown>>(Promise.resolve());
+
   const onQrCode = useCallback(
+    (code: string): Promise<"assigned" | "switched"> => {
+      const run = qrChainRef.current.then(() => processQrCode(code));
+      qrChainRef.current = run.catch(() => undefined);
+      return run;
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- processQrCode below
+    [],
+  );
+
+  const processQrCode = useCallback(
     async (code: string): Promise<"assigned" | "switched"> => {
       const trimmed = code.trim();
       if (!trimmed) return "assigned";
@@ -599,6 +615,9 @@ export function useIntakeSession(
         }
         // superseded: the session now holds a different, freshly adopted item
         if (await assignToCurrent()) return "assigned";
+        // The adopted item already carries THIS code (an overlapping create
+        // landed what we wanted) — never close it photo-less; it is current.
+        if (currentAssetRef.current?.qrCode === trimmed) return "switched";
       }
       toast.error("Could not switch items — scan the code again.");
       return "assigned";
