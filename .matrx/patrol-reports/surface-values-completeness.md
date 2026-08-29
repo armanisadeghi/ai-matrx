@@ -31,11 +31,11 @@ Locate anchors, applicable write/mirror contract, honest readiness, independent
 certification, and browser proof are recorded. A blocked row is retained and
 the next ready row replaces it toward the three-Surface floor.
 
-| Rank | Queue key                          | Canonical Surface ID target            | Host and interaction path                                                                                              | Status  |
-| ---: | ---------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------- |
-|    1 | `keywordQuickAnswersWindow`        | `matrx-user/keyword-quick-answers`     | Keyword Value Workbench → **Quick Answers**                                                                            | `ready` |
-|    2 | `keywordResearchWindow`            | `matrx-user/keyword-research`          | Any authenticated AppShell route → **Tools** → **Keyword Research**                                                     | `ready` |
-|    3 | `pageResearchWindow`               | `matrx-user/page-research`             | `/marketing/content-plan/[siteId]` → select a page node → **Run research for this page**                                | `ready` |
+| Rank | Queue key                   | Canonical Surface ID target        | Host and interaction path                                                                | Status  |
+| ---: | --------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------- | ------- |
+|    1 | `keywordQuickAnswersWindow` | `matrx-user/keyword-quick-answers` | Keyword Value Workbench → **Quick Answers**                                              | `ready` |
+|    2 | `keywordResearchWindow`     | `matrx-user/keyword-research`      | Any authenticated AppShell route → **Tools** → **Keyword Research**                      | `ready` |
+|    3 | `pageResearchWindow`        | `matrx-user/page-research`         | `/marketing/content-plan/[siteId]` → select a page node → **Run research for this page** | `ready` |
 
 These three form the first coherent pilot family: all are registered floating
 marketing/research windows with canonical components and live openers but no
