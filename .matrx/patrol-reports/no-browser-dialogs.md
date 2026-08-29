@@ -1,53 +1,61 @@
 # P7 — No browser dialogs
 
-- Run date: 2026-08-13
-- Run kind: scheduled full-repository pass
+- Run date: 2026-08-29
+- Run kind: resumed usage-limit-aborted scheduled full-repository pass
 - Registry scope: full repository every run
-- Execution: isolated Codex worktree at `origin/main` (`b4b5464f2`, release `v0.4.561`)
+- Run record: `P7/01a00ab2-19eb-73c3-bb37-c2b6cacde9f9`
+- Base: `a88478e861364e6bd95bae53982b28f61cadb4fd`
+- Certified candidate: `f70638875cbae083e1b9f160ee32215e4ad2bb74`
+- Integration: candidate is an ancestor of `origin/main` at `9475f626461a99b028ec9f64144ade8fd30c181d`
+- Release: queued for the serialized release lane; no patrol-owned release was created
+
+## Orchestration reconciliation
+
+- The scheduled task had stopped at the usage limit before it created a controller-era permanent record, refreshed this report or memory, or emitted a useful inbox item. The abort is recorded as an orchestration failure, not a clean run.
+- Recreated the exact isolated automation worktree from current `origin/main`, installed its dependencies offline with the frozen lockfile, and created the missing append-only hash-chained run record.
+- Restored `pattern-patrol-p7-no-browser-dialogs` to the manifest-owned **ACTIVE** schedule: Thursdays and Sundays at 6:10 AM local time.
 
 ## Scope scanned
 
-- Ran the P7 call-pattern grep across all repository TypeScript and JavaScript sources, excluding dependency, build, coverage, and distribution trees.
-- Ran repo-wide ESLint scope resolution for `no-alert`, `no-restricted-globals`, and `no-restricted-properties` so canonical imported `confirm({...})` calls, local functions, comments/prose, and security fixtures were not misclassified.
-- Reverified the open P7 ledger item and both formerly manual files directly.
-- Full-pass result: **0 executable browser-dialog calls in 0 files**.
+- Ran the P7 call-pattern scan across repository TypeScript and JavaScript sources, excluding dependencies, build output, coverage, and distribution trees.
+- Ran scope-aware ESLint resolution for `no-alert`, `no-restricted-globals`, and `no-restricted-properties`, so imported canonical `confirm({...})` calls, local functions, comments, prose, security fixtures, and the PWA install event's legitimate `prompt()` method were not misclassified.
+- Verified the P7 sighting ledger. No earlier P7 sighting remained open.
+- Full-pass result before repair: **2 executable browser-native calls in 2 files**.
 
-## Approval routes
+## Findings and standing-authority repairs
 
-### Auto-fixed now
+1. `features/admin/taxonomy/TaxonomyAdminClient.tsx` used `window.confirm` before deleting a taxonomy node. It now awaits the canonical destructive `confirm({...})` host, preserves cancel-before-write control flow, and keeps the node identity and consequence in the acknowledgement.
+2. `features/content-ir/admin/KindVariantsTab.tsx` used `window.confirm` before deleting a presentation variant. It now awaits the same canonical host, preserves the fallback warning, and performs persistence only after approval.
 
-- **0 findings; 0 fixes.** No Tier M batch was created.
+- Fixed: **2 of 2 findings**.
+- Human decisions required: **0**.
+- Exception proposals: **0**.
+- Missing-evidence or missing-machinery tasks: **0**.
 
-### Manual approval requested
+## Baseline-delta verification
 
-- **0 findings.** No approval remains pending.
+- Pre-edit `pnpm type-check`: **PASS**.
+- Post-edit `pnpm type-check`: **PASS**.
+- Scope-aware P7 ESLint diagnostics: **4 → 0**. Each native call produced both `no-alert` and `no-restricted-properties`, so four diagnostics represent two calls.
+- Independent candidate-wide P7 scan: **0 findings**.
+- `git diff --check`: **PASS**.
+- Permanent run record verification: **PASS** with five valid hash-chained lifecycle events through `delivery_queued`.
+- Unchanged baseline-only issue: `TaxonomyAdminClient.tsx` already reports `react-hooks/set-state-in-effect`; the P7 batch did not create or worsen it.
+- Manifest contract drift decreased when P7 returned to ACTIVE. The three remaining Fleet Health prompt/project/worktree drifts are unrelated baseline machinery owned outside this patrol.
 
-### Backlog retained
+## Adversarial certification
 
-- **0 findings.** No item lacks evidence or a safe decision.
+- Verdict: **CERTIFIED** by `/root/p7_certifier` for exact candidate `f70638875cbae083e1b9f160ee32215e4ad2bb74`.
+- The certifier independently verified candidate identity, the 4→0 P7 delta, type-check, hash-chain validity, awaited cancel/confirm behavior, destructive sequencing, request queuing, and the pure opener's unchanged chunk boundary.
+- Exact-worktree browser proof was unavailable because the enforced preview lease belonged to the P3 patrol. The certifier accepted bounded static/component evidence because this batch changed only call sites—not the shared dialog implementation, layout, theme, responsive behavior, or chunk structure.
 
-## Prior open items resolved before this run
-
-- `features/administration/hindsight/components/EnrollmentDetailPanel.tsx` now uses the canonical imperative `confirm({...})` host for its destructive archive action.
-- `app/(dev)/demos/tests/slack/page.dev.tsx` now uses `TextInputDialog` for manual token entry.
-- Both replacements landed before this patrol in `460ff2dcc`, whose repository-wide single-rule scan reported zero P7 violations. That commit is an ancestor of release `v0.4.561`; the patrol applied no product-code mutation.
-
-## Verification and certification
-
-- Immutable pre-edit baseline: clean git worktree; `pnpm type-check` pass; `pnpm check:doctrine` pass with 11 advisory reuse notices; `pnpm check:tsconfig` pass with two inert `.next*` include notes; `pnpm check:ui-primitives` pass with 19 unchanged advisory findings; scope-aware P7 ESLint detector 0.
-- Post-report verification: `pnpm type-check` pass; doctrine remained the same 11 advisory reuse notices; tsconfig remained the same two inert `.next*` include notes; UI-primitives remained the same 19 advisory findings; scope-aware P7 ESLint detector remained 0.
-- Finalization gates: `pnpm check:migrations` silent; `pnpm sync-types` completed with `Type-check passed.` The live generators exposed unrelated drift in `types/database.types.ts`, `types/python-generated/api-types.ts`, and `types/python-generated/openapi.json`; P7's generated-file hard rule required discarding those tool-produced diffs, so no generated file is part of this patrol.
-- Adversarial certifier verdict: **NOT APPLICABLE — no Tier M fix batch**.
-- Browser proof: not required because this run changed no product code, shared primitive, interaction, layout, responsive behavior, theme behavior, or chunk boundary.
-
-## New baseline
+## New baseline and delivery
 
 - Executable P7 findings: **0 calls / 0 files**.
 - Approved exceptions: **0**.
-- Open ledger sightings: **0**.
+- Open P7 ledger sightings: **0**.
+- Candidate and certification authority refs are pushed. The certified candidate is integrated on `origin/main`; the permanent record remains truthfully `delivery_queued` until the normal serialized release lane records the containing version.
 
-## Loop health
+## Recursive learning
 
-- Available reports from the preceding month include finding-bearing and recovery runs on 2026-08-09 and 2026-08-12, so the all-clean threshold is not met and no longer cadence is proposed.
-- The earlier infrastructure-blocked preview attempt does not count as a batch rejection; the recovered alert batch was certified and shipped.
-- No recurring unregistered class was observed, so no Candidate-bench nomination was added.
+- A cheap P7 run still needs a permanent record before scanning: pre-prompt usage exhaustion otherwise leaves a stale clean report and blank inbox that can masquerade as success. The smallest next improvement is controller-side run initialization before worker token consumption.
