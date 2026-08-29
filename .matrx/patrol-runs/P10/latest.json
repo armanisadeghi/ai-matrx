@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-29T191203Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-29T19:12:04.164Z",
-  "summary": "Claimed disjoint ranked repair units for bounded parallel implementation.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-29T19:22:42.927Z",
+  "summary": "Certified Batch 1 is integrated on origin/main; queue delivery record.",
   "source": "2026-08-29T191203Z.json",
-  "eventHash": "4b7ac5c2f35e5188a30bbbccc768923700b48fbba92ef7428f5fda6eb7fe7730"
+  "eventHash": "6c3a6bbfbcba0e1d878d227a5e15e06b277a467b09f9e45d0fcc790e09f947c9"
 }
