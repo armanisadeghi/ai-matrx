@@ -22,10 +22,6 @@
 // chunk first loads.
 
 import React from "react";
-// Side-effect import (server graph): registers next/link into
-// @ai-matrx/tap-target's link registry so SSR renders the same link element
-// hydration will (the client-graph twin lives in DeferredSingletonWrapper).
-import "@/components/icons/tap-target-setup";
 // disaster
 import StoreProvider from "@/providers/StoreProvider";
 // disaster

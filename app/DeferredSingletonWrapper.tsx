@@ -31,9 +31,9 @@ import "@/features/window-panels/utils/lazy-bundle-guard";
 // this the icons would silently fall back.
 import "@/utils/icons/matrx-public-svg-registry";
 // Side-effect import: registers next/link into @ai-matrx/tap-target's link
-// registry for the CLIENT graph (Providers.tsx covers the server graph) —
-// unregistered, internal-href tap buttons render plain <a> and would
-// hydration-mismatch against the SSR output.
+// registry. This client module also executes during the SSR pass, so both
+// server render and hydration resolve the same link element; a Server
+// Component must never import the setup module (client-reference call).
 import "@/components/icons/tap-target-setup";
 
 import dynamic from "next/dynamic";
