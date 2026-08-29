@@ -43549,6 +43549,7 @@ export type Database = {
         }
         Returns: string
       }
+      _wf_failure_sentence: { Args: { p_class: string }; Returns: string }
       _wf_grant_step: { Args: { p_step: string }; Returns: number }
       _wf_holder_employments: {
         Args: {
