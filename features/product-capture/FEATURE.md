@@ -27,6 +27,13 @@ Stage lives on the item (`stage`: intake → analysis → research → review �
 
 Surfaces: `/manage` — stepper + stage list + per-item workspace with cumulative stage panels (analysis w/ split, research w/ weight-ranked price factors + unknowns→questions, questions w/ resubmit, grading gate, listing w/ approve + CSV/JSON export; publishing APIs are future scope). `/answer` — one question at a time, featured-image-first, choice chips / yes-no / text + voice (transcribed via `transcribeAudioFile`), answer/skip/defer.
 
+### The two process lanes (A/B test, 2026-08-29)
+
+Arman is testing WHERE processing starts; both lanes ship until one wins:
+
+- **SERVER lane** (`/tools/product-capture`): `closeItem` flips `capturing → captured`; the DB workflow trigger owns everything after (invariant 6). The client fires nothing.
+- **INSTANT lane** (`/tools/product-capture/instant`, `CaptureScreen mode="instant"`): a Process button runs the intake analysis FROM THE BROWSER through the mandate **`product_capture.instant_analysis`** (system default Holder: Electronics Intake Analyzer; identity lives in the DB — `useInstantAnalysis` never names an agent id) and streams the `electronics_intake_analysis` kind into `InstantProcessSheet` via `useLiveAgentRun` + `<LiveRunDisplay>` (the ONE stream pipeline; the kind component renders itself). Photos attach as multimodal message parts (`fileHandler.toContentPart` — never `user_input`); notes ride the agent's `dock_notes` variable. The result persists through the run's `onResult` seam — payload kind `instant_analysis` (raw kind object, verbatim; never shoehorned into the pipeline's `analysis` shape) — and the item goes **`capturing → processed` DIRECTLY, skipping `captured`, so the server lane's trigger can never double-process an instant item** (`service.markProcessed`). The lane distinction is which transition the item took; no new status value exists. Disclosure: the fixed job registers in the top Agents menu via `useDeclaredSurfaceMandates` (no page content — the disclosure law).
+
 ## Data model — deliberately minimal staging
 
 `migrations/workbench_product_capture_2026_08_28.sql` (applied live + certified 2026-08-28, ledger row recorded):
@@ -82,6 +89,7 @@ Reused, never reimplemented: camera runtime (`acquireCameraLease` / `CameraPrevi
 
 ## Change log
 
+- 2026-08-29 — v4, the INSTANT process lane (client-side A/B test): mandate `product_capture.instant_analysis` + payload kind `instant_analysis` (migration `workbench_product_capture_instant_mode_2026_08_29.sql`, applied live + ledgered), `useInstantAnalysis` (useLiveAgentRun over the mandate, photos as message parts, onResult persistence seam), `service.markProcessed` (capturing → processed skips the server trigger), `InstantProcessSheet` (LiveRunDisplay streaming drawer), `CaptureScreen mode="instant"` + Process pill, route `/tools/product-capture/instant`, nav "Instant Capture" + `BrainCircuit` shell icon, top-menu disclosure via `useDeclaredSurfaceMandates`. type-check green.
 - 2026-08-28 — v3, the AI listing pipeline: `stage` + `featured_file_id` on the item, `product_capture_question` (HITL queue) + `product_capture_payload` (jsonb-per-kind documents) tables (applied live + certified, ledgered; store decision documented above), `pipeline-types.ts` shape contracts, `pipeline-service.ts` (stages/questions/payloads/split/featured), `/manage` desktop-first stepper workspace (analysis+split, research, questions+resubmit, grading gate, listing approve + CSV/JSON export), `/answer` mobile quick-answer queue (image-first, voice transcription, skip/defer), featured-image strip with canonical `InitialCropWindow` crop reuse, nav "Product Pipeline" + `TableProperties` shell icon. type-check/eslint/scroll-chain green.
 
 - 2026-08-28 — Gestures + header fix (Arman's round-3 feedback): fixed the manage-page shell header (the pages wrapped self-injecting `RouteHeader` in a second `PageHeader`, splitting the center zone 50/50 — back button appeared mid-header and the title crushed); `MediaPager` swipeable viewer everywhere a file opens full-screen; `ItemSwipeRow` + `SwipeableRow` + `useLongPress` + `ItemActionsDrawer` give every list surface tap/swipe-left/swipe-right/long-press per the gesture contract; /all renders the card list on mobile (canonical table stays on desktop). type-check/eslint green.

@@ -292,6 +292,18 @@ export async function reopenItem(item: CaptureItem): Promise<CaptureItem> {
   return guardedItemWrite(item, () => ({ status: "capturing" }));
 }
 
+/**
+ * INSTANT-lane terminal write: `capturing → processed` DIRECTLY. The item
+ * never enters `captured`, so the server-side workflow trigger (which fires
+ * on the capturing → captured transition — see `closeItem`) can never
+ * double-process an item the client lane already analyzed. The lane
+ * distinction is which transition the item took, not a new status value.
+ */
+export async function markProcessed(item: CaptureItem): Promise<CaptureItem> {
+  if (item.status === "processed") return item;
+  return guardedItemWrite(item, () => ({ status: "processed" }));
+}
+
 /** Soft-delete an item. Its uploaded files stay in the org's file tree. */
 export async function deleteItem(itemId: string): Promise<void> {
   const { error } = await items()
