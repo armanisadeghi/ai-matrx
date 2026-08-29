@@ -30,8 +30,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/utils/supabase/client";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { guardedUpdate } from "@ai-matrx/data/db";
+import { readAllRows } from "@ai-matrx/data/db";
 
 import type {
   ArtifactKind,

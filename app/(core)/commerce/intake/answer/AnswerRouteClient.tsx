@@ -7,7 +7,7 @@
 
 import { LayoutGrid } from "lucide-react";
 
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import { ProductCaptureHeader } from "@/features/product-capture/components/ProductCaptureHeader";
 import { IntakeAnswerQueue } from "@/features/commerce-intake/components/IntakeAnswerQueue";
 
