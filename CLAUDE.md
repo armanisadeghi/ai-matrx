@@ -91,6 +91,7 @@ Arman plus dozens of agents edit this ONE checkout at once. `git add <your files
 | `(public)` | Marketing / legal / share / education / canvas. |
 | `(auth-pages)` | Login / signup. 🚨 A user bounced to auth NEVER loses their destination — ONE primitive owns it: [`utils/auth/FEATURE.md`](./utils/auth/FEATURE.md); read it before touching any auth page or `/login` redirect. |
 | `(kiosk)` | Shared-tablet HR punch surface (`/kiosk/[deviceId]`). The actor is a paired **device**, never a user — no session, no `AppShell`, no nav, deliberately ungated; it is not a `(core)` page and never gets auth or shell (see `app/(kiosk)/layout.tsx`). |
+| `(portal)` | Signed-in departed-member portal (`/portal/**`) without `AppShell`, org switcher, global search, or org-scoped navigation; contract: [`features/continued-access/FEATURE.md`](./features/continued-access/FEATURE.md). |
 | `(popup)` | Unused popup demo — fate undecided (D127). |
 | `(oauth-review)` | Google OAuth verification review surface. |
 

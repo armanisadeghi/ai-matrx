@@ -19,6 +19,7 @@ import Link from "next/link";
 import { Building2, Clock, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import {
   fetchContinuedAccessPortal,
   type ContinuedAccessOrganization,
@@ -109,6 +110,7 @@ function OrganizationPanel({ org }: { org: ContinuedAccessOrganization }) {
 }
 
 export function ContinuedAccessPortal({ organizationId }: { organizationId?: string }) {
+  const loginHref = useLoginHref();
   const [state, setState] = useState<
     | { status: "loading" }
     | { status: "signed_out"; message: string }
@@ -147,7 +149,7 @@ export function ContinuedAccessPortal({ organizationId }: { organizationId?: str
           <div className="rounded-lg border border-border bg-card p-5">
             <p className="text-sm">{state.message}</p>
             <Button asChild className="mt-4">
-              <Link href="/login">Sign in</Link>
+              <Link href={loginHref}>Sign in</Link>
             </Button>
           </div>
         )}
