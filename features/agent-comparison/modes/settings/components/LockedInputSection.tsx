@@ -6,8 +6,7 @@
  * Top section of the Settings-mode page. Contains everything that's held
  * CONSTANT across every column:
  *   - Agent + version picker (single, page-level)
- *   - Variable inputs (single set of values, page-level)
- *   - User message (single textarea, page-level)
+ *   - Canonical shared Smart Agent Input
  *
  * On Submit All, the parent thunk copies these values into every column's
  * per-conversation slices, then dispatches smartExecute per column. The
@@ -29,12 +28,12 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import SearchableSelect from "@/components/matrx/SearchableSelect";
 import type { Option } from "@/components/matrx/SearchableSelect";
 import { cn } from "@/lib/utils";
-import { setLocked, setLockedUserMessage, setLockedVariable } from "../redux/slice";
+import { SharedBattleInput } from "@/features/agent-comparison/shared/SharedBattleInput";
+import { setLocked } from "../redux/slice";
 import {
   selectLockedAgentId,
   selectLockedAgentVersion,
-  selectLockedUserMessage,
-  selectLockedVariables,
+  selectSettingsInputConversationId,
 } from "../redux/selectors";
 import { setLockedAgent, setLockedVersion } from "../redux/thunks";
 
@@ -42,8 +41,9 @@ export function LockedInputSection() {
   const dispatch = useAppDispatch();
   const agentId = useAppSelector(selectLockedAgentId);
   const agentVersion = useAppSelector(selectLockedAgentVersion);
-  const userMessage = useAppSelector(selectLockedUserMessage);
-  const lockedVariables = useAppSelector(selectLockedVariables);
+  const inputConversationId = useAppSelector(
+    selectSettingsInputConversationId,
+  );
 
   const agent = useAppSelector((s) =>
     agentId ? selectAgentById(s, agentId) : undefined,
@@ -115,8 +115,6 @@ export function LockedInputSection() {
       }),
     );
   };
-
-  const variableDefs = agent?.variableDefinitions ?? [];
 
   return (
     <div className="border-b border-border bg-card/40 shrink-0">
@@ -198,90 +196,12 @@ export function LockedInputSection() {
             )}
           </div>
 
-          {/* Variables grid */}
-          {variableDefs.length > 0 && (
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold text-foreground">
-                Variables
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {variableDefs.map((def) => (
-                  <LockedVariableInput
-                    key={def.name}
-                    name={def.name}
-                    helpText={def.helpText}
-                    required={def.required}
-                    value={lockedVariables[def.name]}
-                    onChange={(value) =>
-                      dispatch(setLockedVariable({ name: def.name, value }))
-                    }
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* User message */}
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold text-foreground">
-              User message
-            </span>
-            <textarea
-              value={userMessage}
-              onChange={(e) => dispatch(setLockedUserMessage(e.target.value))}
-              placeholder={
-                !agentId
-                  ? "Pick an agent first..."
-                  : "Type the message every column will receive..."
-              }
-              rows={3}
-              disabled={!agentId}
-              className="w-full text-xs bg-background border border-border rounded px-2 py-1.5 text-foreground resize-y focus:outline-none focus:border-primary disabled:opacity-50"
-            />
-          </div>
+          <SharedBattleInput
+            conversationId={inputConversationId}
+            surfaceKey="agent-comparison-settings-input"
+          />
         </div>
       )}
-    </div>
-  );
-}
-
-function LockedVariableInput({
-  name,
-  helpText,
-  required,
-  value,
-  onChange,
-}: {
-  name: string;
-  helpText?: string;
-  required?: boolean;
-  value: unknown;
-  onChange: (next: string) => void;
-}) {
-  const stringValue =
-    typeof value === "string"
-      ? value
-      : value == null
-      ? ""
-      : JSON.stringify(value);
-
-  return (
-    <div className="space-y-0.5">
-      <div className="flex items-center gap-1">
-        <span className="text-[10px] font-mono font-semibold text-foreground">
-          {name}
-        </span>
-        {required && (
-          <span className="text-[9px] text-rose-500 font-bold">·required</span>
-        )}
-      </div>
-      <textarea
-        value={stringValue}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={helpText ?? `Value for ${name}...`}
-        rows={2}
-        className="w-full text-[11px] bg-background border border-border rounded px-2 py-1 text-foreground resize-y focus:outline-none focus:border-primary"
-      />
     </div>
   );
 }

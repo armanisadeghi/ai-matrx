@@ -5,8 +5,7 @@
  *
  * What's locked across every variation:
  *   - Template agent + version (the forking baseline for each variation)
- *   - Test variables (single set of values)
- *   - Test message (single textarea)
+ *   - Canonical shared Smart Agent Input
  *
  * What VARIES per variation: the ENTIRE editable agent definition, edited in
  * the floating editor window (one tab per variation), each pointed at the
@@ -28,12 +27,11 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import SearchableSelect from "@/components/matrx/SearchableSelect";
 import type { Option } from "@/components/matrx/SearchableSelect";
 import { cn } from "@/lib/utils";
-import { setLockedUserMessage, setLockedVariable } from "../redux/slice";
+import { SharedBattleInput } from "@/features/agent-comparison/shared/SharedBattleInput";
 import {
   selectLockedAgentVersion,
-  selectLockedUserMessage,
-  selectLockedVariables,
   selectSourceAgentId,
+  selectVariationsInputConversationId,
 } from "../redux/selectors";
 import { setLockedSourceAgent, setLockedVersion } from "../redux/thunks";
 
@@ -41,8 +39,9 @@ export function LockedInputSection() {
   const dispatch = useAppDispatch();
   const sourceAgentId = useAppSelector(selectSourceAgentId);
   const agentVersion = useAppSelector(selectLockedAgentVersion);
-  const userMessage = useAppSelector(selectLockedUserMessage);
-  const lockedVariables = useAppSelector(selectLockedVariables);
+  const inputConversationId = useAppSelector(
+    selectVariationsInputConversationId,
+  );
 
   const agent = useAppSelector((s) =>
     sourceAgentId ? selectAgentById(s, sourceAgentId) : undefined,
@@ -107,8 +106,6 @@ export function LockedInputSection() {
     if (!row) return;
     dispatch(setLockedVersion({ version, versionId: row.version_id }));
   };
-
-  const variableDefs = agent?.variableDefinitions ?? [];
 
   return (
     <div className="border-b border-border bg-card/40 shrink-0">
@@ -188,88 +185,13 @@ export function LockedInputSection() {
             )}
           </div>
 
-          {variableDefs.length > 0 && (
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold text-foreground">
-                Variables
-              </span>
-              <div className="grid grid-cols-2 gap-2">
-                {variableDefs.map((def) => (
-                  <LockedVariableInput
-                    key={def.name}
-                    name={def.name}
-                    helpText={def.helpText}
-                    required={def.required}
-                    value={lockedVariables[def.name]}
-                    onChange={(value) =>
-                      dispatch(setLockedVariable({ name: def.name, value }))
-                    }
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <span className="text-[11px] font-semibold text-foreground">
-              Test message
-            </span>
-            <textarea
-              value={userMessage}
-              onChange={(e) => dispatch(setLockedUserMessage(e.target.value))}
-              placeholder={
-                !sourceAgentId
-                  ? "Pick a template agent first..."
-                  : "Type the message every variation will receive..."
-              }
-              rows={3}
-              disabled={!sourceAgentId}
-              className="w-full text-xs bg-background border border-border rounded px-2 py-1.5 text-foreground resize-y focus:outline-none focus:border-primary disabled:opacity-50"
-            />
-          </div>
+          <SharedBattleInput
+            conversationId={inputConversationId}
+            surfaceKey="agent-comparison-variations-input"
+            description="Use Submit All in the toolbar to run every variation."
+          />
         </div>
       )}
-    </div>
-  );
-}
-
-function LockedVariableInput({
-  name,
-  helpText,
-  required,
-  value,
-  onChange,
-}: {
-  name: string;
-  helpText?: string;
-  required?: boolean;
-  value: unknown;
-  onChange: (next: string) => void;
-}) {
-  const stringValue =
-    typeof value === "string"
-      ? value
-      : value == null
-        ? ""
-        : JSON.stringify(value);
-
-  return (
-    <div className="space-y-0.5">
-      <div className="flex items-center gap-1">
-        <span className="text-[10px] font-mono font-semibold text-foreground">
-          {name}
-        </span>
-        {required && (
-          <span className="text-[9px] text-rose-500 font-bold">·required</span>
-        )}
-      </div>
-      <textarea
-        value={stringValue}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={helpText ?? `Value for ${name}...`}
-        rows={2}
-        className="w-full text-[11px] bg-background border border-border rounded px-2 py-1 text-foreground resize-y focus:outline-none focus:border-primary"
-      />
     </div>
   );
 }
