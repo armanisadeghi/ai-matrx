@@ -24,7 +24,8 @@ import { useState, useMemo, useEffect } from "react";
 import {
   guardMarkdownDelimiters,
   reportDelimiterViolations,
-} from "@/lib/markdown/delimiter-guard";
+} from "@ai-matrx/kit/delimiter-guard";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkComponent";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -432,6 +433,7 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
     reportDelimiterViolations(delimiterViolations, {
       renderPath: "BasicMarkdownContent",
       messageId,
+      capture: captureError,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- signature is the stable identity of `delimiterViolations`
   }, [delimiterViolationSignature, isStreamActive, messageId]);

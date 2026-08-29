@@ -46,6 +46,10 @@ import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-defini
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import { parseMandateContract } from "@/features/agents/mandates/overrides";
+import {
+  contractOfMandate,
+  holderOfMandate,
+} from "@/lib/supabase/mandateStorage";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
@@ -115,8 +119,11 @@ export function TryItNowPanel({
   onSavedTestCase: () => void;
 }) {
   const dispatch = useAppDispatch();
-  const contract = useMemo(() => parseMandateContract(mandate.contract), [mandate]);
-  const pinnedVersionId = mandate.default_agent_version_id;
+  const contract = useMemo(
+    () => parseMandateContract(contractOfMandate(mandate)),
+    [mandate],
+  );
+  const pinnedVersionId = holderOfMandate(mandate).versionId;
   const execution = useAppSelector((state) =>
     defaultAgentId ? selectAgentExecutionPayload(state, defaultAgentId) : null,
   );
@@ -164,7 +171,7 @@ export function TryItNowPanel({
   }, [pinnedVersionId]);
 
   /** The declarations of the agent that ACTUALLY RUNS. A version pin wins;
-   * otherwise the live definition (which is also what `use_latest` runs). */
+   * otherwise the live definition — which is what an unpinned mandate runs. */
   const agentDefinitions: VariableDefinition[] =
     (pinnedVersionId ? versionDefinitions : null) ??
     execution?.variableDefinitions ??

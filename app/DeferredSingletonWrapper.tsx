@@ -28,7 +28,7 @@ import "@/features/window-panels/utils/lazy-bundle-guard";
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { useIdleReady } from "@/utils/idle-scheduler";
+import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 import { installGlobalErrorCapture } from "@/lib/diagnostics/globalErrorCapture";
 import { installErrorPersistence } from "@/lib/diagnostics/persistCapturedErrors";
 

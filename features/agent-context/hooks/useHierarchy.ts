@@ -28,7 +28,7 @@ import {
   upsertTaskWithLevel,
   removeTaskFromSlice,
 } from "@/features/agent-context/redux/tasksSlice";
-import { matchesSearch } from "@/utils/search-scoring";
+import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 
 const KEYS = {
   tree: () => ["hierarchy-tree"] as const,

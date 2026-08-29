@@ -26,7 +26,7 @@ import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { deriveReadiness } from "../../readiness";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSynthesis, ResearchDataEvent } from "../../types";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import MarkdownStream from "@/components/markdown";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";

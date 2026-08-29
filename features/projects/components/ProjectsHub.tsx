@@ -13,7 +13,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { useRouter } from "next/navigation";
 import {

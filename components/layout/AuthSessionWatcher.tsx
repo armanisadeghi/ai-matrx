@@ -36,7 +36,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { supabase } from "@/utils/supabase/client";
-import { captureDrafts } from "@/lib/local-drafts/localDrafts";
+import { captureDrafts } from "@ai-matrx/kit/drafts";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 // Surface A lifecycle write: reset the global active context on sign-out so the

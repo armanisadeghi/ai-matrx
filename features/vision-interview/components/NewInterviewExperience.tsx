@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
-import { useDurableDraft } from "@/hooks/useDurableDraft";
+import { useDurableDraft } from "@ai-matrx/kit/drafts";
 import { createSession } from "../service";
 import { ROLE_ORDER, ROLES } from "../types";
 

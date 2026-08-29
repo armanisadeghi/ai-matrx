@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { isPubliclyVisible } from "@/lib/visibility/labels";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import {

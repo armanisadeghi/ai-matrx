@@ -107,7 +107,7 @@ import {
   NEEDS_SCRAPE_STATUSES,
   authorityTier,
 } from "../../constants";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { setSourceNavOrder } from "../../utils/sourceNavOrder";
 
 function formatPageAge(pageAge: string | null): {

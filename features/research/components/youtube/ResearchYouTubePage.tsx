@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { toast } from "@/lib/toast";
-import { runWithConcurrency } from "@/lib/async/run-with-concurrency";
+import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { YouTubeDiscovery } from "@/features/marketing/discovery/youtube/YouTubeDiscovery";
 import { YouTubeResearchActions } from "@/features/marketing/discovery/youtube/YouTubeResearchActions";

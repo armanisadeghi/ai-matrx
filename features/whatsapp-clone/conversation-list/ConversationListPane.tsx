@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConversationListHeader } from "./ConversationListHeader";
 import { ConversationSearch } from "./ConversationSearch";

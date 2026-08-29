@@ -11,7 +11,7 @@ import React from "react";
 import { Loader2, Search } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Input } from "@/components/ui/input";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { supabase } from "@/utils/supabase/client";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";

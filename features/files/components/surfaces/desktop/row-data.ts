@@ -30,7 +30,7 @@ import {
   folderToSortable,
 } from "@/features/files/redux/tree-utils";
 import { getFilePreviewProfile } from "@/features/files/utils/file-types";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { toEpochMs } from "@/utils/datetime";
 import {
   isExcludedFromRecents,

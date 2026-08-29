@@ -18,7 +18,7 @@ import { Card } from "@/components/ui/card";
 import { useUserOrganizations } from "../hooks";
 import { OrganizationCard } from "./OrganizationCard";
 import { CreateOrgModal } from "./CreateOrgModal";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";

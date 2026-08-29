@@ -64,6 +64,10 @@ import {
 } from "../overrides";
 import { compareContracts, compareStoredContract } from "../contract-compare";
 import { parseBindingWave1, parseMandateWave1 } from "../provision-shapes";
+import {
+  contractOfMandate,
+  holderOfBinding,
+} from "@/lib/supabase/mandateStorage";
 
 /** Externally-owned override store (e.g. research's per-topic
  * `rs_topic.agent_config`). When provided, picking a candidate still runs the
@@ -142,7 +146,7 @@ export function MandateAgentPicker({
   const overrideAgentId = override
     ? override.agentId
     : data?.myBinding?.is_enabled
-      ? (data.myBinding.agent_id ?? null)
+      ? holderOfBinding(data.myBinding).holderId
       : null;
   const overrideAgentName = overrideAgentId
     ? ([...ownedAgents, ...sharedAgents].find((a) => a.id === overrideAgentId)
@@ -238,14 +242,17 @@ export function MandateAgentPicker({
             variableDefinitions: payload.variableDefinitions,
             contextPolicies: payload.contextPolicies ?? [],
           })
-        : compareStoredContract(parseMandateContract(data.mandate.contract), {
-            variableNames: (payload.variableDefinitions ?? []).map(
-              (v) => v.name,
-            ),
-            contextPolicyKeys: (payload.contextPolicies ?? []).map(
-              (s) => s.key,
-            ),
-          });
+        : compareStoredContract(
+            parseMandateContract(contractOfMandate(data.mandate)),
+            {
+              variableNames: (payload.variableDefinitions ?? []).map(
+                (v) => v.name,
+              ),
+              contextPolicyKeys: (payload.contextPolicies ?? []).map(
+                (s) => s.key,
+              ),
+            },
+          );
       if (!check.passing) {
         setPreflight(
           `That agent can't run this step — missing: ${[

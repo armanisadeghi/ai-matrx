@@ -49,6 +49,12 @@ import { useMandateGoal } from "../useMandateGoal";
 import { MandateNotesPanel } from "../components/MandateNotesPanel";
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
 import { splitMandateKey } from "../mandate-key";
+import {
+  holderOfBinding,
+  holderOfMandate,
+  isFloatingBinding,
+  isFloatingMandate,
+} from "@/lib/supabase/mandateStorage";
 import { OverrideFlow, type WorkspacePrincipal } from "./OverrideFlow";
 import { RunThisJobSection } from "./RunThisJobSection";
 import { Section } from "./Section";
@@ -83,8 +89,10 @@ function resolveForPrincipal(
   orgIds: ReadonlySet<string>,
   principal: WorkspacePrincipal,
 ) {
-  const swapping = (b: MandateBindingRowDb) =>
-    b.is_enabled && (b.agent_id !== null || b.agent_version_id !== null);
+  const swapping = (b: MandateBindingRowDb) => {
+    const holder = holderOfBinding(b);
+    return b.is_enabled && (holder.holderId !== null || holder.versionId !== null);
+  };
   const userBinding =
     principal.kind === "org"
       ? null
@@ -110,9 +118,18 @@ function resolveForPrincipal(
       ? "org"
       : "system";
 
-  const versionId = winner?.agent_version_id ?? (winner ? null : data.mandate.default_agent_version_id);
-  const agentIdRaw = winner?.agent_id ?? (winner ? null : data.mandate.default_agent_id);
-  const useLatest = winner ? winner.use_latest === true : data.mandate.use_latest === true;
+  // The WINNING layer answers alone: a binding that wins supplies its own
+  // Holder and its own float/pin state, and the mandate default is consulted
+  // only when no binding won at all.
+  const systemHolder = holderOfMandate(data.mandate);
+  const winnerHolder = winner ? holderOfBinding(winner) : null;
+  const versionId = winnerHolder
+    ? winnerHolder.versionId
+    : systemHolder.versionId;
+  const agentIdRaw = winnerHolder ? winnerHolder.holderId : systemHolder.holderId;
+  const useLatest = winner
+    ? isFloatingBinding(winner)
+    : isFloatingMandate(data.mandate);
 
   const version = versionId ? (data.versionsById[versionId] ?? null) : null;
   const agentId = version?.agentId ?? agentIdRaw;
@@ -429,8 +446,9 @@ function FulfillmentSection({
               onClick={() => {
                 void copyAndOpen(
                   {
-                    defaultAgentId: data.mandate.default_agent_id,
-                    defaultAgentVersionId: data.mandate.default_agent_version_id,
+                    defaultAgentId: holderOfMandate(data.mandate).holderId,
+                    defaultAgentVersionId: holderOfMandate(data.mandate)
+                      .versionId,
                   },
                   { connect: () => onChanged() },
                 );
@@ -498,9 +516,10 @@ function OrgOverridesDisclosure({
       {open ? (
         <div className="space-y-2 border-t border-border/40 px-3 py-2.5">
           {orgBindings.map((b) => {
-            const agentId = b.agent_version_id
+            const bindingHolder = holderOfBinding(b);
+            const agentId = bindingHolder.versionId
               ? null // version identity resolves via the workspace load when needed
-              : b.agent_id;
+              : bindingHolder.holderId;
             const agent = agentId ? agentsById[agentId] : null;
             return (
               <div key={b.id} className="flex flex-wrap items-center gap-2 text-[12px]">

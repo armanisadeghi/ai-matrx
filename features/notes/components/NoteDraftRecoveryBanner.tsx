@@ -26,7 +26,7 @@ import {
 } from "@/features/overlays/openers/diffViewerWindow";
 import { selectNoteContent } from "../redux/selectors";
 import { discardNoteDraft, getNoteDraft } from "../utils/notesDrafts";
-import type { LocalDraft } from "@/lib/local-drafts/types";
+import type { LocalDraft } from "@ai-matrx/kit/drafts";
 
 function whenLabel(at: number): string {
   const minutes = Math.floor((Date.now() - at) / 60_000);

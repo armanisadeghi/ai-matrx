@@ -5,7 +5,7 @@ import { Search, Loader2, Notebook } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { listAccessibleWorkbooks } from "@/features/data-tables/workbook-service";
 import { isServiceFailure, type Workbook } from "@/features/data-tables/types";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 

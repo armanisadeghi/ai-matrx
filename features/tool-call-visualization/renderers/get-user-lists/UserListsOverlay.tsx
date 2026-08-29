@@ -23,7 +23,7 @@ import type { ToolLifecycleEntry } from "@/features/agents/types/request.types";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
 import { EntityOpenActions } from "../_shared-entity/EntityOpenActions";
 import { getArg, resultAsObject } from "../_shared";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 
 interface UserList {
     id: string;

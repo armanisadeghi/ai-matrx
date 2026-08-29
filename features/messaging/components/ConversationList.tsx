@@ -4,7 +4,7 @@ import React, { useState, useTransition, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import {
   selectConversations,
   selectMessagingIsLoading,

@@ -75,7 +75,7 @@ import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { useApiTestConfig } from "@/components/api-test-config/useApiTestConfig";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import type {
   TypedStreamEvent,
   RenderBlockEvent,

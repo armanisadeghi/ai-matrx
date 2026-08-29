@@ -28,7 +28,13 @@ import {
   parseMandateWave1,
 } from "../provision-shapes";
 import { parseMandateContract, type MandateContract } from "../contract";
-import { mandateBindings, mandateDefinitions } from "@/lib/supabase/mandateStorage";
+import {
+  contractOfMandate,
+  holderOfBinding,
+  holderOfMandate,
+  mandateBindings,
+  mandateDefinitions,
+} from "@/lib/supabase/mandateStorage";
 import type { MandateBindingRow as MandateBindingRowDb, MandateDefinitionRow } from "@/lib/supabase/mandateStorage";
 
 export type MandateRowDb = MandateDefinitionRow;
@@ -125,9 +131,11 @@ export function useMandateWorkspaceData(
 
       // 3. Holder identities. Version pins resolve to their master for the
       //    identity read; version_number rides along for drift.
+      const systemHolder = holderOfMandate(mandate);
+      const bindingHolders = bindings.map((b) => holderOfBinding(b));
       const versionIds = [
-        mandate.default_agent_version_id,
-        ...bindings.map((b) => b.agent_version_id),
+        systemHolder.versionId,
+        ...bindingHolders.map((h) => h.versionId),
       ].filter((v): v is string => Boolean(v));
 
       const versionsById: Record<string, WorkspaceVersionInfo> = {};
@@ -148,8 +156,8 @@ export function useMandateWorkspaceData(
       }
 
       const agentIds = [
-        mandate.default_agent_id,
-        ...bindings.map((b) => b.agent_id),
+        systemHolder.holderId,
+        ...bindingHolders.map((h) => h.holderId),
         ...Object.values(versionsById).map((v) => v.agentId),
       ].filter((v): v is string => Boolean(v));
 
@@ -175,7 +183,7 @@ export function useMandateWorkspaceData(
 
       return {
         mandate,
-        contract: parseMandateContract(mandate.contract),
+        contract: parseMandateContract(contractOfMandate(mandate)),
         provisionKey: wave1.provisionKey,
         pins: wave1.pins,
         pinnedContext: wave1.pinnedContext,

@@ -1,4 +1,4 @@
-import { formatTitleCase } from "@/utils/text/text-case-converter";
+import { formatTitleCase } from "@ai-matrx/kit/text-case";
 import type { ModulePage } from "@/components/matrx/navigation/types";
 
 export function groupRoutes(

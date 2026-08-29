@@ -32,7 +32,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import CreateTableModal from "./CreateTableModal";
 import EditTableModal from "./EditTableModal";
 import { TableListItem } from "./TableListItem";

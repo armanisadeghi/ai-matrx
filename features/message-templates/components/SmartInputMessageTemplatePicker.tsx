@@ -13,7 +13,7 @@ import { ProInput } from "@/components/official/ProInput";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { fetchMessageTemplates } from "@/features/message-templates/services/message-templates-service";
 import type { MessageTemplateDB } from "@/features/message-templates/types/message-templates-db";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 
 interface SmartInputMessageTemplatePickerProps {
   onSelect: (templateContent: string) => void;

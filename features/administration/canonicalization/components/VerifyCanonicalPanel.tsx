@@ -30,7 +30,7 @@ import {
   enumUrlCodec,
   stringUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

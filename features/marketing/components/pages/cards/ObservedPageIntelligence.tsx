@@ -28,7 +28,7 @@ import {
 } from "@/features/marketing/lib/snapshot-content";
 import type { MarketingPage, PageSnapshot } from "@/features/marketing/types";
 import { isJsonRecord } from "@/features/marketing/types";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import type { Json } from "@/types/database.types";
 
 function primaryBlockLabel(data: Record<string, Json>): string | null {

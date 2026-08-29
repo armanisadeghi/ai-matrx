@@ -26,7 +26,7 @@ import { AddItemDialog } from "./AddItemDialog";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { deleteListAction } from "../actions/list-actions";
 import { useToastManager } from "@/hooks/useToastManager";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 
 interface ListsTreeNavProps {
   lists: UserList[];

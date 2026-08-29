@@ -13,8 +13,8 @@ import {
   getDraft,
   listDrafts,
   registerDraftSource,
-} from "@/lib/local-drafts/localDrafts";
-import type { LocalDraft, LocalDraftInput } from "@/lib/local-drafts/types";
+} from "@ai-matrx/kit/drafts";
+import type { LocalDraft, LocalDraftInput } from "@ai-matrx/kit/drafts";
 import type { NoteRecord, NotesSliceState } from "../redux/notes.types";
 import { getNoteLiveContent } from "./noteLiveContent";
 

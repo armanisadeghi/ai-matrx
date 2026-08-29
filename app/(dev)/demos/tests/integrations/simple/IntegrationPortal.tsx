@@ -5,7 +5,7 @@ import { FiSearch, FiCheck } from 'react-icons/fi';
 import { INTEGRATIONS, CATEGORIES } from './constants';
 import { USER_INTEGRATIONS } from './mockData';
 import { Integration, UserIntegration } from './types';
-import { filterAndSortBySearch } from '@/utils/search-scoring';
+import { filterAndSortBySearch } from '@ai-matrx/kit/search-scoring';
 
 const IntegrationPortal: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');

@@ -11,7 +11,7 @@ import { Check, Plus, Search, X } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import {
   makeSelectScopeTypesForOrg,
   selectTreeStatus,

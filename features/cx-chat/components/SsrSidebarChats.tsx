@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 // ── Legacy cx-conversation slice stubs ────────────────────────────────────────
 // cx-chat is deprecated (rebuild in progress on `conversation-list/` slice).
 // During the Redux unification we kept this component rendering but inert:

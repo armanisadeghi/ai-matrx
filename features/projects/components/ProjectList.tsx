@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { useOrgProjects, usePersonalProjects } from '../hooks';
 import { ProjectCard } from './ProjectCard';
 import { CreateProjectModal } from './CreateProjectModal';
-import { filterAndSortBySearch } from '@/utils/search-scoring';
+import { filterAndSortBySearch } from '@ai-matrx/kit/search-scoring';
 
 interface ProjectListProps {
   organizationId?: string | null;

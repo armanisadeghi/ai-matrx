@@ -13,7 +13,7 @@ import {
   enumUrlCodec,
   stringUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 function toDatabasePermissions(data: unknown): DatabasePermission[] {
   if (!Array.isArray(data)) return [];

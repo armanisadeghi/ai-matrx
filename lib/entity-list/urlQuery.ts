@@ -23,7 +23,7 @@
 //   * An unparseable or unknown value falls back to the default rather than
 //     throwing. A hand-edited or stale URL must never break the page.
 
-import type { UrlHistoryMode } from "@/lib/url-state/useUrlState";
+import type { UrlHistoryMode } from "@ai-matrx/kit/url-state";
 import {
   LIST_SCOPE_KINDS,
   makeScope,

@@ -14,7 +14,7 @@ import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchSource } from "../../types";
 import type { CurationAnalysisState } from "../../service";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { SourceResultsTable } from "../sources/SourceResultsTable";
 
 export default function ContentList() {

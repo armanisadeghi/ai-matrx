@@ -31,7 +31,7 @@
 
 import { useCallback, useMemo } from "react";
 
-import { useMirroredUrlState } from "@/lib/url-state/useUrlState";
+import { useMirroredUrlState } from "@ai-matrx/kit/url-state";
 
 import type { ColumnFilterMap } from "../column-filters";
 import {

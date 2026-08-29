@@ -24,13 +24,13 @@
 //
 // Pure except for the two side-effect callbacks handed in by the hook.
 
-import { detectJson } from "@/lib/json-format/detect";
-import { formatJsonText } from "@/lib/json-format/format";
+import { detectJson } from "@ai-matrx/kit/json-format";
+import { formatJsonText } from "@ai-matrx/kit/json-format";
 import type {
   JsonDetection,
   JsonFenceMode,
   JsonFormatStyle,
-} from "@/lib/json-format/types";
+} from "@ai-matrx/kit/json-format";
 
 export interface JsonMenuAction {
   id: string;

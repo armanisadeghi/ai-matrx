@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ChevronRight, Search, Loader2, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useNotes } from "@/features/notes/hooks/useNotes";

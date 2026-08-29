@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAllNotesList,

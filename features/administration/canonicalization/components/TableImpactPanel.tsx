@@ -31,7 +31,7 @@ import {
   booleanUrlCodec,
   stringUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 function isTableImpactRow(v: unknown): v is TableImpactRow {
   if (typeof v !== "object" || v === null) return false;

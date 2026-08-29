@@ -16,7 +16,7 @@ import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice
 import {
   commitUrlParams,
   useUrlSearchParams,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 import type { EntityListController, EntityListService } from "./config";
 import {
   DEFAULT_ENTITY_LIST_QUERY,

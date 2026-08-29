@@ -1,5 +1,5 @@
 import { IDBPDatabase } from 'idb';
-import { DBStoreManager } from '../store-manager';
+import { DBStoreManager, getIdbStoreSingleton } from '@ai-matrx/kit/idb-store';
 import {
     Recording,
     RecordingChunk,
@@ -9,19 +9,11 @@ import {
 } from '@/types/audioRecording.types';
 
 class AudioStore extends DBStoreManager<Recording> {
-    protected static override _instance: AudioStore;
     private initialized: boolean = false;
     private initPromise: Promise<void> | null = null;
 
-    private constructor() {
+    constructor() {
         super('voiceNotesDB', 2);
-    }
-
-    static getInstance(): AudioStore {
-        if (!AudioStore._instance) {
-            AudioStore._instance = new AudioStore();
-        }
-        return AudioStore._instance;
     }
 
     protected setupStores(db: IDBPDatabase): void {
@@ -187,4 +179,6 @@ class AudioStore extends DBStoreManager<Recording> {
     }
 }
 
-export const audioStore = AudioStore.getInstance();
+// Instance lives on the kit's globalThis slot — a module-level or class-static
+// singleton would split per loader graph and race IndexedDB upgrades.
+export const audioStore = getIdbStoreSingleton('voiceNotesDB/audio', () => new AudioStore());

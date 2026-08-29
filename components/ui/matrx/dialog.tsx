@@ -5,7 +5,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
 import { Cross2Icon } from "@radix-ui/react-icons";
-import { treeContainsComponent } from "@/lib/react/treeContainsComponent";
+import { treeContainsComponent } from "@ai-matrx/kit/react-tree";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
 import { RadixDialogModalProvider } from "@/components/ui/radix-dialog-modal-context";
 import { DialogContentPrimitive } from "@/components/ui/dialog";

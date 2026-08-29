@@ -7,7 +7,7 @@ import {
   type ShellNavItem,
 } from "@/features/shell/constants/nav-data";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { USER_LAUNCHPAD_PATH } from "./constants";
 
 export interface LaunchpadDestination {

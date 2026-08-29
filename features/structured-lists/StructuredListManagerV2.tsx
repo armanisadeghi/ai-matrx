@@ -31,7 +31,7 @@ import {
 } from "@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow";
 import type { UserListItem } from "@/features/user-lists/types";
 import { useStructuredLists, type PicklistSummary } from "./useStructuredLists";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 
 interface StructuredListManagerV2Props {
   /** Pin to a specific list and hide the switcher (e.g. in a modal). */

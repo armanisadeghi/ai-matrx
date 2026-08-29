@@ -13,7 +13,7 @@ import {
 } from "@/lib/redux/slices/appContextSlice";
 import type { Task, TaskWithProject, Project, TaskSortConfig } from "../types";
 import { sortTasks } from "../utils/taskSorting";
-import { matchesSearch } from "@/utils/search-scoring";
+import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   normalizeTaskStatus,

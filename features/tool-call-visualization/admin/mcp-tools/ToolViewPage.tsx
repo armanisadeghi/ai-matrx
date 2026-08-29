@@ -24,7 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import { mapIcon } from "@/utils/icons/icon-mapper";
 import { ToolTestSamplesViewer } from "@/features/tool-call-visualization/admin/ToolTestSamplesViewer";
 import { RegistryTab } from "@/features/tool-registry/tools-admin/components/RegistryTab";

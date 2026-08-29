@@ -68,7 +68,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffViewer";
 import { compareAgentDefinitions } from "@/features/agents/components/diff/compare-agent-definitions";
 import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import { fetchSavedAgentDefinition } from "@/features/agents/services/agent-definition-snapshot.service";
 import type { DiffTemporalMetadata } from "@/components/diff/engine/types";
 import {

@@ -48,7 +48,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
-import { useAutosave } from "@/hooks/useAutosave";
+import { useAutosave } from "@ai-matrx/kit/autosave";
 import { AutosaveIndicator } from "@/components/AutosaveIndicator";
 import { SetVersionHistoryDialog } from "./SetVersionHistoryDialog";
 import { studyService } from "@/features/education/study/service/studyService";

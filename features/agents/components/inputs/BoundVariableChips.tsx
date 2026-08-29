@@ -55,7 +55,7 @@ import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
 import { ensureContextValues } from "@/features/scopes/redux/thunks/ensureContextValues";
 import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
 
 interface BoundVariableChipsProps {

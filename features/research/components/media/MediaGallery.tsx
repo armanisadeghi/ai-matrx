@@ -42,7 +42,7 @@ import { useYouTubeVideoIdentityIndex } from "../../hooks/useResearchState";
 import type { YouTubeVideoIdentity } from "../../service";
 import { updateMedia } from "../../service";
 import type { ResearchMedia } from "../../types";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import {
   bucketMedia,
   formatResolvedSizeLabel,

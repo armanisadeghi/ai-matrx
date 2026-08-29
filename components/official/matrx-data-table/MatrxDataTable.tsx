@@ -58,7 +58,7 @@ import {
   jsonUrlCodec,
   stringUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ColumnHeaderCell } from "./ColumnHeaderCell";
 import { DataRowInspector } from "./DataRowInspector";

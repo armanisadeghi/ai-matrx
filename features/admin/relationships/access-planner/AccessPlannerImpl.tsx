@@ -43,7 +43,7 @@ import {
   booleanUrlCodec,
   stringUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

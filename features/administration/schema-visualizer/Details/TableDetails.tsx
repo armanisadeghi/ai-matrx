@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { SchemaTable } from "../types-standalone";
-import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
+import { enumUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 
 interface TableDetailsProps {
   table: SchemaTable;

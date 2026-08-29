@@ -39,7 +39,7 @@ import { removeInstanceTab } from "../redux/slice";
 import { deleteNote, moveNoteToFolder, restoreNote } from "../redux/thunks";
 import { ingestSource } from "@/features/rag/api/ingest";
 import { isNoteContentEmpty } from "../utils/noteUtils";
-import { runWithConcurrency } from "../utils/concurrency";
+import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
 import {
   downloadNoteAsMarkdown,
   downloadNotesAsMarkdownZip,

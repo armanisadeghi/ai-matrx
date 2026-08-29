@@ -3,7 +3,7 @@
 
 import { create } from "zustand";
 import type { SelectedElement } from "./types-standalone";
-import { commitUrlParams } from "@/lib/url-state/useUrlState";
+import { commitUrlParams } from "@ai-matrx/kit/url-state";
 
 interface SchemaVisualizerState {
   selectedElement: SelectedElement | null;

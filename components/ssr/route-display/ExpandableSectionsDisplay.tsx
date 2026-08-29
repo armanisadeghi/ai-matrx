@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { formatTitleCase } from "@/utils/text/text-case-converter";
+import { formatTitleCase } from "@ai-matrx/kit/text-case";
 import { ChevronRight, ArrowRight, FolderClosed, FolderOpen } from "lucide-react";
 import { getRouteLabel } from "@/utils/route-discovery/shared";
 import type { RouteDisplayProps } from "./types";

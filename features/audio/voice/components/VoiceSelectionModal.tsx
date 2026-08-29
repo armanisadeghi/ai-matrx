@@ -14,7 +14,7 @@ import { useCartesia } from '@/hooks/tts/useCartesia';
 import { VoiceOptions, VoiceSpeed } from '@/lib/cartesia/cartesia.types';
 import { AiVoice } from '@/types/aiAudioTypes';
 import { cn } from '@/lib/utils';
-import { filterAndSortBySearch } from '@/utils/search-scoring';
+import { filterAndSortBySearch } from '@ai-matrx/kit/search-scoring';
 
 interface VoiceSelectionModalProps {
     isOpen: boolean;

@@ -13,7 +13,7 @@
  */
 
 import { isJsonObject, type JsonObject } from "@/types/json";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 
 export const SOURCE_SUPPRESSED_UNTIL = "infinity";
 export const SOURCE_SUPPRESSION_METADATA_KEY = "source_suppression";

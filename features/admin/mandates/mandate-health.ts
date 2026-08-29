@@ -8,6 +8,11 @@
 import { isJsonObject } from "@/types/json";
 import { parseMandateContract } from "@/features/agents/mandates/overrides";
 import { splitMandateKey } from "@/features/agents/mandates/mandate-key";
+import {
+  contractOfMandate,
+  holderOfMandate,
+  inputKindOfMandate,
+} from "@/lib/supabase/mandateStorage";
 import type {
   MandateCodeTruth,
   MandateConsoleData,
@@ -119,8 +124,9 @@ export function buildRow(
   let nonSystem = false;
   let archived = false;
 
-  if (mandate.default_agent_version_id) {
-    const version = data.versionsById[mandate.default_agent_version_id];
+  const holder = holderOfMandate(mandate);
+  if (holder.versionId) {
+    const version = data.versionsById[holder.versionId];
     const agent = version?.agentId
       ? data.agentsById[version.agentId]
       : undefined;
@@ -138,10 +144,10 @@ export function buildRow(
     nonSystem = agent != null && agent.agentType !== "builtin";
     archived = Boolean(agent?.isArchived);
   } else {
-    const agent = mandate.default_agent_id
-      ? data.agentsById[mandate.default_agent_id]
+    const agent = holder.holderId
+      ? data.agentsById[holder.holderId]
       : undefined;
-    agentId = agent?.id ?? mandate.default_agent_id ?? null;
+    agentId = agent?.id ?? holder.holderId ?? null;
     agentName = agent?.name ?? "(unknown agent)";
     agentType = agent?.agentType ?? null;
     latestVersion = agent?.version ?? null;
@@ -185,7 +191,7 @@ export function buildRow(
   // Output columns render THIS, never the bare input_kind/output_kind
   // columns (which are null for most mandates and were reporting "—"/"text"
   // while the contract declared five required variables).
-  const contract = parseMandateContract(mandate.contract);
+  const contract = parseMandateContract(contractOfMandate(mandate));
   const mandateKeyParts = splitMandateKey(mandate.mandate_key);
 
   // Context gating. The mandate's own gate is a column on the mandate; the
@@ -212,7 +218,7 @@ export function buildRow(
     drift,
     health,
     codeTruth: codeTruth ?? null,
-    inputKind: mandate.input_kind ?? "—",
+    inputKind: inputKindOfMandate(mandate) ?? "—",
     outputKind: mandate.output_kind ?? "text",
     requiredVariables: contract.requiredVariables,
     requiredContextPolicyKeys: contract.requiredContextPolicyKeys,

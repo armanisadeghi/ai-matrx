@@ -12,7 +12,7 @@ import {
   type AdminNavigationDestination,
 } from "@/features/admin/constants/admin-navigation";
 import { cn } from "@/lib/utils";
-import { matchesSearch } from "@/utils/search-scoring";
+import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 import { useVisibilityAwarePageRefresh } from "@/features/launchpad/hooks/useVisibilityAwarePageRefresh";
 
 const getLaunchpadColumnCount = (viewportWidth: number) => {

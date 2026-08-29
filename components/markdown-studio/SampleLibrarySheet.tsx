@@ -25,7 +25,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useUserMarkdownSamples } from "./useUserMarkdownSamples";
 import { getBlockTypeStyle } from "./block-type-colors";
 import type { UserMarkdownSample } from "./user-samples-service";

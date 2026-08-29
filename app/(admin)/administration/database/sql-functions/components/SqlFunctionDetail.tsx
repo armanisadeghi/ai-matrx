@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import SyntaxHighlighter from "@/features/administration/database-admin/SyntaxHighlighter";
 import SqlFunctionTester from "./SqlFunctionTester";
-import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
+import { enumUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 
 interface SqlFunctionDetailProps {
   func: SqlFunction;

@@ -8,7 +8,7 @@ import {
   isServiceFailure,
   type DocumentRow,
 } from "@/features/data-tables/types";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 

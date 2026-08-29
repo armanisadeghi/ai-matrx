@@ -50,7 +50,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {

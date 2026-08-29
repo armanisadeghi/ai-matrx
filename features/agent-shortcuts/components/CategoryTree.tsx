@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {

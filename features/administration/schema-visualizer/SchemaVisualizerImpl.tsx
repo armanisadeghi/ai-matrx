@@ -27,7 +27,7 @@ import {
   jsonUrlCodec,
   stringUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 const nodeTypes = {
   schemaNode: SchemaNode,

@@ -30,7 +30,7 @@ import {
   tokenFromColumnName,
 } from "@/components/official/entity-ref/doors";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
-import { stringUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
+import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 
 type Severity = "error" | "warning" | "info";
 

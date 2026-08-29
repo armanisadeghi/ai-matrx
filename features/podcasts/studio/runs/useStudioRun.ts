@@ -62,7 +62,7 @@ import {
   reconcileRun,
   type ReconcileResult,
 } from "./reconcile";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import type { RunAsset, RunAssetKind, RunDetail } from "./run-types";
 import type {
   ToolEventPayload,

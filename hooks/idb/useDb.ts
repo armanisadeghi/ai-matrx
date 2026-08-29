@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { AsyncResult } from '@/lib/idb/store-manager';
-import { PublicStoreManager } from '@/lib/idb/store-interface';
+import { AsyncResult } from '@ai-matrx/kit/idb-store';
+import { PublicStoreManager } from '@ai-matrx/kit/idb-store';
 
 export function useIDB<T extends object>(store: PublicStoreManager<T>) {
     const [loadingOps, setLoadingOps] = useState(new Set<string>());

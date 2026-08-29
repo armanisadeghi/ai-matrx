@@ -6,7 +6,8 @@ import type { Components } from 'react-markdown';
 import {
   guardMarkdownDelimiters,
   reportDelimiterViolations,
-} from '@/lib/markdown/delimiter-guard';
+} from '@ai-matrx/kit/delimiter-guard';
+import { captureError } from '@/lib/diagnostics/errorCaptureStore';
 
 export interface MarkdownWithPluginsProps {
   content: string;
@@ -22,6 +23,7 @@ const MarkdownWithPlugins = ({ content, components }: MarkdownWithPluginsProps) 
     if (!signature) return;
     reportDelimiterViolations(violations, {
       renderPath: 'MarkdownWithPlugins',
+      capture: captureError,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- signature is the stable identity of `violations`
   }, [signature]);
@@ -33,4 +35,4 @@ const MarkdownWithPlugins = ({ content, components }: MarkdownWithPluginsProps) 
   );
 };
 
-export default MarkdownWithPlugins; 
+export default MarkdownWithPlugins;

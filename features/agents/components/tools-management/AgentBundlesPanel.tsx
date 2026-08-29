@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentTools } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentTools } from "@/features/agents/redux/agent-definition/slice";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { useAgentBundleOptions } from "./useAgentBundleOptions";
 import { useToolRuntimes } from "./useToolRuntimes";
 import {

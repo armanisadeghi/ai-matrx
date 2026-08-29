@@ -29,7 +29,7 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import {
   commitUrlParams,
   useUrlSearchParams,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { defaultHiddenColumns } from "../columns";
 import type { ListScope, ListScopeKind } from "@/lib/list-scope/types";

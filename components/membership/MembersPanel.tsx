@@ -57,7 +57,7 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import {

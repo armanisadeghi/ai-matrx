@@ -45,7 +45,7 @@ import type {
   OrgRole,
 } from "@/features/organizations/types";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";

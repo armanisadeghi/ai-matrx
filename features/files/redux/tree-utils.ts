@@ -14,7 +14,7 @@ import type {
   TreeState,
 } from "@/features/files/types";
 import { getFileTypeDetails } from "@/features/files/utils/file-types";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { compareTimestamps } from "@/utils/datetime";
 
 const EMPTY_SORTED_IDS: string[] = [];

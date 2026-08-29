@@ -45,7 +45,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { renderIcon } from "@/components/official/icons/IconResolver";
-import { matchesSearch } from "@/utils/search-scoring";
+import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 import {
   createAgentAppCategory,
   deleteAgentAppCategory,

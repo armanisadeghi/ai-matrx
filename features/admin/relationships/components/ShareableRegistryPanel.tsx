@@ -40,7 +40,7 @@ import {
   isSecretLookingColumn,
 } from "./SharePolicyColumnEditor";
 import type { SharePolicyRow, ShareableRegistryRow } from "../types";
-import { stringUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
+import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 
 function label(token: string): string {
   return tryGetEntityInfo(token)?.label ?? token;

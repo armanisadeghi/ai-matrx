@@ -143,7 +143,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open-context-menu";

@@ -66,8 +66,8 @@ import {
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useTools } from "@/hooks/useTools";
 import { supabase } from "@/utils/supabase/client";
-import { formatText } from "@/utils/text/text-case-converter";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { formatText } from "@ai-matrx/kit/text-case";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { cn } from "@/styles/themes/utils";
 import {
   SourceKindBadge,

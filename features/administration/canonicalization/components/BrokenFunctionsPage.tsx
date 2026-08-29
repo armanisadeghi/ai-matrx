@@ -33,7 +33,7 @@ import {
   booleanUrlCodec,
   jsonUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 export function BrokenFunctionsPage() {
   const searchParams = useSearchParams();

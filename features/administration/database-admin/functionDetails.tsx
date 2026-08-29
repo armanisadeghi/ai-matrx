@@ -15,7 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import SyntaxHighlighter from "./SyntaxHighlighter";
 import { cn } from "@/lib/utils";
 import type { DatabaseFunction } from "./types";
-import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
+import { enumUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 
 interface FunctionDetailsProps {

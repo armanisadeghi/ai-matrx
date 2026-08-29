@@ -42,7 +42,7 @@ import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-sy
 import { DEFAULT_BUILDER_ADVANCED_SETTINGS } from "@/features/agents/types/instance.types";
 import { useSkills } from "@/features/skills/hooks/useSkills";
 import type { SkillRow } from "@/features/skills/types";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 
 type AgentSkillTier = "included" | "listed" | "forbidden";
 

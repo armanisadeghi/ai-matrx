@@ -35,7 +35,7 @@ import {
 import { setExpandedVariableId } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { VariableInputComponent } from "./input-components/VariableInputComponent";
 import { BoundVariableChips } from "./BoundVariableChips";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
 import { calculateVisualViewportLift } from "@/lib/dom/visual-viewport-lift";
 

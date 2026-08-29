@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Search, Moon, Sun, Filter, Check, X } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Category, Integration, mockIntegrations } from "./constants";
-import { matchesSearch } from "@/utils/search-scoring";
+import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 
 // Type definitions
 

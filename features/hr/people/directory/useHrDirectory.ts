@@ -35,7 +35,7 @@ import type {
 import {
   commitUrlParams,
   useUrlSearchParams,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 import { useHrRequest } from "../shared/useHrRequest";
 
