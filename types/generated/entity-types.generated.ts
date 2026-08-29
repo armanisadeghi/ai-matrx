@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 605 active entity tokens. A token here is FK-valid for
+// 606 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -427,6 +427,7 @@ export type EntityTypeToken =
   | "product_capture_file"
   | "product_capture_item"
   | "product_capture_payload"
+  | "product_capture_product"
   | "product_capture_question"
   | "project"
   | "provision_new"
@@ -921,6 +922,7 @@ export type ComponentEntityToken =
   | "processed_document_page"
   | "product_capture_file"
   | "product_capture_payload"
+  | "product_capture_product"
   | "product_capture_question"
   | "redaction_mapping"
   | "research_analysis"
@@ -1409,6 +1411,7 @@ export type ScopeableEntityToken =
   | "product_capture_file"
   | "product_capture_item"
   | "product_capture_payload"
+  | "product_capture_product"
   | "product_capture_question"
   | "project"
   | "provision_new"
@@ -2111,6 +2114,7 @@ export const ENTITY_TYPE_METADATA = {
   "product_capture_file": { token: "product_capture_file", schema: "workbench", table: "product_capture_file", label: "Product Capture File", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "product_capture_item": { token: "product_capture_item", schema: "workbench", table: "product_capture_item", label: "Product Capture Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "product_capture_payload": { token: "product_capture_payload", schema: "workbench", table: "product_capture_payload", label: "Product Capture Payload", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "product_capture_product": { token: "product_capture_product", schema: "workbench", table: "product_capture_product", label: "Product Capture Product", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "product_capture_question": { token: "product_capture_question", schema: "workbench", table: "product_capture_question", label: "Product Capture Question", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces", referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "provision_new": { token: "provision_new", schema: "mandate", table: "provision", label: "Mandate Provision (new)", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2720,6 +2724,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "product_capture_file",
   "product_capture_item",
   "product_capture_payload",
+  "product_capture_product",
   "product_capture_question",
   "project",
   "provision_new",

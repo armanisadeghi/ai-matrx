@@ -55489,6 +55489,7 @@ export type Database = {
           reason: string
         }[]
       }
+      normalize_identity_args: { Args: { p_args: string }; Returns: string }
       promote_custom_field_index: {
         Args: { p_concurrently?: boolean; p_definition_id: string }
         Returns: Json
@@ -88618,6 +88619,77 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "product_capture_payload_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "product_capture_item"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_capture_product: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          intake: Json
+          item_id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          product_index: number
+          realistic_used_range: string | null
+          research: Json | null
+          research_run_id: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          verdict: string | null
+          version: number
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intake?: Json
+          item_id: string
+          metadata?: Json
+          name?: string
+          organization_id: string
+          product_index: number
+          realistic_used_range?: string | null
+          research?: Json | null
+          research_run_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          intake?: Json
+          item_id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          product_index?: number
+          realistic_used_range?: string | null
+          research?: Json | null
+          research_run_id?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_capture_product_item_id_fkey"
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "product_capture_item"
