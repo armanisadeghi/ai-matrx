@@ -100,6 +100,16 @@
       },
       "previousEventHash": "108f40cfdaac88e9eeda08990da3c8a855384916a0c0271901b05fa8f37c5b96",
       "eventHash": "58fefd1425b4e57231b96d364e39b03330c05febd2ec6c3cc47bf162ea26e8dd"
+    },
+    {
+      "sequence": 7,
+      "state": "closed",
+      "at": "2026-08-29T19:29:31.163Z",
+      "actor": "/root",
+      "summary": "Batch 2 lifecycle closed; five schema-backed reads remain assigned to the next P10 wave.",
+      "evidence": [],
+      "previousEventHash": "58fefd1425b4e57231b96d364e39b03330c05febd2ec6c3cc47bf162ea26e8dd",
+      "eventHash": "b8411f2859f637fea78f54658755080490a512180556f9bf3fdd09dedd521061"
     }
   ]
 }

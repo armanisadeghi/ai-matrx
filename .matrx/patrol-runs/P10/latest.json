@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-29T192327Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-29T19:29:23.300Z",
-  "summary": "Batch 2 delivered to origin/main without invoking the serialized release lane.",
+  "state": "closed",
+  "updatedAt": "2026-08-29T19:29:31.163Z",
+  "summary": "Batch 2 lifecycle closed; five schema-backed reads remain assigned to the next P10 wave.",
   "source": "2026-08-29T192327Z.json",
-  "eventHash": "58fefd1425b4e57231b96d364e39b03330c05febd2ec6c3cc47bf162ea26e8dd"
+  "eventHash": "b8411f2859f637fea78f54658755080490a512180556f9bf3fdd09dedd521061"
 }
