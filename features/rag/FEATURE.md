@@ -56,6 +56,10 @@ ruling tracked in the node's HANDOFF §3.
 - **Library ingest is streamed.** `api/library-ingest.ts` consumes
   `/rag/library/stores/{store_id}/ingest` through the canonical `postNdjson`; never parse the
   response as one JSON document or restore the retired 501-stub state.
+- **Library member kinds must resolve to canonical access entities.** `rag.member_source_entity_token`
+  maps `cld_file → file` and `library_doc → processed_document`; every added source kind needs an
+  active `platform.association_types` rule into `data_store` plus real association rows. Otherwise
+  the judge, RLS, and the member tree silently diverge.
 - This feature has **no Redux slice**; it composes auth + cloudFiles state via existing selectors.
 
 ## Layout
@@ -81,4 +85,4 @@ features/rag/
 
 ## Change log
 
-- 2026-08-29 — Aligned admin library ingest with the live NDJSON endpoint contract.
+- 2026-08-29 — aligned admin library ingest with the live NDJSON endpoint contract; aligned open-library RLS candidates and `library_doc` access associations with the canonical judge; kept the generic catalog wrapper on the starter-pack `meaning_count` contract.

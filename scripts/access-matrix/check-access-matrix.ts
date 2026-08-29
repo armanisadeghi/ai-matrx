@@ -2,14 +2,15 @@
 /**
  * Shared Knowledge ACCEPTANCE MATRIX — `pnpm check:access-matrix`
  *
- * Parameterized, repeatable proof that a grant on a data store confers READ
- * on everything inside it — and nothing more. For (store, entitled_user,
- * control_user) it asserts the full grid at every level of the knowledge
+ * Parameterized, repeatable proof that a publication confers its intended READ
+ * surface. For (store, entitled_user, control_user) it asserts the full grid
+ * at every level of the knowledge
  * tree: store row, members, file metadata + DB-level download check, doc
  * metadata, pages, page-image files, chunks (search), extraction
  * jobs/runs/results, and every files.* baby table — with
- * viewer=true / editor=false for the entitled user and all-false/0 for the
- * control user.
+ * viewer=true / editor=false for the entitled user. The control expectation
+ * comes from public.library_is_open: industry/global publication is open to
+ * every signed-in user; organization-only publication remains denied.
  *
  * Probes are REAL: kernel judges via service-key RPC, row visibility via a
  * real user JWT over PostgREST (true RLS). Loud, non-blocking (exit 0)
@@ -19,7 +20,7 @@
  *   pnpm check:access-matrix -- --store <uuid> --entitled <uuid> --control <uuid> --strict
  *
  * Defaults: AMA-G5 store + the grant-only entitled reader
- * (elliesadeghijd@gmail.com) + the non-entitled control. NEVER pass a
+ * (elliesadeghijd@gmail.com) + the unrelated control. NEVER pass a
  * super-admin as the entitled user — it reports can_curate=true and masks
  * exactly the failures this matrix exists to catch (the script refuses).
  */
@@ -37,7 +38,7 @@ import {
 
 const DEFAULT_STORE = "0158e878-1bab-4c91-9597-da4e8951c2a7"; // AMA Guides 5th Ed
 const DEFAULT_ENTITLED = "77c6af70-a35e-4724-a304-64a0dd789674"; // grant-only reader
-const DEFAULT_CONTROL = "929274b1-a889-41ee-8a7f-dbaec7b0ee54"; // non-entitled
+const DEFAULT_CONTROL = "929274b1-a889-41ee-8a7f-dbaec7b0ee54"; // unrelated user
 /** Known super-admins that must never be the entitled leg. */
 const BANNED_ENTITLED = new Set(["87a6e699-3622-4869-8843-d0867456c0dd"]);
 
@@ -104,34 +105,43 @@ async function main(): Promise<number> {
     return 1;
   }
 
+  const libraryOpen = await rpc<boolean>(env, "library_is_open", {
+    p_entity_type: "data_store",
+    p_entity_id: store,
+  });
+  const controlCount = (visibleCount: number): number => (libraryOpen ? visibleCount : 0);
+  console.log(`${C.dim}library_open=${libraryOpen} (control expectation: ${libraryOpen ? "read" : "deny"})${C.reset}\n`);
+
   const [jwtE, jwtC] = await Promise.all([mintUserJwt(env, entitled), mintUserJwt(env, control)]);
 
   // ── Store level ──────────────────────────────────────────────────────────
   assert("store judge viewer (entitled)", "true", String(await judge(env, entitled, "data_store", store, "viewer")), (await judge(env, entitled, "data_store", store, "viewer")) === true);
   assert("store judge editor (entitled)", "false", String(await judge(env, entitled, "data_store", store, "editor")), (await judge(env, entitled, "data_store", store, "editor")) === false);
-  assert("store judge viewer (control)", "false", String(await judge(env, control, "data_store", store, "viewer")), (await judge(env, control, "data_store", store, "viewer")) === false);
+  const storeControl = await judge(env, control, "data_store", store, "viewer");
+  assert("store judge viewer (control)", String(libraryOpen), String(storeControl), storeControl === libraryOpen);
 
   const storeRowsE = await rlsCount(env, jwtE, "rag", "data_stores", `id=eq.${store}`);
   const storeRowsC = await rlsCount(env, jwtC, "rag", "data_stores", `id=eq.${store}`);
   assert("store row RLS (entitled)", "1", String(storeRowsE), storeRowsE === 1);
-  assert("store row RLS (control)", "0", String(storeRowsC), storeRowsC === 0);
+  assert("store row RLS (control)", String(controlCount(1)), String(storeRowsC), storeRowsC === controlCount(1));
 
   const memRowsE = await rlsCount(env, jwtE, "rag", "data_store_members", `data_store_id=eq.${store}&deleted_at=is.null`, "source_id");
   assert("members RLS (entitled)", `${tree.members.length}`, String(memRowsE), memRowsE === tree.members.length);
   const memRowsC = await rlsCount(env, jwtC, "rag", "data_store_members", `data_store_id=eq.${store}&deleted_at=is.null`, "source_id");
-  assert("members RLS (control)", "0", String(memRowsC), memRowsC === 0);
+  assert("members RLS (control)", String(controlCount(tree.members.length)), String(memRowsC), memRowsC === controlCount(tree.members.length));
 
   // ── File level ───────────────────────────────────────────────────────────
   for (const fileId of tree.files) {
     const short = fileId.slice(0, 8);
     assert(`file ${short} judge viewer (entitled) [DB download gate]`, "true", String(await judge(env, entitled, "file", fileId, "viewer")), (await judge(env, entitled, "file", fileId, "viewer")) === true);
     assert(`file ${short} judge editor (entitled)`, "false", String(await judge(env, entitled, "file", fileId, "editor")), (await judge(env, entitled, "file", fileId, "editor")) === false);
-    assert(`file ${short} judge viewer (control)`, "false", String(await judge(env, control, "file", fileId, "viewer")), (await judge(env, control, "file", fileId, "viewer")) === false);
+    const fileControl = await judge(env, control, "file", fileId, "viewer");
+    assert(`file ${short} judge viewer (control)`, String(libraryOpen), String(fileControl), fileControl === libraryOpen);
 
     const fE = await rlsCount(env, jwtE, "files", "files", `id=eq.${fileId}`);
     const fC = await rlsCount(env, jwtC, "files", "files", `id=eq.${fileId}`);
     assert(`file ${short} metadata RLS (entitled)`, "1", String(fE), fE === 1);
-    assert(`file ${short} metadata RLS (control)`, "0", String(fC), fC === 0);
+    assert(`file ${short} metadata RLS (control)`, String(controlCount(1)), String(fC), fC === controlCount(1));
 
     // Baby tables — n/a when the baseline is empty for this file.
     const babies: [string, string, string][] = [
@@ -151,7 +161,7 @@ async function main(): Promise<number> {
       const e = await rlsCount(env, jwtE, schema, table, `${col}=eq.${fileId}`);
       const c = await rlsCount(env, jwtC, schema, table, `${col}=eq.${fileId}`);
       assert(`${schema}.${table} for ${short} RLS (entitled)`, `${base}`, String(e), e === base);
-      assert(`${schema}.${table} for ${short} RLS (control)`, "0", String(c), c === 0);
+      assert(`${schema}.${table} for ${short} RLS (control)`, String(controlCount(base)), String(c), c === controlCount(base));
     }
   }
 
@@ -164,19 +174,19 @@ async function main(): Promise<number> {
     // Archived docs: grant readers must LOSE read (D-D rule).
     assert(`doc ${short} can_read (entitled)`, doc.archived ? "false (archived)" : "true", String(readE), readE === !doc.archived);
     assert(`doc ${short} can_curate (entitled)`, "false", String(curateE), curateE === false);
-    assert(`doc ${short} can_read (control)`, "false", String(readC), readC === false);
+    assert(`doc ${short} can_read (control)`, String(libraryOpen && !doc.archived), String(readC), readC === (libraryOpen && !doc.archived));
 
     if (!doc.archived) {
       const dE = await rlsCount(env, jwtE, "docproc", "processed_documents", `id=eq.${doc.id}`);
       const dC = await rlsCount(env, jwtC, "docproc", "processed_documents", `id=eq.${doc.id}`);
       assert(`doc ${short} metadata RLS (entitled)`, "1", String(dE), dE === 1);
-      assert(`doc ${short} metadata RLS (control)`, "0", String(dC), dC === 0);
+      assert(`doc ${short} metadata RLS (control)`, String(controlCount(1)), String(dC), dC === controlCount(1));
 
       const pBase = await baselineCount(env, "docproc", "processed_document_pages", `processed_document_id=eq.${doc.id}`);
       const pE = await rlsCount(env, jwtE, "docproc", "processed_document_pages", `processed_document_id=eq.${doc.id}`);
       const pC = await rlsCount(env, jwtC, "docproc", "processed_document_pages", `processed_document_id=eq.${doc.id}`);
       assert(`doc ${short} pages RLS (entitled)`, `${pBase}`, String(pE), pE === pBase);
-      assert(`doc ${short} pages RLS (control)`, "0", String(pC), pC === 0);
+      assert(`doc ${short} pages RLS (control)`, String(controlCount(pBase)), String(pC), pC === controlCount(pBase));
     }
   }
 
@@ -185,7 +195,7 @@ async function main(): Promise<number> {
     const ok = await judge(env, entitled, "file", img, "viewer");
     const okC = await judge(env, control, "file", img, "viewer");
     assert(`page image ${img.slice(0, 8)} judge viewer (entitled)`, "true", String(ok), ok === true);
-    assert(`page image ${img.slice(0, 8)} judge viewer (control)`, "false", String(okC), okC === false);
+    assert(`page image ${img.slice(0, 8)} judge viewer (control)`, String(libraryOpen), String(okC), okC === libraryOpen);
   }
 
   // ── Chunks (search-hit level) ────────────────────────────────────────────
@@ -203,7 +213,7 @@ async function main(): Promise<number> {
     ).then((r) => r.json() as Promise<{ id: string }[]>);
     if (oneChunk[0]?.id) {
       const cC = await rlsCount(env, jwtC, "rag", "kg_chunks", `id=eq.${oneChunk[0].id}`);
-      assert("chunk row RLS (control)", "0", String(cC), cC === 0);
+      assert("chunk row RLS (control)", String(controlCount(1)), String(cC), cC === controlCount(1));
     }
   }
 
@@ -213,7 +223,7 @@ async function main(): Promise<number> {
     const jE = await rlsCount(env, jwtE, "docproc", "page_extraction_jobs", `id=eq.${jobId}`);
     const jC = await rlsCount(env, jwtC, "docproc", "page_extraction_jobs", `id=eq.${jobId}`);
     assert(`extraction job ${short} RLS (entitled)`, "1", String(jE), jE === 1);
-    assert(`extraction job ${short} RLS (control)`, "0", String(jC), jC === 0);
+    assert(`extraction job ${short} RLS (control)`, String(controlCount(1)), String(jC), jC === controlCount(1));
 
     for (const child of ["page_extraction_runs", "page_extraction_results"]) {
       const base = await baselineCount(env, "docproc", child, `job_id=eq.${jobId}`);
@@ -224,7 +234,7 @@ async function main(): Promise<number> {
       const e = await rlsCount(env, jwtE, "docproc", child, `job_id=eq.${jobId}`);
       const c = await rlsCount(env, jwtC, "docproc", child, `job_id=eq.${jobId}`);
       assert(`${child} for ${short} RLS (entitled)`, `${base}`, String(e), e === base);
-      assert(`${child} for ${short} RLS (control)`, "0", String(c), c === 0);
+      assert(`${child} for ${short} RLS (control)`, String(controlCount(base)), String(c), c === controlCount(base));
     }
   }
 
