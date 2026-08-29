@@ -31,7 +31,7 @@ importers:
         version: 0.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@ai-matrx/kit':
         specifier: latest
-        version: 0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
+        version: 0.5.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
       '@ai-sdk/google':
         specifier: ^3.0.43
         version: 3.0.43(zod@4.4.3)
@@ -812,8 +812,8 @@ packages:
       react: 19.2.7
       react-dom: 19.2.7
 
-  '@ai-matrx/kit@0.5.0':
-    resolution: {integrity: sha512-LQmHzQNxluHI4RrnBFOUVqzkDu256tKNcDlL4q1QcQ0j3yVas9/vb5VNMs2wN8MGynEH3eXiZi1hA2LXKyrrpg==}
+  '@ai-matrx/kit@0.5.1':
+    resolution: {integrity: sha512-j8LzQ9Lxc977Dil+cAIHdIBOXTqKu4HD9OC1TFj2p3setkEHAYEiGoZAdH16ypziWIiIaxJ9M0ePBqieqKQI0A==}
     engines: {node: '>=20'}
     peerDependencies:
       react: 19.2.7
@@ -13010,7 +13010,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/kit@0.5.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7))':
+  '@ai-matrx/kit@0.5.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7))':
     dependencies:
       '@radix-ui/react-alert-dialog': 1.1.23(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       idb: 8.0.3
