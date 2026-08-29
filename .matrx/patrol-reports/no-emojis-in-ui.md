@@ -5,7 +5,7 @@
 - Run kind: retry of the missed scheduled periodic full pass
 - Tier: M/R, one behavior-preserving batch capped below 15 files
 - Base SHA: `4544506cf27c818676ca0ba2954e744f06761055`
-- Delivery state: exact-candidate certification pending
+- Delivery state: exact candidate independently CERTIFIED and delivered in `v0.4.1441`
 
 ## Reconciled prior delivery
 
@@ -107,7 +107,8 @@ These remain open because the current glyph is the only state signal, belongs to
 - P6 manifest contract: PASS. The fleet-wide contract check still reports unrelated automation drift outside P6.
 - Scoped ESLint: existing same-file errors/warnings remain outside the edited lines; the P6 edits add none.
 - Managed preview: unavailable because `/Users/armanisadeghi/code/matrx-frontend` owns the machine-wide lease; that foreign preview was not used. This pure text-glyph deletion risk class is covered by exact source-delta review, unchanged markup/classes, detector, type, doctrine, and adversarial review.
-- Independent adversarial certifier: PENDING for the exact candidate SHA.
+- Independent adversarial certifier: **CERTIFIED** exact candidate `508177a056c6b5be446cbc609ca9dca9e6a1e244`; no concrete batch-caused defect.
+- Delivery-order reconciliation: the automatic integration/release lane placed the candidate on `origin/main` and in `v0.4.1441` before the verdict. The permanent record appends the real certification time and then retroactively records the already-completed delivery; it does not imply certification happened first.
 - Human approvals needed: none. Exceptions proposed: none.
 
 ## Structural baseline for the next run
