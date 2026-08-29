@@ -102,6 +102,15 @@ function formatFileSize(bytes: number): string {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
+ * The universal file transport captures its own structured failures. A retry
+ * wrapper stays visible without re-emitting the same failure as system_error.
+ */
+function reportRetryableUploadFailure(attempt: number, error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+  console.warn(`Upload attempt ${attempt} failed; retrying: ${message}`);
+}
+
+/**
  * Upload an audio recording to cloud-files. Retries indefinitely (up to
  * `maxRetries`) so a flaky network never loses a recording.
  */
@@ -181,9 +190,8 @@ export async function saveAudioToStorage(
       };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      // eslint-disable-next-line no-console
-      console.error(`Upload attempt ${attempt} failed:`, error);
       if (attempt < maxRetries) {
+        reportRetryableUploadFailure(attempt, error);
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 16000);
         onProgress?.(
           (attempt / maxRetries) * 50,
