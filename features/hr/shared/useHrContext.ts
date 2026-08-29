@@ -332,7 +332,25 @@ export function useHrContextResolver(
     active,
     persona: active?.persona ?? null,
     capabilities: active?.capabilities ?? [],
-    orgRef: orgRefFor(employers, active),
+    /*
+      🚨 THE EMPLOYER TRAVELS FROM THE FIRST PAINT, NOT FROM HYDRATION.
+
+      `orgRefFor` reads the RESOLVED context, so it is null until `hr_my_context` answers. Every
+      `?org=`-carrying link built from this value therefore rendered bare for the first render and
+      only grew its employer once the fetch landed — measured on 2026-08-28 as
+      `413ms → /hr/tasks`, `801ms → /hr/tasks?org=zzz-throwaway-surface-test-org`. A click inside
+      that window drops the employer exactly as a hardcoded literal would, and lands the user in
+      whatever their active-org selection happens to name. A link that is only correct after
+      hydration is a race, not a fix.
+
+      `orgParam` is `?org=` read straight off `useSearchParams()` — present synchronously, on the
+      very first render, and it is by definition the employer this page was asked for. It is a
+      FALLBACK, never an override: the moment the context resolves, `orgRefFor` wins, so a server
+      substitution (law B) still corrects the value rather than being papered over. With no `?org=`
+      in the URL there is nothing to fall back to and this stays null, which is the honest answer —
+      the destination then resolves the employer the same way this page just did.
+    */
+    orgRef: orgRefFor(employers, active) ?? orgParam,
     substitution,
     isLoading,
     error,
