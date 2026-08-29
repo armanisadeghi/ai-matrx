@@ -1,4 +1,4 @@
--- hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql
+-- hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql
 --
 -- 🚨 THE FOURTH RULING: THE WRITE GATE NEVER ASKED THE POPULATION IT HAD JUST REFUSED THE READ FOR.
 --
@@ -64,7 +64,7 @@
 --       treats that spell's org as authoritative. The resolver now filters by, and then asserts,
 --       the employee's own employer. 0 rows where employment.organization_id disagrees today.
 --
--- Applied live 2026-08-30 and double-ledgered. Falsified three ways through PostgREST.
+-- Applied live 2026-08-29 and double-ledgered. Falsified three ways through PostgREST.
 
 ---------------------------------------------------------------------------------------------
 -- 1. THE ONE IMPLEMENTATION OF THE NEAREST-SPELL RULE
@@ -113,7 +113,7 @@ begin
 end $fn$;
 
 comment on function hr.subject_employment_as_of(uuid, date, uuid) is
-  'hr_l1_63: the ONE resolution of "which employment is this person''s record about as of a date" '
+  'hr_l1_64: the ONE resolution of "which employment is this person''s record about as of a date" '
   '— the live spell, else the nearest one (intended future, else last held), asserted to the '
   'employee''s own employer. Every subject door, read and write, resolves through this and only '
   'this; a NULL subject makes hr.capability skip population_contains entirely.';
@@ -133,7 +133,7 @@ begin
     raise exception 'hr write: organization_id is required' using errcode = '22023';
   end if;
 
-  -- 🚨 THE WRITE GATE ASKS THE POPULATION THE READ WAS ALREADY REFUSED FOR (hr_l1_63).
+  -- 🚨 THE WRITE GATE ASKS THE POPULATION THE READ WAS ALREADY REFUSED FOR (hr_l1_64).
   -- This function exists so that the resolution and the refusal happen in ONE place for every
   -- employee-keyed door. It adds no rule of its own: the nearest spell comes from
   -- hr.subject_employment_as_of and the decision comes from hr._l1_write_gate, unchanged.
@@ -160,7 +160,7 @@ begin
 end $fn$;
 
 comment on function hr._l1_subject_write_gate(uuid, text, uuid, text, text, text) is
-  'hr_l1_63: the employee-keyed write gate. Resolves the subject through '
+  'hr_l1_64: the employee-keyed write gate. Resolves the subject through '
   'hr.subject_employment_as_of, refuses when even the nearest spell does not exist, then defers '
   'to hr._l1_write_gate. Passing a raw NULL subject to that gate makes hr.capability skip '
   'population_contains, which is the defect this closes.';
@@ -173,7 +173,7 @@ begin
   if (select prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
        where n.nspname = 'hr' and p.proname = '_wf_instance_visible')
      ~ 'SCOPE MEANS SCOPE WHEREVER THE POPULATION IS EVALUABLE' then
-    raise notice 'hr_l1_63: already applied';
+    raise notice 'hr_l1_64: already applied';
     return;
   end if;
 
@@ -184,7 +184,7 @@ begin
     v_def := pg_get_functiondef(p_fn::regprocedure);
     v_cnt := (length(v_def) - length(replace(v_def, p_old, ''))) / length(p_old);
     if v_cnt <> p_expect then
-      raise exception 'hr_l1_63: % — expected % occurrence(s) of the anchor, found %. REFUSING to '
+      raise exception 'hr_l1_64: % — expected % occurrence(s) of the anchor, found %. REFUSING to '
                       'guess at a body that has moved underneath this migration.',
                       p_fn, p_expect, v_cnt;
     end if;
@@ -209,7 +209,7 @@ begin
     || E'              em.hire_date desc\n'
     || E'     limit 1;\n'
     || E'  end if;\n',
-    E'\n  -- 🚨 THE FALLBACK ITSELF NOW LIVES IN hr.subject_employment_as_of (hr_l1_63), because it\n'
+    E'\n  -- 🚨 THE FALLBACK ITSELF NOW LIVES IN hr.subject_employment_as_of (hr_l1_64), because it\n'
     || E'  -- was inlined HERE and nowhere else — which is why ten write doors kept handing\n'
     || E'  -- hr.capability a NULL subject and skipping population_contains entirely for months\n'
     || E'  -- after hr_l1_61 "closed" it. One rule, one implementation, every door.\n', 1);
@@ -221,7 +221,7 @@ begin
   perform pg_temp._swap('hr._l1_viewer(uuid,uuid,date)',
     E'\n  elsif hr.capability(p_user, ''identity.read'', v_emp, p_at, v_org)\n'
     || E'        or hr.capability(p_user, ''working_record.write'', v_emp, p_at, v_org) then\n',
-    E'\n  -- 🚨 AN UNRESOLVABLE SUBJECT REFUSES, IT DOES NOT FALL THROUGH (hr_l1_63, latent (a)).\n'
+    E'\n  -- 🚨 AN UNRESOLVABLE SUBJECT REFUSES, IT DOES NOT FALL THROUGH (hr_l1_64, latent (a)).\n'
     || E'  elsif v_emp is not null\n'
     || E'        and (hr.capability(p_user, ''identity.read'', v_emp, p_at, v_org)\n'
     || E'             or hr.capability(p_user, ''working_record.write'', v_emp, p_at, v_org)) then\n',
@@ -235,7 +235,7 @@ begin
   ------------------------------------------------------------------ the EMPLOYEE-keyed write doors
   perform pg_temp._swap('public.hr_employee_update(uuid,jsonb,integer)',
     E'\n  v_emp := (hr.employment_as_of(p_employee_id, current_date)).id;\n',
-    E'\n  -- 🚨 THE WRITE GATE ASKS THE POPULATION IT JUST REFUSED THE READ FOR (hr_l1_63).\n'
+    E'\n  -- 🚨 THE WRITE GATE ASKS THE POPULATION IT JUST REFUSED THE READ FOR (hr_l1_64).\n'
     || E'  -- hr.employment_as_of is NULL for a prehire and for an ex-employee, and hr.capability\n'
     || E'  -- skips population_contains outright on a NULL subject — so a department-scoped admin\n'
     || E'  -- REFUSED the read of this person was granted the WRITE in the same second. Resolved\n'
@@ -250,7 +250,7 @@ begin
   perform pg_temp._swap('public.hr_employee_invite(uuid,text,timestamp with time zone)',
     E'\n  v_emp := (hr.employment_as_of(p_employee_id, current_date)).id;\n'
     || E'  v_gate := hr._l1_write_gate(v_org, ''identity.write'', v_emp, ''hr_employee'', ''invite'', ''login'');\n',
-    E'\n  -- 🚨 THE WRITE GATE ASKS THE POPULATION IT JUST REFUSED THE READ FOR (hr_l1_63): an\n'
+    E'\n  -- 🚨 THE WRITE GATE ASKS THE POPULATION IT JUST REFUSED THE READ FOR (hr_l1_64): an\n'
     || E'  -- invite to a prehire IS the ordinary case here, and it was the case with no scope.\n'
     || E'  select g.gate, g.subject_employment into v_gate, v_emp\n'
     || E'    from hr._l1_subject_write_gate(v_org, ''identity.write'', p_employee_id,\n'
@@ -258,7 +258,7 @@ begin
 
   perform pg_temp._swap('public.hr_emergency_contact_upsert(jsonb)',
     E'\n  v_emp := (hr.employment_as_of(v_employee, current_date)).id;\n',
-    E'\n  -- 🚨 resolved and gated below through hr._l1_subject_write_gate (hr_l1_63).\n', 1);
+    E'\n  -- 🚨 resolved and gated below through hr._l1_subject_write_gate (hr_l1_64).\n', 1);
 
   perform pg_temp._swap('public.hr_emergency_contact_upsert(jsonb)',
     E'\n    v_gate := hr._l1_write_gate(v_org, ''identity.write'', v_emp, ''hr_emergency_contact'', ''update'');\n',
@@ -273,7 +273,7 @@ begin
 
   perform pg_temp._swap('public.hr_emergency_contact_remove(uuid)',
     E'\n    v_gate := hr._l1_write_gate(v_org, ''identity.write'', null, ''hr_emergency_contact'', ''delete'');\n',
-    E'\n    -- 🚨 THE SUBJECT WAS ONE COLUMN AWAY AND THE GATE WAS HANDED A LITERAL NULL (hr_l1_63).\n'
+    E'\n    -- 🚨 THE SUBJECT WAS ONE COLUMN AWAY AND THE GATE WAS HANDED A LITERAL NULL (hr_l1_64).\n'
     || E'    select g.gate, g.subject_employment into v_gate, v_subject\n'
     || E'      from hr._l1_subject_write_gate(v_org, ''identity.write'', v_employee,\n'
     || E'                                     ''hr_emergency_contact'', ''delete'') g;\n', 1);
@@ -284,7 +284,7 @@ begin
 
   perform pg_temp._swap('public.hr_external_identity_upsert(jsonb)',
     E'\n  v_gate := hr._l1_write_gate(v_org, ''identity.write'', null, ''hr_external_identity'', ''update'');\n',
-    E'\n  -- 🚨 THE SUBJECT WAS ONE COLUMN AWAY AND THE GATE WAS HANDED A LITERAL NULL (hr_l1_63).\n'
+    E'\n  -- 🚨 THE SUBJECT WAS ONE COLUMN AWAY AND THE GATE WAS HANDED A LITERAL NULL (hr_l1_64).\n'
     || E'  select g.gate, g.subject_employment into v_gate, v_subject\n'
     || E'    from hr._l1_subject_write_gate(v_org, ''identity.write'', v_employee,\n'
     || E'                                   ''hr_external_identity'', ''update'') g;\n', 1);
@@ -301,7 +301,7 @@ begin
   perform pg_temp._swap('public.hr_incident_create(jsonb)',
     E'\n  v_gate := hr._l1_write_gate(v_org, ''incident.investigate'', null, ''hr_incident'', ''create'',\n'
     || E'                              ''incident_intake'');\n',
-    E'\n  -- 🚨 THE CASE IS ABOUT SOMEBODY, AND THE GATE MUST ASK ABOUT THEM (hr_l1_63). The reporter\n'
+    E'\n  -- 🚨 THE CASE IS ABOUT SOMEBODY, AND THE GATE MUST ASK ABOUT THEM (hr_l1_64). The reporter\n'
     || E'  -- lane below is UNCHANGED: an ordinary employee still files a report about anyone.\n'
     || E'  v_gate := hr._l1_write_gate(v_org, ''incident.investigate'', v_subject, ''hr_incident'', ''create'',\n'
     || E'                              ''incident_intake'');\n', 1);
@@ -318,7 +318,7 @@ begin
   perform pg_temp._swap('public.hr_incident_advance(uuid,text,jsonb)',
     E'\n  v_gate := hr._l1_write_gate(v_org, ''incident.investigate'', null, ''hr_incident'', ''update'',\n'
     || E'                              ''investigation'');\n',
-    E'\n  -- 🚨 THE CASE IS ABOUT SOMEBODY, AND THE GATE MUST ASK ABOUT THEM (hr_l1_63).\n'
+    E'\n  -- 🚨 THE CASE IS ABOUT SOMEBODY, AND THE GATE MUST ASK ABOUT THEM (hr_l1_64).\n'
     || E'  v_gate := hr._l1_write_gate(v_org, ''incident.investigate'', v_subject, ''hr_incident'', ''update'',\n'
     || E'                              ''investigation'');\n', 1);
 
@@ -335,7 +335,7 @@ begin
   perform pg_temp._swap('public.hr_incident_assign(uuid,uuid,text)',
     E'\n  v_gate := hr._l1_write_gate(v_org, ''incident.investigate'', null, ''hr_incident'', ''update'',\n'
     || E'                              ''investigation'');\n',
-    E'\n  -- 🚨 THE CASE IS ABOUT SOMEBODY, AND THE GATE MUST ASK ABOUT THEM (hr_l1_63). The population\n'
+    E'\n  -- 🚨 THE CASE IS ABOUT SOMEBODY, AND THE GATE MUST ASK ABOUT THEM (hr_l1_64). The population\n'
     || E'  -- question is about the SUBJECT of the case, never about the assignee being routed to it.\n'
     || E'  v_gate := hr._l1_write_gate(v_org, ''incident.investigate'', v_subject, ''hr_incident'', ''update'',\n'
     || E'                              ''investigation'');\n', 1);
@@ -353,7 +353,7 @@ begin
   perform pg_temp._swap('public.hr_incident_party_add(jsonb)',
     E'\n  v_gate := hr._l1_write_gate(v_org, ''incident.investigate'', null, ''hr_incident_party'', ''create'',\n'
     || E'                              ''investigation'');\n',
-    E'\n  -- 🚨 THE CASE IS ABOUT SOMEBODY, AND THE GATE MUST ASK ABOUT THEM (hr_l1_63) — the subject\n'
+    E'\n  -- 🚨 THE CASE IS ABOUT SOMEBODY, AND THE GATE MUST ASK ABOUT THEM (hr_l1_64) — the subject\n'
     || E'  -- of the case, not the party being added, who may be a witness from anywhere.\n'
     || E'  v_gate := hr._l1_write_gate(v_org, ''incident.investigate'', v_subject, ''hr_incident_party'', ''create'',\n'
     || E'                              ''investigation'');\n', 1);
@@ -365,7 +365,7 @@ begin
   perform pg_temp._swap('public.hr_restricted_note_add(jsonb)',
     E'\n  v_gate := hr._l1_write_gate(v_org, ''incident.investigate'', null, ''hr_restricted_note'', ''create'',\n'
     || E'                              ''investigation'');\n',
-    E'\n  -- 🚨 THE NOTE IS ABOUT SOMEBODY, AND THE GATE MUST ASK ABOUT THEM (hr_l1_63). The subject is\n'
+    E'\n  -- 🚨 THE NOTE IS ABOUT SOMEBODY, AND THE GATE MUST ASK ABOUT THEM (hr_l1_64). The subject is\n'
     || E'  -- polymorphic, so it is resolved to an employment where one exists — through the ONE\n'
     || E'  -- resolver, never a second copy of the rule. A subject_token with no person behind it has\n'
     || E'  -- no population to evaluate and stays on the org rung (hr_l1_62''s stranding ruling).\n'
@@ -383,7 +383,7 @@ begin
   perform pg_temp._swap('hr._wf_instance_visible(uuid,uuid)',
     E'\n      or hr.capability(p_user, ''workflow.view_queue'', null, current_date, inst.organization_id);\n',
     E'\n      -- 🚨 SCOPE MEANS SCOPE WHEREVER THE POPULATION IS EVALUABLE (hr_l1_62, extended to the\n'
-    || E'      -- PER-INSTANCE door by hr_l1_63). hr_l1_62 scoped the queue LIST and stopped there, so\n'
+    || E'      -- PER-INSTANCE door by hr_l1_64). hr_l1_62 scoped the queue LIST and stopped there, so\n'
     || E'      -- both items a department-scoped admin''s queue correctly WITHHELD stayed fully readable\n'
     || E'      -- by uuid — granted:true, the subject''s name, and the change diff. A list that hides\n'
     || E'      -- what the door hands over is not a scope. The four standings above are IDENTITY facts\n'
@@ -394,6 +394,56 @@ begin
     || E'      or hr.capability(p_user, ''workflow.view_queue'', inst.subject_employment_id,\n'
     || E'                       current_date, inst.organization_id);\n', 1);
 end $mig$;
+
+---------------------------------------------------------------------------------------------
+-- 3b. THE STAMP CORRECTION — because this file was applied under TWO names
+--
+-- 🚨 THIS BLOCK EXISTS BECAUSE OF A REAL SHARED-CHECKOUT RACE, AND SAYING SO IS THE POINT.
+-- This migration was first written as `hr_l1_63`, and a concurrent process in this shared
+-- checkout committed and applied it under that name before the number was found to collide with
+-- another agent's in-flight `hr_l1_63_the_derivation_reads_dates_not_a_stale_enum`. It was
+-- renumbered to `hr_l1_64` and applied again — but the second apply hit the idempotence guard
+-- above and skipped every swap, so the STAMPS inside the twelve swapped bodies still read
+-- `hr_l1_63`: pointing a future reader at an unrelated migration about directory status.
+-- A comment that names the wrong migration is worse than no comment, because it will be believed.
+-- The two functions CREATED by this file (not swapped) already carry the right number.
+--
+-- This block is occurrence-checked exactly like the swaps and is a no-op on a clean apply.
+do $stamp$
+declare r record; v_def text; v_cnt int; v_fixed int := 0;
+begin
+  for r in
+    select p.oid::regprocedure::text as sig,
+           (length(p.prosrc) - length(replace(p.prosrc, 'hr_l1_63', ''))) / 8 as hits
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where (n.nspname = 'hr' and p.proname in ('_l1_viewer', '_wf_instance_visible'))
+        or (n.nspname = 'public' and p.proname in (
+              'hr_employee_update', 'hr_employee_invite', 'hr_emergency_contact_upsert',
+              'hr_emergency_contact_remove', 'hr_external_identity_upsert',
+              'hr_restricted_note_add', 'hr_incident_create', 'hr_incident_advance',
+              'hr_incident_assign', 'hr_incident_party_add'))
+  loop
+    if r.hits = 0 then
+      continue;                          -- clean apply, or already corrected
+    end if;
+    v_def := pg_get_functiondef(r.sig::regprocedure);
+    -- 🚨 REFUSE TO REWRITE A SENTENCE THAT MAY BELONG TO ANOTHER MIGRATION. Two conditions,
+    -- both required: the body must carry a marker only THIS migration writes, and it must NOT
+    -- name the other hr_l1_63 by its full filename stem. The other hr_l1_63 touched
+    -- employee_directory_status / hr_directory_list / hr_employee_profile / hr_org_summary /
+    -- hr_employee_create — none of which is in the loop's allowlist above — so a hit here that
+    -- fails either condition means the world has moved and a human should look.
+    v_cnt := (length(v_def) - length(replace(v_def, 'hr_l1_63_', ''))) / 9;
+    if v_cnt > 0 or v_def !~ 'subject_employment_as_of|_l1_subject_write_gate|v_subject|inst\.subject_employment_id' then
+      raise exception 'hr_l1_64 stamp correction: % carries % hr_l1_63 reference(s) that are not '
+                      'recognisably this migration''s own. REFUSING to rewrite them.',
+                      r.sig, r.hits;
+    end if;
+    execute replace(v_def, 'hr_l1_63', 'hr_l1_64');
+    v_fixed := v_fixed + 1;
+  end loop;
+  raise notice 'hr_l1_64 stamp correction: % function(s) restamped', v_fixed;
+end $stamp$;
 
 ---------------------------------------------------------------------------------------------
 -- 4. THE CONTRACTS — every function touched is pinned so a re-emit cannot reopen the population
@@ -410,7 +460,7 @@ insert into hr.function_contract
   (schema_name, function_name, home_migration, must_contain, must_not_contain, reason)
 values
   ('hr', 'subject_employment_as_of',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['case when em.hire_date > p_at then em.hire_date end asc nulls last',
          'THE RESOLVED SPELL MUST BELONG TO THE EMPLOYEE''S OWN EMPLOYER',
          'em.organization_id = p_organization_id'],
@@ -423,7 +473,7 @@ values
    || 'mismatched employment row move the tenant the capability is evaluated in.'),
 
   ('hr', '_l1_subject_write_gate',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['hr.subject_employment_as_of(p_employee_id, current_date, p_org)',
          'unresolvable_subject:',
          'hr._l1_write_gate(p_org, p_capability, subject_employment'],
@@ -434,7 +484,7 @@ values
    || 'hr._l1_write_gate. Re-deriving either here is how the two drift apart.'),
 
   ('hr', '_l1_viewer',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['hr.subject_employment_as_of(p_employee_id, p_at, v_org)',
          'AN UNRESOLVABLE SUBJECT REFUSES, IT DOES NOT FALL THROUGH',
          'elsif v_emp is not null'],
@@ -445,7 +495,7 @@ values
    || 'Reinstating the raw hr.employment_as_of call, or dropping the guards, reopens the read half.'),
 
   ('hr', '_wf_instance_visible',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['SCOPE MEANS SCOPE WHEREVER THE POPULATION IS EVALUABLE',
          'hr.capability(p_user, ''workflow.view_queue'', inst.subject_employment_id,'],
    array['hr.capability(p_user, ''workflow.view_queue'', null, current_date, inst.organization_id)'],
@@ -455,48 +505,48 @@ values
    || 'subject. Passing null here restores an org-wide door under a scoped list.'),
 
   ('public', 'hr_employee_update',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['hr._l1_subject_write_gate(v_org, ''identity.write'', p_employee_id,'],
    array['(hr.employment_as_of(p_employee_id, current_date)).id'],
    'PROVEN end-to-end: a department-scoped admin refused the READ of a prehire and of an '
    || 'ex-employee was GATE PASSED on the write. The door must resolve the subject and gate on it.'),
 
   ('public', 'hr_employee_invite',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['hr._l1_subject_write_gate(v_org, ''identity.write'', p_employee_id,'],
    array['(hr.employment_as_of(p_employee_id, current_date)).id'],
    'Inviting a PREHIRE is this door''s ordinary case, and it was the case with no population '
    || 'bound at all — the raw hr.employment_as_of resolves to NULL for exactly that person.'),
 
   ('public', 'hr_emergency_contact_upsert',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['hr._l1_subject_write_gate(v_org, ''identity.write'', v_employee,'],
    array['(hr.employment_as_of(v_employee, current_date)).id'],
    'PROVEN end-to-end alongside hr_employee_update. Same shape, same raw NULL subject.'),
 
   ('public', 'hr_emergency_contact_remove',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['hr._l1_subject_write_gate(v_org, ''identity.write'', v_employee,'],
    array['hr._l1_write_gate(v_org, ''identity.write'', null, ''hr_emergency_contact'', ''delete'')'],
    'A literal null subject with v_employee one column away. Deleting somebody''s emergency '
    || 'contacts is a write about that person and must be scoped to them.'),
 
   ('public', 'hr_external_identity_upsert',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['hr._l1_subject_write_gate(v_org, ''identity.write'', v_employee,'],
    array['hr._l1_write_gate(v_org, ''identity.write'', null, ''hr_external_identity'', ''update'')'],
    'A literal null subject with v_employee one column away. An external identity is a person''s '
    || 'identity in another system; writing it is a write about them.'),
 
   ('public', 'hr_incident_create',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['''incident.investigate'', v_subject, ''hr_incident'', ''create'''],
    array['''incident.investigate'', null, ''hr_incident'', ''create'''],
    'The investigation capability must be asked about the case''s SUBJECT. The reporter lane below '
    || 'the gate is deliberately unchanged: intake is open to any employee, investigation is not.'),
 
   ('public', 'hr_incident_advance',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['i.subject_employment_id into v_org, v_cur, v_subject',
          '''incident.investigate'', v_subject, ''hr_incident'', ''update'''],
    array['''incident.investigate'', null, ''hr_incident'', ''update'''],
@@ -504,7 +554,7 @@ values
    || 'the person the case is about, and must be scoped to them.'),
 
   ('public', 'hr_incident_assign',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['i.subject_employment_id into v_org, v_subject',
          '''incident.investigate'', v_subject, ''hr_incident'', ''update'''],
    array['''incident.investigate'', null, ''hr_incident'', ''update'''],
@@ -512,7 +562,7 @@ values
    || 'routed to it — routing an investigator is a write about the person investigated.'),
 
   ('public', 'hr_incident_party_add',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['i.subject_employment_id into v_org, v_subject',
          '''incident.investigate'', v_subject, ''hr_incident_party'', ''create'''],
    array['''incident.investigate'', null, ''hr_incident_party'', ''create'''],
@@ -520,7 +570,7 @@ values
    || 'party being added, who may be a witness from anywhere in the employer.'),
 
   ('public', 'hr_restricted_note_add',
-   'hr_l1_63_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
+   'hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql',
    array['hr.subject_employment_as_of(v_subject, current_date, v_org)',
          '''incident.investigate'', v_subject_emp, ''hr_restricted_note'''],
    array['''incident.investigate'', null, ''hr_restricted_note'', ''create'''],
@@ -541,7 +591,7 @@ begin
   select count(*), string_agg(qname || ' / ' || clause || ' / ' || missing_or_present, '; ')
     into v_broken, v_bad from hr.function_contracts_broken();
   if v_broken > 0 then
-    raise exception 'hr_l1_63: % contract clause(s) broken after apply (including every earlier '
+    raise exception 'hr_l1_64: % contract clause(s) broken after apply (including every earlier '
                     'migration''s, which must survive this one): %', v_broken, v_bad;
   end if;
 end $verify$;
