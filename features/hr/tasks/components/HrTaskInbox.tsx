@@ -12,6 +12,8 @@ import { toast } from "@/lib/toast";
 import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
 import { HrFailureResolveDialog } from "@/features/hr/tasks/components/HrFailureResolveDialog";
 import { HrTaskTable } from "@/features/hr/tasks/components/HrTaskTable";
+import { hrTaskHref, hrTasksHref } from "@/features/hr/routes";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { isScope } from "@/features/hr/tasks/envelope";
 import { useHrInbox } from "@/features/hr/tasks/hooks/useHrInbox";
 import { bulkDecide } from "@/features/hr/tasks/service";
@@ -87,6 +89,12 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
     const scope: HrInboxScope =
         scopeParam && isScope(scopeParam) ? scopeParam : initialScope;
     const flowKey = params.get("flow");
+    /*
+      The employer every door off this inbox has to keep. Five of the six `/hr/tasks…` hrefs on
+      this page were spelled by hand and dropped it; `setScope` below was the one that did not,
+      and only because it rebuilds the WHOLE query string rather than composing a new one.
+    */
+    const { orgRef } = useHrContext();
 
     const { inbox, refusal, error, loading, reload } = useHrInbox(scope, flowKey);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -104,6 +112,10 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
         const query = new URLSearchParams(params.toString());
         query.set("scope", next);
         setSelectedIds([]);
+        // hr-url-exempt: rebuilt from `useSearchParams()`, so every existing key — `org`
+        // first among them — is carried over verbatim. A builder call here would have to
+        // re-enumerate `flow` and anything a future filter adds, and would silently drop
+        // whatever it forgot. See `features/hr/__tests__/no-hand-built-hr-urls.test.ts`.
         startTransition(() => router.replace(`/hr/tasks?${query.toString()}`));
     }
 
@@ -197,7 +209,9 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                 })}
                 {flowKey ? (
                     <Button size="sm" variant="ghost" asChild>
-                        <Link href={`/hr/tasks?scope=${scope}`}>Clear “{flowKey}” filter</Link>
+                        <Link href={hrTasksHref(orgRef, { scope })}>
+                            Clear “{flowKey}” filter
+                        </Link>
                     </Button>
                 ) : null}
                 {inbox ? (
@@ -350,7 +364,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                     className="flex items-center justify-between gap-3 p-3 text-sm"
                                 >
                                     <Link
-                                        href={`/hr/tasks/${row.instance_id}?step=${row.step_id}`}
+                                        href={hrTaskHref(row.instance_id, orgRef, { step: row.step_id })}
                                         className="truncate font-medium hover:underline"
                                     >
                                         {/* The one section whose point is "this decides itself
@@ -386,7 +400,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                         also what the pay-period health panel reads). */}
                                     <div className="min-w-0 flex-1">
                                         <Link
-                                            href={`/hr/tasks/${row.instance_id}?failure=${row.failure_id}`}
+                                            href={hrTaskHref(row.instance_id, orgRef, { failure: row.failure_id })}
                                             className="block truncate font-medium hover:underline"
                                         >
                                             {row.flow_label ?? row.flow_key ?? "This request"} —
@@ -448,7 +462,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                 <li key={row.instance_id} className="flex items-start gap-3 p-3 text-sm">
                                     <div className="min-w-0 flex-1">
                                         <Link
-                                            href={`/hr/tasks/${row.instance_id}`}
+                                            href={hrTaskHref(row.instance_id, orgRef)}
                                             className="block truncate font-medium hover:underline"
                                         >
                                             {/* Their own request, in the words the approver
@@ -499,7 +513,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                 >
                                     <div className="min-w-0 flex-1">
                                         <Link
-                                            href={`/hr/tasks/${row.instance_id}`}
+                                            href={hrTaskHref(row.instance_id, orgRef)}
                                             className="block truncate font-medium hover:underline"
                                         >
                                             {decidedRowLine(row)}
