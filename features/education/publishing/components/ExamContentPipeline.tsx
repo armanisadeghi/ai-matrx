@@ -36,7 +36,7 @@ import {
 } from "@/features/rag/api/grounding";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import { asJsonObject } from "@ai-matrx/data/db";
+import { asJsonObject } from "@/lib/supabase/mergeJsonColumn";
 import { supabase } from "@/utils/supabase/client";
 
 type DraftStatus =

@@ -2,7 +2,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import type { Database, Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
-import { mergeJsonColumn } from "@ai-matrx/data/db";
+import { mergeJsonColumn } from "@/lib/supabase/mergeJsonColumn";
 import { waitForConversationPersisted } from "../conversations/conversation-persistence";
 import {
   markInputCapabilitiesPersisted,

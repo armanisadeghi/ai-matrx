@@ -2,7 +2,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
-import { asJsonObject, mergeJsonColumn } from "@ai-matrx/data/db";
+import { asJsonObject, mergeJsonColumn } from "@/lib/supabase/mergeJsonColumn";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type {

@@ -16,7 +16,7 @@ import type { Json } from "@/types/database.types";
 import {
   mergeJsonColumn,
   type JsonObject,
-} from "@ai-matrx/data/db";
+} from "@/lib/supabase/mergeJsonColumn";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
