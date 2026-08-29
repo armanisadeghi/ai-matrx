@@ -15,11 +15,29 @@ import type { AgentShortcutRecord } from "@/features/agents/redux/agent-shortcut
 
 jest.mock("next/link", () => ({
     __esModule: true,
-    default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    // `prefetch` is a next/link-only prop; forwarding it to a bare <a> makes
+    // React warn about a non-boolean attribute, so it is dropped here.
+    default: ({
+        href,
+        children,
+        prefetch: _prefetch,
+        ...rest
+    }: {
+        href: string;
+        children: React.ReactNode;
+        prefetch?: boolean;
+    }) => (
         <a href={href} {...rest}>
             {children}
         </a>
     ),
+}));
+// The panel always mounts the link modal (closed), and the modal reads its own
+// slice of shortcut/category state. Its behaviour is its own concern — this
+// suite is about the panel's doors, so the modal is stubbed out entirely.
+jest.mock("@/features/agent-shortcuts/components/LinkAgentToShortcutModal", () => ({
+    __esModule: true,
+    LinkAgentToShortcutModal: () => null,
 }));
 const pushMock = jest.fn();
 jest.mock("next/navigation", () => ({

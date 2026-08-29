@@ -15,10 +15,6 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
-### D289 — shortcuts-panel-doors jest suite broken by panel growth since 2026-08-27 (no CI job runs it)
-
-`features/agents/components/shortcuts/__tests__/shortcuts-panel-doors.test.tsx` fails 5/5. Not one break but layers: `22b787b9fa` (2026-08-27, org-context shortcut writes) made `useAgentShortcutCrud` read `selectUserId` against the test's empty store (now provisioned with `userAuth` — first layer fixed 2026-08-29 during the icons C9 swap, which also repointed the suite's IconResolver mock to `@ai-matrx/icons`); the next layer is `LinkAgentToShortcutModal` mounting with selectors the suite never mocks (`shortcuts.filter` on undefined at its line ~169). The suite runs in NO CI job (jest jobs are scoped to content-ir/workflow-runtime/hr), so each panel feature added since 08-15 broke it silently. Fix: mock the modal (it has its own concerns) or provision its selectors; then consider adding the file to a CI jest scope.
-
 ### D288 — kind-render cracks still open after the 2026-08-29 audit (grouped remainder)
 
 The 2026-08-29 "kind slips through the cracks" audit found 27 ways a `__kind` payload renders as raw JSON/generic. The four production-dominant ones were fixed same-session (readAllRows on `content_ir` warm reads; miss TTL + `refresh()` + `kind-definitions` invalidation on `kindRegistry`; splitter structural brace counting; kind preservation on structural raws + `broken-instance` route in the 0.3.0 packages) plus the in-band Errors tab / `KindEscapedNotice` tripwire. Open remainder, in expected-volume order:
@@ -2408,6 +2404,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D289** — the `shortcuts-panel-doors` jest suite failed 5/5 because `AgentShortcutsPanel` mounts `LinkAgentToShortcutModal`, whose own state selectors the suite never mocked (`shortcuts.filter` on undefined). **FIXED 2026-08-29** in `features/agents/components/shortcuts/__tests__/shortcuts-panel-doors.test.tsx`: the modal is stubbed (its behaviour is its own concern, and the panel's door law is what this suite asserts), and the suite's `next/link` mock now drops `prefetch` instead of forwarding it to a bare `<a>`. 5/5 green. **Still true and NOT fixed:** the file runs in no CI jest job (jest jobs are scoped to content-ir/workflow-runtime/hr), so it can rot silently again. 2026-08-29.
 
 - **D286** — `esign._notify` composed a notice-less deep link for INTERNAL (user) signers (`/sign/e/<envelope>`), the third notice-less producer after `hr._wf_notify`/`hr.wf_pending`/`hr.wf_inbox` — following it stamped no `read_at` (§5.2). **FIXED 2026-08-28 by `hr_c4_51`** (the esign twin of the DEFECT-1 fix): `esign._notify` is the single shared inserter and the link is built before the row id exists, so for `user` rows only it folds `?notice=<own id>` into `deep_link` AFTER insert, keyed by `mark_notification_read`'s `recipient_user_id=auth.uid()` gate so cross-viewer stamping can't happen. **Outsider (`actor_token`) rows are left untouched** — two guards (`v_kind='user'` + `position('#')=0`) — because their secret rides the URL fragment (`/x/sign#t=…`, §5.4) and they read via the `esign.envelope_event` ledger, not spine `read_at`. Proven 7/0 (`scripts/hr/hrb001_esign_notify_read_ref_proof.py`): the internal signer's link stamps read_at when followed; the outsider fragment link is byte-identical. 2026-08-28.
 
