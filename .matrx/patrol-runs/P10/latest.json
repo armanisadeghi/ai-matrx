@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-29T192327Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-29T19:29:16.395Z",
-  "summary": "Certified Batch 2 is an ancestor of origin/main; queue delivery record.",
+  "state": "delivered",
+  "updatedAt": "2026-08-29T19:29:23.300Z",
+  "summary": "Batch 2 delivered to origin/main without invoking the serialized release lane.",
   "source": "2026-08-29T192327Z.json",
-  "eventHash": "108f40cfdaac88e9eeda08990da3c8a855384916a0c0271901b05fa8f37c5b96"
+  "eventHash": "58fefd1425b4e57231b96d364e39b03330c05febd2ec6c3cc47bf162ea26e8dd"
 }
