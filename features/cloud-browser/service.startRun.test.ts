@@ -51,7 +51,12 @@ const runRow = {
 
 type QueryResult = { data: unknown; error: null };
 let mockMaybeSingleRun: typeof runRow | null = null;
-const mockGetResourceAccess = jest.fn(async () => ({ level: "admin" }));
+// Declared with a rest parameter so the mock below can FORWARD its arguments into
+// it. Without one, `mockGetResourceAccess(...args)` is a TS2556 spread into a
+// zero-arity function — which broke `pnpm type-check` for the whole repo.
+const mockGetResourceAccess = jest.fn(
+  async (..._args: unknown[]) => ({ level: "admin" }),
+);
 
 function queryFor(table: string) {
   const result = (): QueryResult => {
