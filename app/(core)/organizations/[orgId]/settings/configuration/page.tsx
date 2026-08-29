@@ -19,6 +19,7 @@ import {
   useUserRole,
 } from "@/features/organizations/hooks";
 import { OrganizationAccessGate } from "@/features/organizations/components/OrganizationAccessGate";
+import { hrSettingsHref } from "@/features/hr/routes";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
 import { useScopedKnobs } from "@/lib/scoped-config/useScopedKnobs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -93,7 +94,10 @@ export default function OrgConfigurationPage() {
               takes effect for this organization within a minute, with no
               deploy; clear it and the platform value applies again. HR
               settings live on{" "}
-              <Link className="underline" href="/hr/settings">
+              <Link
+                className="underline"
+                href={hrSettingsHref(null, { org: organizationId })}
+              >
                 their own page
               </Link>
               .
