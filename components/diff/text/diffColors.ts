@@ -15,7 +15,7 @@
 // hue at low opacity (green-500/15) rather than a near-black 950 shade, which
 // is what made the old scheme invisible.
 
-import type { LineChangeType } from "./engine/types";
+import type { LineChangeType } from "@ai-matrx/diff/text";
 
 export const LINE_BG = {
   added: "bg-green-100 dark:bg-green-500/15",

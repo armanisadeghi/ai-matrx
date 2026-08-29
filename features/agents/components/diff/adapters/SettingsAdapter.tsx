@@ -5,7 +5,7 @@ import { Settings } from "lucide-react";
 import {
   filterChanges,
   formatValue,
-} from "@/components/diff/engine/diff-utils";
+} from "@ai-matrx/diff/structural";
 import type {
   FieldAdapter,
   FieldDiffProps,

@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import CodeBlock from '@/features/code-editor/components/code-block/CodeBlock';
 import { DiffView } from '@/features/code-editor/components/DiffView';
-import { computeTextDiff } from '@/components/diff/text/engine/computeTextDiff';
+import { computeTextDiff } from '@ai-matrx/diff/text';
 import type { CodeEdit } from '@/features/code-editor/utils/parseCodeEdits';
 
 export interface CodePreviewCanvasProps {

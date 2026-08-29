@@ -1,4 +1,4 @@
-import { computeDiff } from "@/components/diff/engine/compute-diff";
+import { computeDiff } from "@ai-matrx/diff/structural";
 import { AGENT_DIFF_OPTIONS } from "@/features/agents/components/diff/agent-diff-constants";
 import {
   parseAgentAutoToolsDisabled,

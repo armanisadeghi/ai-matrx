@@ -10,7 +10,7 @@
 import { useMemo } from "react";
 import { CodeDiff } from "@/components/diff/code/CodeDiff";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import type { DiffTemporalMetadata } from "../engine/types";
+import type { DiffTemporalMetadata } from "@ai-matrx/diff/structural";
 import { DiffSideMoment } from "./DiffTemporalRow";
 
 interface RawJsonViewProps {

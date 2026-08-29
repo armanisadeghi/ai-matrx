@@ -37,7 +37,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectWorkingDocContent } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.selectors";
 import { selectIsLatestToolActivity } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { AnimatedDiffReveal } from "@/components/diff/text/AnimatedDiffReveal";
-import { computeTextDiff } from "@/components/diff/text/engine/computeTextDiff";
+import { computeTextDiff } from "@ai-matrx/diff/text";
 import { WORKING_DOCUMENT_CONTEXT_KEY } from "@/features/agents/utils/workingDocumentContext";
 
 import type { ToolRendererProps } from "../../types";

@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 626 active entity tokens. A token here is FK-valid for
+// 648 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -115,6 +115,16 @@ export type EntityTypeToken =
   | "coding_session"
   | "coding_session_entry"
   | "comment"
+  | "commerce_asset_allocation"
+  | "commerce_asset_grading"
+  | "commerce_asset_identifier"
+  | "commerce_asset_lot_event"
+  | "commerce_asset_mandate_result"
+  | "commerce_asset_price_factor"
+  | "commerce_asset_reshoot_request"
+  | "commerce_asset_review"
+  | "commerce_asset_unknown"
+  | "commerce_cloud_sync_connection"
   | "commerce_ebay_business_policy"
   | "commerce_ebay_category"
   | "commerce_ebay_category_aspect"
@@ -127,17 +137,31 @@ export type EntityTypeToken =
   | "commerce_ebay_listing"
   | "commerce_ebay_marketplace_policy"
   | "commerce_ebay_media_asset"
+  | "commerce_ebay_notification_destination"
+  | "commerce_ebay_notification_event"
+  | "commerce_ebay_notification_subscription"
+  | "commerce_ebay_notification_topic"
   | "commerce_ebay_offer"
   | "commerce_ebay_order"
   | "commerce_ebay_order_line_item"
   | "commerce_ebay_shipping_fulfillment"
   | "commerce_ebay_store_category"
+  | "commerce_human_correction"
+  | "commerce_intake_artifact"
+  | "commerce_intake_asset"
+  | "commerce_intake_batch"
   | "commerce_marketplace_account"
+  | "commerce_marketplace_account_deletion_audit"
+  | "commerce_marketplace_api_call"
+  | "commerce_marketplace_rate_budget"
   | "commerce_marketplace_site"
+  | "commerce_marketplace_sync_run"
+  | "commerce_prediction_outcome"
   | "commerce_product"
   | "commerce_product_channel_ref"
   | "commerce_product_media"
   | "commerce_product_variant"
+  | "commerce_recall_audit"
   | "comparison_set"
   | "contact_medium"
   | "contact_submission"
@@ -200,8 +224,6 @@ export type EntityTypeToken =
   | "domain_classification"
   | "esign_campaign"
   | "esign_campaign_member"
-  | "esign_config_definition"
-  | "esign_config_value"
   | "esign_consent_disclosure"
   | "esign_envelope"
   | "esign_envelope_certificate"
@@ -813,6 +835,15 @@ export type ComponentEntityToken =
   | "canvas_item_state"
   | "cmp_entry"
   | "coding_session_entry"
+  | "commerce_asset_allocation"
+  | "commerce_asset_grading"
+  | "commerce_asset_identifier"
+  | "commerce_asset_lot_event"
+  | "commerce_asset_mandate_result"
+  | "commerce_asset_price_factor"
+  | "commerce_asset_reshoot_request"
+  | "commerce_asset_review"
+  | "commerce_asset_unknown"
   | "commerce_ebay_business_policy"
   | "commerce_ebay_custom_policy"
   | "commerce_ebay_inventory_item"
@@ -821,15 +852,22 @@ export type ComponentEntityToken =
   | "commerce_ebay_inventory_location"
   | "commerce_ebay_listing"
   | "commerce_ebay_media_asset"
+  | "commerce_ebay_notification_subscription"
   | "commerce_ebay_offer"
   | "commerce_ebay_order"
   | "commerce_ebay_order_line_item"
   | "commerce_ebay_shipping_fulfillment"
   | "commerce_ebay_store_category"
+  | "commerce_human_correction"
+  | "commerce_intake_artifact"
+  | "commerce_intake_asset"
   | "commerce_marketplace_site"
+  | "commerce_marketplace_sync_run"
+  | "commerce_prediction_outcome"
   | "commerce_product_channel_ref"
   | "commerce_product_media"
   | "commerce_product_variant"
+  | "commerce_recall_audit"
   | "content_ir_kind_component"
   | "content_ir_kind_component_incident"
   | "content_ir_kind_conformance"
@@ -1152,6 +1190,16 @@ export type ScopeableEntityToken =
   | "coding_session"
   | "coding_session_entry"
   | "comment"
+  | "commerce_asset_allocation"
+  | "commerce_asset_grading"
+  | "commerce_asset_identifier"
+  | "commerce_asset_lot_event"
+  | "commerce_asset_mandate_result"
+  | "commerce_asset_price_factor"
+  | "commerce_asset_reshoot_request"
+  | "commerce_asset_review"
+  | "commerce_asset_unknown"
+  | "commerce_cloud_sync_connection"
   | "commerce_ebay_business_policy"
   | "commerce_ebay_category"
   | "commerce_ebay_category_aspect"
@@ -1164,17 +1212,31 @@ export type ScopeableEntityToken =
   | "commerce_ebay_listing"
   | "commerce_ebay_marketplace_policy"
   | "commerce_ebay_media_asset"
+  | "commerce_ebay_notification_destination"
+  | "commerce_ebay_notification_event"
+  | "commerce_ebay_notification_subscription"
+  | "commerce_ebay_notification_topic"
   | "commerce_ebay_offer"
   | "commerce_ebay_order"
   | "commerce_ebay_order_line_item"
   | "commerce_ebay_shipping_fulfillment"
   | "commerce_ebay_store_category"
+  | "commerce_human_correction"
+  | "commerce_intake_artifact"
+  | "commerce_intake_asset"
+  | "commerce_intake_batch"
   | "commerce_marketplace_account"
+  | "commerce_marketplace_account_deletion_audit"
+  | "commerce_marketplace_api_call"
+  | "commerce_marketplace_rate_budget"
   | "commerce_marketplace_site"
+  | "commerce_marketplace_sync_run"
+  | "commerce_prediction_outcome"
   | "commerce_product"
   | "commerce_product_channel_ref"
   | "commerce_product_media"
   | "commerce_product_variant"
+  | "commerce_recall_audit"
   | "comparison_set"
   | "contact_medium"
   | "contact_submission"
@@ -1222,8 +1284,6 @@ export type ScopeableEntityToken =
   | "domain_classification"
   | "esign_campaign"
   | "esign_campaign_member"
-  | "esign_config_definition"
-  | "esign_config_value"
   | "esign_consent_disclosure"
   | "esign_envelope"
   | "esign_envelope_certificate"
@@ -1701,6 +1761,8 @@ export type ListedEntityToken =
   | "browser_login_recipe"
   | "browser_profile"
   | "browser_site_policy"
+  | "commerce_cloud_sync_connection"
+  | "commerce_intake_batch"
   | "commerce_marketplace_account"
   | "commerce_product"
   | "content_ir_kind"
@@ -1716,7 +1778,6 @@ export type ListedEntityToken =
   | "custom_field_target"
   | "dataset"
   | "esign_campaign"
-  | "esign_config_definition"
   | "esign_consent_disclosure"
   | "esign_envelope"
   | "esign_provider_binding"
@@ -1859,6 +1920,16 @@ export const ENTITY_TYPE_METADATA = {
   "coding_session": { token: "coding_session", schema: "chat", table: "coding_session", label: "Coding Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "coding_session_entry": { token: "coding_session_entry", schema: "chat", table: "coding_session_entry", label: "Coding Session Entry", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "comment": { token: "comment", schema: "platform", table: "comments", label: "Comment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_allocation": { token: "commerce_asset_allocation", schema: "commerce", table: "asset_allocation", label: "Asset Allocation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_grading": { token: "commerce_asset_grading", schema: "commerce", table: "asset_grading", label: "Asset Grading", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_identifier": { token: "commerce_asset_identifier", schema: "commerce", table: "asset_identifier", label: "Asset Identifier", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_lot_event": { token: "commerce_asset_lot_event", schema: "commerce", table: "asset_lot_event", label: "Asset Lot Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_mandate_result": { token: "commerce_asset_mandate_result", schema: "commerce", table: "asset_mandate_result", label: "Asset Mandate Result", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_price_factor": { token: "commerce_asset_price_factor", schema: "commerce", table: "asset_price_factor", label: "Asset Price Factor", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_reshoot_request": { token: "commerce_asset_reshoot_request", schema: "commerce", table: "asset_reshoot_request", label: "Asset Reshoot Request", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_review": { token: "commerce_asset_review", schema: "commerce", table: "asset_review", label: "Asset Review", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_unknown": { token: "commerce_asset_unknown", schema: "commerce", table: "asset_unknown", label: "Asset Unknown", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_cloud_sync_connection": { token: "commerce_cloud_sync_connection", schema: "commerce", table: "cloud_sync_connection", label: "Cloud Sync Connection", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_ebay_business_policy": { token: "commerce_ebay_business_policy", schema: "commerce", table: "ebay_business_policy", label: "eBay Business Policy", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_ebay_category": { token: "commerce_ebay_category", schema: "commerce", table: "ebay_category", label: "eBay Category", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_ebay_category_aspect": { token: "commerce_ebay_category_aspect", schema: "commerce", table: "ebay_category_aspect", label: "eBay Category Aspect", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1871,17 +1942,31 @@ export const ENTITY_TYPE_METADATA = {
   "commerce_ebay_listing": { token: "commerce_ebay_listing", schema: "commerce", table: "ebay_listing", label: "eBay Listing", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_ebay_marketplace_policy": { token: "commerce_ebay_marketplace_policy", schema: "commerce", table: "ebay_marketplace_policy", label: "eBay Marketplace Policy", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_ebay_media_asset": { token: "commerce_ebay_media_asset", schema: "commerce", table: "ebay_media_asset", label: "eBay Media Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_notification_destination": { token: "commerce_ebay_notification_destination", schema: "commerce", table: "ebay_notification_destination", label: "eBay Notification Destination", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_notification_event": { token: "commerce_ebay_notification_event", schema: "commerce", table: "ebay_notification_event", label: "eBay Notification Event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_notification_subscription": { token: "commerce_ebay_notification_subscription", schema: "commerce", table: "ebay_notification_subscription", label: "eBay Notification Subscription", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_notification_topic": { token: "commerce_ebay_notification_topic", schema: "commerce", table: "ebay_notification_topic", label: "eBay Notification Topic", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_ebay_offer": { token: "commerce_ebay_offer", schema: "commerce", table: "ebay_offer", label: "eBay Offer", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_ebay_order": { token: "commerce_ebay_order", schema: "commerce", table: "ebay_order", label: "eBay Order", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_ebay_order_line_item": { token: "commerce_ebay_order_line_item", schema: "commerce", table: "ebay_order_line_item", label: "eBay Order Line Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_ebay_shipping_fulfillment": { token: "commerce_ebay_shipping_fulfillment", schema: "commerce", table: "ebay_shipping_fulfillment", label: "eBay Shipping Fulfillment", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_ebay_store_category": { token: "commerce_ebay_store_category", schema: "commerce", table: "ebay_store_category", label: "eBay Store Category", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_human_correction": { token: "commerce_human_correction", schema: "commerce", table: "human_correction", label: "Human Correction", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_intake_artifact": { token: "commerce_intake_artifact", schema: "commerce", table: "intake_artifact", label: "Intake Artifact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_intake_asset": { token: "commerce_intake_asset", schema: "commerce", table: "intake_asset", label: "Intake Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_intake_batch": { token: "commerce_intake_batch", schema: "commerce", table: "intake_batch", label: "Intake Batch", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_marketplace_account": { token: "commerce_marketplace_account", schema: "commerce", table: "marketplace_account", label: "Marketplace Account", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_marketplace_account_deletion_audit": { token: "commerce_marketplace_account_deletion_audit", schema: "commerce", table: "marketplace_account_deletion_audit", label: "Marketplace Account Deletion Audit", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_marketplace_api_call": { token: "commerce_marketplace_api_call", schema: "commerce", table: "marketplace_api_call", label: "Marketplace API Call", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_marketplace_rate_budget": { token: "commerce_marketplace_rate_budget", schema: "commerce", table: "marketplace_rate_budget", label: "Marketplace Rate Budget", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_marketplace_site": { token: "commerce_marketplace_site", schema: "commerce", table: "marketplace_site", label: "Marketplace Site", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_marketplace_sync_run": { token: "commerce_marketplace_sync_run", schema: "commerce", table: "marketplace_sync_run", label: "Marketplace Sync Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_prediction_outcome": { token: "commerce_prediction_outcome", schema: "commerce", table: "prediction_outcome", label: "Prediction Outcome", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_product": { token: "commerce_product", schema: "commerce", table: "product", label: "Product", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_product_channel_ref": { token: "commerce_product_channel_ref", schema: "commerce", table: "product_channel_ref", label: "Product Channel Reference", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_product_media": { token: "commerce_product_media", schema: "commerce", table: "product_media", label: "Product Media", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "commerce_product_variant": { token: "commerce_product_variant", schema: "commerce", table: "product_variant", label: "Product Variant", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_recall_audit": { token: "commerce_recall_audit", schema: "commerce", table: "recall_audit", label: "Recall Audit", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "comparison_set": { token: "comparison_set", schema: "agent", table: "cmp_comparison_sets", label: "Comparison Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "contact_medium": { token: "contact_medium", schema: "crm", table: "contact_medium", label: "Contact Medium", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "display_value", contentRole: "utility", referenceCategory: null },
   "contact_submission": { token: "contact_submission", schema: "communication", table: "contact_submissions", label: "Contact Submission", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -1944,8 +2029,6 @@ export const ENTITY_TYPE_METADATA = {
   "domain_classification": { token: "domain_classification", schema: "platform", table: "domain_classification", label: "Domain Classification", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "esign_campaign": { token: "esign_campaign", schema: "esign", table: "campaign", label: "Signature campaign", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "esign_campaign_member": { token: "esign_campaign_member", schema: "esign", table: "campaign_member", label: "Campaign member", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "esign_config_definition": { token: "esign_config_definition", schema: "esign", table: "config_definition", label: "E-sign configuration definition", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "esign_config_value": { token: "esign_config_value", schema: "esign", table: "config_value", label: "E-sign configuration value", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "esign_consent_disclosure": { token: "esign_consent_disclosure", schema: "esign", table: "consent_disclosure", label: "E-sign consent disclosure", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "esign_envelope": { token: "esign_envelope", schema: "esign", table: "envelope", label: "Signature envelope", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "esign_envelope_certificate": { token: "esign_envelope_certificate", schema: "esign", table: "envelope_certificate", label: "Completion certificate", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2489,6 +2572,16 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "coding_session",
   "coding_session_entry",
   "comment",
+  "commerce_asset_allocation",
+  "commerce_asset_grading",
+  "commerce_asset_identifier",
+  "commerce_asset_lot_event",
+  "commerce_asset_mandate_result",
+  "commerce_asset_price_factor",
+  "commerce_asset_reshoot_request",
+  "commerce_asset_review",
+  "commerce_asset_unknown",
+  "commerce_cloud_sync_connection",
   "commerce_ebay_business_policy",
   "commerce_ebay_category",
   "commerce_ebay_category_aspect",
@@ -2501,17 +2594,31 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "commerce_ebay_listing",
   "commerce_ebay_marketplace_policy",
   "commerce_ebay_media_asset",
+  "commerce_ebay_notification_destination",
+  "commerce_ebay_notification_event",
+  "commerce_ebay_notification_subscription",
+  "commerce_ebay_notification_topic",
   "commerce_ebay_offer",
   "commerce_ebay_order",
   "commerce_ebay_order_line_item",
   "commerce_ebay_shipping_fulfillment",
   "commerce_ebay_store_category",
+  "commerce_human_correction",
+  "commerce_intake_artifact",
+  "commerce_intake_asset",
+  "commerce_intake_batch",
   "commerce_marketplace_account",
+  "commerce_marketplace_account_deletion_audit",
+  "commerce_marketplace_api_call",
+  "commerce_marketplace_rate_budget",
   "commerce_marketplace_site",
+  "commerce_marketplace_sync_run",
+  "commerce_prediction_outcome",
   "commerce_product",
   "commerce_product_channel_ref",
   "commerce_product_media",
   "commerce_product_variant",
+  "commerce_recall_audit",
   "comparison_set",
   "contact_medium",
   "contact_submission",
@@ -2574,8 +2681,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "domain_classification",
   "esign_campaign",
   "esign_campaign_member",
-  "esign_config_definition",
-  "esign_config_value",
   "esign_consent_disclosure",
   "esign_envelope",
   "esign_envelope_certificate",

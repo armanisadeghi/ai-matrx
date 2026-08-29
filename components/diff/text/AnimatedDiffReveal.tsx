@@ -28,8 +28,8 @@
 import { useMemo } from "react";
 
 import { cn } from "@/lib/utils";
-import { computeTextDiff } from "./engine/computeTextDiff";
-import type { InlineDiffLine, WordSegment } from "./engine/types";
+import { computeTextDiff } from "@ai-matrx/diff/text";
+import type { InlineDiffLine, WordSegment } from "@ai-matrx/diff/text";
 import { useDiffReveal, type DiffRevealOptions } from "./useDiffReveal";
 
 export interface AnimatedDiffRevealProps {

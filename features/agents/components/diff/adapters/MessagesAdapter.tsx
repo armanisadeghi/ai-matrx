@@ -6,7 +6,7 @@ import type {
   FieldAdapter,
   FieldDiffProps,
 } from "@/components/diff/adapters/types";
-import type { DiffNode } from "@/components/diff/engine/types";
+import type { DiffNode } from "@ai-matrx/diff/structural";
 import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
 
 interface MessageLike {

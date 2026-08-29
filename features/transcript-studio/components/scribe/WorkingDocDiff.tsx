@@ -23,7 +23,7 @@ import { DiffViewer } from "@/components/diff/DiffViewer";
 import {
   computeTextDiff,
   summarizeTextDiff,
-} from "@/components/diff/text/engine/computeTextDiff";
+} from "@ai-matrx/diff/text";
 
 interface WorkingDocDiffProps {
   /** Document content the user last saw (the "before"). */

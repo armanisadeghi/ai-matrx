@@ -23,13 +23,13 @@ import {
   ChevronsDownUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { computeTextDiff, summarizeTextDiff } from "./engine/computeTextDiff";
+import { computeTextDiff, summarizeTextDiff } from "@ai-matrx/diff/text";
 import type {
   DiffCell,
   DiffRow,
   TextDiffOptions,
   WordSegment,
-} from "./engine/types";
+} from "@ai-matrx/diff/text";
 import {
   GUTTER,
   INLINE_BG,

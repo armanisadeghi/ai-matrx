@@ -54,6 +54,12 @@ interface TapTargetButtonProps {
    * label is self-describing. Visible text becomes the accessible name.
    */
   label?: string;
+  /**
+   * Collapse an icon + caption pill to its icon-only 44px tap target below
+   * the `sm` breakpoint. The caption and inline geometry return at `sm+`;
+   * `ariaLabel` (falling back to `label`) remains the accessible name.
+   */
+  mobileIconOnly?: boolean;
 }
 
 interface TapTargetButtonSolidProps extends TapTargetButtonProps {
@@ -108,21 +114,35 @@ function IconContent({
 
 type TapTargetSize = "default" | "sm";
 
-function resolveTapGeometry(label: string | undefined, size: TapTargetSize) {
+function resolveTapGeometry(
+  label: string | undefined,
+  size: TapTargetSize,
+  mobileIconOnly: boolean,
+) {
   const inline = Boolean(label);
   if (size === "sm") {
     return {
-      outerClassName: inline
-        ? "matrx-tap-target matrx-tap-target-sm matrx-tap-target-inline-sm group"
-        : TAP_GROUP_OUTER_CLASS,
-      inlineModifier: "matrx-tap-pill-inline-sm",
+      outerClassName:
+        inline && mobileIconOnly
+          ? "matrx-tap-target matrx-tap-target-sm matrx-tap-target-mobile-icon-only-sm group"
+          : inline
+            ? "matrx-tap-target matrx-tap-target-sm matrx-tap-target-inline-sm group"
+            : TAP_GROUP_OUTER_CLASS,
+      inlineModifier: mobileIconOnly
+        ? "matrx-tap-pill-mobile-icon-only-sm"
+        : "matrx-tap-pill-inline-sm",
     };
   }
   return {
-    outerClassName: inline
-      ? `${TAP_OUTER_CLASS} matrx-tap-target-inline`
-      : TAP_OUTER_CLASS,
-    inlineModifier: "matrx-tap-pill-inline",
+    outerClassName:
+      inline && mobileIconOnly
+        ? `${TAP_OUTER_CLASS} matrx-tap-target-mobile-icon-only`
+        : inline
+          ? `${TAP_OUTER_CLASS} matrx-tap-target-inline`
+          : TAP_OUTER_CLASS,
+    inlineModifier: mobileIconOnly
+      ? "matrx-tap-pill-mobile-icon-only"
+      : "matrx-tap-pill-inline",
   };
 }
 
@@ -176,6 +196,7 @@ interface RenderTapTargetArgs extends Pick<
   | "children"
   | "strokeWidth"
   | "label"
+  | "mobileIconOnly"
   | "onClick"
   | "as"
   | "htmlFor"
@@ -206,6 +227,7 @@ function renderTapTarget({
   children,
   strokeWidth,
   label,
+  mobileIconOnly = false,
   onClick,
   as,
   htmlFor,
@@ -221,12 +243,19 @@ function renderTapTarget({
   rest,
   buttonRef,
 }: RenderTapTargetArgs): ReactElement {
-  const { outerClassName, inlineModifier } = resolveTapGeometry(label, size);
+  const { outerClassName, inlineModifier } = resolveTapGeometry(
+    label,
+    size,
+    mobileIconOnly,
+  );
+  const responsiveLabelClassName = mobileIconOnly
+    ? `${labelClassName ?? "matrx-tap-label"} matrx-tap-label-mobile-icon-only`
+    : labelClassName;
   const inner = buildTapInner({
     label,
     pillClassName,
     iconClassName,
-    labelClassName,
+    labelClassName: responsiveLabelClassName,
     inlineModifier: label ? inlineModifier : "",
     icon,
     children,
@@ -234,7 +263,8 @@ function renderTapTarget({
   });
   const resolvedTooltip =
     tooltip !== undefined ? tooltip : label ? false : undefined;
-  const triggerAriaLabel = label ? undefined : ariaLabel;
+  const triggerAriaLabel =
+    label && !mobileIconOnly ? undefined : (ariaLabel ?? label);
   const trigger = renderTrigger({
     href,
     target,
@@ -432,6 +462,7 @@ export const TapTargetButton = forwardRef<
     tooltipSide,
     tooltipAlign,
     label,
+    mobileIconOnly,
     ...rest
   },
   ref,
@@ -454,6 +485,7 @@ export const TapTargetButton = forwardRef<
     tooltipSide,
     tooltipAlign,
     label,
+    mobileIconOnly,
     pillClassName: "matrx-tap-pill matrx-glass-thin-border",
     iconClassName: `matrx-tap-icon ${color}`,
     rest,
@@ -483,6 +515,7 @@ export const TapTargetButtonTransparent = forwardRef<
     tooltipSide,
     tooltipAlign,
     label,
+    mobileIconOnly,
     ...rest
   },
   ref,
@@ -505,6 +538,7 @@ export const TapTargetButtonTransparent = forwardRef<
     tooltipSide,
     tooltipAlign,
     label,
+    mobileIconOnly,
     pillClassName:
       "matrx-tap-pill hover:bg-muted active:bg-muted-foreground/15",
     iconClassName: `matrx-tap-icon ${color}`,
@@ -538,6 +572,7 @@ export const TapTargetButtonSolid = forwardRef<
     tooltipSide,
     tooltipAlign,
     label,
+    mobileIconOnly,
     ...rest
   },
   ref,
@@ -559,6 +594,7 @@ export const TapTargetButtonSolid = forwardRef<
     tooltipSide,
     tooltipAlign,
     label,
+    mobileIconOnly,
     pillClassName: `matrx-tap-pill ${bgColor} ${iconColor} ${hoverBgColor} ${activeBgColor}`,
     iconClassName: `matrx-tap-icon ${iconColor}`,
     labelClassName: `matrx-tap-label ${iconColor}`,
@@ -615,6 +651,7 @@ export const TapTargetButtonForGroup = forwardRef<
     tooltipSide,
     tooltipAlign,
     label,
+    mobileIconOnly,
     ...rest
   },
   ref,
@@ -638,6 +675,7 @@ export const TapTargetButtonForGroup = forwardRef<
     tooltipSide,
     tooltipAlign,
     label,
+    mobileIconOnly,
     pillClassName: "matrx-tap-pill matrx-tap-pill-sm matrx-glass-interactive",
     iconClassName: `matrx-tap-icon ${color}`,
     labelClassName: `matrx-tap-label ${color}`,

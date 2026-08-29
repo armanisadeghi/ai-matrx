@@ -70,7 +70,7 @@ import { compareAgentDefinitions } from "@/features/agents/components/diff/compa
 import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
 import { formatText } from "@ai-matrx/kit/text-case";
 import { fetchSavedAgentDefinition } from "@/features/agents/services/agent-definition-snapshot.service";
-import type { DiffTemporalMetadata } from "@/components/diff/engine/types";
+import type { DiffTemporalMetadata } from "@ai-matrx/diff/structural";
 import {
   deriveAgentFieldChangeMoments,
   findAgentVersionMoment,

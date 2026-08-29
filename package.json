@@ -274,6 +274,7 @@
         "@ai-matrx/content-ir-react": "latest",
         "@ai-matrx/data": "latest",
         "@ai-matrx/design-system": "latest",
+        "@ai-matrx/diff": "latest",
         "@ai-matrx/icons": "latest",
         "@ai-matrx/kit": "latest",
         "@ai-sdk/google": "^3.0.43",

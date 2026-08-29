@@ -14,7 +14,7 @@
 
 import { TextDiff, type TextDiffView } from "./text/TextDiff";
 import { CodeDiff } from "./code/CodeDiff";
-import type { TextDiffOptions } from "./text/engine/types";
+import type { TextDiffOptions } from "@ai-matrx/diff/text";
 
 export type DiffEngine = "auto" | "light" | "monaco";
 

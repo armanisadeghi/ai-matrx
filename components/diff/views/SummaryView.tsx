@@ -5,7 +5,7 @@ import type {
   DiffNode,
   DiffResult,
   DiffTemporalMetadata,
-} from "../engine/types";
+} from "@ai-matrx/diff/structural";
 import type { AdapterRegistry, EnrichmentContext } from "../adapters/types";
 import { DefaultFieldAdapter } from "../adapters/defaults";
 import { DiffSideMoment } from "./DiffTemporalRow";

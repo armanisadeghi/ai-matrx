@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { AlignLeft, Braces, Columns2, FileText, List } from "lucide-react";
-import { computeDiff } from "@/components/diff/engine/compute-diff";
+import { computeDiff } from "@ai-matrx/diff/structural";
 import { createAdapterRegistry } from "@/components/diff/adapters/registry";
 import { AllChangesView } from "@/components/diff/views/AllChangesView";
 import { ChangesOnlyView } from "@/components/diff/views/ChangesOnlyView";
@@ -16,7 +16,7 @@ import {
   TagsFieldAdapter,
   JsonObjectAdapter,
 } from "@/components/diff/adapters/defaults";
-import type { DiffNode } from "@/components/diff/engine/types";
+import type { DiffNode } from "@ai-matrx/diff/structural";
 import type { Note } from "@/features/notes/types";
 import { NOTE_DIFF_OPTIONS, NOTE_PRIORITY_FIELDS } from "./note-diff-constants";
 import { NoteContentAdapter } from "./adapters/NoteContentAdapter";
