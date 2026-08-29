@@ -563,14 +563,22 @@ export function useIntakeSession(
   // other's superseded retry was the failure mode). Each call chains behind
   // the previous one.
   const qrChainRef = useRef<Promise<unknown>>(Promise.resolve());
+  /** Always the LATEST processQrCode — the chain wrapper must never pin a
+   *  first-render closure (whose organizationId was still null). */
+  const processQrCodeRef = useRef<
+    ((code: string) => Promise<"assigned" | "switched">) | null
+  >(null);
 
   const onQrCode = useCallback(
     (code: string): Promise<"assigned" | "switched"> => {
-      const run = qrChainRef.current.then(() => processQrCode(code));
+      const run = qrChainRef.current.then(() => {
+        const process = processQrCodeRef.current;
+        if (!process) return "assigned" as const;
+        return process(code);
+      });
       qrChainRef.current = run.catch(() => undefined);
       return run;
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- processQrCode below
     [],
   );
 
@@ -629,6 +637,10 @@ export function useIntakeSession(
       organizationId,
     ],
   );
+
+  useEffect(() => {
+    processQrCodeRef.current = processQrCode;
+  }, [processQrCode]);
 
   const addManualIdentifier = useCallback(
     (value: string) => {
