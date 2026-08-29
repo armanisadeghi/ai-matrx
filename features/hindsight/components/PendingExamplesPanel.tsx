@@ -173,7 +173,16 @@ export function PendingExamplesPanel({
                     variant="outline"
                     className="h-6 max-w-full px-2 text-[11px]"
                     disabled={reviewRunning}
-                    onClick={() => onReviewExample(ex.id)}
+                    onClick={async () => {
+                      // THE LAW: expensive + deliberately duplicative — say so.
+                      const ok = await confirm({
+                        title: "Review exactly this run?",
+                        description:
+                          "A frontier reviewer reads this one run now — it costs real money and takes minutes. It does not advance the normal queue, so the next full review will read this run again.",
+                        confirmLabel: "Review just this",
+                      });
+                      if (ok) onReviewExample(ex.id);
+                    }}
                     title="Review exactly this run now — bypasses the settle window, never advances the queue"
                   >
                     <Eye className="mr-1 h-3 w-3" />

@@ -120,7 +120,19 @@ export function EnrollmentSidebar({
             size="sm"
             className="flex-1"
             disabled={runReview.isPending}
-            onClick={() => runReview.mutate(undefined)}
+            onClick={async () => {
+              // THE LAW (destructive-and-expensive-actions): state the cost
+              // before spending, and never silently skip a click.
+              const ok = await confirm({
+                title: "Run a review now?",
+                description:
+                  pending > 0
+                    ? `The reviewer reads your ${pending} new run${pending === 1 ? "" : "s"} end to end — it costs real money and takes a few minutes. Left alone, it happens automatically after ${needed} new runs.`
+                    : "No new runs are waiting — the reviewer has nothing new to read and this will be skipped.",
+                confirmLabel: pending > 0 ? "Review now" : "Run anyway",
+              });
+              if (ok) runReview.mutate(undefined);
+            }}
             data-testid="hindsight-review-now"
           >
             {runReview.isPending ? (

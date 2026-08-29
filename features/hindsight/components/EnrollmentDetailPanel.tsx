@@ -130,7 +130,21 @@ export function EnrollmentDetailPanel({
             <Button
               size="sm"
               disabled={runReview.isPending}
-              onClick={() => runReview.mutate(undefined)}
+              onClick={async () => {
+                // THE LAW (destructive-and-expensive-actions): an expensive
+                // click states its consequence before running, and a click
+                // that would find nothing says so instead of silently skipping.
+                const waiting = data.pending_examples ?? 0;
+                const ok = await confirm({
+                  title: "Run a full review now?",
+                  description:
+                    waiting > 0
+                      ? `A frontier reviewer reads the ${waiting} waiting run${waiting === 1 ? "" : "s"} end to end — it costs real money and takes minutes. The automatic pass would review these on its own once ${enrollment.review_every_n} have accumulated.`
+                      : "No new runs are waiting — the reviewer has nothing new to read and this will be skipped. Use “Review just this” on a specific run instead.",
+                  confirmLabel: waiting > 0 ? "Review now" : "Run anyway",
+                });
+                if (ok) runReview.mutate(undefined);
+              }}
               data-testid="hindsight-review-now"
             >
               {runReview.isPending ? (
