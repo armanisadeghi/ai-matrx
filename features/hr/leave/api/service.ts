@@ -33,6 +33,7 @@ import type {
   LeaveBlackoutRule,
   LeaveCountsToward,
   LeaveCancelResult,
+  LeaveDiscardResult,
   LeaveConflictCheck,
   LeaveConflictFinding,
   LeaveDayPart,
@@ -518,6 +519,43 @@ export async function cancelLeaveRequest(
   return {
     ok: true,
     data: { outcome: str(r.outcome), workflowInstanceId: str(r.workflowInstanceId) },
+  };
+}
+
+/**
+ * `hr_leave_request_discard(...)` — the ONLY way a draft leaves the person's page.
+ *
+ * 🚨 THIS IS NOT `cancelLeaveRequest`, AND THE TWO MUST NEVER BE COLLAPSED. Cancellation
+ * undoes a commitment: something was filed, an approver was asked, hours may be encumbered,
+ * and the ledger may owe a reversal — which is why `hr_leave_request_cancel` reaches the
+ * workflow engine. A draft committed nothing. `hr_leave_request_cancel` answers a draft with
+ * `not_cancellable`, which is what made a draft permanent until this door existed.
+ *
+ * The server refuses every state but `draft`, each refusal naming the act that IS available,
+ * and those sentences render verbatim — this module composes none of them.
+ */
+export async function discardLeaveRequest(
+  args: { requestId: string; reason?: string | null },
+  opts?: HrRpcOptions,
+): Promise<HrResult<LeaveDiscardResult>> {
+  const res = await callHrLeaveRpc(
+    "hr_leave_request_discard",
+    { p_request_id: args.requestId, p_reason: args.reason ?? undefined },
+    opts,
+  );
+  if (!res.ok) return res;
+  const r = res.data;
+  return {
+    ok: true,
+    data: {
+      outcome: str(r.outcome),
+      leaveRequestId: str(r.leaveRequestId),
+      workflowInstanceId: str(r.workflowInstanceId),
+      /* The server asserts both. `?? false` here would invent a claim it did not make, so an
+         absent key reads as "not asserted" and the surface says nothing about it. */
+      workflowInstanceKept: bool(r.workflowInstanceKept) === true,
+      balanceMoved: bool(r.balanceMoved) === true,
+    },
   };
 }
 

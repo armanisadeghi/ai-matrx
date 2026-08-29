@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2` (a sub-feature of the `hr` Tier 1 feature — its admin map is `/hr/admin`)
-**Last updated:** `2026-08-27`
+**Last updated:** `2026-08-29`
 
 **Register item:** HRB-017 — HR domain program, L5 Leave & PTO lane (matrx-frontend).
 **Spec (SoR):** [`SPEC-LEAVE.md`](../../../../common-docs/projects/hr-domain/specs/SPEC-LEAVE.md) —
@@ -46,7 +46,8 @@ and every change ever made to a balance (§12). Manager and HR surfaces (`/hr/le
    never a generic failure toast. `code` never reaches page text.
 9. 🚨 **Absence, not disablement** (SPEC-UI-IA §4.2, §16). A policy the person is not enrolled
    in is not in the select. The request form is not in the DOM when `can_request` is false. The
-   cancel control exists for `submitted` and `approved` only.
+   row's control exists for `draft`, `submitted` and `approved` only — one per lawful act
+   (LAW 14) — and for `taken`, `partially_taken`, `denied` and `cancelled` it is not in the DOM.
 10. 🚨 **No edit and no delete on the ledger, for anyone.** It is append-only; a correction is
     a new entry made through §6's adjustment on the admin surface.
 11. 🚨 **No client computes an hour, a balance, or an exclusion.** `hr.leave_span_hours` /
@@ -67,6 +68,23 @@ and every change ever made to a balance (§12). Manager and HR surfaces (`/hr/le
     to SPEC-LEAVE §5's "Used (taken)" wording is owed by the SQL lane.)
 13. 🚨 **No second inbox.** `/hr/tasks` is THE inbox; the workflow engine projects leave
     approval steps into it. This feature declares a flow type and never builds a queue.
+14. 🚨 **A DRAFT IS DISCARDED, NOT CANCELLED — two doors, never one control.** Cancellation
+    undoes a COMMITMENT: something was filed, an approver was asked, hours may be encumbered,
+    and the ledger may owe a reversal, which is why `hr_leave_request_cancel` reaches the
+    workflow engine. A draft committed nothing, so `hr_leave_request_discard` soft-deletes it
+    and stops: **no ledger entry, no balance move, no workflow instance touched** (an instance
+    is evidence, §1.3), and no new state — the enum is frozen and §4.1 says the UI adds none.
+    `hr_leave_request_cancel` answers a draft `not_cancellable`, which is exactly what made a
+    draft **write-once and permanent** until `hr_l5_34`: two rows sat on `/hr/me/time-off`
+    reading "Not sent yet" with no control, forever. `LeaveRequestList`'s action descriptor
+    carries **which door**, so a shared button can never send a draft to the cancel door.
+15. 🚨 **`draft` means the checks refused this at intake — it is not a saved draft.** There is
+    no "save as draft" here: `hr.leave_request_submit` is the only writer, it always inserts
+    `draft` and immediately submits, and `hr.leave_wf_validate` moves the row to `submitted`
+    **unless it froze HARD findings**, where it leaves the state alone and the instance goes
+    `rejected_at_intake` (terminal). The frozen enum has no "rejected" state, so `draft` + that
+    instance IS the representation — which is why the row explains itself ("What stopped this",
+    LAW 8) and why the only act available on it is discard.
 
 ---
 
@@ -76,6 +94,11 @@ Two exposures shipped in one session because each of these looked done when it w
 migration that creates a leave door ends with all four:
 
 1. **`select hr.leave_seal_door('<name>');`** — `'client'` (the default) or `'engine'`.
+   A **client** door also needs its `platform.client_callable_door` row **above the `CREATE`**,
+   not merely above the seal: `platform.enforce_definer_client_grants` fires on the CREATE as
+   well, so a declaration inserted between them still logs a `definer_client_grant_revoked`
+   row describing a revoke the seal then undoes — a `platform.ddl_guard_log` line that reads as
+   a live exposure on every replay of the file (measured on `hr_l5_34`).
    **`grant execute … to authenticated` is NOT enough and it reports success.** Supabase's default
    privileges hand `anon` EXECUTE on every newly created function in `public`, and neither the
    grant nor `revoke … from public` removes it — `anon` holds its own explicit grant. **Both
@@ -127,10 +150,11 @@ Envelopes verified live against `pg_get_functiondef` on `brsgrqvjdzwihsvnfqkf`, 
 | `hr_my_time_off(p_employment_id)` | `{granted, employment_id, viewer_rung, as_of, policies[], requests[], can_request}` | policies = `hr.leave_figures` ⊕ enrollment facts ⊕ `sentence` ⊕ `ledger_href` |
 | `hr_leave_request_preview(...)` | `{granted, span, breakdown_sentence, figures, projection, policy_name, increment_minutes, mandated_uses, documentation_required, documentation_required_after_days, submittable, blocker}` | `span.days[]` = `{date, hours, basis, excluded?, label?, partial?}`. `submittable:false` + a verbatim `blocker` sentence = the free-week refusal, in the submit door's own words |
 | `hr_leave_request_submit(...)` | `{granted, leave_request_id, workflow_instance_id, state, requested_hours, conflict_check, workflow, rejected_at_intake}` | `conflict_check` is inserted as `{}` and re-read after `hr.wf_submit` — an empty object is normal |
-| `hr_leave_request_cancel(...)` | `{granted, outcome, workflow[, workflow_instance_id]}` | `withdrawn` \| `cancellation_requested`; refuses `already_taken` / `not_cancellable` |
+| `hr_leave_request_cancel(...)` | `{granted, outcome, workflow[, workflow_instance_id]}` | `withdrawn` \| `cancellation_requested`; refuses `already_taken` / `not_cancellable`. **A `draft` refuses here — it goes to the discard door** (LAW 14) |
+| `hr_leave_request_discard(p_request_id, p_reason)` | `{granted, outcome, leave_request_id, state, workflow_instance_id, workflow_instance_kept, balance_moved}` | `hr_l5_34`. **`draft` only**; every other state refuses `not_discardable` naming the act that IS available, and an OPEN `hr.workflow_binding` refuses `workflow_still_open`. Soft delete — the audit is the `SOFT_DELETE` row `platform._version_capture` writes to `history.row_versions` |
 | `hr_leave_ledger_view(...)` | `{granted, entries[], figures, sentence, running_balance_ok, divergence_at_entry_id, unexplained_entry_count, entry_count}` | `amount`/`rate` excluded in the SQL by construction. Entries also carry `request_state`, `request_starts_on`, `request_ends_on`, `counts_toward` |
 
-🚨 **This lane's refusal dialect is `granted`, not `ok`.** None of the five doors returns an
+🚨 **This lane's refusal dialect is `granted`, not `ok`.** None of the six doors returns an
 `ok` key or an `error` object. A transport testing `ok` reads every refusal as a success and
 hands the surface an empty envelope — which renders as "you have no leave" rather than "you may
 not see this". `rpc.ts` tests `granted` and normalizes into `HrResult` / `HrDenied`.
@@ -156,8 +180,11 @@ days marked excluded **with their label**, plus the same five figures.
 on every retry. `rejected_at_intake` → every `conflict_check.hard[].message` rendered verbatim
 in place, and the key is NOT re-minted (the same intent is still being fixed).
 
-**4. Withdraw / cancel.** `LeaveRequestList` → `ConfirmDialog` → `cancelLeaveRequest`.
-`submitted` withdraws (no ledger entry ever existed); `approved` opens a cancellation workflow.
+**4. Discard / withdraw / cancel.** `LeaveRequestList` → `requestAction(state)` → `ConfirmDialog`
+→ the door that descriptor names. `draft` → `discardLeaveRequest` (never filed, so nothing is
+reversed); `submitted` → `cancelLeaveRequest`, which withdraws (no ledger entry ever existed);
+`approved` → `cancelLeaveRequest`, which opens a cancellation workflow. Nothing else has a
+control, and both doors refuse the rest with the act that IS available.
 
 **5. Reconcile.** Any figure → `/hr/me/time-off/[policyId]?show=…` (`added` /
 `used_taken` / `approved_upcoming`, filtered on the server's per-entry `counts_toward`, never
@@ -173,12 +200,12 @@ divergence banner.
 | File | Role |
 |---|---|
 | `api/rpc.ts` | THE ONE DOOR. `granted` dialect → `HrResult`; structural camelCase mapping; evidence-block `calc` left verbatim |
-| `api/service.ts` | Typed, field-by-field mappers over the five doors + the reason-category read. Mapped, never cast |
+| `api/service.ts` | Typed, field-by-field mappers over the six doors + the reason-category read. Mapped, never cast |
 | `api/types.ts` | Client shapes, written against the live function bodies |
 | `hrefs.ts` | `hrMeTimeOffPolicyHref` — the server's `ledger_href` re-attached to `?org=` |
 | `components/LeaveBalanceBlock.tsx` | THE HONESTY LAW component (§5) |
 | `components/LeaveRequestForm.tsx` | §4.1's form + live preview + verbatim intake refusals |
-| `components/LeaveRequestList.tsx` | Request history; withdraw/cancel where lawful |
+| `components/LeaveRequestList.tsx` | Request history; discard/withdraw/cancel where lawful, one door per state (LAW 14) |
 | `components/LeaveLedgerView.tsx` | §12, viewer-agnostic — the manager route mounts this too |
 | `components/MyTimeOffSurface.tsx` | Route 8 host |
 | `components/MyLeaveLedgerSurface.tsx` | `/hr/me/time-off/[policyId]` host, `viewer=self` |
@@ -224,3 +251,18 @@ divergence banner.
   client change was needed — the filter and the two separate figure doors were correct as
   built; only the comments that asserted the divergence were rewritten, since a stale comment
   claiming a disagreement that no longer exists is the same defect as a stale doc.
+- **2026-08-29** — 🚨 **A draft leave request was write-once and permanent, and two live rows
+  proved it.** `hr.leave_request_cancel` handles `taken` / `submitted` / `approved` and falls
+  through to `not_cancellable`, so `draft` had no product door at all while `hr.my_time_off`
+  returned it forever. `hr_l5_34` adds `hr_leave_request_discard` (draft only, soft delete, no
+  ledger entry, no balance move, workflow instance untouched) and wires the control into
+  `LeaveRequestList` — new LAWS 14 and 15. **Root-caused the second defect while there:** two
+  drafts shared one `workflow_instance_id` because `hr.leave_request_submit` INSERTS its row
+  before calling `hr.wf_request`, whose idempotency contract RETURNS the existing instance on a
+  replay — so a retry minted a second row stamped with an instance targeting the first, an
+  orphan with no binding and no path to any state. Fixed at the source: on `replayed` the row
+  just inserted is removed and the ORIGINAL request is returned. Falsified live as the subject
+  employee through `public.hr_leave_request_discard` — every non-draft state refused, an open
+  binding refused, a stranger refused; both stray rows discarded; ledger unchanged at 3 entries
+  and the balance block unchanged at 38.50 / 62.50 / 24.00 / 0.00 with `last_accrual_at`
+  untouched.

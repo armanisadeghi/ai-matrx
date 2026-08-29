@@ -307,6 +307,22 @@ export interface LeaveCancelResult {
   workflowInstanceId: string | null;
 }
 
+/**
+ * `hr_leave_request_discard` — a DRAFT only, and it is not a cancellation.
+ *
+ * A draft was never filed, so there is nothing to reverse: no ledger entry, no encumbered
+ * hours, no approver to tell. The server soft-deletes the row and says so — `balanceMoved` is
+ * its own assertion that no figure changed, and `workflowInstanceKept` records that the
+ * instance (evidence, never deleted) is still there. Neither is re-derived here.
+ */
+export interface LeaveDiscardResult {
+  outcome: "discarded" | string | null;
+  leaveRequestId: string | null;
+  workflowInstanceId: string | null;
+  workflowInstanceKept: boolean;
+  balanceMoved: boolean;
+}
+
 // ── hr.leave_ledger_view (§12) ───────────────────────────────────────────────
 
 export interface LeaveLedgerSource {

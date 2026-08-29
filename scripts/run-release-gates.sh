@@ -5,13 +5,21 @@
 # Each gate announces itself before it starts — no silent spinner hiding a
 # 60s+ wait. On pass: one OK line. On warn/fail: the check's own report.
 #
-# DEFAULT IS ADVISORY — loud findings, exit 0 always. Ship/release must never
-# be blocked by these checks; only git itself may stop a push.
-# Use --strict for CI / manual hard-fail.
+# ADVISORY BY DESIGN, IN EVERY LANE. Arman's standing ruling: "the screaming is
+# very real and you need to fix them, but it's not a reason to stop the code from
+# going live." A red here is a WORK ITEM, never a brake.
+#
+# NOTHING AUTOMATIC RUNS THIS SCRIPT IN --strict. `scripts/release.sh` invokes it
+# `--advisory || true`, and `.github/workflows/ci.yml` does not invoke it at all
+# — CI runs a hand-picked subset of `check:*` scripts directly, and THOSE are the
+# only ones that actually stop a merge. So --strict is a HUMAN tool: run it to
+# make findings exit non-zero for your own triage. Calling a gate below
+# "blocking" means only "exits 1 under --strict"; it does not mean a red stops a
+# merge or a deploy, because no automation consumes that exit code.
 #
 # Usage:
 #   ./scripts/run-release-gates.sh            # advisory — scream, never block
-#   ./scripts/run-release-gates.sh --strict   # exit 1 on failure (CI)
+#   ./scripts/run-release-gates.sh --strict   # exit 1 on findings (manual triage)
 #   ./scripts/run-release-gates.sh --advisory # explicit alias of the default
 set -euo pipefail
 
@@ -52,17 +60,20 @@ if $STRICT; then
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts --strict"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
-        # CANONICAL RATCHETS — the two BLOCKING counts from the 2026-08-15
-        # architecture drift audit's enforcement recommendation (item 2). Both
-        # read ONE cached snapshot (public.canonical_ratchet_snapshot, ~0.7s;
-        # they never run audit.refresh() on the hot path) and fail only when the
-        # live count EXCEEDS a committed baseline. A new entity-like table born
-        # unregistered, or a post-2026-08-12 table born non-conformant, stops the
-        # release; the legacy backlog stays a queue and cannot block anything.
+        # CANONICAL RATCHETS — the two counts from the 2026-08-15 architecture
+        # drift audit's enforcement recommendation (item 2). Both read ONE cached
+        # snapshot (public.canonical_ratchet_snapshot, ~0.7s; they never run
+        # audit.refresh() on the hot path) and fail only when the live count
+        # EXCEEDS a committed baseline. A new entity-like table born
+        # unregistered, or a post-2026-08-12 table born non-conformant, exits 1
+        # under --strict; the legacy backlog stays a queue and never fails.
+        # No automation reads that exit code (see the header) — a red here is a
+        # work item someone must pick up, not a stopped release.
         # Contract + baselines: scripts/canonical-ratchets/FEATURE.md.
         "Unregistered entity-like tables (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-unregistered-entities.ts --strict"
         "Post-doctrine conformance (ratchet)|pnpm exec tsx scripts/canonical-ratchets/check-post-doctrine-conformance.ts --strict"
-        # NO NULL ORG is BLOCKING. Owner ruling 2026-08-21 (db-rules §2/§6e):
+        # NO NULL ORG exits 1 under --strict. Owner ruling 2026-08-21 (db-rules
+        # §2/§6e) — and note the ruling asks for a SCREAM, not a brake:
         # "If something belongs to the system, that CANNOT EVER be represented
         # by a NULL org! ... make the release script scream ... NO NULL ORG."
         # Two ratchets on one ~1s snapshot: NULL-org ROW count (may only go
@@ -83,7 +94,7 @@ if $STRICT; then
         # without --strict, because the fix is a rebuild + a filed defect,
         # not a blocked release.
         "Reachability standing guards|pnpm check:reachability-guards"
-        # DB GUARD LIVENESS is BLOCKING. A guard's function body proves nothing —
+        # DB GUARD LIVENESS exits 1 under --strict. A guard's function body proves nothing —
         # `pg_event_trigger` is the only proof one is live (db-rules §1), and a
         # project restore drops event triggers SILENTLY because CREATE EVENT
         # TRIGGER needs superuser. That already happened: from the changeover
@@ -139,7 +150,7 @@ if $STRICT; then
         "Agent sync fields vs live RPC (snapshot fallback)|pnpm exec tsx scripts/check-agent-sync-fields.ts --live --strict"
         "Access guard check|pnpm exec tsx scripts/check-access-guards.ts --strict"
         "Visibility vocabulary|pnpm exec tsx scripts/check-visibility-vocab.ts --strict"
-        # THE COMPONENT OWNERSHIP LAW is BLOCKING in strict mode, unlike most
+        # THE COMPONENT OWNERSHIP LAW exits 1 in strict mode, unlike most
         # drift gates here. Its live count is 0 today (191 component tables, 945
         # policies) and must STAY 0 — a single regenerated component policy that
         # mentions created_by re-opens D182(3), where a parent-editor stamps
@@ -188,7 +199,9 @@ if $STRICT; then
         # the fix is one command (`pnpm shape:types <kind>`), never an edit to a
         # .gen.ts. Needs the live registry, like its two neighbours here.
         "Generated kind types vs live registry|pnpm check:kind-types"
-        # THE `__kind` MARKER LAW is BLOCKING, in both modes. `__kind` is part of
+        # THE `__kind` MARKER LAW genuinely blocks a MERGE — ci.yml runs
+        # `pnpm check:kind-marker-law` on every push and PR, so unlike most gates
+        # here a red really does stop something. It exits 1 in both modes. `__kind` is part of
         # the data (KINDS_EVERYWHERE_PLAN §4.2); the 2026-08-23 annihilation left
         # ZERO violations and a small, reason-carrying blessed list, so there is
         # no backlog to grandfather. A new stripper is how stored examples and
@@ -249,7 +262,7 @@ if $STRICT; then
         "URL state written outside the canonical primitive|pnpm check:url-state"
         "Retired-database project id handed to agents|pnpm check:retired-db-ref"
         # HR TIME & ATTENDANCE — NO CLIENT COMPUTES HOURS (SPEC-TIME §9.2, L3-75).
-        # BLOCKING on --strict, deliberately: the lane is greenfield and stands at
+        # Exits 1 on --strict, deliberately: the lane is greenfield and stands at
         # ZERO findings today, so a strict gate stalls nobody and catches the first
         # regression. Subtracting ended_at − started_at in a browser returns 8 hours
         # for a spring-forward night shift that was 7 (fixture OT-DST-01).
@@ -398,7 +411,9 @@ else
         # the fix is one command (`pnpm shape:types <kind>`), never an edit to a
         # .gen.ts. Needs the live registry, like its two neighbours here.
         "Generated kind types vs live registry|pnpm check:kind-types"
-        # THE `__kind` MARKER LAW is BLOCKING, in both modes. `__kind` is part of
+        # THE `__kind` MARKER LAW genuinely blocks a MERGE — ci.yml runs
+        # `pnpm check:kind-marker-law` on every push and PR, so unlike most gates
+        # here a red really does stop something. It exits 1 in both modes. `__kind` is part of
         # the data (KINDS_EVERYWHERE_PLAN §4.2); the 2026-08-23 annihilation left
         # ZERO violations and a small, reason-carrying blessed list, so there is
         # no backlog to grandfather. A new stripper is how stored examples and
@@ -476,7 +491,7 @@ echo ""
 echo -e "${BOLD}  Release quality gates${NC}"
 echo -e "  ${DIM}${#GATES[@]} checks — each prints its name before it starts${NC}"
 if $STRICT; then
-    echo -e "  ${CYAN}Mode: strict (blocks on failure)${NC}"
+    echo -e "  ${CYAN}Mode: strict (exits 1 on findings — manual triage; no automation reads this)${NC}"
 else
     echo -e "  ${CYAN}Mode: advisory (reports findings; never blocks ship/push)${NC}"
 fi
@@ -553,7 +568,23 @@ run_gate() {
     # that screams in a phrase this list does not know prints a silent green
     # [OK] with real findings inside it — which is the exact opposite of
     # "scream, never block", and is how an advisory gate quietly becomes decor.
-    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|ROUTE METADATA GAPS|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|PICKERS THAT DO NOT TAKE NEW INPUT|TYPE-ESCAPE HATCHES ABOVE BASELINE|UNACKNOWLEDGED DDL GUARD FIRINGS|CANONICAL RATCHET EXCEEDED|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
+    #
+    # IT HAS NOW HAPPENED TWICE, so treat this as a law and not a suggestion:
+    #   2026-08-26  check:component-created-by printed "VIOLATION" and exited 0.
+    #               229 offenders behind a green [OK] for five days. Fixed by
+    #               invoking `:strict` in the advisory list (see below).
+    #   2026-08-29  check:migrations printed "Migrations: 88 drifted" and exited
+    #               0 — drift NEVER changes that checker's exit code, in either
+    #               mode, so `:strict` could not have saved it either. 88 real
+    #               findings printed as a green [OK]; the only possible fix was
+    #               the banner. `MIGRATION LEDGER DRIFT` / `MIGRATION LEDGER
+    #               UNVERIFIABLE` are now in the list below and the checker's
+    #               header says not to reword them without editing this regex.
+    #
+    # The lesson both times: an exit code you did not verify is not a signal.
+    # After wiring a gate here, run it once with a KNOWN finding present and
+    # confirm this script prints [WARN] or [FAIL] — never take green on faith.
+    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|ROUTE METADATA GAPS|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|PICKERS THAT DO NOT TAKE NEW INPUT|TYPE-ESCAPE HATCHES ABOVE BASELINE|UNACKNOWLEDGED DDL GUARD FIRINGS|CANONICAL RATCHET EXCEEDED|MIGRATION LEDGER DRIFT|MIGRATION LEDGER UNVERIFIABLE|MIGRATION SLOT COLLISION|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
         echo -e "${YELLOW}[WARN]${NC}  [$step/$total] ${label} (${elapsed}s) — findings below (advisory)"
         print_gate_details "$tmp"
         rm -f "$tmp"
@@ -591,7 +622,7 @@ echo ""
 if [[ $failed -ne 0 ]]; then
     echo -e "${RED}${BOLD}Release gates reported failures.${NC}"
     if $STRICT; then
-        echo -e "${RED}${BOLD}Strict mode — fix the issues above before releasing.${NC}"
+        echo -e "${RED}${BOLD}Strict mode — exiting 1 so your triage sees it. Fix the issues above.${NC}"
         echo ""
         exit 1
     fi

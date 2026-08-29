@@ -26,10 +26,25 @@
  *   pnpm check:migrations            # loud, non-blocking (exit 0) — for hooks
  *   pnpm check:migrations --strict   # exit 1 when anything is unapplied — for CI
  *
+ * Three separate classes, never one number (they demand different responses):
+ *   UNAPPLIED     on disk, the ledger has never seen it — the file never ran.
+ *   DRIFTED       ledgered with a real SHA-256 that no longer matches the file.
+ *   UNVERIFIABLE  ledgered with something that is not a SHA-256 at all, so what
+ *                 ran was never recorded. Not repairable; never re-stamp it.
+ *
  * Exit codes:
  *   0  clean, OR unapplied found in default (non-blocking) mode, OR creds absent
- *   1  unapplied/drifted found AND --strict
+ *   1  unapplied found (or an actionable slot collision) AND --strict
  *   2  unexpected error (DB fetch failed)
+ *
+ * DRIFTED and UNVERIFIABLE never change the exit code, in either mode — they are
+ * a standing inventory, and a release that touches no migration must not stall
+ * on them. That makes the BANNER the only thing that carries them: the phrases
+ * `MIGRATION LEDGER DRIFT` / `MIGRATION LEDGER UNVERIFIABLE` are matched by
+ * run-release-gates.sh's advisory-marker regex. Before 2026-08-29 they were not,
+ * so the gate printed a silent green [OK] over 88 real findings — the same
+ * failure mode that hid 229 component-policy violations. Do not reword a banner
+ * without updating that regex.
  *
  * A migration intentionally not meant to apply (superseded, destructive, already
  * live) is exempted with `-- migrate: skip: <reason>` in its first 25 lines — the
@@ -228,6 +243,30 @@ function nextFreeNumber(series: string, allSlots: Iterable<string>): number {
   return max + 1;
 }
 
+/**
+ * A real checksum is the SHA-256 of the SQL that ran: 64 lowercase hex chars.
+ *
+ * 43 ledger rows (measured 2026-08-29) carry something else — 34 of them
+ * `md5(<filename stem>)`, written by migrations that ledgered THEMSELVES in
+ * their own body, plus placeholders like `applied-via-mcp-apply_migration` and
+ * `n/a-applied-live`. A value derived from the filename is a constant: it cannot
+ * change when the file changes, so it can never detect an edit — and it never
+ * equals the file's real hash, so the file reported DRIFTED forever whether or
+ * not anyone touched it. 27 of the 88 "drifted" findings on 2026-08-29 were
+ * only ever this, which made the drift number itself untrustworthy.
+ *
+ * Those rows are NOT repairable: the bytes that ran were never recorded, so
+ * re-stamping them with today's file hash would silence the alarm by destroying
+ * the last evidence that we do not know what ran. They get their own class
+ * instead, counted out loud and separately from real drift.
+ *
+ * The door is now shut in the database, not here:
+ * migrations/migration_checksum_honesty_guard.sql refuses a non-SHA-256 on
+ * INSERT **and** UPDATE of public._schema_migrations, so this class can only
+ * ever shrink. This check is the reader that keeps the existing ones visible.
+ */
+const SHA256_RE = /^[0-9a-f]{64}$/;
+
 const DRIFT_OK_FILE = resolve(MIGRATIONS_DIR, "DB_TRANSITION_DRIFT_OK.txt");
 
 /** Filename allowlist — drift on these files is expected during DB transition. */
@@ -278,9 +317,14 @@ async function main(): Promise<number> {
   const driftOk = loadDriftOkSet();
   const pending: string[] = []; // on disk, never recorded
   const drifted: string[] = []; // recorded, but file content changed since
+  // Recorded with a checksum that is not a SHA-256 at all, so the ledger never
+  // captured what ran and drift for this file is UNKNOWABLE — see SHA256_RE.
+  const unverifiable: string[] = [];
   for (const [f, sum] of local) {
-    if (!ledger.has(f)) pending.push(f);
-    else if (ledger.get(f) !== sum && !driftOk.has(f)) drifted.push(f);
+    const recorded = ledger.get(f);
+    if (recorded === undefined) pending.push(f);
+    else if (!SHA256_RE.test(recorded)) unverifiable.push(f);
+    else if (recorded !== sum && !driftOk.has(f)) drifted.push(f);
   }
 
   // ── Numeric-slot collisions ────────────────────────────────────────────────
@@ -349,7 +393,7 @@ async function main(): Promise<number> {
   }
 
   // Clean: every tracked migration is recorded and unchanged. Stay quiet.
-  if (pending.length === 0 && drifted.length === 0)
+  if (pending.length === 0 && drifted.length === 0 && unverifiable.length === 0)
     return actionable.length && strict ? 1 : 0;
 
   // Two valid fixes for BOTH states below: apply via the Supabase MCP
@@ -378,15 +422,46 @@ async function main(): Promise<number> {
         `  ${C.white}- ${f}${C.reset} ${C.yellow}[DRIFTED]${C.reset}`,
       );
     console.log(`  ${fix}`);
-  } else {
+  } else if (drifted.length) {
     console.log(
-      `${TAG.warn}Migrations: ${drifted.length} drifted — recorded as applied, but the file changed since. (non-blocking)`,
+      `${TAG.warn}MIGRATION LEDGER DRIFT — ${drifted.length} drifted: recorded as applied, but the file changed since. (non-blocking)`,
     );
     for (const f of drifted)
       console.log(
         `  ${C.white}- ${f}${C.reset} ${C.yellow}[DRIFTED]${C.reset}`,
       );
     console.log(`  ${fix}`);
+  }
+
+  // ── The class that is not drift ─────────────────────────────────────────────
+  // Reported SEPARATELY and never folded into the drift count, because the two
+  // demand opposite responses: drift asks "which is right, the file or the DB?",
+  // while this asks nothing — the answer was never recorded. Re-stamping these
+  // with the current file hash is the one fix that is always wrong: it turns
+  // "we do not know what ran" into "the file is what ran", which is a claim
+  // nobody can support. They can only be retired by a migration that genuinely
+  // re-applies the file and ledgers a real SHA-256 of the bytes it ran.
+  if (unverifiable.length) {
+    console.log();
+    console.log(
+      `${TAG.warn}MIGRATION LEDGER UNVERIFIABLE — ${unverifiable.length} file(s) recorded with a checksum ` +
+        `that is not a SHA-256, so what actually ran is unknowable. (non-blocking)`,
+    );
+    for (const f of unverifiable)
+      console.log(
+        `  ${C.white}- ${f}${C.reset} ${C.yellow}[UNVERIFIABLE]${C.reset} ` +
+          `${C.dim}ledgered ${JSON.stringify(ledger.get(f))}${C.reset}`,
+      );
+    console.log(
+      `  ${C.dim}Cause: migrations that ledgered themselves with md5(<filename>), and ` +
+        `hand-written placeholders. New ones are refused at the door by ` +
+        `migrations/migration_checksum_honesty_guard.sql — this count may only shrink.${C.reset}`,
+    );
+    console.log(
+      `  ${C.white}Do NOT re-stamp these with the file's current hash.${C.reset} ` +
+        `${C.dim}That silences the alarm by destroying the evidence. Retire one only by ` +
+        `re-applying the file for real and ledgering the SHA-256 of what ran.${C.reset}`,
+    );
   }
 
   return (pending.length || actionable.length) && strict ? 1 : 0;

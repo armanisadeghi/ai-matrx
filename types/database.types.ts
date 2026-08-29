@@ -44361,6 +44361,10 @@ export type Database = {
         Args: { p_hours?: number; p_reason?: string; p_request_id: string }
         Returns: Json
       }
+      leave_request_discard: {
+        Args: { p_reason?: string; p_request_id: string }
+        Returns: Json
+      }
       leave_request_preview: {
         Args: {
           p_day_parts?: Json
@@ -62524,6 +62528,10 @@ export type Database = {
       }
       hr_leave_request_cancel: {
         Args: { p_hours?: number; p_reason?: string; p_request_id: string }
+        Returns: Json
+      }
+      hr_leave_request_discard: {
+        Args: { p_reason?: string; p_request_id: string }
         Returns: Json
       }
       hr_leave_request_preview: {
