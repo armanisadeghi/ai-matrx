@@ -51,7 +51,13 @@ this directory.
   `ensureScopeTypeItems`), `contextValuesSlice.ts` (high-churn values sidecar; writes echo through
   `thunks/setContextValue.ts` → the sanctioned `set_context_value` RPC),
   `templatesSlice.ts`, plus `thunks/` and `selectors/`. `appContextSlice.ts` lives at
-  `lib/redux/slices/`.
+  `lib/redux/slices/`. **Structural writes go ONLY through the mutation thunks**
+  (`thunks/scopeTreeMutations.ts` — create/update/delete scope type + scope;
+  `thunks/contextItemMutations.ts` — create/update/delete context item;
+  `thunks/applyTemplate.ts`), each backed by a SECURITY DEFINER RPC of the
+  `set_context_value` family (C17 HYBRID ruling: reads stay direct RLS table
+  reads, writes go through the RPCs) and folding the authoritative row straight
+  into the slice — no refetch, no legacy-action mirroring.
 - `hooks/` — `useScopeTree`, `useActiveContext`, `useContextValues`, `useEntityScopes`,
   `useTemplates`, `useAssociations` (alias `useEntityRelationships`), `useContainerLinks`,
   `useAssociationCandidates`, `useCategories`, `useEntityTitles`. **Components consume hooks —
@@ -62,12 +68,21 @@ this directory.
 - `components/entity-context/` — Surface B (durable tagging only): `EntityScopeTagger`,
   `EntityTargetPicker`.
 - `components/associations/` — the container-centric association UI (see the section below).
+- `components/management/` — the canonical scope-management surfaces: `ScopesManager`
+  (the `/organizations/[orgId]/scopes` page), `OrgScopeTypeSection`, `NewScopeInline`,
+  `EditScopeTypeSheet`, `AddScopeModal`, `ScopeOnboarding`, `TemplateGalleryDrawer`,
+  `ScopeColorPicker`, `ReorderDialog` (generic drag-reorder dialog, also used by
+  window-panels + war-room), plus the pre-existing `ScopesHub` family. All run on the
+  canonical tree + the mutation thunks — zero legacy-module imports.
 - `registry/` — `entityRegistry.ts`, `entityContentAdapters.ts`.
 - `utils/` — `scopeMismatch.ts` (pure decision logic + tests for the send-time gate),
-  `categoryHierarchy.ts`.
+  `categoryHierarchy.ts`, `slugify.ts` (key/slug rules shared app-wide),
+  `scopeValuePayload.ts` (raw input → `value_*` column routing),
+  `customComponent.ts` (jsonb → `VariableCustomComponent` narrowing).
 - Routes: `app/(core)/scopes/` (`page`, `manage`, `s/[scopeId]`, `templates`, `settings`) and
-  `app/(core)/organizations/[orgId]/scopes/**` (legacy CRUD editors, still live —
-  `features/scope-system/`).
+  `app/(core)/organizations/[orgId]/scopes/**` (the root page is the canonical
+  `ScopesManager`; the deeper per-type/per-scope editors are still legacy
+  `features/scope-system/` pending their own teardown wave).
 
 ---
 
@@ -176,6 +191,26 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-08-29 — Lane F W6–W8 (context-core teardown): the eight `notYetImplemented`
+  mutation stubs in `scopesService` are real implementations over the live
+  SECURITY DEFINER RPC family (create/update/delete scope type + scope,
+  `create_context_item`, `apply_template` — all verified live: definer,
+  org-authz inside, authenticated EXECUTE), plus two NEW doored RPCs
+  `update_context_item` / `delete_context_item`
+  (`migrations/ctx_context_item_update_delete_rpcs.sql`, §6d-4 door + ledger).
+  New mutation thunks (`scopeTreeMutations` / `contextItemMutations` /
+  `applyTemplate`) patch the canonical tree directly. `ScopesManager` rewired
+  onto `ensureScopeTree` + `makeSelectScopeTypesForOrg` with canonical rebuilds
+  of `OrgScopeTypeSection`, `NewScopeInline`, `EditScopeTypeSheet`,
+  `AddScopeModal`, `ScopeOnboarding`, `TemplateGalleryDrawer` under
+  `components/management/`; `ContextAssignmentField`'s quick-add now uses the
+  canonical `createScope` thunk. `slugify`, `scopeValuePayload`,
+  `ScopeColorPicker`, `ReorderDialog` moved into this unit. Templates catalog
+  read enriched with nested scope-type/field detail. **Zero
+  `features/scope-system` / `features/agent-context` imports remain anywhere in
+  `features/scopes` — the last 8 of 29 legacy back-edges are gone.**
+  (`revertContextValue` / `deleteContextValue` stay stubs — their RPCs do not
+  exist yet.)
 - 2026-08-29 — Associations-extraction W0 prereqs: `AttachedItemsSheet` title resolution
   repointed onto the unit's `service/entityTitles.ts` (sharing's `accessSummary.fetchEntityTitles`
   copy is dedup-flagged for the sharing node); in-unit `cn` imports unified on `@/utils/cn`;
