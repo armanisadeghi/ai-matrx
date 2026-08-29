@@ -30,7 +30,7 @@ This is a behavior-preserving Door Law repair. No product-navigation choice rema
 - `pnpm check:dead-ends --json`: 73 → 72 findings; the sole `AuditionDialog.tsx` finding is gone.
 - `pnpm patrol:run verify --patrol P1 --run 20260829T142359Z`: PASS with seven hash-chained events ending `closed`.
 - Generated P1 automation prompt byte-matches the live prompt; live status is `ACTIVE`; live and manifest schedules both equal `FREQ=WEEKLY;BYDAY=MO;BYHOUR=1;BYMINUTE=10`.
-- `pnpm check:patrol-contracts` still reports unrelated pre-existing P5 and Fleet Health live-config drift; it reports no P1 drift and did not reject this baseline-delta batch.
+- `pnpm check:patrol-contracts` reports only unrelated pre-existing Fleet Health live-config drift; it reports no P1 drift and did not reject this baseline-delta batch.
 - Independent adversarial review checked the exact candidate diff, rule-name resolution, canonical anchor, stale-rule fallback, type-check, focused lint, detector output, and run-record validity: **CERTIFIED**, no concrete batch-caused defect.
 
 ## Recursive learning
