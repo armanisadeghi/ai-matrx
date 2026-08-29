@@ -106,7 +106,7 @@ export async function submitInvitationRequestStep1(
 
     // Send admin notification email (non-blocking)
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@aimatrx.com';
-    const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.aimatrx.com'}/administration/users/invitations`;
+    const adminUrl = 'https://manage.aimatrx.com/administration/users/invitations';
     const adminTemplate = emailTemplates.invitationRequestAdminNotification(
       request.full_name,
       request.email,
@@ -168,10 +168,11 @@ export async function submitInvitationRequestStep2(
  */
 export async function validateInvitationCode(
   code: string
-): Promise<ActionResponse<{ valid: boolean; codeId?: string }>> {
+): Promise<ActionResponse<{ valid: boolean }>> {
   try {
-    // Use public client with anon key - RLS policies allow anonymous validation
-    const supabase = await createClient();
+    // Code rows are private credentials. Validate the exact candidate at this
+    // server-only boundary; never make the code table enumerable to anon.
+    const supabase = createAdminClient();
 
     // Clean the code (remove spaces, uppercase)
     const cleanCode = code.trim().toUpperCase().replace(/\s/g, '');
@@ -179,7 +180,7 @@ export async function validateInvitationCode(
     // Check if code exists and is valid
     const { data, error } = await supabase
       .schema('users').from('invitation_codes')
-      .select('id, code, status, max_uses, current_uses, expires_at')
+      .select('status, max_uses, current_uses, expires_at')
       .eq('code', cleanCode)
       .single();
 
@@ -216,7 +217,7 @@ export async function validateInvitationCode(
 
     return { 
       success: true, 
-      data: { valid: true, codeId: data.id } 
+      data: { valid: true }
     };
   } catch (error) {
     console.error('Unexpected error in validateInvitationCode:', error);
@@ -225,16 +226,17 @@ export async function validateInvitationCode(
 }
 
 /**
- * Mark invitation code as used (called after successful signup)
- * This should be called from the signup flow with authenticated user
+ * Mark an invitation code as used from a trusted server workflow.
+ * No signup flow currently calls this helper.
  */
 export async function markInvitationCodeUsed(
   code: string,
   userId: string
 ): Promise<ActionResponse> {
   try {
-    // Use public client - this will be called during signup with the invitation code
-    const supabase = await createClient();
+    // Code consumption is service-role-only. Keep the credential and the
+    // mutation behind this server-action boundary.
+    const supabase = createAdminClient();
 
     const cleanCode = code.trim().toUpperCase().replace(/\s/g, '');
 

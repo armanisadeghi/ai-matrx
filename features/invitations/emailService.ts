@@ -25,7 +25,7 @@ export async function sendInvitationRequestApprovalEmail(
 
   try {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.aimatrx.com';
-    const signupUrl = `${siteUrl}/sign-up?code=${invitationCode}`;
+    const signupUrl = `${siteUrl}/sign-up?invitation=${encodeURIComponent(invitationCode)}`;
 
     const emailTemplate = emailTemplates.invitationRequestApproved(
       fullName,
