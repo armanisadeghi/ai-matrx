@@ -164,7 +164,12 @@ merge, `bd22614a02b2a0bd9db246964a85a77db99e6095`, then explicitly selected
 the fail-forward version again. The final exact follow-up on that merge ancestry,
 `bd6d6672cd1336747f01d57c96ea44a519615814`, was independently **CERTIFIED**
 with the same 15/15 focused suite and ordering assertions. This retry integrates
-that final certified state without creating a redundant release.
+that final certified state without creating a redundant release. A concurrent
+fleet process cut `v0.4.1443` from the fail-forward ancestry before this final
+integration; this retry did not create that release. Certified candidate
+`bd6d6672cd` is preserved as an ancestor of final integration
+`c4a2f09dfd4202d8b4e3d7eb807e3fde495ed0cc`, whose remote `release.sh` is
+fail-closed.
 
 ## Open routing
 
@@ -208,6 +213,10 @@ independent adversarial review **CERTIFIED** final exact follow-up
 `fe3fcc2bfdbfd3f0742578b3c9bccb487f00b9ae`. The certifier verified both
 pre-mutation authorization checks, the post-ship hard checkpoint, no rebase,
 and the complete focused gate set.
+
+Final integration `c4a2f09dfd4202d8b4e3d7eb807e3fde495ed0cc` preserves that
+certified SHA as an ancestor on `origin/main`. No release was created for the
+retry.
 
 ## Recursive learning
 
