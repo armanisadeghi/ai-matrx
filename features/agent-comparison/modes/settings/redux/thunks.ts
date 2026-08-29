@@ -23,6 +23,7 @@ import {
   destroyInstance,
 } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { copyInstanceRequestDraft } from "@/features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
@@ -30,8 +31,6 @@ import {
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
 } from "@/features/agents/redux/agent-definition/thunks";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
@@ -49,11 +48,18 @@ import {
   resetSettings,
   setActiveSettingsSet,
   setLocked,
+  setSettingsInputConversationId,
   setSettingsColumns,
   submitAllFinished,
   submitAllStarted,
 } from "./slice";
 import type { SettingsColumn } from "../types";
+import {
+  createBattleInputDraft,
+  hydrateBattleInputDraft,
+  readBattleInputDraft,
+  replaceBattleInputDraft,
+} from "@/features/agent-comparison/shared/battleInputDraft";
 
 // =============================================================================
 // Page-wide constants
@@ -93,7 +99,9 @@ export const setLockedAgent = createAsyncThunk<
   async ({ agentId }, { dispatch, getState }) => {
     const state = getState();
     const prev = state.agentComparisonSettings.locked;
-    const wasReady = prev.agentId === agentId;
+    const wasReady =
+      prev.agentId === agentId &&
+      state.agentComparisonSettings.inputConversationId !== null;
     if (wasReady) return;
 
     // Load the agent + its version history for the locked-axis pickers.
@@ -104,16 +112,23 @@ export const setLockedAgent = createAsyncThunk<
       ).unwrap(),
     ]);
 
-    // Reset locked variable values since the new agent's variable schema
-    // may not overlap. The user re-fills them; cheaper than guessing.
     dispatch(
       setLocked({
         agentId,
         agentVersion: "current",
         agentVersionId: null,
-        variables: {},
       }),
     );
+
+    const inputConversationId = await replaceBattleInputDraft({
+      dispatch,
+      agentId,
+      agentVersionId: null,
+      previousConversationId:
+        state.agentComparisonSettings.inputConversationId,
+      copyVariables: false,
+    });
+    dispatch(setSettingsInputConversationId(inputConversationId));
 
     // Recreate every column's instance under the new agent. Carry
     // existing overrides forward so the user doesn't lose model/temp
@@ -168,7 +183,12 @@ export const setLockedVersion = createAsyncThunk<
     const state = getState();
     const { agentId, agentVersion } = state.agentComparisonSettings.locked;
     if (!agentId) return;
-    if (agentVersion === version) return;
+    if (
+      agentVersion === version &&
+      state.agentComparisonSettings.inputConversationId
+    ) {
+      return;
+    }
 
     // Hydrate the snapshot for label display (best-effort).
     if (version !== "current") {
@@ -192,6 +212,14 @@ export const setLockedVersion = createAsyncThunk<
     const post = getState();
     const pinnedVersionId =
       version === "current" ? null : versionId ?? null;
+    const inputConversationId = await replaceBattleInputDraft({
+      dispatch,
+      agentId,
+      agentVersionId: pinnedVersionId,
+      previousConversationId:
+        post.agentComparisonSettings.inputConversationId,
+    });
+    dispatch(setSettingsInputConversationId(inputConversationId));
     for (const col of post.agentComparisonSettings.columns) {
       const prevOverrides =
         post.instanceModelOverrides.byConversationId[col.conversationId]
@@ -302,34 +330,22 @@ export const submitAllSettings = createAsyncThunk<
     dispatch(submitAllStarted());
     try {
       const state = getState();
-      const { agentId, variables, userMessage } =
-        state.agentComparisonSettings.locked;
+      const { agentId } = state.agentComparisonSettings.locked;
+      const inputConversationId =
+        state.agentComparisonSettings.inputConversationId;
       const columns = state.agentComparisonSettings.columns;
 
-      if (!agentId || columns.length === 0) {
+      if (!agentId || !inputConversationId || columns.length === 0) {
         return { launched: 0, failed: 0, skipped: columns.length };
       }
 
-      // Page is locked-input — broadcast the locked text + variables to
-      // every column's per-instance slices before firing. The shared
-      // executor will read those slices for each conversation.
       for (const col of columns) {
-        if (userMessage) {
-          dispatch(
-            setUserInputText({
-              conversationId: col.conversationId,
-              text: userMessage,
-            }),
-          );
-        }
-        if (Object.keys(variables).length > 0) {
-          dispatch(
-            setUserVariableValues({
-              conversationId: col.conversationId,
-              values: variables,
-            }),
-          );
-        }
+        dispatch(
+          copyInstanceRequestDraft({
+            sourceConversationId: inputConversationId,
+            targetConversationId: col.conversationId,
+          }),
+        );
       }
 
       const results = await Promise.allSettled(
@@ -379,6 +395,11 @@ export const clearSettingsBattle = createAsyncThunk<void, void, ThunkApi>(
   "agentComparisonSettings/clear",
   async (_arg, { dispatch, getState }) => {
     const state = getState();
+    if (state.agentComparisonSettings.inputConversationId) {
+      dispatch(
+        destroyInstance(state.agentComparisonSettings.inputConversationId),
+      );
+    }
     for (const col of state.agentComparisonSettings.columns) {
       dispatch(destroyInstance(col.conversationId));
     }
@@ -471,8 +492,12 @@ function buildSettingsEntries(state: RootState): UpsertEntryInput[] {
 }
 
 function buildSetMetadata(state: RootState): Record<string, unknown> {
-  const { agentId, agentVersion, agentVersionId, variables, userMessage } =
+  const { agentId, agentVersion, agentVersionId } =
     state.agentComparisonSettings.locked;
+  const { variables, userMessage } = readBattleInputDraft(
+    state,
+    state.agentComparisonSettings.inputConversationId,
+  );
   return {
     mode: "settings",
     locked: {
@@ -538,6 +563,11 @@ export const loadSettingsBattleSet = createAsyncThunk<
   async ({ setId }, { dispatch, getState }) => {
     // Wipe local state.
     const before = getState();
+    if (before.agentComparisonSettings.inputConversationId) {
+      dispatch(
+        destroyInstance(before.agentComparisonSettings.inputConversationId),
+      );
+    }
     for (const col of before.agentComparisonSettings.columns) {
       dispatch(destroyInstance(col.conversationId));
     }
@@ -570,10 +600,20 @@ export const loadSettingsBattleSet = createAsyncThunk<
           agentId: locked.agent_id,
           agentVersion: locked.agent_version ?? "current",
           agentVersionId: locked.agent_version_id ?? null,
-          variables: locked.variables ?? {},
-          userMessage: locked.user_message ?? "",
         }),
       );
+      const inputConversationId = await createBattleInputDraft({
+        dispatch,
+        agentId: locked.agent_id,
+        agentVersionId: locked.agent_version_id ?? null,
+      });
+      hydrateBattleInputDraft({
+        dispatch,
+        conversationId: inputConversationId,
+        userMessage: locked.user_message ?? "",
+        variables: locked.variables ?? {},
+      });
+      dispatch(setSettingsInputConversationId(inputConversationId));
     }
 
     // Restore each column + its per-column overrides + history.
