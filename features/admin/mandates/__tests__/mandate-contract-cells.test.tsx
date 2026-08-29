@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import type { MandateDefinitionRow } from "@/lib/supabase/mandateStorage";
-import { MandateOutputCell } from "../mandate-contract-cells";
+import { MandateInputsCell, MandateOutputCell } from "../mandate-contract-cells";
 import type { MandateRow } from "../mandate-health";
 
 const LONG_OUTPUT_KIND =
@@ -62,6 +62,7 @@ const row: MandateRow = {
   inputKind: "text",
   outputKind: LONG_OUTPUT_KIND,
   requiredVariables: [],
+  provisionKey: null,
   requiredContextPolicyKeys: [],
   contextGateClosed: false,
   holderContextClosed: false,
@@ -86,5 +87,43 @@ describe("MandateOutputCell", () => {
     expect(markup).toContain("[overflow-wrap:anywhere]");
     expect(markup).toContain("leading-tight");
     expect(markup).not.toMatch(/class="[^"]*(?:^|\s)h-5(?:\s|$)/);
+  });
+});
+
+/**
+ * THE REGRESSION THIS FILE EXISTS TO HOLD (2026-08-29). `required_variables` is
+ * stripped for every mandate that declares a Provision, so a cell reading only
+ * that field announced "user text only" on exactly the mandates with the
+ * richest, fully typed input declarations. Each case below FAILS against the
+ * pre-fix cell.
+ */
+describe("MandateInputsCell reads the Provision, not required_variables", () => {
+  const provisioned: MandateRow = {
+    ...row,
+    requiredVariables: [],
+    provisionKey: "education.convert_source",
+  };
+
+  it("renders the offered value names when the offer has loaded", () => {
+    const html = renderToStaticMarkup(
+      <MandateInputsCell
+        row={provisioned}
+        offeredValues={["source_content", "title", "depth"]}
+      />,
+    );
+    expect(html).toContain("source_content");
+    expect(html).toContain("depth");
+    expect(html).not.toContain("user text only");
+  });
+
+  it("names the provision rather than lying while the offer is still loading", () => {
+    const html = renderToStaticMarkup(<MandateInputsCell row={provisioned} />);
+    expect(html).toContain("education.convert_source");
+    expect(html).not.toContain("user text only");
+  });
+
+  it("still says user text only when there is genuinely no input declaration", () => {
+    const html = renderToStaticMarkup(<MandateInputsCell row={row} />);
+    expect(html).toContain("user text only");
   });
 });
