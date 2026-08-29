@@ -15,6 +15,7 @@ import { createClient } from "@/utils/supabase/client";
 import type {
   KnobOverrideCount,
   KnobOverrideSetResult,
+  KnobRungLockSetResult,
   KnobScopeKindName,
   ScopedKnob,
 } from "./types";
@@ -64,6 +65,32 @@ export async function setKnobOverride(options: {
   });
   if (error) throw new Error(`knob_override_set failed: ${error.message}`);
   return data as KnobOverrideSetResult;
+}
+
+/**
+ * Set (or clear) THIS organization's rung lock for one key (scfg_50) — the org
+ * turning off user-level (or sub-org) control of one setting even where the
+ * platform allows it. `lockedKinds: []` or omitted CLEARS the lock; standing
+ * overrides on a locked rung go inert (never deleted), so unlocking restores
+ * them. Org owner/admin gated inside the SQL door.
+ */
+export async function setKnobRungLock(options: {
+  feature: string;
+  key: string;
+  organizationId: string;
+  lockedKinds: KnobScopeKindName[];
+  note?: string;
+}): Promise<KnobRungLockSetResult> {
+  const supabase = createClient();
+  const { data, error } = await supabase.schema("platform").rpc("knob_rung_lock_set", {
+    p_feature: options.feature,
+    p_key: options.key,
+    p_organization_id: options.organizationId,
+    p_locked_kinds: options.lockedKinds,
+    p_note: options.note,
+  });
+  if (error) throw new Error(`knob_rung_lock_set failed: ${error.message}`);
+  return data as KnobRungLockSetResult;
 }
 
 /** Per-knob override counts for the platform admin surface (admin-gated in SQL). */

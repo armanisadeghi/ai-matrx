@@ -138,6 +138,7 @@ export default function OrgConfigurationPage() {
                       scopeId={organizationId}
                       organizationId={organizationId}
                       blastRadius="Applies to everyone in this organization."
+                      showUserLockControl={canEdit}
                       onChanged={refreshKnobs}
                     />
                   ))}
