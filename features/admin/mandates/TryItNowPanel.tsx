@@ -51,11 +51,13 @@ import { toast } from "@/lib/toast";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
 import { OutputPreview } from "./bench-output-preview";
 import {
-  fetchVersionVariableDefinitions,
   runMandateAdHocTest,
+  type MandateTestResponse,
+} from "@/features/agents/mandates/test-run";
+import {
+  fetchVersionVariableDefinitions,
   saveAdHocResultAsExemplar,
   type MandateDefinitionRow,
-  type MandateTestResponse,
 } from "./service";
 
 /** One scaffolded field: a mandate-declared variable, an agent-declared one, or

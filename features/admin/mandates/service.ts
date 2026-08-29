@@ -13,6 +13,14 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { invalidateMandateCache } from "@/features/agents/mandates/service";
+/** The ad-hoc run path + its transport shapes moved down to the shared
+ * mandates feature so the (core) Mandate workspace can run a job too — ONE
+ * implementation, two hosts. See features/agents/mandates/test-run.ts. */
+import {
+  isMandateTestResult,
+  mandateTestResultValidationErrors,
+  type MandateTestResponse,
+} from "@/features/agents/mandates/test-run";
 import {
   versionSnapshotRowToAgentDefinition,
   type AgentVersionSnapshot,
@@ -535,13 +543,10 @@ export async function deleteMandateExemplar(id: string): Promise<void> {
 }
 
 /** All bench transport shapes come from aidream's generated OpenAPI contract. */
-export type MandateTestCandidate = components["schemas"]["MandateCandidate"];
 export type MandateTestBatchRequest =
   components["schemas"]["MandateTestBatchRequest"];
 export type MandateTestBatchResponse =
   components["schemas"]["MandateTestBatchResponse"];
-export type MandateTestResponse = components["schemas"]["MandateTestResult"];
-export type MandateTestRequest = components["schemas"]["MandateTestRequest"];
 export type MandateCodeTruth = components["schemas"]["MandateCodeTruth"];
 export type MandateCodeTruthReport =
   components["schemas"]["MandateCodeTruthReport"];
@@ -737,102 +742,6 @@ export async function runMandateTests(
     throw new Error("Agent mandate bench returned an invalid batch response.");
   }
   return response.data;
-}
-
-/**
- * Run ONE candidate against inputs typed right now, with no stored test case —
- * the "Try it now" path that makes a cold mandate (no exemplars) benchable at all.
- * The server persists nothing for an ad-hoc run; `saveAdHocResultAsExemplar`
- * turns a good one into the mandate's first real test case.
- */
-export async function runMandateAdHocTest(
-  dispatch: AppDispatch,
-  mandateKey: string,
-  input: {
-    variables: JsonObject;
-    userInput?: string | null;
-    candidate?: MandateTestCandidate;
-  },
-): Promise<MandateTestResponse> {
-  const body: MandateTestRequest = {
-    variables: toJsonRecord(input.variables),
-    user_input: input.userInput?.trim() ? input.userInput : null,
-    candidate: input.candidate,
-  };
-  const response = await dispatch(
-    callApi({
-      path: "/mandates/{mandate_key}/test",
-      method: "POST",
-      pathParams: { mandate_key: mandateKey },
-      body,
-      // One agent run, not a batch — but a slow model on a long prompt still
-      // outruns the default connect deadline, and this endpoint sends no
-      // headers until the run has finished.
-      connectTimeoutMs: 5 * 60_000,
-      totalTimeoutMs: null,
-    }),
-  );
-  if (response.error) throw new Error(response.error.message);
-  if (!isMandateTestResult(response.data)) {
-    throw new Error("Agent mandate bench returned an invalid run result.");
-  }
-  return response.data;
-}
-
-function structuralVerdictValidationErrors(value: unknown): string[] {
-  if (!isJsonObject(value)) return ["structural must be an object"];
-  const errors: string[] = [];
-  if (typeof value.checked !== "boolean") {
-    errors.push("structural.checked must be a boolean");
-  }
-  if (
-    !Array.isArray(value.errors) ||
-    !value.errors.every((entry) => typeof entry === "string")
-  ) {
-    errors.push("structural.errors must be an array of strings");
-  }
-  return errors;
-}
-
-/** Explain an open-JSONB contract failure at the field that broke it. */
-export function mandateTestResultValidationErrors(value: unknown): string[] {
-  if (!isJsonObject(value)) return ["result must be an object"];
-  const errors: string[] = [];
-  if (typeof value.id !== "string") errors.push("id must be a string");
-  if (typeof value.created_at !== "string") {
-    errors.push("created_at must be a string");
-  }
-  if (typeof value.mandate_key !== "string") {
-    errors.push("mandate_key must be a string");
-  }
-  if (!(typeof value.exemplar_id === "string" || value.exemplar_id == null)) {
-    errors.push("exemplar_id must be a string or null");
-  }
-  if (typeof value.candidate_id !== "string") {
-    errors.push("candidate_id must be a string");
-  }
-  if (typeof value.candidate_label !== "string") {
-    errors.push("candidate_label must be a string");
-  }
-  if (typeof value.provenance !== "string") {
-    errors.push("provenance must be a string");
-  }
-  if (typeof value.is_version !== "boolean") {
-    errors.push("is_version must be a boolean");
-  }
-  if (typeof value.output !== "string") errors.push("output must be a string");
-  if (typeof value.duration_ms !== "number") {
-    errors.push("duration_ms must be a number");
-  }
-  errors.push(...structuralVerdictValidationErrors(value.structural));
-  return errors;
-}
-
-/** Runtime boundary for generated test results stored inside open JSONB.
- * `exemplar_id` is null on an AD-HOC run (a "Try it now" run that has no
- * stored test case yet) and a string on every persisted one. */
-export function isMandateTestResult(value: unknown): value is MandateTestResponse {
-  return mandateTestResultValidationErrors(value).length === 0;
 }
 
 function isMandateTestBatchResponse(

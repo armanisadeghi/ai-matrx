@@ -2581,3 +2581,14 @@ it from earlier the same day. Fixed here the same way (depend on the org id, wai
 fail), but any hook that calls `callApi` from a mount effect without that dependency has the same
 bug, and nothing enforces it. Worth a guard or a shared "call when sendable" primitive.
 
+
+## `retired-slot-producer.test.ts` asserts a table name no mandate service writes — 2026-08-28
+
+Pre-existing at HEAD (verified with `git show HEAD:<file> | grep`), not caused by the run-affordance
+work that found it. `features/admin/mandates/__tests__/retired-slot-producer.test.ts:21` asserts the
+runtime mandate sources contain `.from("mandate")`, but every one of the four files it reads goes
+through the `mandateDefinitions()` / `mandateBindings()` helpers in `lib/supabase/mandateStorage.ts`
+instead — so the string is absent and the suite fails. The CONTRACT the test guards (no reads/writes
+against the retired `slot_*` tables) still holds; only its positive assertion is stale. Fix is either
+to assert on the storage helpers or to have the test read `lib/supabase/mandateStorage.ts` too. Left
+alone here because changing what a guard asserts is not a change to make inside an unrelated task.

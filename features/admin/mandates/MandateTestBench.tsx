@@ -82,10 +82,12 @@ import {
   type MandateDefinitionRow,
   type MandateExemplarRow,
   type MandateTestBatchResponse,
-  type MandateTestCandidate,
-  type MandateTestResponse,
   type MandateVersionInfo,
 } from "./service";
+import type {
+  MandateTestCandidate,
+  MandateTestResponse,
+} from "@/features/agents/mandates/test-run";
 
 /**
  * 🚨 WIRE ENUM — `"mandate_pinned"` is aidream's literal, not ours, and it is NOT a

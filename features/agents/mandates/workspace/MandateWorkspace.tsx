@@ -17,6 +17,9 @@
 //   §3 Organization context — one line, collapsed. This surface is PERSONAL;
 //      org editing lives on the org route.
 //   §4 Your override — the stepwise flow (OverrideFlow).
+// Plus: RUN THIS JOB — run the mandate you are looking at, agent holder or
+// workflow holder alike (super-admin gated; the server endpoint is
+// `require_super_admin`).
 //
 // No prose paragraphs. Sections state facts; the data does the talking.
 
@@ -47,6 +50,8 @@ import { MandateNotesPanel } from "../components/MandateNotesPanel";
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
 import { splitMandateKey } from "../mandate-key";
 import { OverrideFlow, type WorkspacePrincipal } from "./OverrideFlow";
+import { RunThisJobSection } from "./RunThisJobSection";
+import { Section } from "./Section";
 import {
   useMandateWorkspaceData,
   type MandateBindingRowDb,
@@ -187,6 +192,11 @@ export function MandateWorkspace({
 
         <JobSection data={data} />
         <FulfillmentSection data={data} resolution={resolution} onChanged={refresh} />
+
+        {/* Run it — the workspace's own run affordance, super-admin gated
+            (the server endpoint is require_super_admin) and identical in both
+            hosts. Renders nothing for everyone else. */}
+        <RunThisJobSection data={data} />
         {principal.kind === "user" ? (
           <OrgOverridesDisclosure
             resolution={resolution}
@@ -217,32 +227,6 @@ export function MandateWorkspace({
         />
       </div>
     </div>
-  );
-}
-
-// ── Section chrome (ShortcutEditorNext anatomy — eyebrow title, calm body) ──
-
-function Section({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-2">
-      <div className="flex items-baseline gap-2">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-          {title}
-        </h3>
-        {hint ? (
-          <span className="text-[11px] text-muted-foreground/70">{hint}</span>
-        ) : null}
-      </div>
-      {children}
-    </section>
   );
 }
 
