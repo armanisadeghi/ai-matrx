@@ -182,6 +182,52 @@ function listSql(dir: string): string[] {
     .sort();
 }
 
+/**
+ * ── Numeric-slot collision detection ──────────────────────────────────────────
+ *
+ * Two agents independently claiming the same migration NUMBER cost this program
+ * three incidents in two days (2026-08-27/28), the worst of which left twelve
+ * function bodies stamped with an unrelated migration's number. The ledger is
+ * keyed on (source, FILENAME), so two files sharing a number both apply cleanly.
+ *
+ * THE ACTUAL GUARD IS IN THE DATABASE: a BEFORE INSERT trigger on
+ * public._schema_migrations that refuses the second claim on every apply path
+ * (migrations/migration_slot_guard.sql). This check is the CHEAP PRE-APPLY
+ * companion, and it is worth having for one reason the trigger cannot cover:
+ * the trigger only sees the LEDGER, so it cannot know about a colliding file
+ * that is still sitting UNAPPLIED on someone's disk. This check reads the disk.
+ *
+ * Keep the slot rule below in sync with public.migration_slot(text) — that SQL
+ * function is the definition; this is the mirror.
+ */
+const SLOT_RE = /^(.*?)_(\d{1,4})([a-z]?)(?:_[a-z].*)?\.sql$/;
+
+/** Canonical slot key for a filename, or null when it claims no numeric slot. */
+function migrationSlot(filename: string): string | null {
+  const m = filename.match(SLOT_RE);
+  if (!m) return null;
+  return `${m[1]} #${m[2].padStart(4, "0")}${m[3]}`;
+}
+
+function slotSeries(slot: string): string {
+  return slot.split(" #")[0] ?? "";
+}
+
+function slotNumber(slot: string): number {
+  return parseInt((slot.split(" #")[1] ?? "").replace(/[a-z]$/, ""), 10);
+}
+
+/** Lowest number in `series` that no file on disk and no ledger row has claimed. */
+function nextFreeNumber(series: string, allSlots: Iterable<string>): number {
+  let max = 0;
+  for (const slot of allSlots) {
+    if (slotSeries(slot) !== series) continue;
+    const n = slotNumber(slot);
+    if (Number.isFinite(n) && n > max) max = n;
+  }
+  return max + 1;
+}
+
 const DRIFT_OK_FILE = resolve(MIGRATIONS_DIR, "DB_TRANSITION_DRIFT_OK.txt");
 
 /** Filename allowlist — drift on these files is expected during DB transition. */
@@ -237,8 +283,74 @@ async function main(): Promise<number> {
     else if (ledger.get(f) !== sum && !driftOk.has(f)) drifted.push(f);
   }
 
+  // ── Numeric-slot collisions ────────────────────────────────────────────────
+  // A collision only MATTERS while at least one of the two files is still
+  // unapplied — that is the window in which renumbering is free. Once both are
+  // applied it is history: renaming an applied migration orphans every citation
+  // of its bytes, which is exactly why the 2026-08-28 hr_c4_55 pair was recorded
+  // in a file header instead of renumbered. Those are counted, never screamed.
+  const slotMembers = new Map<string, Set<string>>();
+  for (const f of [...local.keys(), ...skipped, ...ledger.keys()]) {
+    const slot = migrationSlot(f);
+    if (!slot) continue;
+    let set = slotMembers.get(slot);
+    if (!set) slotMembers.set(slot, (set = new Set()));
+    set.add(f);
+  }
+
+  const actionable: Array<{ slot: string; files: string[] }> = [];
+  let historicalCollisions = 0;
+  for (const [slot, set] of slotMembers) {
+    if (set.size < 2) continue;
+    const files = [...set].sort();
+    // "Unapplied" means: on disk, and the ledger has never seen it.
+    if (files.some((f) => !ledger.has(f) && existsSync(resolve(MIGRATIONS_DIR, f))))
+      actionable.push({ slot, files });
+    else historicalCollisions += 1;
+  }
+
+  if (actionable.length) {
+    console.log();
+    console.log(
+      `${TAG.fail}Migrations: ${actionable.length} NUMBER COLLISION(S) — two files claim one slot, ` +
+        `and at least one has not been applied yet.`,
+    );
+    for (const { slot, files } of actionable) {
+      const series = slotSeries(slot);
+      const free = nextFreeNumber(series, slotMembers.keys());
+      console.log(`  ${C.red}slot ${slot}${C.reset}`);
+      for (const f of files) {
+        const state = ledger.has(f)
+          ? `${C.red}[APPLIED — do not rename]${C.reset}`
+          : `${C.yellow}[unapplied — renumber this one]${C.reset}`;
+        console.log(`    ${C.white}- ${f}${C.reset} ${state}`);
+      }
+      console.log(
+        `    ${C.white}Fix: renumber the unapplied file to ` +
+          `${series}_${String(free).padStart(2, "0")}_<slug>.sql${C.reset} ` +
+          `${C.dim}(next free number in this series; for a deliberate sub-step use ` +
+          `${series}_${String(slotNumber(slot)).padStart(2, "0")}a_<slug>.sql instead)${C.reset}`,
+      );
+      console.log(
+        `    ${C.dim}Re-point hr.function_contract.home_migration rows and in-body ` +
+          `number stamps in the same edit.${C.reset}`,
+      );
+    }
+    console.log(
+      `  ${C.dim}The database refuses these at apply time too ` +
+        `(migrations/migration_slot_guard.sql) — this check just catches it while ` +
+        `renumbering is still free.${C.reset}`,
+    );
+  } else if (historicalCollisions) {
+    console.log(
+      `${TAG.info}Migrations: ${historicalCollisions} shared number slot(s), all fully applied — ` +
+        `historical, not actionable (an applied migration cannot be renamed).`,
+    );
+  }
+
   // Clean: every tracked migration is recorded and unchanged. Stay quiet.
-  if (pending.length === 0 && drifted.length === 0) return 0;
+  if (pending.length === 0 && drifted.length === 0)
+    return actionable.length && strict ? 1 : 0;
 
   // Two valid fixes for BOTH states below: apply via the Supabase MCP
   // (apply_migration) + write the ledger row yourself, or run aidream's batch
@@ -277,7 +389,7 @@ async function main(): Promise<number> {
     console.log(`  ${fix}`);
   }
 
-  return pending.length && strict ? 1 : 0;
+  return (pending.length || actionable.length) && strict ? 1 : 0;
 }
 
 main().then(
