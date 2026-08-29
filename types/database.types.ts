@@ -52165,6 +52165,7 @@ export type Database = {
         Row: {
           allowed_values: Json | null
           basis: string | null
+          bound_value: Json | null
           created_at: string
           default_value: Json
           description: string
@@ -52173,6 +52174,8 @@ export type Database = {
           label: string
           max_value: number | null
           min_value: number | null
+          overridable_by: string[]
+          override_direction: string
           review_due: string | null
           set_by: string
           unit: string | null
@@ -52184,6 +52187,7 @@ export type Database = {
         Insert: {
           allowed_values?: Json | null
           basis?: string | null
+          bound_value?: Json | null
           created_at?: string
           default_value: Json
           description: string
@@ -52192,6 +52196,8 @@ export type Database = {
           label: string
           max_value?: number | null
           min_value?: number | null
+          overridable_by?: string[]
+          override_direction?: string
           review_due?: string | null
           set_by?: string
           unit?: string | null
@@ -52203,6 +52209,7 @@ export type Database = {
         Update: {
           allowed_values?: Json | null
           basis?: string | null
+          bound_value?: Json | null
           created_at?: string
           default_value?: Json
           description?: string
@@ -52211,6 +52218,8 @@ export type Database = {
           label?: string
           max_value?: number | null
           min_value?: number | null
+          overridable_by?: string[]
+          override_direction?: string
           review_due?: string | null
           set_by?: string
           unit?: string | null

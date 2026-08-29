@@ -17,7 +17,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { getUserId, requireUserId } from "@/utils/auth/getUserId";
 import type { Json } from "@/types/database.types";
-import { asJsonObject, mergeJsonColumn } from "@/lib/supabase/mergeJsonColumn";
+import { asJsonObject, mergeJsonColumn } from "@ai-matrx/data/db";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { FsrsState } from "@/lib/srs/fsrs";
