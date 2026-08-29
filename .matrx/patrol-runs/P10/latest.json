@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-29T191203Z",
-  "state": "certified",
-  "updatedAt": "2026-08-29T19:18:47.553Z",
-  "summary": "CERTIFIED exact Batch 1 candidate; no batch-caused defect.",
+  "state": "closed",
+  "updatedAt": "2026-08-29T19:22:52.624Z",
+  "summary": "Batch 1 lifecycle closed; deeper repair wave continues in a new permanent record.",
   "source": "2026-08-29T191203Z.json",
-  "eventHash": "d82d66c299a3c5c1b0da882102d1d5f75d3f6943cdee7cb7dd2ca19380434276"
+  "eventHash": "c79907b750f49e38a6e8dd2d9ab7439062dc407cd1220ab4c38ae38ca84ff360"
 }
