@@ -44,8 +44,8 @@ export interface LabelTemplate {
  * 5163 — 2" × 4" shipping, 10-up (2×5). Top/bottom 0.5", side 0.15625",
  *        0.1875" column gutter, zero row gutter.
  * 5164 — 3⅓" × 4" shipping, 6-up (2×3). Same horizontal grid as 5163.
- * 22806 — 2" × 2" rounded square, 12-up (3×4). Margins 0.375" sides /
- *        0.75" top, 0.375" column gutter, 0.5" row gutter.
+ * 22806 — 2" × 2" rounded square, 12-up (3×4). Margins 0.5" sides /
+ *        0.75" top, 0.75" column gutter, 0.5" row gutter.
  * 22807 — 2" round, 12-up (3×4). Same grid as 22806, circular die-cut.
  */
 export const LABEL_TEMPLATES: LabelTemplate[] = [
@@ -104,12 +104,12 @@ export const LABEL_TEMPLATES: LabelTemplate[] = [
     sheetWIn: 8.5,
     sheetHIn: 11,
     marginTopIn: 0.75,
-    marginLeftIn: 0.375,
+    marginLeftIn: 0.5,
     labelWIn: 2,
     labelHIn: 2,
     cols: 3,
     rows: 4,
-    gutterXIn: 0.375,
+    gutterXIn: 0.75,
     gutterYIn: 0.5,
     cornerRadiusIn: 0.09375,
   },
@@ -120,12 +120,12 @@ export const LABEL_TEMPLATES: LabelTemplate[] = [
     sheetWIn: 8.5,
     sheetHIn: 11,
     marginTopIn: 0.75,
-    marginLeftIn: 0.375,
+    marginLeftIn: 0.5,
     labelWIn: 2,
     labelHIn: 2,
     cols: 3,
     rows: 4,
-    gutterXIn: 0.375,
+    gutterXIn: 0.75,
     gutterYIn: 0.5,
     cornerRadiusIn: 1,
     round: true,

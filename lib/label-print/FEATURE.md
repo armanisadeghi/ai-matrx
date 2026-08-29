@@ -98,6 +98,14 @@ hard-coded jsPDF generator (deleted 2026-08-29 per no-legacy; its 2×5
 
 ## Change Log
 
+- 2026-08-29 (2nd) — DEFECT FIX (found by the @ai-matrx/print extraction): the
+  22806/22807 rows carried marginLeft 0.375 + gutterX 0.375 — a 7.5in
+  horizontal grid on an 8.5in sheet, drifting every square/round label off its
+  die-cut (assertTemplateGeometry had been console.error-ing this in dev).
+  Corrected to Avery's published 2.75in pitch (marginLeft 0.5, gutterX 0.75).
+  Same fix ships in the package (apps/shared/print CHANGELOG 0.1.0), which
+  supersedes this directory at the C9 cutover.
+
 - 2026-08-29 — Created: registry (5 Avery stocks + custom), qrLabelsPrinter,
   LabelSheetPreview, calibration page, downloadLabelsPdf; added
   `number`/`select` setting types to block-print contract; deleted the old
