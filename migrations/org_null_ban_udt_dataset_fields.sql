@@ -111,7 +111,7 @@ SELECT set_config('app.udt_template_provisioning', 'off', true);
 
 -- ── 3. Prove the backfill moved exactly what it should, and nothing else ────
 DO $$
-DECLARE p record; v_total int; v_null int; v_fp text; v_has int;
+DECLARE p record; v_total int; v_null int; v_has int; v_fp text; v_bad int;
 BEGIN
   SELECT * INTO p FROM _org_null_udt_pre;
   SELECT count(*) INTO v_total FROM workbench.udt_dataset_fields;
@@ -128,23 +128,32 @@ BEGIN
     RAISE EXCEPTION 'ABORT: expected all % rows to carry an org, found %.', p.total_rows, v_has;
   END IF;
 
-  -- The rows that ALREADY had an organization must be byte-identical: the
-  -- backfill's WHERE clause said `organization_id IS NULL`, and this proves it.
+  -- CHECKSUM DISCIPLINE, the real form: recompute the fingerprint over exactly
+  -- the rows that already had an org (everything NOT in the target set) and
+  -- require it to be bit-identical to the pre-state. If the UPDATE had touched
+  -- one row it had no business touching, this is what catches it.
   SELECT coalesce(md5(string_agg(id::text || ':' || organization_id::text, ',' ORDER BY id)), '')
     INTO v_fp
     FROM workbench.udt_dataset_fields
-   WHERE organization_id IS NOT NULL
-     AND id IN (SELECT id FROM workbench.udt_dataset_fields);
+   WHERE id NOT IN (SELECT id FROM _org_null_udt_targets);
 
-  -- Recompute the pre-existing subset only (rows that had an org before) by
-  -- excluding the ones this migration just stamped is not possible after the
-  -- fact, so assert the weaker-but-real invariant: every previously-orged row
-  -- still agrees with its parent-or-original value, and none became NULL.
-  IF EXISTS (SELECT 1 FROM workbench.udt_dataset_fields WHERE organization_id IS NULL) THEN
-    RAISE EXCEPTION 'ABORT: a NULL organization_id is present after backfill.';
+  IF v_fp <> p.untouched_fingerprint THEN
+    RAISE EXCEPTION 'ABORT: rows outside the NULL-org target set changed. Expected fingerprint %, got %.',
+                    p.untouched_fingerprint, v_fp;
   END IF;
 
-  RAISE NOTICE 'NO NULL ORG / udt_dataset_fields: backfilled % row(s); total unchanged at %; 0 NULL-org remain.',
+  -- And every backfilled row must equal its parent's org — this is inheritance,
+  -- not a guess, so a disagreement is a bug rather than a rounding error.
+  SELECT count(*) INTO v_bad
+    FROM workbench.udt_dataset_fields f
+    JOIN workbench.udt_datasets d ON d.id = f.table_id
+   WHERE f.id IN (SELECT id FROM _org_null_udt_targets)
+     AND f.organization_id IS DISTINCT FROM d.organization_id;
+  IF v_bad <> 0 THEN
+    RAISE EXCEPTION 'ABORT: % backfilled row(s) disagree with their dataset''s org.', v_bad;
+  END IF;
+
+  RAISE NOTICE 'NO NULL ORG / udt_dataset_fields: backfilled % row(s); total unchanged at %; untouched rows bit-identical; 0 NULL-org remain.',
                p.null_org, v_total;
 END $$;
 
@@ -185,7 +194,7 @@ BEGIN
   -- GREEN: an INSERT that OMITS organization_id must come out carrying the
   -- parent's org. This is the claim the whole migration rests on.
   INSERT INTO workbench.udt_dataset_fields (table_id, field_name, display_name, data_type, field_order, user_id)
-  VALUES (v_ds, 'zz_probe_field', 'ZZ Probe Field', 'text', 0, v_user)
+  VALUES (v_ds, 'zz_probe_field', 'ZZ Probe Field', 'string', 0, v_user)
   RETURNING id, organization_id INTO v_field, v_got;
 
   IF v_got IS DISTINCT FROM v_sys THEN
