@@ -15,11 +15,16 @@ const ADMIN_CAPS = [
   "candidate.read",
 ];
 
+import { appendFileSync } from "node:fs";
+
+const OUT = "/private/tmp/claude-501/-Users-armanisadeghi-code-common-docs/c70d36d3-9188-4d99-aaed-c2f11032e2eb/scratchpad/persona-nav.txt";
+
 function show(label: string, res: ReturnType<typeof resolveHrNav>) {
-  // eslint-disable-next-line no-console
-  console.log(
+  appendFileSync(
+    OUT,
     `\n### ${label} (flat=${res.flat}, selfServiceCount=${res.selfServiceCount})\n` +
-      res.items.map((i) => `${i.label} -> ${i.href}`).join("\n"),
+      res.items.map((i) => `${i.label} -> ${i.href}`).join("\n") +
+      "\n",
   );
 }
 
