@@ -26,6 +26,8 @@ export interface MintOptions {
   scopes?: string[];
   ttlSeconds?: number;
   signal?: AbortSignal;
+  /** Caller owns final classification/recovery; suppress generic inspector capture. */
+  captureErrors?: boolean;
 }
 
 /**
@@ -47,7 +49,7 @@ export async function mintCredential(
         model: opts.model ?? null,
         scopes: opts.scopes ?? [],
       },
-      { signal: opts.signal },
+      { signal: opts.signal, captureErrors: opts.captureErrors },
     );
     return data;
   } catch (err) {

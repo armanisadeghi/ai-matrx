@@ -42,6 +42,9 @@ Below is only what an agent editing THIS directory must not get wrong.
 
 - **The realtime credential comes only from the aidream token broker** (`lib/api/broker`,
   audience `xai_realtime`). Never a repo-local route holding `XAI_API_KEY`.
+- **A broker 403 is a policy decision, not an operational error.** `tokenManager`
+  owns its typed `refused` state and suppresses generic API/console ERROR capture;
+  transport, configuration, and malformed-response failures remain loud.
 - **xAI ephemeral secrets are consumed by the WebSocket handshake.** `stop()` must
   `tokenManager.invalidate()` and background-`prime()`, or restart-within-TTL fails with an
   uninformative transport error.

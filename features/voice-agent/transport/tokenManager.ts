@@ -183,17 +183,32 @@ export function createTokenManager(
       try {
         credential = await mintCredential(BROKER_AUDIENCE, BROKER_TIER_POLICY, {
           ttlSeconds,
+          // The manager maps policy refusals into its typed, user-visible
+          // state. Generic HTTP capture would misclassify the expected 403 as
+          // an operational failure before that classification can happen.
+          captureErrors: false,
         });
       } catch (caught) {
         const err = toTokenError(caught);
-        // Log once so the operator inspecting the network tab sees the full
-        // diagnostic beside the request.
+        // A 403 is the child-safety gate answering correctly, not an
+        // operational error. Other failures remain loud.
         if (typeof console !== "undefined") {
-          console.error("[voice-agent/tokenManager] credential mint failed:", {
+          const detail = {
             status: err.status,
             code: err.code,
             message: err.message,
-          });
+          };
+          if (err.code === "refused") {
+            console.warn(
+              "[voice-agent/tokenManager] credential mint refused:",
+              detail,
+            );
+          } else {
+            console.error(
+              "[voice-agent/tokenManager] credential mint failed:",
+              detail,
+            );
+          }
         }
         throw err;
       }
