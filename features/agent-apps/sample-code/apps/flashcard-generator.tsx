@@ -46,7 +46,7 @@ export default function FlashcardGenerator({ onExecute, response, isExecuting, i
       {rateLimitInfo && rateLimitInfo.remaining <= 2 && rateLimitInfo.remaining > 0 && (
         <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg">
           <p className="text-sm text-amber-800 dark:text-amber-200">
-            ⚠️ Only {rateLimitInfo.remaining} free uses remaining.
+            Only {rateLimitInfo.remaining} free uses remaining.
             <a href="/sign-up" className="underline ml-1 font-semibold hover:text-amber-900 dark:hover:text-amber-100">
               Sign up
             </a> for unlimited access.

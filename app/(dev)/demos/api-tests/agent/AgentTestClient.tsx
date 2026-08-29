@@ -349,11 +349,11 @@ export default function AgentTestClient() {
         textOutput: "Agent warmed successfully.",
         endedAt: new Date(),
       });
-      setLiveText("✅ Agent warmed successfully.");
+      setLiveText("Agent warmed successfully.");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Warm-up failed";
       updateLog(log.id, { status: "error", error: msg, endedAt: new Date() });
-      setLiveText(`❌ ${msg}`);
+      setLiveText(msg);
     } finally {
       setActiveRunId(null);
     }
@@ -449,7 +449,7 @@ export default function AgentTestClient() {
             error: msg,
             endedAt: new Date(),
           });
-          setLiveText(`❌ ${msg}`);
+          setLiveText(msg);
         }
       } finally {
         abortControllerRef.current = null;

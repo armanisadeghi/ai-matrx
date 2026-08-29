@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P6",
-  "runId": "01a0058c-d8db-74d3-b638-f59fbb0a9407",
-  "state": "delivered",
-  "updatedAt": "2026-08-15T18:29:54.584Z",
-  "summary": "DELIVERED: the independently certified No Emojis cleanup is on origin/main and was shipped in v0.4.673.",
-  "source": "01a0058c-d8db-74d3-b638-f59fbb0a9407.json",
-  "eventHash": "b575befbb13142b0935c3d3666e93bb91e593c1edc98ada7783c721be0c71b2a"
+  "runId": "e266c3f6-22ec-4f63-8446-e251e5b46f25",
+  "state": "fixing",
+  "updatedAt": "2026-08-29T14:22:51.944Z",
+  "summary": "Auto-approved a 10-file decorative-glyph deletion batch covering 15 verified user-visible lines.",
+  "source": "e266c3f6-22ec-4f63-8446-e251e5b46f25.json",
+  "eventHash": "475296121de3aea914630d3a27675f8fa2e427ac7a928594bd0e5b1d4e0dc9bc"
 }

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P6",
+  "runId": "e266c3f6-22ec-4f63-8446-e251e5b46f25",
+  "baseSha": "4544506cf27c818676ca0ba2954e744f06761055",
+  "createdAt": "2026-08-29T14:22:45.557Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-29T14:22:45.557Z",
+      "actor": "codex-patrol-worker",
+      "summary": "Retried the missed August 29 scheduled P6 run after the prior usage-limit abort.",
+      "evidence": [
+        "The prior scheduled attempt ended at the usage limit before producing a permanent run record; it is not counted as clean.",
+        "Fresh isolated worktree at current origin/main with worktree-local offline dependencies.",
+        "Pre-edit pnpm type-check PASS.",
+        "Pre-edit full detector: 1,091 raw lines in 421 files.",
+        "P6 automation restored from the typed manifest to ACTIVE on Wednesdays and Saturdays at 6:10 AM.",
+        "Prior run 01a0058c-d8db-74d3-b638-f59fbb0a9407 is already delivered in v0.4.673; its readable projections require reconciliation."
+      ],
+      "previousEventHash": null,
+      "eventHash": "8c8deef106ffd61622544d71a7591fa2e8a4be4a7ab47de934733f2ffdb7cdb2"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-29T14:22:51.944Z",
+      "actor": "codex-patrol-worker",
+      "summary": "Auto-approved a 10-file decorative-glyph deletion batch covering 15 verified user-visible lines.",
+      "evidence": [
+        "Every selected glyph is redundant beside complete status or warning text; deletion preserves copy, handlers, state, semantics, layout, themes, and responsive behavior.",
+        "No import, wrapper, generated file, suppression, type, chunk boundary, or dependency change is required."
+      ],
+      "previousEventHash": "8c8deef106ffd61622544d71a7591fa2e8a4be4a7ab47de934733f2ffdb7cdb2",
+      "eventHash": "475296121de3aea914630d3a27675f8fa2e427ac7a928594bd0e5b1d4e0dc9bc"
+    }
+  ]
+}

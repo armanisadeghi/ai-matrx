@@ -761,7 +761,7 @@ function QueryTermCoverage({
               : `"${c.term}" appears in ${c.count} of ${hits.length} results.`
           }
         >
-          {c.term} {c.count === 0 ? "✕ 0" : c.count}
+          {c.term} {c.count}
         </Badge>
       ))}
       {missing.length > 0 && (
