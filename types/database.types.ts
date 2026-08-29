@@ -51971,6 +51971,7 @@ export type Database = {
           default_holder_version_id: string | null
           deleted_at: string | null
           description: string | null
+          draft_inputs: Json
           fallback_mandate_key: string | null
           goal: string
           goal_grounding: string
@@ -52006,6 +52007,7 @@ export type Database = {
           default_holder_version_id?: string | null
           deleted_at?: string | null
           description?: string | null
+          draft_inputs?: Json
           fallback_mandate_key?: string | null
           goal: string
           goal_grounding?: string
@@ -52041,6 +52043,7 @@ export type Database = {
           default_holder_version_id?: string | null
           deleted_at?: string | null
           description?: string | null
+          draft_inputs?: Json
           fallback_mandate_key?: string | null
           goal?: string
           goal_grounding?: string
