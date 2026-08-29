@@ -61,6 +61,11 @@ SUBJECTS = [
 FOREIGN_PREHIRE = ("FOREIGN-ORG prehire (G2T-Owen Fitzgerald, Probe Two)",
                    "32204298-1cf6-4d99-af67-91eeb9baeebc", "3a522021-6abf-4fca-b405-644d99dbdf5b")
 
+# 🚨 Zzz Linkprobe carries priya's own login, so SHE reaches it on the `self` lane — a lane that
+# never touches hr.capability and therefore cannot move here. Asserting `hr_admin` for her would be
+# asserting the wrong thing about the right row.
+SELF_OF = {"priya": {"a1c0e2ad-af1a-4e21-b235-dbce7e7d9a0a"}}
+
 R = []
 
 
@@ -156,7 +161,8 @@ async def main():
         print("\n=== R1 · 🚨 MUST NOT BREAK: an ORG-scoped admin still reaches all of them ===")
         for label, emp_id, empl_id, _mine in SUBJECTS:
             v, gh, gc, _ = await viewer("priya", emp_id, empl_id)
-            rec(f"R1 · priya(scope=org) -> {label} · profile", "hr_admin", v)
+            exp = "self" if emp_id in SELF_OF["priya"] else "hr_admin"
+            rec(f"R1 · priya(scope=org) -> {label} · profile", exp, v)
             rec(f"R1 · priya(scope=org) -> {label} · history", True, gh)
             rec(f"R1 · priya(scope=org) -> {label} · pending", True, gc)
 
@@ -174,7 +180,9 @@ async def main():
             q = await rpc("hr_wf_inbox", {"p_scope": "queue", "p_employment_id": None,
                                           "p_filters": {}}, tok[who])
             granted = bool(q.get("granted")) if isinstance(q, dict) else False
-            rows = (q.get("queue") or q.get("rows") or []) if granted else []
+            # `scope_rows` is the QUEUE's own list; `needs_my_decision` is the caller's personal
+            # queue and is bounded by resolved_user_ids, not by the capability under test.
+            rows = (q.get("scope_rows") or []) if granted else []
             ids = sorted({r.get("instance_id") for r in rows if r.get("instance_id")})
             uid = await conn.fetchval("select id from auth.users where email = $1", PERSONAS[who])
             foreign = await conn.fetchval(

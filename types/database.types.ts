@@ -44414,6 +44414,10 @@ export type Database = {
         Returns: Json
       }
       my_time_off: { Args: { p_employment_id?: string }; Returns: Json }
+      my_timesheet_context: {
+        Args: { p_employment_id?: string }
+        Returns: Json
+      }
       name_rule_violations: {
         Args: never
         Returns: {
@@ -62509,6 +62513,10 @@ export type Database = {
       }
       hr_my_context: { Args: { p_organization_id?: string }; Returns: Json }
       hr_my_time_off: { Args: { p_employment_id?: string }; Returns: Json }
+      hr_my_timesheet_context: {
+        Args: { p_employment_id?: string }
+        Returns: Json
+      }
       hr_my_verification_consents: { Args: never; Returns: Json }
       hr_org_chart: {
         Args: { p_on?: string; p_organization_id: string }
