@@ -14531,6 +14531,88 @@
         }
       }
     },
+    "/microsoft-integrations/teams/joined": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Joined Teams",
+        "operationId": "joined_teams_microsoft_integrations_teams_joined_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MicrosoftConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamsJoinedTeamsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/teams/selected-chat/recent-messages": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Selected Chat Recent Messages",
+        "operationId": "selected_chat_recent_messages_microsoft_integrations_teams_selected_chat_recent_messages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamsSelectedChatMessagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamsRecentChatMessagesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ebay-integrations/sandbox/taxonomy/default-category-tree": {
       "get": {
         "tags": [
@@ -130938,6 +131020,21 @@
         "title": "MessageUpdate",
         "description": "Fields the client can edit on an existing ``cx_message`` row.\n\nEvery field is optional — only fields the caller actually sets are\nwritten to the DB. ``content`` accepts the same structured JSON the\nserver would have written (list of parts) — callers that want to\nedit a simple text message should still send the list form."
       },
+      "MicrosoftConnectionRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "MicrosoftConnectionRequest"
+      },
       "MintControlRequest": {
         "properties": {
           "mode": {
@@ -172685,6 +172782,193 @@
         ],
         "title": "TaskResponse",
         "description": "Single sch_task row (plain, without children)."
+      },
+      "TeamsChatMessageResponse": {
+        "properties": {
+          "chat_id": {
+            "type": "string",
+            "title": "Chat Id"
+          },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "last_modified_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Modified At"
+          },
+          "message_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Type"
+          },
+          "sender_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Display Name"
+          },
+          "body_content_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Content Type"
+          },
+          "body_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chat_id",
+          "message_id",
+          "created_at",
+          "last_modified_at",
+          "message_type",
+          "sender_display_name",
+          "body_content_type",
+          "body_content"
+        ],
+        "title": "TeamsChatMessageResponse"
+      },
+      "TeamsJoinedTeamResponse": {
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "title": "Team Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "is_archived": {
+            "type": "boolean",
+            "title": "Is Archived"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_id",
+          "display_name",
+          "is_archived"
+        ],
+        "title": "TeamsJoinedTeamResponse"
+      },
+      "TeamsJoinedTeamsResponse": {
+        "properties": {
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/TeamsJoinedTeamResponse"
+            },
+            "type": "array",
+            "title": "Teams"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only",
+            "title": "Access Mode",
+            "default": "read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "teams",
+          "truncated"
+        ],
+        "title": "TeamsJoinedTeamsResponse"
+      },
+      "TeamsRecentChatMessagesResponse": {
+        "properties": {
+          "chat_id": {
+            "type": "string",
+            "title": "Chat Id"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/TeamsChatMessageResponse"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only",
+            "title": "Access Mode",
+            "default": "read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chat_id",
+          "messages",
+          "truncated"
+        ],
+        "title": "TeamsRecentChatMessagesResponse"
+      },
+      "TeamsSelectedChatMessagesRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "chat_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Chat Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "chat_id"
+        ],
+        "title": "TeamsSelectedChatMessagesRequest"
       },
       "TemplateCreate": {
         "properties": {

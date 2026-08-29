@@ -5673,6 +5673,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/microsoft-integrations/teams/joined": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Joined Teams */
+        post: operations["joined_teams_microsoft_integrations_teams_joined_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/teams/selected-chat/recent-messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Selected Chat Recent Messages */
+        post: operations["selected_chat_recent_messages_microsoft_integrations_teams_selected_chat_recent_messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ebay-integrations/sandbox/taxonomy/default-category-tree": {
         parameters: {
             query?: never;
@@ -50442,6 +50476,11 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** MicrosoftConnectionRequest */
+        MicrosoftConnectionRequest: {
+            /** Connection Id */
+            connection_id: string;
+        };
         /**
          * MintControlRequest
          * @description Body of POST /handoffs/{handoff_id}/stream-ticket.
@@ -67621,6 +67660,69 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
+        /** TeamsChatMessageResponse */
+        TeamsChatMessageResponse: {
+            /** Chat Id */
+            chat_id: string;
+            /** Message Id */
+            message_id: string;
+            /** Created At */
+            created_at: string;
+            /** Last Modified At */
+            last_modified_at: string | null;
+            /** Message Type */
+            message_type: string | null;
+            /** Sender Display Name */
+            sender_display_name: string | null;
+            /** Body Content Type */
+            body_content_type: string | null;
+            /** Body Content */
+            body_content: string | null;
+        };
+        /** TeamsJoinedTeamResponse */
+        TeamsJoinedTeamResponse: {
+            /** Team Id */
+            team_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Is Archived */
+            is_archived: boolean;
+        };
+        /** TeamsJoinedTeamsResponse */
+        TeamsJoinedTeamsResponse: {
+            /** Teams */
+            teams: components["schemas"]["TeamsJoinedTeamResponse"][];
+            /** Truncated */
+            truncated: boolean;
+            /**
+             * Access Mode
+             * @default read_only
+             * @constant
+             */
+            access_mode?: "read_only";
+        };
+        /** TeamsRecentChatMessagesResponse */
+        TeamsRecentChatMessagesResponse: {
+            /** Chat Id */
+            chat_id: string;
+            /** Messages */
+            messages: components["schemas"]["TeamsChatMessageResponse"][];
+            /** Truncated */
+            truncated: boolean;
+            /**
+             * Access Mode
+             * @default read_only
+             * @constant
+             */
+            access_mode?: "read_only";
+        };
+        /** TeamsSelectedChatMessagesRequest */
+        TeamsSelectedChatMessagesRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Chat Id */
+            chat_id: string;
+        };
         /** TemplateCreate */
         TemplateCreate: {
             /** Name */
@@ -84330,6 +84432,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    joined_teams_microsoft_integrations_teams_joined_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MicrosoftConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamsJoinedTeamsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    selected_chat_recent_messages_microsoft_integrations_teams_selected_chat_recent_messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamsSelectedChatMessagesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamsRecentChatMessagesResponse"];
+                };
             };
             /** @description Validation Error */
             422: {
