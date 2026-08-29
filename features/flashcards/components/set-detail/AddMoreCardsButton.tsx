@@ -19,6 +19,7 @@
 import { useCallback, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
@@ -55,6 +56,16 @@ export function AddMoreCardsButton({
   const [unavailable, setUnavailable] = useState(false);
 
   const run = useCallback(async () => {
+    // A top-up is minutes of AI generation billed to the student, so the click
+    // says so before it spends anything.
+    const ok = await confirm({
+      title: "Make more cards from your material?",
+      description:
+        "Re-reads your original material and runs the AI generator over every section again — that uses AI generation credits and usually takes a few minutes. New cards are ADDED to this deck; every card you already have is kept.",
+      confirmLabel: "Make more cards",
+    });
+    if (!ok) return;
+
     setBusy(true);
     setStatus("Finding your original material…");
     try {

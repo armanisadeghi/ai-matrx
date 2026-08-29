@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -439,7 +440,25 @@ export function EnhanceSetDialog({
                             variant="ghost"
                             className="h-7 gap-1 px-2 text-xs"
                             disabled={w.saving}
-                            onClick={() => {
+                            onClick={async () => {
+                              // This preview is AI work that already ran and
+                              // was already billed — discarding it throws that
+                              // away, so the click names what is lost.
+                              const count =
+                                preview.mode === "enrich"
+                                  ? preview.details.length
+                                  : preview.subCards.length;
+                              const what =
+                                preview.mode === "enrich"
+                                  ? `${count} detail layer${count === 1 ? "" : "s"}`
+                                  : `${count} sub-card${count === 1 ? "" : "s"}`;
+                              const ok = await confirm({
+                                title: "Discard what was just generated?",
+                                description: `The ${what} the AI just generated for “${card.front}” are thrown away and never saved. This generation has already been run and billed — getting them back means paying to generate again.`,
+                                confirmLabel: "Discard",
+                                variant: "destructive",
+                              });
+                              if (!ok) return;
                               void writePendingEnhancement(card.id, null);
                               releaseRun(card.id);
                               patchWork(card.id, {

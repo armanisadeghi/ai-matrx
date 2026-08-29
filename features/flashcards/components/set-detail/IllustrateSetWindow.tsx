@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { LiveRunProgress } from "@/features/agents/components/live-run/LiveRunProgress";
 import { FlashcardFaceImage } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
@@ -192,7 +193,18 @@ function ReviewRow({
                 variant="ghost"
                 className="h-7 w-7 text-muted-foreground hover:text-destructive"
                 disabled={busy !== null}
-                onClick={() => void act("reject", onReject)}
+                onClick={async () => {
+                  // A tooltip is not a gate: rejecting takes the picture off
+                  // the card, so the click says what disappears.
+                  const ok = await confirm({
+                    title: "Reject this image?",
+                    description: `The illustration is removed from “${card.label}” — the card goes back to having no picture, and the sourcing agent's miss is recorded so its judging improves.`,
+                    confirmLabel: "Reject image",
+                    variant: "destructive",
+                  });
+                  if (!ok) return;
+                  void act("reject", onReject);
+                }}
                 title="Reject this image (removed, and the agent's miss is recorded)"
                 aria-label={`Reject the image on ${card.label}`}
               >
