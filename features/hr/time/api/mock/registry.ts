@@ -183,8 +183,18 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
         allowedKinds: ["clock_in"],
       },
     },
-    // The `blocked` state is a SERVER fact and it always carries a door. A contractor is gated off
-    // the punch lane entirely (§8) — and the surface is ABSENT, not disabled, with somewhere to go.
+    // The `blocked` state is a SERVER fact. A contractor is gated off the punch lane entirely
+    // (§8), and the surface is ABSENT, not disabled.
+    //
+    // 🚨 THIS FIXTURE USED TO PRESCRIBE A DOOR TO `/hr/me/engagement`, WHICH DOES NOT EXIST and is
+    // not a registered promise. Nothing reads `hrefLabel` yet, so it was never rendered — but a
+    // fixture is a SPECIFICATION of the shape the server should send, and the first surface built
+    // against this one would have shipped a contractor a "Open your engagement" link straight into
+    // "We couldn't find that page". A dead door inside an honest refusal is worse than no door:
+    // the refusal is doing its job, and the link makes the product look broken while doing it.
+    //
+    // The reason stands on its own until the engagement surface is real. When it lands, add the
+    // door back here AND to `lib/coming-soon/registry.ts` if it ships behind the refusal.
     edge: {
       ok: true,
       data: {
@@ -195,8 +205,6 @@ export const HR_TIME_RPC_FIXTURES: Partial<Record<HrTimeRpcName, HrTimeRpcFixtur
         blocked: {
           reason:
             "Contractors record time through their engagement, not the company time clock.",
-          href: "/hr/me/engagement",
-          hrefLabel: "Open your engagement",
         },
       },
     },
