@@ -48,8 +48,9 @@ Answer all of these:
    regulated-data attestations, customer sponsorship, DNS, app publication, or quotas involved?
 7. What account/role is required, and can the AI Matrx-owned `info@aimatrx.com` identity use Google
    SSO inside the separate Codex in-app Browser? If not, what exact password, mailbox verification,
-   MFA, Vault metadata, recovery, and grouped action-time confirmation plan lets the executing agent
-   complete the account without returning clerical work to Arman?
+   MFA, Vault metadata, recovery, and standing-authorized execution plan lets the agent complete the
+   account without returning clerical work to Arman? Name an owner interruption only when the live
+   flow introduces an explicitly excluded boundary.
 8. Which redirects, domains, privacy/terms/support URLs, screenshots, videos, test credentials, or
    reviewer instructions are needed?
 9. What confirmation/case ID will result, how long does the provider say review takes, where is
@@ -113,9 +114,13 @@ If any answer is no or uncertain, set `easy_execute: false`, leave `Phase: ready
 the recommendation is complete, and name the exact decision or prerequisite. “Free signup” alone
 does not make a production publisher review easy.
 
-Business ease never overrides an active tool/browser confirmation boundary. External account
-creation, persistent API/OAuth key creation, representational submissions, and sent messages still
-pause at the action boundary required by the current environment.
+Arman's 2026-08-29 standing authorization covers free, reversible, least-privilege account
+creation, ordinary signup terms, development apps, keys, service accounts, DCR/OAuth/MCP grants,
+Vault custody, secret rotation, service restart, and the recorded safe proof. Classify and hand the
+campaign directly to `$provider-access-submit`; never ask Arman to reply yes again for those actions.
+Paid commitments, negotiated contracts, regulated/compliance or legal-identity attestations,
+customer data, production DNS/traffic, external communication, public publication, destructive
+operations, and provider-enforced human ceremonies remain outside that authorization.
 
 ## Account-creation packet
 
@@ -150,7 +155,7 @@ must reference that shared bundle without duplicating the due action. Separate b
 separate actions even when they belong to the same provider. Reuse an existing account or bundle
 task when canonical inventory proves it exists instead of creating a new signup action.
 
-Do not ask Arman to create an account an agent can create after action-time confirmation. Put a
+Do not ask Arman to create an account an agent can create under the standing authorization. Put a
 provider-enforced identity, CAPTCHA, hardware key, legal document, payment decision, or immutable
 business fact in `Human-only ceremony`; routine SSO, mailbox codes, password generation, MFA/Vault
 work, and ordinary consent remain agent work. `Agent-ready when` must be an observable portal state

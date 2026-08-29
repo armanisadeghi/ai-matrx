@@ -1,6 +1,6 @@
 ---
 name: provider-access-submit
-description: "Execute an approved third-party provider access campaign end to end: account or app registration, exact scopes, reviewer assets, secure credential storage, receipt capture, canonical connection, real verification, and task/CRM updates. Use only after scouting is complete and any required owner decision or action-time confirmation has been satisfied."
+description: "Execute a scouted third-party provider access campaign end to end under Arman's standing free/reversible setup authorization: account or app registration, exact scopes, reviewer assets, secure credential storage, receipt capture, canonical connection, real verification, and task/CRM updates."
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -22,27 +22,37 @@ submission brief; stop and rescout if the live portal materially disagrees.
 4. The task is `Phase: ready_to_submit`, or the scout recorded `easy_execute` and every gate passed.
 5. Any legal, billing, compliance, regulated-data, identity, DNS, publication, customer-impact, or
    material scope choice has an explicit owner decision.
-6. The active browser/tool action-time confirmation is satisfied before final external account
-   creation, persistent key/OAuth creation, representational submission, or sent message.
+6. The action is covered by the standing authorization in the provider-access feature, or the task
+   records the explicit owner decision for an uncovered paid, negotiated, regulated,
+   customer-impacting, destructive, public, or human-only boundary.
 
 If a precondition fails, update the exact blocker and stop before changing provider state.
 
-## Autonomy and confirmation
+## Standing authorization and autonomy
 
-- Treat confirmation as permission for the agent to act, never as a handoff. When browser/tool
-  policy requires action-time confirmation, ask one narrow yes/no question, preserve the exact page,
-  and perform the click or submission yourself immediately after confirmation.
+- Arman authorized routine free, reversible, least-privilege Provider Access Launch setup on
+  2026-08-29. Do not ask him to reply yes for account creation, ordinary free-tier signup terms,
+  development apps, keys, service accounts, DCR/OAuth/MCP grants, Vault custody, secret rotation,
+  service restart, or the recorded safe proof. Execute and leave an audit receipt.
+- Interrupt only for a charge or paid-plan commitment, negotiated contract, regulated/compliance or
+  legal-identity attestation, customer-data access, production DNS/traffic change, external
+  communication, public publication, destructive operation, or provider-enforced CAPTCHA,
+  biometric, hardware-key, signature, or identity ceremony.
+
+- Treat any genuinely required owner decision as permission for the agent to act, never as a
+  handoff. Perform the click or submission yourself immediately after the decision.
 - Never ask Arman to click a button, choose an already-settled account, complete ordinary login or
   SSO, approve an OAuth consent screen, copy a code the agent can read, or finish any other step the
   agent can operate.
-- Do not set `Phase: blocked_owner` merely because confirmation is required. Use it only when the
-  remaining action is technically or legally impossible for the agent.
+- Do not set `Phase: blocked_owner` for any standing-authorized action. Use it only when the
+  remaining action is technically or legally impossible for the agent or falls outside the standing
+  authorization.
 - Claiming a campaign means owning its account access, registration, verification email, credential
   custody, connection, proof, reconciliation, and follow-up. Never finish at an account chooser,
   ordinary SSO screen, verification link, consent page, credential copy screen, or Vault-save step.
-- Use one grouped interruption packet for up to five imminent provider actions. Name the exact
-  provider, destination account, data or credential transmitted, persistent access created, and
-  safe proof operation. After approval, execute the entire packet yourself.
+- Never emit a grouped yes/no packet for standing-authorized actions. If an uncovered boundary
+  exists, consolidate only those uncovered actions into one owner interruption and continue every
+  authorized campaign while it waits.
 - Convert recurring choices into policy. Before asking Arman about a choice that could recur for
   another provider, workspace, account, or agent, propose the smallest durable rule: “May I add this
   rule to the provider-access policy: `<rule>`?” If approved, update the canonical provider-access
@@ -61,16 +71,16 @@ If a precondition fails, update the exact blocker and stop before changing provi
   AI Matrx-owned provider identity and Google SSO where supported; never borrow Arman's Chrome tabs,
   profile, cookies, or saved passwords.
 - Continue through ordinary login, account choosers, existing-session SSO, OAuth consent, and
-  email-link flows the agent can access. If policy requires confirmation before identity disclosure
-  or a persistent grant, obtain permission and then complete the step yourself.
+  email-link flows the agent can access. Standing-authorized free, reversible identity disclosure
+  and persistent grants proceed without another permission request.
 - Never guess publisher/legal/compliance facts. Read them from the approved Vault profile.
 - Never store a password in the browser or paste a credential value into tasks, docs, CRM, shell
   arguments, logs, screenshots, or Git.
 - Put passwords, API keys, client secrets, TOTP/recovery material, and protected files into the
   AI Matrx organization Vault through the normal product/service surface.
 - When a new password account is required, generate one unique strong password without printing it,
-  include its transmission, final account creation, and Vault save in the grouped action-time
-  confirmation, then create and verify the account yourself. Store non-secret metadata for provider,
+  create and verify the standing-authorized free account, and save the credential in Vault. Store
+  non-secret metadata for provider,
   login URL, account identity, organization/workspace, authentication and MFA methods, owning task,
   creation date, and recovery/revocation location. Prefer TOTP over SMS/push when optional and keep
   the seed plus recovery codes in the Vault; never weaken existing MFA.
@@ -131,7 +141,8 @@ the development access is independently useful and ongoing.
 - A provider-enforced human-only challenge, physical hardware key, biometric/identity ceremony,
   signature, regulated commitment, or payment decision that the agent cannot perform: set
   `Phase: blocked_owner` with the exact one-step owner action. An ordinary login, account choice,
-  OAuth approval button, or required confirmation is not an owner blocker.
+  OAuth approval button, Vault operation, or any other standing-authorized action is not an owner
+  blocker.
 
 ## Example requests
 
