@@ -55960,7 +55960,6 @@ export type Database = {
           min_value: number | null
           overridable_by: string[]
           override_direction: string
-          override_scope: string
           review_due: string | null
           set_by: string
           unit: string | null
@@ -55983,7 +55982,6 @@ export type Database = {
           min_value?: number | null
           overridable_by?: string[]
           override_direction?: string
-          override_scope?: string
           review_due?: string | null
           set_by?: string
           unit?: string | null
@@ -56006,7 +56004,6 @@ export type Database = {
           min_value?: number | null
           overridable_by?: string[]
           override_direction?: string
-          override_scope?: string
           review_due?: string | null
           set_by?: string
           unit?: string | null
@@ -57137,69 +57134,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "change_type_default"
             referencedColumns: ["change_type_key"]
-          },
-        ]
-      }
-      org_knob_override: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          feature: string
-          id: string
-          key: string
-          metadata: Json
-          organization_id: string
-          set_note: string | null
-          updated_at: string
-          updated_by: string | null
-          value: Json
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          feature: string
-          id?: string
-          key: string
-          metadata?: Json
-          organization_id: string
-          set_note?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          value: Json
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          feature?: string
-          id?: string
-          key?: string
-          metadata?: Json
-          organization_id?: string
-          set_note?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          value?: Json
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "org_knob_override_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "org_knob_override_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
           },
         ]
       }
@@ -58449,72 +58383,6 @@ export type Database = {
           },
         ]
       }
-      user_knob_override: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          feature: string
-          id: string
-          key: string
-          metadata: Json
-          organization_id: string
-          set_note: string | null
-          updated_at: string
-          updated_by: string | null
-          user_id: string
-          value: Json
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          feature: string
-          id?: string
-          key: string
-          metadata?: Json
-          organization_id: string
-          set_note?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id: string
-          value: Json
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          feature?: string
-          id?: string
-          key?: string
-          metadata?: Json
-          organization_id?: string
-          set_note?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          user_id?: string
-          value?: Json
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_knob_override_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_knob_override_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "admin_auth_user"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       admin_auth_user: {
@@ -59042,43 +58910,6 @@ export type Database = {
       _drop_custom_field_index: {
         Args: { p_definition_id: string }
         Returns: boolean
-      }
-      _knob_override_validate: {
-        Args: {
-          p_feature: string
-          p_key: string
-          p_tier: string
-          p_value: Json
-        }
-        Returns: {
-          allowed_values: Json | null
-          basis: string | null
-          bound_value: Json | null
-          created_at: string
-          default_value: Json
-          description: string
-          feature: string
-          key: string
-          label: string
-          max_value: number | null
-          min_value: number | null
-          overridable_by: string[]
-          override_direction: string
-          override_scope: string
-          review_due: string | null
-          set_by: string
-          unit: string | null
-          updated_at: string
-          updated_by: string | null
-          value: Json
-          value_type: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "feature_knob"
-          isOneToOne: true
-          isSetofReturn: false
-        }
       }
       _knob_override_write: {
         Args: {
@@ -59637,15 +59468,6 @@ export type Database = {
         }[]
       }
       normalize_identity_args: { Args: { p_args: string }; Returns: string }
-      org_knob_set: {
-        Args: {
-          p_feature: string
-          p_key: string
-          p_organization_id: string
-          p_value: Json
-        }
-        Returns: Json
-      }
       promote_custom_field_index: {
         Args: { p_concurrently?: boolean; p_definition_id: string }
         Returns: Json
@@ -59929,15 +59751,6 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
-      }
-      user_knob_set: {
-        Args: {
-          p_feature: string
-          p_key: string
-          p_organization_id: string
-          p_value: Json
-        }
-        Returns: Json
       }
       validate_custom_row: {
         Args: {
