@@ -12,7 +12,7 @@
 // column of blanks announces that the data exists and that this viewer is not
 // getting it.
 //
-// 🚨 AND THE GATING HERE IS NOT THE SECURITY BOUNDARY — `hr_l1_64` IS. The door
+// 🚨 AND THE GATING HERE IS NOT THE SECURITY BOUNDARY — `hr_l1_65` IS. The door
 // REMOVES the working-record keys from a directory-tier viewer's payload; this file
 // exists so nothing renders a header over data that is no longer on the wire.
 // Hiding a column client-side cannot unsend a payload, so if these flags and the

@@ -200,7 +200,7 @@ export type HrMyContext = {
  * EVERY STATUS THIS VIEWER MAY SEE — never "the default set". Sending no status at
  * all is a different request: route 10's default view, which excludes `terminated`.
  * A status the viewer may not have (`prehire` / `terminated` for anyone below the
- * HR tier) is REFUSED with `42501`, not quietly dropped (`hr_l1_64`).
+ * HR tier) is REFUSED with `42501`, not quietly dropped (`hr_l1_65`).
  */
 export type HrDirectoryStatusRequest = HrDirectoryStatus | "all";
 
@@ -221,7 +221,7 @@ export type HrDirectoryFilter = {
  *
  * 🚨 SEVEN FIELDS ARE OPTIONAL BECAUSE THEY ARE **ABSENT** FOR A DIRECTORY-TIER
  * VIEWER — not null, not blank, not present-and-empty. `hr_directory_list` removes
- * them from the payload for anyone below the working-record tier (`hr_l1_64`), so
+ * them from the payload for anyone below the working-record tier (`hr_l1_65`), so
  * `undefined` here is the wire telling you this viewer never received the field.
  * They are exactly the `hr.employment` / `hr.position_assignment` facts, which
  * SPEC-ACCESS §3.2 marks `—` for an ordinary org member.

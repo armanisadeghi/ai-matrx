@@ -123,7 +123,7 @@ export function EmployeeSearchSelect({
         setRefusal(null);
         setRows(
           result.data.rows
-            // 🚨 `!= null` COVERS BOTH ABSENCES. `hr_l1_64` OMITS `employment_id` and
+            // 🚨 `!= null` COVERS BOTH ABSENCES. `hr_l1_65` OMITS `employment_id` and
             // `worker_class` from the payload for a viewer below the working-record tier, so
             // "not there" is `undefined` here, not `null`. This picker only ever runs at
             // `time.read` standing, which carries `working_record.read` — but a gate whose

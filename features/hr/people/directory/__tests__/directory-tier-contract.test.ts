@@ -7,14 +7,14 @@
 // holding an EMPTY capability set received the SAME 24 fields as the employer's HR
 // owner — `fte`, `flsa_status`, `worker_class`, `schedule_class`, `hire_date`,
 // `employment_id`, `row_basis` — and could ASK for the three not-yet-started hires
-// with their start dates, and for the three former employees. `hr_l1_64` removes
+// with their start dates, and for the three former employees. `hr_l1_65` removes
 // those keys from the payload and refuses those filters.
 //
 // The client half exists so nothing renders a header over data that is no longer on
 // the wire. It is NOT the security boundary: hiding a column cannot unsend a payload,
 // and a test that only checked the client would pass over a door that still leaks.
 // The DOOR's own guarantee is pinned in `hr.function_contract`
-// (home `hr_l1_64_the_directory_narrows_to_the_viewer.sql`), which reddens the
+// (home `hr_l1_65_the_directory_narrows_to_the_viewer.sql`), which reddens the
 // blocking conformance check if a later lane re-emits the body without the narrowing.
 //
 // 🚨 IF THIS TEST FAILS, DO NOT DELETE THE GATE TO GET GREEN. Every assertion here
@@ -31,7 +31,7 @@ const columns = read("features/hr/people/directory/directoryColumns.tsx");
 const surface = read("features/hr/people/directory/HrDirectory.tsx");
 const types = read("features/hr/types.ts");
 const migration = read(
-  "migrations/hr_l1_64_the_directory_narrows_to_the_viewer.sql",
+  "migrations/hr_l1_65_the_directory_narrows_to_the_viewer.sql",
 );
 
 /** Source with comments stripped — the question is what the CODE does. */

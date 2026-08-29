@@ -476,7 +476,7 @@ export function fetchHrDirectory(args: {
   // Wire: {as_of, capabilities, columns, limit, offset, persona, rows, statuses,
   // tier, total}. Exact match.
   //
-  // 🚨 THE ROW SHAPE IS PER-VIEWER, WHICH IS THE POINT (`hr_l1_64`). An HR-tier
+  // 🚨 THE ROW SHAPE IS PER-VIEWER, WHICH IS THE POINT (`hr_l1_65`). An HR-tier
   // caller gets 24 row keys; a directory-tier caller gets 17, because the seven
   // working-record keys are REMOVED from the payload rather than nulled. That is why
   // those seven are optional on `HrDirectoryRow` and why `page.columns` — not the

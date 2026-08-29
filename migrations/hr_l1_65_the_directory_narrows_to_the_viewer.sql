@@ -2,7 +2,7 @@
 --
 -- 🚨 THE DIRECTORY DOOR RESOLVED A PERSONA AND THEN NARROWED NOTHING WITH IT.
 --
--- Applied live to db.matrxserver.com as `hr_l1_64_the_directory_narrows_to_the_viewer`.
+-- Applied live to db.matrxserver.com as `hr_l1_65_the_directory_narrows_to_the_viewer`.
 -- Idempotent (CREATE OR REPLACE + a delete/insert of this migration's contract rows).
 -- Authority: SPEC-ACCESS §3.1 (the table → tier map) + §3.2 (the role × table grant matrix);
 --            SPEC-EMPLOYEES §2.2 route 10 (Role variations, Edge behavior) + §5.1.
@@ -39,8 +39,37 @@
 -- was not a status and matched nothing.
 --
 -- ===================================================================================
--- THE FIX — THREE DECISIONS, EACH TRACEABLE TO A SPEC LINE
+-- THE FIX — THE PATTERN `hr_employee_profile` ALREADY USES, NOT A SECOND MECHANISM
 -- ===================================================================================
+--
+-- A render verifier confirmed the leak on screen AND handed over the decisive clue:
+-- the PROFILE door is already correctly tiered for the same contractor (one Personal
+-- tab, preferred name and work email, no legal name, no Compensation/Job/Time-off),
+-- while the directory table was the one surface that was not. So this is that door's
+-- mechanism applied here, read out of its live body rather than invented:
+--
+--   `hr_employee_profile`                        `hr_directory_list` (this migration)
+--   ------------------------------------------   ------------------------------------------
+--   reach from a CAPABILITY —                    reach from a CAPABILITY —
+--     hr.capability(v_uid,'comp.read',…)           'working_record.read' = any(v_caps)
+--   the payload is built so an unreachable       the payload has the unreachable keys
+--     section's keys are simply NOT in it —        REMOVED — (to_jsonb(r) - 'rn') - v_strip
+--     v_personal := v_personal || …
+--   the door publishes a MANIFEST of what        the door publishes a MANIFEST of what
+--     this viewer got — 'tabs', to_jsonb(…) —      this viewer got — 'columns' + 'statuses' —
+--     and the client renders only that            and the client renders only that
+--
+-- 🚨 THE ONE DELIBERATE DIFFERENCE, STATED SO NOBODY "FIXES" IT INTO A THIRD PATTERN:
+-- the profile ADDS sections and this door SUBTRACTS keys. The observable contract is
+-- identical (the key is absent either way), and subtraction is required here for two
+-- reasons the profile does not have: this is ONE CTE that must still compute
+-- `hire_date` and `worker_class` to COUNT, SORT and FILTER by them for the viewers who
+-- may have them; and `jsonb - '{}'::text[]` is the identity operation, which is what
+-- makes "an HR admin's row is byte-identical to yesterday" provable rather than
+-- asserted. It was proven that way: 72 comparisons of this body against the previous
+-- one (2 HR admins x 9 filters x 4 sorts), zero differences.
+--
+-- ── THREE DECISIONS, EACH TRACEABLE TO A SPEC LINE ─────────────────────────────────
 --
 -- 1. THE TIER IS A CAPABILITY, NEVER A PERSONA STRING. SPEC-ACCESS §3.2's `hr_employment`
 --    row is **G** for manager / hr_admin / payroll_admin / leave_administrator /
@@ -151,8 +180,10 @@ begin
   v_mine    := hr.employments_of(v_uid, v_today);
 
   -- ── THE VIEWER'S TIER (SPEC-ACCESS §3.2's hr_employment row = working_record.read) ──
-  -- Resolved ONCE and applied to every row of the answer, so no column is ragged. A ragged
-  -- column would itself disclose which of these people the viewer has a lane onto.
+  -- The same shape hr_employee_profile uses to decide its tab list: reach comes from a
+  -- CAPABILITY, never from the persona string. Resolved ONCE and applied to every row of the
+  -- answer, so no column is ragged — a ragged column would itself disclose which of these
+  -- people the viewer has a lane onto.
   v_tier := case
     when v_persona = 'hr_admin'
       or 'working_record.read' = any(v_caps)
@@ -359,15 +390,24 @@ grant execute on function public.hr_directory_list(uuid, jsonb, integer, integer
 -- The hr_l1_60 row (`ds.status = any(v_statuses)`, no `e.directory_status`) and the hr_l3_64
 -- row (`_employee_display_name`, no raw manager projection) are untouched and still enforced;
 -- this body satisfies both.
+-- 🚨 THE NUMBER MOVED, AND A CONTRACT ROW POINTING AT A FILE THAT NO LONGER EXISTS IS A
+-- COMMENT THAT NAMES THE WRONG MIGRATION — the exact defect hr_l1_64's own restamp block
+-- was written to correct. This file was first applied as `hr_l1_64_the_directory_narrows_
+-- to_the_viewer.sql` and collided, minutes later, with another agent's in-flight
+-- `hr_l1_64_the_write_gate_asks_the_population_it_refused_the_read_for.sql` in this shared
+-- checkout. That one claimed 64 first and is already ledgered under it, so THIS one moved to
+-- 65. The delete below names the old filename EXACTLY — never a LIKE 'hr_l1_64%', which
+-- would take the other lane's rows with it.
 delete from hr.function_contract
- where home_migration = 'hr_l1_64_the_directory_narrows_to_the_viewer.sql';
+ where home_migration in ('hr_l1_65_the_directory_narrows_to_the_viewer.sql',
+                          'hr_l1_64_the_directory_narrows_to_the_viewer.sql');
 
 insert into hr.function_contract
   (schema_name, function_name, home_migration, must_contain, must_not_contain,
    must_be_definer, reason)
 values
   ('public', 'hr_directory_list',
-   'hr_l1_64_the_directory_narrows_to_the_viewer.sql',
+   'hr_l1_65_the_directory_narrows_to_the_viewer.sql',
    array[
      -- the tier exists and is a capability, not a persona string
      '''working_record.read'' = any(v_caps)',
@@ -407,15 +447,15 @@ declare
                      where n.nspname = 'public' and p.proname = 'hr_directory_list');
 begin
   if v_src is null then
-    raise exception 'hr_l1_64: public.hr_directory_list is missing after the replace';
+    raise exception 'hr_l1_65: public.hr_directory_list is missing after the replace';
   end if;
   if position('v_strip' in v_src) = 0 then
-    raise exception 'hr_l1_64: the narrowing did not land';
+    raise exception 'hr_l1_65: the narrowing did not land';
   end if;
   select count(*) into v_broken from hr.function_contracts_broken()
    where qname = 'public.hr_directory_list';
   if v_broken > 0 then
-    raise exception 'hr_l1_64: this body breaks % contract clause(s) on its own door: %',
+    raise exception 'hr_l1_65: this body breaks % contract clause(s) on its own door: %',
       v_broken,
       (select string_agg(clause || ' ' || missing_or_present, '; ')
          from hr.function_contracts_broken() where qname = 'public.hr_directory_list');
@@ -423,8 +463,8 @@ begin
   if not exists (select 1 from information_schema.routine_privileges
                   where routine_name = 'hr_directory_list' and grantee = 'authenticated'
                     and privilege_type = 'EXECUTE') then
-    raise exception 'hr_l1_64: authenticated lost EXECUTE on the directory door';
+    raise exception 'hr_l1_65: authenticated lost EXECUTE on the directory door';
   end if;
-  raise notice 'hr_l1_64: directory door narrowed; contracts hold';
+  raise notice 'hr_l1_65: directory door narrowed; contracts hold';
 end
 $chk$;
