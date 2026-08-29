@@ -160,13 +160,26 @@ export interface ListingDraft {
 
 // ── Payload envelope ────────────────────────────────────────────────────────
 
-export type PayloadKind = "analysis" | "research" | "grading" | "listing";
+export type PayloadKind =
+  | "analysis"
+  | "research"
+  | "grading"
+  | "listing"
+  | "instant_analysis";
 
 export interface PayloadDataByKind {
   analysis: AnalysisResult;
   research: ResearchResult;
   grading: GradingResult;
   listing: ListingDraft;
+  /**
+   * The INSTANT lane's stored result (client-triggered test mode): the raw
+   * `electronics_intake_analysis` kind object streamed back by the mandate
+   * `product_capture.instant_analysis`, saved verbatim. Deliberately loose
+   * here — that shape belongs to the registered kind (and renders through the
+   * kind registry), not to this pipeline's own contracts above.
+   */
+  instant_analysis: Record<string, unknown>;
 }
 
 /** One stored payload row (workbench.product_capture_payload). */

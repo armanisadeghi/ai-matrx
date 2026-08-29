@@ -1354,6 +1354,16 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
+        label: "Instant Capture",
+        href: "/tools/product-capture/instant",
+        iconName: "BrainCircuit",
+        description:
+          "Capture product photos and process them on the spot — the analysis streams back live",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
         label: "Product Pipeline",
         href: "/tools/product-capture/manage",
         iconName: "TableProperties",

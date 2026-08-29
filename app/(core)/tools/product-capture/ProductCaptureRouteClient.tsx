@@ -27,8 +27,11 @@ const CaptureScreen = dynamic(
 
 export default function ProductCaptureRouteClient({
   initialItemId,
+  mode = "standard",
 }: {
   initialItemId: string | null;
+  /** "instant" adds the client-side Process lane (see CaptureScreen). */
+  mode?: "standard" | "instant";
 }) {
-  return <CaptureScreen initialItemId={initialItemId} />;
+  return <CaptureScreen initialItemId={initialItemId} mode={mode} />;
 }

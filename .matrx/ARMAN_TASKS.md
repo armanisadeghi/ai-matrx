@@ -21,6 +21,10 @@ _(none)_
 
 ## Done
 
+- Definer-guard section E applied and live-verified after Arman cleared the permission block:
+  `platform.enforce_definer_client_grants` now matches grandfather/door rows through
+  `platform.normalize_identity_args`, closing the search_path rendering class for future
+  functions too; the guided SQL-editor step is no longer needed (2026-08-29).
 - Main Supabase restart released the signal-immune backend; the committed GSC coverage index was rebuilt online and live-proven in 1.122s on the 9.24M-row site, with all 12 exact timeout rows resolved (2026-08-25).
 - Independent audit removed ten stale, speculative, already-complete, or
   ordinary-engineering entries: npm publication, transcript nesting,

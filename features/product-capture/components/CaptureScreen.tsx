@@ -33,6 +33,7 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
+  BrainCircuit,
   Camera as CameraIcon,
   Check,
   Eye,
@@ -70,9 +71,16 @@ import {
 import { extensionForMime } from "@/features/media-capture/core/mime-selection";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 
+import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
+
 import type { PendingArtifact } from "../types";
 import { useProductCaptureSession } from "../hooks/useProductCaptureSession";
+import {
+  INSTANT_ANALYSIS_MANDATE_KEY,
+  useInstantAnalysis,
+} from "../hooks/useInstantAnalysis";
 import { useQrAutoScan } from "../hooks/useQrAutoScan";
+import { InstantProcessSheet } from "./InstantProcessSheet";
 import { NotesPanel } from "./NotesPanel";
 import { VoiceNoteButton } from "./VoiceNoteButton";
 import { ItemsSheet } from "./ItemsSheet";
@@ -84,11 +92,68 @@ const QR_MODE_STORAGE_KEY = "product-capture:qr-auto";
 export interface CaptureScreenProps {
   /** Open with this item current (the `?item=` deep link). */
   initialItemId?: string | null;
+  /**
+   * Process-mode A/B test (2026-08-29):
+   * - `"standard"` — capture only; the server-side workflow picks items up on
+   *   the `capturing → captured` transition (`closeItem`).
+   * - `"instant"` — adds the Process button: the CLIENT runs the intake
+   *   analysis through the `product_capture.instant_analysis` mandate and
+   *   streams the result into `InstantProcessSheet`; on success the item goes
+   *   `capturing → processed` directly, so the server lane never fires for it.
+   */
+  mode?: "standard" | "instant";
 }
 
-export function CaptureScreen({ initialItemId = null }: CaptureScreenProps) {
+// The instant surface's one fixed AI job, registered in the top Agents menu
+// (agent-disclosure law — never as visible page content). Stable identity so
+// the declaration effect doesn't churn.
+const INSTANT_MANDATE_REFS = [
+  {
+    mandateKey: INSTANT_ANALYSIS_MANDATE_KEY,
+    does: "Analyzes the current item's photos into an intake record when you tap Process — streamed live.",
+  },
+];
+const NO_MANDATE_REFS: typeof INSTANT_MANDATE_REFS = [];
+
+export function CaptureScreen({
+  initialItemId = null,
+  mode = "standard",
+}: CaptureScreenProps) {
   const router = useRouter();
   const session = useProductCaptureSession({ initialItemId });
+  const instantMode = mode === "instant";
+  useDeclaredSurfaceMandates(
+    instantMode ? INSTANT_MANDATE_REFS : NO_MANDATE_REFS,
+  );
+
+  // ── Instant lane (mode="instant") ────────────────────────────────────────
+  const instant = useInstantAnalysis();
+  const [processOpen, setProcessOpen] = useState(false);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+
+  const onProcess = useCallback(() => {
+    // Already running: the button re-opens the sheet (closing it never
+    // cancels the run — the result seam persists it regardless).
+    if (instant.isRunning) {
+      setProcessOpen(true);
+      return;
+    }
+    const item = session.currentItem;
+    if (!item) return;
+    setLaunchError(null);
+    setProcessOpen(true);
+    void instant.process(item).catch((err: unknown) => {
+      setLaunchError(
+        err instanceof Error ? err.message : "Processing failed — try again.",
+      );
+    });
+  }, [session.currentItem, instant]);
+
+  const onInstantNextItem = useCallback(() => {
+    setProcessOpen(false);
+    instant.dismiss();
+    session.nextItem();
+  }, [instant, session]);
 
   // ── Camera lease (scanner contract) ──────────────────────────────────────
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -607,6 +672,32 @@ export function CaptureScreen({ initialItemId = null }: CaptureScreenProps) {
           </div>
         </div>
 
+        {/* Instant lane: the Process affordance (mode="instant" only) */}
+        {instantMode && (
+          <div className="px-2 pb-1">
+            <Button
+              className="h-11 w-full rounded-full"
+              onClick={onProcess}
+              disabled={
+                currentItem === null ||
+                recording ||
+                session.uploadingCount > 0
+              }
+            >
+              {instant.isRunning ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <BrainCircuit className="mr-1.5 h-4 w-4" />
+              )}
+              {session.uploadingCount > 0
+                ? "Waiting for uploads…"
+                : instant.isRunning
+                  ? "Analyzing…"
+                  : "Process item"}
+            </Button>
+          </div>
+        )}
+
         {/* Items · shutter · next */}
         <div className="flex items-center justify-between py-2">
           <div className="flex w-20 justify-start">
@@ -671,6 +762,19 @@ export function CaptureScreen({ initialItemId = null }: CaptureScreenProps) {
           </p>
         )}
       </div>
+
+      {instantMode && (
+        <InstantProcessSheet
+          open={processOpen}
+          onOpenChange={setProcessOpen}
+          conversationId={instant.conversationId}
+          pending={processOpen && !instant.conversationId && !launchError}
+          isRunning={instant.isRunning}
+          error={launchError ?? instant.error}
+          saved={instant.saved}
+          onNextItem={onInstantNextItem}
+        />
+      )}
 
       {/* ── Artifact preview overlay ── */}
       <NotesPanel
