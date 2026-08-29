@@ -5571,6 +5571,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/microsoft-integrations/onedrive/selected-file/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Selected File Metadata */
+        post: operations["selected_file_metadata_microsoft_integrations_onedrive_selected_file_metadata_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/onedrive/selected-file/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Selected File Content */
+        post: operations["selected_file_content_microsoft_integrations_onedrive_selected_file_content_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/outlook/recent-basic-messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recent Basic Messages */
+        post: operations["recent_basic_messages_microsoft_integrations_outlook_recent_basic_messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/outlook/calendar/basic-window": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Basic Calendar Window */
+        post: operations["basic_calendar_window_microsoft_integrations_outlook_calendar_basic_window_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/sharepoint/selected-file/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sharepoint Selected File Metadata */
+        post: operations["sharepoint_selected_file_metadata_microsoft_integrations_sharepoint_selected_file_metadata_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/sharepoint/selected-file/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sharepoint Selected File Content */
+        post: operations["sharepoint_selected_file_content_microsoft_integrations_sharepoint_selected_file_content_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ebay-integrations/sandbox/taxonomy/default-category-tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Default Category Tree */
+        get: operations["default_category_tree_ebay_integrations_sandbox_taxonomy_default_category_tree_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/outreach/inbound/gmail/{token}": {
         parameters: {
             query?: never;
@@ -39611,6 +39730,28 @@ export interface components {
             amount?: string | null;
         };
         /**
+         * EbaySandboxTaxonomyResult
+         * @description Safe proof result; no provider token or credential material.
+         */
+        EbaySandboxTaxonomyResult: {
+            /**
+             * Environment
+             * @default sandbox
+             */
+            environment?: string;
+            /** Marketplace Id */
+            marketplace_id: string;
+            /** Category Tree Id */
+            category_tree_id: string;
+            /** Category Tree Version */
+            category_tree_version: string;
+            /**
+             * Scope
+             * @default https://api.ebay.com/oauth/api_scope
+             */
+            scope?: string;
+        };
+        /**
          * EdgeDef
          * @description User-authored edge in a ReactFlow-compatible definition.
          *
@@ -51831,6 +51972,32 @@ export interface components {
             /** User Id */
             user_id: string;
         };
+        /** OneDriveSelectedFileRequest */
+        OneDriveSelectedFileRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Drive Id */
+            drive_id: string;
+            /** Item Id */
+            item_id: string;
+        };
+        /** OneDriveSelectedFileResponse */
+        OneDriveSelectedFileResponse: {
+            /** Drive Id */
+            drive_id: string;
+            /** Item Id */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Size */
+            size: number;
+            /** Mime Type */
+            mime_type: string;
+            /** Etag */
+            etag: string | null;
+            /** Last Modified At */
+            last_modified_at: string | null;
+        };
         /** OpenRuntimeResponse */
         OpenRuntimeResponse: {
             [key: string]: unknown;
@@ -52368,6 +52535,77 @@ export interface components {
             rejected?: {
                 [key: string]: string;
             }[];
+        };
+        /** OutlookBasicCalendarEventResponse */
+        OutlookBasicCalendarEventResponse: {
+            /** Event Id */
+            event_id: string;
+            /** Starts At */
+            starts_at: string;
+            /** Start Time Zone */
+            start_time_zone: string;
+            /** Ends At */
+            ends_at: string;
+            /** End Time Zone */
+            end_time_zone: string;
+            /** Is All Day */
+            is_all_day: boolean;
+            /** Show As */
+            show_as: string | null;
+            /** Sensitivity */
+            sensitivity: string | null;
+            /** Event Type */
+            event_type: string | null;
+        };
+        /** OutlookBasicCalendarWindowRequest */
+        OutlookBasicCalendarWindowRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /**
+             * Days
+             * @default 7
+             */
+            days?: number;
+        };
+        /** OutlookBasicCalendarWindowResponse */
+        OutlookBasicCalendarWindowResponse: {
+            /** Window Start */
+            window_start: string;
+            /** Window End */
+            window_end: string;
+            /** Events */
+            events: components["schemas"]["OutlookBasicCalendarEventResponse"][];
+            /** Truncated */
+            truncated: boolean;
+            /**
+             * Access Mode
+             * @default read_only
+             * @constant
+             */
+            access_mode?: "read_only";
+        };
+        /** OutlookBasicMessageResponse */
+        OutlookBasicMessageResponse: {
+            /** Message Id */
+            message_id: string;
+            /** Sender Name */
+            sender_name: string | null;
+            /** Sender Address */
+            sender_address: string | null;
+            /** Subject */
+            subject: string | null;
+            /** Received At */
+            received_at: string;
+        };
+        /** OutlookRecentBasicMessagesRequest */
+        OutlookRecentBasicMessagesRequest: {
+            /** Connection Id */
+            connection_id: string;
+        };
+        /** OutlookRecentBasicMessagesResponse */
+        OutlookRecentBasicMessagesResponse: {
+            /** Messages */
+            messages: components["schemas"]["OutlookBasicMessageResponse"][];
         };
         /**
          * OutputSchemaEnvelope
@@ -63721,6 +63959,32 @@ export interface components {
             total_mentions: number;
             /** Entries */
             entries?: components["schemas"]["VoiceShare"][];
+        };
+        /** SharePointSelectedFileRequest */
+        SharePointSelectedFileRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Site Id */
+            site_id: string;
+            /** Item Id */
+            item_id: string;
+        };
+        /** SharePointSelectedFileResponse */
+        SharePointSelectedFileResponse: {
+            /** Site Id */
+            site_id: string;
+            /** Item Id */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Size */
+            size: number;
+            /** Mime Type */
+            mime_type: string;
+            /** Etag */
+            etag: string | null;
+            /** Last Modified At */
+            last_modified_at: string | null;
         };
         /** SheetReadRequest */
         SheetReadRequest: {
@@ -83880,6 +84144,232 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GitHubWebhookResponse"];
+                };
+            };
+        };
+    };
+    selected_file_metadata_microsoft_integrations_onedrive_selected_file_metadata_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OneDriveSelectedFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OneDriveSelectedFileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    selected_file_content_microsoft_integrations_onedrive_selected_file_content_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OneDriveSelectedFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recent_basic_messages_microsoft_integrations_outlook_recent_basic_messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutlookRecentBasicMessagesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutlookRecentBasicMessagesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    basic_calendar_window_microsoft_integrations_outlook_calendar_basic_window_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutlookBasicCalendarWindowRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutlookBasicCalendarWindowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sharepoint_selected_file_metadata_microsoft_integrations_sharepoint_selected_file_metadata_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SharePointSelectedFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharePointSelectedFileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sharepoint_selected_file_content_microsoft_integrations_sharepoint_selected_file_content_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SharePointSelectedFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    default_category_tree_ebay_integrations_sandbox_taxonomy_default_category_tree_get: {
+        parameters: {
+            query: {
+                credential_item_id: string;
+                marketplace_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EbaySandboxTaxonomyResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

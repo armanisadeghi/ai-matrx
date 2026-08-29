@@ -14299,6 +14299,292 @@
         }
       }
     },
+    "/microsoft-integrations/onedrive/selected-file/metadata": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Selected File Metadata",
+        "operationId": "selected_file_metadata_microsoft_integrations_onedrive_selected_file_metadata_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OneDriveSelectedFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OneDriveSelectedFileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/onedrive/selected-file/content": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Selected File Content",
+        "operationId": "selected_file_content_microsoft_integrations_onedrive_selected_file_content_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OneDriveSelectedFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/outlook/recent-basic-messages": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Recent Basic Messages",
+        "operationId": "recent_basic_messages_microsoft_integrations_outlook_recent_basic_messages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutlookRecentBasicMessagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutlookRecentBasicMessagesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/outlook/calendar/basic-window": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Basic Calendar Window",
+        "operationId": "basic_calendar_window_microsoft_integrations_outlook_calendar_basic_window_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutlookBasicCalendarWindowRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutlookBasicCalendarWindowResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/sharepoint/selected-file/metadata": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Sharepoint Selected File Metadata",
+        "operationId": "sharepoint_selected_file_metadata_microsoft_integrations_sharepoint_selected_file_metadata_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharePointSelectedFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharePointSelectedFileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/sharepoint/selected-file/content": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Sharepoint Selected File Content",
+        "operationId": "sharepoint_selected_file_content_microsoft_integrations_sharepoint_selected_file_content_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharePointSelectedFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ebay-integrations/sandbox/taxonomy/default-category-tree": {
+      "get": {
+        "tags": [
+          "eBay Integrations"
+        ],
+        "summary": "Default Category Tree",
+        "operationId": "default_category_tree_ebay_integrations_sandbox_taxonomy_default_category_tree_get",
+        "parameters": [
+          {
+            "name": "credential_item_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Credential Item Id"
+            }
+          },
+          {
+            "name": "marketplace_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^EBAY_[A-Z0-9_]{2,24}$",
+              "default": "EBAY_US",
+              "title": "Marketplace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EbaySandboxTaxonomyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/outreach/inbound/gmail/{token}": {
       "post": {
         "tags": [
@@ -102890,6 +103176,41 @@
         ],
         "title": "EarningCodeTotal"
       },
+      "EbaySandboxTaxonomyResult": {
+        "properties": {
+          "environment": {
+            "type": "string",
+            "title": "Environment",
+            "default": "sandbox"
+          },
+          "marketplace_id": {
+            "type": "string",
+            "title": "Marketplace Id"
+          },
+          "category_tree_id": {
+            "type": "string",
+            "title": "Category Tree Id"
+          },
+          "category_tree_version": {
+            "type": "string",
+            "title": "Category Tree Version"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": "https://api.ebay.com/oauth/api_scope"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "marketplace_id",
+          "category_tree_id",
+          "category_tree_version"
+        ],
+        "title": "EbaySandboxTaxonomyResult",
+        "description": "Safe proof result; no provider token or credential material."
+      },
       "EdgeDef": {
         "properties": {
           "id": {
@@ -133894,6 +134215,92 @@
         "title": "OnSignInResponse",
         "description": "Response from the on-sign-in hook — used for operator observability."
       },
+      "OneDriveSelectedFileRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "drive_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Drive Id"
+          },
+          "item_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Item Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "drive_id",
+          "item_id"
+        ],
+        "title": "OneDriveSelectedFileRequest"
+      },
+      "OneDriveSelectedFileResponse": {
+        "properties": {
+          "drive_id": {
+            "type": "string",
+            "title": "Drive Id"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "etag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etag"
+          },
+          "last_modified_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Modified At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "drive_id",
+          "item_id",
+          "name",
+          "size",
+          "mime_type",
+          "etag",
+          "last_modified_at"
+        ],
+        "title": "OneDriveSelectedFileResponse"
+      },
       "OpenRuntimeResponse": {
         "properties": {},
         "additionalProperties": true,
@@ -135606,6 +136013,224 @@
           "sources_analyzed"
         ],
         "title": "OutletContactExtraction"
+      },
+      "OutlookBasicCalendarEventResponse": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "starts_at": {
+            "type": "string",
+            "title": "Starts At"
+          },
+          "start_time_zone": {
+            "type": "string",
+            "title": "Start Time Zone"
+          },
+          "ends_at": {
+            "type": "string",
+            "title": "Ends At"
+          },
+          "end_time_zone": {
+            "type": "string",
+            "title": "End Time Zone"
+          },
+          "is_all_day": {
+            "type": "boolean",
+            "title": "Is All Day"
+          },
+          "show_as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show As"
+          },
+          "sensitivity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sensitivity"
+          },
+          "event_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "starts_at",
+          "start_time_zone",
+          "ends_at",
+          "end_time_zone",
+          "is_all_day",
+          "show_as",
+          "sensitivity",
+          "event_type"
+        ],
+        "title": "OutlookBasicCalendarEventResponse"
+      },
+      "OutlookBasicCalendarWindowRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "days": {
+            "type": "integer",
+            "maximum": 7,
+            "minimum": 1,
+            "title": "Days",
+            "default": 7
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "OutlookBasicCalendarWindowRequest"
+      },
+      "OutlookBasicCalendarWindowResponse": {
+        "properties": {
+          "window_start": {
+            "type": "string",
+            "title": "Window Start"
+          },
+          "window_end": {
+            "type": "string",
+            "title": "Window End"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/OutlookBasicCalendarEventResponse"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only",
+            "title": "Access Mode",
+            "default": "read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_start",
+          "window_end",
+          "events",
+          "truncated"
+        ],
+        "title": "OutlookBasicCalendarWindowResponse"
+      },
+      "OutlookBasicMessageResponse": {
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          },
+          "sender_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Name"
+          },
+          "sender_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Address"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "received_at": {
+            "type": "string",
+            "title": "Received At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id",
+          "sender_name",
+          "sender_address",
+          "subject",
+          "received_at"
+        ],
+        "title": "OutlookBasicMessageResponse"
+      },
+      "OutlookRecentBasicMessagesRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "OutlookRecentBasicMessagesRequest"
+      },
+      "OutlookRecentBasicMessagesResponse": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/OutlookBasicMessageResponse"
+            },
+            "type": "array",
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "OutlookRecentBasicMessagesResponse"
       },
       "OutputSchemaEnvelope": {
         "properties": {
@@ -163007,6 +163632,92 @@
           "total_mentions"
         ],
         "title": "ShareOfVoice"
+      },
+      "SharePointSelectedFileRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "site_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Site Id"
+          },
+          "item_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Item Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "site_id",
+          "item_id"
+        ],
+        "title": "SharePointSelectedFileRequest"
+      },
+      "SharePointSelectedFileResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "etag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etag"
+          },
+          "last_modified_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Modified At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "item_id",
+          "name",
+          "size",
+          "mime_type",
+          "etag",
+          "last_modified_at"
+        ],
+        "title": "SharePointSelectedFileResponse"
       },
       "SheetReadRequest": {
         "properties": {
