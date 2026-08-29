@@ -5964,6 +5964,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tiktok-integrations/public-video-metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Public Video Metadata */
+        get: operations["get_public_video_metadata_tiktok_integrations_public_video_metadata_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/oracle-health-integrations/open-sandbox/capability": {
         parameters: {
             query?: never;
@@ -6073,6 +6090,60 @@ export interface paths {
         };
         /** Public Author Feed */
         get: operations["public_author_feed_bluesky_public_author_feed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internet-archive/public/item": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Item */
+        get: operations["public_item_internet_archive_public_item_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/canvas-integrations/read-proof": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Proof
+         * @description Prove the minimum profile and active-course read scopes.
+         */
+        get: operations["read_proof_canvas_integrations_read_proof_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mixcloud/public/cloudcast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Cloudcast */
+        get: operations["public_cloudcast_mixcloud_public_cloudcast_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -31779,6 +31850,69 @@ export interface components {
             task_cancelled: boolean;
         };
         /**
+         * CanvasCourse
+         * @description Small non-enrollment projection of one active Canvas course.
+         */
+        CanvasCourse: {
+            /** Id */
+            id: number | string;
+            /** Name */
+            name: string;
+            /** Course Code */
+            course_code?: string | null;
+            /** Workflow State */
+            workflow_state?: string | null;
+            /** Start At */
+            start_at?: string | null;
+            /** End At */
+            end_at?: string | null;
+        };
+        /**
+         * CanvasProfile
+         * @description Small non-secret projection of the authorizing Canvas user.
+         */
+        CanvasProfile: {
+            /** Id */
+            id: number | string;
+            /** Name */
+            name: string;
+            /** Short Name */
+            short_name?: string | null;
+            /** Sortable Name */
+            sortable_name?: string | null;
+        };
+        /**
+         * CanvasReadProofResult
+         * @description Safe receipt proving the minimum user and course read scopes.
+         */
+        CanvasReadProofResult: {
+            /**
+             * Provider
+             * @default canvas
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default oauth2_read_only
+             */
+            access?: string;
+            /** Instance Origin */
+            instance_origin: string;
+            profile: components["schemas"]["CanvasProfile"];
+            /** Courses */
+            courses: components["schemas"]["CanvasCourse"][];
+            /** Requested Course Limit */
+            requested_course_limit: number;
+            /**
+             * Scopes
+             * @default [
+             *       "url:GET|/api/v1/users/self/profile",
+             *       "url:GET|/api/v1/courses"
+             *     ]
+             */
+            scopes?: string[];
+        };
+        /**
          * CapDetail
          * @description One cap and what was left of it. ``remaining`` is ``None`` when the cap is not set.
          *
@@ -46904,6 +47038,54 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /**
+         * InternetArchivePublicItem
+         * @description Safe bounded projection of one public Internet Archive item.
+         */
+        InternetArchivePublicItem: {
+            /**
+             * Kind
+             * @default internet_archive_public_item
+             * @constant
+             */
+            __kind?: "internet_archive_public_item";
+            /**
+             * Provider
+             * @default internet_archive
+             * @constant
+             */
+            provider?: "internet_archive";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Identifier */
+            identifier: string;
+            /** Item Url */
+            item_url: string;
+            /** Title */
+            title: string;
+            /** Media Type */
+            media_type: string;
+            /** Creators */
+            creators: string[];
+            /** Collections */
+            collections: string[];
+            /** Subjects */
+            subjects: string[];
+            /** Languages */
+            languages: string[];
+            /** Date */
+            date?: string | null;
+            /** Public Date */
+            public_date?: string | null;
+            /** Files Count */
+            files_count: number;
+            /** Item Size Bytes */
+            item_size_bytes: number;
+        };
         /** IntersectingImageOut */
         IntersectingImageOut: {
             /** Xref */
@@ -51530,6 +51712,97 @@ export interface components {
             };
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * MixcloudPublicCloudcast
+         * @description Bounded public metadata for one explicit Mixcloud cloudcast.
+         */
+        MixcloudPublicCloudcast: {
+            /**
+             * Kind
+             * @default mixcloud_public_cloudcast
+             * @constant
+             */
+            __kind?: "mixcloud_public_cloudcast";
+            /**
+             * Provider
+             * @default mixcloud
+             * @constant
+             */
+            provider?: "mixcloud";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+            creator: components["schemas"]["MixcloudPublicCreator"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Audio Length Seconds */
+            audio_length_seconds: number;
+            /** Play Count */
+            play_count: number;
+            /** Favorite Count */
+            favorite_count: number;
+            /** Repost Count */
+            repost_count: number;
+            /** Comment Count */
+            comment_count: number;
+            /** Tags */
+            tags: components["schemas"]["MixcloudPublicTag"][];
+        };
+        /**
+         * MixcloudPublicCreator
+         * @description Safe projection of a public Mixcloud creator identity.
+         */
+        MixcloudPublicCreator: {
+            /**
+             * Kind
+             * @default mixcloud_public_creator
+             * @constant
+             */
+            __kind?: "mixcloud_public_creator";
+            /** Key */
+            key: string;
+            /** Username */
+            username: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+        };
+        /**
+         * MixcloudPublicTag
+         * @description Safe projection of one public Mixcloud tag.
+         */
+        MixcloudPublicTag: {
+            /**
+             * Kind
+             * @default mixcloud_public_tag
+             * @constant
+             */
+            __kind?: "mixcloud_public_tag";
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
         };
         /** MockScenario */
         MockScenario: {
@@ -69215,6 +69488,48 @@ export interface components {
             label?: string | null;
         };
         /**
+         * TikTokPublicMetadata
+         * @description Safe projection of one public TikTok video oEmbed response.
+         */
+        TikTokPublicMetadata: {
+            /**
+             * Kind
+             * @default tiktok_public_metadata
+             * @constant
+             */
+            __kind?: "tiktok_public_metadata";
+            /** Source Url */
+            source_url: string;
+            /** Video Id */
+            video_id: string;
+            /** Creator Handle */
+            creator_handle: string;
+            /** Title */
+            title: string;
+            /** Author Name */
+            author_name: string;
+            /** Author Url */
+            author_url: string;
+            /**
+             * Provider Name
+             * @default TikTok
+             * @constant
+             */
+            provider_name?: "TikTok";
+            /**
+             * Provider Url
+             * @default https://www.tiktok.com
+             * @constant
+             */
+            provider_url?: "https://www.tiktok.com";
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+            /** Thumbnail Width */
+            thumbnail_width?: number | null;
+            /** Thumbnail Height */
+            thumbnail_height?: number | null;
+        };
+        /**
          * TimesheetExportBody
          * @description E-21. Writes ``hr.access_audit action='export'`` and creates **no** ``hr.payroll_export``
          *     row — conflating the two would let a report supersede a payroll file.
@@ -86407,6 +86722,37 @@ export interface operations {
             };
         };
     };
+    get_public_video_metadata_tiktok_integrations_public_video_metadata_get: {
+        parameters: {
+            query: {
+                url: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TikTokPublicMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_open_sandbox_capability_oracle_health_integrations_open_sandbox_capability_get: {
         parameters: {
             query?: never;
@@ -86562,6 +86908,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BlueskyPublicAuthorFeed"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_item_internet_archive_public_item_get: {
+        parameters: {
+            query: {
+                identifier: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternetArchivePublicItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_proof_canvas_integrations_read_proof_get: {
+        parameters: {
+            query: {
+                credential_item_id: string;
+                instance_origin: string;
+                course_limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CanvasReadProofResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_cloudcast_mixcloud_public_cloudcast_get: {
+        parameters: {
+            query: {
+                cloudcast_key: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MixcloudPublicCloudcast"];
                 };
             };
             /** @description Validation Error */

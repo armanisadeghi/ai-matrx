@@ -15281,6 +15281,50 @@
         }
       }
     },
+    "/tiktok-integrations/public-video-metadata": {
+      "get": {
+        "tags": [
+          "TikTok Integrations"
+        ],
+        "summary": "Get Public Video Metadata",
+        "operationId": "get_public_video_metadata_tiktok_integrations_public_video_metadata_get",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "title": "Url"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TikTokPublicMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/oracle-health-integrations/open-sandbox/capability": {
       "get": {
         "tags": [
@@ -15531,6 +15575,160 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BlueskyPublicAuthorFeed"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internet-archive/public/item": {
+      "get": {
+        "tags": [
+          "Internet Archive Integrations"
+        ],
+        "summary": "Public Item",
+        "operationId": "public_item_internet_archive_public_item_get",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "title": "Identifier"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternetArchivePublicItem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/canvas-integrations/read-proof": {
+      "get": {
+        "tags": [
+          "Canvas Integrations"
+        ],
+        "summary": "Read Proof",
+        "description": "Prove the minimum profile and active-course read scopes.",
+        "operationId": "read_proof_canvas_integrations_read_proof_get",
+        "parameters": [
+          {
+            "name": "credential_item_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Credential Item Id"
+            }
+          },
+          {
+            "name": "instance_origin",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Instance Origin"
+            }
+          },
+          {
+            "name": "course_limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 10,
+              "title": "Course Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CanvasReadProofResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mixcloud/public/cloudcast": {
+      "get": {
+        "tags": [
+          "Mixcloud Integrations"
+        ],
+        "summary": "Public Cloudcast",
+        "operationId": "public_cloudcast_mixcloud_public_cloudcast_get",
+        "parameters": [
+          {
+            "name": "cloudcast_key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 5,
+              "maxLength": 320,
+              "title": "Cloudcast Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MixcloudPublicCloudcast"
                 }
               }
             }
@@ -81495,6 +81693,177 @@
         ],
         "title": "CancelRunResponse"
       },
+      "CanvasCourse": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "course_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Course Code"
+          },
+          "workflow_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow State"
+          },
+          "start_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Start At"
+          },
+          "end_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CanvasCourse",
+        "description": "Small non-enrollment projection of one active Canvas course."
+      },
+      "CanvasProfile": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "short_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Name"
+          },
+          "sortable_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sortable Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "CanvasProfile",
+        "description": "Small non-secret projection of the authorizing Canvas user."
+      },
+      "CanvasReadProofResult": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "canvas"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "oauth2_read_only"
+          },
+          "instance_origin": {
+            "type": "string",
+            "title": "Instance Origin"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/CanvasProfile"
+          },
+          "courses": {
+            "items": {
+              "$ref": "#/components/schemas/CanvasCourse"
+            },
+            "type": "array",
+            "title": "Courses"
+          },
+          "requested_course_limit": {
+            "type": "integer",
+            "title": "Requested Course Limit"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes",
+            "default": [
+              "url:GET|/api/v1/users/self/profile",
+              "url:GET|/api/v1/courses"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instance_origin",
+          "profile",
+          "courses",
+          "requested_course_limit"
+        ],
+        "title": "CanvasReadProofResult",
+        "description": "Safe receipt proving the minimum user and course read scopes."
+      },
       "CapDetail": {
         "properties": {
           "cap": {
@@ -120891,6 +121260,134 @@
         "type": "object",
         "title": "InternalGraphRequest"
       },
+      "InternetArchivePublicItem": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "internet_archive_public_item",
+            "title": "Kind",
+            "default": "internet_archive_public_item"
+          },
+          "provider": {
+            "type": "string",
+            "const": "internet_archive",
+            "title": "Provider",
+            "default": "internet_archive"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "identifier": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Identifier"
+          },
+          "item_url": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Item Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "media_type": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Media Type"
+          },
+          "creators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Creators"
+          },
+          "collections": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Collections"
+          },
+          "subjects": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Subjects"
+          },
+          "languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Languages"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "public_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Public Date"
+          },
+          "files_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Files Count"
+          },
+          "item_size_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Item Size Bytes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identifier",
+          "item_url",
+          "title",
+          "media_type",
+          "creators",
+          "collections",
+          "subjects",
+          "languages",
+          "files_count",
+          "item_size_bytes"
+        ],
+        "title": "InternetArchivePublicItem",
+        "description": "Safe bounded projection of one public Internet Archive item."
+      },
       "IntersectingImageOut": {
         "properties": {
           "xref": {
@@ -133494,6 +133991,191 @@
         ],
         "title": "MissingInputField",
         "description": "One input a node needs before it can run — surfaced so the studio can\nrender a prompt form for EXACTLY these fields."
+      },
+      "MixcloudPublicCloudcast": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mixcloud_public_cloudcast",
+            "title": "Kind",
+            "default": "mixcloud_public_cloudcast"
+          },
+          "provider": {
+            "type": "string",
+            "const": "mixcloud",
+            "title": "Provider",
+            "default": "mixcloud"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 320,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Url"
+          },
+          "creator": {
+            "$ref": "#/components/schemas/MixcloudPublicCreator"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "audio_length_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Audio Length Seconds"
+          },
+          "play_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Play Count"
+          },
+          "favorite_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Favorite Count"
+          },
+          "repost_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Repost Count"
+          },
+          "comment_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Comment Count"
+          },
+          "tags": {
+            "items": {
+              "$ref": "#/components/schemas/MixcloudPublicTag"
+            },
+            "type": "array",
+            "maxItems": 5,
+            "title": "Tags"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "url",
+          "creator",
+          "created_at",
+          "updated_at",
+          "audio_length_seconds",
+          "play_count",
+          "favorite_count",
+          "repost_count",
+          "comment_count",
+          "tags"
+        ],
+        "title": "MixcloudPublicCloudcast",
+        "description": "Bounded public metadata for one explicit Mixcloud cloudcast."
+      },
+      "MixcloudPublicCreator": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mixcloud_public_creator",
+            "title": "Kind",
+            "default": "mixcloud_public_creator"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "username": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Username"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "username",
+          "name",
+          "url"
+        ],
+        "title": "MixcloudPublicCreator",
+        "description": "Safe projection of a public Mixcloud creator identity."
+      },
+      "MixcloudPublicTag": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "mixcloud_public_tag",
+            "title": "Kind",
+            "default": "mixcloud_public_tag"
+          },
+          "key": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "name",
+          "url"
+        ],
+        "title": "MixcloudPublicTag",
+        "description": "Safe projection of one public Mixcloud tag."
       },
       "MockScenario": {
         "properties": {
@@ -176309,6 +176991,97 @@
           "body"
         ],
         "title": "ThreadMessageView"
+      },
+      "TikTokPublicMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tiktok_public_metadata",
+            "title": "Kind",
+            "default": "tiktok_public_metadata"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "video_id": {
+            "type": "string",
+            "title": "Video Id"
+          },
+          "creator_handle": {
+            "type": "string",
+            "title": "Creator Handle"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "author_name": {
+            "type": "string",
+            "title": "Author Name"
+          },
+          "author_url": {
+            "type": "string",
+            "title": "Author Url"
+          },
+          "provider_name": {
+            "type": "string",
+            "const": "TikTok",
+            "title": "Provider Name",
+            "default": "TikTok"
+          },
+          "provider_url": {
+            "type": "string",
+            "const": "https://www.tiktok.com",
+            "title": "Provider Url",
+            "default": "https://www.tiktok.com"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "thumbnail_width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Width"
+          },
+          "thumbnail_height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Height"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source_url",
+          "video_id",
+          "creator_handle",
+          "title",
+          "author_name",
+          "author_url"
+        ],
+        "title": "TikTokPublicMetadata",
+        "description": "Safe projection of one public TikTok video oEmbed response."
       },
       "TimesheetExportBody": {
         "properties": {

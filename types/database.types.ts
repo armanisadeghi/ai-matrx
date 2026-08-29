@@ -16308,6 +16308,7 @@ export type Database = {
       }
       finalize_notification: {
         Args: {
+          p_delivered_at?: string
           p_error_code: string
           p_error_message: string
           p_id: string
@@ -16317,6 +16318,7 @@ export type Database = {
           p_provider: string
           p_provider_message_id: string
           p_retry_base_seconds?: number
+          p_sent_at?: string
           p_worker_id: string
         }
         Returns: boolean
