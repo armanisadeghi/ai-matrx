@@ -49910,6 +49910,7 @@ export type Database = {
       }
     }
     Functions: {
+      _api_key_base62: { Args: { p_bytes: string }; Returns: string }
       _apply_rls_unchecked: {
         Args: {
           p_schema: string
@@ -50049,6 +50050,15 @@ export type Database = {
             }
             Returns: string[]
           }
+      api_key_create: {
+        Args: {
+          p_expires_at?: string
+          p_name: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      api_key_revoke: { Args: { p_id: string }; Returns: Json }
       apply_config_rls: {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
@@ -63438,6 +63448,10 @@ export type Database = {
         Args: { p_doc: string; p_user: string }
         Returns: boolean
       }
+      can_view_chat_conversation: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
+      }
       canonical_ratchet_refresh: { Args: never; Returns: string }
       canonical_ratchet_snapshot: {
         Args: { p_cutoff?: string; p_min_score?: number }
@@ -64324,6 +64338,7 @@ export type Database = {
         Args: { p_ids: string[]; p_table_name: string }
         Returns: Json
       }
+      delete_context_item: { Args: { p_item_id: string }; Returns: Json }
       delete_conversation_for_user: {
         Args: { p_conversation_id: string }
         Returns: boolean
@@ -69309,6 +69324,22 @@ export type Database = {
         Returns: undefined
       }
       update_all_trending_scores: { Args: never; Returns: undefined }
+      update_context_item: {
+        Args: {
+          p_category?: string
+          p_description?: string
+          p_display_name?: string
+          p_fetch_hint?: Database["public"]["Enums"]["context_fetch_hint"]
+          p_item_id: string
+          p_sensitivity?: Database["public"]["Enums"]["context_sensitivity"]
+          p_sort_order?: number
+          p_status?: Database["public"]["Enums"]["context_item_status"]
+          p_status_note?: string
+          p_tags?: string[]
+          p_value_type?: Database["public"]["Enums"]["context_value_type"]
+        }
+        Returns: Json
+      }
       update_data_row_in_user_table: {
         Args: { p_data: Json; p_row_id: string }
         Returns: Json
