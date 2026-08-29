@@ -71,8 +71,10 @@ independently.
 
 ## Typing note
 
-`commerce` is not in the generated `types/database.types.ts` (the `db-types` script's schema
-list omits it and this container cannot run it). Rows are hand-declared in `types.ts` against
+`commerce` is not yet in the generated `types/database.types.ts`. The `db-types` script's
+schema list now INCLUDES `--schema commerce` (added 2026-08-29), but the last regeneration
+attempt failed for lack of Supabase credentials in the container — the first machine with a
+`SUPABASE_ACCESS_TOKEN` that runs `pnpm db-types` picks it up. Rows are hand-declared in `types.ts` against
 the LIVE columns (verified via information_schema 2026-08-29) and the client is cast through
 `CommerceIntakeSchema` — the vision-interview `InterviewSchema` pattern. When `commerce` lands
 in the generated types, delete the hand rows and project from `Database["commerce"]`.
@@ -139,3 +141,5 @@ On a phone, logged into an org:
   notes-flush-before-close; generic editable rows; full-sensor shutter). Hand-typed commerce
   rows (db-types lacks the schema — see typing note). type-check green; real-phone session
   pending (script above).
+- 2026-08-29 — `--schema commerce` added to the `db-types` script; regeneration still pending
+  credentials (see Typing note). Hand-declared rows unchanged.
