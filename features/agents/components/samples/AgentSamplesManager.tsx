@@ -33,12 +33,17 @@ import {
   fetchCandidateRuns,
   fetchRunFinalResponse,
   sampleFreshness,
+  sampleInputContent,
+  sampleInputText,
   setAgentSampleStatus,
   type AgentContractHead,
   type AgentSampleRow,
   type CandidateRun,
   type SampleFreshness,
 } from "@/features/agents/samples/service";
+import { AgentUserMessageContent } from "@/features/agents/components/messages-display/user/AgentUserMessage";
+import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
+import { isJsonObject } from "@/types/json";
 
 function describeError(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -86,19 +91,6 @@ function FreshnessBadge({ freshness }: { freshness: SampleFreshness }) {
       Stale
     </Badge>
   );
-}
-
-function variablesPreview(variables: unknown): string {
-  if (!variables || typeof variables !== "object") return "";
-  const entries = Object.entries(variables as Record<string, unknown>);
-  if (entries.length === 0) return "";
-  return entries
-    .map(([key, value]) => {
-      const text =
-        typeof value === "string" ? value : JSON.stringify(value ?? "");
-      return `${key}: ${text.length > 40 ? `${text.slice(0, 40)}…` : text}`;
-    })
-    .join(" · ");
 }
 
 export interface AgentSamplesManagerProps {
@@ -175,6 +167,11 @@ export function AgentSamplesManager({
   function renderSample(sample: AgentSampleRow) {
     const freshness = sampleFreshness(sample, head);
     const busy = pendingId === sample.id;
+    const inputContent = sampleInputContent(sample);
+    const attachmentParts = inputContent.filter(isAttachmentMessagePart);
+    const sampleVariables = isJsonObject(sample.variables)
+      ? sample.variables
+      : {};
     return (
       <div
         key={sample.id}
@@ -193,16 +190,6 @@ export function AgentSamplesManager({
                 </Badge>
               ) : null}
             </div>
-            {sample.user_input ? (
-              <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                “{sample.user_input}”
-              </p>
-            ) : null}
-            {variablesPreview(sample.variables) ? (
-              <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                {variablesPreview(sample.variables)}
-              </p>
-            ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {onUseSample ? (
@@ -275,6 +262,18 @@ export function AgentSamplesManager({
             </Button>
           </div>
         </div>
+        <AgentUserMessageContent
+          conversationId={
+            sample.source_conversation_id ?? `sample:${sample.id}`
+          }
+          text={sampleInputText(sample)}
+          attachmentParts={attachmentParts}
+          variables={sampleVariables}
+        />
+        {inputContent.length === 0 &&
+        Object.keys(sampleVariables).length === 0 ? (
+          <p className="text-xs text-muted-foreground">No input</p>
+        ) : null}
       </div>
     );
   }
@@ -413,6 +412,9 @@ function BorrowFromRunsSection({
           {runs.map((run) => {
             const expanded = expandedId === run.conversationId;
             const final = finalById[run.conversationId];
+            const attachmentParts = run.inputContent.filter(
+              isAttachmentMessagePart,
+            );
             return (
               <div
                 key={run.conversationId}
@@ -431,16 +433,6 @@ function BorrowFromRunsSection({
                       {new Date(run.createdAt).toLocaleString()}
                       {run.sourceFeature ? ` · ${run.sourceFeature}` : ""}
                     </div>
-                    {run.userInput ? (
-                      <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                        “{run.userInput}”
-                      </p>
-                    ) : null}
-                    {variablesPreview(run.variables) ? (
-                      <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
-                        {variablesPreview(run.variables)}
-                      </p>
-                    ) : null}
                   </button>
                   <div className="flex shrink-0 items-center gap-1">
                     <Button
@@ -491,6 +483,18 @@ function BorrowFromRunsSection({
                       )}
                     </Button>
                   </div>
+                </div>
+                <div className="mt-2">
+                  <AgentUserMessageContent
+                    conversationId={run.conversationId}
+                    text={run.userInput ?? ""}
+                    attachmentParts={attachmentParts}
+                    variables={run.variables}
+                  />
+                  {run.inputContent.length === 0 &&
+                  Object.keys(run.variables).length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No input</p>
+                  ) : null}
                 </div>
                 {expanded ? (
                   <div className="mt-2 rounded bg-muted/50 p-2">

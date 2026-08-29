@@ -5,10 +5,10 @@
  * cases (agent.exemplar) in a WindowPanel. Builder-only by Arman's ruling
  * (2026-08-26): the earlier full-width chip strip sat on top of the run
  * surfaces and was ripped out — samples must never add page chrome. Picking a
- * sample ("Use") prefills the test instance's variables + user input through
- * the SAME slices the human's own typing uses; the sample's user_input IS
- * human-typed text (raw-values invariant), so this is not a USER-INPUT-LAW
- * violation.
+ * sample ("Use") prefills variables, human text, and every canonical structured
+ * input part through the SAME slices the live composer uses. The sample's
+ * user_input is still only human-typed text; attachments remain message parts,
+ * so this does not violate the USER-INPUT LAW.
  */
 
 import { FlaskConical } from "lucide-react";

@@ -35,12 +35,12 @@ interface FirstTurnVariablesProps {
   conversationId: string;
 }
 
-export function FirstTurnVariables({
-  conversationId,
-}: FirstTurnVariablesProps) {
-  const userValues = useAppSelector(selectUserVariableValues(conversationId));
-
-  const lines = buildVariableDisplayLines(userValues);
+export function UserMessageVariables({
+  values,
+}: {
+  values: Record<string, unknown>;
+}) {
+  const lines = buildVariableDisplayLines(values);
 
   // Resolve the human name for every wired record, so the door reads
   // "Rulebook: Chronic Care Intake" and never a UUID fragment. `EntityRef`
@@ -75,4 +75,11 @@ export function FirstTurnVariables({
       ))}
     </div>
   );
+}
+
+export function FirstTurnVariables({
+  conversationId,
+}: FirstTurnVariablesProps) {
+  const userValues = useAppSelector(selectUserVariableValues(conversationId));
+  return <UserMessageVariables values={userValues} />;
 }

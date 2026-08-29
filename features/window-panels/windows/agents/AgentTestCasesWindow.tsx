@@ -4,8 +4,15 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { isJsonObject } from "@/types/json";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import type { AgentSampleRow } from "@/features/agents/samples/service";
+import {
+  setUserInputMessageParts,
+  setUserInputText,
+} from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import {
+  sampleAttachmentParts,
+  sampleInputText,
+  type AgentSampleRow,
+} from "@/features/agents/samples/service";
 import { AgentSamplesManager } from "@/features/agents/components/samples/AgentSamplesManager";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 
@@ -35,8 +42,15 @@ export default function AgentTestCasesWindow({
     dispatch(
       setUserInputText({
         conversationId,
-        text: sample.user_input ?? "",
+        text: sampleInputText(sample),
         userValues: values,
+      }),
+    );
+    const attachmentParts = sampleAttachmentParts(sample);
+    dispatch(
+      setUserInputMessageParts({
+        conversationId,
+        parts: attachmentParts.length > 0 ? attachmentParts : null,
       }),
     );
     toast.success(`Loaded “${sample.label}”`);

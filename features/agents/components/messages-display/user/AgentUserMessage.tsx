@@ -12,10 +12,7 @@
  */
 
 import { useMemo, useState } from "react";
-import {
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -27,7 +24,7 @@ import {
   extractContentBlocks,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { UserActionBar } from "./UserActionBar";
-import { FirstTurnVariables } from "./FirstTurnVariables";
+import { FirstTurnVariables, UserMessageVariables } from "./FirstTurnVariables";
 import { ContextPolicyChipStrip } from "@/features/agents/components/context-policies-display/ContextPolicyChipStrip";
 import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
 import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
@@ -37,6 +34,47 @@ import MarkdownStream from "@/components/MarkdownStream";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { RootState } from "@/lib/redux/store";
 import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
+import type { MessagePart } from "@/types/python-generated/stream-events";
+
+export function AgentUserMessageContent({
+  conversationId,
+  text,
+  attachmentParts,
+  variables,
+}: {
+  conversationId: string;
+  text: string;
+  attachmentParts: MessagePart[];
+  variables?: Record<string, unknown>;
+}) {
+  const trimmedText = text.trim();
+
+  if (
+    !trimmedText &&
+    attachmentParts.length === 0 &&
+    (!variables || buildVariableDisplayLines(variables).length === 0)
+  ) {
+    return null;
+  }
+
+  return (
+    <>
+      {variables ? <UserMessageVariables values={variables} /> : null}
+      <MessageAttachmentStrip
+        conversationId={conversationId}
+        parts={attachmentParts}
+      />
+      {trimmedText ? (
+        <MarkdownStream
+          content={trimmedText}
+          className="text-xs text-foreground"
+          hideCopyButton
+          allowFullScreenEditor={false}
+        />
+      ) : null}
+    </>
+  );
+}
 
 /**
  * User-attached resource block types (`input_notes`, `input_task`, media, …).
@@ -296,21 +334,11 @@ export function AgentUserMessage({
               />
             )}
 
-            {/* Attachment chips */}
-            <MessageAttachmentStrip
+            <AgentUserMessageContent
               conversationId={conversationId}
-              parts={attachmentParts}
+              text={trimmedText}
+              attachmentParts={attachmentParts}
             />
-
-            {/* Text content */}
-            {trimmedText && (
-              <MarkdownStream
-                content={trimmedText}
-                className="text-xs text-foreground"
-                hideCopyButton
-                allowFullScreenEditor={false}
-              />
-            )}
           </div>
 
           {/* Fade + expand affordance — overlays the whole collapsed body. */}

@@ -6,8 +6,9 @@
  * mandate test bench 2026-08-25; the mandate bench in features/admin/mandates
  * reads the same table filtered by mandate_id).
  *
- * THE RAW-VALUES INVARIANT: a sample's `variables` + `user_input` are the exact
- * values as entered in the UI or sent programmatically — NEVER the merged
+ * THE COMPLETE-INPUT INVARIANT: a sample's variables, human text, and canonical
+ * `metadata.input_content` are the exact turn entered in the UI or sent
+ * programmatically — NEVER the merged
  * conversation snapshot. Borrowing from a real run therefore filters
  * chat.conversation.variables down to the capture-version's DECLARED variable
  * names and pulls the human text out of the reserved `__agent_user_input__`
@@ -23,9 +24,15 @@ import { createClient } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
+import { readAllRows } from "@ai-matrx/data/db";
+import {
+  parseMessageContent,
+  type MessagePart,
+} from "@/types/python-generated/stream-events";
 
 /** Server twin: USER_INPUT_VARIABLE_KEY in matrx_ai/agents/variable_kinds.py. */
 const USER_INPUT_KEY = "__agent_user_input__";
+export const SAMPLE_INPUT_CONTENT_KEY = "input_content";
 
 export type AgentSampleRow = Database["agent"]["Tables"]["exemplar"]["Row"];
 
@@ -37,11 +44,43 @@ export interface AgentContractHead {
 }
 
 export type SampleFreshness =
-  | "fresh"
-  | "input-stale"
-  | "output-stale"
-  | "both-stale"
-  | "unknown";
+  "fresh" | "input-stale" | "output-stale" | "both-stale" | "unknown";
+
+function textFromMessageContent(parts: readonly MessagePart[]): string | null {
+  const text = parts
+    .flatMap((part) => (part.type === "text" ? [part.text] : []))
+    .join("\n")
+    .trim();
+  return text || null;
+}
+
+export function sampleInputContent(
+  sample: Pick<AgentSampleRow, "metadata" | "user_input">,
+): MessagePart[] {
+  if (isJsonObject(sample.metadata)) {
+    const stored = sample.metadata[SAMPLE_INPUT_CONTENT_KEY];
+    if (Array.isArray(stored)) return parseMessageContent(stored);
+  }
+  return sample.user_input
+    ? parseMessageContent([{ type: "text", text: sample.user_input }])
+    : [];
+}
+
+export function sampleAttachmentParts(
+  sample: Pick<AgentSampleRow, "metadata" | "user_input">,
+): MessagePart[] {
+  return sampleInputContent(sample).filter((part) => part.type !== "text");
+}
+
+export function sampleInputText(
+  sample: Pick<AgentSampleRow, "metadata" | "user_input">,
+): string {
+  return (
+    textFromMessageContent(sampleInputContent(sample)) ??
+    sample.user_input ??
+    ""
+  );
+}
 
 /** Derived at read time from the head hashes — never persisted. */
 export function sampleFreshness(
@@ -163,6 +202,8 @@ export interface CandidateRun {
   sourceFeature: string | null;
   /** The human-typed text (reserved key), for the list preview. */
   userInput: string | null;
+  /** Exact first user turn: text plus every attached media/resource block. */
+  inputContent: MessagePart[];
   /** Declared-variable values only — the raw inputs a sample would keep. */
   variables: JsonObject;
   agentVersionId: string | null;
@@ -227,6 +268,33 @@ export async function fetchCandidateRuns(
   const rows = data ?? [];
   if (rows.length === 0) return [];
 
+  const conversationIds = rows.map((row) => row.id);
+  const userMessages = await readAllRows(
+    ({ from, to }) =>
+      supabase
+        .schema("chat")
+        .from("message")
+        .select("id, conversation_id, content, position", { count: "exact" })
+        .in("conversation_id", conversationIds)
+        .eq("role", "user")
+        .is("deleted_at", null)
+        .order("conversation_id", { ascending: true })
+        .order("position", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "candidate-run user messages" },
+  );
+  const firstInputByConversation = new Map<string, MessagePart[]>();
+  for (const message of userMessages) {
+    if (firstInputByConversation.has(message.conversation_id)) continue;
+    firstInputByConversation.set(
+      message.conversation_id,
+      parseMessageContent(
+        Array.isArray(message.content) ? message.content : [],
+      ),
+    );
+  }
+
   // One definitions lookup per distinct capture version — the declared-name
   // filter is what makes a borrowed sample raw instead of merged.
   const versionIds = [
@@ -256,13 +324,19 @@ export async function fetchCandidateRuns(
     const declared = row.initial_agent_version_id
       ? (namesByVersionId.get(row.initial_agent_version_id) ?? null)
       : null;
-    const { variables, userInput } = extractRawInputs(row.variables, declared);
+    const { variables, userInput: mergedUserInput } = extractRawInputs(
+      row.variables,
+      declared,
+    );
+    const inputContent = firstInputByConversation.get(row.id) ?? [];
+    const userInput = textFromMessageContent(inputContent) ?? mergedUserInput;
     return {
       conversationId: row.id,
       title: row.title,
       createdAt: row.created_at,
       sourceFeature: row.source_feature,
       userInput,
+      inputContent,
       variables,
       agentVersionId: row.initial_agent_version_id,
     };
@@ -343,6 +417,9 @@ export async function borrowSampleFromRun(input: {
       output_contract_hash: outputContractHash,
       visibility: "personal",
       organization_id: organizationId,
+      metadata: {
+        [SAMPLE_INPUT_CONTENT_KEY]: input.run.inputContent,
+      },
     })
     .select("*")
     .single();

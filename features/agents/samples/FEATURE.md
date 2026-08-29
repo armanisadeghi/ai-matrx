@@ -9,12 +9,14 @@ same rule as `features/admin/mandates/FEATURE.md`).
 
 ## The three laws of this feature
 
-1. **THE RAW-VALUES INVARIANT.** A sample's `variables` + `user_input` are the
-   exact values entered in the UI or sent programmatically — NEVER the merged
+1. **THE COMPLETE-INPUT INVARIANT.** A sample's `variables` + `user_input` +
+   `metadata.input_content` are the exact values entered in the UI or sent programmatically — NEVER the merged
    conversation snapshot. `chat.conversation.variables` merges scope/context
    (vsc) values in, so borrowing filters that dict down to the capture
    version's DECLARED variable names and lifts the human text out of the
-   reserved `__agent_user_input__` key (`service.ts extractRawInputs`).
+   first `chat.message` row. `metadata.input_content` keeps that row's complete
+   canonical `MessagePart[]` (images, files, and attached records included), so
+   preview, reuse, and server-side tests replay the same turn without flattening.
 2. **Staleness is DERIVED, never stamped** (TRUE CURRENT law). A sample
    carries the `input_contract_hash`/`output_contract_hash` it was captured or
    approved under; freshness = compare to `agent.definition` head hashes at
@@ -71,6 +73,10 @@ agent builder. Do not re-add chips, bars, or strips to any run surface.
 
 ## Change Log
 
+- 2026-08-29 — Test cases now capture, render, and replay the complete first
+  user-message content (`metadata.input_content`) instead of losing every
+  attachment and showing only flattened text/variables. The manager reuses the
+  canonical user-message body; variables remain a separate launch-input strip.
 - 2026-08-27 — Moved the builder's lone test-case icon from the test panel's
   top-right corner to the band directly above Smart Agent. Replaced its
   blocking right Sheet with the ephemeral `agentTestCasesWindow` and reduced
