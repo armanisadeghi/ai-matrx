@@ -16372,17 +16372,17 @@ export type Database = {
       }
       finalize_notification: {
         Args: {
-          p_delivered_at?: string
+          p_delivered_at: string
           p_error_code: string
           p_error_message: string
           p_id: string
-          p_max_attempts?: number
-          p_next_attempt_at?: string
+          p_max_attempts: number
+          p_next_attempt_at: string
           p_outcome: string
           p_provider: string
           p_provider_message_id: string
-          p_retry_base_seconds?: number
-          p_sent_at?: string
+          p_retry_base_seconds: number
+          p_sent_at: string
           p_worker_id: string
         }
         Returns: boolean
@@ -47520,6 +47520,7 @@ export type Database = {
         Returns: boolean
       }
       _wf_decision_words: { Args: { p_outcome: string }; Returns: string }
+      _wf_decision_words_short: { Args: { p_outcome: string }; Returns: string }
       _wf_display: {
         Args: { p_contentless?: boolean; p_step: string }
         Returns: Json
