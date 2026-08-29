@@ -9,12 +9,15 @@
  *
  * The SSE consumer is fetch-based, NOT `EventSource` — EventSource cannot set
  * the Authorization header, which would force the JWT into a query param.
- * Frame parsing accepts all three SSE separators (\r\n\r\n, \n\n, \r\r):
- * sse-starlette emits CRLF, and matching only "\n\n" parses ZERO frames from
- * the real server (the exact bug that silently killed workflow studio's push
- * transport, found live 2026-07-09).
+ * Frame parsing is `@ai-matrx/agents/stream/sse` — the extracted kernel that
+ * handles all three SSE separators by construction (sse-starlette emits CRLF;
+ * matching only "\n\n" parses ZERO frames from the real server — the exact
+ * bug that silently killed workflow studio's push transport, 2026-07-09).
+ * Host policy stays here: the fetch, the stall timer, the retry budget, and
+ * what each event MEANS.
  */
 
+import { readMatrxSseStream } from "@ai-matrx/agents/stream/sse";
 import type { ResolvedBackend } from "../redux/execution-system/thunks/resolve-base-url";
 import type {
   RuntimeExecutionStatus,
@@ -22,7 +25,6 @@ import type {
   RuntimeOperationsByLinkResponse,
 } from "./types";
 
-const SSE_FRAME_SEPARATOR = /\r\n\r\n|\n\n|\r\r/;
 /**
  * The server pings every ~15s, so a wire that is open but silent past this is
  * dead (buffering proxy, idle-killed connection) — abort and retry rather than
@@ -125,67 +127,38 @@ export async function followOperationStream(
       }
 
       armStall();
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      try {
-        for (;;) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          let sep: RegExpExecArray | null;
-          while ((sep = SSE_FRAME_SEPARATOR.exec(buffer)) !== null) {
-            const frame = buffer.slice(0, sep.index);
-            buffer = buffer.slice(sep.index + sep[0].length);
-            // Any parsed frame — comment heartbeats included — proves the
-            // wire is alive: reset both the stall timer and the retry budget.
-            armStall();
-            failures = 0;
+      for await (const frame of readMatrxSseStream(res.body)) {
+        // Any parsed frame — comment heartbeats included — proves the
+        // wire is alive: reset both the stall timer and the retry budget.
+        armStall();
+        failures = 0;
 
-            let eventType = "message";
-            let eventId: string | undefined;
-            const dataLines: string[] = [];
-            for (const line of frame.split(/\r\n|\n|\r/)) {
-              if (line.startsWith(":")) continue;
-              if (line.startsWith("event:")) eventType = line.slice(6).trim();
-              else if (line.startsWith("data:"))
-                dataLines.push(line.slice(5).replace(/^ /, ""));
-              else if (line.startsWith("id:")) eventId = line.slice(3).trim();
-            }
-            if (dataLines.length === 0) continue;
-            const dataText = dataLines.join("\n");
+        if (frame.data === null) continue;
 
-            if (eventType === "end") {
-              let status: RuntimeExecutionStatus | null = null;
-              try {
-                const parsed = JSON.parse(dataText) as { status?: string };
-                if (typeof parsed.status === "string") {
-                  status = parsed.status as RuntimeExecutionStatus;
-                }
-              } catch {
-                // malformed end payload — still terminal
-              }
-              return { ended: true, status };
+        if (frame.event === "end") {
+          let status: RuntimeExecutionStatus | null = null;
+          try {
+            const parsed = JSON.parse(frame.data) as { status?: string };
+            if (typeof parsed.status === "string") {
+              status = parsed.status as RuntimeExecutionStatus;
             }
-            if (eventType === "execution_event") {
-              const seq =
-                eventId && Number.isInteger(Number(eventId))
-                  ? Number(eventId)
-                  : null;
-              if (seq !== null && seq > cursor) cursor = seq;
-              try {
-                opts.onEvent(
-                  JSON.parse(dataText) as RuntimeOperationEvent,
-                  seq,
-                );
-              } catch {
-                // malformed frame — the durable ledger heals gaps on reconnect
-              }
-            }
+          } catch {
+            // malformed end payload — still terminal
+          }
+          return { ended: true, status };
+        }
+        if (frame.event === "execution_event") {
+          const seq = frame.seq;
+          if (seq !== null && seq > cursor) cursor = seq;
+          try {
+            opts.onEvent(
+              JSON.parse(frame.data) as RuntimeOperationEvent,
+              seq,
+            );
+          } catch {
+            // malformed frame — the durable ledger heals gaps on reconnect
           }
         }
-      } finally {
-        reader.releaseLock();
       }
       // Server closed without an `end` frame (e.g. process restart). Retry —
       // Last-Event-ID replays anything missed from the durable ledger.

@@ -62,6 +62,18 @@ const PRODUCT_CAPTURE_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/tools/product-capture/instant",
+      label: "Instant capture (client process lane)",
+      description:
+        "The process-mode A/B test: the same capture surface plus a Process button — the browser runs the product_capture.instant_analysis mandate on the item's photos and streams the electronics_intake_analysis record into a bottom sheet. Success writes the instant_analysis payload and moves the item capturing → processed directly (never 'captured', so the server workflow lane can't double-process it).",
+      filePath: "app/(core)/tools/product-capture/instant/page.tsx",
+      status: "Live",
+      notes: [
+        "Server lane (closeItem → 'captured' → workflow trigger) stays untouched — both lanes run side by side for the test",
+        "Agent identity is DB-resolved via the mandate; rebind in the mandate UI, no deploy",
+      ],
+    },
+    {
       url: "/tools/product-capture/manage",
       label: "Pipeline workspace",
       description:
@@ -176,6 +188,13 @@ const PRODUCT_CAPTURE_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/product-capture/components/pipeline/PipelineWorkspace.tsx",
       description:
         "The /manage engine: StageStepper, StageItemList, ItemWorkspace with AnalysisPanel (SplitDialog), ResearchPanel, QuestionsPanel, GradingPanel, ListingPanel, FeaturedImageStrip (canonical InitialCropWindow crop).",
+      status: "Live",
+    },
+    {
+      name: "useInstantAnalysis + InstantProcessSheet",
+      filePath: "features/product-capture/hooks/useInstantAnalysis.ts",
+      description:
+        "The instant lane: useLiveAgentRun over the product_capture.instant_analysis mandate with the item's photos as message parts; result persisted via the onResult seam (instant_analysis payload + markProcessed). The sheet streams the run through LiveRunDisplay (canonical pipeline, kind component included).",
       status: "Live",
     },
     {

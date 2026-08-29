@@ -63,7 +63,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import type { Json } from "@/types/database.types";
 import type { ResearchTemplate, AutonomyLevel } from "../types";
 import type {

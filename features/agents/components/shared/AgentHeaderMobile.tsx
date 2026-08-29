@@ -8,7 +8,7 @@ import { selectAgentIsDirty } from "@/features/agents/redux/agent-definition/sel
 import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
-} from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import {
   AlertDialog,

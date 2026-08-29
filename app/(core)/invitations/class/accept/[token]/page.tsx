@@ -22,7 +22,7 @@ import { isScopesRpcErr } from "@/features/scopes/types";
 import { supabase } from "@/utils/supabase/client";
 import { loginHref } from "@/utils/auth/auth-destination";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 export default function AcceptClassInvitationPage() {
   const params = useParams();

@@ -10,7 +10,7 @@
 import { Building, ListChecks, Network, Settings as SettingsIcon, Zap } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav, type RouteNavItem } from "@/features/shell/components/header/RouteModeNav";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import { KgSuggestionsNavButton } from "@/features/kg-suggestions/components/KgSuggestionsNavButton";
 
 const HUB_NAV_ITEMS: RouteNavItem[] = [

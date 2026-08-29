@@ -22,7 +22,7 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
 import { buildConversationMenu } from "@/features/agents/components/conversation-actions/conversationActionRegistry";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import { SectionToolbar } from "../SectionToolbar";
 import { SectionFooter } from "../SectionFooter";
 import {

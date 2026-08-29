@@ -13,7 +13,7 @@
 import { supabase } from "@/utils/supabase/client";
 import type { TablesUpdate } from "@/types/database.types";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
-import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { pgErrorToError } from "@ai-matrx/data";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { membershipsService } from "@/features/organizations/service/membershipsService";

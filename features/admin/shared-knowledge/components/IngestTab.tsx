@@ -5,10 +5,8 @@
 // Curation ingest: pick an existing cloud file (canonical shared picker) or
 // upload a new one (canonical fileHandler via useFileUpload — never a
 // bespoke uploader), then submit it to P1's
-// `POST /knowledge/library/stores/{store_id}/ingest`. The endpoint is a published
-// day-1 stub that answers 501 until the P1-full pipeline (system-owner
-// rehome + streamed progress) lands — that state renders as a clearly
-// labeled "pipeline not yet live" card, never a swallowed error.
+// `POST /rag/library/stores/{store_id}/ingest`, whose canonical NDJSON
+// stream is consumed by the shared RAG API client.
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +21,6 @@ import {
 import {
   CheckCircle2,
   CircleAlert,
-  Clock,
   FolderOpen,
   Loader2,
   Send,
@@ -33,18 +30,10 @@ import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import {
-  ingestLibraryFile,
-  isLibraryIngestNotLive,
-} from "@/features/rag/api/library-ingest";
+import { ingestLibraryFile } from "@/features/rag/api/library-ingest";
 import type { SharedKnowledgeDirectory } from "../types";
 
-type IngestPhase =
-  | "idle"
-  | "submitting"
-  | "not_live"
-  | "complete"
-  | "error";
+type IngestPhase = "idle" | "submitting" | "complete" | "error";
 
 interface PickedFile {
   fileId: string;
@@ -56,9 +45,7 @@ export function IngestTab({
 }: {
   directory: SharedKnowledgeDirectory;
 }) {
-  const [storeId, setStoreId] = useState<string>(
-    directory.stores[0]?.id ?? "",
-  );
+  const [storeId, setStoreId] = useState<string>(directory.stores[0]?.id ?? "");
   const [picked, setPicked] = useState<PickedFile | null>(null);
   const [profile, setProfile] = useState("");
   const [phase, setPhase] = useState<IngestPhase>("idle");
@@ -67,8 +54,7 @@ export function IngestTab({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { upload, uploading, progress } = useFileUpload();
 
-  const selectedStore =
-    directory.stores.find((s) => s.id === storeId) ?? null;
+  const selectedStore = directory.stores.find((s) => s.id === storeId) ?? null;
 
   const onPickExisting = async () => {
     const ids = await openFilePicker({
@@ -113,16 +99,8 @@ export function IngestTab({
       setResultDetail(res.detail);
       toast.success("Library ingest complete");
     } catch (e) {
-      if (isLibraryIngestNotLive(e)) {
-        // Honest stub state — the contract is live, the pipeline isn't.
-        setPhase("not_live");
-        setResultDetail(
-          "The server validated the store and file, but the P1 ingest pipeline (system-owner rehome + streamed progress) has not shipped yet.",
-        );
-      } else {
-        setPhase("error");
-        setResultDetail(e instanceof Error ? e.message : "Ingest failed");
-      }
+      setPhase("error");
+      setResultDetail(e instanceof Error ? e.message : "Ingest failed");
     }
   };
 
@@ -235,9 +213,7 @@ export function IngestTab({
           className={`rounded-md border px-3 py-2.5 text-sm ${
             phase === "error"
               ? "border-destructive/40 bg-destructive/10"
-              : phase === "not_live"
-                ? "border-amber-500/40 bg-amber-500/10"
-                : "border-border bg-card"
+              : "border-border bg-card"
           }`}
         >
           <div className="flex items-center gap-2 font-medium text-foreground">
@@ -251,11 +227,6 @@ export function IngestTab({
                 <CheckCircle2 className="h-4 w-4 text-primary" /> Ingest
                 complete
               </>
-            ) : phase === "not_live" ? (
-              <>
-                <Clock className="h-4 w-4 text-amber-600 dark:text-amber-500" />{" "}
-                Pipeline not yet live (contract verified)
-              </>
             ) : (
               <>
                 <CircleAlert className="h-4 w-4 text-destructive" /> Ingest
@@ -264,9 +235,7 @@ export function IngestTab({
             )}
           </div>
           {resultDetail ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {resultDetail}
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{resultDetail}</p>
           ) : null}
         </div>
       ) : null}

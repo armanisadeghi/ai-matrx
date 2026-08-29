@@ -15,6 +15,24 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D289 — shortcuts-panel-doors jest suite broken by panel growth since 2026-08-27 (no CI job runs it)
+
+`features/agents/components/shortcuts/__tests__/shortcuts-panel-doors.test.tsx` fails 5/5. Not one break but layers: `22b787b9fa` (2026-08-27, org-context shortcut writes) made `useAgentShortcutCrud` read `selectUserId` against the test's empty store (now provisioned with `userAuth` — first layer fixed 2026-08-29 during the icons C9 swap, which also repointed the suite's IconResolver mock to `@ai-matrx/icons`); the next layer is `LinkAgentToShortcutModal` mounting with selectors the suite never mocks (`shortcuts.filter` on undefined at its line ~169). The suite runs in NO CI job (jest jobs are scoped to content-ir/workflow-runtime/hr), so each panel feature added since 08-15 broke it silently. Fix: mock the modal (it has its own concerns) or provision its selectors; then consider adding the file to a CI jest scope.
+
+### D288 — kind-render cracks still open after the 2026-08-29 audit (grouped remainder)
+
+The 2026-08-29 "kind slips through the cracks" audit found 27 ways a `__kind` payload renders as raw JSON/generic. The four production-dominant ones were fixed same-session (readAllRows on `content_ir` warm reads; miss TTL + `refresh()` + `kind-definitions` invalidation on `kindRegistry`; splitter structural brace counting; kind preservation on structural raws + `broken-instance` route in the 0.3.0 packages) plus the in-band Errors tab / `KindEscapedNotice` tripwire. Open remainder, in expected-volume order:
+
+- **Python-owned kinds (`data` NULL) mint NO `KindDefinition`** — `schema-source-kind-tables.ts` omits them from the schema map, so `kind-route.ts` has no `def`, and with no component row the block gets NOT EVEN the generic floor (raw code block; now at least flagged by `KindEscapedNotice`). Fix: let the warm loop mint definition entries (schema-less) from the ENTRY list so registered-but-unflattenable kinds reach the R6 generic floor.
+- **`irCloseRegion` never calls `session.dispose()`** (`stream-block-accumulator.ts` ~1300) — one leaked `onSchemaArrived` listener per streamed region for the life of the tab, and late schema arrivals mutate a dead tree.
+- **`memoizedRegionEnvelope` caches pre-warm envelopes by source text** (`region-envelope-memo.ts`) — the first DB-reload split can memoize a `pending_schema`/raw envelope permanently; the warm kick is fire-and-forget. Fix: don't memoize an envelope whose root is pending/raw-for-schema-availability, or invalidate the memo on registry version bumps.
+- **Accumulator bare-JSON detection requires the `{` to start a line** (`stream-block-accumulator.ts` ~840 + `BARE_JSON_OPEN_RE`) — `Here you go: {"__kind": …}` on one line streams as prose and only snaps to a component at finalize.
+- **`readPartialKindEvent` rejects malformed partial events through 12 silent `return null`s** (kernel `wire/partial-kind.ts`) — a server-side event schema drift degrades every live kind render to a skeleton with zero telemetry.
+- **Surface-registry snapshot race** (`xml-finalize.ts` ~123) — the first XML/fence region of a session consults the pre-warm snapshot; a DB-only `kind_surface` never converges for that region, silently.
+- **Splitter recovery around an embedded kind re-emits orphan JSON fragments** (`content-splitter-v2.ts` `recoverEmbeddedKindJsonBlocks`) — the kind renders but broken `{"result":` / `}` code-block crumbs render around it.
+
+Full inventory with file:line for all 27 lives in the 2026-08-29 session record (PR `claude/kind-rendering-inconsistency-3sfhpp`); the two comment/config contradictions ("React Compiler is OFF in this repo" in `BlockRenderer.tsx`/`use-registry-repaint.ts` vs CLAUDE.md's "React Compiler is on") also need one truth.
+
 ### D287 — a `party` (non-user) notification recipient has NO read path, and §4.5 leaves it unspecified — STOP, needs a ruling (2026-08-28)
 
 `communication.mark_notification_read` authorizes on `is_platform_admin() OR recipient_user_id = auth.uid() OR created_by = auth.uid()`. For a `party` recipient — a job applicant, a candidate, anyone with no platform account — `recipient_user_id` and `created_by` are **both NULL** by §4.5's own design (external notices are `visibility='personal'` with `created_by = NULL`). So a party can never stamp their own `read_at`; only an HR admin can, and that is oversight, not the recipient reading it.
@@ -2567,3 +2585,14 @@ it from earlier the same day. Fixed here the same way (depend on the org id, wai
 fail), but any hook that calls `callApi` from a mount effect without that dependency has the same
 bug, and nothing enforces it. Worth a guard or a shared "call when sendable" primitive.
 
+
+## `retired-slot-producer.test.ts` asserts a table name no mandate service writes — 2026-08-28
+
+Pre-existing at HEAD (verified with `git show HEAD:<file> | grep`), not caused by the run-affordance
+work that found it. `features/admin/mandates/__tests__/retired-slot-producer.test.ts:21` asserts the
+runtime mandate sources contain `.from("mandate")`, but every one of the four files it reads goes
+through the `mandateDefinitions()` / `mandateBindings()` helpers in `lib/supabase/mandateStorage.ts`
+instead — so the string is absent and the suite fails. The CONTRACT the test guards (no reads/writes
+against the retired `slot_*` tables) still holds; only its positive assertion is stale. Fix is either
+to assert on the storage helpers or to have the test read `lib/supabase/mandateStorage.ts` too. Left
+alone here because changing what a guard asserts is not a change to make inside an unrelated task.

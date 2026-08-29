@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import { cn } from "@/lib/utils";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import { isMediaVariableType } from "@/features/agents/types/agent-definition.types";

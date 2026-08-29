@@ -103,6 +103,14 @@ const FAILURE_WORDS: Record<string, string> = {
   no_approver_resolved: "nobody could be resolved to decide this",
   approver_inactive: "the person who should decide is no longer active",
   subject_excluded: "the person who would decide is a party to this record and cannot act on it",
+  // 🚨 THE OTHER TWO CLASSES THAT ACTUALLY EXIST. `/hr/tasks` listed its "Failures assigned to me"
+  // rows as bare class tokens — `distinct_actor_required`, `unactionable_no_reach` — and this map
+  // is the one place the platform words a failure class. Adding them HERE rather than starting a
+  // second map in the task inbox is the whole point of the map existing.
+  distinct_actor_required:
+    "this needs a second person — whoever raised it cannot also approve it",
+  unactionable_no_reach:
+    "nobody who can act on this could be reached, so it is waiting on a human to route it",
 };
 
 /**

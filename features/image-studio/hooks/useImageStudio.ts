@@ -54,7 +54,7 @@ import {
   setResourcePreview,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { adoptHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
-import { runWithConcurrency } from "@/lib/async/run-with-concurrency";
+import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
 
 /**
  * Folder-segment sanitizer. Cloud-files folder names tolerate spaces, but

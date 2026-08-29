@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
 
 import type { ScanItem } from "../types";

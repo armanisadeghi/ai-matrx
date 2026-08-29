@@ -178,6 +178,7 @@ cost. The owned ledgers above remain the canonical everyday view.
 
 ## Change log
 
+- `2026-08-28` — Invitation review now refuses repeated decisions, homes generated codes in the system organization with personal visibility, and reports approval/rejection email failures honestly instead of claiming the applicant was notified.
 - `2026-08-24` — Added the independent Full MCP Access control to the Accounts roster. The super-admin route merges `mcp.full_access` into protected App Metadata without changing the account's platform or organization role; admins inherit access, and explicit grants are independently revocable.
 - `2026-08-24` — Replaced exact-email and compact account selectors with the canonical `UserSearchField`: inline entry remains available, while the search action opens one protected sortable/filterable account directory. Admin promotion, organization membership, and bulk-email recipient selection use it; the email surface now reads the complete protected roster instead of a 100-user cap. Existing super-admin-gated mutation/send paths are unchanged.
 - `2026-08-24` — Fixed the Accounts route crash by moving shareable table query state into the controlled query owner with `useTableUrlState`; search, filters, sort, pagination, Back/Forward, and agent-visible query context now share one state path.

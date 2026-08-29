@@ -65,7 +65,7 @@ import {
   type DispatchKeyExtraction,
   type HostSurfaceExtraction,
 } from "../../features/content-ir/registry/shape-doctor-extract";
-import { readAllRows } from "../../lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import { parseContractManifestSnapshot } from "./contract-manifest-format";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");

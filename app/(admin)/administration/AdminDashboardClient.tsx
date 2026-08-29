@@ -15,7 +15,7 @@ import {
   adminNavigationRegistry,
   type AdminNavigationDestination,
 } from "@/features/admin/constants/admin-navigation";
-import { matchesSearch } from "@/utils/search-scoring";
+import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 import {
   buildRouteSearchRows,
   filterRouteSearchRows,

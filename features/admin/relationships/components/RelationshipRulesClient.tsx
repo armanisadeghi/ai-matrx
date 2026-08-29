@@ -43,7 +43,7 @@ import {
   enumUrlCodec,
   stringUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 type RuleFilter = "all" | "conveying" | "known" | "inactive";
 

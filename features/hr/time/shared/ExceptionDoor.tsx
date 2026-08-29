@@ -31,7 +31,8 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
-import { hrTimeExceptionsHref } from "@/features/hr/routes";
+import { hrTimeExceptionsHref, type HrOrgRef } from "@/features/hr/routes";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { cn } from "@/lib/utils";
 
 import type { AttendanceExceptionRow } from "../api/types";
@@ -48,8 +49,15 @@ export function hrExceptionHref(
     AttendanceExceptionRow,
     "employmentId" | "localWorkDate" | "exceptionKind"
   >,
+  /**
+   * 🚨 REQUIRED, AND IT USED TO BE ABSENT. This builder hard-coded `undefined` for the employer,
+   * so EVERY door it produced — from the strip, the queue, the timesheet day blocks and the clock
+   * — dropped `?org=`. A door that lands a multi-employer reader on the employer picker is not a
+   * door. Callers pass `useHrContext().orgRef`.
+   */
+  org: HrOrgRef,
 ): string {
-  return hrTimeExceptionsHref(undefined, {
+  return hrTimeExceptionsHref(org, {
     employment: exception.employmentId,
     day: exception.localWorkDate,
     kind: exception.exceptionKind,
@@ -72,9 +80,15 @@ export function ExceptionSentence({
   tone?: "notice" | "bare";
   className?: string;
 }) {
+  /*
+   * Read here rather than threaded from four call sites. This component is mounted ONLY inside
+   * the `/hr` shell — the file header forbids the kiosk from ever mounting it — so `HrProvider`
+   * has already resolved the employer and this costs no extra read.
+   */
+  const { orgRef } = useHrContext();
   return (
     <Link
-      href={hrExceptionHref(exception)}
+      href={hrExceptionHref(exception, orgRef)}
       className={cn(
         "group flex items-start gap-1.5 text-xs",
         tone === "notice" &&

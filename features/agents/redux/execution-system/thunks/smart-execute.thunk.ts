@@ -193,8 +193,6 @@ export const smartExecute = createAsyncThunk<
           );
           return;
         }
-        const sendText = composerText.trim();
-        if (!sendText) return; // nothing to queue
         const surfaceName =
           state.conversations.byConversationId[conversationId]?.surfaceName;
         if (
@@ -217,6 +215,8 @@ export const smartExecute = createAsyncThunk<
           });
           return;
         }
+        const sendText = composerText.trim();
+        if (!sendText) return; // the running-turn inbox is text-only
         const userValuesForClear =
           state.instanceVariableValues?.byConversationId[conversationId]
             ?.userValues ?? {};

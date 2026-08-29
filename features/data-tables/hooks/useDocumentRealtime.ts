@@ -14,7 +14,7 @@
 import { useEffect } from "react";
 
 import { supabase } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import { uniqueChannelTopic } from "@ai-matrx/data/db";
 
 export type DocumentRealtimeEvent = {
   snapshotId: string;

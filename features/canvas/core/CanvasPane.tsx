@@ -54,7 +54,7 @@ import {
   type CanvasItem,
 } from "@/features/canvas/redux/canvasSlice";
 import { toast } from "@/lib/toast";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import { CanvasBody, getDefaultTitle, titleToString } from "./CanvasBody";
 import { CanvasNavigation } from "./CanvasNavigation";
 import { CanvasPaneUserMenu } from "./CanvasPaneHeaderChrome";

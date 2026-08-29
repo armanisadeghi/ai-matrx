@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSchemaQuery } from "./hooks/useSchemaQuery";
-import { stringUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
+import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 
 const SCHEMA_TYPES = ["table", "view", "dynamic", "other"] as const;
 

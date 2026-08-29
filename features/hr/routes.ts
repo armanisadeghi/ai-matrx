@@ -17,6 +17,24 @@
 // Switching employers is a full context change: navigate to the SAME route with the
 // new `?org=`, never merge. `hrSwitchEmployerHref` is the one builder for that.
 //
+// 🚨 `org` IS A REQUIRED ARGUMENT ON EVERY BUILDER — DELIBERATELY, AND IT STAYS THAT WAY.
+//
+// Passing `org` was always the rule, but an OPTIONAL parameter enforces nothing, and the
+// module drifted: 17 live call sites had quietly stopped passing it, one of them shipping a
+// page whose two halves rendered TWO DIFFERENT EMPLOYERS at once. `HrOrgRef` is
+// `string | null | undefined`, so requiring the argument costs a correct caller nothing —
+// it only makes the OMISSION impossible. `hrTimePeriodsHref()` is now a type error.
+//
+// A site that genuinely has no employer must therefore write `null` — visibly, on purpose,
+// with a one-line comment saying why (a pre-context door, or a route that is employer-free
+// by construction). "I forgot" and "I meant to" now look different in the diff, which is the
+// entire point. Never restore a `?`, and never add a default: the compiler is the only
+// reviewer that reads all 200-odd call sites every time.
+//
+// `hrUrl` stays PURE — no `window.location` fallback, ever. An href computed from ambient
+// browser state differs between the server and the client render and Next.js reports it as a
+// hydration mismatch; the employer must be threaded in from `useHrContext()`, never sniffed.
+//
 // Route numbers in the comments are SPEC-UI-IA §3's; the pillar specs cite them.
 
 import { HR_ORG_PARAM } from "./constants";
@@ -48,7 +66,7 @@ function hrUrl(
 // ── §3.1 Home and self-service ──────────────────────────────────────────────
 
 /** Route 1 — the role-adaptive HR home. */
-export function hrHref(org?: HrOrgRef): string {
+export function hrHref(org: HrOrgRef): string {
   return hrUrl(HR_HREF, org);
 }
 
@@ -62,7 +80,7 @@ export function hrSwitchEmployerHref(pathname: string, org: string): string {
 }
 
 /** Route 2 — My Info. The same `EmployeeProfile` component with `viewer=self`. */
-export function hrMeHref(org?: HrOrgRef): string {
+export function hrMeHref(org: HrOrgRef): string {
   return hrUrl("/hr/me", org);
 }
 /**
@@ -72,7 +90,7 @@ export function hrMeHref(org?: HrOrgRef): string {
  */
 export function hrMeTabHref(
   segment: string,
-  org?: HrOrgRef,
+  org: HrOrgRef,
   /** `assignment` opens one position-assignment row in place, and is new-tab-able —
       the self-surface twin of `hrEmployeeHref`'s option of the same name. */
   options: { assignment?: string | null } = {},
@@ -83,41 +101,45 @@ export function hrMeTabHref(
   });
 }
 /** Route 3 — my compensation. Never accepts an employeeId; self only. */
-export function hrMePayHref(org?: HrOrgRef): string {
+export function hrMePayHref(org: HrOrgRef): string {
   return hrUrl("/hr/me/pay", org);
 }
 /** Route 4 */
-export function hrMeDocumentsHref(org?: HrOrgRef): string {
+export function hrMeDocumentsHref(org: HrOrgRef): string {
   return hrUrl("/hr/me/documents", org);
 }
 /** Route 5 */
-export function hrMeTimesheetHref(org?: HrOrgRef): string {
+export function hrMeTimesheetHref(org: HrOrgRef): string {
   return hrUrl("/hr/me/timesheet", org);
 }
 /** Route 6 */
-export function hrMeClockHref(org?: HrOrgRef): string {
+export function hrMeClockHref(org: HrOrgRef): string {
   return hrUrl("/hr/me/clock", org);
 }
 /** Route 7 */
-export function hrMeScheduleHref(org?: HrOrgRef): string {
+export function hrMeScheduleHref(org: HrOrgRef): string {
   return hrUrl("/hr/me/schedule", org);
 }
 /** Route 8 */
-export function hrMeTimeOffHref(org?: HrOrgRef): string {
+export function hrMeTimeOffHref(org: HrOrgRef): string {
   return hrUrl("/hr/me/time-off", org);
 }
 /** Route 9 */
-export function hrMeTrainingHref(org?: HrOrgRef): string {
+export function hrMeTrainingHref(org: HrOrgRef): string {
   return hrUrl("/hr/me/training", org);
 }
-/** Route 9a — what the platform sent me, and whether it arrived. */
-export function hrMeNoticesHref(org?: HrOrgRef): string {
-  return hrUrl("/hr/me/notices", org);
-}
-/** Route 9b — who looked at my confidential records, and under what justification. */
-export function hrMeAccessLogHref(org?: HrOrgRef): string {
-  return hrUrl("/hr/me/access-log", org);
-}
+/*
+  🚨 ROUTES 9a AND 9b HAVE NO BUILDERS HERE, DELIBERATELY.
+  `hrMeNoticesHref` (`/hr/me/notices`) and `hrMeAccessLogHref`
+  (`/hr/me/access-log`) lived here with ZERO call sites and no `page.tsx` at
+  either destination. A builder is not documentation — it is a loaded gun for the
+  next caller, who has every reason to trust that a function in this file returns
+  a URL that opens something. Removed 2026-08-28 with the dead-menu fix.
+
+  A door builder lands in this file when its route lands, not before. That is the
+  same rule §3.2's comment already states for pillar leaves ("adding a leaf
+  builder is that lane's edit to this file"), read in the honest direction.
+*/
 
 // ── §3.2 People ─────────────────────────────────────────────────────────────
 
@@ -128,7 +150,7 @@ export function hrMeAccessLogHref(org?: HrOrgRef): string {
  */
 export function hrPeopleHref(
   options: {
-    org?: HrOrgRef;
+    org: HrOrgRef;
     search?: string | null;
     status?: HrDirectoryStatus[] | null;
     departmentId?: string | null;
@@ -137,7 +159,7 @@ export function hrPeopleHref(
     workerClass?: HrWorkerClass | null;
     managerEmployeeId?: string | null;
     myTeam?: boolean;
-  } = {},
+  },
 ): string {
   return hrUrl("/hr/people", options.org, {
     q: options.search,
@@ -153,7 +175,7 @@ export function hrPeopleHref(
 
 /** Route 11 — the org chart, with the as-of control and an optional focused node. */
 export function hrOrgChartHref(
-  options: { org?: HrOrgRef; focus?: string | null; asOf?: string | null } = {},
+  options: { org: HrOrgRef; focus?: string | null; asOf?: string | null },
 ): string {
   return hrUrl("/hr/people/org-chart", options.org, {
     focus: options.focus,
@@ -164,13 +186,13 @@ export function hrOrgChartHref(
 /** Route 12 — create an employee, or link an existing member / CRM party / candidate. */
 export function hrPeopleNewHref(
   options: {
-    org?: HrOrgRef;
+    org: HrOrgRef;
     /** Pre-fill from the surface that sent us — never make them retype a name it had. */
     name?: string | null;
     partyId?: string | null;
     userId?: string | null;
     candidateId?: string | null;
-  } = {},
+  },
 ): string {
   return hrUrl("/hr/people/new", options.org, {
     name: options.name,
@@ -188,8 +210,10 @@ export function hrPeopleNewHref(
  */
 export function hrEmployeeHref(
   employeeId: string,
-  tab?: HrProfileTab | string | null,
-  options: { org?: HrOrgRef; assignment?: string | null; asOf?: string | null } = {},
+  /** Required-but-nullable: `null` is "no tab, let route 13 pick". It sits before the
+      REQUIRED options bag, and an optional parameter may not precede a required one. */
+  tab: HrProfileTab | string | null,
+  options: { org: HrOrgRef; assignment?: string | null; asOf?: string | null },
 ): string {
   const base = tab ? `/hr/people/${employeeId}/${tab}` : `/hr/people/${employeeId}`;
   return hrUrl(base, options.org, {
@@ -202,13 +226,13 @@ export function hrEmployeeHref(
 export function hrEmployeeCustomTabHref(
   employeeId: string,
   tabKey: string,
-  org?: HrOrgRef,
+  org: HrOrgRef,
 ): string {
   return hrUrl(`/hr/people/${employeeId}/c/${tabKey}`, org);
 }
 
 /** Route 15 — the employee-relations case list. Confidential tier. */
-export function hrRelationsHref(org?: HrOrgRef): string {
+export function hrRelationsHref(org: HrOrgRef): string {
   return hrUrl("/hr/people/relations", org);
 }
 /**
@@ -222,13 +246,13 @@ export function hrRelationsHref(org?: HrOrgRef): string {
  */
 export function hrRelationsCaseHref(
   caseId: string,
-  org?: HrOrgRef,
+  org: HrOrgRef,
   kind?: "incident" | "corrective_action" | null,
 ): string {
   return hrUrl(`/hr/people/relations/${caseId}`, org, { kind });
 }
 /** Route 17 — employment / income verification letters. */
-export function hrVerificationsHref(org?: HrOrgRef): string {
+export function hrVerificationsHref(org: HrOrgRef): string {
   return hrUrl("/hr/people/verifications", org);
 }
 
@@ -236,27 +260,32 @@ export function hrVerificationsHref(org?: HrOrgRef): string {
 // The pillar lanes own the leaves; these are the nav destinations and the doors
 // other surfaces link to. Adding a leaf builder is that lane's edit to this file.
 
-export function hrHiringHref(org?: HrOrgRef): string {
+export function hrHiringHref(org: HrOrgRef): string {
   return hrUrl("/hr/hiring", org);
 }
-export function hrCandidateHref(candidateId: string, org?: HrOrgRef): string {
-  return hrUrl(`/hr/hiring/candidates/${candidateId}`, org);
-}
-export function hrTimeHref(org?: HrOrgRef): string {
+/*
+  `hrCandidateHref` (`/hr/hiring/candidates/<id>`) is gone for the same reason as
+  routes 9a/9b above: zero call sites, and nothing at the destination. Its one
+  would-be caller — the convert-candidate note on `/hr/people/new` — had
+  hand-assembled the same dead URL by template literal, and now states the
+  registered promise `hr.hiring.candidate-record` instead. The Hiring lane adds
+  the builder back the day it has a route to point at.
+*/
+export function hrTimeHref(org: HrOrgRef): string {
   return hrUrl("/hr/time", org);
 }
 // ── Lane L3 (HRB-015) leaves — routes 31a/31b/32/33. Added per this file's own
 //    rule that "adding a leaf builder is that lane's edit to this file".
 /** Route 32 — the pay-period state machine per pay group. */
-export function hrTimePeriodsHref(org?: HrOrgRef): string {
+export function hrTimePeriodsHref(org: HrOrgRef): string {
   return hrUrl("/hr/time/periods", org);
 }
 /** Route 33 — one period: approval progress, export runs, post-lock adjustments. */
-export function hrTimePeriodHref(payPeriodId: string, org?: HrOrgRef): string {
+export function hrTimePeriodHref(payPeriodId: string, org: HrOrgRef): string {
   return hrUrl(`/hr/time/periods/${payPeriodId}`, org);
 }
 /** Route 31a — the overtime pre-approval queue and the approaching-OT watchlist (D24a). */
-export function hrTimeOvertimeHref(org?: HrOrgRef): string {
+export function hrTimeOvertimeHref(org: HrOrgRef): string {
   return hrUrl("/hr/time/overtime", org);
 }
 /**
@@ -264,32 +293,32 @@ export function hrTimeOvertimeHref(org?: HrOrgRef): string {
  * view are the SAME route and the same component, with `viewer` swapped from the caller's
  * relationship to the subject — never two URLs that drift apart.
  */
-export function hrTimeOvertimeRequestHref(requestId: string, org?: HrOrgRef): string {
+export function hrTimeOvertimeRequestHref(requestId: string, org: HrOrgRef): string {
   return hrUrl(`/hr/time/overtime/${requestId}`, org);
 }
 /** Route 32 — the pay-period state machine per pay group, plus export history. */
-export function hrPayPeriodsHref(org?: HrOrgRef): string {
+export function hrPayPeriodsHref(org: HrOrgRef): string {
   return hrUrl("/hr/time/periods", org);
 }
 /** Route 33 — one pay period: approval progress and its export runs. */
-export function hrPayPeriodHref(periodId: string, org?: HrOrgRef): string {
+export function hrPayPeriodHref(periodId: string, org: HrOrgRef): string {
   return hrUrl(`/hr/time/periods/${periodId}`, org);
 }
 /** Route 28 — the timesheet approval grid for one pay group and period. */
-export function hrTimesheetsHref(org?: HrOrgRef, periodId?: string): string {
+export function hrTimesheetsHref(org: HrOrgRef, periodId?: string): string {
   return hrUrl("/hr/time/timesheets", org, { period: periodId });
 }
 /** Route 29 — one person's period in full. */
 export function hrTimesheetHref(
   employmentId: string,
-  org?: HrOrgRef,
+  org: HrOrgRef,
   periodId?: string,
 ): string {
   return hrUrl(`/hr/time/timesheets/${employmentId}`, org, { period: periodId });
 }
 /** Route 30 — the RAW punch register (AD-11's evidence lane). No computed value lives here. */
 export function hrPunchesHref(
-  org?: HrOrgRef,
+  org: HrOrgRef,
   filters?: { employment?: string; from?: string; to?: string; group?: string },
 ): string {
   return hrUrl("/hr/time/punches", org, {
@@ -307,7 +336,7 @@ export function hrPunchesHref(
  * date and filtering by a timestamp would miss it.
  */
 export function hrTimeExceptionsHref(
-  org?: HrOrgRef,
+  org: HrOrgRef,
   filters?: { kind?: string; period?: string; employment?: string; day?: string },
 ): string {
   return hrUrl("/hr/time/exceptions", org, {
@@ -323,12 +352,28 @@ export function hrTimeExceptionsHref(
  * 🚨 Unapproved overtime is **still paid**. This surface flags it for review; it never
  * withholds, delays or conditions payment (SPEC-TIME §4.4/§4.6).
  */
-export function hrOvertimeHref(org?: HrOrgRef, state?: string): string {
+export function hrOvertimeHref(org: HrOrgRef, state?: string): string {
   return hrUrl("/hr/time/overtime", org, { state });
 }
 /** Route 31b — one OT request. The employee's view and the manager's are one component. */
-export function hrOvertimeRequestHref(requestId: string, org?: HrOrgRef): string {
+export function hrOvertimeRequestHref(requestId: string, org: HrOrgRef): string {
   return hrUrl(`/hr/time/overtime/${requestId}`, org);
+}
+/**
+ * Route 34 — the SHARED DESK CLOCK, run by a manager or a front-desk machine under
+ * the operator's own login (every punch is stamped `actor_type='manager'`).
+ *
+ * 🚨 NOT the kiosk. Routes 35/36 live in the `(kiosk)` group, which has no session
+ * and deliberately no way back into HR — so there is no builder here for them and
+ * there must never be one.
+ *
+ * Added 2026-08-28 with the Time section's tab bar: the route had existed since the
+ * clock lane shipped and had no builder, so the only way to reach it was to type the
+ * URL. A route with no builder is the mirror of the defect the block at routes 9a/9b
+ * describes — there, a builder with no route; here, a route with no door.
+ */
+export function hrTimeClockHref(org: HrOrgRef): string {
+  return hrUrl("/hr/time/clock", org);
 }
 /**
  * Route 75a — kiosk device management (pair, trust, suspend, revoke).
@@ -337,34 +382,34 @@ export function hrOvertimeRequestHref(requestId: string, org?: HrOrgRef): string
  * shared-surface rule; L3 owns the panels it mounts. The builder lives here so every
  * door to it is already correct the moment that file lands.
  */
-export function hrSettingsDevicesHref(org?: HrOrgRef): string {
+export function hrSettingsDevicesHref(org: HrOrgRef): string {
   return hrUrl("/hr/settings/devices", org);
 }
-export function hrScheduleHref(org?: HrOrgRef): string {
+export function hrScheduleHref(org: HrOrgRef): string {
   return hrUrl("/hr/schedule", org);
 }
-export function hrLeaveHref(org?: HrOrgRef): string {
+export function hrLeaveHref(org: HrOrgRef): string {
   return hrUrl("/hr/leave", org);
 }
-export function hrOnboardingHref(org?: HrOrgRef): string {
+export function hrOnboardingHref(org: HrOrgRef): string {
   return hrUrl("/hr/onboarding", org);
 }
-export function hrDocumentsHref(org?: HrOrgRef): string {
+export function hrDocumentsHref(org: HrOrgRef): string {
   return hrUrl("/hr/documents", org);
 }
-export function hrTrainingHref(org?: HrOrgRef): string {
+export function hrTrainingHref(org: HrOrgRef): string {
   return hrUrl("/hr/training", org);
 }
-export function hrPerformanceHref(org?: HrOrgRef): string {
+export function hrPerformanceHref(org: HrOrgRef): string {
   return hrUrl("/hr/performance", org);
 }
-export function hrAssetsHref(org?: HrOrgRef): string {
+export function hrAssetsHref(org: HrOrgRef): string {
   return hrUrl("/hr/assets", org);
 }
-export function hrEngagementHref(org?: HrOrgRef): string {
+export function hrEngagementHref(org: HrOrgRef): string {
   return hrUrl("/hr/engagement", org);
 }
-export function hrComplianceHref(org?: HrOrgRef): string {
+export function hrComplianceHref(org: HrOrgRef): string {
   return hrUrl("/hr/compliance", org);
 }
 /**
@@ -375,14 +420,41 @@ export function hrComplianceHref(org?: HrOrgRef): string {
  * has no builder here: an org never edits the baseline, so there is no door from
  * this module to it.
  */
-export function hrComplianceLawsHref(org?: HrOrgRef): string {
+export function hrComplianceLawsHref(org: HrOrgRef): string {
   return hrUrl("/hr/compliance/laws", org);
 }
-/** Route 65 — THE one HR task inbox. HR never builds a second task store. */
-export function hrTasksHref(org?: HrOrgRef): string {
-  return hrUrl("/hr/tasks", org);
+/**
+ * Route 65 — THE one HR task inbox. HR never builds a second task store.
+ *
+ * `scope` is the inbox's own filter (`queue`, `mine`, …), read straight off the URL
+ * by `HrTaskInbox`. It lives here rather than being appended by callers for the
+ * reason at the top of this file: an href assembled anywhere else is an href that
+ * can forget the employer, and three call sites had already done exactly that.
+ */
+export function hrTasksHref(org: HrOrgRef, options?: { scope?: string | null }): string {
+  return hrUrl("/hr/tasks", org, { scope: options?.scope });
 }
-export function hrReportsHref(org?: HrOrgRef): string {
+
+/**
+ * Route 65a — ONE task, opened on its decision (SPEC-WORKFLOW-ENGINE §6.2).
+ *
+ * `step` / `failure` / `notice` are the three deep-link targets
+ * `app/(core)/hr/tasks/[instanceId]/page.tsx` actually reads; anything else it
+ * ignores, so nothing else is offered here.
+ */
+export function hrTaskHref(
+  instanceId: string,
+  org: HrOrgRef,
+  options?: { step?: string | null; failure?: string | null; notice?: string | null },
+): string {
+  return hrUrl(`/hr/tasks/${encodeURIComponent(instanceId)}`, org, {
+    step: options?.step,
+    failure: options?.failure,
+    notice: options?.notice,
+  });
+}
+
+export function hrReportsHref(org: HrOrgRef): string {
   return hrUrl("/hr/reports", org);
 }
 
@@ -415,15 +487,17 @@ export type HrSettingsSection = (typeof HR_SETTINGS_SECTIONS)[number];
  * index of every configuration key with its effective value and its origin.
  */
 export function hrSettingsHref(
-  section?: HrSettingsSection | null,
-  options: { org?: HrOrgRef; focus?: string | null } = {},
+  /** Required-but-nullable: `null` is the settings hub. Same reason as `hrEmployeeHref`'s
+      `tab` — it precedes the REQUIRED options bag. */
+  section: HrSettingsSection | null,
+  options: { org: HrOrgRef; focus?: string | null },
 ): string {
   const base = section ? `/hr/settings/${section}` : "/hr/settings";
   return hrUrl(base, options.org, { focus: options.focus });
 }
 
 /** §4.5 — Department · Location · Job title all open the structure panel, focused. */
-export function hrStructureFocusHref(focusId: string, org?: HrOrgRef): string {
+export function hrStructureFocusHref(focusId: string, org: HrOrgRef): string {
   return hrSettingsHref("structure", { org, focus: focusId });
 }
 

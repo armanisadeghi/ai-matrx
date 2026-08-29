@@ -18,7 +18,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
-import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { pgErrorToError } from "@ai-matrx/data";
 import type { Database } from "@/types/database.types";
 
 export type RunHistoryEntry =

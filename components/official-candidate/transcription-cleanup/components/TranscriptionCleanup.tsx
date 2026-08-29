@@ -27,7 +27,7 @@ import {
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
-import { FilesTapButton } from "@/components/icons/tap-buttons";
+import { FilesTapButton } from "@ai-matrx/tap-target/buttons";
 import { stripThinkingStreaming } from "@/components/content-refine/utils/stripThinking";
 import { TranscriptionCleanupContextPanel } from "./TranscriptionCleanupContextPanel";
 import {

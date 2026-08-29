@@ -13,7 +13,7 @@ import {
   setError,
 } from "../redux/messagingSlice";
 import { createClient } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import { uniqueChannelTopic } from "@ai-matrx/data/db";
 import { summarizeMatrxText } from "@/features/matrx-envelope/referenceText";
 import { toConversationWithDetails } from "@/features/messaging/data/conversation-list";
 import {

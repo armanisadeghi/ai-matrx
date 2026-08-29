@@ -70,6 +70,9 @@ Only the Body mounts `useWorkingDocument`; title actions + history read the shar
 
 ## Change log
 
+- `2026-08-29` — Submitted media attachments now preserve known file identity fields as hydration
+  hints, so chips and drawer previews seed the canonical file record and fetch only missing render
+  metadata instead of treating a durable file ID as an empty attachment.
 - `2026-08-13` — YouTube attachment previews render the shared compact publish
   date as a no-layout-shift player overlay, reading provider metadata when the
   attachment carries it and showing `No Date` for legacy URL-only blocks.

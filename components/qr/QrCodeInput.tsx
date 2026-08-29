@@ -26,7 +26,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import {
   decodeQrFromElement,
   decodeQrFromImageFile,
-} from "@/lib/qr/decode";
+} from "@ai-matrx/kit/qr";
 import {
   acquireCameraLease,
   type CameraLease,

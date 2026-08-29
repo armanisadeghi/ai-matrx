@@ -79,6 +79,7 @@ in the same change.
     `cache/`, `virtual-sources/`, `upload/`, `providers/`, `services/`, `api/` stay ring-fenced.
 18. **Docs are updated in the same change as the code.** Stale docs cascade across parallel agents.
 19. **`FileAcquisitionActions` is the one source chooser.** Local file/folder inputs, existing-Matrx-Files selection, and Google Drive connect/import belong there; hosts select a presentation and disable sources with props. Drag/drop and paste remain host gestures, but their resulting `File[]` must enter the same upload callback. Never synthesize an input, query a page-wide file input, or fork a partial source menu.
+20. **A selectable file thumbnail is `SelectableFileThumbnail`.** Its thumbnail opens the canonical File Preview WindowPanel, its independent 44px control changes selection, and `FileRightClickMenu` supplies the universal menu. Hosts provide labels/icons and the selection callback; they never rebuild any of those three behaviors.
 
 ## Local commands
 
@@ -90,6 +91,18 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- 2026-08-29 — File preview tab and action rails now scroll horizontally at constrained mobile widths; tab/action labels remain intact instead of collapsing into one-character columns. `FileResourceChip` now gives the universal file menu a real DOM trigger, so nested message-level menus cannot steal file-chip right clicks. Embedded file menus emit a complete canonical Files scope, eliminating the menu guard error caused by declaring always-available browser values without supplying them.
+
+- **2026-08-29 — File selection becomes a reusable preview/menu primitive.**
+  `SelectableFileThumbnail` composes the existing metadata hydration, `MediaThumbnail`, File Preview
+  WindowPanel opener, universal `FileRightClickMenu`, and a distinct 44px selection control. Product
+  Capture is its first consumer. ESLint now blocks resolving an owned file ID to a browser URL and
+  fetching that URL back for bytes; callers ask `fileHandler` for `blob`/`array_buffer` directly.
+- **2026-08-29 — ID-backed media hydrates only the canonical fields it lacks.** Message/API hints
+  seed the shared `cloudFiles` record, `_loadedFields` distinguishes absent values from loaded
+  nulls, and concurrent preview/chip consumers share a bounded direct-Supabase read. Private image
+  pixels use the authenticated blob cache automatically; only explicitly public files use their
+  permanent CDN URL.
 - **2026-08-28 — Image preview and thumbnail surfaces converge on the canonical asset variant.**
   `useFileAsset` now exposes the concrete `primaryVariant`; `FilePreview` renders non-public image
   bytes through the existing bearer-authenticated blob cache, and `MediaThumbnail` accepts a

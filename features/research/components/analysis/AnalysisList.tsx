@@ -45,7 +45,7 @@ import {
   tokenUsageFromJson,
 } from "../../types";
 import type { SourceImportance } from "../../ranking";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 
 /** A string with real (non-whitespace) content. */
 const hasText = (s: string | null | undefined): s is string =>

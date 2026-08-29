@@ -207,6 +207,8 @@ The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
 
+- **2026-08-29 — worker failure containment and exact profile identity:** profile hydration now drops rows whose canonical access resolves to `none`; exact run links retain their profile identity after the run becomes terminal and never auto-start a replacement; and the screenshot session owns every timer promise, keeping retryable worker replacement re-armable while stopping terminal/network failures without duplicate unhandled rejections.
+
 - **2026-08-24 — duplicate-start regression is falsifiable:**
   `service.startRun.test.ts` now drives two concurrent `loadSnapshot()` calls
   through a held network boundary and proves they share exactly one

@@ -28,7 +28,12 @@ jest.mock("../abort-registry", () => ({
   hasAbortController: mockHasAbortController,
 }));
 jest.mock("sonner", () => ({
-  toast: { error: mockToastError },
+  // Callable with error+warning: @ai-matrx/kit's createMatrxToast refuses a
+  // non-callable toast object at module load.
+  toast: Object.assign(jest.fn(), {
+    error: mockToastError,
+    warning: jest.fn(),
+  }),
 }));
 
 import {

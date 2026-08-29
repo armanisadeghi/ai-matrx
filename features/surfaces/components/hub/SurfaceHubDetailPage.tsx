@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";

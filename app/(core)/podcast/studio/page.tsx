@@ -1,5 +1,5 @@
 import { StudioDashboard } from "@/features/podcasts/studio/components/StudioDashboard";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 
 export default function PodcastStudioPage() {

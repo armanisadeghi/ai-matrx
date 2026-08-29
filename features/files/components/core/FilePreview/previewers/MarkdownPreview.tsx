@@ -27,7 +27,7 @@ import rehypeKatex from "rehype-katex";
 import rehypePrism from "rehype-prism-plus";
 import "katex/dist/katex.min.css";
 import { cn } from "@/lib/utils";
-import { guardMarkdownDelimiters } from "@/lib/markdown/delimiter-guard";
+import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 
 export interface MarkdownPreviewProps {

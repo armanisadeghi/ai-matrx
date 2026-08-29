@@ -27,7 +27,7 @@ import { CircleSlash, Loader2, OctagonX, Pause, Play, RotateCcw } from "lucide-r
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import ElapsedTime from "@/components/official-candidate/elapsed-time/ElapsedTime";
 
 import {

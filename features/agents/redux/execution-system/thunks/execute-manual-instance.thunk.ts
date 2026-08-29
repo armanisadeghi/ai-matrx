@@ -152,9 +152,9 @@ import {
 import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state.slice";
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 import { toast } from "@/lib/toast";
-import { resilientFetch } from "@/lib/net/resilient-fetch";
+import { resilientFetch } from "@ai-matrx/data/net";
 import { logApiTarget } from "@/lib/api/log-api-target";
-import { toNetError } from "@/lib/net/errors";
+import { toNetError } from "@ai-matrx/data/net";
 import { payloadSafetyStore } from "@/lib/persistence/payloadSafetyStore";
 import {
   startRequest as startNetRequest,

@@ -30,7 +30,7 @@ import {
 import { format } from "date-fns";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +45,7 @@ import type {
   OrgRole,
 } from "@/features/organizations/types";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { ReferencesBulkCopyButton } from "@/features/matrx-envelope/components/ReferencesBulkCopyButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";

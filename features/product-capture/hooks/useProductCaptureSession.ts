@@ -72,6 +72,10 @@ export interface UseProductCaptureSessionResult {
 
   addPhoto: (blob: Blob) => void;
   addVideo: (blob: Blob, fileName: string) => void;
+  /** Files the user picked from their own device (gallery / files app).
+   *  Images and videos land as normal artifacts of the current item; the
+   *  count of accepted files is returned so the caller can report skips. */
+  addUploads: (files: File[] | FileList) => number;
   /** Voice note: upload + background transcription into the notes. */
   addAudioNote: (blob: Blob) => void;
   setNotes: (text: string) => void;
@@ -91,12 +95,29 @@ export interface UseProductCaptureSessionOptions {
   /** Open with this item current (the `?item=` deep link from the list /
    *  detail pages). Wins over the localStorage mid-item resume. */
   initialItemId?: string | null;
+  /**
+   * WHICH LANE OWNS THE TERMINAL WRITE (see CaptureScreen's `mode`).
+   *
+   * `"standard"` — leaving an item writes `capturing → captured`, the DB
+   * transition the server-side workflow trigger fires on, and re-opening a
+   * finished item flips it back to `capturing` so closing it again re-fires
+   * that handoff (more photos = a reprocess).
+   *
+   * 🚨 `"instant"` — the client already ran the analysis, so this lane NEVER
+   * writes `captured` and never re-opens a finished item. Both writes would
+   * hand a already-analyzed item to the server pipeline: `capturing →
+   * processed` skipping `captured` is the ONLY thing keeping the two lanes
+   * from double-processing, and a close (or a reopen-then-close on revisit)
+   * walks straight through it.
+   */
+  lane?: "standard" | "instant";
 }
 
 export function useProductCaptureSession(
   options: UseProductCaptureSessionOptions = {},
 ): UseProductCaptureSessionResult {
-  const { initialItemId = null } = options;
+  const { initialItemId = null, lane = "standard" } = options;
+  const instantLane = lane === "instant";
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
 
   const [currentItem, setCurrentItem] = useState<CaptureItem | null>(null);
@@ -202,7 +223,9 @@ export function useProductCaptureSession(
       // closed/processed item to `capturing` so the close on leaving re-fires
       // the workflow handoff transition (more photos = a reprocess). Freshly
       // created items are born `capturing` — no write.
-      if (item.status !== "capturing") {
+      // The INSTANT lane opts out entirely: re-opening a processed item is
+      // exactly how it would leak into the server pipeline on the next close.
+      if (item.status !== "capturing" && !instantLane) {
         void reopenItem(item)
           .then((saved) => {
             if (currentItemRef.current?.id === saved.id) {
@@ -215,7 +238,7 @@ export function useProductCaptureSession(
           });
       }
     },
-    [setCurrent],
+    [setCurrent, instantLane],
   );
 
   /** The current item, created on first use (never an empty row). */
@@ -261,6 +284,10 @@ export function useProductCaptureSession(
     void (async () => {
       await flushNotes(item);
       if (!item) return;
+      // The instant lane's terminal write is `markProcessed` (capturing →
+      // processed), fired by the analysis itself. Closing here would write
+      // `captured` and hand the item to the server pipeline as well.
+      if (instantLane) return;
       try {
         await closeItem(item);
       } catch (err) {
@@ -280,7 +307,7 @@ export function useProductCaptureSession(
     notesRef.current = "";
     notesDirtyRef.current = false;
     setNotesState("");
-  }, [flushNotes, clearResumeKey]);
+  }, [flushNotes, clearResumeKey, instantLane]);
 
   const nextItem = useCallback(() => {
     finishCurrentItem();
@@ -467,6 +494,39 @@ export function useProductCaptureSession(
     [startArtifact],
   );
 
+  const addUploads = useCallback(
+    (input: File[] | FileList) => {
+      const files = Array.from(input);
+      let accepted = 0;
+      let skipped = 0;
+      for (const file of files) {
+        const kind: ProductCaptureFileKind | null = file.type.startsWith(
+          "image/",
+        )
+          ? "photo"
+          : file.type.startsWith("video/")
+            ? "video"
+            : null;
+        if (!kind) {
+          skipped += 1;
+          continue;
+        }
+        accepted += 1;
+        const previewUrl = createTrackedObjectUrl(file);
+        void startArtifact(file, kind, previewUrl).catch(() => {
+          // Surfaced on the artifact chip.
+        });
+      }
+      if (skipped > 0) {
+        toast.error(
+          `${skipped} file${skipped === 1 ? "" : "s"} skipped — only photos and videos can be added.`,
+        );
+      }
+      return accepted;
+    },
+    [startArtifact],
+  );
+
   const addAudioNote = useCallback(
     (blob: Blob) => {
       artifactSeqRef.current += 1;
@@ -561,6 +621,7 @@ export function useProductCaptureSession(
     notesSaving,
     addPhoto,
     addVideo,
+    addUploads,
     addAudioNote,
     setNotes,
     setCode,

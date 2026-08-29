@@ -17,7 +17,7 @@ import { Crosshair, LocateFixed } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { ElapsedTime } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 
 import { selectNodeAggregate } from "../../redux/workflow-runs.selectors";

@@ -107,11 +107,19 @@ export function InvitationsTableClient() {
         });
         const json = await res.json();
         if (!json.success) throw new Error(json.msg ?? "Action failed");
-        toast.success(
-          action === "approve"
-            ? `Approved — code sent to ${row.email}`
-            : `Rejected — notified ${row.email}`,
-        );
+        if (json.data?.emailSent === false) {
+          toast.warning(
+            action === "approve"
+              ? `Approved, but the code email to ${row.email} failed`
+              : `Rejected, but the notification to ${row.email} failed`,
+          );
+        } else {
+          toast.success(
+            action === "approve"
+              ? `Approved — code sent to ${row.email}`
+              : `Rejected — notified ${row.email}`,
+          );
+        }
         setSelectedId(null);
         setNotes("");
         setReason("");

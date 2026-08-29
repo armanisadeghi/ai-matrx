@@ -25,9 +25,9 @@
 //     JSON silently deletes the user's comments — a rewrite wearing a
 //     cleanup's clothes.
 
-import { detectJson } from "@/lib/json-format/detect";
-import { formatJsonText } from "@/lib/json-format/format";
-import type { JsonFormatStyle } from "@/lib/json-format/types";
+import { detectJson } from "@ai-matrx/kit/json-format";
+import { formatJsonText } from "@ai-matrx/kit/json-format";
+import type { JsonFormatStyle } from "@ai-matrx/kit/json-format";
 import type {
   CleanupRegionOperationDef,
   CleanupRegionOperationId,

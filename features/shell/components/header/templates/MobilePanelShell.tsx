@@ -41,7 +41,7 @@ import { MoreHorizontal, type LucideIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
   BottomSheet,
   BottomSheetBody,

@@ -107,7 +107,7 @@ import {
   type FeedbackDetailView,
 } from "../format";
 import { cn } from "@/lib/utils";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";

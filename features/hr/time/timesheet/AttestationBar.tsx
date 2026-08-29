@@ -107,13 +107,34 @@ export function AttestationBar({
                 You confirmed this on{" "}
                 {formatDateTimeInTz(attestation.attestedAt, viewerTimeZone())}.
               </span>
-              <span className="mt-1.5 block text-muted-foreground">
-                What you agreed to, word for word:
-              </span>
+              {/*
+                🚨 NOTHING BUT THE STORED STATEMENT EVER APPEARS INSIDE THE QUOTATION MARKS.
+                This slot used to render `statementShown ?? "The statement was not recorded."` —
+                so an attestation whose text was never stored printed *"The statement was not
+                recorded."* IN QUOTES under the heading "What you agreed to, word for word", and
+                a reader takes that as the literal sentence they signed. This is the record of a
+                legal act; the absence of the words is a fact ABOUT the record and is stated as
+                one, outside the quotation, with the heading withheld because the heading itself
+                promises verbatim text that does not exist. Never substitute prose here — a
+                fabricated statement on an attestation is a wage claim.
+              */}
               {/* `statementShown`. NEVER `statementToShow`. */}
-              <span className="mt-1 block italic">
-                &ldquo;{attestation.statementShown ?? "The statement was not recorded."}&rdquo;
-              </span>
+              {attestation.statementShown ? (
+                <>
+                  <span className="mt-1.5 block text-muted-foreground">
+                    What you agreed to, word for word:
+                  </span>
+                  <span className="mt-1 block italic">
+                    &ldquo;{attestation.statementShown}&rdquo;
+                  </span>
+                </>
+              ) : (
+                <span className="mt-1.5 block text-muted-foreground">
+                  No statement was recorded for this attestation, so there are no words to show
+                  you here. Your confirmation itself is on the record; the wording it was made
+                  against was not stored with it.
+                </span>
+              )}
             </span>
           </p>
         </div>

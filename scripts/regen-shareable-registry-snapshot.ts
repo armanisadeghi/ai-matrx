@@ -38,7 +38,7 @@ import { createClient } from "@supabase/supabase-js";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { config as loadEnv } from "dotenv";
-import { readAllRows } from "../lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 loadEnv({ path: ".env.local" });
 loadEnv({ path: ".env" });
@@ -76,7 +76,7 @@ async function fetchRegistryJson(): Promise<string> {
   const supabase = createClient(url, key);
 
   // Paged: the snapshot is compared whole under --check, so a PostgREST
-  // truncation would read as registry drift. See lib/supabase/readAllRows.ts.
+  // truncation would read as registry drift. See readAllRows in @ai-matrx/data/db.
   let data: unknown[];
   try {
     data = await readAllRows<unknown>(

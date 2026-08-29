@@ -2,7 +2,7 @@
 
 import type { Note, NoteFilters, NoteSortConfig, FolderGroup } from "../types";
 import { DEFAULT_FOLDER_NAMES } from "../constants/defaultFolders";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 
 /**
  * Whether a note belongs in the active-org sidebar/list view.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { DynamicIcon } from "@ai-matrx/icons";
 import {
   Wrench,
   Search,
@@ -106,7 +106,7 @@ import {
   selectToolsStatus,
 } from "@/features/agents/redux/tools/tools.selectors";
 import { fetchAvailableTools } from "@/features/agents/redux/tools/tools.thunks";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";
 import { supportsTools } from "@/features/agents/hooks/useModelControls";
 import { AgentBundlesPanel } from "./AgentBundlesPanel";

@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,7 +25,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { DynamicIcon } from "@ai-matrx/icons";
 import { getPlacementTypeMeta, PLACEMENT_TYPES } from "../constants";
 import type { AgentShortcutCategory, ScopeProps } from "../types";
 

@@ -23,7 +23,7 @@ import { CardLoading } from "@/components/matrx/LoadingComponents";
 import {
   PanelLeftTapButton,
   SearchTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { PdfNamedSurfaceSwitcher } from "@/features/pdf/components/PdfNamedSurfaceSwitcher";
 
 interface PdfRow {

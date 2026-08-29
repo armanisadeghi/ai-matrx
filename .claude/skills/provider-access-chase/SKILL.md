@@ -21,10 +21,15 @@ Use $provider-access-chase on the AI Matrx Provider Access Launch project. Selec
 active campaigns whose next-check/due time has arrived. Check their recorded email thread,
 developer portal, or support case using existing authenticated access. Record consequential changes
 in the task and CRM, set the next phase/action/check, and verify any approval through the canonical
-integration path. Do not create accounts, keys, scopes, submissions, or sent messages without the
-active action-time confirmation. Alert Arman only for approval, rejection, deadline, material scope
-change, provider-requested action, a decision, or an owner-only blocker. If nothing changed, report
-only a compact no-change receipt and do not notify repeatedly.
+integration path. Arman's 2026-08-29 standing authorization covers free, reversible,
+least-privilege accounts, ordinary signup terms, development apps, keys, service accounts,
+DCR/OAuth/MCP grants, Vault custody, secret rotation, service restarts, and safe proofs. Execute
+those actions directly through `$provider-access-submit`; never ask him to reply yes again. Alert
+Arman only for approval, rejection, deadline, material scope change, or an uncovered consequential
+boundary: paid commitment, negotiated contract, regulated/compliance or legal-identity attestation,
+customer data, production DNS/traffic, external communication, public publication, destructive
+operation, or provider-enforced human ceremony. If nothing changed, report only a compact no-change
+receipt and do not notify repeatedly.
 ```
 
 Use this prompt for the initial Codex scheduled task. Any later in-product scheduler must invoke a
@@ -65,8 +70,9 @@ agent login that can be repaired through the normal account flow is not.
 - Deadline: escalate immediately with the exact action and deadline.
 - Material new scope/legal/compliance request: set `blocked_owner`; do not accept or attest.
 
-A draft response is not a sent response. A resubmission is not finalized without the active
-action-time confirmation required for representational communication or provider changes.
+Routine free/reversible setup proceeds under the standing authorization and must not wait for a new
+confirmation. A draft response is not a sent response, and representational communication or any
+other action outside the standing authorization still requires the recorded owner decision.
 
 ## Cadence
 

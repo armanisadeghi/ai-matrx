@@ -41,7 +41,7 @@ Alternative for INSERT-heavy streams (DM messages): **id + client_message_id ded
 
 - **Prefer a Redux middleware** as the subscription owner (start on first data load, stop on state reset). Component effects resubscribe on identity churn and multiply channels across mounts — the `useConversations` bug ran one global subscription (each doing a full N+1 reload per event) per mounted picker/panel.
 - **One channel per feature.** postgres_changes + broadcast + presence can share a channel — don't run three.
-- **Always wrap topics in `uniqueChannelTopic()`** (`utils/supabase/realtime.ts`). Static topics collide with the still-joined channel on React 19 double-invoked effects / Fast Refresh and throw "cannot add postgres_changes callbacks after subscribe()".
+- **Always wrap topics in `uniqueChannelTopic()`** (from `@ai-matrx/data/db`). Static topics collide with the still-joined channel on React 19 double-invoked effects / Fast Refresh and throw "cannot add postgres_changes callbacks after subscribe()".
 - Callbacks and mutable values the handler needs: hold in refs / read from `storeApi.getState()` at event time — never in effect deps.
 
 ## Rule 5 — Server-side prerequisites (silent-zero-events checklist)

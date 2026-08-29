@@ -24,7 +24,8 @@
 import Link from "next/link";
 
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
-import { cn } from "@/lib/utils";
+import { hrTasksHref } from "@/features/hr/routes";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import { getTimesheet } from "../api/service";
 import type { Timesheet } from "../api/types";
@@ -41,31 +42,38 @@ import { TimesheetWeeks } from "./WeekBlocks";
 export function MyTimesheet({
   employmentId,
   payPeriodId,
+  periodNote = null,
 }: {
-  employmentId: string | null;
-  payPeriodId: string | null;
+  employmentId: string;
+  payPeriodId: string;
+  /**
+   * Set only when the resolved period is NOT the one containing today — `hr.my_timesheet_context`
+   * returns `basis: 'most_recent'` with this sentence. Rendered verbatim above the hours, because
+   * showing a closed period silently as "your timesheet" is a lie of omission.
+   */
+  periodNote?: string | null;
 }) {
   const mockCase = useHrMockCase();
-  const ready = Boolean(employmentId && payPeriodId);
 
   const query = useHrTimeQuery<Timesheet>(
     // The live envelope is structurally different from `types.ts`; `fromLiveTimesheet` is the seam.
-    (signal) =>
-      getTimesheet(employmentId as string, payPeriodId as string, {
-        mockCase,
-        signal,
-      }),
+    (signal) => getTimesheet(employmentId, payPeriodId, { mockCase, signal }),
     [employmentId, payPeriodId, mockCase],
-    ready,
+    true,
   );
-
-  if (!ready) return <UnresolvedContext />;
 
   return (
     <RuleSnapshotProvider>
       <div className="mx-auto w-full max-w-5xl space-y-4 px-3 py-4 sm:px-4">
         <HrTimeReadState loading={query.loading} error={query.error}>
-          {query.data ? <MyTimesheetBody timesheet={query.data} mockCase={mockCase} onRefetch={query.refetch} /> : null}
+          {query.data ? (
+            <MyTimesheetBody
+              timesheet={query.data}
+              periodNote={periodNote}
+              mockCase={mockCase}
+              onRefetch={query.refetch}
+            />
+          ) : null}
         </HrTimeReadState>
       </div>
     </RuleSnapshotProvider>
@@ -74,13 +82,17 @@ export function MyTimesheet({
 
 function MyTimesheetBody({
   timesheet,
+  periodNote,
   mockCase,
   onRefetch,
 }: {
   timesheet: Timesheet;
+  periodNote: string | null;
   mockCase: ReturnType<typeof useHrMockCase>;
   onRefetch: () => void;
 }) {
+  const { orgRef } = useHrContext();
+
   // §2.2's `no-timesheet` state. It comes FIRST: everything below assumes there are hours.
   if (timesheet.noTimesheetReason) {
     return (
@@ -91,8 +103,14 @@ function MyTimesheetBody({
           If you think that is wrong, tell your manager or HR — they can check how your position is
           set up.
         </p>
+        {/*
+          ♻️ THE ORG TRAVELS ON THE LINK. `hrTasksHref(orgRef)` and never a hardcoded "/hr/tasks":
+          HR is strictly single-employer and a link that drops `?org=` silently lands the person in
+          a different employer (`features/hr/routes.ts`). Same org-dropping class as the "/hr/me"
+          link this route used to carry.
+        */}
         <Link
-          href="/hr/tasks"
+          href={hrTasksHref(orgRef)}
           className="mt-3 inline-flex text-sm font-medium underline underline-offset-4"
         >
           Open your HR tasks
@@ -113,6 +131,19 @@ function MyTimesheetBody({
        * skill names as failure class 1. What the body owes the reader is the sentence that changes
        * how they read the numbers, not the page's own name.
        */}
+      {/*
+        🚨 WHICH PERIOD THIS IS, WHEN IT IS NOT TODAY'S. `hr.my_timesheet_context` resolves the
+        period containing today; when none does — a person whose last period closed yesterday — it
+        returns the most recent one they were actually in, WITH this sentence. Rendering those hours
+        without saying which week they are is the same class of defect as a bookable balance that
+        cannot be booked.
+      */}
+      {periodNote ? (
+        <p className="rounded-lg border border-border bg-card p-3 text-sm text-foreground">
+          {periodNote}
+        </p>
+      ) : null}
+
       <header className="space-y-1">
         <p className="text-xs text-muted-foreground">
           Every figure here was calculated by the payroll engine, not by this page. Open any
@@ -158,32 +189,17 @@ function MyTimesheetBody({
   );
 }
 
-/**
- * ⚠️ THE HONEST STATE FOR AN UNRESOLVED CONTEXT, AND A NAMED DEBT.
+/*
+ * 🚨 THE DEBT THAT USED TO SIT HERE IS PAID, AND THE STATE IT EXCUSED IS DELETED.
  *
- * SPEC-TIME §2.2's data line is `hr.timesheet_get(self, current_period)`, but the live contract is
- * `public.hr_timesheet_get(p_employment_id uuid, p_pay_period_id uuid)` — two concrete ids, with no
- * self/current resolution. `public.hr_my_context(p_organization_id)` exists live and is the natural
- * source for the employment, and the current period comes from the pay group; **both reads belong
- * to lanes L1 and the periods lane, not to this one.** Rather than guess a uuid or render a blank
- * grid, this route says what it is missing and gives the reader somewhere to go.
+ * This file carried an `UnresolvedContext` that told every employee *"That link is not wired up
+ * yet"* — including the ones whose hours were in the database — and a comment declaring the
+ * self/current resolution to be "another lane's". Round 42 measured what that cost: route 5 was
+ * dead for priya, punch and the contractor alike.
+ *
+ * `hr.my_timesheet_context` (`hr_c4_55`) is that resolution, and `features/hr/me/MyTimesheetContext`
+ * is its one caller. It always hands this component two real ids, or renders the server's own
+ * reason instead — so there is no unresolved arm left to render, and the props are no longer
+ * nullable. A page must never tell a person the product is unfinished when the true answer is a
+ * fact about their own record.
  */
-function UnresolvedContext({ className }: { className?: string }) {
-  return (
-    <div className={cn("mx-auto w-full max-w-5xl px-3 py-4 sm:px-4", className)}>
-      <section className="rounded-lg border border-border bg-card p-6">
-        <h1 className="text-base font-semibold">We could not work out which timesheet is yours</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This page needs to know your employment and the pay period you are in. That link is not
-          wired up yet, so nothing is shown rather than the wrong person&rsquo;s hours.
-        </p>
-        <Link
-          href="/hr/me"
-          className="mt-3 inline-flex text-sm font-medium underline underline-offset-4"
-        >
-          Open my HR profile
-        </Link>
-      </section>
-    </div>
-  );
-}

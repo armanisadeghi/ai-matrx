@@ -41,7 +41,7 @@ import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import type { FilterOption } from "@/components/hierarchy-filter/HierarchyFilterPill";
 import type { ResearchKeyword, ResearchSource } from "../../types";
 import { Favicon } from "../overview/live-pipeline/ui/Favicon";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import KeywordOverlapMatrix from "./KeywordOverlapMatrix";
 
 /**

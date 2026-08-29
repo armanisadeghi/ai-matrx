@@ -24,7 +24,7 @@ import type { UserList } from "../types";
 import { getListVisibility } from "../types";
 import { ListMetaModal } from "./ListMetaModal";
 import { CreateListDialog } from "./CreateListDialog";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 
 interface CategoryPanelProps {
   lists: UserList[];

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import {
   adminDomainHref,
   findAdminNavigationDomainBySlug,

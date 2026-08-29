@@ -255,6 +255,7 @@ surface means importing them too, never reimplementing the RPC call.
 
 ## Change Log
 
+- **2026-08-28** — Access Gate refusal actions opt into the shared responsive 44px touch-target floor, including standalone CMS missing-site fallback doors.
 - **2026-08-24** — **Governed write refusals became conversations, starting
   with website deletion.** The exact edit-but-not-full `42501` now opens one
   polished `GovernedActionDialog`, never a raw toast. The editor can ask the

@@ -105,6 +105,35 @@ function looksLikeDirectiveHead(content: string): boolean {
   return DIRECTIVE_HEAD_RE.test(content.trimStart());
 }
 
+/**
+ * Count JSON object braces while treating string content as opaque — the
+ * splitter twin of the accumulator's `countStructuralObjectBraces` (kept in
+ * lockstep by the stream/splitter parity suite). A JSON string cannot contain
+ * a raw newline, so calling this per line is exact.
+ */
+function countStructuralBraces(source: string): {
+  opens: number;
+  closes: number;
+} {
+  let opens = 0;
+  let closes = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (const char of source) {
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === "{") opens++;
+    else if (char === "}") closes++;
+  }
+  return { opens, closes };
+}
+
 function blockHasResolvedRootKind(block: SplitterBlock): boolean {
   const envelope = block.metadata?.[IR_ENVELOPE_KEY];
   if (typeof envelope !== "object" || envelope === null) return false;
@@ -454,9 +483,10 @@ function validateJsonBlock(
     // JSON parse failed, continue with brace analysis
   }
 
-  // Count braces to determine completion
-  const openBraces = (trimmed.match(/\{/g) || []).length;
-  const closeBraces = (trimmed.match(/\}/g) || []).length;
+  // Count braces to determine completion (structural: braces inside string
+  // values must not move the balance — see countStructuralBraces).
+  const { opens: openBraces, closes: closeBraces } =
+    countStructuralBraces(trimmed);
 
   // Still streaming
   if (openBraces > closeBraces) {
@@ -2362,16 +2392,24 @@ export const splitContentIntoBlocksV2 = (
     // because code/XML/table steps above would have consumed those first.
     if (trimmedLine.startsWith("{")) {
       const jsonLines: string[] = [processedLine];
-      let openCount = (trimmedLine.match(/\{/g) || []).length;
-      let closeCount = (trimmedLine.match(/\}/g) || []).length;
+      // Structural counting, NOT naive regex counting: a `{`/`}` inside a
+      // string value (a code snippet, a template, JSON-in-JSON) must not move
+      // the balance — naive counting made any such payload never balance,
+      // silently dropping `__kind` blocks to text (2026-08-29 audit crack
+      // #16). Mirrors the accumulator's countStructuralObjectBraces; a JSON
+      // string cannot contain a raw newline, so per-line counting is exact.
+      const first = countStructuralBraces(trimmedLine);
+      let openCount = first.opens;
+      let closeCount = first.closes;
       let j = i + 1;
 
       // Collect subsequent lines until braces balance (multi-line JSON)
       while (j < lines.length && openCount > closeCount) {
         const nextLine = normalizeLine(lines[j]);
         jsonLines.push(nextLine);
-        openCount += (nextLine.match(/\{/g) || []).length;
-        closeCount += (nextLine.match(/\}/g) || []).length;
+        const counts = countStructuralBraces(nextLine);
+        openCount += counts.opens;
+        closeCount += counts.closes;
         j++;
       }
 

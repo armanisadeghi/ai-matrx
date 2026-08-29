@@ -47,7 +47,16 @@ export type KindComponentIncidentType =
    * same error_type from the server; the browser is the other half, because
    * most renders happen here and the server never sees them.
    */
-  | "generic_floor_render";
+  | "generic_floor_render"
+  /**
+   * A REGISTERED `__kind` payload rendered as a raw JSON code block — it
+   * escaped the promotion path entirely (detection crack, latched miss,
+   * structural degradation with the kind erased). Unlike generic_floor_render
+   * the kind system never even claimed the block; the JsonBlock tripwire
+   * (`KindEscapedNotice`) is the only witness. Every one of these is a
+   * pipeline defect, never a missing component.
+   */
+  | "kind_escaped_render";
 
 export interface KindComponentIncidentInput {
   kind: string;

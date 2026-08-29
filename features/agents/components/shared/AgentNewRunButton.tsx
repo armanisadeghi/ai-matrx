@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { startNewConversation } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { PlusTapButton } from "@/components/icons/tap-buttons";
+import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
 import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 
 interface AgentNewRunButtonProps {

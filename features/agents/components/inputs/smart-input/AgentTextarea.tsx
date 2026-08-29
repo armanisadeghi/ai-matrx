@@ -59,8 +59,6 @@ interface AgentTextareaProps {
   initiallyExpanded?: boolean;
   /** Preserve the existing eager focus everywhere except ambient launchers. */
   autoFocus?: boolean;
-  /** Ambient chat launchers need a human message; variables-only runs do not. */
-  requireTextForSubmit?: boolean;
   /** Hide the expansion control when the host deliberately keeps sparse chrome. */
   showExpandToggle?: boolean;
 }
@@ -83,7 +81,6 @@ export function AgentTextarea({
   disableSend = false,
   initiallyExpanded = false,
   autoFocus = true,
-  requireTextForSubmit = false,
   showExpandToggle = true,
 }: AgentTextareaProps) {
   const dispatch = useAppDispatch();
@@ -160,12 +157,9 @@ export function AgentTextarea({
   // Stopping without sending is the action bar's explicit Stop button.
   const handleSend = useCallback(() => {
     if (disableSend) return;
-    if (requireTextForSubmit && charCount === 0) return;
     dispatch(smartExecute({ conversationId, surfaceKey }));
   }, [
     disableSend,
-    requireTextForSubmit,
-    charCount,
     conversationId,
     surfaceKey,
     dispatch,
@@ -218,14 +212,14 @@ export function AgentTextarea({
       // ⌘/Ctrl+Shift+Enter during a run → INTERRUPT: stop, then send.
       if (withCmd && e.shiftKey && isExecuting) {
         e.preventDefault();
-        if (!disableSend && charCount > 0) handleInterruptSend();
+        if (!disableSend) handleInterruptSend();
         return;
       }
       // ⌘/Ctrl+Enter during a run (submitOnEnter ON — the combo is otherwise
       // unused there) → STEER: deliver at the agent's next pause.
       if (withCmd && !e.shiftKey && isExecuting && submitOnEnter) {
         e.preventDefault();
-        if (!disableSend && charCount > 0) handleSteerSend();
+        if (!disableSend) handleSteerSend();
         return;
       }
       // submitOnEnter ON  → Enter sends, Shift+Enter is a newline.
@@ -233,17 +227,13 @@ export function AgentTextarea({
       const shouldSend = submitOnEnter ? !e.shiftKey && !withCmd : withCmd;
       if (!shouldSend) return;
       e.preventDefault();
-      // While streaming, an empty Enter is a no-op (never an implicit stop);
-      // with text it QUEUES (sends when the run finishes). Idle → normal send.
       if (disableSend) return;
-      if (isExecuting && charCount === 0) return;
       handleSend();
     },
     [
       submitOnEnter,
       disableSend,
       isExecuting,
-      charCount,
       handleSend,
       handleSteerSend,
       handleInterruptSend,

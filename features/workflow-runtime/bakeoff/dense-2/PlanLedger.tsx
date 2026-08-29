@@ -12,7 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Crosshair } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { formatElapsed } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 
 import { PhaseIcon, PHASE_LABEL } from "../../components/readout-parts";

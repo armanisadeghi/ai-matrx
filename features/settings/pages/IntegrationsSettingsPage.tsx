@@ -64,7 +64,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import { githubConnectUrl } from "@/features/github-integration/service";
 import { DirectoryConnectorCards } from "@/features/connectors/DirectoryConnectorCards";

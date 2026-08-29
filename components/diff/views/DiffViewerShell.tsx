@@ -8,7 +8,7 @@ import type {
   DiffResult,
   DiffTemporalMetadata,
   ViewMode,
-} from "../engine/types";
+} from "@ai-matrx/diff/structural";
 import type { AdapterRegistry, EnrichmentContext } from "../adapters/types";
 import { AllChangesView } from "./AllChangesView";
 import { ChangesOnlyView } from "./ChangesOnlyView";

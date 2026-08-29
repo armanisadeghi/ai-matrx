@@ -683,6 +683,30 @@ export interface TimesheetEditHistoryEntry {
   rateAtTime: number | null;
 }
 
+/**
+ * `hr_my_timesheet_context` — the two ids route 5 needs, resolved SERVER-SIDE for the caller.
+ *
+ * SPEC-TIME §2.2 writes the read as `hr.timesheet_get(self, current_period)`; the frozen door takes
+ * two concrete uuids, and until `hr_c4_55` producing them was left to the page. `basis` is the
+ * honesty field — a closed period rendered silently as "your timesheet" would be the same class of
+ * defect as a negative bookable balance, so `most_recent` always arrives with a `periodNote`.
+ */
+export interface MyTimesheetContext {
+  employmentId: string | null;
+  payGroupId: string | null;
+  /** Null exactly when `basis === "none"`; `noPeriodReason` then says why, in the server's words. */
+  payPeriodId: string | null;
+  periodStartOn: string | null;
+  periodEndOn: string | null;
+  periodState: string | null;
+  /** `current` — a period contains today · `most_recent` — the last one they were in · `none`. */
+  basis: "current" | "most_recent" | "none" | null;
+  /** Set on `most_recent` only. Rendered verbatim above the hours. */
+  periodNote: string | null;
+  /** Set on `none` only. The reason, in the three shapes it comes in. Rendered verbatim. */
+  noPeriodReason: string | null;
+}
+
 /** `hr_timesheet_get` — the single read behind routes 5 and 29. */
 export interface Timesheet {
   employmentId: string;

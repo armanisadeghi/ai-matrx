@@ -1,7 +1,7 @@
 import { dbRowToAgentDefinition } from "@/features/agents/redux/agent-definition/converters";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { supabase } from "@/utils/supabase/client";
-import { pgErrorToError } from "@/utils/supabase/pg-error";
+import { pgErrorToError } from "@ai-matrx/data";
 
 /**
  * Read the currently saved agent definition without hydrating Redux.

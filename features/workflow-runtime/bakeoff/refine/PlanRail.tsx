@@ -13,7 +13,7 @@
 import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 
 import { PhaseIcon } from "../../components/readout-parts";
 import {

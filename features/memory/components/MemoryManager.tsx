@@ -16,7 +16,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Plus, Save, Trash2, Loader2, Brain } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import { uniqueChannelTopic } from "@ai-matrx/data/db";
 import { getUserId } from "@/utils/auth/getUserId";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {

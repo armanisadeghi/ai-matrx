@@ -36,7 +36,7 @@ import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifact
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
-import { matchesSearch as matchesSearchScoring } from "@/utils/search-scoring";
+import { matchesSearch as matchesSearchScoring } from "@ai-matrx/kit/search-scoring";
 
 interface ResourceCollectionBlockProps {
   collection: ResourceCollectionData;

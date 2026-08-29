@@ -43,7 +43,7 @@ import {
 import { hasAudioBootMarker } from "@/features/audio/audioBootMarker";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsOverlayOpen } from "@/lib/redux/slices/overlaySlice";
-import { useIdleReady } from "@/utils/idle-scheduler";
+import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 
 const AudioSystemHostImpl = dynamic(() => import("./AudioSystemHostImpl"), {
   ssr: false,

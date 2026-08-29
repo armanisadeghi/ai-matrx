@@ -15,8 +15,8 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { guardedUpdate } from "@ai-matrx/data/db";
+import { readAllRows } from "@ai-matrx/data/db";
 import { folderForProductCaptureItem } from "@/features/files/utils/folder-conventions";
 
 import type {
@@ -279,6 +279,12 @@ export async function appendToItemNotes(
  */
 export async function closeItem(item: CaptureItem): Promise<CaptureItem> {
   if (item.status === "captured") return item;
+  // 🚨 `processed` is TERMINAL — never walk it backwards to `captured`. That
+  // write is the server workflow's trigger, so a close landing on an item the
+  // INSTANT lane already analyzed re-runs the whole pipeline on it (and loses
+  // the processed status on the way). A legitimate re-capture goes through
+  // `reopenItem` first, which puts the row back at `capturing`.
+  if (item.status === "processed") return item;
   return guardedItemWrite(item, () => ({ status: "captured" }));
 }
 
@@ -290,6 +296,18 @@ export async function closeItem(item: CaptureItem): Promise<CaptureItem> {
 export async function reopenItem(item: CaptureItem): Promise<CaptureItem> {
   if (item.status === "capturing") return item;
   return guardedItemWrite(item, () => ({ status: "capturing" }));
+}
+
+/**
+ * INSTANT-lane terminal write: `capturing → processed` DIRECTLY. The item
+ * never enters `captured`, so the server-side workflow trigger (which fires
+ * on the capturing → captured transition — see `closeItem`) can never
+ * double-process an item the client lane already analyzed. The lane
+ * distinction is which transition the item took, not a new status value.
+ */
+export async function markProcessed(item: CaptureItem): Promise<CaptureItem> {
+  if (item.status === "processed") return item;
+  return guardedItemWrite(item, () => ({ status: "processed" }));
 }
 
 /** Soft-delete an item. Its uploaded files stay in the org's file tree. */

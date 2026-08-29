@@ -14,7 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import { mapIcon } from "@/utils/icons/icon-mapper";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectNormalizedControls } from "@/lib/redux/slices/agent-settings/selectors";

@@ -18,7 +18,7 @@ import { Radio } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { getIconComponent } from "@/components/official/icons/IconResolver";
+import { getIconComponent } from "@ai-matrx/icons";
 import {
   selectNodeAggregate,
   selectRunInterrupt,

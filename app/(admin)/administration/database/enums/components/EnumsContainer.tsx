@@ -40,7 +40,7 @@ import {
   positiveIntegerUrlCodec,
   stringUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 import type { EnumFilter, EnumSort } from "@/types/enum-types";
 
 interface EnumsContainerProps {

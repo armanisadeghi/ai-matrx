@@ -92,7 +92,7 @@ import { feedbackBrief, feedbackRowSummary } from "../format";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { getFeedbackScreenshotRefs } from "@/features/feedback/screenshot-refs";

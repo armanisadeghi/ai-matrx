@@ -183,6 +183,11 @@ neither prompt blocks nor run inputs: a canonical
   removed only after the association inventory proves that edge is readable.
   Stored file bytes never enter `user_input` merely because the conversation
   has not materialized yet.
+- Local paste and drag/drop uploads are stamped with the conversation's
+  canonical execution organization before bytes move. The file and its future
+  `file → conversation` edge therefore share one tenant even if the active
+  sidebar organization changes; a cross-organization edge remains a rejected
+  request, never an implicit move or copy.
 - Files enter the backend Document Evidence System: processed text is primary,
   while RAG, raw/clean representations, selected physical PDF pages, and
   verification tools are auto-injected.
@@ -402,6 +407,7 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-29` — **Agent attachments now upload into the conversation's organization.** The canonical paste/drag-drop hook resolves the same durable execution organization used by request assembly and stamps it into file metadata, preventing a personal-workspace file from reaching a Titanium conversation and failing the server's tenant-checked `file → conversation` association.
 - `2026-08-28` — **Conversation materialization proof is scoped to the authenticated viewer.** `useConversationMaterialized` no longer caches a readable conversation by bare UUID for the module lifetime; the cache key includes the current Redux auth user, so an in-app account transition cannot reuse the previous viewer's proof and call viewer-gated attachment RPCs under the new session. A forcing hook test proves the same conversation returns to pending and rechecks persistence after identity changes.
 
 - `2026-08-28` — **Structured agent output uses the shared JSON5 repair boundary.** Final extraction now recovers common model-produced JSON5 forms (single quotes, unquoted keys, comments) in `utils/json/extract-json.ts`; Agent Generator and every `jsonExtraction` consumer inherit the repair without a local parser or retry loop.

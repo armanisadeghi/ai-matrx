@@ -9,8 +9,8 @@
 "use client";
 
 import React, { useState, useCallback, lazy, Suspense } from "react";
-import { PlayTapButton, StopTapButton } from "@/components/icons/tap-buttons";
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+import { PlayTapButton, StopTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 
 export interface SpeakerCompactGroupProps {
   text: string;

@@ -35,6 +35,8 @@ import type { HrDenied, HrResult } from "@/features/hr/types";
 import type { LeaveFigures } from "../../api/types";
 
 import { callHrLeaveRpc } from "../../api/rpc";
+/* ONE mapper for `hr.leave_figures`, exported by the lane that owns the door. See the note above. */
+import { toFigures } from "../../api/service";
 import type {
   LeaveAdjustRefusal,
   LeaveAdjustResult,
@@ -92,44 +94,18 @@ function bool(value: unknown): boolean | null {
 
 // ── figures (the §5 block, as `hr.leave_figures` builds it) ──────────────────
 
-/**
- * ♻️ The same key-for-key mapping as `features/hr/leave/api/service.ts` → `toFigures`, which is
- * module-private there. Both were written against ONE function body (`hr.leave_figures`), and
- * both must stay identical — when that lane exports its mapper, delete this one and import it.
- */
-function toFigures(raw: unknown): LeaveFigures {
-  const r = bag(raw);
-  return {
-    ok: bool(r.ok),
-    refused: str(r.refused),
-    unlimited: bool(r.unlimited),
-    asOf: str(r.asOf),
-    policyId: str(r.policyId),
-    policyName: str(r.policyName),
-    leaveKind: str(r.leaveKind),
+/*
+  ♻️ THE DUPLICATE MAPPER THAT USED TO LIVE HERE IS DELETED, AND ITS OWN COMMENT SAID TO DO THIS.
 
-    accruedToDate: num(r.accruedToDate),
-    usedTaken: num(r.usedTaken),
-    approvedUpcoming: num(r.approvedUpcoming),
-    pendingApproval: num(r.pendingApproval),
-    available: num(r.available),
-
-    ledgerBalance: num(r.ledgerBalance),
-    removed: num(r.removed),
-    identityHolds: bool(r.identityHolds),
-
-    accrualMethod: str(r.accrualMethod),
-    accrualRate: num(r.accrualRate),
-    accrualPerUnits: num(r.accrualPerUnits),
-    incrementMinutes: num(r.incrementMinutes),
-    balanceCap: num(r.balanceCap),
-    carryoverAllowed: bool(r.carryoverAllowed),
-    negativeBalanceAllowed: bool(r.negativeBalanceAllowed),
-    negativeBalanceFloor: num(r.negativeBalanceFloor),
-    statutoryBasisRuleClass: str(r.statutoryBasisRuleClass),
-    usableOn: str(r.usableOn),
-  };
-}
+  It was a key-for-key copy of `features/hr/leave/api/service.ts` → `toFigures`, kept only because
+  that one was module-private, and it carried the standing note *"when that lane exports its mapper,
+  delete this one and import it."* Round 42 collected the bill: `hr.leave_figures` gained
+  `bookable_now` / `pending_beyond_balance` — the pair that stops "What you can book right now" from
+  rendering a negative number — and this copy would have silently kept withholding them, so the
+  MANAGER's team view and `/hr/leave/balances` would have shown "Not provided" under the very tile
+  the employee's page shows a number in. Two implementations of one mapping disagree on the first
+  change to the thing they map; that is the whole law.
+*/
 
 // ── policy list ──────────────────────────────────────────────────────────────
 

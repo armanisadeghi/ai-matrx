@@ -39,7 +39,7 @@ jest.mock("@/features/shell/components/header/templates/EntityModeHeader", () =>
   EntityModeHeader: () => null,
 }));
 
-jest.mock("@/components/icons/tap-buttons", () => ({
+jest.mock("@ai-matrx/tap-target/buttons", () => ({
   ChevronLeftTapButton: () => null,
 }));
 

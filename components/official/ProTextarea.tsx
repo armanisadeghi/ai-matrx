@@ -102,7 +102,7 @@ import { Label } from "@/components/ui/label";
 import {
   TapTargetButton,
   TapTargetButtonSolid,
-} from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target";
 import {
   Popover,
   PopoverTrigger,

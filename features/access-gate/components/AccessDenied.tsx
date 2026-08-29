@@ -228,7 +228,7 @@ export function AccessDeniedView({
   const selfHref = selfInfo?.hrefFor?.(id) ?? null;
 
   return (
-    <div className="flex h-full min-h-64 w-full items-center justify-center p-6">
+    <div className="matrx-touch-targets flex h-full min-h-64 w-full items-center justify-center p-6">
       <div className="w-full max-w-xl">
         <div className="flex items-start gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-muted">
@@ -328,6 +328,7 @@ export function AccessDeniedView({
                 <Link
                   key={s.href + s.title}
                   href={s.href}
+                  data-tap-target
                   className="group flex items-start gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-foreground/20 hover:bg-accent"
                 >
                   {Icon ? (
@@ -355,7 +356,7 @@ export function AccessDeniedView({
         <div className="mt-5 flex flex-wrap items-center gap-2">
           {context.status === "anonymous" ? (
             <Button asChild size="sm">
-              <Link href={signInHref}>
+              <Link href={signInHref} data-tap-target>
                 <LogIn className="mr-1.5 h-4 w-4" aria-hidden />
                 Sign in
               </Link>
@@ -372,14 +373,14 @@ export function AccessDeniedView({
 
           {ancestor && ancestorHref ? (
             <Button asChild size="sm" variant="outline">
-              <Link href={ancestorHref}>
+              <Link href={ancestorHref} data-tap-target>
                 <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden />
                 Open {ancestor.title ?? ancestor.label.toLowerCase()}
               </Link>
             </Button>
           ) : fallbackHref ? (
             <Button asChild size="sm" variant="outline">
-              <Link href={fallbackHref}>
+              <Link href={fallbackHref} data-tap-target>
                 <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden />
                 {fallbackLabel ?? "Back to what you can see"}
               </Link>

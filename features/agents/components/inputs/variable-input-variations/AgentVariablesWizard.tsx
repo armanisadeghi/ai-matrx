@@ -27,7 +27,7 @@ import {
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { VariableInputComponent } from "../input-components/VariableInputComponent";
 import { BoundVariableChips } from "../BoundVariableChips";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 
 interface AgentVariablesWizardProps {
   conversationId: string;

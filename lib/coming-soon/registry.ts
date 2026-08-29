@@ -629,20 +629,9 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "SPEC-EMPLOYEES §2.2 makes an export an AUDITED action (hr.access_audit action='export'). There is no hr_directory_export door, and a browser cannot write that audit row — so an unaudited CSV of everyone is deliberately NOT shipped. Copy / Copy for AI on the table remain available for the directory-tier columns already on screen.",
     surfaces: ["/hr/people — bulk action bar", "/hr/people — toolbar"],
   },
-  "hr.people.start-offboarding": {
-    id: "hr.people.start-offboarding",
-    label: "Start offboarding",
-    owner: "hr",
-    promise:
-      "Open the separation form — last day worked, termination date, reason, initiator, rehire eligibility — and hand off to the offboarding run once it is approved.",
-    stage: "blocked",
-    blockedBy:
-      "public.hr_separation_record IS live (verified against pg_proc 2026-08-26); what is missing is the separation FORM and the offboarding run it hands off to (routes 50/51), owned by the Onboarding & Offboarding lane. The directory offers the verb because SPEC-EMPLOYEES §2.2 puts it on the row.",
-    surfaces: [
-      "/hr/people — row menu",
-      "/hr/people/[employeeId]/job — spell actions",
-    ],
-  },
+  // "hr.people.start-offboarding" was a stage:"blocked" stub while hr_separation_record was
+  // already live. The separation FORM is now built (OffboardEmployeeDialog, wired from the
+  // /hr/people row menu), so the coming-soon entry is deleted — no dead path left behind.
   "hr.people.corrective-action": {
     id: "hr.people.corrective-action",
     label: "Start a corrective action",
@@ -852,6 +841,171 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "What you have been assigned, when it is due, and your transcript — which is yours and is never rewritten.",
     stage: "planned",
     surfaces: ["/hr/me/training", "HR nav — My Training"],
+  },
+  // ── The unbuilt HR PILLARS the nav has been offering all along ────────────
+  //
+  // 🚨 THESE NINE WERE 404s, IN TWO PLACES EACH. `resolveHrNav` is one resolver
+  // with two callers — the left rail and the home card grid — so every unbuilt
+  // pillar cost a dead rail item AND a dead card on the first screen a user
+  // sees. Measured 2026-08-28, before the fix: hr_admin 17 rail items / 9 dead
+  // and 16 home cards / 9 dead; manager 14 / 8; and Performance and Engagement
+  // were ungated, so a plain employee, a contractor and a person with NO
+  // EMPLOYER were each offered two of them. The owner's report was, exactly,
+  // "the menus don't all work".
+  //
+  // Registered rather than removed from the nav, because these are committed
+  // pillars with route numbers in SPEC-UI-IA §3 — an advertised direction, which
+  // is what this registry is FOR. Who should never be offered one at all is a
+  // separate and equally real fix, and it lives in `hr-nav.ts` as `requires`.
+  //
+  // Each renders through `features/hr/shared/HrPillarSurface.tsx`, inside the
+  // full HR shell, so the page is somewhere a person can navigate onward from.
+  // When a lane ships its pillar: mount the real surface AND delete the entry
+  // here, in the same commit.
+  "hr.hiring": {
+    id: "hr.hiring",
+    label: "Hiring",
+    owner: "hr",
+    promise:
+      "Open a requisition, move candidates through interviews, and turn an accepted offer into an employee record without retyping a single field.",
+    stage: "planned",
+    blockedBy:
+      "SPEC-UI-IA §3.3 routes 18–26. `hr.candidate` has no client read door yet, which is also why /hr/people/new can only carry a candidate id rather than prefill from one.",
+    surfaces: ["/hr/hiring", "HR nav — Hiring", "HR home — Hiring card"],
+  },
+  "hr.schedule": {
+    id: "hr.schedule",
+    label: "Schedule",
+    owner: "hr",
+    promise:
+      "Build the shift schedule, check it against your own scheduling rules before anyone sees it, publish it, and fill the shifts that come open.",
+    stage: "planned",
+    blockedBy:
+      "SPEC-UI-IA §3.5. The rules this surface must respect are already configurable at /hr/settings/schedule-rules; the builder that reads them is not built.",
+    surfaces: ["/hr/schedule", "HR nav — Schedule", "HR home — Schedule card"],
+  },
+  "hr.onboarding": {
+    id: "hr.onboarding",
+    label: "Onboarding",
+    owner: "hr",
+    promise:
+      "Run a new hire through their first-day checklist — and run a leaver through the mirror of it — from templates you set once, with every task owned by a named person.",
+    stage: "planned",
+    blockedBy:
+      "SPEC-UI-IA §3.6. The separation half already has its writer (hr_separation_record, wired from the /hr/people row menu); the run surface and its templates are not built.",
+    surfaces: [
+      "/hr/onboarding",
+      "HR nav — Onboarding",
+      "HR home — Onboarding card",
+    ],
+  },
+  "hr.documents": {
+    id: "hr.documents",
+    label: "Documents",
+    owner: "hr",
+    promise:
+      "The document library everyone works from, the acknowledgment campaigns you send from it, and the signatures that come back — with retention clocks and legal holds shown on the row.",
+    stage: "planned",
+    blockedBy:
+      "SPEC-UI-IA §3.7 route 54. Documents reuse features/files end to end and HR must not build its own file storage; the association between an hr.employee and files.files rows is not wired.",
+    surfaces: [
+      "/hr/documents",
+      "HR nav — Documents",
+      "HR home — Documents card",
+    ],
+  },
+  "hr.documents.i9-register": {
+    id: "hr.documents.i9-register",
+    label: "The I-9 register",
+    owner: "hr",
+    promise:
+      "Every I-9 and its reverification dates, in a register with its own access — deliberately segregated from the personnel file, so opening somebody's record never means opening their work authorization.",
+    stage: "planned",
+    // The two call sites are the reason this is its own entry rather than a
+    // corner of `hr.documents`: both of them exist to tell somebody the I-9 is
+    // NOT where they are looking. That sentence is worthless if the door it
+    // offers 404s, which is exactly what both were doing — the profile
+    // Documents tab and the work-authorization expiry warning.
+    blockedBy:
+      "The Documents pillar is not built (see hr.documents), and the register is a segregated surface inside it with its own access tier.",
+    surfaces: [
+      "/hr/people/[employeeId]/documents — where I-9s actually live",
+      "/hr/people/[employeeId]/personal — work-authorization expiry warning",
+    ],
+  },
+  "hr.hiring.candidate-record": {
+    id: "hr.hiring.candidate-record",
+    label: "Open the candidate record",
+    owner: "hr",
+    promise:
+      "Open the candidate this hire came from — their application, interviews and offer — while keeping interview notes, self-ID and rejection history on that side of the line, where they belong.",
+    stage: "planned",
+    blockedBy:
+      "The Hiring pillar is not built (see hr.hiring), so /hr/hiring/candidates/[id] has nothing behind it. /hr/people/new already carries the candidate id it was handed and says plainly what it could not prefill.",
+    surfaces: ["/hr/people/new — convert-candidate note"],
+  },
+  "hr.training": {
+    id: "hr.training",
+    label: "Training",
+    owner: "hr",
+    promise:
+      "Assign a course or a compliance mandate to one person or a whole group, watch completion come down from the same list, and keep certifications and their expiries where a renewal cannot be missed.",
+    stage: "planned",
+    blockedBy:
+      "SPEC-UI-IA §3.8 routes 57–61. The directory already offers Assign training as a registered promise (hr.people.assign-training) because bulk assignment is specified there.",
+    surfaces: ["/hr/training", "HR nav — Training", "HR home — Training card"],
+  },
+  "hr.performance": {
+    id: "hr.performance",
+    label: "Performance",
+    owner: "hr",
+    promise:
+      "Run review cycles for your team — the questions, the schedule, the outcomes — through one reviews feature, never a second one bolted onto the profile.",
+    stage: "planned",
+    blockedBy:
+      "SPEC-UI-IA §3.9 route 62. The employee's own face of this ('yours') is a /hr/me/performance surface the same lane owes; until it exists the nav gates this org-wide surface rather than offering it to everybody.",
+    surfaces: [
+      "/hr/performance",
+      "HR nav — Performance",
+      "HR home — Performance card",
+    ],
+  },
+  "hr.assets": {
+    id: "hr.assets",
+    label: "Assets",
+    owner: "hr",
+    promise:
+      "What equipment is issued to whom, what is still out on somebody who has left, and what came back — so recovery is a list, not a memory.",
+    stage: "planned",
+    blockedBy:
+      "SPEC-UI-IA §3.10. Offboarding is where recovery is triggered from, and that pillar is not built either (see hr.onboarding).",
+    surfaces: ["/hr/assets", "HR nav — Assets", "HR home — Assets card"],
+  },
+  "hr.engagement": {
+    id: "hr.engagement",
+    label: "Engagement",
+    owner: "hr",
+    promise:
+      "Send an announcement people actually receive, run a pulse survey whose answers stay anonymous when you promised they would, and recognize somebody where their team can see it.",
+    stage: "planned",
+    blockedBy:
+      "SPEC-UI-IA §3.10. This is the authoring side; the employee's feed is a self surface the same lane owes, which is why the nav now gates the org-wide one instead of offering it to a person with no employer.",
+    surfaces: [
+      "/hr/engagement",
+      "HR nav — Engagement",
+      "HR home — Engagement card",
+    ],
+  },
+  "hr.reports": {
+    id: "hr.reports",
+    label: "Reports",
+    owner: "hr",
+    promise:
+      "Headcount, turnover, cost and compliance reporting over the records HR already holds — as of any date, because every one of those numbers is an as-of question.",
+    stage: "planned",
+    blockedBy:
+      "SPEC-UI-IA §3.11. Reporting reads across every pillar, so it is deliberately last: a report over half the pillars would be a number nobody could defend.",
+    surfaces: ["/hr/reports", "HR nav — Reports", "HR home — Reports card"],
   },
   "hr-settings.custom-field-authoring": {
     id: "hr-settings.custom-field-authoring",

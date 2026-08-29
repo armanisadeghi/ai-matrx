@@ -51,6 +51,10 @@ import {
 } from "@/features/surfaces/manifests/mandates.manifest";
 import { parseMandateContract } from "@/features/agents/mandates/overrides";
 import { parseMandateWave1 } from "@/features/agents/mandates/provision-shapes";
+import {
+  contractOfMandate,
+  holderOfMandate,
+} from "@/lib/supabase/mandateStorage";
 import { ProvisionOfferComposer } from "./ProvisionOfferComposer";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
@@ -82,10 +86,12 @@ import {
   type MandateDefinitionRow,
   type MandateExemplarRow,
   type MandateTestBatchResponse,
-  type MandateTestCandidate,
-  type MandateTestResponse,
   type MandateVersionInfo,
 } from "./service";
+import type {
+  MandateTestCandidate,
+  MandateTestResponse,
+} from "@/features/agents/mandates/test-run";
 
 /**
  * 🚨 WIRE ENUM — `"mandate_pinned"` is aidream's literal, not ours, and it is NOT a
@@ -444,7 +450,7 @@ function CandidateEditor({
                   value={selection}
                   disabled={
                     selection === "mandate_pinned" &&
-                    !mandate.default_agent_version_id
+                    !holderOfMandate(mandate).versionId
                   }
                 >
                   {SELECTION_LABEL[selection]}
@@ -593,7 +599,10 @@ export function MandateTestBench({
   );
   // The mandate's declared inputs — shown beside the composer so a test case can
   // be written without guessing the variable names.
-  const contract = useMemo(() => parseMandateContract(mandate.contract), [mandate]);
+  const contract = useMemo(
+    () => parseMandateContract(contractOfMandate(mandate)),
+    [mandate],
+  );
   // Provision-era mandates get a structured composer generated from the offer
   // (the raw JSON textarea stays — it is the escape hatch and the legacy path).
   const provisionKey = useMemo(
@@ -651,7 +660,10 @@ export function MandateTestBench({
       toast.error(`${label}: choose a saved version.`);
       return null;
     }
-    if (draft.selection === "mandate_pinned" && !mandate.default_agent_version_id) {
+    if (
+      draft.selection === "mandate_pinned" &&
+      !holderOfMandate(mandate).versionId
+    ) {
       toast.error(`${label}: this mandate is not pinned to a version.`);
       return null;
     }

@@ -299,7 +299,11 @@ export async function deleteTranscript(id: string): Promise<void> {
  * Permanently delete a transcript
  */
 export async function permanentlyDeleteTranscript(id: string): Promise<void> {
-  const { error } = await supabase.schema("transcripts").from("transcripts").delete().eq("id", id);
+  const { error } = await supabase
+    .schema("transcripts")
+    .from("transcripts")
+    .delete()
+    .eq("id", id);
 
   if (error) {
     console.error("Error permanently deleting transcript:", error);
@@ -349,6 +353,9 @@ export async function saveDraftTranscript(
   }
 
   const transcript = mapTranscriptRow(data);
+  if (input.metadata?.qa_fixture) {
+    return transcript;
+  }
   const labelSourceText = input.segments
     .map((s) => s.text?.trim() ?? "")
     .filter(Boolean)

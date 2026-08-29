@@ -13,8 +13,8 @@ import {
   PlayTapButton,
   PauseTapButton,
   StopTapButton,
-} from "@/components/icons/tap-buttons";
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import { useSpeech } from "@/features/audio/service/useSpeech";
 
 interface Props {

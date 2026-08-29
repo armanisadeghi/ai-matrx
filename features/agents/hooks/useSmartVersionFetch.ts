@@ -9,8 +9,8 @@ import {
   selectVersionsByParentAgentId,
 } from "@/features/agents/redux/agent-definition/selectors";
 import type { AgentVersionHistoryItem } from "@/features/agents/redux/agent-definition/thunks";
-import { computeDiff } from "@/components/diff/engine/compute-diff";
-import type { DiffResult } from "@/components/diff/engine/types";
+import { computeDiff } from "@ai-matrx/diff/structural";
+import type { DiffResult } from "@ai-matrx/diff/structural";
 import { AGENT_DIFF_OPTIONS } from "@/features/agents/components/diff/agent-diff-constants";
 
 export interface EnrichedVersion extends AgentVersionHistoryItem {

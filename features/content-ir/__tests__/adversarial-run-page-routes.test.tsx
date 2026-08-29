@@ -32,8 +32,8 @@
  *     (`workflow_io_data_transform_2aa7e01c_output`: 607 node_completed
  *     events in the last 14 days). Those slugs were soft-deleted out of
  *     `kind_definition` by the contract-artifact eviction, so the FE registry
- *     can never know them — the strangler seam must hold (pass through, no
- *     crash, no false "known shape" claim).
+ *     can never know them — they must reach the honest unregistered generic
+ *     floor (no crash, no false registered-component claim).
  */
 
 import {
@@ -118,19 +118,24 @@ describe("HOLE A — the wire contract's workflow kinds reach the reader only by
 });
 
 describe("HOLE B — evicted fingerprint slugs still arrive on the wire as output_kind", () => {
-  it("an evicted contract slug is unknown to the registry and passes through untouched", () => {
+  it("an evicted contract slug is unknown to the registry and reaches the unregistered generic floor", () => {
     // 607 node_completed events declared this exact slug in the 14 days
     // before 2026-08-21; the eviction removed it from kind_definition, so no
-    // FE registry tier can ever deliver it. The strangler seam must hold.
+    // FE registry tier can ever deliver it. The unregistered floor must hold.
     const evictedSlug = "workflow_io_data_transform_2aa7e01c_output";
     expect(kindRegistry.getDefinition(evictedSlug)).toBeUndefined();
 
     const block = kindBlock(evictedSlug, { anything: true });
     const routed = applyIrKindRoute(block);
 
-    // Unknown kind: untouched, by reference — never a false "known shape".
-    expect(routed).toBe(block);
-    expect(markerOf(routed)).toBeUndefined();
+    // Unknown kind: acknowledged as a kind, but never presented as registered.
+    expect(routed.type).toBe(GENERIC_STRUCTURED_COMPONENT_KEY);
+    expect(markerOf(routed)).toEqual({
+      by: "generic",
+      key: GENERIC_STRUCTURED_COMPONENT_KEY,
+      unverified: true,
+      reason: "unregistered",
+    });
   });
 
   test.todo(

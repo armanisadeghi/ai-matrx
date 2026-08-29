@@ -6,7 +6,7 @@ import {
   type Crumb,
   type CrumbOption,
 } from "@/features/shell/components/header/templates/CrumbTrailHeader";
-import { formatTitleCase } from "@/utils/text/text-case-converter";
+import { formatTitleCase } from "@ai-matrx/kit/text-case";
 
 export interface RouteTreeBreadcrumbHeaderProps {
   /** Relative route paths, such as `tests/buttons/variants`. */

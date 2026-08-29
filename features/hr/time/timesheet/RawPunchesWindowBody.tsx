@@ -20,6 +20,7 @@ import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { getTimesheet } from "../api/service";
 import type { Timesheet } from "../api/types";
 import { hrTimesheetHref } from "@/features/hr/routes";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { formatLocalDate } from "../shared/format";
 import { PunchChain } from "../shared/PunchChain";
 import { HrTimeReadState } from "../shared/RefusalNotice";
@@ -34,6 +35,8 @@ export function RawPunchesWindowBody({
   payPeriodId: string;
   mockCase?: HrFixtureCase;
 }) {
+  // "Open the full timesheet" must land in the employer whose punches are in this window.
+  const { orgRef } = useHrContext();
   const query = useHrTimeQuery<Timesheet>(
     (signal) =>
       getTimesheet(employmentId, payPeriodId, { mockCase, signal }),
@@ -67,7 +70,7 @@ export function RawPunchesWindowBody({
           )}
 
           <Link
-            href={hrTimesheetHref(employmentId, undefined, payPeriodId)}
+            href={hrTimesheetHref(employmentId, orgRef, payPeriodId)}
             className="inline-flex text-xs font-medium underline underline-offset-4"
           >
             Open the full timesheet

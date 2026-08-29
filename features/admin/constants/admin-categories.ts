@@ -5,7 +5,7 @@
  *
  * Pure data — NO React, NO JSX, NO icon-component imports. Icons are stored as
  * string names and rendered lazily via `IconResolver`
- * (`@/components/official/icons/IconResolver`), which resolves any lucide-react
+ * (`@ai-matrx/icons`), which resolves any lucide-react
  * icon by name. This keeps the catalog importable from the shell sidebar
  * without pulling ~40 icon components into the main bundle.
  *

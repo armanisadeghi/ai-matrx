@@ -37,7 +37,7 @@ import {
   TRAY_CHIP_W_DESKTOP,
 } from "./constants/tray";
 import { getStaticEntryByOverlayId } from "./registry/windowRegistryMetadata";
-import { renderIcon } from "@/components/official/icons/IconResolver";
+import { renderIcon } from "@ai-matrx/icons";
 import { TrayChipPreview } from "./WindowTray/TrayChipPreview";
 
 // ─── Constants ────────────────────────────────────────────────────────────────

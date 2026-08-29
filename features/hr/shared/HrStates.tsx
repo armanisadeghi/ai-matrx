@@ -11,8 +11,9 @@
 //     never a layout shift on arrival, never the words "Loading…".
 //  2. ERROR names the failed operation IN WORDS, says what the actor does next, and
 //     offers a retry. A raw Postgres code or a bare "something went wrong" is a
-//     defect. The code may appear as a secondary technical reference, never as the
-//     message.
+//     defect. The code lives BEHIND the "Error reference" disclosure — never in the
+//     body, never as the message. `Technical reference: 22P02` was printed as flat
+//     body text until D11, so a mistyped URL ended in a bare SQLSTATE.
 //  3. NO-ACCESS renders the persona's nearest legitimate surface with ONE sentence.
 //     Never a permission wall over a real layout, and NEVER a hint that the record
 //     exists — "not reachable" and "does not exist" must read identically, because
@@ -31,7 +32,7 @@
 
 "use client";
 
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -289,13 +290,32 @@ export function HrError({
             variant="outline"
             className="min-h-11 sm:min-h-9"
           >
-            <Link href={hrHref()}>Back to HR</Link>
+            {/* This error state can render before employer context exists. */}
+            <Link href={hrHref(null)}>Back to HR</Link>
           </Button>
         </div>
+        {/*
+          🚨 THE MACHINE TOKEN GOES IN THE DISCLOSURE, NOT THE BODY — the same
+          affordance as "Record reference" (`HrDecisionPanel`), "Refusal
+          reference" (`HrRefusalNotice`) and "Consent reference"
+          (`VerificationRowActions`). This printed `Technical reference: 22P02`
+          as flat body text, so a mistyped URL ended with a bare SQLSTATE staring
+          at whoever followed the link. The sentence above already says what
+          happened in words; the code is for whoever has to trace it afterwards.
+
+          "Error reference", NOT "Record reference": the siblings' labels each
+          promise their own contents, and this one holds the failure's own code,
+          not the address of a record.
+        */}
         {code ? (
-          <p className="text-[0.6875rem] text-muted-foreground">
-            Technical reference: {code}
-          </p>
+          <details className="pt-0.5">
+            <summary className="cursor-pointer text-[0.6875rem] text-muted-foreground">
+              Error reference
+            </summary>
+            <p className="mt-1 break-words font-mono text-[0.6875rem] text-muted-foreground">
+              {code}
+            </p>
+          </details>
         ) : null}
       </div>
     </div>
@@ -356,7 +376,8 @@ export function HrNoAccess({
  */
 export function HrEmployerPicker({ className }: { className?: string } = {}) {
   const { employers, isLoading } = useHrContext();
-  const pathname = usePathname() ?? hrHref();
+  // The picker is itself the pre-employer-context state.
+  const pathname = usePathname() ?? hrHref(null);
 
   if (isLoading) return <HrLoading variant="cards" rows={3} className={className} />;
 
@@ -421,6 +442,96 @@ export function HrEmployerPicker({ className }: { className?: string } = {}) {
           })}
         </ul>
       </div>
+    </div>
+  );
+}
+
+// ── 4b. The employer we opened is not the one you asked for ─────────────────
+
+/**
+ * 🚨 LAW B IS STATED EXACTLY ONCE PER PAGE, AND NEVER ZERO TIMES.
+ *
+ * The disclosure used to live in `HrShell` alone, and thirteen `/hr/*` pages do not
+ * mount `HrShell` — `/hr/tasks`, `/hr/tasks/[instanceId]` (the route every HR
+ * notification deep-links to) and the whole `/hr/me/*` family. So on exactly the
+ * surfaces an outside link lands somebody on, HR could open a different employer in
+ * silence. Proven live on 2026-08-29: `/hr?org=<unreachable>` said so; the same
+ * `?org=` on `/hr/tasks/<instance>` said nothing and rendered another employer's
+ * pay change.
+ *
+ * So the notice now hangs off `HrPageState` — the ordered state machine EVERY HR
+ * surface already runs through — and the chromes that state it above the page
+ * (`HrShell`, the two task surfaces) CLAIM it through this context so the nested
+ * `HrPageState` inside them stands down. Outermost renderer wins. Never render
+ * `HrEmployerSubstitutionNotice` without claiming, and never claim without
+ * rendering it.
+ */
+const HrDisclosureClaimedContext = createContext(false);
+
+/**
+ * Wrap a subtree whose chrome has ALREADY stated the substitution, so the
+ * `HrPageState` inside it does not state it a second time.
+ */
+export function HrDisclosureClaimed({ children }: { children: ReactNode }) {
+  return (
+    <HrDisclosureClaimedContext.Provider value={true}>
+      {children}
+    </HrDisclosureClaimedContext.Provider>
+  );
+}
+
+/** True when an ancestor chrome already stated the substitution. */
+export function useHrDisclosureClaimed(): boolean {
+  return useContext(HrDisclosureClaimedContext);
+}
+
+
+/**
+ * 🚨 NO EMPLOYER IS EVER SUBSTITUTED IN SILENCE (`useHrContext` law B).
+ *
+ * `useHrContextResolver` legitimately rescues a person whose asked-for employer
+ * cannot do HR — without it, a multi-employer admin whose global active org is her
+ * personal workspace lands in an empty HR with no way in. But an unannounced swap is
+ * the same defect as a link that quietly changes employer, which is the one thing
+ * every URL rule in `routes.ts` exists to prevent. So the rescue always says so.
+ *
+ * NOT a modal, NOT a toast, and NOT dismissible: it is a statement of which employer
+ * this page is showing, and it must still be true the moment somebody looks up.
+ */
+export function HrEmployerSubstitutionNotice({
+  className,
+}: { className?: string } = {}) {
+  const { substitution } = useHrContext();
+  if (!substitution) return null;
+
+  const { askedName, askedRef, reason, openedName } = substitution;
+
+  const sentence =
+    reason === "module-off"
+      ? `${askedName ?? "The employer you asked for"} doesn't have HR turned on, so this is ${openedName}.`
+      : `That link named an employer you can't do HR in, so this is ${openedName}.`;
+
+  return (
+    <div
+      role="status"
+      data-hr-employer-substitution={reason}
+      className={cn(
+        "flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-100",
+        className,
+      )}
+    >
+      <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      <span className="min-w-0">{sentence}</span>
+      {/* The way back is a real door: `?org=` is honored now, so a module-off
+          employer opens its enable door instead of bouncing back to here. */}
+      {askedRef ? (
+        <Link
+          href={hrHref(askedRef)}
+          className="shrink-0 font-medium underline underline-offset-2 hover:no-underline"
+        >
+          Open {askedName ?? "it"} anyway
+        </Link>
+      ) : null}
     </div>
   );
 }
@@ -559,6 +670,7 @@ export function HrPageState({
   requireEmployer?: boolean;
 }) {
   const context = useHrContext();
+  const disclosureClaimed = useHrDisclosureClaimed();
 
   if (context.isLoading) return <HrLoading variant={variant} rows={rows} />;
 
@@ -619,5 +731,18 @@ export function HrPageState({
     );
   }
 
-  return <>{children}</>;
+  /*
+    🚨 STATE 9 IS NOT JUST "THE PAGE" — IT IS THE PAGE, PLUS WHICH EMPLOYER IT IS.
+    Every other state above says out loud what the HR context turned out to be; the
+    granted page that opened a DIFFERENT employer than the link asked for was the one
+    that said nothing. `HrEmployerSubstitutionNotice` renders null in the ordinary
+    case, so this adds ZERO DOM unless an employer really was swapped.
+  */
+  if (disclosureClaimed) return <>{children}</>;
+  return (
+    <HrDisclosureClaimed>
+      <HrEmployerSubstitutionNotice className="mx-4 mt-3 sm:mx-6" />
+      {children}
+    </HrDisclosureClaimed>
+  );
 }

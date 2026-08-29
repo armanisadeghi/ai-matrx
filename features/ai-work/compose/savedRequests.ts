@@ -40,7 +40,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import type { Json } from "@/types/database.types";
 import type { WorkDestinationId } from "./destinations";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";

@@ -9,7 +9,7 @@ import "@/styles/shell.css";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import type { UserData } from "@/utils/userDataMapper";
-import { ChevronRightTapButton } from "@/components/icons/tap-buttons";
+import { ChevronRightTapButton } from "@ai-matrx/tap-target/buttons";
 import UserMenuTrigger from "@/features/shell/components/header/header-right-menu/UserMenuTrigger";
 import UserMenuPanel from "@/features/shell/components/header/header-right-menu/UserMenuPanel";
 import GuestUserMenuTrigger from "@/features/shell/components/header/header-right-menu/GuestUserMenuTrigger";

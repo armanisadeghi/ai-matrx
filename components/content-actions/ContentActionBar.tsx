@@ -24,14 +24,14 @@ import React, {
   Suspense,
   lazy,
 } from "react";
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
   CopyTapButton,
   CheckTapButton,
   PencilTapButton,
   MoreHorizontalTapButton,
   TrashTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeakerButton";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -103,7 +103,7 @@ export interface ContentActionBarProps {
    * Slot for caller-provided action buttons rendered alongside the built-ins,
    * after the pencil and before the trash / overflow menu. To keep the bar
    * visually consistent, callers MUST pass `*TapButton` components from
-   * `@/components/icons/tap-buttons` (use `variant="group"`).
+   * `@ai-matrx/tap-target/buttons` (use `variant="group"`).
    */
   extras?: React.ReactNode;
 }

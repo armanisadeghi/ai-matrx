@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import * as icons from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/utils/cn";
 import {

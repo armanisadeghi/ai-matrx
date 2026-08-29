@@ -2,6 +2,7 @@
 import { getJson, postJson } from "@/lib/python-client";
 import { supabase } from "@/utils/supabase/client";
 import { getResourceAccess } from "@/utils/permissions/access";
+import { canViewAccess } from "@/utils/permissions/access-core";
 import type { Database, Json } from "@/types/database.types";
 import type {
   AccountBinding,
@@ -580,9 +581,10 @@ export async function listProfiles(): Promise<CloudBrowserProfile[]> {
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
   if (error) throw error;
-  return Promise.all(
+  const profiles = await Promise.all(
     data.map(async (row) => {
       const access = await getResourceAccess("browser_profile", row.id);
+      if (!canViewAccess(access.level)) return null;
       const level =
         access.level === "admin"
           ? "admin"
@@ -592,6 +594,7 @@ export async function listProfiles(): Promise<CloudBrowserProfile[]> {
       return mapProfile(row, me, level);
     }),
   );
+  return profiles.filter((profile) => profile !== null);
 }
 
 /**
@@ -641,18 +644,17 @@ export async function loadSnapshot(
   requestedRunId?: string | null,
 ): Promise<CloudBrowserSnapshot> {
   const me = await userId();
-  const pinnedRun = requestedRunId
-    ? (
-        await supabase
-          .schema("browser")
-          .from("run")
-          .select("*")
-          .eq("id", requestedRunId)
-          .in("state", [...LIVE_STATES])
-          .is("deleted_at", null)
-          .maybeSingle()
-      ).data
-    : null;
+  const pinnedRunResult = requestedRunId
+    ? await supabase
+        .schema("browser")
+        .from("run")
+        .select("*")
+        .eq("id", requestedRunId)
+        .is("deleted_at", null)
+        .maybeSingle()
+    : { data: null, error: null };
+  if (pinnedRunResult.error) throw pinnedRunResult.error;
+  const pinnedRun = pinnedRunResult.data;
   let profiles = await listProfiles();
   let selected =
     profiles.find((item) => item.id === pinnedRun?.profile_id) ??
@@ -670,8 +672,11 @@ export async function loadSnapshot(
   }
   if (!selected)
     throw new Error("Cloud Browser could not create your browser profile.");
-  const runQuery = pinnedRun
-    ? { data: [pinnedRun], error: null }
+  const pinnedRunIsLive =
+    pinnedRun !== null &&
+    LIVE_STATES.some((state) => state === pinnedRun.state);
+  const runQuery = requestedRunId
+    ? { data: pinnedRunIsLive ? [pinnedRun] : [], error: null }
     : await supabase
         .schema("browser")
         .from("run")
@@ -683,7 +688,7 @@ export async function loadSnapshot(
         .limit(1);
   if (runQuery.error) throw runQuery.error;
   let activeRow = runQuery.data[0] ?? null;
-  if (!runQuery.data.length) {
+  if (!runQuery.data.length && !requestedRunId) {
     const openedId = openedRunId ?? (await startRun(selected.id));
     const opened = await supabase
       .schema("browser")

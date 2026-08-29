@@ -9,7 +9,7 @@
 import { Link as LinkIcon, Archive } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
+import { confirm } from "@ai-matrx/kit/confirm";
 import type { StudioDocSummary } from "./hooks/usePdfStudioDocs";
 
 function resolveAbsoluteHref(href: string): string {

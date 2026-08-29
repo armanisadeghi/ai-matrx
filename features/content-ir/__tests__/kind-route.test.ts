@@ -1,7 +1,8 @@
 /**
  * Phase 4: kind routing. A block with a resolved, registered kind in its
  * envelope becomes the kind's legacy component type with envelope-derived
- * serverData; everything else passes through by reference (strangler seam).
+ * serverData; any non-empty root kind stays in the kind system, while
+ * genuinely kind-less content passes through by reference.
  */
 
 import { applyIrKindRoute } from "../react/kind-route";
@@ -56,12 +57,12 @@ describe("applyIrKindRoute", () => {
     expect(applyIrKindRoute(block)).toBe(block);
   });
 
-  it("passes an UNREGISTERED __kind raw through by reference (teaching content stays readable JSON)", () => {
+  it("routes an UNREGISTERED __kind raw to the honest generic floor", () => {
     // The kind was identified from `__kind` but the platform has NO
     // definition for it (typo / hypothetical example in teaching content).
     // The envelope preserves the kind (so a late registration can upgrade
-    // via repaint), but the route does NOT claim the shape — the raw code
-    // block stands, untouched and by reference.
+    // via repaint), and the generic floor acknowledges it as a kind without
+    // pretending that a registered component exists.
     const envelope = envelopeFor(
       JSON.stringify({ __kind: "not_registered_anywhere", a: 1 }),
     );
@@ -72,7 +73,17 @@ describe("applyIrKindRoute", () => {
       content: "x",
       metadata: { [IR_ENVELOPE_KEY]: envelope },
     };
-    expect(applyIrKindRoute(block)).toBe(block);
+    const routed = applyIrKindRoute(block);
+    expect(routed.type).toBe("generic_structured");
+    expect(
+      "serverData" in routed ? routed.serverData : undefined,
+    ).toBeUndefined();
+    expect((routed.metadata as Record<string, unknown>).__ir_route).toEqual({
+      by: "generic",
+      key: "generic_structured",
+      unverified: true,
+      reason: "unregistered",
+    });
   });
 
   it("routes a REGISTERED kind's schema-race raw to the generic viewer (never raw JSON)", () => {
@@ -129,11 +140,9 @@ describe("applyIrKindRoute", () => {
   it("card mapping is reference-stable across calls (memoized on tree identity)", () => {
     const envelope = envelopeFor(FLASHCARDS);
     const first = flashcardsServerDataFromEnvelope(envelope) as
-      | FlashcardsBlockData
-      | undefined;
+      FlashcardsBlockData | undefined;
     const second = flashcardsServerDataFromEnvelope(envelope) as
-      | FlashcardsBlockData
-      | undefined;
+      FlashcardsBlockData | undefined;
     expect(second?.cards[0]).toBe(first?.cards[0]);
     expect(second?.cards[1]).toBe(first?.cards[1]);
   });
@@ -155,12 +164,15 @@ describe("applyIrKindRoute", () => {
         },
       },
       nodeIndex: {
-        "cards.0": { kind: "flashcard", kindState: "resolved" as const, status: "streaming" as const },
+        "cards.0": {
+          kind: "flashcard",
+          kindState: "resolved" as const,
+          status: "streaming" as const,
+        },
       },
     };
     const serverData = flashcardsServerDataFromEnvelope(streaming) as
-      | FlashcardsBlockData
-      | undefined;
+      FlashcardsBlockData | undefined;
     expect(serverData?.isComplete).toBe(false);
     expect(serverData?.cards[0].back).toBeNull();
   });

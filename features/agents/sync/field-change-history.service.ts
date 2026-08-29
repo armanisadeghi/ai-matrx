@@ -1,4 +1,4 @@
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import { supabase } from "@/utils/supabase/client";
 import {
   toAgentVersionFieldSnapshot,

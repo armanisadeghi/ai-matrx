@@ -29,7 +29,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { runWithConcurrency } from "@/lib/async/run-with-concurrency";
+import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   AlertDialog,

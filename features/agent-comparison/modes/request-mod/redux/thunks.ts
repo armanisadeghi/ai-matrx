@@ -246,32 +246,8 @@ export const submitAllRequestMod = createAsyncThunk<
         return { launched: 0, failed: 0, skipped: columns.length };
       }
 
-      // No broadcast here — each column has its own per-instance
-      // user-input + variables already populated by the per-column
-      // SmartAgentInput. Skip empty columns rather than fail them.
-      const toRun: RequestModColumn[] = [];
-      let skipped = 0;
-      for (const col of columns) {
-        const userInput =
-          state.instanceUserInput.byConversationId[col.conversationId];
-        const variables =
-          state.instanceVariableValues.byConversationId[col.conversationId]
-            ?.userValues ?? {};
-        const hasText = (userInput?.text ?? "").trim().length > 0;
-        const hasVars = Object.values(variables).some((v) => {
-          if (v == null) return false;
-          if (typeof v === "string") return v.trim().length > 0;
-          return true;
-        });
-        if (!hasText && !hasVars) {
-          skipped++;
-          continue;
-        }
-        toRun.push(col);
-      }
-
       const results = await Promise.allSettled(
-        toRun.map((col) =>
+        columns.map((col) =>
           dispatch(
             smartExecute({
               conversationId: col.conversationId,
@@ -304,7 +280,7 @@ export const submitAllRequestMod = createAsyncThunk<
         }
       }
 
-      return { launched, failed, skipped };
+      return { launched, failed, skipped: 0 };
     } finally {
       dispatch(submitAllFinished());
     }

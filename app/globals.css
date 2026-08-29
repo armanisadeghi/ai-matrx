@@ -1342,109 +1342,11 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
-  /* =========================================================================
-     TapTargetButton — SINGLE SOURCE OF TRUTH for tap-button geometry + feedback.
-     This is the ONLY place these are defined (previously also duplicated in
-     styles/shell.css, which caused the same button to resolve differently
-     inside vs outside the shell). Consumed exclusively by
-     components/icons/TapTargetButton.tsx. To resize or retune EVERY tap button
-     in the app, edit HERE — nowhere else.
-
-     Structure per button:
-       .matrx-tap-target — outer 44px invisible touch target = the interactive
-                           element (<button>/<a>/<label>). It owns the tap
-                           hygiene (touch-action + tap-highlight) so it applies
-                           to the WHOLE 44px target AND to the link variants —
-                           the iOS gray flash paints on the anchor, not the
-                           inner pill, so putting it on the pill never worked.
-       .matrx-tap-pill   — inner 28px visible pill. Geometry + press feedback.
-                           Each variant layers ONLY its decoration on top (glass
-                           border / solid fill / hover bg) — the size is identical
-                           across glass / transparent / solid, guaranteed here.
-       .matrx-tap-icon   — 14px icon.
-       .matrx-tap-*-inline — wider auto-width geometry when `label` is set on
-                              TapTargetButton (icon + caption on one row).
-     The `-sm` classes (32 / 20px) are the slimmer geometry used inside groups.
-     ========================================================================= */
-  .matrx-tap-target {
-    display: flex;
-    height: 2.75rem; /* 44px outer tap target */
-    width: 2.75rem;
-    flex-shrink: 0; /* a tap target never squishes under flex pressure —
-                       flexible neighbors (truncating labels) absorb it */
-    align-items: center;
-    justify-content: center;
-    background-color: transparent;
-    cursor: pointer;
-    outline: none;
-    touch-action: manipulation; /* kills the 300ms mobile tap delay */
-    -webkit-tap-highlight-color: transparent; /* kills the iOS gray tap flash */
-  }
-  .matrx-tap-target:disabled {
-    opacity: 0.4;
-    pointer-events: none;
-  }
-  .matrx-tap-target-sm {
-    height: 2rem; /* 32px */
-    width: 2rem;
-  }
-
-  .matrx-tap-pill {
-    display: flex;
-    height: 1.75rem; /* 28px visible pill */
-    width: 1.75rem;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9999px;
-    transition:
-      background-color 150ms ease,
-      transform 100ms ease;
-  }
-  .matrx-tap-pill:active {
-    transform: scale(0.92);
-  }
-  .matrx-tap-pill-sm {
-    height: 1.25rem; /* 20px */
-    width: 1.25rem;
-  }
-
-  .matrx-tap-icon {
-    height: 0.875rem; /* 14px */
-    width: 0.875rem;
-    flex-shrink: 0;
-  }
-
-  /* Inline label — icon + text on one row inside the pill */
-  .matrx-tap-target-inline {
-    width: auto;
-    min-width: 2.75rem;
-    padding-inline: 0.25rem;
-  }
-  .matrx-tap-pill-inline {
-    width: auto;
-    gap: 0.375rem;
-    padding-inline: 0.625rem;
-  }
-  .matrx-tap-label {
-    font-size: 0.75rem;
-    font-weight: 500;
-    line-height: 1;
-    white-space: nowrap;
-  }
-
-  .matrx-tap-target-inline-sm {
-    width: auto;
-    min-width: 2rem;
-    padding-inline: 0.125rem;
-  }
-  .matrx-tap-pill-inline-sm {
-    width: auto;
-    gap: 0.25rem;
-    padding-inline: 0.5rem;
-  }
-  .matrx-tap-pill-inline-sm .matrx-tap-label {
-    font-size: 0.625rem;
-  }
+  /* TapTargetButton geometry + feedback moved VERBATIM to the extracted
+     package — imported once in app/layout.tsx as
+     `@ai-matrx/tap-target/styles.css` (C9 swap, 2026-08-29). To resize or
+     retune EVERY tap button, edit the package stylesheet — nowhere else.
+     The glass decoration classes (matrx-glass-*) stay host-theme, above. */
 
   /* =========================================================================
      .matrx-touch-targets — SUBTREE touch-target floor (iOS 44px).

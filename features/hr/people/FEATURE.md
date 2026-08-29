@@ -32,9 +32,12 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
    failure.**
 2. **`profile.tabs` IS the tab bar.** Rendered verbatim. Never intersected with a client-side guess,
    never filtered, never added to.
-3. **The profile header's status comes from `header.status`** (server-resolved through
-   `hr.employment_as_of`) — **never** `directory_status`, which is a list-only convenience column
-   and can be a day stale.
+3. **Status is DERIVED from the employment spells as of a date, never stored.** The directory row
+   and the profile header both resolve through `hr.employee_directory_status(employee_id, on)`
+   (the header prefers `hr.employment_as_of(...).status` and falls back to it for the leavers and
+   prehires that resolver correctly answers nothing for). There is no `hr.employee.directory_status`
+   column any more: it was `DEFAULT 'active'` with no writer past creation, so every terminated
+   person read "Active" and was counted in headcount (**D4**, migration `hr_l1_60`).
 4. **One query, real pagination over the full result set.** No capped fetch, no "showing first 100".
    Facet options come from the server (`hr_structure_list`, `hr_org_chart`), never from loaded rows.
 5. **A refusal is DATA.** `supabase.rpc()` does not throw on `{granted:false}` / `{ok:false}`. Empty,
@@ -43,6 +46,12 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
    (Arman's Q2 ruling). Contractors are marked **quietly, as a fact** — one small neutral chip,
    never a lesser status (Arman's Q3 ruling); the marketplace of record shows only in the Job tab.
 7. **Capability-gated actions are ABSENT**, never disabled.
+8. **Malformed IDs 404 before any read — on EVERY dynamic HR route, not just this lane's.** Each
+   `app/(core)/hr/**/[id]/page.tsx` validates with `isFullUuid` before mounting its client reader,
+   so invalid route text never reaches a door as a Postgres `22P02`. And when one does slip
+   through, the transport says so as a READ: `22P02` on a read is "the address is not a valid
+   record id", never "could not be saved… a defect in the form", which is what a mistyped URL
+   used to produce on a screen with no form on it (**D11**).
 
 ## Internal contracts
 
@@ -78,6 +87,15 @@ Section shell (the route-tab bar) is `HrPeopleShell.tsx`, mounted by
 
 ## Change Log
 
+- `2026-08-29` — Directory status is derived from the employment spells as of today, by one
+  shared server function; the `hr.employee.directory_status` column — which had no writer past
+  creation, so every terminated person read "Active" and was counted in headcount — is dropped,
+  and headcount now resolves from `hr.employment` as route 1 always required (D4).
+- `2026-08-29` — A read that fails on a malformed record id says so as a read; the SQLSTATE moved
+  behind the "Error reference" disclosure, and the nine dynamic HR routes that were never
+  uuid-guarded now are (D11).
+- `2026-08-28` — Employee-profile routes reject malformed UUIDs before mounting the client reader,
+  preventing database `22P02` failures from typed or automated bad URLs.
 - `2026-08-28` — Verification consent now fails closed to everyone except the linked subject,
   including pre-start hires; compensation requests notify that subject and expose a self-scoped
   consent inbox door.

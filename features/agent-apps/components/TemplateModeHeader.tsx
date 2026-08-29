@@ -1,6 +1,6 @@
 "use client";
 
-import { CopyTapButton } from "@/components/icons/tap-buttons";
+import { CopyTapButton } from "@ai-matrx/tap-target/buttons";
 
 /**
  * RIGHT region — contextual actions for the active template.

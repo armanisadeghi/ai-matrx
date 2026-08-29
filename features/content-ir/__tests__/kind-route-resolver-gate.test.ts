@@ -7,11 +7,11 @@
  *   a DB row — even an inactive one — can refine the marker but can never
  *   un-render a production kind);
  * - kind resolvable ONLY via a `content_ir.kind_component` row with
- *   `is_active === false` → does NOT route (today's un-routed rendering —
- *   never an error, never hidden content);
+ *   `is_active === false` but no definition → routes to the honest
+ *   unregistered generic floor (never an anonymous code block);
  * - DB-only row with `is_active === true` → routes to its componentKey
  *   (serverData CLEARED — no compiled bridge, the component parses content);
- * - unknown kind → untouched, by reference (the strangler seam);
+ * - unknown kind → generic structured floor with reason `unregistered`;
  * - every resolver-decided route stamps `metadata.__ir_route =
  *   { by: "compiled" | "db", key: componentKey }` (the live verification
  *   hook: registry-resolution vs hard-coded fallback).
@@ -121,7 +121,7 @@ describe("resolver gate at applyIrKindRoute (R6) + __ir_route marker", () => {
     expect(markerOf(routed)).toEqual({ by: "db", key: "flashcards" });
   });
 
-  it("a DB-only kind with is_active=false does NOT route — block untouched, by reference", () => {
+  it("a DB-only kind with is_active=false and no definition routes to the unregistered generic floor", () => {
     componentRegistry.ingestDbRows([
       dbRow({
         kind: "incident_report",
@@ -132,9 +132,15 @@ describe("resolver gate at applyIrKindRoute (R6) + __ir_route marker", () => {
 
     const block = dbOnlyBlock("incident_report");
     const routed = applyIrKindRoute(block);
-    expect(routed).toBe(block); // never an error, never hidden content
-    expect(routed.type).toBe("code");
-    expect(markerOf(routed)).toBeUndefined();
+    expect(routed).not.toBe(block);
+    expect(routed.type).toBe("generic_structured");
+    expect(routed.serverData).toBeUndefined();
+    expect(markerOf(routed)).toEqual({
+      by: "generic",
+      key: "generic_structured",
+      unverified: true,
+      reason: "unregistered",
+    });
   });
 
   it("a DB-only kind with is_active=true routes to its componentKey, clears poison serverData, stamps by:'db'", () => {
@@ -160,8 +166,15 @@ describe("resolver gate at applyIrKindRoute (R6) + __ir_route marker", () => {
     expect(applyIrKindRoute(block)).toBe(block);
   });
 
-  it("an unknown kind (no compiled entry, no DB row) is untouched, by reference", () => {
+  it("an unknown kind (no compiled entry, no DB row) routes to the unregistered generic floor", () => {
     const block = dbOnlyBlock("kind_nobody_registered");
-    expect(applyIrKindRoute(block)).toBe(block);
+    const routed = applyIrKindRoute(block);
+    expect(routed.type).toBe("generic_structured");
+    expect(markerOf(routed)).toEqual({
+      by: "generic",
+      key: "generic_structured",
+      unverified: true,
+      reason: "unregistered",
+    });
   });
 });

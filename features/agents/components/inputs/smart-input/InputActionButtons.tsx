@@ -34,7 +34,6 @@ import {
   selectShowMicrophone,
   selectAutoClearConversation,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectInputCharCount } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   setSubmitOnEnter,
   toggleVariablePanel,
@@ -147,16 +146,12 @@ export function InputActionButtons({
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
   const showMicrophone = useAppSelector(selectShowMicrophone(conversationId));
 
-  const charCount = useAppSelector(selectInputCharCount(conversationId));
-
   // While a run streams, the composer STAYS live: Send queues the text into
   // the Turn-Boundary Inbox (the running agent answers it at its next pause,
   // on the same stream — /Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md), and a separate Stop
-  // button cancels the run. Send during a run needs text to queue; while the
-  // mic is active the send path blocks so trailing audio isn't dropped.
-  const isSendDisabled = isExecuting
-    ? charCount === 0 || disableSend || voiceBusy
-    : disableSend || voiceBusy;
+  // button cancels the run. Content never controls submit eligibility; while
+  // the mic is active the send path blocks so trailing audio isn't dropped.
+  const isSendDisabled = disableSend || voiceBusy;
 
   const handleVoiceBusyChange = useCallback(
     (state: { isRecording: boolean; isTranscribing: boolean }) => {

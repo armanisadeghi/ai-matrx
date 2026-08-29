@@ -14,7 +14,7 @@
 
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 import Link from "next/link";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { DynamicIcon } from "@ai-matrx/icons";
 import { Loader2, TestTube, ChevronDown, Rocket } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
@@ -27,7 +27,7 @@ import { AgentSelectorIsland } from "@/features/agents/components/shared/AgentSe
 import { AgentModeController } from "@/features/agents/components/shared/AgentModeController";
 import { AgentSaveStatus } from "@/features/agents/components/shared/AgentSaveStatus";
 import { AgentOptionsMenu } from "@/features/agents/components/shared/AgentOptionsMenu";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   getAllDisplayTypes,
   getDisplayMeta,

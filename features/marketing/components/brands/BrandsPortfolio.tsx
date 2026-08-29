@@ -27,7 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
+import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
 import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hub-scope";

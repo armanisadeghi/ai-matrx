@@ -4,12 +4,28 @@
 //
 // The header, on every tab (SPEC-EMPLOYEES §2.3.0).
 //
-// 🚨 THE STATUS COMES FROM `header.status`, WHICH THE SERVER RESOLVED THROUGH
-// `hr.employment_as_of(employee_id, today)` — NEVER from `directory_status`.
-// `directory_status` is a trigger-maintained convenience column that can be up
-// to a day stale for a future-dated change that just landed; it is sanctioned
-// for the LIST and nowhere else. Wiring the header to it is the single easiest
-// way to make this page quietly lie about whether somebody works here.
+// 🚨 THE STATUS COMES FROM `header.status`, WHICH IS ONE CALL TO
+// `hr.employee_directory_status(employee_id, as_of)` — the SAME function the
+// directory row resolves through, as of the SAME date, so the list and the
+// record cannot disagree about whether somebody works here.
+//
+// It did not always say that, and the difference is the whole of D4B. The
+// server used to coalesce the RAW `hr.employment.status` enum over the
+// derivation, making the derivation a mere fallback for the two populations
+// `hr.employment_as_of` answers nothing for (somebody who has left, somebody
+// who has not started). Everybody else got the raw spell enum, whose values
+// (`pending`, `suspended`) are not the four this chip speaks — and a person
+// hired yesterday came back `pending`, captioned "Not started yet", through a
+// `?as_of=` date a user can type into the URL. (Migration `hr_l1_63`.)
+//
+// There is no `directory_status` COLUMN any more, and there must never be one
+// again: it was `DEFAULT 'active'` with no writer past creation, so separation,
+// rehire and leave never moved it (D4, migration `hr_l1_60`). Nor may the
+// derivation read a status column in the enum's clothing: it consulted
+// `em.status = 'pending'` — a value nothing ever writes twice — and froze all
+// seven future hires at "Not started yet" permanently, hire date or no hire
+// date (D4A, `hr_l1_63`). Whether somebody works here is a fact about the DATES
+// on their spells, which no stored word can hold across a day boundary.
 //
 // 🚨 AT MOST ONE PENDING CHIP (§6.2). Not one per change. `PendingChip` takes
 // the count and is a door to the pending panel.
@@ -81,7 +97,7 @@ export function ProfileHeader({
           <h1 className="min-w-0 truncate text-lg font-semibold text-foreground">
             {header.display_name}
           </h1>
-          {/* Resolved as-of TODAY by the server. Never `directory_status`. */}
+          {/* Resolved from the spells as of the viewed date, by the server. */}
           <HrStatusChip status={header.status} />
           <HrWorkerClassChip workerClass={header.worker_class} />
           {header.pronouns ? (

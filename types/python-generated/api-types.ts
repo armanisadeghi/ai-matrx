@@ -5205,6 +5205,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mcp-connections/{server_id}/selected-file-metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Selected File Metadata
+         * @description Read metadata for one explicit Dropbox file path or id.
+         */
+        post: operations["selected_file_metadata_mcp_connections__server_id__selected_file_metadata_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp-connections/{server_id}/new-relic/account-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * New Relic Account Status
+         * @description Return only the accounts visible to one authorized New Relic identity.
+         */
+        post: operations["new_relic_account_status_mcp_connections__server_id__new_relic_account_status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp-connections/{server_id}/cloudflare/account-metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cloudflare Account Metadata
+         * @description Return only account id/name/type through an exact core-scope grant.
+         */
+        post: operations["cloudflare_account_metadata_mcp_connections__server_id__cloudflare_account_metadata_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mcp-connections/{server_id}/grafana/dashboard-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grafana Dashboard Search
+         * @description Search dashboard metadata through Grafana's fixed read-only MCP tool.
+         */
+        post: operations["grafana_dashboard_search_mcp_connections__server_id__grafana_dashboard_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mcp-connections/{server_id}/oauth-tokens": {
         parameters: {
             query?: never;
@@ -5565,6 +5645,363 @@ export interface paths {
         put?: never;
         /** Webhook */
         post: operations["webhook_github_integrations_webhook_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Authorize */
+        post: operations["authorize_microsoft_integrations_authorize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Callback */
+        get: operations["callback_microsoft_integrations_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh */
+        post: operations["refresh_microsoft_integrations_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preflight */
+        post: operations["preflight_microsoft_integrations_preflight_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disconnect */
+        post: operations["disconnect_microsoft_integrations_disconnect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/onedrive/selected-file/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Selected File Metadata */
+        post: operations["selected_file_metadata_microsoft_integrations_onedrive_selected_file_metadata_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/onedrive/selected-file/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Selected File Content */
+        post: operations["selected_file_content_microsoft_integrations_onedrive_selected_file_content_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/outlook/recent-basic-messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recent Basic Messages */
+        post: operations["recent_basic_messages_microsoft_integrations_outlook_recent_basic_messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/outlook/calendar/basic-window": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Basic Calendar Window */
+        post: operations["basic_calendar_window_microsoft_integrations_outlook_calendar_basic_window_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/sharepoint/selected-file/metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sharepoint Selected File Metadata */
+        post: operations["sharepoint_selected_file_metadata_microsoft_integrations_sharepoint_selected_file_metadata_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/sharepoint/selected-file/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sharepoint Selected File Content */
+        post: operations["sharepoint_selected_file_content_microsoft_integrations_sharepoint_selected_file_content_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/teams/joined": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Joined Teams */
+        post: operations["joined_teams_microsoft_integrations_teams_joined_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/teams/selected-chat/recent-messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Selected Chat Recent Messages */
+        post: operations["selected_chat_recent_messages_microsoft_integrations_teams_selected_chat_recent_messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ebay-integrations/sandbox/taxonomy/default-category-tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Default Category Tree */
+        get: operations["default_category_tree_ebay_integrations_sandbox_taxonomy_default_category_tree_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/trello-integrations/public/boards/{board_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Board */
+        get: operations["public_board_trello_integrations_public_boards__board_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vimeo-integrations/public/videos/{video_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Video */
+        get: operations["public_video_vimeo_integrations_public_videos__video_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moodle-integrations/official-demos/{site_key}/public-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Official Demo Public Config */
+        get: operations["official_demo_public_config_moodle_integrations_official_demos__site_key__public_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openedx-integrations/official-sandbox/demo-course": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Official Sandbox Demo Course */
+        get: operations["official_sandbox_demo_course_openedx_integrations_official_sandbox_demo_course_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/zotero/public-libraries/{library_type}/{library_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Public Library Items */
+        get: operations["list_public_library_items_zotero_public_libraries__library_type___library_id__items_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/spotify/public-metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Public Metadata */
+        get: operations["get_public_metadata_spotify_public_metadata_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/twitch/streams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Streams */
+        get: operations["public_streams_twitch_streams_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -32899,6 +33336,23 @@ export interface components {
             /** Active Page Id */
             active_page_id?: string | null;
         };
+        /**
+         * CloudflareAccountMetadata
+         * @description Provider-formatted account metadata from one fixed Cloudflare API read.
+         */
+        CloudflareAccountMetadata: {
+            /** Server Id */
+            server_id: string;
+            /** Accounts */
+            accounts: string;
+            /**
+             * Tool Name
+             * @default execute
+             */
+            tool_name?: string;
+            /** Oauth Scopes */
+            oauth_scopes?: string[];
+        };
         /** ClusterDetailResponse */
         ClusterDetailResponse: {
             cluster: components["schemas"]["LocalClusterResponse"];
@@ -39396,6 +39850,34 @@ export interface components {
             /** Schema Source */
             schema_source?: string | null;
         };
+        /**
+         * DropboxSelectedFileMetadata
+         * @description Provider-formatted metadata for the one requested file.
+         */
+        DropboxSelectedFileMetadata: {
+            /** Server Id */
+            server_id: string;
+            /** File Ref */
+            file_ref: string;
+            /** Metadata */
+            metadata: string;
+            /**
+             * Tool Name
+             * @default GetFileMetadata
+             */
+            tool_name?: string;
+        };
+        /**
+         * DropboxSelectedFileRequest
+         * @description One exact Dropbox file reference; directory discovery is not accepted.
+         */
+        DropboxSelectedFileRequest: {
+            /**
+             * File Ref
+             * @description Exact Dropbox file path or file id returned by Dropbox.
+             */
+            file_ref: string;
+        };
         /** DryRunEdgeReport */
         DryRunEdgeReport: {
             /**
@@ -39609,6 +40091,28 @@ export interface components {
             hours: string;
             /** Amount */
             amount?: string | null;
+        };
+        /**
+         * EbaySandboxTaxonomyResult
+         * @description Safe proof result; no provider token or credential material.
+         */
+        EbaySandboxTaxonomyResult: {
+            /**
+             * Environment
+             * @default sandbox
+             */
+            environment?: string;
+            /** Marketplace Id */
+            marketplace_id: string;
+            /** Category Tree Id */
+            category_tree_id: string;
+            /** Category Tree Version */
+            category_tree_version: string;
+            /**
+             * Scope
+             * @default https://api.ebay.com/oauth/api_scope
+             */
+            scope?: string;
         };
         /**
          * EdgeDef
@@ -44078,6 +44582,34 @@ export interface components {
              * @constant
              */
             access_mode?: "read_only";
+        };
+        /**
+         * GrafanaDashboardSearchRequest
+         * @description One bounded dashboard title/tag query; no arbitrary MCP arguments.
+         */
+        GrafanaDashboardSearchRequest: {
+            /**
+             * Query
+             * @description Grafana dashboard search text.
+             */
+            query: string;
+        };
+        /**
+         * GrafanaDashboardSearchResult
+         * @description Provider-formatted matches from Grafana's fixed read-only search tool.
+         */
+        GrafanaDashboardSearchResult: {
+            /** Server Id */
+            server_id: string;
+            /** Query */
+            query: string;
+            /** Dashboards */
+            dashboards: string;
+            /**
+             * Tool Name
+             * @default search_dashboards
+             */
+            tool_name?: string;
         };
         /** GrantPermissionRequest */
         GrantPermissionRequest: {
@@ -49270,6 +49802,15 @@ export interface components {
             candidate_label: string;
             candidate: components["schemas"]["MandateCandidate"];
             principal: components["schemas"]["MandateTestPrincipal"];
+            /**
+             * Holder Type
+             * @default agent
+             */
+            holder_type?: string;
+            /** Run Id */
+            run_id?: string | null;
+            /** Workflow Id */
+            workflow_id?: string | null;
             /** Agent Id */
             agent_id?: string | null;
             /** Definition Agent Id */
@@ -50301,6 +50842,47 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** MicrosoftAuthorizationRequest */
+        MicrosoftAuthorizationRequest: {
+            /** Campaigns */
+            campaigns: ("identity" | "outlook_mail_basic" | "outlook_calendar_basic" | "onedrive_files_read" | "sharepoint_selected" | "teams_personal_read")[];
+        };
+        /** MicrosoftAuthorizationResponse */
+        MicrosoftAuthorizationResponse: {
+            /** Authorization Url */
+            authorization_url: string;
+            /** Campaigns */
+            campaigns: string[];
+            /** Requested Scopes */
+            requested_scopes: string[];
+        };
+        /** MicrosoftConnectionRequest */
+        MicrosoftConnectionRequest: {
+            /** Connection Id */
+            connection_id: string;
+        };
+        /** MicrosoftEntitlementResponse */
+        MicrosoftEntitlementResponse: {
+            /** Campaign */
+            campaign: string;
+            /** Ready */
+            ready: boolean;
+            /** Reason */
+            reason: string | null;
+        };
+        /** MicrosoftLifecycleResponse */
+        MicrosoftLifecycleResponse: {
+            /** Connection Id */
+            connection_id: string;
+            /** Status */
+            status: string;
+            /** Campaigns */
+            campaigns: string[];
+            /** Scopes */
+            scopes: string[];
+            /** Entitlements */
+            entitlements: components["schemas"]["MicrosoftEntitlementResponse"][];
+        };
         /**
          * MintControlRequest
          * @description Body of POST /handoffs/{handoff_id}/stream-ticket.
@@ -50606,6 +51188,45 @@ export interface components {
             /** Referenced By */
             referenced_by: string[];
         };
+        /**
+         * MoodlePublicConfigResult
+         * @description Bounded projection of Moodle's unauthenticated mobile public config.
+         */
+        MoodlePublicConfigResult: {
+            /**
+             * Provider
+             * @default moodle
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default public_no_auth
+             */
+            access?: string;
+            /**
+             * Site Key
+             * @enum {string}
+             */
+            site_key: "school" | "sandbox";
+            /** Site Url */
+            site_url: string;
+            /** Site Name */
+            site_name: string;
+            /** Guest Login Enabled */
+            guest_login_enabled: boolean;
+            /** Web Services Enabled */
+            web_services_enabled: boolean;
+            /** Mobile Web Service Enabled */
+            mobile_web_service_enabled: boolean;
+            /** Maintenance Enabled */
+            maintenance_enabled: boolean;
+            /** Login Type */
+            login_type: number;
+            /** Language */
+            language: string;
+            /** Show Login Form */
+            show_login_form: boolean;
+        };
         /** MoveArgs */
         MoveArgs: {
             /** New Parent Id */
@@ -50806,6 +51427,23 @@ export interface components {
             score?: number;
             /** Reasons */
             reasons?: string[];
+        };
+        /**
+         * NewRelicAccountStatus
+         * @description Provider-formatted account visibility from the discovery-only MCP tool.
+         */
+        NewRelicAccountStatus: {
+            /** Server Id */
+            server_id: string;
+            /** Accounts */
+            accounts: string;
+            /**
+             * Tool Name
+             * @default list_available_new_relic_accounts
+             */
+            tool_name?: string;
+            /** Include Tags */
+            include_tags?: string[];
         };
         /** NewsroomSyncBody */
         NewsroomSyncBody: {
@@ -51831,6 +52469,80 @@ export interface components {
             /** User Id */
             user_id: string;
         };
+        /** OneDriveSelectedFileRequest */
+        OneDriveSelectedFileRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Drive Id */
+            drive_id: string;
+            /** Item Id */
+            item_id: string;
+        };
+        /** OneDriveSelectedFileResponse */
+        OneDriveSelectedFileResponse: {
+            /** Drive Id */
+            drive_id: string;
+            /** Item Id */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Size */
+            size: number;
+            /** Mime Type */
+            mime_type: string;
+            /** Etag */
+            etag: string | null;
+            /** Last Modified At */
+            last_modified_at: string | null;
+        };
+        /**
+         * OpenEdxDemoCourseResult
+         * @description Bounded public metadata for the official sandbox demo course.
+         */
+        OpenEdxDemoCourseResult: {
+            /**
+             * Provider
+             * @default openedx
+             * @constant
+             */
+            provider?: "openedx";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Environment
+             * @default official_sandbox
+             * @constant
+             */
+            environment?: "official_sandbox";
+            /**
+             * Site Url
+             * @default https://sandbox.openedx.org
+             */
+            site_url?: string;
+            /** Course Id */
+            course_id: string;
+            /** Course Name */
+            course_name: string;
+            /** Organization */
+            organization: string;
+            /** Course Number */
+            course_number: string;
+            /**
+             * Pacing
+             * @enum {string}
+             */
+            pacing: "self" | "instructor";
+            /** Mobile Available */
+            mobile_available: boolean;
+            /** Invitation Only */
+            invitation_only: boolean;
+            /** Short Description */
+            short_description: string;
+        };
         /** OpenRuntimeResponse */
         OpenRuntimeResponse: {
             [key: string]: unknown;
@@ -52368,6 +53080,77 @@ export interface components {
             rejected?: {
                 [key: string]: string;
             }[];
+        };
+        /** OutlookBasicCalendarEventResponse */
+        OutlookBasicCalendarEventResponse: {
+            /** Event Id */
+            event_id: string;
+            /** Starts At */
+            starts_at: string;
+            /** Start Time Zone */
+            start_time_zone: string;
+            /** Ends At */
+            ends_at: string;
+            /** End Time Zone */
+            end_time_zone: string;
+            /** Is All Day */
+            is_all_day: boolean;
+            /** Show As */
+            show_as: string | null;
+            /** Sensitivity */
+            sensitivity: string | null;
+            /** Event Type */
+            event_type: string | null;
+        };
+        /** OutlookBasicCalendarWindowRequest */
+        OutlookBasicCalendarWindowRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /**
+             * Days
+             * @default 7
+             */
+            days?: number;
+        };
+        /** OutlookBasicCalendarWindowResponse */
+        OutlookBasicCalendarWindowResponse: {
+            /** Window Start */
+            window_start: string;
+            /** Window End */
+            window_end: string;
+            /** Events */
+            events: components["schemas"]["OutlookBasicCalendarEventResponse"][];
+            /** Truncated */
+            truncated: boolean;
+            /**
+             * Access Mode
+             * @default read_only
+             * @constant
+             */
+            access_mode?: "read_only";
+        };
+        /** OutlookBasicMessageResponse */
+        OutlookBasicMessageResponse: {
+            /** Message Id */
+            message_id: string;
+            /** Sender Name */
+            sender_name: string | null;
+            /** Sender Address */
+            sender_address: string | null;
+            /** Subject */
+            subject: string | null;
+            /** Received At */
+            received_at: string;
+        };
+        /** OutlookRecentBasicMessagesRequest */
+        OutlookRecentBasicMessagesRequest: {
+            /** Connection Id */
+            connection_id: string;
+        };
+        /** OutlookRecentBasicMessagesResponse */
+        OutlookRecentBasicMessagesResponse: {
+            /** Messages */
+            messages: components["schemas"]["OutlookBasicMessageResponse"][];
         };
         /**
          * OutputSchemaEnvelope
@@ -63722,6 +64505,32 @@ export interface components {
             /** Entries */
             entries?: components["schemas"]["VoiceShare"][];
         };
+        /** SharePointSelectedFileRequest */
+        SharePointSelectedFileRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Site Id */
+            site_id: string;
+            /** Item Id */
+            item_id: string;
+        };
+        /** SharePointSelectedFileResponse */
+        SharePointSelectedFileResponse: {
+            /** Site Id */
+            site_id: string;
+            /** Item Id */
+            item_id: string;
+            /** Name */
+            name: string;
+            /** Size */
+            size: number;
+            /** Mime Type */
+            mime_type: string;
+            /** Etag */
+            etag: string | null;
+            /** Last Modified At */
+            last_modified_at: string | null;
+        };
         /** SheetReadRequest */
         SheetReadRequest: {
             /** Connection Id */
@@ -65319,6 +66128,49 @@ export interface components {
         SplitPlanResponse: {
             /** Plans */
             plans: components["schemas"]["PlanRecord"][];
+        };
+        /**
+         * SpotifyPublicMetadata
+         * @description Safe projection of one public Spotify oEmbed response.
+         */
+        SpotifyPublicMetadata: {
+            /**
+             * Kind
+             * @default spotify_public_metadata
+             * @constant
+             */
+            __kind?: "spotify_public_metadata";
+            /** Source Url */
+            source_url: string;
+            /**
+             * Resource Type
+             * @enum {string}
+             */
+            resource_type: "track" | "album" | "artist" | "playlist" | "episode" | "show";
+            /** Resource Id */
+            resource_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Provider Name
+             * @default Spotify
+             * @constant
+             */
+            provider_name?: "Spotify";
+            /** Provider Url */
+            provider_url: string;
+            /** Embed Url */
+            embed_url: string;
+            /** Width */
+            width?: number | null;
+            /** Height */
+            height?: number | null;
+            /** Thumbnail Url */
+            thumbnail_url?: string | null;
+            /** Thumbnail Width */
+            thumbnail_width?: number | null;
+            /** Thumbnail Height */
+            thumbnail_height?: number | null;
         };
         /**
          * SpreadsheetSpec
@@ -67357,6 +68209,69 @@ export interface components {
             /** Updated At */
             updated_at?: string | null;
         };
+        /** TeamsChatMessageResponse */
+        TeamsChatMessageResponse: {
+            /** Chat Id */
+            chat_id: string;
+            /** Message Id */
+            message_id: string;
+            /** Created At */
+            created_at: string;
+            /** Last Modified At */
+            last_modified_at: string | null;
+            /** Message Type */
+            message_type: string | null;
+            /** Sender Display Name */
+            sender_display_name: string | null;
+            /** Body Content Type */
+            body_content_type: string | null;
+            /** Body Content */
+            body_content: string | null;
+        };
+        /** TeamsJoinedTeamResponse */
+        TeamsJoinedTeamResponse: {
+            /** Team Id */
+            team_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Is Archived */
+            is_archived: boolean;
+        };
+        /** TeamsJoinedTeamsResponse */
+        TeamsJoinedTeamsResponse: {
+            /** Teams */
+            teams: components["schemas"]["TeamsJoinedTeamResponse"][];
+            /** Truncated */
+            truncated: boolean;
+            /**
+             * Access Mode
+             * @default read_only
+             * @constant
+             */
+            access_mode?: "read_only";
+        };
+        /** TeamsRecentChatMessagesResponse */
+        TeamsRecentChatMessagesResponse: {
+            /** Chat Id */
+            chat_id: string;
+            /** Messages */
+            messages: components["schemas"]["TeamsChatMessageResponse"][];
+            /** Truncated */
+            truncated: boolean;
+            /**
+             * Access Mode
+             * @default read_only
+             * @constant
+             */
+            access_mode?: "read_only";
+        };
+        /** TeamsSelectedChatMessagesRequest */
+        TeamsSelectedChatMessagesRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Chat Id */
+            chat_id: string;
+        };
         /** TemplateCreate */
         TemplateCreate: {
             /** Name */
@@ -69046,6 +69961,47 @@ export interface components {
             folders: components["schemas"]["TrashFolderEntry"][];
         };
         /**
+         * TrelloPublicBoardResult
+         * @description Safe public metadata proof; no Trello credential or private data.
+         */
+        TrelloPublicBoardResult: {
+            /**
+             * Provider
+             * @default trello
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default public_no_auth
+             */
+            access?: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+            /** Short Url */
+            short_url: string;
+            /** Permission Level */
+            permission_level: string;
+            /** Cards */
+            cards: components["schemas"]["TrelloPublicCard"][];
+        };
+        /** TrelloPublicCard */
+        TrelloPublicCard: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Url */
+            url: string;
+            /** Closed */
+            closed: boolean;
+            /** List Id */
+            list_id: string;
+        };
+        /**
          * TriggerCreate
          * @description Child sch_trigger row payload.
          */
@@ -69340,6 +70296,77 @@ export interface components {
             from_user_message_id: string;
             /** To User Message Id */
             to_user_message_id?: string | null;
+        };
+        /**
+         * TwitchStream
+         * @description Safe projection of one public Twitch stream record.
+         */
+        TwitchStream: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: string;
+            /** User Login */
+            user_login: string;
+            /** User Name */
+            user_name: string;
+            /**
+             * Game Id
+             * @default
+             */
+            game_id?: string;
+            /**
+             * Game Name
+             * @default
+             */
+            game_name?: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "live" | "";
+            /**
+             * Title
+             * @default
+             */
+            title?: string;
+            /** Tags */
+            tags?: string[];
+            /** Viewer Count */
+            viewer_count: number;
+            /** Started At */
+            started_at: string;
+            /** Language */
+            language: string;
+            /** Thumbnail Url */
+            thumbnail_url: string;
+        };
+        /**
+         * TwitchStreamsResult
+         * @description Credential-free output from one public-stream page.
+         */
+        TwitchStreamsResult: {
+            /**
+             * Kind
+             * @default twitch_public_streams
+             * @constant
+             */
+            __kind?: "twitch_public_streams";
+            /**
+             * Environment
+             * @enum {string}
+             */
+            environment: "mock" | "production";
+            /** Streams */
+            streams?: components["schemas"]["TwitchStream"][];
+            /** Cursor */
+            cursor?: string | null;
+            /** Requested First */
+            requested_first: number;
+            /** Requested User Logins */
+            requested_user_logins?: string[];
+            /** Scopes */
+            scopes?: string[];
         };
         /**
          * TypeLeak
@@ -71667,6 +72694,48 @@ export interface components {
             resize_negotiation?: "disabled";
         };
         /**
+         * VimeoPublicVideoResult
+         * @description Safe public metadata projection; provider-controlled HTML is excluded.
+         */
+        VimeoPublicVideoResult: {
+            /**
+             * Provider
+             * @default vimeo
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default public_no_auth
+             */
+            access?: string;
+            /** Video Id */
+            video_id: string;
+            /** Uri */
+            uri: string;
+            /** Video Url */
+            video_url: string;
+            /** Title */
+            title: string;
+            /** Author Name */
+            author_name: string;
+            /** Author Url */
+            author_url: string;
+            /** Account Type */
+            account_type?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Thumbnail Url */
+            thumbnail_url: string;
+            /** Upload Date */
+            upload_date?: string | null;
+        };
+        /**
          * VirtualAdapterDescriptor
          * @description The shape returned by GET /virtual.
          */
@@ -73280,6 +74349,66 @@ export interface components {
             comment_count: number | null;
             /** Privacy Status */
             privacy_status: string | null;
+        };
+        /** ZoteroCreator */
+        ZoteroCreator: {
+            /** Creator Type */
+            creator_type?: string | null;
+            /** First Name */
+            first_name?: string | null;
+            /** Last Name */
+            last_name?: string | null;
+            /** Name */
+            name?: string | null;
+        };
+        /** ZoteroPublicItem */
+        ZoteroPublicItem: {
+            /**
+             * Kind
+             * @default zotero_public_library_item
+             * @constant
+             */
+            __kind?: "zotero_public_library_item";
+            /** Key */
+            key: string;
+            /** Version */
+            version: number;
+            /** Item Type */
+            item_type: string;
+            /** Title */
+            title: string;
+            /** Creators */
+            creators: components["schemas"]["ZoteroCreator"][];
+            /** Date */
+            date?: string | null;
+            /** Doi */
+            doi?: string | null;
+            /** Isbn */
+            isbn?: string | null;
+        };
+        /** ZoteroPublicLibraryResponse */
+        ZoteroPublicLibraryResponse: {
+            /**
+             * Kind
+             * @default zotero_public_library_items
+             * @constant
+             */
+            __kind?: "zotero_public_library_items";
+            /**
+             * Library Type
+             * @enum {string}
+             */
+            library_type: "users" | "groups";
+            /** Library Id */
+            library_id: number;
+            /** Library Name */
+            library_name?: string | null;
+            /** Library Version */
+            library_version?: number | null;
+            /** Returned Count */
+            returned_count: number;
+            /** Items */
+            items: components["schemas"]["ZoteroPublicItem"][];
         };
         /** DeletedResponse */
         aidream__api__routers__admin_app_logs__DeletedResponse: {
@@ -83242,6 +84371,138 @@ export interface operations {
             };
         };
     };
+    selected_file_metadata_mcp_connections__server_id__selected_file_metadata_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DropboxSelectedFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DropboxSelectedFileMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    new_relic_account_status_mcp_connections__server_id__new_relic_account_status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewRelicAccountStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cloudflare_account_metadata_mcp_connections__server_id__cloudflare_account_metadata_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloudflareAccountMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    grafana_dashboard_search_mcp_connections__server_id__grafana_dashboard_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrafanaDashboardSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrafanaDashboardSearchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     persist_tokens_mcp_connections__server_id__oauth_tokens_post: {
         parameters: {
             query?: never;
@@ -83880,6 +85141,672 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GitHubWebhookResponse"];
+                };
+            };
+        };
+    };
+    authorize_microsoft_integrations_authorize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MicrosoftAuthorizationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MicrosoftAuthorizationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    callback_microsoft_integrations_callback_get: {
+        parameters: {
+            query: {
+                state: string;
+                code?: string | null;
+                error?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            307: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_microsoft_integrations_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MicrosoftConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MicrosoftLifecycleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preflight_microsoft_integrations_preflight_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MicrosoftConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MicrosoftLifecycleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disconnect_microsoft_integrations_disconnect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MicrosoftConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    selected_file_metadata_microsoft_integrations_onedrive_selected_file_metadata_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OneDriveSelectedFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OneDriveSelectedFileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    selected_file_content_microsoft_integrations_onedrive_selected_file_content_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OneDriveSelectedFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recent_basic_messages_microsoft_integrations_outlook_recent_basic_messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutlookRecentBasicMessagesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutlookRecentBasicMessagesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    basic_calendar_window_microsoft_integrations_outlook_calendar_basic_window_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OutlookBasicCalendarWindowRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OutlookBasicCalendarWindowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sharepoint_selected_file_metadata_microsoft_integrations_sharepoint_selected_file_metadata_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SharePointSelectedFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SharePointSelectedFileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sharepoint_selected_file_content_microsoft_integrations_sharepoint_selected_file_content_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SharePointSelectedFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    joined_teams_microsoft_integrations_teams_joined_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MicrosoftConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamsJoinedTeamsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    selected_chat_recent_messages_microsoft_integrations_teams_selected_chat_recent_messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeamsSelectedChatMessagesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamsRecentChatMessagesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    default_category_tree_ebay_integrations_sandbox_taxonomy_default_category_tree_get: {
+        parameters: {
+            query: {
+                credential_item_id: string;
+                marketplace_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EbaySandboxTaxonomyResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_board_trello_integrations_public_boards__board_id__get: {
+        parameters: {
+            query?: {
+                card_limit?: number;
+            };
+            header?: never;
+            path: {
+                board_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrelloPublicBoardResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_video_vimeo_integrations_public_videos__video_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VimeoPublicVideoResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    official_demo_public_config_moodle_integrations_official_demos__site_key__public_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_key: "school" | "sandbox";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoodlePublicConfigResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    official_sandbox_demo_course_openedx_integrations_official_sandbox_demo_course_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenEdxDemoCourseResult"];
+                };
+            };
+        };
+    };
+    list_public_library_items_zotero_public_libraries__library_type___library_id__items_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                library_type: "users" | "groups";
+                library_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZoteroPublicLibraryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_metadata_spotify_public_metadata_get: {
+        parameters: {
+            query: {
+                url: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpotifyPublicMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_streams_twitch_streams_get: {
+        parameters: {
+            query: {
+                credential_item_id: string;
+                user_login?: string[];
+                first?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwitchStreamsResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

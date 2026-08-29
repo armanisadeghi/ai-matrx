@@ -7,7 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { useProject } from "@/features/projects/hooks";
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { getProjectBySlug, getProject } from "@/features/projects/service";

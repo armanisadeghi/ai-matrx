@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import {
   fetchCodingSessionBindings,
   type CodingSessionBinding,

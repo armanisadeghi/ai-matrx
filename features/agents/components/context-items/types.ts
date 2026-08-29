@@ -14,6 +14,7 @@
 
 import type { ComponentType } from "react";
 import type { DataRef } from "@/features/agents/types/message-types";
+import type { FileIdentityHint } from "@/features/files/types";
 import type {
   ListInputPart,
   PreFetchedUrl,
@@ -59,6 +60,8 @@ export interface ContextItemRefs {
   contextInput?: ContextInputSnapshot;
   /** cld_files UUID for media blocks (MediaRef contract). */
   fileId?: string | null;
+  /** Known fields carried by the persisted part; Redux fetches only the rest. */
+  fileHint?: FileIdentityHint;
   /** Direct durable URL when no file_id is present. */
   fileUrl?: string | null;
   projectIds?: string[];

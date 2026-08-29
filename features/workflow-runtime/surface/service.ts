@@ -15,7 +15,7 @@
 
 import type { Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { guardedUpdate } from "@ai-matrx/data/db";
 import {
   parseSurfaceConfig,
   validateSurfaceConfig,

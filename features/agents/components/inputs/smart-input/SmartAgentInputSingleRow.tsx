@@ -141,7 +141,6 @@ export function SmartAgentInputSingleRow({
             disableSend={sendBlocked}
             singleRow
             autoFocus={!isAmbient}
-            requireTextForSubmit={isAmbient}
           />
         </div>
 

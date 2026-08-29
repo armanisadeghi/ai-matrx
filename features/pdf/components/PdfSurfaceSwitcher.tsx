@@ -19,7 +19,7 @@ import { ArrowRight, Check, ExternalLink, Layers, Loader2 } from "lucide-react";
 import {
   LayersTapButton,
   LoadingTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import {
   DropdownMenu,
   DropdownMenuContent,

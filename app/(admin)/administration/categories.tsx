@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { adminNavigationRegistry } from "@/features/admin/constants/admin-navigation";
 
 export const adminNavigation = adminNavigationRegistry.map((domain) => ({

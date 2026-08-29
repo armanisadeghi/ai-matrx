@@ -125,7 +125,14 @@ place. See `types.ts` for the full contract.
    disabled enable-button. `HrRouteTab.visible === false` means the tab is not
    rendered at all.
 4. **Every page runs the universal states before its own** — through `HrPageState`,
-   in one order, so no page re-implements the sequence.
+   in one order, so no page re-implements the sequence. Its last state is the
+   disclosure: when the employer that OPENED is not the one the link ASKED FOR,
+   the page says so (`useHrContext` law B). `HrShell` and the two `/hr/tasks`
+   surfaces state it above the page and claim it through `HrDisclosureClaimed`;
+   everything else inherits it from `HrPageState`. A `/hr` route that reaches
+   neither is a compliance defect, and
+   `features/hr/__tests__/employer-substitution-is-stated-on-every-route.test.ts`
+   fails on one.
 5. **Effective dating is asked, never guessed.** The date is first and labelled
    _Effective_; a future date flips the verb to _Schedule change_; the
    correction-vs-amendment question is asked in the three exact sentences from
@@ -167,6 +174,22 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-08-29 (the deep-link landing states its employer)** — the substitution
+  notice lived in `HrShell` alone, and thirteen `/hr` routes do not mount it —
+  `/hr/tasks`, `/hr/tasks/[instanceId]` (the landing every HR notification deep-links
+  to) and the whole `/hr/me/*` family. Measured live: `/hr?org=<unreachable>` stated
+  the swap, while the same `?org=` on `/hr/tasks/<instance>` rendered another
+  employer's pay change in silence. The disclosure now hangs off `HrPageState`, with
+  `HrShell`, `HrTaskInbox` and `HrDecisionPanel` claiming it via
+  `HrDisclosureClaimed` so it is stated once and never zero times. Guards:
+  `employer-substitution-is-stated-on-every-route.test.ts` (every route reaches a
+  renderer) + `hr-page-state-states-the-substitution.test.tsx` (it renders, once,
+  and stays silent when nothing was substituted).
+- **2026-08-29 (single enabled employer default)** — HR context now resolves to the
+  person's sole module-enabled employer when their global organization is a module-off
+  personal workspace. The live `hr_my_context` contract and the client fallback agree:
+  zero or multiple enabled employers remain unresolved for the employer picker, while
+  one enabled employer restores the person's actual capability set.
 - **2026-08-28 (HR SMS contact graph)** — `work_phone` and `personal_phone` now feed the
   employee party's CRM contact graph as unverified `work`/`mobile` points. The existing Twilio
   Verify success path upgrades that graph to verified/mobile; the SMS resolver still refuses

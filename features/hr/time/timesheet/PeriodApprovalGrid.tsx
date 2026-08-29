@@ -43,7 +43,9 @@ import {
   hrTimePeriodHref,
   hrTimePeriodsHref,
   hrTimesheetHref,
+  type HrOrgRef,
 } from "@/features/hr/routes";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import { getPeriodGrid } from "../api/service";
 import { type LivePeriodGrid } from "./fromLiveTimesheet";
@@ -71,6 +73,20 @@ const DEFAULT_PAGE_SIZE = 50;
 
 export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null }) {
   const mockCase = useHrMockCase();
+  /*
+   * 🚨 THE EMPLOYER, THREADED INTO EVERY DOOR THIS SURFACE OPENS.
+   *
+   * Read ONCE here and passed down, because `columns`, `MobileRow`, `PeriodGridHeader` and
+   * `NoPeriodChosen` build hrefs and none of them could reach the context on its own. That is
+   * exactly how this file lost the employer: the builders' `org` was optional, so a plain
+   * function that had no context simply omitted it and the compiler agreed.
+   *
+   * The failure was not theoretical. "Open pay periods" below fired `hrTimePeriodsHref()` from
+   * `/hr/time/timesheets?org=<A>` and produced `/hr/time/periods` with NO employer — where the
+   * period rows then resolved to employer B, so ONE page said "This employer has no active pay
+   * group yet" directly above a table of a DIFFERENT employer's periods.
+   */
+  const { orgRef } = useHrContext();
   const { prefs } = useListViewPrefs("hr-time-timesheets", {
     pageSize: DEFAULT_PAGE_SIZE,
   });
@@ -143,7 +159,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
   );
 
 
-  if (!payPeriodId) return <NoPeriodChosen />;
+  if (!payPeriodId) return <NoPeriodChosen org={orgRef} />;
 
   const rows = grid.data?.rows ?? [];
   const selectedRows = rows.filter((row) => selectedIds.includes(row.employmentId));
@@ -151,7 +167,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
   return (
     <RuleSnapshotProvider>
       <div className="flex h-full min-h-0 flex-col gap-3 px-3 py-3 sm:px-4">
-        {grid.data ? <PeriodGridHeader grid={grid.data} /> : null}
+        {grid.data ? <PeriodGridHeader grid={grid.data} org={orgRef} /> : null}
 
         <HrTimeReadState loading={grid.loading} error={grid.error}>
           <>
@@ -186,7 +202,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
             <div className="min-h-0 flex-1">
               <MatrxDataTable<PeriodGridRow>
                 data={rows}
-                columns={columns(setRawFor)}
+                columns={columns(setRawFor, orgRef)}
                 getRowId={(row) => row.employmentId}
                 isLoading={grid.loading}
                 isFetching={grid.refreshing}
@@ -205,7 +221,7 @@ export function PeriodApprovalGrid({ payPeriodId }: { payPeriodId: string | null
                   isRowSelectable: (row) => row.openExceptionCount === 0 && row.openStepId !== null,
                 }}
                 mobileCardsBreakpoint="lg"
-                mobileCards={(row) => <MobileRow row={row} />}
+                mobileCards={(row) => <MobileRow row={row} org={orgRef} />}
                 emptyState={{
                   title: "No timecards match these filters",
                   description:
@@ -282,6 +298,8 @@ function readFilters(query: MatrxDataTableQueryState) {
 
 function columns(
   openRaw: (row: PeriodGridRow) => void,
+  /** Threaded from the surface: a column builder is not a component and cannot read the context. */
+  org: HrOrgRef,
 ): MatrxColumnDef<PeriodGridRow>[] {
   return [
     {
@@ -289,7 +307,7 @@ function columns(
       accessorKey: "employeeDisplayName",
       header: "Employee",
       // A real anchor — cmd-click and middle-click open route 29 in a new tab (the door law).
-      href: (row) => hrTimesheetHref(row.employmentId),
+      href: (row) => hrTimesheetHref(row.employmentId, org),
       cell: (row) => (
         <span className="font-medium">{row.employeeDisplayName}</span>
       ),
@@ -380,7 +398,7 @@ function columns(
           <span className="text-muted-foreground">None</span>
         ) : (
           <Link
-            href={hrTimeExceptionsHref(undefined, { employment: row.employmentId })}
+            href={hrTimeExceptionsHref(org, { employment: row.employmentId })}
             className="font-medium underline underline-offset-4"
           >
             {row.openExceptionCount}
@@ -461,12 +479,12 @@ function BulkBar({
 }
 
 /** The phone rendering: the figures that matter, and no controls that pretend to edit. */
-function MobileRow({ row }: { row: PeriodGridRow }) {
+function MobileRow({ row, org }: { row: PeriodGridRow; org: HrOrgRef }) {
   return (
     <div className="space-y-1 border-b border-border px-3 py-2.5">
       <div className="flex items-baseline justify-between gap-2">
         <Link
-          href={hrTimesheetHref(row.employmentId)}
+          href={hrTimesheetHref(row.employmentId, org)}
           className="text-sm font-medium underline underline-offset-4"
         >
           {row.employeeDisplayName}
@@ -503,7 +521,14 @@ function MobileRow({ row }: { row: PeriodGridRow }) {
  * read: one call, one consistent answer. A separate period fetch could disagree with the rows on
  * screen, which is precisely the confusion D8 is about.
  */
-export function PeriodGridHeader({ grid }: { grid: LivePeriodGrid }) {
+export function PeriodGridHeader({
+  grid,
+  org,
+}: {
+  grid: LivePeriodGrid;
+  /** REQUIRED. "Move the pay period" must land in the employer whose grid is on screen. */
+  org: HrOrgRef;
+}) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
       <PeriodStateChip state={grid.periodState} />
@@ -512,7 +537,7 @@ export function PeriodGridHeader({ grid }: { grid: LivePeriodGrid }) {
         {grid.progress.approved} of {grid.progress.total} timecards approved
       </span>
       <Link
-        href={hrTimePeriodHref(grid.periodId)}
+        href={hrTimePeriodHref(grid.periodId, org)}
         className="text-xs font-medium underline underline-offset-4"
       >
         Move the pay period
@@ -521,7 +546,7 @@ export function PeriodGridHeader({ grid }: { grid: LivePeriodGrid }) {
   );
 }
 
-function NoPeriodChosen() {
+function NoPeriodChosen({ org }: { org: HrOrgRef }) {
   return (
     <div className="px-4 py-6">
       <section className="rounded-lg border border-border bg-card p-6">
@@ -531,7 +556,7 @@ function NoPeriodChosen() {
           want to work through.
         </p>
         <Link
-          href={hrTimePeriodsHref()}
+          href={hrTimePeriodsHref(org)}
           className="mt-3 inline-flex text-sm font-medium underline underline-offset-4"
         >
           Open pay periods

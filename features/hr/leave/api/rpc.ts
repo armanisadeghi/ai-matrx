@@ -57,6 +57,7 @@ export type HrLeaveRpcName =
   | "hr_leave_request_preview"
   | "hr_leave_request_submit"
   | "hr_leave_request_cancel"
+  | "hr_leave_request_discard"
   | "hr_leave_ledger_view"
   | "hr_leave_policy_list"
   | "hr_leave_policy_validate"

@@ -46,7 +46,8 @@ import {
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { toast } from "@/lib/toast";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
-import { hrTimeExceptionsHref, hrTimesheetHref } from "@/features/hr/routes";
+import { hrTimeExceptionsHref, hrTimesheetHref, type HrOrgRef } from "@/features/hr/routes";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import { HrRpcError } from "../api/rpc";
 import { resolveAttendanceException } from "../api/service";
@@ -86,6 +87,8 @@ export function ExceptionsQueue({
   readOnly?: boolean;
 }) {
   const mockCase = useHrMockCase();
+  // Every door out of this queue stays in the employer whose exceptions are on screen.
+  const { orgRef } = useHrContext();
   const { prefs } = useListViewPrefs("hr-time-exceptions", { pageSize: DEFAULT_PAGE_SIZE });
   const [query, setQuery] = useState<MatrxDataTableQueryState>({
     page: 1,
@@ -148,7 +151,7 @@ export function ExceptionsQueue({
                 .join(" · ")}
             </span>{" "}
             ·{" "}
-            <Link href={hrTimeExceptionsHref()} className="underline underline-offset-4">
+            <Link href={hrTimeExceptionsHref(orgRef)} className="underline underline-offset-4">
               show everything
             </Link>
           </p>
@@ -173,7 +176,7 @@ export function ExceptionsQueue({
           <div className="min-h-0 flex-1">
             <MatrxDataTable<AttendanceExceptionRow>
               data={rows}
-              columns={exceptionColumns({ readOnly, mockCase, onResolved: queue.refetch })}
+              columns={exceptionColumns({ readOnly, mockCase, orgRef, onResolved: queue.refetch })}
               getRowId={(row) => row.id}
               isLoading={queue.loading}
               isFetching={queue.refreshing}
@@ -259,10 +262,13 @@ function readFilters(query: MatrxDataTableQueryState) {
 function exceptionColumns({
   readOnly,
   mockCase,
+  orgRef,
   onResolved,
 }: {
   readOnly: boolean;
   mockCase: ReturnType<typeof useHrMockCase>;
+  /** Threaded from the caller: a column builder is not a component and cannot read the context itself. */
+  orgRef: HrOrgRef;
   onResolved: () => void;
 }): MatrxColumnDef<AttendanceExceptionRow>[] {
   return [
@@ -270,7 +276,7 @@ function exceptionColumns({
       id: "employeeDisplayName",
       accessorKey: "employeeDisplayName",
       header: "Employee",
-      href: (row) => hrTimesheetHref(row.employmentId),
+      href: (row) => hrTimesheetHref(row.employmentId, orgRef),
       cell: (row) => (
         <span className="font-medium">{row.employeeDisplayName ?? "This employee"}</span>
       ),

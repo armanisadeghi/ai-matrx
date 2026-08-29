@@ -21,7 +21,7 @@
  */
 
 import { extractErrorMessage } from "@/utils/errors";
-import { isTransportFailure } from "@/lib/net/errors";
+import { isTransportFailure } from "@ai-matrx/data/net";
 import {
   captureError,
   type CapturedOperation,

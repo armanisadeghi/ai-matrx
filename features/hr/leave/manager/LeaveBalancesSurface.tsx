@@ -58,7 +58,12 @@ import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import type { HrDenied, HrFailed } from "@/features/hr/types";
 
-import { formatHours } from "../components/LeaveBalanceBlock";
+import {
+  LeaveAfterPendingCell,
+  LeaveAfterPendingHeader,
+  LeaveBookableCell,
+  LeaveFigureCell,
+} from "./balanceFigures";
 import { fetchLeaveBalances } from "./api/service";
 import type { LeaveBalanceList, LeaveBalanceRow } from "./api/types";
 import { LeaveAdjustDialog } from "./LeaveAdjustDialog";
@@ -70,26 +75,6 @@ type Scope = "mine" | "team" | "organization";
 
 function isScope(value: string | null): value is Scope {
   return value === "mine" || value === "team" || value === "organization";
-}
-
-/** One figure cell. `null` renders dark; an unlimited policy renders the WORD. */
-function Figure({ row, value }: { row: LeaveBalanceRow; value: number | null }) {
-  if (row.unlimited === true) {
-    return <span className="text-muted-foreground">Unlimited</span>;
-  }
-  const shown = formatHours(value);
-  if (shown === null) return <span className="text-muted-foreground">Not provided</span>;
-  return (
-    <span
-      className={
-        value !== null && value < 0
-          ? "tabular-nums text-destructive"
-          : "tabular-nums text-foreground"
-      }
-    >
-      {shown}
-    </span>
-  );
 }
 
 /** Formatting of server values. No arithmetic. */
@@ -235,7 +220,7 @@ export function LeaveBalancesSurface() {
       header: "Accrued to date",
       sortable: true,
       filter: false,
-      cell: (row) => <Figure row={row} value={row.accruedToDate} />,
+      cell: (row) => <LeaveFigureCell row={row} value={row.accruedToDate} />,
     },
     {
       id: "used",
@@ -243,7 +228,7 @@ export function LeaveBalancesSurface() {
       header: "Used (taken)",
       sortable: true,
       filter: false,
-      cell: (row) => <Figure row={row} value={row.usedTaken} />,
+      cell: (row) => <LeaveFigureCell row={row} value={row.usedTaken} />,
     },
     {
       id: "upcoming",
@@ -251,7 +236,7 @@ export function LeaveBalancesSurface() {
       header: "Approved upcoming",
       sortable: true,
       filter: false,
-      cell: (row) => <Figure row={row} value={row.approvedUpcoming} />,
+      cell: (row) => <LeaveFigureCell row={row} value={row.approvedUpcoming} />,
     },
     {
       id: "pending",
@@ -259,19 +244,34 @@ export function LeaveBalancesSurface() {
       header: "Pending approval",
       sortable: true,
       filter: false,
-      cell: (row) => <Figure row={row} value={row.pendingApproval} />,
+      cell: (row) => <LeaveFigureCell row={row} value={row.pendingApproval} />,
     },
+    /*
+      🚨 "AVAILABLE" MEANS HERE WHAT IT MEANS ON THE EMPLOYEE'S OWN TILE, AND NOTHING ELSE.
+
+      This column used to read `row.available` — §5's accounting identity — under the same word
+      `/hr/me/time-off` uses for `bookable_now`. Round 42 clamped the employee's tile and left this
+      one alone, which did not remove the negative number, it moved it onto the HR admin's screen:
+      the same person read **Available 0 h** on their phone while their administrator read
+      **Available −24 h** in red, with no sub-caption on either to say the two words meant two
+      different quantities. The identity did not need hiding — it needed its own name, which is the
+      column immediately after this one.
+    */
     {
       id: "available",
-      accessorFn: (row) => row.available ?? Number.NEGATIVE_INFINITY,
+      accessorFn: (row) => row.bookableNow ?? Number.NEGATIVE_INFINITY,
       header: "Available",
       sortable: true,
       filter: false,
-      cell: (row) => (
-        <span className="font-semibold">
-          <Figure row={row} value={row.available} />
-        </span>
-      ),
+      cell: (row) => <LeaveBookableCell row={row} />,
+    },
+    {
+      id: "after-pending",
+      accessorFn: (row) => row.available ?? Number.NEGATIVE_INFINITY,
+      header: <LeaveAfterPendingHeader />,
+      sortable: true,
+      filter: false,
+      cell: (row) => <LeaveAfterPendingCell row={row} />,
     },
     {
       id: "accrual",
@@ -300,20 +300,35 @@ export function LeaveBalancesSurface() {
     {
       id: "flags",
       accessorFn: (row) =>
-        row.ledgerBalance !== null && row.ledgerBalance < 0 ? "negative" : "",
+        [
+          row.ledgerBalance !== null && row.ledgerBalance < 0 ? "negative" : "",
+          (row.pendingBeyondBalance ?? 0) > 0 ? "overhang" : "",
+          row.identityHolds === false ? "identity" : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
       header: "Flags",
       sortable: true,
       filter: "select",
       cell: (row) => {
+        // The BANK itself is overdrawn — they have taken more than they earned.
         const negative = row.ledgerBalance !== null && row.ledgerBalance < 0;
+        /*
+          A different fact, and the one that used to reach this screen as a bare red number under
+          "Available": they have ASKED for more than they hold. The bank is still positive, so
+          `negative` above does not fire and the Flags column said "—" on the very row whose
+          headline figure was red. Same server field the sub-captions read.
+        */
+        const overhang = (row.pendingBeyondBalance ?? 0) > 0;
         // The server's own verdict on §5's identity. Fires ONLY on an explicit false.
         const identityBroken = row.identityHolds === false;
-        if (!negative && !identityBroken) {
+        if (!negative && !overhang && !identityBroken) {
           return <span className="text-muted-foreground">—</span>;
         }
         return (
           <div className="flex flex-wrap gap-1">
             {negative ? <Badge variant="destructive">Negative</Badge> : null}
+            {overhang ? <Badge variant="outline">Asked beyond balance</Badge> : null}
             {identityBroken ? (
               <Badge variant="destructive">Figures do not add up</Badge>
             ) : null}

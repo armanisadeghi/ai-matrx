@@ -25,7 +25,7 @@ import {
   isMediaVariableType,
   type VariableCustomComponent,
 } from "@/features/agents/types/agent-definition.types";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import { Label } from "@/components/ui/label";
 import { useContainerWidth } from "./useContainerColumns";
 import { Button } from "@/components/ui/button";

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import type { UserListItem } from "../types";
-import { matchesSearch } from "@/utils/search-scoring";
+import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 
 export function useItemsTableState(items: UserListItem[]) {
   const [searchTerm, setSearchTerm] = useState("");

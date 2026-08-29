@@ -27,7 +27,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SendTapButton } from "@/components/icons/tap-buttons";
+import { SendTapButton } from "@ai-matrx/tap-target/buttons";
 
 import type { ExportColumn, ExportRow } from "./export";
 import { pushToDataset, pushToWorkbook } from "./export-targets";

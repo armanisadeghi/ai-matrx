@@ -1,5 +1,5 @@
 import { Group, Panel } from "react-resizable-panels";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { Handle } from "@/features/resizable-panels/Handle";

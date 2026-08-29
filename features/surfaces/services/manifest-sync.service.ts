@@ -35,7 +35,7 @@ import {
   getRegisteredSurfaceNames,
 } from "@/features/surfaces/manifests/registry";
 import { listRegisteredNamespaces } from "@/features/surfaces/config/namespace-registry";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import type {
   BrokenMapping,
   SurfaceAgentRole,
@@ -500,7 +500,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
   // `missing_in_db` / `diff` verdicts, so a row PostgREST silently dropped at
   // its 1000-row cap is reported as "not in the DB" and the sync is told to
   // create a row that already exists. `ui.ui_surface_value` alone is 4185 rows
-  // — a bare `.select()` here saw 1000 of them. See lib/supabase/readAllRows.ts.
+  // — a bare `.select()` here saw 1000 of them. See readAllRows in @ai-matrx/data/db.
   const [
     allDbRows,
     allDbRoleRows,

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { idMatchesQuery } from '@/utils/search-scoring';
+import { idMatchesQuery } from '@ai-matrx/kit/search-scoring';
 import { Plus, RefreshCw, Search, Pencil, Trash2, Link, Mic, Music, CheckCircle2, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

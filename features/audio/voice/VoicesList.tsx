@@ -16,7 +16,7 @@ import { DesktopSearchBar } from "./components/DesktopSearchBar";
 import { FilterModal } from "./components/FilterModal";
 import { VoiceSelectionModal } from "./components/VoiceSelectionModal";
 import { cn } from "@/lib/utils";
-import { matchesSearch } from "@/utils/search-scoring";
+import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 
 const VoicesList: React.FC = () => {
   const { loading, error, getOneData, setOneData, setLoading, setError } =

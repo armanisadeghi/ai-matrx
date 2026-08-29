@@ -121,11 +121,28 @@ export async function canProduceAssist(sourceKey: string): Promise<boolean> {
 export async function emitAssist(
   userId: string,
   input: EmitAssistInput,
+  organizationId: string,
 ): Promise<string | null> {
   if (!(await canProduceAssist(input.sourceKey))) return null;
+  // 🚨 NO NULL ORG (owner ruling 2026-08-21, db-rules §2). `organizationId` is a
+  // REQUIRED positional argument, not an optional field, so a producer cannot
+  // forget it quietly — which is exactly what happened before 2026-08-29: this
+  // payload simply had no `organization_id` key, `platform.assists` has no
+  // `_stamp_org_default` backstop (migration 0135 attaches it only where the
+  // column is already NOT NULL), and every row this client wrote landed NULL.
+  // The database will not catch a regression here for us, so this check is the
+  // guard: refuse loudly rather than write a NULL scope.
+  if (!organizationId) {
+    console.error(
+      `[assists] NO NULL ORG: refusing to emit '${input.sourceKey}' with no organization. ` +
+        `An assist must state its owning org (db-rules §2); NULL is never a scope.`,
+    );
+    return null;
+  }
   const supabase = createClient();
   const payload = {
     user_id: userId,
+    organization_id: organizationId,
     // Producers address the assist; created_by = addressee keeps RLS honest
     // even when a service-role producer writes on someone's behalf.
     created_by: userId,

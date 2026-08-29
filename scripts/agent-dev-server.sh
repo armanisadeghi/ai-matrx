@@ -40,6 +40,12 @@ FAILED="$BASE.failed"
 #
 # 192 GB is ~1.4x the observed peak and leaves 64 GB to the host. If you raise
 # this again, MEASURE first and update these numbers; do not nudge it blind.
+#
+# 2026-08-28: the runaways this cap exists for were traced to an oversized
+# Turbopack persistent cache (see the CACHE RESET block in cmd_start). The
+# 2026-08-15 "normal" figures above may themselves have been cache-inflated:
+# with a fresh distdir, cold /notes peaked at 18 GB RSS. Revisit this cap
+# downward only after re-measuring heavy routes with the cache cap in force.
 MAX_RSS_GB="${MATRX_PREVIEW_MAX_RSS_GB:-192}"
 NO_PROGRESS_SEC="${MATRX_PREVIEW_NO_PROGRESS_SEC:-300}"
 
@@ -161,6 +167,27 @@ cmd_start() {
   # Reclaim only servers dev-cleanup already classifies as runaway/abandoned.
   # With no live server above, this mainly clears stale tracking files.
   bash "$REPO_ROOT/scripts/dev-cleanup.sh" reap >/dev/null 2>&1 || true
+
+  # Turbopack's persistent cache (<distdir>/dev/cache/turbopack, default-on in
+  # Next 16 dev) accretes across this shared checkout's constant code churn and
+  # never shrinks below its churn history. Past a certain size it poisons every
+  # COLD route compile: measured 2026-08-28 on an otherwise-quiet host, cold
+  # /notes from a FRESH distdir served 200 in 57s at ≤18 GB RSS, while the same
+  # route against a 153 GB restored cache dropped the connection at 87s with the
+  # worker at 65 GB and climbing ~0.6 GB/s (independent runaways that day hit
+  # 101-124 GB and never served). Warm routes keep serving throughout, which is
+  # why this presents as "intermittent". Deleting the distdir costs ~1 min of
+  # recompile per route — nothing next to a 100 GB runaway that starves the box.
+  local cache_dir cache_kb cache_cap_gb
+  cache_dir="$REPO_ROOT/$DISTDIR/dev/cache/turbopack"
+  cache_cap_gb="${MATRX_PREVIEW_MAX_CACHE_GB:-20}"
+  if [[ -d "$cache_dir" ]]; then
+    cache_kb="$(du -sk "$cache_dir" 2>/dev/null | awk '{print $1 + 0}')"
+    if (( cache_kb >= cache_cap_gb * 1048576 )); then
+      log "CACHE RESET: turbopack persistent cache is $(awk -v kb="$cache_kb" 'BEGIN { printf "%.1f", kb / 1048576 }') GB (cap ${cache_cap_gb} GB) — deleting $DISTDIR; oversized caches send every cold compile into a 100+ GB RSS runaway"
+      rm -rf "$REPO_ROOT/$DISTDIR"
+    fi
+  fi
 
   # exec_command owns and reaps its shell process group. Python's
   # start_new_session creates a real detached OS session that survives the tool

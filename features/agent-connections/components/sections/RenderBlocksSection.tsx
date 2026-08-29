@@ -19,7 +19,7 @@ import { useRenderBlocks } from "../../hooks/useRenderBlocks";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
 import type { CategoryTreeNode } from "../../redux/skl/selectors";
 import type { SklRenderDefinition } from "../../redux/skl/types";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 
 /**
  * Classification badges — surfaces the block_type / visibility fidelity the

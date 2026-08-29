@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { HrTimeShell } from "@/features/hr/time/HrTimeShell";
+import { HrLoading } from "@/features/hr/shared/HrStates";
 import { ExceptionsQueue } from "@/features/hr/time/exceptions/ExceptionsQueue";
 import type { AttendanceExceptionKind } from "@/features/hr/time/api/types";
 
@@ -9,6 +10,9 @@ import type { AttendanceExceptionKind } from "@/features/hr/time/api/types";
  *
  * The queue that makes the scheduled-vs-actual join real. `?kind=` is how the exceptions strip on
  * routes 28 and 29 hands over pre-filtered.
+ *
+ * No `PageHeader`: `HrTimeShell` → `HrSubShell` → `HrShell` injects the route header, the HR nav,
+ * the employer switcher and the section's tab bar, and owns the scroll chain.
  */
 export const metadata = { title: "Attendance exceptions" };
 
@@ -43,23 +47,14 @@ export default async function AttendanceExceptionsPage({
   const validDay = day && /^\d{4}-\d{2}-\d{2}$/.test(day) ? day : null;
 
   return (
-    <>
-      <PageHeader>
-        <h1 className="text-sm font-semibold">Attendance exceptions</h1>
-      </PageHeader>
-      <div className="h-full overflow-hidden">
-        <Suspense
-          fallback={
-            <div className="h-full animate-pulse bg-card/40" aria-label="Loading the queue" />
-          }
-        >
-          <ExceptionsQueue
-            kind={validKind}
-            employmentId={employment ?? null}
-            day={validDay}
-          />
-        </Suspense>
-      </div>
-    </>
+    <HrTimeShell title="Attendance exceptions">
+      <Suspense fallback={<HrLoading variant="table" rows={8} />}>
+        <ExceptionsQueue
+          kind={validKind}
+          employmentId={employment ?? null}
+          day={validDay}
+        />
+      </Suspense>
+    </HrTimeShell>
   );
 }

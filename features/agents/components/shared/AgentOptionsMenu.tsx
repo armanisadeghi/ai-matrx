@@ -48,7 +48,7 @@ import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -61,7 +61,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { MenuTapButton } from "@/components/icons/tap-buttons";
+import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   AgentDuplicateOutcomeDialog,
   type DuplicateOutcomeState,

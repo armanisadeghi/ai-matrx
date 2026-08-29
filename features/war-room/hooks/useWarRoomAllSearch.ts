@@ -14,7 +14,7 @@ import { useMemo } from "react";
 import { createSelector } from "@reduxjs/toolkit";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { containerKey } from "@/features/war-room/types";
 import { threadDisplayTitle } from "@/features/war-room/utils/threadDisplayTitle";
 

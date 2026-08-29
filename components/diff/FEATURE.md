@@ -8,11 +8,11 @@ engines so callers never wire diff internals by hand:
 
 | Engine | Component | Backed by | Use for |
 |---|---|---|---|
-| **light** | `text/TextDiff.tsx` | custom LCS engine (this dir) | plain text, markdown, prose, version history, clipboard compares |
+| **light** | `text/TextDiff.tsx` | custom LCS engine (`@ai-matrx/diff/text`) | plain text, markdown, prose, version history, clipboard compares |
 | **heavy** | `code/CodeDiff.tsx` | Monaco `DiffEditor` (lazy) | source code, large inputs |
 
 > Two pre-existing structured frameworks remain and are **not** replaced:
-> `components/diff/engine` + `views/` + `adapters/` is the **structured
+> `@ai-matrx/diff/structural` + `views/` + `adapters/` is the **structured
 > object/entity** diff (agent versions, note fields). This canonical text/
 > code system is for *content* diffs. They are complementary.
 
@@ -63,7 +63,7 @@ renders as normal resolved text in place, with an Undo chip. Accept-all /
 Reject-all clear all remaining pending at once; `Apply` calls
 `onApply(mergedText)`. Headless of any source — the caller owns what "apply"
 means (note / code file / context value / conflict). Built for real files: the
-diff is computed ONCE (`text/engine/hunks.ts` `getDiffStructure` /
+diff is computed ONCE (`getDiffStructure` from `@ai-matrx/diff/text` /
 `mergeFromDecisions` — no re-diff on resolve/expand/navigate), unchanged context
 folds to a few lines around each change, and Prev/Next jump between changes. Use
 `DiffViewer` (also folds + navigates, wrap-on by default) for read-only;
@@ -211,6 +211,8 @@ compare/merge), agent-emittable `matrx-diff` block, 3-way merge, since-last-seen
 > [`ROLLOUT_HANDOFF.md`](./ROLLOUT_HANDOFF.md) — pick-up-here backlog.
 
 ## Change Log
+
+- `2026-08-29` — claude: **Engines extracted to `@ai-matrx/diff`** (C9 campaign): `text/engine/` and `engine/` deleted; every import now `@ai-matrx/diff/text` / `@ai-matrx/diff/structural`. The UI (viewers, adapters, views, colors, reveal) stays here.
 
 - 2026-08-25 — **Structured diffs are lossless by default.** The engine no
   longer silently drops `_`/`__`-prefixed keys unless a consumer explicitly

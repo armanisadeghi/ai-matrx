@@ -58,7 +58,7 @@ import {
   type KindDefProjection,
   type KindEdgeProjection,
 } from "@/features/content-ir/registry/schema-source-kind-tables";
-import { readAllRows } from "../../lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 config({ path: resolve(process.cwd(), ".env.local") });
 

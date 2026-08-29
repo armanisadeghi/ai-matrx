@@ -21,6 +21,9 @@ import {
     withdrawInstance,
 } from "@/features/hr/tasks/service";
 import { HR_NOT_PROVIDED } from "@/features/hr/constants";
+import { hrTasksHref } from "@/features/hr/routes";
+import { HrEmployerSubstitutionNotice } from "@/features/hr/shared/HrStates";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { relativeDue } from "@/features/hr/tasks/urgency";
 import type {
     HrDecisionIntent,
@@ -63,13 +66,44 @@ export function HrDecisionPanel({
     stepId,
     noticeId,
     failureId,
+    embedded = false,
+    onDecided,
 }: {
     instanceId: string;
     stepId: string | null;
     noticeId: string | null;
     /** From `?failure=` — the inbox's failure rows deep-link straight to their terminal. */
     failureId: string | null;
+    /**
+     * 🚨 THE SAME PANEL, HOSTED SOMEWHERE ELSE — NOT A SECOND ONE (hr_c4_55 / D9).
+     *
+     * `/hr/tasks` has a small window control beside each row, and it opened `DataRowInspector`:
+     * a floating window titled "Leave request — Tomo Iversen-G32" whose entire body was
+     * `STEP_ID … / INSTANCE_ID … / FLOW_KEY leave_request / STEP_KEY manager_approval / DUE_AT …
+     * / AUTONOMY_MODE 4 / RESOLUTION_PATH authority`, with no Approve and no Reject. A raw field
+     * dump handed to a manager as the item's detail.
+     *
+     * The fix is to host THIS component there, because the alternative — rebuilding the summary
+     * and the four controls inside the table — forks the reason rules, the refusal rendering, the
+     * quorum counter and the never-approve-yourself guard, and this lane has already paid for a
+     * forked decision path once. `embedded` only drops the "All HR tasks" back link, which is
+     * meaningless in a window opened from that very list.
+     */
+    embedded?: boolean;
+    /** Lets a host list (the task table's window) refresh after a decision is recorded here. */
+    onDecided?: () => void;
 }) {
+    /*
+      🚨 THE BACK LINK CARRIES THE EMPLOYER. It used to be `<Link href="/hr/tasks">`, and this
+      panel is the body of EVERY task detail page — so the one control most likely to be pressed
+      on the whole surface was the one that dropped `?org=`. `routes.ts` made all 49 builders
+      require `org` on 2026-08-28, which cannot reach a string literal: `hrTasksHref()` is a
+      compile error, `"/hr/tasks"` is a valid string. The tasks lane does not scope its rows by
+      employer TODAY, so this dropped the param without yet changing what was listed — a latent
+      defect that becomes a live one the day that lane scopes, and a visibly wrong URL either way.
+    */
+    const { orgRef } = useHrContext();
+
     const [detail, setDetail] = useState<HrInstanceDetail | null>(null);
     const [refusal, setRefusal] = useState<HrRefusal | null>(null);
     const [actionRefusal, setActionRefusal] = useState<HrRefusal | null>(null);
@@ -228,6 +262,8 @@ export function HrDecisionPanel({
             toast.success(`Recorded: ${decision}`);
             setReason("");
             await load();
+            // A decided row must not sit in the queue behind the window that decided it.
+            onDecided?.();
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "The decision could not be recorded");
         } finally {
@@ -249,20 +285,39 @@ export function HrDecisionPanel({
 
     return (
         <div className="flex h-full flex-col overflow-hidden">
-            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-                <Button size="sm" variant="ghost" asChild>
-                    <Link href="/hr/tasks">
-                        <ArrowLeft className="mr-1 h-4 w-4" />
-                        All HR tasks
-                    </Link>
-                </Button>
-                {restricted ? (
-                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-                        <EyeOff className="h-3 w-3" />
-                        Restricted — the record itself is the only place its details render
-                    </span>
-                ) : null}
-            </div>
+            {/*
+              🚨 THE DEEP-LINK LANDING OWES THE DISCLOSURE, AND NOTHING ABOVE IT PROVIDES ONE.
+              This is the route every HR notification points at, and it mounts `PageHeader` —
+              not `HrShell` — so until 2026-08-29 it was the one surface where HR could open a
+              DIFFERENT employer than the link named and say nothing (`useHrContext` law B).
+              Proven live: `/hr/tasks/<instance>?org=<unreachable>` rendered another employer's
+              pay change in silence while `/hr?org=<same>` stated the swap. Renders null in the
+              ordinary case. `embedded` drops it because the host surface already states it.
+            */}
+            {embedded ? null : (
+                <HrEmployerSubstitutionNotice className="mx-4 mt-3 shrink-0" />
+            )}
+            {/* Embedded, the back link points at the list this window was opened FROM, so it is
+                dropped — but the restricted banner is a disclosure fact and is never dropped, so
+                the bar survives whenever there is something in it. */}
+            {embedded && !restricted ? null : (
+                <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+                    {embedded ? null : (
+                        <Button size="sm" variant="ghost" asChild>
+                            <Link href={hrTasksHref(orgRef)}>
+                                <ArrowLeft className="mr-1 h-4 w-4" />
+                                All HR tasks
+                            </Link>
+                        </Button>
+                    )}
+                    {restricted ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <EyeOff className="h-3 w-3" />
+                            Restricted — the record itself is the only place its details render
+                        </span>
+                    ) : null}
+                </div>
+            )}
 
             <div className="flex-1 min-h-0 space-y-6 overflow-y-auto p-4">
                 {refusal ? <HrRefusalNotice refusal={refusal} action="Opening this request" /> : null}
@@ -370,8 +425,19 @@ export function HrDecisionPanel({
                         {activeStep ? (
                             <section className="space-y-3 rounded-lg border border-border bg-card p-4">
                                 <div className="flex flex-wrap items-baseline gap-2">
+                                    {/* 🚨 THE STEP IS NAMED, NOT KEYED. This heading — directly
+                                        above the Approve / Reject controls, on a page whose every
+                                        other line is a sentence — read `manager_approval`.
+                                        `hr._wf_display` has returned `step_label` (the step
+                                        definition's own label: "Manager approval of the change")
+                                        for every decorated step all along, and
+                                        `public.hr_wf_instance` decorates EVERY step, so this is
+                                        the same label path the flow heading already uses. The key
+                                        stays only as the fallback for a step with no definition
+                                        behind it. */}
                                     <h2 className="text-sm font-semibold">
-                                        {str(activeStep, "step_key")}
+                                        {str(activeStep, "step_label") ??
+                                            str(activeStep, "step_key")}
                                     </h2>
                                     <span className="text-xs text-muted-foreground">
                                         due {relativeDue(str(activeStep, "due_at"))}
@@ -467,9 +533,19 @@ export function HrDecisionPanel({
                                             <span className="text-muted-foreground">
                                                 {str(f, "state")}
                                             </span>
-                                            {str(f, "detail") ? (
+                                            {/* 🚨 THE SENTENCE, NOT THE HOOK'S OUTPUT (hr_c4_57).
+                                                This read `detail` — `hr.workflow_failure.detail`,
+                                                which is a jsonb OBJECT on every live row, so
+                                                `str()` returned null and this line has never once
+                                                rendered. Had it ever held a JSON string it would
+                                                have printed `hr._wf_call_hook`'s own
+                                                `{sqlstate, detail: sqlerrm}` text — a Postgres
+                                                column name — to an HR manager. The door now ships
+                                                `failure_reason`, built from the failure CLASS
+                                                alone, exactly as a delivery failure is worded. */}
+                                            {str(f, "failure_reason") ? (
                                                 <span className="truncate text-muted-foreground">
-                                                    {str(f, "detail")}
+                                                    {str(f, "failure_reason")}
                                                 </span>
                                             ) : null}
                                             <Button
@@ -497,8 +573,12 @@ export function HrDecisionPanel({
                             <ul className="divide-y divide-border rounded-lg border border-border bg-card text-sm">
                                 {steps.map((s) => (
                                     <li key={String(s.id)} className="flex items-center gap-3 p-3">
+                                        {/* The chain read `auto_approve / manager_approval /
+                                            hr_review` — three machine keys presented to a manager
+                                            as the record of what happened. Same label path as the
+                                            active step above. */}
                                         <span className="truncate font-medium">
-                                            {str(s, "step_key")}
+                                            {str(s, "step_label") ?? str(s, "step_key")}
                                         </span>
                                         <span className="text-muted-foreground">{str(s, "state")}</span>
                                         {str(s, "resolution_path") ? (

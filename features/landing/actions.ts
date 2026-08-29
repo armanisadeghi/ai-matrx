@@ -2,6 +2,8 @@
 'use server';
 
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/adminClient';
+import { SYSTEM_ORGANIZATION_ID } from '@/constants/platform-orgs';
 import { sendEmail, emailTemplates } from '@/lib/email/client';
 import { InvitationRequestStep1, InvitationRequestStep2 } from './types';
 
@@ -15,13 +17,24 @@ export type ActionResponse<T = void> =
  */
 export async function submitInvitationRequestStep1(
   data: InvitationRequestStep1
-): Promise<ActionResponse<{ requestId: string }>> {
+): Promise<ActionResponse<{ requestId: string | null }>> {
   try {
-    // Use standard server client - RLS policies allow both anon and authenticated inserts
-    const supabase = await createClient();
+    // This is a server-only, validated public-intake boundary. The ordinary
+    // session client cannot safely return or update private applicant rows.
+    const supabase = createAdminClient();
+    const email = data.email.toLowerCase().trim();
+    const request = {
+      full_name: data.full_name.trim(),
+      company: data.company.trim(),
+      email,
+      use_case: data.use_case.trim(),
+      user_type: data.user_type,
+      user_type_other: data.user_type_other?.trim() || null,
+      organization_id: SYSTEM_ORGANIZATION_ID,
+    };
 
     // Validate required fields
-    if (!data.full_name || !data.company || !data.email || !data.use_case || !data.user_type) {
+    if (!request.full_name || !request.company || !request.email || !request.use_case || !request.user_type) {
       return { success: false, error: 'All required fields must be filled' };
     }
 
@@ -29,24 +42,21 @@ export async function submitInvitationRequestStep1(
     const { data: existing } = await supabase
       .schema('users').from('invitation_requests')
       .select('id, status')
-      .eq('email', data.email.toLowerCase().trim())
+      .eq('email', email)
       .single();
 
     if (existing) {
-      // If they already have a pending or approved request, return that ID
+      // Confirm receipt without exposing an existing private request ID to
+      // someone who merely knows the applicant's email address.
       if (existing.status === 'pending' || existing.status === 'approved') {
-        return { 
-          success: true, 
-          data: { requestId: existing.id }
-        };
+        return { success: true, data: { requestId: null } };
       }
       // If rejected, they can resubmit
       if (existing.status === 'rejected') {
         const { data: updated, error: updateError } = await supabase
           .schema('users').from('invitation_requests')
           .update({
-            ...data,
-            email: data.email.toLowerCase().trim(),
+            ...request,
             status: 'pending',
             step_completed: 1,
           })
@@ -60,9 +70,9 @@ export async function submitInvitationRequestStep1(
         }
 
         // Send confirmation email on resubmission (non-blocking)
-        const confirmationTemplate = emailTemplates.invitationRequestReceived(data.full_name);
+        const confirmationTemplate = emailTemplates.invitationRequestReceived(request.full_name);
         sendEmail({
-          to: data.email.toLowerCase().trim(),
+          to: email,
           subject: confirmationTemplate.subject,
           html: confirmationTemplate.html,
         }).catch(err => console.error('Failed to send confirmation email:', err));
@@ -75,8 +85,7 @@ export async function submitInvitationRequestStep1(
     const { data: newRequest, error } = await supabase
       .schema('users').from('invitation_requests')
       .insert({
-        ...data,
-        email: data.email.toLowerCase().trim(),
+        ...request,
         step_completed: 1,
       })
       .select('id')
@@ -88,21 +97,21 @@ export async function submitInvitationRequestStep1(
     }
 
     // Send confirmation email to user (non-blocking)
-    const confirmationTemplate = emailTemplates.invitationRequestReceived(data.full_name);
+    const confirmationTemplate = emailTemplates.invitationRequestReceived(request.full_name);
     sendEmail({
-      to: data.email.toLowerCase().trim(),
+      to: email,
       subject: confirmationTemplate.subject,
       html: confirmationTemplate.html,
     }).catch(err => console.error('Failed to send confirmation email:', err));
 
     // Send admin notification email (non-blocking)
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@aimatrx.com';
-    const adminUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.aimatrx.com'}/administration/users/invitations`;
+    const adminUrl = 'https://manage.aimatrx.com/administration/users/invitations';
     const adminTemplate = emailTemplates.invitationRequestAdminNotification(
-      data.full_name,
-      data.email,
-      data.company,
-      data.use_case,
+      request.full_name,
+      request.email,
+      request.company,
+      request.use_case,
       newRequest.id,
       adminUrl
     );
@@ -127,17 +136,20 @@ export async function submitInvitationRequestStep2(
   data: InvitationRequestStep2
 ): Promise<ActionResponse> {
   try {
-    // Use standard server client - RLS policies allow both anon and authenticated inserts
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Update the existing request with step 2 data
     const { error } = await supabase
       .schema('users').from('invitation_requests')
       .update({
         ...data,
+        organization_id: SYSTEM_ORGANIZATION_ID,
         step_completed: 2,
       })
-      .eq('id', requestId);
+      .eq('id', requestId)
+      .eq('status', 'pending')
+      .select('id')
+      .single();
 
     if (error) {
       console.error('Error updating invitation request step 2:', error);
@@ -156,10 +168,11 @@ export async function submitInvitationRequestStep2(
  */
 export async function validateInvitationCode(
   code: string
-): Promise<ActionResponse<{ valid: boolean; codeId?: string }>> {
+): Promise<ActionResponse<{ valid: boolean }>> {
   try {
-    // Use public client with anon key - RLS policies allow anonymous validation
-    const supabase = await createClient();
+    // Code rows are private credentials. Validate the exact candidate at this
+    // server-only boundary; never make the code table enumerable to anon.
+    const supabase = createAdminClient();
 
     // Clean the code (remove spaces, uppercase)
     const cleanCode = code.trim().toUpperCase().replace(/\s/g, '');
@@ -167,7 +180,7 @@ export async function validateInvitationCode(
     // Check if code exists and is valid
     const { data, error } = await supabase
       .schema('users').from('invitation_codes')
-      .select('id, code, status, max_uses, current_uses, expires_at')
+      .select('status, max_uses, current_uses, expires_at')
       .eq('code', cleanCode)
       .single();
 
@@ -204,7 +217,7 @@ export async function validateInvitationCode(
 
     return { 
       success: true, 
-      data: { valid: true, codeId: data.id } 
+      data: { valid: true }
     };
   } catch (error) {
     console.error('Unexpected error in validateInvitationCode:', error);
@@ -213,16 +226,17 @@ export async function validateInvitationCode(
 }
 
 /**
- * Mark invitation code as used (called after successful signup)
- * This should be called from the signup flow with authenticated user
+ * Mark an invitation code as used from a trusted server workflow.
+ * No signup flow currently calls this helper.
  */
 export async function markInvitationCodeUsed(
   code: string,
   userId: string
 ): Promise<ActionResponse> {
   try {
-    // Use public client - this will be called during signup with the invitation code
-    const supabase = await createClient();
+    // Code consumption is service-role-only. Keep the credential and the
+    // mutation behind this server-action boundary.
+    const supabase = createAdminClient();
 
     const cleanCode = code.trim().toUpperCase().replace(/\s/g, '');
 
@@ -232,8 +246,7 @@ export async function markInvitationCodeUsed(
       p_user_id: userId,
     });
 
-    const success = data as unknown as boolean;
-    if (error || !success) {
+    if (error || !data) {
       console.error('Error marking invitation code as used:', error);
       return { success: false, error: 'Failed to process invitation code.' };
     }
@@ -244,4 +257,3 @@ export async function markInvitationCodeUsed(
     return { success: false, error: 'An unexpected error occurred.' };
   }
 }
-

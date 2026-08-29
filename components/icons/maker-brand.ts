@@ -37,7 +37,7 @@ import {
   XaiTapButton,
   ZaiTapButton,
 } from "@/components/icons/ai-tap-buttons";
-import { RobotTapButton } from "@/components/icons/tap-buttons";
+import { RobotTapButton } from "@ai-matrx/tap-target/buttons";
 
 /** Canonical brand ids — one tap-button / glyph per provider family. */
 export type MakerBrandId =

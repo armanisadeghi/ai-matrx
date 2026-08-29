@@ -17,7 +17,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { getMessagingService } from "@/lib/supabase/messaging";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { createClient } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import { uniqueChannelTopic } from "@ai-matrx/data/db";
 import type {
   Message,
   MessageWithSender,

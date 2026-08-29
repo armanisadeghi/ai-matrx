@@ -27,7 +27,7 @@ import {
 } from "@/features/agents/redux/tools/tools.selectors";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import { cn } from "@/lib/utils";
 
 interface AiIdentityRefCommonProps {

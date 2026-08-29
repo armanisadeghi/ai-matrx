@@ -25,7 +25,7 @@ import { useEffect, useState } from "react";
 import { PackageOpen, RotateCcw, SkipForward, Tv } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { cn } from "@/lib/utils";
 
 import { DeliveredStream } from "../../kind-emissions/DeliveredStream";

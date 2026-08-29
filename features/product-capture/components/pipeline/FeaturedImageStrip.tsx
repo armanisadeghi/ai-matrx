@@ -14,9 +14,8 @@ import { Crop, Loader2, Star } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { InitialCropWindow } from "@/features/image-studio/components/InitialCropWindow";
-import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { fileHandler } from "@/features/files/handler/handler";
-import { cn } from "@/lib/utils";
+import { SelectableFileThumbnail } from "@/features/files/components/preview/SelectableFileThumbnail";
 import { toast } from "@/lib/toast";
 
 import type { CaptureFile } from "../../types";
@@ -43,12 +42,10 @@ export function FeaturedImageStrip({
   const startCrop = async (fileId: string) => {
     setBusy(true);
     try {
-      // file_id → URL → File (the AvatarModeShell recipe) for the cropper.
-      const url = await fileHandler
+      // File ID stays authoritative all the way to authenticated bytes.
+      const blob = await fileHandler
         .use({ kind: "file_id", fileId })
-        .as({ kind: "html_src" });
-      if (!url) throw new Error("Could not resolve the image URL.");
-      const blob = await (await fetch(url)).blob();
+        .as({ kind: "blob" });
       setCropSource([
         new File([blob], `featured-${Date.now()}.jpg`, {
           type: blob.type || "image/jpeg",
@@ -93,36 +90,21 @@ export function FeaturedImageStrip({
           {photos.map((file) => {
             const isFeatured = item.featuredFileId === file.fileId;
             return (
-              <div key={file.id} className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() =>
-                    void onSetFeatured(isFeatured ? null : file.fileId)
-                  }
-                  aria-label={
-                    isFeatured ? "Clear featured image" : "Set as featured image"
-                  }
-                  aria-pressed={isFeatured}
-                  className={cn(
-                    "block h-16 w-16 overflow-hidden rounded-lg bg-muted ring-2 ring-inset",
-                    isFeatured ? "ring-primary" : "ring-transparent",
-                  )}
-                >
-                  <CaptureThumb fileId={file.fileId} alt="Photo" />
-                </button>
-                <span
-                  className={cn(
-                    "pointer-events-none absolute right-1 top-1 rounded-full p-0.5",
-                    isFeatured
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-black/50 text-white/80",
-                  )}
-                >
-                  <Star
-                    className={cn("h-3 w-3", isFeatured && "fill-current")}
-                  />
-                </span>
-              </div>
+              <SelectableFileThumbnail
+                key={file.id}
+                fileId={file.fileId}
+                selected={isFeatured}
+                onSelectedChange={(nextSelected) =>
+                  onSetFeatured(nextSelected ? file.fileId : null)
+                }
+                alt="Product photo"
+                selectLabel="Set as featured image"
+                clearLabel="Clear featured image"
+                selectedIcon={<Star className="h-5 w-5 fill-current" />}
+                unselectedIcon={<Star className="h-5 w-5" />}
+                disabled={busy}
+                className="mx-1 mb-2"
+              />
             );
           })}
           {featuredFileId && (

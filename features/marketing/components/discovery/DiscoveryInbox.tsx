@@ -57,7 +57,7 @@ import {
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingDiscoveryScope } from "@/features/surfaces/manifests/marketing-discovery.manifest";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   useBulkConfirmDiscoveredItems,
   useBulkDeleteDiscoveredItems,

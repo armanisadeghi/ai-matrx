@@ -30,7 +30,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatTitleCase } from "@/utils/text/text-case-converter";
+import { formatTitleCase } from "@ai-matrx/kit/text-case";
 import {
   generateBuiltinVariables,
   FormatType,

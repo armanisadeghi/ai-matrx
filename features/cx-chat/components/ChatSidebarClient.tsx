@@ -34,7 +34,7 @@ import {
   ChevronLeftTapButton,
   PanelLeftTapButton,
   PlusTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { initializeChatAgents } from "@/features/agents/redux/agent-definition/thunks";

@@ -1,41 +1,32 @@
 /**
- * components/dialogs/confirm/ConfirmDialogHost.tsx
+ * components/dialogs/confirm/ConfirmDialogHost.tsx — HOST WIRING for
+ * @ai-matrx/kit/confirm.
  *
  * Slim client shell + public entry point for the global confirm dialog.
- * Statically importable from anywhere — it does NOT pull `<ConfirmDialog>`,
- * radix-alert-dialog, or the host's own state machinery into the static
- * graph of route entries that mount it. The heavy body lives in
- * `ConfirmDialogHostImpl.tsx` and loads via `next/dynamic({ ssr: false })`.
+ * Statically importable from anywhere — it does NOT pull the dialog body,
+ * radix-alert-dialog, or the host state machinery into the static graph of
+ * route entries that mount it: the imperative API comes from the kit's pure
+ * `confirm-opener` entry (zero React, zero dialog markup), and the heavy
+ * host loads via `next/dynamic({ ssr: false })` from the kit's `confirm`
+ * entry. The two entries share ONE opener state by construction (a
+ * `Symbol.for` globalThis slot inside the package).
  *
- * Two responsibilities:
- *
- *   1. Re-export the imperative API (`confirm`) from
- *      `confirmDialogOpener.ts` so any consumer can do:
- *        import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
- *        if (!(await confirm({ title: "Delete?", variant: "destructive" }))) return;
- *      The opener registry is pure TS (zero React, zero dialog markup),
- *      so importing it costs almost nothing.
- *
- *   2. Render `<ConfirmDialogHost />` once, near the root of every
- *      provider tree (Providers, EntityProviders, PublicProviders) so
- *      the imperative `confirm()` always has a live host to dispatch
- *      to once the page hydrates.
- *
- * Pre-hydration calls queue inside `confirmDialogOpener.ts` and resolve
- * as soon as the host registers. In practice the dynamic chunk loads in
- * tens of milliseconds, well before any user-triggered destructive
- * action could fire.
+ * Render `<ConfirmDialogHost />` once, near the root of every provider tree
+ * (Providers, EntityProviders, PublicProviders) so the imperative
+ * `confirm()` always has a live host to dispatch to once the page hydrates.
+ * Pre-hydration calls queue inside the package and resolve as soon as the
+ * host registers.
  */
 
 "use client";
 
 import dynamic from "next/dynamic";
 
-export { confirm } from "./confirmDialogOpener";
-export type { ConfirmOptions } from "./confirmDialogOpener";
+export { confirm } from "@ai-matrx/kit/confirm-opener";
+export type { ConfirmOptions } from "@ai-matrx/kit/confirm-opener";
 
 const ConfirmDialogHostImpl = dynamic(
-  () => import("./ConfirmDialogHostImpl"),
+  () => import("@ai-matrx/kit/confirm").then((m) => m.ConfirmDialogHost),
   { ssr: false, loading: () => null },
 );
 

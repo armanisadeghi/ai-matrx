@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
-import type { DiffNode, ViewMode } from "../engine/types";
+import type { DiffNode, ViewMode } from "@ai-matrx/diff/structural";
 
 export interface EnrichmentContext {
   resolveModelId: (id: string) => string | undefined;

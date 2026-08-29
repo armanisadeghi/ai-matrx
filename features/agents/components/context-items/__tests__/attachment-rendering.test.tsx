@@ -184,6 +184,10 @@ describe("submitted webpage rendering", () => {
       expect.objectContaining({
         fileId,
         nameOverride: "Product 15A.jpeg",
+        fileHint: expect.objectContaining({
+          fileName: "Product 15A.jpeg",
+          mimeType: "image/jpeg",
+        }),
       }),
     );
   });

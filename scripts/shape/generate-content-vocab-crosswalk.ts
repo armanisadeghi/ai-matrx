@@ -45,7 +45,7 @@ import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import { CONTROL_TAGS } from "../../features/content-ir/registry/shape-doctor";
 import { extractDetectorTokensFromTexts } from "../../features/content-ir/registry/shape-doctor-extract";
-import { readAllRows } from "../../lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const CROSSWALK_PATH = resolve(ROOT, "scripts/shape/content-vocab-crosswalk.json");

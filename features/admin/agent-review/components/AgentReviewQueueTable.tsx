@@ -7,7 +7,7 @@ import { ArrowRight, ExternalLink, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
-import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
+import { enumUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import { toast } from "@/lib/toast";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";

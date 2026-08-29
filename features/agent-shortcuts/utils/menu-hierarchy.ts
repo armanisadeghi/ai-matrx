@@ -1,4 +1,4 @@
-import { getIconComponent } from "@/components/official/icons/IconResolver";
+import { getIconComponent } from "@ai-matrx/icons";
 import type { AgentShortcutCategory } from "../types";
 
 export interface FlatAgentCategory {

@@ -35,13 +35,13 @@ import TaskTapButton from "@/features/tasks/widgets/TaskTapButton";
 import TaskAttachmentsPanel from "@/features/tasks/components/TaskAttachmentsPanel";
 import TaskPreviewWindow from "@/features/tasks/components/TaskPreviewWindow";
 import { parseMarkdownChecklist } from "@/components/mardown-display/blocks/tasks/tasklist-parser";
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
   CopyTapButton,
   PencilTapButton,
   MoreHorizontalTapButton,
   ThumbsUpTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 
 // Demo fixtures — realistic fake IDs the backend RLS will reject. Every
 // widget still renders + opens correctly; only the final "commit" hits the

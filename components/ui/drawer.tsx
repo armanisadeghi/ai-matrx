@@ -4,7 +4,7 @@ import * as React from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
 
 import { cn } from "@/lib/utils";
-import { treeContainsComponent } from "@/lib/react/treeContainsComponent";
+import { treeContainsComponent } from "@ai-matrx/kit/react-tree";
 import { RadixDialogModalProvider } from "@/components/ui/radix-dialog-modal-context";
 
 type DrawerProps = React.ComponentProps<typeof DrawerPrimitive.Root> & {

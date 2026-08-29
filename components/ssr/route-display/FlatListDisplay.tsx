@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatTitleCase } from "@/utils/text/text-case-converter";
+import { formatTitleCase } from "@ai-matrx/kit/text-case";
 import { ChevronRight } from "lucide-react";
 import type { RouteDisplayProps } from "./types";
 

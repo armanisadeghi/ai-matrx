@@ -7,7 +7,7 @@ import {
   toggleMessaging,
 } from "../redux/messagingSlice";
 import { Badge } from "@/components/ui/badge";
-import { MessageTapButton } from "@/components/icons/tap-buttons";
+import { MessageTapButton } from "@ai-matrx/tap-target/buttons";
 
 export function MessageIcon() {
   const dispatch = useAppDispatch();

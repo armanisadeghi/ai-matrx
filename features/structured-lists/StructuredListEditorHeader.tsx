@@ -11,7 +11,7 @@
 import { ListChecks, Rows3, FileText } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 const MODES = [
   { name: "v1", href: "/lists/v1", icon: Rows3 },

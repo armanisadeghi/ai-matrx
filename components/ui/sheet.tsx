@@ -6,7 +6,7 @@ import { Cross2Icon } from "@radix-ui/react-icons";
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
-import { treeContainsComponent } from "@/lib/react/treeContainsComponent";
+import { treeContainsComponent } from "@ai-matrx/kit/react-tree";
 import { RadixDialogModalProvider } from "@/components/ui/radix-dialog-modal-context";
 import { DialogContentPrimitive } from "@/components/ui/dialog";
 

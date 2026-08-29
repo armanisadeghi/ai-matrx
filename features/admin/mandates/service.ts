@@ -13,6 +13,14 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { invalidateMandateCache } from "@/features/agents/mandates/service";
+/** The ad-hoc run path + its transport shapes moved down to the shared
+ * mandates feature so the (core) Mandate workspace can run a job too — ONE
+ * implementation, two hosts. See features/agents/mandates/test-run.ts. */
+import {
+  isMandateTestResult,
+  mandateTestResultValidationErrors,
+  type MandateTestResponse,
+} from "@/features/agents/mandates/test-run";
 import {
   versionSnapshotRowToAgentDefinition,
   type AgentVersionSnapshot,
@@ -33,6 +41,8 @@ import {
   mandateDefinitions,
   holderOfBinding,
   holderOfMandate,
+  mandateHolderWrite,
+  type HolderWrite,
   type MandateBindingRow,
   type MandateDefinitionRow,
   type MandateDefinitionUpdate,
@@ -177,24 +187,40 @@ export async function fetchMandateConsoleData(
   return { mandates, agentsById, versionsById, bindingsByMandateId };
 }
 
+/**
+ * The write allowlist for a definition edit, in switch-neutral terms.
+ *
+ * The Holder half is ONE field — `holder` — instead of the three columns it
+ * used to be, because those columns are named differently on the two schemas
+ * and `use_latest` does not survive the cutover at all. `mandateHolderWrite`
+ * in the storage router turns the decision ("this Holder, tracking latest or
+ * pinned to this version") into whichever columns the ACTIVE schema stores.
+ */
+export type MandateDefinitionPatch = {
+  /** Set to REBIND. Omit to leave the mandate's default Holder untouched. */
+  holder?: HolderWrite;
+} & Partial<Pick<
+  MandateDefinitionUpdate,
+  | "is_enabled"
+  | "label"
+  | "description"
+  // The Mandate-level Context Policy gate. Gates only NARROW — see
+  // the mandate's auto_context_disabled column.
+  | "auto_context_disabled"
+>>;
+
 export async function updateMandateDefinition(
   mandateId: string,
-  patch: Partial<Pick<
-    MandateDefinitionUpdate,
-    | "default_agent_id"
-    | "default_agent_version_id"
-    | "use_latest"
-    | "is_enabled"
-    | "label"
-    | "description"
-    // The Mandate-level Context Policy gate. Gates only NARROW — see
-    // agent.mandate.auto_context_disabled.
-    | "auto_context_disabled"
-  >>,
+  patch: MandateDefinitionPatch,
 ): Promise<MandateDefinitionRow> {
   const supabase = createClient();
+  const { holder, ...fields } = patch;
+  const columns: MandateDefinitionUpdate = {
+    ...fields,
+    ...(holder ? mandateHolderWrite(holder) : {}),
+  };
   const { data, error } = await mandateDefinitions(supabase)
-    .update(patch)
+    .update(columns)
     .eq("id", mandateId)
     .select("*")
     .single();
@@ -354,11 +380,12 @@ export async function fetchPinnedAgentIdentity(
   // Pass BOTH identifiers when present: agent_id resolves the identity, and
   // agent_version_id lets the route resolve the pinned version number — a
   // version-pinned unresolved pin must not lose its pinned-version badge.
-  if (mandate.default_agent_id) {
-    params.set("agent_id", mandate.default_agent_id);
+  const holder = holderOfMandate(mandate);
+  if (holder.holderId) {
+    params.set("agent_id", holder.holderId);
   }
-  if (mandate.default_agent_version_id) {
-    params.set("agent_version_id", mandate.default_agent_version_id);
+  if (holder.versionId) {
+    params.set("agent_version_id", holder.versionId);
   }
   if ([...params.keys()].length === 0) {
     return { agent: null, pinnedVersionNumber: null, systemTwin: null };
@@ -535,13 +562,10 @@ export async function deleteMandateExemplar(id: string): Promise<void> {
 }
 
 /** All bench transport shapes come from aidream's generated OpenAPI contract. */
-export type MandateTestCandidate = components["schemas"]["MandateCandidate"];
 export type MandateTestBatchRequest =
   components["schemas"]["MandateTestBatchRequest"];
 export type MandateTestBatchResponse =
   components["schemas"]["MandateTestBatchResponse"];
-export type MandateTestResponse = components["schemas"]["MandateTestResult"];
-export type MandateTestRequest = components["schemas"]["MandateTestRequest"];
 export type MandateCodeTruth = components["schemas"]["MandateCodeTruth"];
 export type MandateCodeTruthReport =
   components["schemas"]["MandateCodeTruthReport"];
@@ -737,102 +761,6 @@ export async function runMandateTests(
     throw new Error("Agent mandate bench returned an invalid batch response.");
   }
   return response.data;
-}
-
-/**
- * Run ONE candidate against inputs typed right now, with no stored test case —
- * the "Try it now" path that makes a cold mandate (no exemplars) benchable at all.
- * The server persists nothing for an ad-hoc run; `saveAdHocResultAsExemplar`
- * turns a good one into the mandate's first real test case.
- */
-export async function runMandateAdHocTest(
-  dispatch: AppDispatch,
-  mandateKey: string,
-  input: {
-    variables: JsonObject;
-    userInput?: string | null;
-    candidate?: MandateTestCandidate;
-  },
-): Promise<MandateTestResponse> {
-  const body: MandateTestRequest = {
-    variables: toJsonRecord(input.variables),
-    user_input: input.userInput?.trim() ? input.userInput : null,
-    candidate: input.candidate,
-  };
-  const response = await dispatch(
-    callApi({
-      path: "/mandates/{mandate_key}/test",
-      method: "POST",
-      pathParams: { mandate_key: mandateKey },
-      body,
-      // One agent run, not a batch — but a slow model on a long prompt still
-      // outruns the default connect deadline, and this endpoint sends no
-      // headers until the run has finished.
-      connectTimeoutMs: 5 * 60_000,
-      totalTimeoutMs: null,
-    }),
-  );
-  if (response.error) throw new Error(response.error.message);
-  if (!isMandateTestResult(response.data)) {
-    throw new Error("Agent mandate bench returned an invalid run result.");
-  }
-  return response.data;
-}
-
-function structuralVerdictValidationErrors(value: unknown): string[] {
-  if (!isJsonObject(value)) return ["structural must be an object"];
-  const errors: string[] = [];
-  if (typeof value.checked !== "boolean") {
-    errors.push("structural.checked must be a boolean");
-  }
-  if (
-    !Array.isArray(value.errors) ||
-    !value.errors.every((entry) => typeof entry === "string")
-  ) {
-    errors.push("structural.errors must be an array of strings");
-  }
-  return errors;
-}
-
-/** Explain an open-JSONB contract failure at the field that broke it. */
-export function mandateTestResultValidationErrors(value: unknown): string[] {
-  if (!isJsonObject(value)) return ["result must be an object"];
-  const errors: string[] = [];
-  if (typeof value.id !== "string") errors.push("id must be a string");
-  if (typeof value.created_at !== "string") {
-    errors.push("created_at must be a string");
-  }
-  if (typeof value.mandate_key !== "string") {
-    errors.push("mandate_key must be a string");
-  }
-  if (!(typeof value.exemplar_id === "string" || value.exemplar_id == null)) {
-    errors.push("exemplar_id must be a string or null");
-  }
-  if (typeof value.candidate_id !== "string") {
-    errors.push("candidate_id must be a string");
-  }
-  if (typeof value.candidate_label !== "string") {
-    errors.push("candidate_label must be a string");
-  }
-  if (typeof value.provenance !== "string") {
-    errors.push("provenance must be a string");
-  }
-  if (typeof value.is_version !== "boolean") {
-    errors.push("is_version must be a boolean");
-  }
-  if (typeof value.output !== "string") errors.push("output must be a string");
-  if (typeof value.duration_ms !== "number") {
-    errors.push("duration_ms must be a number");
-  }
-  errors.push(...structuralVerdictValidationErrors(value.structural));
-  return errors;
-}
-
-/** Runtime boundary for generated test results stored inside open JSONB.
- * `exemplar_id` is null on an AD-HOC run (a "Try it now" run that has no
- * stored test case yet) and a string on every persisted one. */
-export function isMandateTestResult(value: unknown): value is MandateTestResponse {
-  return mandateTestResultValidationErrors(value).length === 0;
 }
 
 function isMandateTestBatchResponse(
@@ -1041,14 +969,15 @@ export async function promoteMandateTestResult(
 export async function resolveMandateDefaultAgentId(
   mandate: MandateDefinitionRow,
 ): Promise<string | null> {
-  if (mandate.default_agent_id) return mandate.default_agent_id;
-  if (!mandate.default_agent_version_id) return null;
+  const holder = holderOfMandate(mandate);
+  if (holder.holderId) return holder.holderId;
+  if (!holder.versionId) return null;
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
     .from("definition_version")
     .select("agent_id")
-    .eq("id", mandate.default_agent_version_id)
+    .eq("id", holder.versionId)
     .single();
   if (error) throw error;
   return data.agent_id;

@@ -13406,6 +13406,198 @@
         }
       }
     },
+    "/mcp-connections/{server_id}/selected-file-metadata": {
+      "post": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Selected File Metadata",
+        "description": "Read metadata for one explicit Dropbox file path or id.",
+        "operationId": "selected_file_metadata_mcp_connections__server_id__selected_file_metadata_post",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DropboxSelectedFileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DropboxSelectedFileMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp-connections/{server_id}/new-relic/account-status": {
+      "post": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "New Relic Account Status",
+        "description": "Return only the accounts visible to one authorized New Relic identity.",
+        "operationId": "new_relic_account_status_mcp_connections__server_id__new_relic_account_status_post",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewRelicAccountStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp-connections/{server_id}/cloudflare/account-metadata": {
+      "post": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Cloudflare Account Metadata",
+        "description": "Return only account id/name/type through an exact core-scope grant.",
+        "operationId": "cloudflare_account_metadata_mcp_connections__server_id__cloudflare_account_metadata_post",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudflareAccountMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mcp-connections/{server_id}/grafana/dashboard-search": {
+      "post": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Grafana Dashboard Search",
+        "description": "Search dashboard metadata through Grafana's fixed read-only MCP tool.",
+        "operationId": "grafana_dashboard_search_mcp_connections__server_id__grafana_dashboard_search_post",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrafanaDashboardSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrafanaDashboardSearchResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mcp-connections/{server_id}/oauth-tokens": {
       "post": {
         "tags": [
@@ -14292,6 +14484,942 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GitHubWebhookResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/authorize": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Authorize",
+        "operationId": "authorize_microsoft_integrations_authorize_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MicrosoftAuthorizationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MicrosoftAuthorizationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/callback": {
+      "get": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Callback",
+        "operationId": "callback_microsoft_integrations_callback_get",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "State"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          }
+        ],
+        "responses": {
+          "307": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/refresh": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Refresh",
+        "operationId": "refresh_microsoft_integrations_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MicrosoftConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MicrosoftLifecycleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/preflight": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Preflight",
+        "operationId": "preflight_microsoft_integrations_preflight_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MicrosoftConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MicrosoftLifecycleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/disconnect": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Disconnect",
+        "operationId": "disconnect_microsoft_integrations_disconnect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MicrosoftConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/onedrive/selected-file/metadata": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Selected File Metadata",
+        "operationId": "selected_file_metadata_microsoft_integrations_onedrive_selected_file_metadata_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OneDriveSelectedFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OneDriveSelectedFileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/onedrive/selected-file/content": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Selected File Content",
+        "operationId": "selected_file_content_microsoft_integrations_onedrive_selected_file_content_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OneDriveSelectedFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/outlook/recent-basic-messages": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Recent Basic Messages",
+        "operationId": "recent_basic_messages_microsoft_integrations_outlook_recent_basic_messages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutlookRecentBasicMessagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutlookRecentBasicMessagesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/outlook/calendar/basic-window": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Basic Calendar Window",
+        "operationId": "basic_calendar_window_microsoft_integrations_outlook_calendar_basic_window_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutlookBasicCalendarWindowRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutlookBasicCalendarWindowResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/sharepoint/selected-file/metadata": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Sharepoint Selected File Metadata",
+        "operationId": "sharepoint_selected_file_metadata_microsoft_integrations_sharepoint_selected_file_metadata_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharePointSelectedFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharePointSelectedFileResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/sharepoint/selected-file/content": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Sharepoint Selected File Content",
+        "operationId": "sharepoint_selected_file_content_microsoft_integrations_sharepoint_selected_file_content_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SharePointSelectedFileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/teams/joined": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Joined Teams",
+        "operationId": "joined_teams_microsoft_integrations_teams_joined_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MicrosoftConnectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamsJoinedTeamsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/microsoft-integrations/teams/selected-chat/recent-messages": {
+      "post": {
+        "tags": [
+          "Microsoft Integrations"
+        ],
+        "summary": "Selected Chat Recent Messages",
+        "operationId": "selected_chat_recent_messages_microsoft_integrations_teams_selected_chat_recent_messages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TeamsSelectedChatMessagesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamsRecentChatMessagesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ebay-integrations/sandbox/taxonomy/default-category-tree": {
+      "get": {
+        "tags": [
+          "eBay Integrations"
+        ],
+        "summary": "Default Category Tree",
+        "operationId": "default_category_tree_ebay_integrations_sandbox_taxonomy_default_category_tree_get",
+        "parameters": [
+          {
+            "name": "credential_item_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Credential Item Id"
+            }
+          },
+          {
+            "name": "marketplace_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^EBAY_[A-Z0-9_]{2,24}$",
+              "default": "EBAY_US",
+              "title": "Marketplace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EbaySandboxTaxonomyResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/trello-integrations/public/boards/{board_id}": {
+      "get": {
+        "tags": [
+          "Trello Integrations"
+        ],
+        "summary": "Public Board",
+        "operationId": "public_board_trello_integrations_public_boards__board_id__get",
+        "parameters": [
+          {
+            "name": "board_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Board Id"
+            }
+          },
+          {
+            "name": "card_limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 0,
+              "default": 20,
+              "title": "Card Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrelloPublicBoardResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vimeo-integrations/public/videos/{video_id}": {
+      "get": {
+        "tags": [
+          "Vimeo Integrations"
+        ],
+        "summary": "Public Video",
+        "operationId": "public_video_vimeo_integrations_public_videos__video_id__get",
+        "parameters": [
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Video Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VimeoPublicVideoResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moodle-integrations/official-demos/{site_key}/public-config": {
+      "get": {
+        "tags": [
+          "Moodle Integrations"
+        ],
+        "summary": "Official Demo Public Config",
+        "operationId": "official_demo_public_config_moodle_integrations_official_demos__site_key__public_config_get",
+        "parameters": [
+          {
+            "name": "site_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "school",
+                "sandbox"
+              ],
+              "type": "string",
+              "title": "Site Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoodlePublicConfigResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openedx-integrations/official-sandbox/demo-course": {
+      "get": {
+        "tags": [
+          "Open edX Integrations"
+        ],
+        "summary": "Official Sandbox Demo Course",
+        "operationId": "official_sandbox_demo_course_openedx_integrations_official_sandbox_demo_course_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenEdxDemoCourseResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/zotero/public-libraries/{library_type}/{library_id}/items": {
+      "get": {
+        "tags": [
+          "Zotero"
+        ],
+        "summary": "List Public Library Items",
+        "operationId": "list_public_library_items_zotero_public_libraries__library_type___library_id__items_get",
+        "parameters": [
+          {
+            "name": "library_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "users",
+                "groups"
+              ],
+              "type": "string",
+              "title": "Library Type"
+            }
+          },
+          {
+            "name": "library_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "title": "Library Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 25,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ZoteroPublicLibraryResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spotify/public-metadata": {
+      "get": {
+        "tags": [
+          "Spotify"
+        ],
+        "summary": "Get Public Metadata",
+        "operationId": "get_public_metadata_spotify_public_metadata_get",
+        "parameters": [
+          {
+            "name": "url",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "title": "Url"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpotifyPublicMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/twitch/streams": {
+      "get": {
+        "tags": [
+          "Twitch"
+        ],
+        "summary": "Public Streams",
+        "operationId": "public_streams_twitch_streams_get",
+        "parameters": [
+          {
+            "name": "credential_item_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Credential Item Id"
+            }
+          },
+          {
+            "name": "user_login",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "title": "User Login"
+            }
+          },
+          {
+            "name": "first",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 20,
+              "title": "First"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwitchStreamsResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -85261,6 +86389,37 @@
         ],
         "title": "ClosePageResult"
       },
+      "CloudflareAccountMetadata": {
+        "properties": {
+          "server_id": {
+            "type": "string",
+            "title": "Server Id"
+          },
+          "accounts": {
+            "type": "string",
+            "title": "Accounts"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "default": "execute"
+          },
+          "oauth_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Oauth Scopes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_id",
+          "accounts"
+        ],
+        "title": "CloudflareAccountMetadata",
+        "description": "Provider-formatted account metadata from one fixed Cloudflare API read."
+      },
       "ClusterDetailResponse": {
         "properties": {
           "cluster": {
@@ -102375,6 +103534,53 @@
         ],
         "title": "DrainRowResult"
       },
+      "DropboxSelectedFileMetadata": {
+        "properties": {
+          "server_id": {
+            "type": "string",
+            "title": "Server Id"
+          },
+          "file_ref": {
+            "type": "string",
+            "title": "File Ref"
+          },
+          "metadata": {
+            "type": "string",
+            "title": "Metadata"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "default": "GetFileMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_id",
+          "file_ref",
+          "metadata"
+        ],
+        "title": "DropboxSelectedFileMetadata",
+        "description": "Provider-formatted metadata for the one requested file."
+      },
+      "DropboxSelectedFileRequest": {
+        "properties": {
+          "file_ref": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 2,
+            "pattern": "^(?:/.+|id:.+)$",
+            "title": "File Ref",
+            "description": "Exact Dropbox file path or file id returned by Dropbox."
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_ref"
+        ],
+        "title": "DropboxSelectedFileRequest",
+        "description": "One exact Dropbox file reference; directory discovery is not accepted."
+      },
       "DryRunEdgeReport": {
         "properties": {
           "state": {
@@ -102889,6 +104095,41 @@
           "hours"
         ],
         "title": "EarningCodeTotal"
+      },
+      "EbaySandboxTaxonomyResult": {
+        "properties": {
+          "environment": {
+            "type": "string",
+            "title": "Environment",
+            "default": "sandbox"
+          },
+          "marketplace_id": {
+            "type": "string",
+            "title": "Marketplace Id"
+          },
+          "category_tree_id": {
+            "type": "string",
+            "title": "Category Tree Id"
+          },
+          "category_tree_version": {
+            "type": "string",
+            "title": "Category Tree Version"
+          },
+          "scope": {
+            "type": "string",
+            "title": "Scope",
+            "default": "https://api.ebay.com/oauth/api_scope"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "marketplace_id",
+          "category_tree_id",
+          "category_tree_version"
+        ],
+        "title": "EbaySandboxTaxonomyResult",
+        "description": "Safe proof result; no provider token or credential material."
       },
       "EdgeDef": {
         "properties": {
@@ -114415,6 +115656,52 @@
           "task_lists"
         ],
         "title": "GoogleTasksPreview"
+      },
+      "GrafanaDashboardSearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Query",
+            "description": "Grafana dashboard search text."
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "GrafanaDashboardSearchRequest",
+        "description": "One bounded dashboard title/tag query; no arbitrary MCP arguments."
+      },
+      "GrafanaDashboardSearchResult": {
+        "properties": {
+          "server_id": {
+            "type": "string",
+            "title": "Server Id"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "dashboards": {
+            "type": "string",
+            "title": "Dashboards"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "default": "search_dashboards"
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_id",
+          "query",
+          "dashboards"
+        ],
+        "title": "GrafanaDashboardSearchResult",
+        "description": "Provider-formatted matches from Grafana's fixed read-only search tool."
       },
       "GrantPermissionRequest": {
         "properties": {
@@ -128213,6 +129500,33 @@
           "principal": {
             "$ref": "#/components/schemas/MandateTestPrincipal"
           },
+          "holder_type": {
+            "type": "string",
+            "title": "Holder Type",
+            "default": "agent"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "workflow_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Id"
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -130617,6 +131931,148 @@
         "title": "MessageUpdate",
         "description": "Fields the client can edit on an existing ``cx_message`` row.\n\nEvery field is optional — only fields the caller actually sets are\nwritten to the DB. ``content`` accepts the same structured JSON the\nserver would have written (list of parts) — callers that want to\nedit a simple text message should still send the list form."
       },
+      "MicrosoftAuthorizationRequest": {
+        "properties": {
+          "campaigns": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "identity",
+                "outlook_mail_basic",
+                "outlook_calendar_basic",
+                "onedrive_files_read",
+                "sharepoint_selected",
+                "teams_personal_read"
+              ]
+            },
+            "type": "array",
+            "maxItems": 5,
+            "minItems": 1,
+            "title": "Campaigns"
+          }
+        },
+        "type": "object",
+        "required": [
+          "campaigns"
+        ],
+        "title": "MicrosoftAuthorizationRequest"
+      },
+      "MicrosoftAuthorizationResponse": {
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "title": "Authorization Url"
+          },
+          "campaigns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Campaigns"
+          },
+          "requested_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requested Scopes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorization_url",
+          "campaigns",
+          "requested_scopes"
+        ],
+        "title": "MicrosoftAuthorizationResponse"
+      },
+      "MicrosoftConnectionRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "MicrosoftConnectionRequest"
+      },
+      "MicrosoftEntitlementResponse": {
+        "properties": {
+          "campaign": {
+            "type": "string",
+            "title": "Campaign"
+          },
+          "ready": {
+            "type": "boolean",
+            "title": "Ready"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "campaign",
+          "ready",
+          "reason"
+        ],
+        "title": "MicrosoftEntitlementResponse"
+      },
+      "MicrosoftLifecycleResponse": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "campaigns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Campaigns"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes"
+          },
+          "entitlements": {
+            "items": {
+              "$ref": "#/components/schemas/MicrosoftEntitlementResponse"
+            },
+            "type": "array",
+            "title": "Entitlements"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "status",
+          "campaigns",
+          "scopes",
+          "entitlements"
+        ],
+        "title": "MicrosoftLifecycleResponse"
+      },
       "MintControlRequest": {
         "properties": {
           "mode": {
@@ -131160,6 +132616,82 @@
         "title": "ModelReport",
         "description": "A distinct model class and every node that (transitively) uses it —\nfixing one shared model shows its blast radius here."
       },
+      "MoodlePublicConfigResult": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "moodle"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "site_key": {
+            "type": "string",
+            "enum": [
+              "school",
+              "sandbox"
+            ],
+            "title": "Site Key"
+          },
+          "site_url": {
+            "type": "string",
+            "title": "Site Url"
+          },
+          "site_name": {
+            "type": "string",
+            "title": "Site Name"
+          },
+          "guest_login_enabled": {
+            "type": "boolean",
+            "title": "Guest Login Enabled"
+          },
+          "web_services_enabled": {
+            "type": "boolean",
+            "title": "Web Services Enabled"
+          },
+          "mobile_web_service_enabled": {
+            "type": "boolean",
+            "title": "Mobile Web Service Enabled"
+          },
+          "maintenance_enabled": {
+            "type": "boolean",
+            "title": "Maintenance Enabled"
+          },
+          "login_type": {
+            "type": "integer",
+            "maximum": 3,
+            "minimum": 1,
+            "title": "Login Type"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "show_login_form": {
+            "type": "boolean",
+            "title": "Show Login Form"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_key",
+          "site_url",
+          "site_name",
+          "guest_login_enabled",
+          "web_services_enabled",
+          "mobile_web_service_enabled",
+          "maintenance_enabled",
+          "login_type",
+          "language",
+          "show_login_form"
+        ],
+        "title": "MoodlePublicConfigResult",
+        "description": "Bounded projection of Moodle's unauthenticated mobile public config."
+      },
       "MoveArgs": {
         "properties": {
           "new_parent_id": {
@@ -131671,6 +133203,37 @@
         ],
         "title": "NeighbourSelection",
         "description": "One plan page selected as a likely competitor of the target, with the\nreason it was selected. The reason is not decoration — it is what lets a\nhuman (or a later audit) see whether the selector actually knew."
+      },
+      "NewRelicAccountStatus": {
+        "properties": {
+          "server_id": {
+            "type": "string",
+            "title": "Server Id"
+          },
+          "accounts": {
+            "type": "string",
+            "title": "Accounts"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "default": "list_available_new_relic_accounts"
+          },
+          "include_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Include Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_id",
+          "accounts"
+        ],
+        "title": "NewRelicAccountStatus",
+        "description": "Provider-formatted account visibility from the discovery-only MCP tool."
       },
       "NewsroomSyncBody": {
         "properties": {
@@ -133894,6 +135457,169 @@
         "title": "OnSignInResponse",
         "description": "Response from the on-sign-in hook — used for operator observability."
       },
+      "OneDriveSelectedFileRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "drive_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Drive Id"
+          },
+          "item_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Item Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "drive_id",
+          "item_id"
+        ],
+        "title": "OneDriveSelectedFileRequest"
+      },
+      "OneDriveSelectedFileResponse": {
+        "properties": {
+          "drive_id": {
+            "type": "string",
+            "title": "Drive Id"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "etag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etag"
+          },
+          "last_modified_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Modified At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "drive_id",
+          "item_id",
+          "name",
+          "size",
+          "mime_type",
+          "etag",
+          "last_modified_at"
+        ],
+        "title": "OneDriveSelectedFileResponse"
+      },
+      "OpenEdxDemoCourseResult": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "const": "openedx",
+            "title": "Provider",
+            "default": "openedx"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "environment": {
+            "type": "string",
+            "const": "official_sandbox",
+            "title": "Environment",
+            "default": "official_sandbox"
+          },
+          "site_url": {
+            "type": "string",
+            "title": "Site Url",
+            "default": "https://sandbox.openedx.org"
+          },
+          "course_id": {
+            "type": "string",
+            "title": "Course Id"
+          },
+          "course_name": {
+            "type": "string",
+            "title": "Course Name"
+          },
+          "organization": {
+            "type": "string",
+            "title": "Organization"
+          },
+          "course_number": {
+            "type": "string",
+            "title": "Course Number"
+          },
+          "pacing": {
+            "type": "string",
+            "enum": [
+              "self",
+              "instructor"
+            ],
+            "title": "Pacing"
+          },
+          "mobile_available": {
+            "type": "boolean",
+            "title": "Mobile Available"
+          },
+          "invitation_only": {
+            "type": "boolean",
+            "title": "Invitation Only"
+          },
+          "short_description": {
+            "type": "string",
+            "title": "Short Description"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "course_id",
+          "course_name",
+          "organization",
+          "course_number",
+          "pacing",
+          "mobile_available",
+          "invitation_only",
+          "short_description"
+        ],
+        "title": "OpenEdxDemoCourseResult",
+        "description": "Bounded public metadata for the official sandbox demo course."
+      },
       "OpenRuntimeResponse": {
         "properties": {},
         "additionalProperties": true,
@@ -135606,6 +137332,224 @@
           "sources_analyzed"
         ],
         "title": "OutletContactExtraction"
+      },
+      "OutlookBasicCalendarEventResponse": {
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "title": "Event Id"
+          },
+          "starts_at": {
+            "type": "string",
+            "title": "Starts At"
+          },
+          "start_time_zone": {
+            "type": "string",
+            "title": "Start Time Zone"
+          },
+          "ends_at": {
+            "type": "string",
+            "title": "Ends At"
+          },
+          "end_time_zone": {
+            "type": "string",
+            "title": "End Time Zone"
+          },
+          "is_all_day": {
+            "type": "boolean",
+            "title": "Is All Day"
+          },
+          "show_as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show As"
+          },
+          "sensitivity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sensitivity"
+          },
+          "event_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "event_id",
+          "starts_at",
+          "start_time_zone",
+          "ends_at",
+          "end_time_zone",
+          "is_all_day",
+          "show_as",
+          "sensitivity",
+          "event_type"
+        ],
+        "title": "OutlookBasicCalendarEventResponse"
+      },
+      "OutlookBasicCalendarWindowRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "days": {
+            "type": "integer",
+            "maximum": 7,
+            "minimum": 1,
+            "title": "Days",
+            "default": 7
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "OutlookBasicCalendarWindowRequest"
+      },
+      "OutlookBasicCalendarWindowResponse": {
+        "properties": {
+          "window_start": {
+            "type": "string",
+            "title": "Window Start"
+          },
+          "window_end": {
+            "type": "string",
+            "title": "Window End"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/OutlookBasicCalendarEventResponse"
+            },
+            "type": "array",
+            "title": "Events"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only",
+            "title": "Access Mode",
+            "default": "read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_start",
+          "window_end",
+          "events",
+          "truncated"
+        ],
+        "title": "OutlookBasicCalendarWindowResponse"
+      },
+      "OutlookBasicMessageResponse": {
+        "properties": {
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          },
+          "sender_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Name"
+          },
+          "sender_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Address"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "received_at": {
+            "type": "string",
+            "title": "Received At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message_id",
+          "sender_name",
+          "sender_address",
+          "subject",
+          "received_at"
+        ],
+        "title": "OutlookBasicMessageResponse"
+      },
+      "OutlookRecentBasicMessagesRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "OutlookRecentBasicMessagesRequest"
+      },
+      "OutlookRecentBasicMessagesResponse": {
+        "properties": {
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/OutlookBasicMessageResponse"
+            },
+            "type": "array",
+            "title": "Messages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "messages"
+        ],
+        "title": "OutlookRecentBasicMessagesResponse"
       },
       "OutputSchemaEnvelope": {
         "properties": {
@@ -163008,6 +164952,92 @@
         ],
         "title": "ShareOfVoice"
       },
+      "SharePointSelectedFileRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "site_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Site Id"
+          },
+          "item_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Item Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "site_id",
+          "item_id"
+        ],
+        "title": "SharePointSelectedFileRequest"
+      },
+      "SharePointSelectedFileResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "size": {
+            "type": "integer",
+            "title": "Size"
+          },
+          "mime_type": {
+            "type": "string",
+            "title": "Mime Type"
+          },
+          "etag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Etag"
+          },
+          "last_modified_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Modified At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "item_id",
+          "name",
+          "size",
+          "mime_type",
+          "etag",
+          "last_modified_at"
+        ],
+        "title": "SharePointSelectedFileResponse"
+      },
       "SheetReadRequest": {
         "properties": {
           "connection_id": {
@@ -166985,6 +169015,120 @@
           "plans"
         ],
         "title": "SplitPlanResponse"
+      },
+      "SpotifyPublicMetadata": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "spotify_public_metadata",
+            "title": "Kind",
+            "default": "spotify_public_metadata"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "resource_type": {
+            "type": "string",
+            "enum": [
+              "track",
+              "album",
+              "artist",
+              "playlist",
+              "episode",
+              "show"
+            ],
+            "title": "Resource Type"
+          },
+          "resource_id": {
+            "type": "string",
+            "title": "Resource Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "provider_name": {
+            "type": "string",
+            "const": "Spotify",
+            "title": "Provider Name",
+            "default": "Spotify"
+          },
+          "provider_url": {
+            "type": "string",
+            "title": "Provider Url"
+          },
+          "embed_url": {
+            "type": "string",
+            "title": "Embed Url"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width"
+          },
+          "height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height"
+          },
+          "thumbnail_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Url"
+          },
+          "thumbnail_width": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Width"
+          },
+          "thumbnail_height": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnail Height"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_url",
+          "resource_type",
+          "resource_id",
+          "title",
+          "provider_url",
+          "embed_url"
+        ],
+        "title": "SpotifyPublicMetadata",
+        "description": "Safe projection of one public Spotify oEmbed response."
       },
       "SpreadsheetSpec": {
         "properties": {
@@ -171975,6 +174119,193 @@
         "title": "TaskResponse",
         "description": "Single sch_task row (plain, without children)."
       },
+      "TeamsChatMessageResponse": {
+        "properties": {
+          "chat_id": {
+            "type": "string",
+            "title": "Chat Id"
+          },
+          "message_id": {
+            "type": "string",
+            "title": "Message Id"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "last_modified_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Modified At"
+          },
+          "message_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Type"
+          },
+          "sender_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender Display Name"
+          },
+          "body_content_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Content Type"
+          },
+          "body_content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Content"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chat_id",
+          "message_id",
+          "created_at",
+          "last_modified_at",
+          "message_type",
+          "sender_display_name",
+          "body_content_type",
+          "body_content"
+        ],
+        "title": "TeamsChatMessageResponse"
+      },
+      "TeamsJoinedTeamResponse": {
+        "properties": {
+          "team_id": {
+            "type": "string",
+            "title": "Team Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "is_archived": {
+            "type": "boolean",
+            "title": "Is Archived"
+          }
+        },
+        "type": "object",
+        "required": [
+          "team_id",
+          "display_name",
+          "is_archived"
+        ],
+        "title": "TeamsJoinedTeamResponse"
+      },
+      "TeamsJoinedTeamsResponse": {
+        "properties": {
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/TeamsJoinedTeamResponse"
+            },
+            "type": "array",
+            "title": "Teams"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only",
+            "title": "Access Mode",
+            "default": "read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "teams",
+          "truncated"
+        ],
+        "title": "TeamsJoinedTeamsResponse"
+      },
+      "TeamsRecentChatMessagesResponse": {
+        "properties": {
+          "chat_id": {
+            "type": "string",
+            "title": "Chat Id"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/TeamsChatMessageResponse"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          },
+          "access_mode": {
+            "type": "string",
+            "const": "read_only",
+            "title": "Access Mode",
+            "default": "read_only"
+          }
+        },
+        "type": "object",
+        "required": [
+          "chat_id",
+          "messages",
+          "truncated"
+        ],
+        "title": "TeamsRecentChatMessagesResponse"
+      },
+      "TeamsSelectedChatMessagesRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "chat_id": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Chat Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "chat_id"
+        ],
+        "title": "TeamsSelectedChatMessagesRequest"
+      },
       "TemplateCreate": {
         "properties": {
           "name": {
@@ -176146,6 +178477,93 @@
         ],
         "title": "TrashListResponse"
       },
+      "TrelloPublicBoardResult": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "trello"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "short_url": {
+            "type": "string",
+            "title": "Short Url"
+          },
+          "permission_level": {
+            "type": "string",
+            "title": "Permission Level"
+          },
+          "cards": {
+            "items": {
+              "$ref": "#/components/schemas/TrelloPublicCard"
+            },
+            "type": "array",
+            "title": "Cards"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "url",
+          "short_url",
+          "permission_level",
+          "cards"
+        ],
+        "title": "TrelloPublicBoardResult",
+        "description": "Safe public metadata proof; no Trello credential or private data."
+      },
+      "TrelloPublicCard": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "closed": {
+            "type": "boolean",
+            "title": "Closed"
+          },
+          "list_id": {
+            "type": "string",
+            "title": "List Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "url",
+          "closed",
+          "list_id"
+        ],
+        "title": "TrelloPublicCard"
+      },
       "TriggerCreate": {
         "properties": {
           "type": {
@@ -176895,6 +179313,149 @@
         ],
         "title": "TurnRange",
         "description": "Identify one or more contiguous turns to compact.\n\n``from_user_message_id`` — the user message that starts the first\nturn in the range. Required.\n\n``to_user_message_id`` — the user message that starts the FIRST turn\nAFTER the range. The turn-range covers everything from\n``from_user_message_id`` up to but NOT including\n``to_user_message_id``. If omitted, the range extends to the end of\nthe conversation (inclusive of the final turn)."
+      },
+      "TwitchStream": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "user_login": {
+            "type": "string",
+            "title": "User Login"
+          },
+          "user_name": {
+            "type": "string",
+            "title": "User Name"
+          },
+          "game_id": {
+            "type": "string",
+            "title": "Game Id",
+            "default": ""
+          },
+          "game_name": {
+            "type": "string",
+            "title": "Game Name",
+            "default": ""
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "live",
+              ""
+            ],
+            "title": "Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "viewer_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Viewer Count"
+          },
+          "started_at": {
+            "type": "string",
+            "title": "Started At"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "thumbnail_url": {
+            "type": "string",
+            "title": "Thumbnail Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "user_login",
+          "user_name",
+          "type",
+          "viewer_count",
+          "started_at",
+          "language",
+          "thumbnail_url"
+        ],
+        "title": "TwitchStream",
+        "description": "Safe projection of one public Twitch stream record."
+      },
+      "TwitchStreamsResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "twitch_public_streams",
+            "title": "Kind",
+            "default": "twitch_public_streams"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "mock",
+              "production"
+            ],
+            "title": "Environment"
+          },
+          "streams": {
+            "items": {
+              "$ref": "#/components/schemas/TwitchStream"
+            },
+            "type": "array",
+            "title": "Streams"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          },
+          "requested_first": {
+            "type": "integer",
+            "title": "Requested First"
+          },
+          "requested_user_logins": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requested User Logins"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "environment",
+          "requested_first"
+        ],
+        "title": "TwitchStreamsResult",
+        "description": "Credential-free output from one public-stream page."
       },
       "TypeLeak": {
         "properties": {
@@ -182773,6 +185334,112 @@
         ],
         "title": "ViewportBlock"
       },
+      "VimeoPublicVideoResult": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "vimeo"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "video_id": {
+            "type": "string",
+            "title": "Video Id"
+          },
+          "uri": {
+            "type": "string",
+            "title": "Uri"
+          },
+          "video_url": {
+            "type": "string",
+            "title": "Video Url"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "author_name": {
+            "type": "string",
+            "title": "Author Name"
+          },
+          "author_url": {
+            "type": "string",
+            "title": "Author Url"
+          },
+          "account_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Type"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Duration Seconds"
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Height"
+          },
+          "thumbnail_url": {
+            "type": "string",
+            "title": "Thumbnail Url"
+          },
+          "upload_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Date"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "video_id",
+          "uri",
+          "video_url",
+          "title",
+          "author_name",
+          "author_url",
+          "duration_seconds",
+          "width",
+          "height",
+          "thumbnail_url"
+        ],
+        "title": "VimeoPublicVideoResult",
+        "description": "Safe public metadata projection; provider-controlled HTML is excluded."
+      },
       "VirtualAdapterDescriptor": {
         "properties": {
           "id": {
@@ -187327,6 +189994,194 @@
           "privacy_status"
         ],
         "title": "YouTubeVideoPreview"
+      },
+      "ZoteroCreator": {
+        "properties": {
+          "creator_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creator Type"
+          },
+          "first_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Name"
+          },
+          "last_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Name"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "title": "ZoteroCreator"
+      },
+      "ZoteroPublicItem": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zotero_public_library_item",
+            "title": "Kind",
+            "default": "zotero_public_library_item"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "item_type": {
+            "type": "string",
+            "title": "Item Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "creators": {
+            "items": {
+              "$ref": "#/components/schemas/ZoteroCreator"
+            },
+            "type": "array",
+            "title": "Creators"
+          },
+          "date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date"
+          },
+          "doi": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Doi"
+          },
+          "isbn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Isbn"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "version",
+          "item_type",
+          "title",
+          "creators"
+        ],
+        "title": "ZoteroPublicItem"
+      },
+      "ZoteroPublicLibraryResponse": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "zotero_public_library_items",
+            "title": "Kind",
+            "default": "zotero_public_library_items"
+          },
+          "library_type": {
+            "type": "string",
+            "enum": [
+              "users",
+              "groups"
+            ],
+            "title": "Library Type"
+          },
+          "library_id": {
+            "type": "integer",
+            "title": "Library Id"
+          },
+          "library_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Library Name"
+          },
+          "library_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Library Version"
+          },
+          "returned_count": {
+            "type": "integer",
+            "title": "Returned Count"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ZoteroPublicItem"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "library_type",
+          "library_id",
+          "returned_count",
+          "items"
+        ],
+        "title": "ZoteroPublicLibraryResponse"
       },
       "aidream__api__routers__admin_app_logs__DeletedResponse": {
         "properties": {

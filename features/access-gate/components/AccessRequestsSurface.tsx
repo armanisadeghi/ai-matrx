@@ -46,7 +46,7 @@ import { UserIdentity } from "@/components/user/UserIdentity";
 import { SettingRequestActionButtons } from "@/features/access-gate/components/SettingRequestActionButtons";
 import { ResourceActionRequestButtons } from "@/features/access-gate/components/ResourceActionRequestButtons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
+import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   NAV_ITEM_SELECTED,
   NAV_ITEM_UNSELECTED,

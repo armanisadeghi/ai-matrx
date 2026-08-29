@@ -17,7 +17,7 @@ import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { makeAssertData, extractErrorMessage } from "@/utils/errors";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import type { Database } from "@/types/database.types";
 import {
   evaluateConditionMatchers,

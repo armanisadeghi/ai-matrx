@@ -19,7 +19,7 @@ import { Megaphone, Plus, Power, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
+import { confirm } from "@ai-matrx/kit/confirm";
 import CreateAnnouncementDialog from "./CreateAnnouncementDialog";
 import {
   getAllAnnouncements,

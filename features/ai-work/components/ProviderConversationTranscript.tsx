@@ -22,7 +22,7 @@ import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { cn } from "@/lib/utils";
 import { formatAbsoluteDate } from "@/utils/datetime";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import {
   appLabel,
   featureLabel,

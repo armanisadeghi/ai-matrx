@@ -9,7 +9,7 @@
 // This gives users a seamless "go back to main navigation" gesture.
 // Both operations are pure DOM checkbox manipulation — zero React re-renders.
 
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 export default function ChatPanelBackButton() {
   function handleBack() {

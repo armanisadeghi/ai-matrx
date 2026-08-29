@@ -41,7 +41,7 @@ import {
   type WorkflowRunWireEvent,
 } from "@/features/agents/redux/execution-system/thunks/follow-workflow-run-stream";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
-import { isTransportFailure } from "@/lib/net/errors";
+import { isTransportFailure } from "@ai-matrx/data/net";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { appendVisionStatement } from "../service";
 import { roleFromNodeId, type InterviewStage, type RoleKey } from "../types";

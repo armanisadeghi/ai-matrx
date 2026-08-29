@@ -29,8 +29,8 @@ import {
   selectNotesMap,
 } from "../redux/selectors";
 import { discardNoteDraft, listNoteDrafts } from "../utils/notesDrafts";
-import { subscribeDrafts } from "@/lib/local-drafts/localDrafts";
-import type { LocalDraft } from "@/lib/local-drafts/types";
+import { subscribeDrafts } from "@ai-matrx/kit/drafts";
+import type { LocalDraft } from "@ai-matrx/kit/drafts";
 
 interface NotesDraftRecoveryListProps {
   instanceId: string;

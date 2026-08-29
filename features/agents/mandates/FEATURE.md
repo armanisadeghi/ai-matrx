@@ -52,7 +52,7 @@ way a surface does; the binding maps them onto the Holder. The rules, all live:
 | `components/MandateAgentPicker.tsx`            | The reusable consumer-facing "which agent runs this step" control — compact popover: system default + the user's own/shared agents, save-on-pick, reset-to-default, link to `/agents/mandates`. First consumer: podcast topic ideas (`TopicIdeaHelper`, mandate `podcast_client.topic_ideas`). Drop it beside any mandate-resolved affordance.                                                                                                                                                                                                                                                                                                                                              |
 
 | `browse/`                                      | **The list** — `listConfig.tsx` on the canonical entity-list shell over the `mnd_list_scoped` RPC triple (`migrations/mnd_list_scoped.sql`): per-caller `resolved_layer`, drift, honest DB-derived health; facets Feature / Decided by / Output kind / Status; 3 layouts; `urlState`. `url-compat.ts` is the LOAD-BEARING legacy shim: `?feature=<domain>` redirects server-side onto the canonical `?filters=` select-filter form (jest-pinned). |
-| `workspace/`                                   | **THE core** — `MandateWorkspace` (§1–§4 per the vision), `OverrideFlow` (the stepper; principal-aware user/org), `useMandateWorkspaceData` (the ONE single-mandate load both hosts share; refresh reloads ONE mandate, never the registry), `save-payload.ts` (pure, jest-pinned wipe guards: full map re-send; stored `config_overrides` survive when the settings step never opened; legacy mandates send NO map — the server 422s on `{}`). |
+| `workspace/`                                   | **THE core** — `MandateWorkspace` (§1–§4 per the vision), `OverrideFlow` (the stepper; principal-aware user/org), `RunThisJobSection` (the run affordance — super-admin gated, Provision-driven inputs, canonical output pipeline, workflow-run door), `Section.tsx` (the shared section chrome), `useMandateWorkspaceData` (the ONE single-mandate load both hosts share; refresh reloads ONE mandate, never the registry), `save-payload.ts` (pure, jest-pinned wipe guards: full map re-send; stored `config_overrides` survive when the settings step never opened; legacy mandates send NO map — the server 422s on `{}`). |
 | `provision-shapes.ts`                          | LEAF module (the `contract.ts` pattern) for the Provision era: `OfferedValue` + `parseOfferedValues`, the ONE client consumption-map deserializer `parseConsumptionMap` (legacy `code_value` normalizes to `offered_value`), `parseMandateWave1`/`parseBindingWave1` (runtime narrowing of the wave-1 columns off `select("*")` rows — see the DB-types note below), the kind-law mirrors (`SCALAR_VALUE_KINDS`, `GENERIC_VALUE_KINDS`, `ALLOWED_PIN_KEYS`, `EXECUTABLE_HOLDER_TYPES`), the ONE holder-refusal message (`holderNotExecutableMessage`), and the `consumptionMapProblems` pre-flight. |
 | `provisions.ts`                                | Client reads of `agent.provision` — `fetchProvision` (one key) and `fetchProvisions` (the BATCHED list read: cache-aware, chunked at 100 keys, negative-caches misses) over a shared 5-min cache. A list surface resolves every key it renders in ONE call — never one request per card. Carries the ONE clearly-marked local-type widening for the table (`ProvisionRowLocal` / `Wave1Database`) — **delete it and rerun `pnpm db-types` when the CLI can authenticate**; the generated `types/database.types.ts` predates `agent.provision` and the wave-1 mandate/binding columns (live-verified 2026-08-22). |
 | `components/EffectiveConfigLayers.tsx`         | The truthful three-layer settings view per key: agent's own → binding overrides → mandate PINS (pins win, rendered locked "set by the mandate"). Pins are code-owned levers only (`reasoning`/`streaming`); a model id is NEVER rendered as a pin — `parseMandateWave1` refuses non-lever keys at ingress.                                                                                                                                                                              |
@@ -255,6 +255,36 @@ commit time.
 
 ## Change Log
 
+- 2026-08-28 — **You can RUN the mandate you are looking at.** The workspace stated the
+  job, the Holder, the override and the notes, and had no way to run any of it: the only
+  run affordance in the product was the admin console's bench, on an `/administration`
+  route. New `workspace/RunThisJobSection.tsx` adds a **Run this job** section to
+  `MandateWorkspace`, so it appears in BOTH hosts (the `(core)` route and the
+  `MandateWindow` twin) with no host branch. Inputs are driven off the **Provision offer**
+  `useMandateWorkspaceData` already loads (guaranteed ⇒ required, `pinned_context` values
+  filtered out because the platform delivers them), each through the canonical
+  `VariableInputComponent`; a legacy contract-only mandate falls back to its required
+  variables. THE USER-INPUT LAW holds: every declared value goes as a named entry in
+  `variables` and the free-text box is the only thing that becomes `user_input` —
+  structured kinds are typed as JSON so they stay structured on the wire. The result
+  renders through the ONE canonical pipeline (`StructuredValueView` for structured
+  payloads and JSON documents, `MarkdownStream` for prose — nothing hand-rendered), and a
+  failure shows the server's error verbatim. **The workflow leg:** the test result now
+  carries `holder_type` / `run_id` / `workflow_id`, so a WORKFLOW holder's child run gets
+  an **Open the run** door to `/workflows/runs/{run_id}`; those three fields are narrowed
+  at ingress in `test-run.ts` (`readMandateRunHolder`) because `api-types.ts` is generated
+  and does not carry them yet — the same local-extension seam `provision-shapes.ts` uses,
+  removable on the next regeneration. **Gating:** `POST /mandates/{key}/test` is
+  `require_super_admin` server-side, so the whole section renders nothing for anyone else
+  rather than offering a guaranteed 403. Reuse, not a fork: `runMandateAdHocTest` moved
+  from `features/admin/mandates/service.ts` down to `test-run.ts` and both hosts call the
+  one function; `TryItNowPanel` itself was NOT reused — it is contract+agent-definition
+  driven and half of it is exemplar authoring, so making it host-agnostic would have meant
+  rewriting its field derivation and gutting its save half. Gates green: `type-check`,
+  `test:workflow-runtime` (370), `test:content-ir` (1320), `check:hardcoded-prompts`,
+  `check:kind-marker-law`, `check:agent-disclosure`, `check:dead-ends` (no new findings).
+  Not browser-verified here by instruction — the preview server is owned by another session.
+- 2026-08-29 — `test-run.ts` now owns the one client ad-hoc mandate test path and its generated transport shapes/runtime guard. Admin and core hosts share it; the endpoint remains super-admin-only and non-streaming.
 - 2026-08-28 — **"Use a Workflow" is real.** The Holder step binds a Workflow end to end now
   that aidream executes one (`workflow_holder.py`), so the `mandates.workflow-holder`
   coming-soon entry is RETIRED rather than left "blocked" beside a working feature.

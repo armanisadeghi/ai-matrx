@@ -50,10 +50,16 @@ export default function AgentConvertSystemWindow({
 
   const rebindMandateToSystem = mandateId
     ? async (systemAgentId: string): Promise<void> => {
+        // Rebinding to the system twin always tracks latest — the twin is the
+        // agent we now maintain, so pinning it to the version that existed at
+        // conversion time would freeze it immediately.
         await updateMandateDefinition(mandateId, {
-          default_agent_id: systemAgentId,
-          default_agent_version_id: null,
-          use_latest: true,
+          holder: {
+            holderType: "agent",
+            holderId: systemAgentId,
+            versionId: null,
+            useLatest: true,
+          },
         });
       }
     : undefined;

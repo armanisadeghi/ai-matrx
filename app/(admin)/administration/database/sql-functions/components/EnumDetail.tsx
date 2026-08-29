@@ -32,7 +32,7 @@ import {
   booleanUrlCodec,
   enumUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 /** The detail panel's tabs — a caller can open straight onto one. */
 export type EnumDetailTab = "details" | "values" | "usage";

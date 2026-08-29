@@ -7,7 +7,7 @@
 
 import { TableProperties } from "lucide-react";
 
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import { ProductCaptureHeader } from "@/features/product-capture/components/ProductCaptureHeader";
 import { AnswerQueue } from "@/features/product-capture/components/pipeline/AnswerQueue";
 
@@ -20,6 +20,7 @@ export function AnswerHeader() {
         <TapTargetButton
           icon={<TableProperties className="h-4 w-4" />}
           label="Pipeline"
+          mobileIconOnly
           href="/tools/product-capture/manage"
           ariaLabel="Open the pipeline manager"
         />

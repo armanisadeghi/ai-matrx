@@ -25,10 +25,20 @@
 // same synchronous turn as the registry/OverlaySurface modules and
 // false-positives on legitimate lazy loads.
 import "@/features/window-panels/utils/lazy-bundle-guard";
+// Side-effect import: registers every Matrx `svg:` public asset into
+// @ai-matrx/icons' injectable registry at client-bundle eval — before any
+// component resolves an `svg:` icon value. The package ships EMPTY; without
+// this the icons would silently fall back.
+import "@/utils/icons/matrx-public-svg-registry";
+// Side-effect import: registers next/link into @ai-matrx/tap-target's link
+// registry. This client module also executes during the SSR pass, so both
+// server render and hydration resolve the same link element; a Server
+// Component must never import the setup module (client-reference call).
+import "@/components/icons/tap-target-setup";
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { useIdleReady } from "@/utils/idle-scheduler";
+import { useIdleReady } from "@ai-matrx/kit/idle-scheduler";
 import { installGlobalErrorCapture } from "@/lib/diagnostics/globalErrorCapture";
 import { installErrorPersistence } from "@/lib/diagnostics/persistCapturedErrors";
 

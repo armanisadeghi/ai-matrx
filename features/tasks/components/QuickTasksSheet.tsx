@@ -84,7 +84,7 @@ import CompactTaskItem from "./CompactTaskItem";
 import TaskDetailsPanel from "./TaskDetailsPanel";
 import TaskSortControl from "./TaskSortControl";
 import { QuickTasksToolbarGroup } from "./QuickTasksToolbarGroup";
-import { XTapButton } from "@/components/icons/tap-buttons";
+import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import type { TaskFilterType } from "../types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOverlayData } from "@/lib/redux/slices/overlaySlice";

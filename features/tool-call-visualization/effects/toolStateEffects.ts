@@ -173,6 +173,25 @@ const TOOL_STATE_EFFECTS: ToolStateEffect[] = [
       fireInvalidation(INVALIDATION_KEYS.kindComponents);
     },
   },
+  {
+    // Agent authored/edited a kind DEFINITION (`content_ir.kind_definition`
+    // via kind_*) → force-refresh the kind registry so the schema lands and
+    // any latched cold-fetch miss for the new slug clears. Without this, a
+    // shape created mid-conversation could not render in the same session —
+    // the "create a shape, first try doesn't work" defect (2026-08-29 audit,
+    // cracks #2/#3). Same inversion: fired by name; the registry registered
+    // the callback at its own init.
+    id: "kind-definitions",
+    tools: new Set([
+      "kind_create",
+      "kind_update_schema",
+      "kind_activate",
+      "kind_add_example",
+    ]),
+    run() {
+      fireInvalidation(INVALIDATION_KEYS.kindDefinitions);
+    },
+  },
 ];
 
 // ─── The runner ──────────────────────────────────────────────────────────────

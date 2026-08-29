@@ -23,7 +23,7 @@ import {
 } from "@/lib/entity-list/columns";
 import { appLabel } from "@/features/agents/redux/conversation-history/source-registry";
 import { fidelityVerdict } from "@/features/agent-connections/coding-sessions/verdict";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import {
   conversationTypeLabel,
   originClassLabel,

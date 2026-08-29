@@ -15,7 +15,7 @@
 import { useEffect, useRef } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { cn } from "@/lib/utils";
 
 import { PhaseIcon } from "../../components/readout-parts";

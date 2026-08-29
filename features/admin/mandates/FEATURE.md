@@ -86,6 +86,7 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
+- 2026-08-29 — The ad-hoc `POST /mandates/{key}/test` transport and runtime result guard moved to the shared mandates feature so admin and core workspaces consume one implementation without pulling the admin service into the core bundle.
 - 2026-08-28 — **The coverage board, the real GOAL, the full Provision, and four
   offenders closed.**
   - **Coverage board** (`MandateCoverageBoard.tsx` + `mandate-coverage.ts`): three

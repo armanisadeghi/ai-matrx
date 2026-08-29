@@ -36,7 +36,7 @@ import { cn } from "@/lib/utils";
 import {
   DynamicIcon,
   getIconComponent,
-} from "@/components/official/icons/IconResolver";
+} from "@ai-matrx/icons";
 import { getPlacementTypeMeta, type PlacementType } from "../constants";
 import type { AgentShortcutCategory } from "../types";
 

@@ -5,7 +5,7 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
-import { treeContainsComponent } from "@/lib/react/treeContainsComponent";
+import { treeContainsComponent } from "@ai-matrx/kit/react-tree";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
 
 /**

@@ -42,6 +42,7 @@ import {
   hrEmployeeHref,
   hrMeTabHref,
   hrStructureFocusHref,
+  hrTaskHref,
   type HrOrgRef,
 } from "../../../routes";
 import type { HrEmployeeProfile } from "../../../types";
@@ -426,7 +427,7 @@ function AssignmentRow({
 
           {workflowInstanceId ? (
             <Link
-              href={`/hr/tasks/${workflowInstanceId}`}
+              href={hrTaskHref(workflowInstanceId, org)}
               className="inline-flex items-center gap-1 text-xs text-muted-foreground underline underline-offset-2 hover:text-primary"
             >
               See who approved this

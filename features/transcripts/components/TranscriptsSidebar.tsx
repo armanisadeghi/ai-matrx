@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import type { Transcript } from "../types";
 import { formatDuration, formatRelativeTime } from "../utils/dateFormatting";
 import { DraftIndicator } from "./DraftIndicator";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { useToastManager } from "@/hooks/useToastManager";
 import { ListScopeSwitcher } from "@/components/official/ListScopeSwitcher";
 

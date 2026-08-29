@@ -1,4 +1,4 @@
-import { runWithConcurrency } from "./run-with-concurrency";
+import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
 
 describe("runWithConcurrency", () => {
   it("starts independent work concurrently without exceeding the limit", async () => {

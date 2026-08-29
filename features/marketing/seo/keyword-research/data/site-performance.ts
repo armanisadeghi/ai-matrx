@@ -2,7 +2,7 @@ import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-
 import type { Database, Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { guardedUpdate } from "@ai-matrx/data/db";
 
 import type {
   SiteKeywordPerformancePage,

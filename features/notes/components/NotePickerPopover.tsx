@@ -14,7 +14,7 @@
 
 import React, { useCallback, useMemo, useState } from "react";
 import { ChevronRight, FileText, Loader2, Search } from "lucide-react";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";

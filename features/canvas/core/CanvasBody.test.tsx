@@ -26,7 +26,7 @@ jest.mock("@/features/canvas/hooks/useCanvasItem", () => ({
   useCanvasItem: jest.fn(),
 }));
 
-jest.mock("@/components/icons/TapTargetButton", () => ({
+jest.mock("@ai-matrx/tap-target", () => ({
   TapTargetButton: ({
     label,
     onClick,

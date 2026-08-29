@@ -24,7 +24,7 @@ export default async function MyClockPage({
       <PageHeader>
         <span className="text-sm font-medium text-foreground">My time clock</span>
       </PageHeader>
-      <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex h-full flex-col overflow-hidden pt-[var(--shell-header-h)]">
         <div className="min-h-0 flex-1 overflow-y-auto">
           <MyClockSurface
             mockCase={mockCaseFromParam(params.case)}

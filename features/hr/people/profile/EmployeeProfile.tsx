@@ -21,7 +21,9 @@
 // and nothing here recovers the difference.
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import { HR_ORG_PARAM } from "../../constants";
 
 import { HrError, HrLoading, HrNoAccess, HrPageState } from "../../shared/HrStates";
 import { useHrContext } from "../../shared/useHrContext";
@@ -60,17 +62,56 @@ export function resolveDefaultTab(
 
 // ── Route 13: the redirect ──────────────────────────────────────────────────
 
+/**
+ * 🚨 THIS REDIRECT MAY NEVER EMIT A URL WITH LESS EMPLOYER THAN THE ONE IT RECEIVED.
+ *
+ * Route 13 is a REWRITE of the URL the user is standing on, so it is the one place in the
+ * module where dropping `?org=` is not merely a bad link — it destroys the employer the user
+ * supplied and then blames them for not supplying one.
+ *
+ * The bug it fixes (D5) was a RACE, not a missing argument. This component runs TWO
+ * independent async reads:
+ *
+ *   • `useHrProfile` — ONE call (`hr_employee_profile`), and it does not depend on the
+ *     employer context at all.
+ *   • `useHrContext` — `validateHrBrowserSession()`, THEN `hr_my_context`, THEN a second
+ *     `hr_my_context` for the slug lane, THEN possibly a third for the HR-reachable rescue.
+ *
+ * The short one always wins. So `target` went non-null while `orgRef` was still `null`, the
+ * effect fired `router.replace()` with no employer, and the component unmounted before the
+ * later render carrying a real `orgRef` could correct it. A SINGLE-employer user never saw it
+ * (rule 3 silently re-infers their one employer); a MULTI-employer user landed on "Which
+ * employer?" — told they had not chosen one when they had, in the URL they typed.
+ *
+ * Two defences, because either alone leaves a hole:
+ *
+ *  1. FALL BACK TO THE RAW `?org=`. Reading it off `useSearchParams()` is race-free by
+ *     construction — it is the value already in the address bar, available on the first
+ *     render, needing no round trip. `orgRef` is still PREFERRED when resolved, because it is
+ *     normalised to the employer's slug and survives a uuid-vs-slug mismatch.
+ *  2. WAIT FOR THE CONTEXT when the URL carried nothing. With no param there is nothing to
+ *     preserve, but redirecting early would still throw away the employer the context is
+ *     about to resolve — so hold the redirect until it lands. `isLoading` is the FIRST
+ *     resolve only and turns false on failure too, so this cannot spin forever.
+ */
 export function EmployeeProfileRedirect({ employeeId }: { employeeId: string }) {
   const router = useRouter();
-  const { orgRef } = useHrContext();
+  const { orgRef, isLoading: contextIsLoading } = useHrContext();
+  const searchParams = useSearchParams();
+  const urlOrg = searchParams?.get(HR_ORG_PARAM)?.trim() || null;
   const { profile, isLoading, denied, error, refresh } = useHrProfile({ employeeId });
 
   const target = profile ? resolveDefaultTab(profile.tabs) : null;
+  // Never emit less than we were handed: the resolved employer, else the one in the URL.
+  const carryOrg = orgRef ?? urlOrg;
 
   useEffect(() => {
     if (!target) return;
-    router.replace(profileTabHref(employeeId, target, orgRef));
-  }, [target, employeeId, orgRef, router]);
+    // Nothing in the URL to preserve, and the employer is still resolving — wait for it
+    // rather than rewriting the URL into one that has no employer at all.
+    if (!carryOrg && contextIsLoading) return;
+    router.replace(profileTabHref(employeeId, target, carryOrg));
+  }, [target, employeeId, carryOrg, contextIsLoading, router]);
 
   if (isLoading) return <HrLoading variant="profile" />;
   if (denied) {

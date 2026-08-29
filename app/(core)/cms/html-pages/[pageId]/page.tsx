@@ -12,7 +12,7 @@ import { HTMLPageService } from "@/features/html-pages/services/htmlPageService"
 import type { HtmlPageRecord } from "@/features/html-pages/types";
 import HtmlPageEditor from "@/features/html-pages/components/HtmlPageEditor";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2 } from "lucide-react";
 import {

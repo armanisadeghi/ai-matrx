@@ -1,5 +1,5 @@
-import { computeDiff } from "@/components/diff/engine/compute-diff";
-import type { DiffNode, DiffResult } from "@/components/diff/engine/types";
+import { computeDiff } from "@ai-matrx/diff/structural";
+import type { DiffNode, DiffResult } from "@ai-matrx/diff/structural";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { AGENT_DIFF_OPTIONS } from "./agent-diff-constants";
 

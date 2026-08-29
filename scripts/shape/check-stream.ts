@@ -43,7 +43,7 @@ import {
   recordFromUpsert,
   type StreamTickRecord,
 } from "../../features/content-ir/studio/stream-simulator";
-import { readAllRows } from "../../lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import type { Json } from "../../types/database.types";
 import { isJsonObject } from "../../types/json";
 

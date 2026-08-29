@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toolsService, DatabaseTool } from '@/utils/supabase/tools-service';
 import { mapIcon } from '@/utils/icons/icon-mapper';
-import { formatText } from '@/utils/text/text-case-converter';
+import { formatText } from '@ai-matrx/kit/text-case';
 
 export interface Tool {
   id: string;           // The actual tool identifier used for tool calls (from database 'name' field)

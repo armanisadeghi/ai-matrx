@@ -22,7 +22,7 @@
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import type { HrResult } from "@/features/hr/types";
 
 /** The time lane's own options type, imported from source — never re-exported through `rpc.ts`. */
@@ -33,6 +33,7 @@ import type {
   LeaveBlackoutRule,
   LeaveCountsToward,
   LeaveCancelResult,
+  LeaveDiscardResult,
   LeaveConflictCheck,
   LeaveConflictFinding,
   LeaveDayPart,
@@ -126,8 +127,14 @@ function countsToward(value: unknown): LeaveCountsToward | null {
  * stops — no five figures, no `ledger_balance`, no `identity_holds`. Everything below
  * therefore resolves to `null` on an unlimited policy, which is exactly right: the block
  * renders the word and no numbers.
+ *
+ * 🚨 EXPORTED, AND IT IS THE ONLY ONE. `features/hr/leave/manager/api/service.ts` used to keep a
+ * key-for-key copy of this function. When `hr.leave_figures` grew `bookable_now` /
+ * `pending_beyond_balance` the copy would have kept withholding them, so the manager's team view
+ * and `/hr/leave/balances` would have rendered "Not provided" under the tile the employee's page
+ * renders a number in. One door, one mapper — import this, never re-type it.
  */
-function toFigures(raw: unknown): LeaveFigures {
+export function toFigures(raw: unknown): LeaveFigures {
   const r = bag(raw);
   return {
     ok: bool(r.ok),
@@ -143,6 +150,16 @@ function toFigures(raw: unknown): LeaveFigures {
     approvedUpcoming: num(r.approvedUpcoming),
     pendingApproval: num(r.pendingApproval),
     available: num(r.available),
+    /*
+      🚨 NO `?? available` FALLBACK, DELIBERATELY. §5's rule 3 is that a figure the server did not
+      send renders dark with the reason — `0.0` hours and "we were not told" are different facts.
+      Falling back to `available` here would put the negative number this pair exists to remove
+      straight back under the caption "What you can book right now" on any payload that predates
+      `hr_c4_55`.
+    */
+    bookableNow: num(r.bookableNow),
+    pendingBeyondBalance: num(r.pendingBeyondBalance),
+    pendingLatestStart: str(r.pendingLatestStart),
 
     ledgerBalance: num(r.ledgerBalance),
     removed: num(r.removed),
@@ -407,6 +424,8 @@ export async function previewLeaveRequest(
       breakdownSentence: str(r.breakdownSentence),
       figures: toFigures(r.figures),
       projection: toProjection(r.projection),
+      /* Server-composed, rendered verbatim — see `LeaveRequestPreview.projectionSentence`. */
+      projectionSentence: str(r.projectionSentence),
       policyName: str(r.policyName),
       incrementMinutes: num(r.incrementMinutes),
       mandatedUses: strList(r.mandatedUses),
@@ -500,6 +519,43 @@ export async function cancelLeaveRequest(
   return {
     ok: true,
     data: { outcome: str(r.outcome), workflowInstanceId: str(r.workflowInstanceId) },
+  };
+}
+
+/**
+ * `hr_leave_request_discard(...)` — the ONLY way a draft leaves the person's page.
+ *
+ * 🚨 THIS IS NOT `cancelLeaveRequest`, AND THE TWO MUST NEVER BE COLLAPSED. Cancellation
+ * undoes a commitment: something was filed, an approver was asked, hours may be encumbered,
+ * and the ledger may owe a reversal — which is why `hr_leave_request_cancel` reaches the
+ * workflow engine. A draft committed nothing. `hr_leave_request_cancel` answers a draft with
+ * `not_cancellable`, which is what made a draft permanent until this door existed.
+ *
+ * The server refuses every state but `draft`, each refusal naming the act that IS available,
+ * and those sentences render verbatim — this module composes none of them.
+ */
+export async function discardLeaveRequest(
+  args: { requestId: string; reason?: string | null },
+  opts?: HrRpcOptions,
+): Promise<HrResult<LeaveDiscardResult>> {
+  const res = await callHrLeaveRpc(
+    "hr_leave_request_discard",
+    { p_request_id: args.requestId, p_reason: args.reason ?? undefined },
+    opts,
+  );
+  if (!res.ok) return res;
+  const r = res.data;
+  return {
+    ok: true,
+    data: {
+      outcome: str(r.outcome),
+      leaveRequestId: str(r.leaveRequestId),
+      workflowInstanceId: str(r.workflowInstanceId),
+      /* The server asserts both. `?? false` here would invent a claim it did not make, so an
+         absent key reads as "not asserted" and the surface says nothing about it. */
+      workflowInstanceKept: bool(r.workflowInstanceKept) === true,
+      balanceMoved: bool(r.balanceMoved) === true,
+    },
   };
 }
 

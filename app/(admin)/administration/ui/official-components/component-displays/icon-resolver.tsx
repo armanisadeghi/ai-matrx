@@ -3,10 +3,10 @@
 import React from "react";
 import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
-import IconResolver, {
+import { IconResolver,
   getIconComponent,
   DynamicIcon,
-} from "@/components/official/icons/IconResolver";
+} from "@ai-matrx/icons";
 import { Check } from "lucide-react";
 
 interface ComponentDisplayProps {

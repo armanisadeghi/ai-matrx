@@ -31,7 +31,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { getIconComponent } from "@/components/official/icons/IconResolver";
+import { getIconComponent } from "@ai-matrx/icons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";

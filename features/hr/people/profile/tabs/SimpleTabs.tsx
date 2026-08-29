@@ -76,8 +76,14 @@ export function DocumentsTab({ org }: { org: HrOrgRef }) {
       />
 
       {/* 🚨 STATED, NOT ASSUMED. Somebody looking for an I-9 here has to be told
-          where it actually is, or they will conclude it was never collected. */}
-      <div className="flex max-w-prose items-start gap-2 rounded-md border border-border px-3 py-2">
+          where it actually is, or they will conclude it was never collected.
+
+          🚨 AND THE DOOR HAS TO OPEN. This said the right sentence and then
+          offered `/hr/documents/i9`, which does not exist — so the one control
+          whose entire job was "it is over there, not here" sent the reader to
+          "We couldn't find that page", which reads as "it is nowhere". A
+          registered promise is the honest version of the same sentence. */}
+      <div className="flex max-w-prose flex-wrap items-start gap-2 rounded-md border border-border px-3 py-2">
         <FileWarning
           className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
           aria-hidden
@@ -85,12 +91,13 @@ export function DocumentsTab({ org }: { org: HrOrgRef }) {
         <p className="text-sm text-foreground">
           I-9s are not here. They live in their own register with their own
           access, deliberately separate from the personnel file.{" "}
-          <Link
-            href="/hr/documents/i9"
+          <button
+            type="button"
+            onClick={() => void announceComingSoon("hr.documents.i9-register")}
             className="underline underline-offset-2 hover:text-primary"
           >
-            Open the I-9 register
-          </Link>
+            About the I-9 register
+          </button>
           .
         </p>
       </div>
@@ -241,6 +248,14 @@ export function HostedTab({
    * the subject themselves", and only the self arm was mounted — behind a login. The staff a shared
    * kiosk exists for have no login, so nobody could issue them a PIN and nobody could receive one.
    * This tab is the HR arm.
+   *
+   * 🚨 BUT `hr.people.tab-time` IS STILL stage:"building", AND THIS TAB WAS THE ONLY ONE OF THE SIX
+   * NOT SAYING SO. The early return above skipped the "What lands here?" door that every sibling
+   * stub renders, so a partly-built tab presented itself as a finished one: the PIN control is here,
+   * and this person's timesheet, punch history and published shifts — which the registry entry names
+   * as still owed — simply were not, with nothing on screen to say they were coming. That is the
+   * worse half of the honesty rule, because there is no 404 to notice. The panel keeps the whole tab;
+   * the door sits under it and names the rest.
    */
   if (segment === "time") {
     return (
@@ -260,6 +275,11 @@ export function HostedTab({
               ? undefined
               : profile.header.login_user_id !== null
           }
+        />
+        <Waiting
+          id={hosted.comingSoonId}
+          sentence="Their timesheet, punch history and published shifts land on this same panel — the Time lane is building them now."
+          action="What else lands here?"
         />
       </TabShell>
     );

@@ -45,7 +45,7 @@ import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import {
   commitUrlParams,
   useUrlSearchParams,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 import { getValueVocabulary } from "../data";
 import { buildBandMeta, reviewWindow } from "../lib";
 import {

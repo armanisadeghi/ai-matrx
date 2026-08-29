@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { IconExternalLink, IconRefresh, IconSearch } from "@tabler/icons-react";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,7 +12,7 @@ import {
   type AdminNavigationDestination,
 } from "@/features/admin/constants/admin-navigation";
 import { cn } from "@/lib/utils";
-import { matchesSearch } from "@/utils/search-scoring";
+import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 import { useVisibilityAwarePageRefresh } from "@/features/launchpad/hooks/useVisibilityAwarePageRefresh";
 
 const getLaunchpadColumnCount = (viewportWidth: number) => {

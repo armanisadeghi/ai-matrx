@@ -309,6 +309,9 @@ export function parseInbox(source: Obj): HrInbox {
             step_id: str(rpc, r, "step_id"),
             instance_id: str(rpc, r, "instance_id"),
             flow_key: str(rpc, r, "flow_key"),
+            // Optional at the seam for the same reason `waiting_on_others` is: the door sends it
+            // since hr_c4_55, and an older payload falls back to the key rather than throwing.
+            flow_label: optStr(r, "flow_label"),
             timeout_at: optStr(r, "timeout_at") ?? null,
         })),
         waiting_on_others: objects(rpc, source, "waiting_on_others").map((r) => ({
@@ -326,14 +329,36 @@ export function parseInbox(source: Obj): HrInbox {
             failure_id: str(rpc, r, "failure_id"),
             instance_id: str(rpc, r, "instance_id"),
             failure_class: str(rpc, r, "failure_class"),
+            // Which request the failure is ON — a bare class token names a category, not a thing.
+            flow_key: optStr(r, "flow_key"),
+            flow_label: optStr(r, "flow_label"),
             state: str(rpc, r, "state"),
             occurred_at: optStr(r, "occurred_at") ?? null,
         })),
+        /*
+            🚨 A DECISION HISTORY NAMES WHAT WAS DECIDED AND ABOUT WHOM (hr_c4_55 / D10).
+            This parsed four fields — id, instance, verb, timestamp — because those were the four
+            the door sent, so a manager's own last thirty days rendered as forty consecutive lines
+            of "approved" and a clock time. The naming now comes from `hr._wf_display` inside
+            `hr.wf_pending`, the same rule that decorates the queue rows above, so entitlement is
+            decided once in the door and never re-derived here. Everything past the original four
+            is optional at the seam: an older payload degrades to the verb rather than throwing at
+            somebody looking at their own history.
+        */
         recently_decided: objects(rpc, source, "recently_decided").map((r) => ({
             decision_id: str(rpc, r, "decision_id"),
             instance_id: str(rpc, r, "instance_id"),
+            step_id: optStr(r, "step_id"),
             decision: str(rpc, r, "decision"),
             decided_at: optStr(r, "decided_at") ?? null,
+            reason: optStr(r, "reason"),
+            title: optStr(r, "title"),
+            flow_key: optStr(r, "flow_key"),
+            flow_label: optStr(r, "flow_label"),
+            step_label: optStr(r, "step_label"),
+            subject_label: optStr(r, "subject_label"),
+            subject_withheld: optBool(r, "subject_withheld"),
+            digest: optStr(r, "digest"),
         })),
         bulk_max: num(rpc, source, "bulk_max"),
         default_sort: str(rpc, source, "default_sort"),
@@ -345,7 +370,21 @@ export function parseInbox(source: Obj): HrInbox {
     };
 }
 
-/** `public.hr_wf_instance` — VERIFIED ALIGNED: instance, steps, decisions, events, failures, notices. */
+/**
+ * `public.hr_wf_instance` — VERIFIED ALIGNED: instance, steps, decisions, events, failures, notices.
+ *
+ * 🚨 ALL SIX ARMS ARE NAMED PROJECTIONS IN THE DOOR (hr_c4_57), and the parsing below is
+ * deliberately NOT the thing keeping operator detail off the wire. hr_c4_55 narrowed `notices`
+ * from a whole-row cast to six named fields and left the other five arms casting whole rows, so
+ * `workflow_event.detail` (where `hr._wf_call_hook` puts `{raised, sqlstate, detail: sqlerrm}` —
+ * two live rows already carry `column d.decider_employment_id does not exist`),
+ * `workflow_failure.detail`, `workflow_instance.payload`, `workflow_step.resolved_user_ids` and
+ * `workflow_decision.client_context` all still travelled to the browser on every task open.
+ *
+ * The rule, in one line: **narrowing in the client cannot unsend a payload.** These maps are typing,
+ * not redaction. If a field must not reach a browser, it must not leave `hr.wf_instance` — the
+ * contract rows on that function name every whole-row cast that is forbidden there.
+ */
 export function parseInstance(source: Obj): HrInstanceDetail {
     const rpc = "hr_wf_instance";
     const instance = required(rpc, source, "instance");
@@ -359,11 +398,14 @@ export function parseInstance(source: Obj): HrInstanceDetail {
         steps: objects(rpc, source, "steps"),
         decisions: objects(rpc, source, "decisions"),
         events: objects(rpc, source, "events"),
+        // Each row is {id, failure_class, state, occurred_at, failure_reason}. `failure_reason` is
+        // `hr._wf_failure_sentence` of the CLASS — never the stored `detail`, which is the hook's
+        // own output and stays in the failure ledger and the Postgres log for the operator.
         failures: objects(rpc, source, "failures"),
-        // `to_jsonb()` of the hr.workflow_notice VIEW carries more columns than the panel renders
-        // (id, event_key, recipient ids, ...). Narrowing to the six delivery fields here is
-        // deliberate: the panel shows delivery evidence, and a type that claimed the rest would be
-        // claiming fields nothing checks.
+        // The notice arm ships six named delivery fields, never the whole view row: the view
+        // carries the operator pair (error_code, error_message — env var names, provider strings,
+        // SQLSTATEs) and a whole-row cast put both on the wire on every open. Narrowing to the six
+        // here is typing on top of that; the door is what makes it true.
         notices: objects(rpc, source, "notices").map(parseNotice),
     };
 }

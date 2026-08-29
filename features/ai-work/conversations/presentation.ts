@@ -9,7 +9,7 @@ import {
   CODING_SESSION_PROVIDER_META,
   type CodingSessionProvider,
 } from "@/features/agent-connections/coding-sessions/catalog";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import { MACHINE_CONVERSATION_TYPES } from "./types";
 
 /** Plain-language name for a `chat.conversation.conversation_type`. */

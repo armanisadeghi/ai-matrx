@@ -21,7 +21,7 @@ import {
   recordCredentialRotation,
   type CredentialMaintenanceEntry,
 } from "@/features/admin/applications/config/credential-maintenance";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 
 interface CredentialMaintenanceEditorProps {
   entries: Record<string, CredentialMaintenanceEntry>;

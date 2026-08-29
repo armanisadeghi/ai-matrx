@@ -139,6 +139,8 @@ export const SOURCE_FEATURES = [
   "education_study_pack",
   "education_study_pack_v2",
   "agent_foundry_v1",
+  "product_capture_intake",
+  "product_capture_research",
   "endpoint_family_sweep",
   "external_url_change",
   "fork_and_run",

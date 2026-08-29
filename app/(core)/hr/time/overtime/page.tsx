@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { HrTimeShell } from "@/features/hr/time/HrTimeShell";
+import { HrLoading } from "@/features/hr/shared/HrStates";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { OvertimeQueuePage } from "@/features/hr/time/overtime/components/OvertimePages";
 
@@ -9,29 +10,23 @@ import { OvertimeQueuePage } from "@/features/hr/time/overtime/components/Overti
  *
  * The pre-approval queue and the approaching-overtime watchlist. Unapproved overtime is still PAID:
  * it renders as flagged for review, never as unpaid or withheld.
+ *
+ * No `PageHeader`: `HrTimeShell` → `HrSubShell` → `HrShell` injects the route header, the HR nav,
+ * the employer switcher and the section's tab bar, and owns the scroll chain.
  */
 export const metadata = createRouteMetadata("/hr/time/overtime", {
-    titlePrefix: "Overtime",
-    title: "Time",
-    description:
-        "Overtime awaiting a decision, and who is close to crossing a threshold. Pre-approval decides whether overtime is worked, never whether it is paid.",
+  titlePrefix: "Overtime",
+  title: "Time",
+  description:
+    "Overtime awaiting a decision, and who is close to crossing a threshold. Pre-approval decides whether overtime is worked, never whether it is paid.",
 });
 
 export default function HrTimeOvertimeRoute() {
-    return (
-        <>
-            <PageHeader>
-                <h1 className="text-sm font-semibold">Overtime pre-approval</h1>
-            </PageHeader>
-            <div className="h-full overflow-hidden">
-                <Suspense
-                    fallback={
-                        <div className="h-full animate-pulse bg-card/40" aria-label="Loading overtime requests" />
-                    }
-                >
-                    <OvertimeQueuePage />
-                </Suspense>
-            </div>
-        </>
-    );
+  return (
+    <HrTimeShell title="Overtime pre-approval">
+      <Suspense fallback={<HrLoading variant="table" rows={8} />}>
+        <OvertimeQueuePage />
+      </Suspense>
+    </HrTimeShell>
+  );
 }

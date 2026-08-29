@@ -52,7 +52,7 @@ import {
   AudioLines,
   type LucideIcon,
 } from "lucide-react";
-import type { IconComponentType } from "@/components/official/icons/IconResolver";
+import type { IconComponentType } from "@ai-matrx/icons";
 import { PLACEMENT_TYPES } from "@/features/agent-shortcuts/constants";
 import type { RichDocumentAction } from "@/features/rich-document/types";
 import type { AgentMenuCategoryGroup } from "../hooks/useUnifiedAgentContextMenu";

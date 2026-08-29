@@ -25,8 +25,33 @@ import {
   EDU_TOOL_NAV,
   eduToolHref,
 } from "@/features/education/lib/education-nav";
+import {
+  hrAssetsHref,
+  hrComplianceHref,
+  hrDocumentsHref,
+  hrEngagementHref,
+  hrHiringHref,
+  hrHref,
+  hrLeaveHref,
+  hrMeHref,
+  hrOnboardingHref,
+  hrPeopleHref,
+  hrPerformanceHref,
+  hrReportsHref,
+  hrScheduleHref,
+  hrSettingsHref,
+  hrTasksHref,
+  hrTimeHref,
+  hrTrainingHref,
+} from "@/features/hr/routes";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
 import type { ShellNavPanelActionId } from "./nav-window-panels";
+
+/**
+ * The sidebar knows no employer — see the block on the HR item below. Naming the `null` is what
+ * makes it a decision in the diff rather than a forgotten argument.
+ */
+const NO_EMPLOYER = null;
 import {
   SHAPES_ALL_HREF,
   SHAPES_ROUTE_BASE,
@@ -1078,8 +1103,34 @@ export const primaryNavItems: ShellNavItem[] = [
     // renders the enable door for an owner/admin and a plain not-enabled page
     // for everyone else (`HrModuleOff`), and every §6 entry point renders its
     // absent state. Named rather than silently skipped.
+    /*
+      🚨 THE HR DOORS ARE BUILT, NOT SPELLED — AND `NO_EMPLOYER` IS THE HONEST ARGUMENT.
+
+      `features/hr/routes.ts` bans hand-assembled `/hr/*` URLs because the employer travels in
+      `?org=` and HR is strictly single-employer: a link that drops it lands the user in a
+      DIFFERENT employer. Proven on 2026-08-28 as `admin@admin.com`, who reaches six employers —
+      from `/hr/people?org=<Castellano>` the sidebar's bare `/hr/people` re-resolved to the
+      active-org selection and rewrote every link on the page to a different employer, and bare
+      `/hr` landed in a third.
+
+      This file genuinely CANNOT carry the employer, for the reason stated just above: it is
+      static, server-agnostic data with no per-org runtime gate, and giving it one would make
+      every page in the app resolve HR context just to draw a sidebar. So it passes `null`
+      VISIBLY — which is exactly the case `routes.ts` reserves `null` for — and the honesty is
+      moved to the LANDING: the page names the employer it opened. Where a route mounts `HrShell`
+      that is the pinned context bar plus the switcher; on the thirteen `/hr` routes that mount
+      `PageHeader` instead — `/hr/tasks`, `/hr/tasks/[instanceId]` and the `/hr/me/*` family — it
+      is `HrPageState`'s substitution notice (`useHrContext` law B). Corrected 2026-08-29: this
+      comment used to claim EVERY `/hr/*` route renders `HrShell`, which was never true, and the
+      routes it was wrong about were the deep-link landings where employers actually get crossed.
+      The sidebar therefore never claims an employer it does not know; the page it opens states
+      the one it resolved.
+
+      Building them also keeps this file HONEST ABOUT PATHS: a route renamed in `routes.ts` now
+      moves the sidebar with it instead of leaving eighteen 404s nobody grep'd for.
+    */
     label: "HR",
-    href: "/hr",
+    href: hrHref(NO_EMPLOYER),
     iconName: "Users",
     section: "primary",
     profileMenu: false,
@@ -1090,7 +1141,7 @@ export const primaryNavItems: ShellNavItem[] = [
     children: [
       {
         label: "HR Home",
-        href: "/hr",
+        href: hrHref(NO_EMPLOYER),
         iconName: "LayoutDashboard",
         exact: true,
         description: "What needs you today",
@@ -1099,7 +1150,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "My Info",
-        href: "/hr/me",
+        href: hrMeHref(NO_EMPLOYER),
         iconName: "User",
         description: "Your own record — always yours, in every role",
         color: "indigo",
@@ -1108,7 +1159,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "People",
-        href: "/hr/people",
+        href: hrPeopleHref({ org: NO_EMPLOYER }),
         iconName: "Users",
         description: "The employee directory and the org chart",
         color: "indigo",
@@ -1116,7 +1167,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Hiring",
-        href: "/hr/hiring",
+        href: hrHiringHref(NO_EMPLOYER),
         iconName: "Handshake",
         description: "Requisitions, candidates, interviews and offers",
         color: "indigo",
@@ -1124,7 +1175,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Time",
-        href: "/hr/time",
+        href: hrTimeHref(NO_EMPLOYER),
         iconName: "CalendarClock",
         description: "Timesheets, punches, exceptions and pay periods",
         color: "indigo",
@@ -1132,7 +1183,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Schedule",
-        href: "/hr/schedule",
+        href: hrScheduleHref(NO_EMPLOYER),
         iconName: "CalendarDays",
         description: "Build, publish and staff the schedule",
         color: "indigo",
@@ -1140,7 +1191,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Time Off",
-        href: "/hr/leave",
+        href: hrLeaveHref(NO_EMPLOYER),
         iconName: "HeartPulse",
         description: "Requests, balances and the team calendar",
         color: "indigo",
@@ -1148,7 +1199,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Onboarding",
-        href: "/hr/onboarding",
+        href: hrOnboardingHref(NO_EMPLOYER),
         iconName: "ClipboardCheck",
         description: "New-hire runs, templates and offboarding",
         color: "indigo",
@@ -1156,7 +1207,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Documents",
-        href: "/hr/documents",
+        href: hrDocumentsHref(NO_EMPLOYER),
         iconName: "FileText",
         description: "The library, acknowledgments and signatures",
         color: "indigo",
@@ -1164,7 +1215,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Training",
-        href: "/hr/training",
+        href: hrTrainingHref(NO_EMPLOYER),
         iconName: "GraduationCap",
         description: "Assignments, certifications and compliance",
         color: "indigo",
@@ -1172,7 +1223,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Performance",
-        href: "/hr/performance",
+        href: hrPerformanceHref(NO_EMPLOYER),
         iconName: "Target",
         description: "Reviews — yours, and your team's",
         color: "indigo",
@@ -1180,7 +1231,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Assets",
-        href: "/hr/assets",
+        href: hrAssetsHref(NO_EMPLOYER),
         iconName: "Package",
         description: "Equipment issued, assigned and recovered",
         color: "indigo",
@@ -1188,7 +1239,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Engagement",
-        href: "/hr/engagement",
+        href: hrEngagementHref(NO_EMPLOYER),
         iconName: "Megaphone",
         description: "Announcements, pulse surveys and recognition",
         color: "indigo",
@@ -1196,7 +1247,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "Compliance",
-        href: "/hr/compliance",
+        href: hrComplianceHref(NO_EMPLOYER),
         iconName: "ShieldCheck",
         description: "Exceptions, work authorization and access review",
         color: "indigo",
@@ -1204,7 +1255,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "HR Tasks",
-        href: "/hr/tasks",
+        href: hrTasksHref(NO_EMPLOYER),
         iconName: "ListTodo",
         description: "Everything in HR waiting on a decision from you",
         color: "indigo",
@@ -1212,7 +1263,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "HR Reports",
-        href: "/hr/reports",
+        href: hrReportsHref(NO_EMPLOYER),
         iconName: "BarChart3",
         description: "Headcount, turnover, cost and compliance reporting",
         color: "indigo",
@@ -1220,7 +1271,7 @@ export const primaryNavItems: ShellNavItem[] = [
       },
       {
         label: "HR Settings",
-        href: "/hr/settings",
+        href: hrSettingsHref(null, { org: NO_EMPLOYER }),
         iconName: "Settings",
         description: "How HR works for this employer",
         color: "indigo",
@@ -1349,6 +1400,16 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "PackagePlus",
         description:
           "Rapid-fire product photos, QR item switching, and voice notes ahead of listing",
+        color: "orange",
+        profileMenu: true,
+        dashboard: true,
+      },
+      {
+        label: "Instant Capture",
+        href: "/tools/product-capture/instant",
+        iconName: "BrainCircuit",
+        description:
+          "Capture product photos and process them on the spot — the analysis streams back live",
         color: "orange",
         profileMenu: true,
         dashboard: true,

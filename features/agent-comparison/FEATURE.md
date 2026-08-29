@@ -80,8 +80,9 @@ and Runs floating windows.
 
 ### Submit All
 - `submitAllBattleColumns` thunk:
-  - Snapshot every column where `agentId != null` AND the per-conversation
-    input has either `text` or `userValues` set.
+  - Snapshot every configured column where `agentId != null`. Typed text is
+    optional; variables, resources, context, tools, or the agent definition
+    itself may be the complete request.
   - For each, dispatch `launchConversation({ identity.surfaceKey: SURFACE_KEY,
     engine: { kind: "agent", agentId }, routing.apiEndpointMode: "agent",
     inputs: { userInput, variables }, origin.sourceFeature: "agent-battle" })`.
@@ -127,7 +128,8 @@ and Runs floating windows.
 - **Load** (toolbar): list user's sets in a dialog. Selecting one resets
   `state.battle.columns` to match the entries (in `display_order`), creates
   manual instances for each `conversation_id`, and calls `loadConversation`
-  to stream message history into Redux.
+  to stream message history into Redux. A hydrated server row is a continuation
+  even when it has zero messages; resubmitting it must never assert `is_new`.
 
 ---
 
@@ -175,6 +177,14 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-08-28 — Loaded Request Mod conversations with an existing server row
+  now continue by row identity even when no message persisted, preventing
+  duplicate-id start requests after an empty or failed first turn.
+- 2026-08-28 — **Submit All never requires typed user input.** Open Battle and
+  all locked-axis modes launch every configured column; Request Mod no longer
+  misclassifies image/file-only columns as empty, and the obsolete empty-input
+  preflight was deleted. A blocking release check rejects the known content-
+  gating patterns.
 - 2026-08-28 — Request Mod columns now inherit the shared Smart Agent Input's
   content-only textarea measurement, preventing the last/focused column from
   opening with an empty 200px composer while its siblings remain compact.
@@ -232,3 +242,4 @@ attributable to this page in analytics.
   "skipped" tally) but stay editable. Persisted in the comparison set's
   per-entry metadata. Visual: column body dims with a "PAUSED — SKIPPED ON
   SUBMIT ALL" notice; editor-window tab gets a pause icon + italic label.
+

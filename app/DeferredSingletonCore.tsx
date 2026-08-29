@@ -14,7 +14,7 @@
 
 import { Suspense, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { useIdleTask } from "@/utils/idle-scheduler";
+import { useIdleTask } from "@ai-matrx/kit/idle-scheduler";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
 import { PersistentDOMConnector } from "@/providers/persistance/PersistentDOMConnector";

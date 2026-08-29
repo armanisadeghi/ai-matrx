@@ -39,7 +39,7 @@ import type {
   EntityType,
   ScopeTypeNode,
 } from "@/features/scopes/types";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { DynamicIcon } from "@ai-matrx/icons";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import {

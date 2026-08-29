@@ -3,7 +3,7 @@ import {
   TapTargetButtonTransparent,
   TapTargetButtonSolid,
   TapTargetButtonForGroup,
-} from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target";
 
 type Variant = "glass" | "transparent" | "solid" | "group";
 

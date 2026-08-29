@@ -44,8 +44,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
-import { renderIcon } from "@/components/official/icons/IconResolver";
-import { matchesSearch } from "@/utils/search-scoring";
+import { renderIcon } from "@ai-matrx/icons";
+import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 import {
   createAgentAppCategory,
   deleteAgentAppCategory,
@@ -61,7 +61,7 @@ import {
   ADMIN_AGENT_APPS_SURFACE_NAME,
   createAdminAgentAppsScope,
 } from "@/features/surfaces/manifests/admin-agent-apps.manifest";
-import { isRegisteredOrLucideIconName } from "@/components/official/icons/IconResolver";
+import { isRegisteredOrLucideIconName } from "@ai-matrx/icons";
 
 /**
  * Surface-write input guards. These THROW rather than coercing — the writeback

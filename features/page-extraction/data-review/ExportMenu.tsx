@@ -29,7 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DownloadTapButton } from "@/components/icons/tap-buttons";
+import { DownloadTapButton } from "@ai-matrx/tap-target/buttons";
 
 import {
   downloadBlob,

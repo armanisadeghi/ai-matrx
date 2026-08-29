@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { toast } from "@/lib/toast";
 
@@ -122,7 +122,10 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
       notesDirtyRef.current = true;
       setNotes(text);
       if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
-      notesTimerRef.current = setTimeout(() => void flushNotes(), NOTES_AUTOSAVE_MS);
+      notesTimerRef.current = setTimeout(
+        () => void flushNotes(),
+        NOTES_AUTOSAVE_MS,
+      );
     },
     [flushNotes],
   );
@@ -153,7 +156,9 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
       // "reprocess" alike.
       adoptItem(await closeItem(current));
       toast.success(
-        wasProcessed ? "Queued for reprocessing." : "Marked ready for processing.",
+        wasProcessed
+          ? "Queued for reprocessing."
+          : "Marked ready for processing.",
       );
     } catch (err) {
       console.error("[product-capture] status change failed", err);
@@ -179,34 +184,31 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
   );
 
   // ── Media management ─────────────────────────────────────────────────────
-  const onAddFiles = useCallback(
-    (picked: File[]) => {
-      const current = itemRef.current;
-      if (!current || picked.length === 0) return;
-      for (const file of picked) {
-        const localId = crypto.randomUUID();
-        const kind = file.type.startsWith("video/") ? "video" : "photo";
-        setPending((prev) => [
-          ...prev,
-          { localId, fileName: file.name, status: "uploading" },
-        ]);
-        void uploadItemFile({ item: current, file, kind })
-          .then(({ link }) => {
-            setPending((prev) => prev.filter((p) => p.localId !== localId));
-            setFiles((prev) => [...prev, link]);
-          })
-          .catch((err: unknown) => {
-            console.error("[product-capture] add-file upload failed", err);
-            setPending((prev) =>
-              prev.map((p) =>
-                p.localId === localId ? { ...p, status: "error" } : p,
-              ),
-            );
-          });
-      }
-    },
-    [],
-  );
+  const onAddFiles = useCallback((picked: File[]) => {
+    const current = itemRef.current;
+    if (!current || picked.length === 0) return;
+    for (const file of picked) {
+      const localId = crypto.randomUUID();
+      const kind = file.type.startsWith("video/") ? "video" : "photo";
+      setPending((prev) => [
+        ...prev,
+        { localId, fileName: file.name, status: "uploading" },
+      ]);
+      void uploadItemFile({ item: current, file, kind })
+        .then(({ link }) => {
+          setPending((prev) => prev.filter((p) => p.localId !== localId));
+          setFiles((prev) => [...prev, link]);
+        })
+        .catch((err: unknown) => {
+          console.error("[product-capture] add-file upload failed", err);
+          setPending((prev) =>
+            prev.map((p) =>
+              p.localId === localId ? { ...p, status: "error" } : p,
+            ),
+          );
+        });
+    }
+  }, []);
 
   const deleteFile = useCallback(async (file: CaptureFile) => {
     setFiles((prev) => prev.filter((f) => f.id !== file.id));
@@ -254,6 +256,7 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
           <TapTargetButtonSolid
             icon={<Camera className="h-4 w-4" />}
             label="Capture"
+            mobileIconOnly
             ariaLabel="Continue capturing this item"
             onClick={() => router.push(`/tools/product-capture?item=${itemId}`)}
           />

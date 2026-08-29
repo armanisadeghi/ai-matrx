@@ -3,12 +3,14 @@ import type { AppDispatch } from "@/lib/redux/store";
 import {
   isMandateTestResult,
   mandateTestResultValidationErrors,
+  type MandateTestResponse,
+} from "@/features/agents/mandates/test-run";
+import {
   fetchMandateCodeTruthReport,
   fetchMandateVariableVerdicts,
   parseMandateTestHistory,
   runMandateTests,
   type MandateTestBatchResponse,
-  type MandateTestResponse,
 } from "../service";
 
 jest.mock("@/lib/api/call-api", () => ({

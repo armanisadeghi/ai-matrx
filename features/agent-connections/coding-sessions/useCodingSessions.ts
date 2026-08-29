@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLatestRequest } from "@/hooks/useLatestRequest";
+import { useLatestRequest } from "@ai-matrx/kit/latest-request";
 import { fetchCodingSessions, type CodingSessionView } from "./service";
 
 export interface CodingSessionsState {

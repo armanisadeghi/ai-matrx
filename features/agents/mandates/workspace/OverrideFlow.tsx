@@ -94,6 +94,11 @@ import {
 import { putMandateBinding, removeMandateBinding } from "../overrides";
 import { EffectiveConfigLayers } from "../components/EffectiveConfigLayers";
 import { buildBindingSavePayload } from "./save-payload";
+import {
+  agentHolderOfBinding,
+  holderOfMandate,
+  isFloatingBinding,
+} from "@/lib/supabase/mandateStorage";
 import type { MandateWorkspaceData } from "./useMandateWorkspaceData";
 
 export type WorkspacePrincipal =
@@ -159,20 +164,25 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
   const [workflowId, setWorkflowId] = useState<string | null>(
     storedHolder.holderId ?? null,
   );
-  const [agentId, setAgentId] = useState<string | null>(myBinding?.agent_id ?? null);
+  // The AGENT half of the stored binding. `agentHolderOfBinding` is null-ing
+  // for a workflow Holder, exactly as the old agent-only columns were — the
+  // workflow identity is `storedHolder` above and must never leak into these.
+  const storedAgent = agentHolderOfBinding(myBinding ?? {});
+  const [agentId, setAgentId] = useState<string | null>(storedAgent.holderId);
   const [agentVersionId, setAgentVersionId] = useState<string | null>(
-    myBinding?.agent_version_id ?? null,
+    storedAgent.versionId,
   );
   const [useLatest, setUseLatest] = useState<boolean>(
-    myBinding ? myBinding.use_latest === true : true,
+    myBinding ? isFloatingBinding(myBinding) : true,
   );
   useEffect(() => {
     const stored = parseBindingWave1(myBinding);
     setHolderKind(stored.holderType === "workflow" ? "workflow" : "agent");
     setWorkflowId(stored.holderId ?? null);
-    setAgentId(myBinding?.agent_id ?? null);
-    setAgentVersionId(myBinding?.agent_version_id ?? null);
-    setUseLatest(myBinding ? myBinding.use_latest === true : true);
+    const agent = agentHolderOfBinding(myBinding ?? {});
+    setAgentId(agent.holderId);
+    setAgentVersionId(agent.versionId);
+    setUseLatest(myBinding ? isFloatingBinding(myBinding) : true);
   }, [myBinding?.id, myBinding?.updated_at]);
 
   // The effective master the later steps reason about (a pinned version's
@@ -288,7 +298,7 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
     }
     setSettingsOpen(true);
     if (overridesReady) return; // idempotent — seed once
-    const seedAgent = effectiveAgentId ?? data.mandate.default_agent_id;
+    const seedAgent = effectiveAgentId ?? holderOfMandate(data.mandate).holderId;
     let baseSettings: Record<string, unknown> = {};
     if (seedAgent) {
       try {
@@ -662,9 +672,10 @@ export function OverrideFlow({ data, userId, principal, onChanged }: OverrideFlo
                 stored.holderType === "workflow" ? "workflow" : "agent",
               );
               setWorkflowId(stored.holderId ?? null);
-              setAgentId(myBinding?.agent_id ?? null);
-              setAgentVersionId(myBinding?.agent_version_id ?? null);
-              setUseLatest(myBinding ? myBinding.use_latest === true : true);
+              const agent = agentHolderOfBinding(myBinding ?? {});
+              setAgentId(agent.holderId);
+              setAgentVersionId(agent.versionId);
+              setUseLatest(myBinding ? isFloatingBinding(myBinding) : true);
               setDraftMap(storedMap);
               setSaveError(null);
               if (!myBinding) setFlow("collapsed");

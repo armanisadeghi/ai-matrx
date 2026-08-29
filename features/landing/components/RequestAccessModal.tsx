@@ -58,6 +58,15 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
         return;
       }
 
+      // Existing pending/approved emails are acknowledged without revealing
+      // the private request ID needed to edit optional follow-up details.
+      if (!result.data.requestId) {
+        setIsSubmitting(false);
+        onOpenChange(false);
+        router.push('/request-access/thank-you');
+        return;
+      }
+
       // Save the request ID and move to optional follow-up
       setRequestId(result.data.requestId);
       setStep('followup');

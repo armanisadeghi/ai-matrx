@@ -5,7 +5,7 @@ import { toast } from "@/lib/toast";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { createClient } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import { uniqueChannelTopic } from "@ai-matrx/data/db";
 import {
   selectCodeTabs,
   selectTabById,

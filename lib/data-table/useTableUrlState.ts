@@ -41,7 +41,7 @@ import {
   commitUrlParams,
   type UrlHistoryMode,
   useUrlSearchParams,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 export interface UseTableUrlStateOptions {
   /** Stable table id used in `table.<id>.*` parameters. */

@@ -10,8 +10,8 @@
 import { Inbox, ListOrdered } from "lucide-react";
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 
 import { WaitingInbox } from "./WaitingInbox";
 

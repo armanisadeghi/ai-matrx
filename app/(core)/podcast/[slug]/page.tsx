@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 import { PodcastEpisodePage } from "@/features/podcasts/components/player/PodcastEpisodePage";
 import { PodcastShowPage } from "@/features/podcasts/components/player/PodcastShowPage";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import type {
   PcArticle,
   PcEpisode,

@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   ArrowUpTapButton,
   StopTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { usePasteImageResource } from "@/features/agents/components/inputs/resources/usePasteImageResource";
 import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart-input/AgentMicrophoneButton";
@@ -21,13 +21,11 @@ import {
 import { selectIsExecuting } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   selectUserInputText,
-  selectInputCharCount,
   selectSubmissionPhase,
 } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
   selectAllResourcesResolved,
-  selectInstanceResources,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
 import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
@@ -85,27 +83,17 @@ export function NewChatLandingInput({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const text = useAppSelector(selectUserInputText(conversationId));
-  const charCount = useAppSelector(selectInputCharCount(conversationId));
   const submissionPhase = useAppSelector(selectSubmissionPhase(conversationId));
   const isExecuting = useAppSelector(selectIsExecuting(conversationId));
-  const resources = useAppSelector(selectInstanceResources(conversationId));
   const allResourcesResolved = useAppSelector(
     selectAllResourcesResolved(conversationId),
   );
   const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
-  const hasResources = resources.length > 0;
-  // Sendable with text OR with attachments/inclusions alone (an attached note
-  // with no prose is a valid first turn) — mirrors the standard input.
-  // Also gate while the mic is recording/transcribing so send doesn't drop the
-  // trailing audio or leave the recorder running.
+  // Content never controls submit eligibility. The only local gates protect
+  // an active voice capture and prevent launching before attached resources
+  // have resolved into sendable payloads.
   const [voiceBusy, setVoiceBusy] = useState(false);
-  // While the first turn streams, a send with text QUEUES via the
-  // Turn-Boundary Inbox (smartExecute routes it; the running agent answers on
-  // the open stream) — attachments-only sends need an idle run.
-  const canSend =
-    !voiceBusy &&
-    allResourcesResolved &&
-    (isExecuting ? charCount > 0 : charCount > 0 || hasResources);
+  const canSend = !voiceBusy && allResourcesResolved;
 
   // Hide the message while a submit is in flight (it moves into the streaming
   // conversation); the text stays in Redux as the non-visual backup.
@@ -159,12 +147,7 @@ export function NewChatLandingInput({
   }, [visibleText, isExpanded]);
 
   const rawSubmit = () => {
-    if (
-      voiceBusy ||
-      !allResourcesResolved ||
-      (charCount === 0 && !hasResources)
-    )
-      return;
+    if (voiceBusy || !allResourcesResolved) return;
     // smartExecute is streaming-aware: while this conversation's run is live
     // it queues the text via the Turn-Boundary Inbox instead of starting a
     // colliding second turn. Stop is its own button below.

@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import type { HtmlPageSummary } from "@/features/html-pages/types";
 import HtmlPageGridView, {
   formatRelativeDate,

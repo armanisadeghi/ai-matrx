@@ -22,7 +22,7 @@ import {
   Users,
 } from "lucide-react";
 
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {

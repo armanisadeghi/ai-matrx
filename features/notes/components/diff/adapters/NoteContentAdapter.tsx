@@ -9,12 +9,12 @@ import type {
   FieldDiffProps,
 } from "@/components/diff/adapters/types";
 import { analyzeDiff } from "@/features/notes/utils/diffAnalysis";
-import { computeTextDiff } from "@/components/diff/text/engine/computeTextDiff";
+import { computeTextDiff } from "@ai-matrx/diff/text";
 import type {
   DiffCell,
   DiffRow as EngineDiffRow,
   LineChangeType,
-} from "@/components/diff/text/engine/types";
+} from "@ai-matrx/diff/text";
 
 const COLLAPSE_THRESHOLD = 6; // Collapse unchanged sections longer than this
 

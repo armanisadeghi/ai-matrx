@@ -91,7 +91,7 @@ import {
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
-import { readAllRows } from "@/lib/supabase/readAllRows";
+import { readAllRows } from "@ai-matrx/data/db";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import {
   matchPlatformsToRegistry,
@@ -103,7 +103,7 @@ import {
   guardedUpdate,
   type GuardedUpdateArgs,
   type VersionedRow,
-} from "@/utils/supabase/guardedUpdate";
+} from "@ai-matrx/data/db";
 
 function rangeFor(state: MatrxDataTableQueryState) {
   const from = (state.page - 1) * state.pageSize;

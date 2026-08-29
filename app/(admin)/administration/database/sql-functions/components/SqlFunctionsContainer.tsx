@@ -34,7 +34,7 @@ import {
   positiveIntegerUrlCodec,
   stringUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 import type { SqlFunctionFilter, SqlFunctionSort } from "@/types/sql-functions";
 
 interface SqlFunctionsContainerProps {

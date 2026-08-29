@@ -9,7 +9,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
-import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { guardedUpdate } from "@ai-matrx/data/db";
 
 import type { CaptureItem } from "./types";
 import type {
@@ -236,7 +236,10 @@ export async function listPayloads(
  * documents on their own passes anyway.
  */
 export async function savePayload<K extends PayloadKind>(
-  item: PipelineItem,
+  // Identity + org only — the INSTANT lane writes its run pointer from a plain
+  // `CaptureItem` (no stage/featured columns loaded) the instant the run's
+  // conversation exists, and must not pay for a pipeline re-read to do it.
+  item: Pick<PipelineItem, "id" | "organizationId">,
   kind: K,
   data: Partial<PayloadDataByKind[K]>,
   existing?: PipelinePayload<K>,

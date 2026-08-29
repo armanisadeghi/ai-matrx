@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectNoteLabel } from "@/features/notes/redux/selectors";

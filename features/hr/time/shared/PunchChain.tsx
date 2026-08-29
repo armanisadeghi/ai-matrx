@@ -17,6 +17,7 @@ import { Camera, MapPin, Undo2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { hrPunchesHref } from "@/features/hr/routes";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import type { PunchRow } from "../api/types";
 import { formatDateTimeInTz } from "./format";
@@ -80,6 +81,13 @@ function PunchChainRow({
   punch: PunchRow;
   onOpenPunch?: (punchId: string) => void;
 }) {
+  /*
+   * The register fallback below ("Open the punch that replaced it") is only reached from the
+   * timesheet and window surfaces inside the `/hr` shell, so `HrProvider` has already resolved
+   * the employer — no extra read. It hard-coded `undefined` before, which sent a manager
+   * reconciling a wage record to a punch register for a DIFFERENT employer, or to the picker.
+   */
+  const { orgRef } = useHrContext();
   const voided = punch.voidedAt !== null;
 
   return (
@@ -139,7 +147,7 @@ function PunchChainRow({
                   </button>
                 ) : (
                   <Link
-                    href={hrPunchesHref(undefined, { employment: punch.employmentId })}
+                    href={hrPunchesHref(orgRef, { employment: punch.employmentId })}
                     className="underline decoration-dotted underline-offset-2 hover:text-foreground"
                   >
                     Open the punch that replaced it

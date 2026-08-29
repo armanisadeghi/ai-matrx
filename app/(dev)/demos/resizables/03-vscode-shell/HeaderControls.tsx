@@ -6,7 +6,7 @@ import {
   TerminalTapButton,
   MessageTapButton,
   HistoryTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { DemoTitle } from "../_lib/DemoTitle";
 

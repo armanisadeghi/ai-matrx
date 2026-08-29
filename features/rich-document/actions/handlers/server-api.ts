@@ -170,7 +170,7 @@ registerAction({
     const { conversationId, messageId } = ctx.source;
     try {
       const { confirm } = await import(
-        "@/components/dialogs/confirm/confirmDialogOpener"
+        "@ai-matrx/kit/confirm"
       );
       const ok = await confirm({
         title: "Delete this message?",
@@ -213,7 +213,7 @@ registerAction({
     const { conversationId, messageId } = ctx.source;
     try {
       const { confirm } = await import(
-        "@/components/dialogs/confirm/confirmDialogOpener"
+        "@ai-matrx/kit/confirm"
       );
       const ok = await confirm({
         title: "Truncate conversation from here?",

@@ -53,6 +53,9 @@ ruling tracked in the node's HANDOFF §3.
   would split that slice across two features.
 - **Imports inside `features/rag/` are absolute (`@/features/rag/...`).** No new `../` relative
   imports across sub-areas. Cross-sub-area imports inside `components/` are fine.
+- **Library ingest is streamed.** `api/library-ingest.ts` consumes
+  `/rag/library/stores/{store_id}/ingest` through the canonical `postNdjson`; never parse the
+  response as one JSON document or restore the retired 501-stub state.
 - This feature has **no Redux slice**; it composes auth + cloudFiles state via existing selectors.
 
 ## Layout
@@ -75,3 +78,7 @@ features/rag/
     ├── search/             RagSearchExperience (4-tab Search Lab) · RagSearchHits
     └── agent-context/      buildRagSearchContextData.ts
 ```
+
+## Change log
+
+- 2026-08-29 — Aligned admin library ingest with the live NDJSON endpoint contract.

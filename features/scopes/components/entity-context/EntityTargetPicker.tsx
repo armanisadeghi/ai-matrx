@@ -28,7 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
   makeSelectOrphanProjects,

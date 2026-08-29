@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { historyModeForParamChange } from "@/lib/url-state/useUrlState";
+import { historyModeForParamChange } from "@ai-matrx/kit/url-state";
 import {
   isContentType,
   type ContentType,

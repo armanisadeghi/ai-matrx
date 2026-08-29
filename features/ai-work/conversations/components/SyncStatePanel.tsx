@@ -39,7 +39,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
-import { formatText } from "@/utils/text/text-case-converter";
+import { formatText } from "@ai-matrx/kit/text-case";
 import { providerLabel } from "../presentation";
 import {
   EMPTY_SYNC_STATE,

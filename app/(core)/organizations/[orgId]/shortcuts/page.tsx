@@ -16,7 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import { useOrgShortcutsContext } from "./OrgShortcutsContext";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 
 const SCOPE = "organization" as const;
 

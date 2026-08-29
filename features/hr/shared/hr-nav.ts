@@ -223,11 +223,26 @@ const NAV: HrNavDef[] = [
     self: { label: "My Training", href: hrMeTrainingHref, needsEmployment: true },
   },
   {
+    /*
+      🚨 THIS ITEM HAD NO `requires` AND WAS THEREFORE OFFERED TO EVERYONE — a
+      plain employee, a contractor, and a person with NO EMPLOYER AT ALL were
+      each handed an org-wide reviews surface. That is the §2.2 rule inverted:
+      an omitted `requires` does not mean "universal", it means "every persona
+      with an employer", and the resolver's employee branch only diverts an item
+      that has a `self` face. With neither, this leaked.
+
+      The employee face of Performance ("yours", in the description) is owed as a
+      `self` entry by the Reviews lane — a `/hr/me/performance` surface, which
+      does not exist and is not registered. Until it does, the org-wide surface
+      is gated like every other org-wide pillar and an employee sees nothing
+      rather than a door that was never theirs.
+    */
     key: "performance",
     label: "Performance",
     icon: Target,
     description: "Reviews — yours, and your team's",
     href: hrPerformanceHref,
+    requires: ["working_record.read"],
   },
   {
     key: "assets",
@@ -238,17 +253,39 @@ const NAV: HrNavDef[] = [
     requires: ["working_record.read"],
   },
   {
+    /*
+      🚨 UNGATED FOR THE SAME REASON AS `performance` ABOVE, and it was the one a
+      human actually clicked: Engagement reached a person with no employer and
+      opened "We couldn't find that page".
+
+      What this pillar is, is the AUTHORING side — composing announcements,
+      running pulse surveys, issuing recognition — so `working_record.read` is
+      the right gate today. The read side (the feed an employee sees, the survey
+      they answer) is a `self` face this entry does not have yet; when the
+      Engagement lane ships it, it belongs here as `self`, NOT as a removed gate.
+    */
     key: "engagement",
     label: "Engagement",
     icon: Megaphone,
     description: "Announcements, pulse surveys and recognition",
     href: hrEngagementHref,
+    requires: ["working_record.read"],
   },
   {
     key: "compliance",
+    /*
+      The description names what is BEHIND THIS DOOR TODAY, not the section the
+      spec eventually describes. It used to promise "Exceptions, work
+      authorization and access review" while `/hr/compliance` redirects to its
+      single built tab — Laws & rules — and neither of the other two exists. A
+      nav description is a claim about the product, and a menu that oversells
+      what it opens is the same defect as one that opens nothing: the user goes
+      looking for the thing it named. The other tabs get named here when they
+      are real.
+    */
     label: "Compliance",
     icon: ShieldCheck,
-    description: "Exceptions, work authorization and access review",
+    description: "The employment law that reaches this employer, and your own rules over it",
     href: hrComplianceHref,
     requires: ["records.govern", "audit.read"],
   },

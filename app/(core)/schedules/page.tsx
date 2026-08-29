@@ -6,7 +6,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {
   PlusTapButton,
   RefreshCwTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";

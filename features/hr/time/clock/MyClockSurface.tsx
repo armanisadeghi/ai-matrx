@@ -26,6 +26,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { HR_MOCK_ENABLED, type HrFixtureCase } from "@/features/hr/mock/transport";
+import { hrMeHref } from "@/features/hr/routes";
 import { HrPageState } from "@/features/hr/shared/HrStates";
 import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { webPunchSessionSegment } from "@/features/hr/time/api/idempotencyKey";
@@ -46,6 +47,17 @@ export function MyClockSurface({
   const hr = useHrContext();
   // The real subject always wins; the stand-in only fills a null, and only under the mock flag.
   const employmentId = hr.active?.employment_id ?? mockEmploymentId ?? null;
+  /*
+    🚨 BOTH DOORS OFF THIS PAGE CARRY THE EMPLOYER, AND NEITHER SPELLS ITS OWN URL.
+
+    They used to read `"/hr/me"`, and `/hr/me` IS employer-scoped, so this was live harm and not a
+    latent one: an employee reached here from `/hr/me/clock?org=<employer>`, pressed the only door
+    on the page, and landed on whichever employer their active-org selection happened to name. In a
+    module whose first law is that HR shows ONE employer at a time, a control that quietly changes
+    which one is a compliance defect, not a broken link — and the type system could not see it,
+    because a string literal has no arguments to check. `routes.ts`'s header bans exactly this.
+  */
+  const myRecordHref = hrMeHref(hr.orgRef);
 
   return (
     /*
@@ -69,7 +81,7 @@ export function MyClockSurface({
       */}
       <HrPageState
         operation="Your time clock"
-        personaHomeHref="/hr/me"
+        personaHomeHref={myRecordHref}
         requireEmployer={!employmentId}
       >
         {employmentId ? (
@@ -81,14 +93,22 @@ export function MyClockSurface({
               deviceOrSession={webPunchSessionSegment()}
               mockCase={HR_MOCK_ENABLED ? mockCase : undefined}
               punchMockCase={HR_MOCK_ENABLED ? punchMockCase : undefined}
+              /*
+                R3: `hr_set_employment_pin` had NO caller anywhere, so no employment could ever hold
+                a PIN and the whole kiosk chain was unusable however well a tablet was paired. The
+                door's own authority check is "an HR writer OR the subject themselves", so
+                self-service is sanctioned — and this is the one route an hourly employee already
+                opens for their time.
+
+                🚨 IT IS NOW THE WIDGET'S FOOTER, NOT A SIBLING (D12c). As a sibling it rendered
+                unconditionally, so a contractor whose clock is gated off by worker class read "you
+                cannot clock here" and, directly underneath, **"Set my time clock PIN"** — an offer
+                of the kiosk credential for a clock that will refuse them. Absent machinery is
+                ABSENT. `PunchWidget` owns the one `hr_clock_state` read and is the only place that
+                knows; deciding it here would need a second read of the same fact.
+              */
+              clockUsableFooter={<SetKioskPinCard employmentId={employmentId} />}
             />
-            {/*
-              R3: `hr_set_employment_pin` had NO caller anywhere, so no employment could ever hold a
-              PIN and the whole kiosk chain was unusable however well a tablet was paired. The door's
-              own authority check is "an HR writer OR the subject themselves", so self-service is
-              sanctioned — and this is the one route an hourly employee already opens for their time.
-            */}
-            <SetKioskPinCard employmentId={employmentId} />
           </div>
         ) : (
           /*
@@ -101,7 +121,7 @@ export function MyClockSurface({
               You do not have an active job here today, so there is no time clock to use.
             </p>
             <Button asChild variant="outline" className="min-h-[48px] w-fit">
-              <Link href="/hr/me">Open my HR record</Link>
+              <Link href={myRecordHref}>Open my HR record</Link>
             </Button>
           </section>
         )}

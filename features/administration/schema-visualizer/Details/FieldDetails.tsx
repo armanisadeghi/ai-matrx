@@ -20,7 +20,7 @@ import {
   booleanUrlCodec,
   enumUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 interface FieldDetailsProps {
   table: SchemaTable;

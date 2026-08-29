@@ -4,7 +4,7 @@ import { Check } from "lucide-react";
 import {
   ArrowDownUpTapButton,
   type TapButtonProps,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import {
   DropdownMenu,
   DropdownMenuContent,

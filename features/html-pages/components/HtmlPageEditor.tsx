@@ -13,7 +13,7 @@ import {
   LoadingTapButton,
   SaveTapButton,
   UploadTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { PromoteToSiteDialog } from "@/features/html-pages/components/PromoteToSiteDialog";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";

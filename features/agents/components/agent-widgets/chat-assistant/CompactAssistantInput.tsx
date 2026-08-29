@@ -100,16 +100,10 @@ export function CompactAssistantInput({
     autoTranscribe: true,
   });
 
-  // Agents can execute on variables alone — text is NOT required (idle).
-  // While a run streams, the composer STAYS live: a send with text queues via
-  // the Turn-Boundary Inbox (smartExecute routes it — the running agent
-  // answers on the same stream), so executing only disables send when there's
-  // nothing to queue. Voice/attachment blocks apply in both states.
+  // Content never controls submit eligibility. Voice and unresolved-resource
+  // guards only protect input that is still being captured or uploaded.
   const voiceBusy = isRecording || isTranscribing;
-  const isSendDisabled =
-    voiceBusy ||
-    !allResourcesResolved ||
-    (isExecuting && !inputText.trim());
+  const isSendDisabled = voiceBusy || !allResourcesResolved;
 
   // Auto-submit after voice transcription
   useEffect(() => {

@@ -14,7 +14,7 @@ import { supabase } from '@/utils/supabase/client';
 import type { ProjectInvitation, Project } from '@/features/projects/types';
 import type { ProjectRole } from '@/features/projects/types';
 import PageHeader from '@/features/shell/components/header/PageHeader';
-import { ChevronLeftTapButton } from '@/components/icons/tap-buttons';
+import { ChevronLeftTapButton } from '@ai-matrx/tap-target/buttons';
 
 type InvitationWithProject = ProjectInvitation & { project: Project };
 

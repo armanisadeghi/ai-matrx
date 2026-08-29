@@ -61,7 +61,7 @@ export function PreviewerActionBar({
   return (
     <div
       className={cn(
-        "flex items-center gap-1 border-b border-border/60 bg-background/80 px-2 py-1 shrink-0",
+        "flex shrink-0 items-center gap-1 overflow-x-auto border-b border-border/60 bg-background/80 px-2 py-1",
         className,
       )}
     >
@@ -79,7 +79,7 @@ export function PreviewerActionBar({
               disabled={action.disabled}
               aria-label={action.label}
               className={cn(
-                "inline-flex h-7 max-lg:min-h-11 max-lg:min-w-11 items-center gap-1 rounded-md px-2 text-xs font-medium",
+                "inline-flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 text-xs font-medium max-lg:min-h-11 max-lg:min-w-11",
                 "text-foreground/80 hover:bg-accent hover:text-foreground",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 action.disabled && "opacity-40 pointer-events-none",

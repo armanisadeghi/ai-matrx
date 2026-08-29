@@ -11,7 +11,11 @@ export function routeRequiresAuthentication(pathname: string): boolean {
     pathname.startsWith("/hr/") ||
     pathname === "/launchpad" ||
     pathname.startsWith("/launchpad/") ||
+    pathname === "/projects" ||
+    pathname.startsWith("/projects/") ||
     pathname === "/scraper" ||
-    pathname.startsWith("/scraper/")
+    pathname.startsWith("/scraper/") ||
+    pathname === "/tasks" ||
+    pathname.startsWith("/tasks/")
   );
 }

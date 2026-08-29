@@ -25,7 +25,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import {
   TapTargetButton,
   TapTargetButtonSolid,
-} from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target";
 import {
   Table,
   TableHeader,

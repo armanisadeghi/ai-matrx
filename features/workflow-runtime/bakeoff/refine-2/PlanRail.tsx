@@ -10,7 +10,7 @@ import { useState } from "react";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { getIconComponent } from "@/components/official/icons/IconResolver";
+import { getIconComponent } from "@ai-matrx/icons";
 
 import {
   FAMILY_ICON,

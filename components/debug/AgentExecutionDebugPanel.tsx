@@ -441,7 +441,9 @@ export const AgentExecutionDebugPanel: React.FC<
                   User Input:
                 </span>
                 <p className="font-medium">
-                  {hasUserInput ? `${userInputText.length} chars` : "Empty"}
+                  {hasUserInput
+                    ? `${userInputText.length} chars · ${userInputContentBlocks?.length ?? 0} parts · ${allResources.length} attachments`
+                    : "Empty"}
                 </p>
               </div>
               <div>

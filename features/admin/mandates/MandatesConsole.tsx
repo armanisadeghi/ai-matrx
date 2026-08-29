@@ -16,7 +16,7 @@ import React, {
   useState,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import { stringUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
+import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 import {
   AlertTriangle,
   Copy,
@@ -95,6 +95,12 @@ import {
   type MandateRow,
 } from "./mandate-health";
 import {
+  agentHolderOfBinding,
+  contractOfMandate,
+  holderOfMandate,
+  isFloatingMandate,
+} from "@/lib/supabase/mandateStorage";
+import {
   fetchMandateCodeTruthReport,
   fetchMandateConsoleData,
   updateMandateDefinition,
@@ -130,17 +136,17 @@ function toMandateDetail(
   row: MandateRow,
   data: MandateConsoleData,
 ): MandateDetail {
-  const pinnedVersion = row.mandate.default_agent_version_id
-    ? data.versionsById[row.mandate.default_agent_version_id]
+  const holder = holderOfMandate(row.mandate);
+  const pinnedVersion = holder.versionId
+    ? data.versionsById[holder.versionId]
     : undefined;
-  const agentId =
-    row.mandate.default_agent_id ?? pinnedVersion?.agentId ?? null;
+  const agentId = holder.holderId ?? pinnedVersion?.agentId ?? null;
   const agent = agentId ? data.agentsById[agentId] : undefined;
   return {
     ...toMandateSummary(row),
     description: row.mandate.description,
     agent_type: agent?.agentType ?? null,
-    use_latest: Boolean(row.mandate.use_latest),
+    use_latest: isFloatingMandate(row.mandate),
     pinned_version: pinnedVersion?.versionNumber ?? null,
     latest_version: agent?.version ?? null,
   };
@@ -501,10 +507,11 @@ export function MandatesConsole() {
     const overrides: MandateOverrideSummary[] | undefined =
       selectedRow && data
         ? (data.bindingsByMandateId[selectedRow.id] ?? []).map((b) => {
-            const versionAgentId = b.agent_version_id
-              ? data.versionsById[b.agent_version_id]?.agentId
+            const bindingHolder = agentHolderOfBinding(b);
+            const versionAgentId = bindingHolder.versionId
+              ? data.versionsById[bindingHolder.versionId]?.agentId
               : undefined;
-            const agentKey = b.agent_id ?? versionAgentId;
+            const agentKey = bindingHolder.holderId ?? versionAgentId;
             return {
               principal_type: b.principal_type,
               agent_name: agentKey
@@ -522,7 +529,9 @@ export function MandatesConsole() {
     // contract check uses, never a re-read of the raw Json.
     let contract: MandateContract | undefined;
     if (selectedRow) {
-      const parsed = parseMandateContract(selectedRow.mandate.contract);
+      const parsed = parseMandateContract(
+        contractOfMandate(selectedRow.mandate),
+      );
       contract = {
         required_variables: parsed.requiredVariables,
         required_context_policies: parsed.requiredContextPolicyKeys,
@@ -756,7 +765,9 @@ export function MandatesConsole() {
         width: 190,
         cell: (r) => (
           <div className="flex items-center gap-1">
-            <Badge variant={r.mandate.use_latest ? "secondary" : "outline"}>
+            <Badge
+              variant={isFloatingMandate(r.mandate) ? "secondary" : "outline"}
+            >
               {r.pinLabel}
             </Badge>
             {r.agentId && (

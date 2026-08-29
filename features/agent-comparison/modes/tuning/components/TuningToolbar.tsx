@@ -56,7 +56,6 @@ import {
   selectCanSubmitTuning,
   selectCollapsedTuningColumnCount,
   selectIsSubmittingAllTuning,
-  selectLockedSetup,
   selectSourceAgentId,
   selectTuningColumns,
 } from "../redux/selectors";
@@ -73,7 +72,6 @@ export function TuningToolbar({
   const dispatch = useAppDispatch();
 
   const sourceAgentId = useAppSelector(selectSourceAgentId);
-  const lockedSetup = useAppSelector(selectLockedSetup);
   const activeSetId = useAppSelector(selectActiveTuningSetId);
   const activeSetName = useAppSelector(selectActiveTuningSetName);
   const isSubmittingAll = useAppSelector(selectIsSubmittingAllTuning);
@@ -101,19 +99,6 @@ export function TuningToolbar({
         "Add at least one variant. Click the 'Add variant' button to start.",
       );
       return;
-    }
-    if (!lockedSetup.userMessage.trim()) {
-      const hasVars = Object.values(lockedSetup.variables).some((v) => {
-        if (v == null) return false;
-        if (typeof v === "string") return v.trim().length > 0;
-        return true;
-      });
-      if (!hasVars) {
-        toast.error(
-          "Add a user message in the Locked input section before submitting.",
-        );
-        return;
-      }
     }
     try {
       maybeShuffleForBlind(columns, setTuningColumns);

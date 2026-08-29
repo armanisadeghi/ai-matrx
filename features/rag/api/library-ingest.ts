@@ -9,14 +9,12 @@
  * file into a shared library store as system-owned content" — distinct from
  * the tenant `/rag/ingest` self-serve path in `./ingest.ts`.
  *
- * Contract status: aidream publishes the signature day 1 but answers
- * `501 Not Implemented` until the full pipeline (system-owner rehome +
- * streamed progress) lands. Callers MUST surface that as a clearly-labeled
- * "pipeline not yet live" state — never swallow it as a generic error. Use
- * `isLibraryIngestNotLive` to detect it.
+ * The endpoint is a canonical matrx-connect NDJSON stream. This client consumes
+ * that stream through `postNdjson` and resolves only after the terminal
+ * `rag.ingest.result` event arrives.
  */
 
-import { postJson } from "@/lib/python-client";
+import { postNdjson } from "@/lib/python-client";
 import { BackendApiError } from "@/lib/api/errors";
 
 export interface LibraryIngestRequest {
@@ -25,13 +23,7 @@ export interface LibraryIngestRequest {
 }
 
 export interface LibraryIngestResponse {
-  status: string;
   detail: string;
-}
-
-/** True when the backend answered 501 — the P1 pipeline hasn't shipped. */
-export function isLibraryIngestNotLive(err: unknown): boolean {
-  return err instanceof BackendApiError && err.status === 501;
 }
 
 export async function ingestLibraryFile(
@@ -39,10 +31,64 @@ export async function ingestLibraryFile(
   fileId: string,
   opts: { profile?: string | null; signal?: AbortSignal } = {},
 ): Promise<LibraryIngestResponse> {
-  const { data } = await postJson<LibraryIngestResponse, LibraryIngestRequest>(
+  for await (const event of postNdjson<LibraryIngestRequest>(
     `/rag/library/stores/${encodeURIComponent(storeId)}/ingest`,
     { file_id: fileId, profile: opts.profile ?? null },
     { signal: opts.signal },
-  );
-  return data;
+  )) {
+    if (event.event === "error") {
+      throw new BackendApiError({
+        code: event.data.code ?? event.data.error_type,
+        detail: event.data.message,
+        userMessage: event.data.user_message ?? event.data.message,
+        details: event.data.details,
+      });
+    }
+
+    if (
+      event.event !== "data" ||
+      !("kind" in event.data) ||
+      event.data.kind !== "rag.ingest.result"
+    ) {
+      continue;
+    }
+
+    const resultError =
+      "error" in event.data && typeof event.data.error === "string"
+        ? event.data.error
+        : null;
+    if (resultError) {
+      throw new BackendApiError({
+        code: "library_ingest_failed",
+        detail: resultError,
+        userMessage: resultError,
+      });
+    }
+
+    const chunksWritten =
+      "chunks_written" in event.data &&
+      typeof event.data.chunks_written === "number"
+        ? event.data.chunks_written
+        : 0;
+    const embeddingsWritten =
+      "embeddings_written" in event.data &&
+      typeof event.data.embeddings_written === "number"
+        ? event.data.embeddings_written
+        : 0;
+    const skippedUnchanged =
+      "skipped_unchanged" in event.data &&
+      event.data.skipped_unchanged === true;
+
+    return {
+      detail: skippedUnchanged
+        ? "Library content was already current; no new chunks were needed."
+        : `Ingested ${chunksWritten} chunks and wrote ${embeddingsWritten} embeddings.`,
+    };
+  }
+
+  throw new BackendApiError({
+    code: "library_ingest_incomplete",
+    detail: "Library ingest stream ended without a rag.ingest.result event",
+    userMessage: "The ingest ended without a final result. Please retry.",
+  });
 }

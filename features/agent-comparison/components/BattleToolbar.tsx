@@ -28,21 +28,18 @@ import {
   EyeOff
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
 import {
   addBattleColumn,
-  broadcastFollowUpToEmpty,
   clearBattle,
   expandAllBattleColumns,
   resetAllBattleConversations,
   saveBattle,
   saveBattleAs,
-  selectBattleReadiness,
   submitAllBattleColumns,
-  type BattleColumnReadiness,
 } from "../redux/thunks";
 import {
   DropdownMenu,
@@ -63,10 +60,6 @@ import { ComparisonSetLoaderDialog } from "./ComparisonSetLoaderDialog";
 import { BlindControls } from "../shared/BlindControls";
 import { useBlindShuffle } from "../shared/useBlindShuffle";
 import { resetBlind, setColumns } from "../redux/battleSlice";
-import {
-  SubmitAllPreflightDialog,
-  type ColumnReadiness,
-} from "./SubmitAllPreflightDialog";
 
 interface BattleToolbarProps {
   contextWindowOpen: boolean;
@@ -90,7 +83,6 @@ export function BattleToolbar({
   onToggleMasterInputWindow,
 }: BattleToolbarProps) {
   const dispatch = useAppDispatch();
-  const store = useAppStore();
 
   const activeSetId = useAppSelector(selectActiveBattleSetId);
   const activeSetName = useAppSelector(selectActiveBattleSetName);
@@ -106,8 +98,6 @@ export function BattleToolbar({
   const [clearConfirm, setClearConfirm] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetKeepInputsConfirm, setResetKeepInputsConfirm] = useState(false);
-  const [preflightOpen, setPreflightOpen] = useState(false);
-  const [preflightReadiness, setPreflightReadiness] = useState<ColumnReadiness[]>([]);
 
   const runSubmit = async () => {
     // Blind test: shuffle + activate masking before firing the run.
@@ -135,37 +125,7 @@ export function BattleToolbar({
       toast.info("Pick at least one agent before submitting.");
       return;
     }
-    // Preflight: compute per-column readiness. If any column is empty,
-    // open the dialog so the user can add a shared message or choose
-    // to submit only the ready columns.
-    // Snapshot via store so we don't have to subscribe at the toolbar
-    // level just to evaluate this once on click.
-    const readiness: BattleColumnReadiness[] = selectBattleReadiness(
-      store.getState(),
-    );
-    const allReady = readiness.every((r) => r.hasMessage);
-    if (readiness.length > 0 && !allReady) {
-      setPreflightReadiness(
-        readiness.map((r) => ({
-          column: columns.find((c) => c.columnId === r.columnId)!,
-          agentName: r.agentName,
-          hasMessage: r.hasMessage,
-          phase: r.phase,
-        })),
-      );
-      setPreflightOpen(true);
-      return;
-    }
     void runSubmit();
-  };
-
-  const handlePreflightSubmitWithSharedMessage = async (message: string) => {
-    await dispatch(broadcastFollowUpToEmpty({ text: message })).unwrap();
-    await runSubmit();
-  };
-
-  const handlePreflightSubmitOnlyReady = async () => {
-    await runSubmit();
   };
 
   const handleSave = async () => {
@@ -465,13 +425,6 @@ export function BattleToolbar({
         onConfirm={handleClearResponsesKeepInputs}
       />
 
-      <SubmitAllPreflightDialog
-        open={preflightOpen}
-        onOpenChange={setPreflightOpen}
-        readiness={preflightReadiness}
-        onSubmitWithSharedMessage={handlePreflightSubmitWithSharedMessage}
-        onSubmitOnlyReady={handlePreflightSubmitOnlyReady}
-      />
     </>
   );
 }

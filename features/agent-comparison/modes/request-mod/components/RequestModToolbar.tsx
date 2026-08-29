@@ -99,13 +99,8 @@ export function RequestModToolbar({
       const res = await dispatch(submitAllRequestMod()).unwrap();
       const parts: string[] = [];
       if (res.launched > 0) parts.push(`${res.launched} launched`);
-      if (res.skipped > 0) parts.push(`${res.skipped} skipped (empty)`);
       if (res.failed > 0) parts.push(`${res.failed} failed`);
-      if (res.launched === 0 && res.skipped > 0) {
-        toast.error(
-          "Nothing to launch — every column is empty. Type a message or fill variables in each column first.",
-        );
-      } else if (res.failed > 0) {
+      if (res.failed > 0) {
         toast.error(parts.join(" · "));
       } else {
         toast.success(parts.join(" · ") || "Done");

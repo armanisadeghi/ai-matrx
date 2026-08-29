@@ -25,13 +25,13 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { ProInput } from "@/components/official/ProInput";
 import type { ThreadPickerOption } from "@/features/war-room/types";
 import { cn } from "@/lib/utils";
-import { TapTargetButtonTransparent } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import {
   ChevronRightTapButton,
   LoadingTapButton,
   PlusTapButton,
   XTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { ProjectPicker } from "@/features/projects/components/ProjectPicker";
 import { WarRoomTaskPicker } from "../shared/WarRoomTaskPicker";
 

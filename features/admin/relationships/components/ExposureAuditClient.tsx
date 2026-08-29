@@ -35,7 +35,7 @@ import {
   booleanUrlCodec,
   enumUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 type ResourceFilter = "all" | "file" | "note";
 type ExposureFilter =

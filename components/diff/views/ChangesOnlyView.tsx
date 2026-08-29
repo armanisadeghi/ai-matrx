@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
-import type { DiffResult, DiffTemporalMetadata } from "../engine/types";
+import type { DiffResult, DiffTemporalMetadata } from "@ai-matrx/diff/structural";
 import type { AdapterRegistry, EnrichmentContext } from "../adapters/types";
 import { DefaultFieldAdapter } from "../adapters/defaults";
 import { DiffFieldTemporalRow, DiffSideMoment } from "./DiffTemporalRow";

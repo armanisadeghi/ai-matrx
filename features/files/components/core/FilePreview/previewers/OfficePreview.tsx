@@ -47,7 +47,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { guardMarkdownDelimiters } from "@/lib/markdown/delimiter-guard";
+import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
 import { stripDuplicatePortionHeading } from "@/lib/markdown/portion-heading";
 import type {
   OfficeExtraction,

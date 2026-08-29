@@ -13,8 +13,8 @@
  * what makes it unit-testable against real production rows.
  */
 
-import { computeDiff } from "@/components/diff/engine/compute-diff";
-import type { ChangeType, DiffNode } from "@/components/diff/engine/types";
+import { computeDiff } from "@ai-matrx/diff/structural";
+import type { ChangeType, DiffNode } from "@ai-matrx/diff/structural";
 import {
   AGENT_SYNC_FIELDS,
   AGENT_SYNC_FIELD_BY_KEY,

@@ -280,6 +280,35 @@ const EXPECTED_CHECKS = [
   // declares itself in platform.client_callable_door and keeps its grant. This check asserts the
   // trigger exists and is enabled, so it cannot be silently dropped, re-opening the class at birth.
   "definer_grant_ddl_guard_installed",
+  // hr_l3_111 — the SQL half of `features/hr/routes.ts`'s opening law, NOBODY HAND-ASSEMBLES AN HR
+  // URL. HR is strictly single-employer and SPEC-UI-IA §1 resolves the active employer from `?org=`
+  // FIRST, so an `/hr` link with no employer lands its reader wherever the picker chooses — proven
+  // live on 2026-08-28, where one bare `/hr/tasks` link rewrote every subsequent link to a DIFFERENT
+  // employer and bare `/hr` landed in a third. `features/hr/__tests__/no-hand-built-hr-urls.test.ts`
+  // closed that for `.ts`/`.tsx` and is structurally blind to a `||` concatenation inside a
+  // CREATE FUNCTION body — which is where the 26 worst instances were living, including
+  // `hr._wf_notify`: the notification spine, whose link is the one a person follows out of an EMAIL,
+  // with no HR page open to inherit an employer from. It had already written 535 employer-free deep
+  // links across 2 organizations. Detector: `hr.hr_links_without_employer()`, narrowed to navigation
+  // position the way the TS guard is (a link literal opens at the path, so `'POST /hr/…'` route
+  // mentions and prose are ignored). Falsified by re-creating the pre-fix `hr._wf_notify` line in a
+  // throwaway function: the check went red on it and green again when it was dropped.
+  "hr_deep_links_carry_the_employer",
+  // hr_l3_112: THE ATTESTATION STATEMENT IS THE LEGAL SUBSTANCE OF THE ATTESTATION.
+  // `hr.pay_period_employment.attestation_statement` is the wording an employee signed and the only
+  // thing route 5 can render under "What you agreed to, word for word" — `hr.timesheet_get` projects
+  // the ROW, never the knob. `hr.pay_period_transition` stamped it inside an
+  // `insert … on conflict (pay_period_id, employment_id) DO NOTHING`, while
+  // `hr._enroll_pay_period_rows` had already created that row at period generation — so the insert
+  // ALWAYS conflicted and the column was NEVER written. Measured live 2026-08-29: 1 of 200 rows
+  // carried a statement (the single row the submit genuinely inserted) and BOTH rows where a person
+  // actually attested were NULL — a signature with nothing above it, and nothing anywhere said so.
+  // Detector: `hr.attestations_without_a_statement()`. Deliberately scoped to rows where somebody
+  // ACTUALLY attested: a row nobody signed is not a broken record, and nothing is ever filled in on
+  // an employee's behalf. Proven red against the pre-backfill state and green after, in one
+  // transaction; the writer fix was then falsified end to end through the real doors (enrol →
+  // submit → the wording is on the row BEFORE the employee is asked → attest → byte-identical).
+  "every_attestation_records_its_statement",
 ] as const;
 
 interface ConformanceRow {

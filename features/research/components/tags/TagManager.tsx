@@ -43,7 +43,7 @@ import {
   deleteTag as deleteTagService,
 } from "../../service";
 import type { ResearchTag } from "../../types";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { CrossCuttingTagsPanel } from "./CrossCuttingTagsPanel";
 
 export default function TagManager() {

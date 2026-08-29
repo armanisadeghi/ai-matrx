@@ -18,7 +18,7 @@
 
 import { useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@/utils/supabase/realtime";
+import { uniqueChannelTopic } from "@ai-matrx/data/db";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   isAllJobsView,

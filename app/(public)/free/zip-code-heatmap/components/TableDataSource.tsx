@@ -22,7 +22,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ZipCodeData } from "../page";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { getTableMetadata } from "@/features/data-tables/service";
 import { isServiceFailure } from "@/features/data-tables/types";
 

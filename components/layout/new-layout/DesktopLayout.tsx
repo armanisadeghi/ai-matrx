@@ -39,7 +39,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { MenuTapButton } from "@/components/icons/tap-buttons";
+import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
 import { useVoicePadAdvanced } from "@/components/official-candidate/voice-pad/hooks/useVoicePad";
 import ShellUserMenu from "@/features/shell/components/header/header-right-menu/ShellUserMenu";
 import NotificationDropdown from "@/components/ui/notifications/NotificationDropdown";

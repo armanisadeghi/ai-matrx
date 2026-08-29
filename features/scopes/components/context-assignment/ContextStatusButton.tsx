@@ -19,7 +19,7 @@ import React from "react";
 import {
   ShieldAlertTapButton,
   ShieldCheckTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import {
   ContextAssignmentPopover,
@@ -48,7 +48,7 @@ export interface ContextStatusButtonProps extends Omit<
 }
 
 // NOTE: this component's tap geometry is FIXED (TapTargetButton's pill size
-// is not configurable by design — see components/icons/TapTargetButton.tsx).
+// is not configurable by design — see @ai-matrx/tap-target).
 // It only fits shell-header / toolbar chrome. A spot that needs a different
 // footprint (a compact metadata-list row, a 24px tab-strip icon, …) should
 // NOT force it in here via a size/className override — build a small local

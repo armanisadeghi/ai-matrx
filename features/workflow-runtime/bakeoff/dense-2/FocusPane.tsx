@@ -16,7 +16,7 @@ import { useEffect } from "react";
 import { Crosshair, LocateFixed } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { formatElapsed } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 import { DbEmitRenderer } from "@/features/workflow-emit/DbEmitRenderer";
 import type { EmitMode } from "@/features/workflow-emit/types";

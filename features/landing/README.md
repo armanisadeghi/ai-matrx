@@ -1,400 +1,109 @@
-# Landing Page & Invitation System
+# Landing invitation system
 
-## Overview
+**Last verified:** 2026-08-28
 
-The AI Matrx landing page provides an exclusive, invitation-only experience for new users. The system includes a beautiful, modern landing page with three primary user flows:
+**Current state:** Public access requests and admin review are operational. Invitation codes are not yet enforced or consumed by account creation, so the site is not end-to-end invitation-only.
 
-The page must render the exact product name **AI Matrx** as visible text.
-Google OAuth verification compares the consent-screen app name with the public
-homepage; metadata-only branding is insufficient.
+This document describes what the invitation surfaces actually do. It deliberately does not treat a generated code, an email, or the words “Invitation Only” as proof that signup is gated.
 
-1. **Login** - Existing users can sign in
-2. **Enter Invitation Code** - New users with an invitation code can sign up
-3. **Request Access** - Prospective users can request an invitation
+## User-facing entry points
 
-## Features
+- The public landing page offers **Enter Invitation Code** and **Request Access**.
+- `RequestAccessModal` collects the required request fields, saves step 1, and offers optional follow-up questions in step 2.
+- `InvitationCodeModal` validates an exact code candidate at a server-only boundary, then routes to `/sign-up?invitation=...` when it is active, unexpired, and has remaining uses.
+- `/request-access/thank-you` confirms that the request was saved. Email delivery is best effort and is not the source of truth for whether the database write succeeded.
 
-### Landing Page (`app/page.tsx`)
-- **Server-Side Rendered (SSR)** for optimal performance and SEO
-- **Lazy-loaded modals** for better initial page load
-- **Modern, exclusive design** with gradient backgrounds and professional UI
-- **Fully responsive** with mobile-first approach
-- **System theme detection** - Respects user's OS dark/light mode preference
+## Request flow
 
-### Invitation Request System
-- **Two-step form process**:
-  - Step 1: Required information (Name, Company, Email, Use Case, Role)
-  - Step 2: Optional enrichment data (Phone, AI Obstacles, Referral, Current Tools, Recent Projects)
-- **Email uniqueness validation**
-- **Graceful handling** of existing requests
-- **Beautiful success state** with clear messaging
-
-### Invitation Code Validation
-- **Real-time validation** of invitation codes
-- **Format enforcement**: XXXX-XXXX-XXXX
-- **Single-use codes** per successful account creation
-- **Expiration support** (optional)
-- **Usage tracking**
-
-## Database Schema
-
-### Tables Created
-
-#### `invitation_requests`
-Stores user requests for platform access.
-
-**Key Fields:**
-- `full_name`, `company`, `email` - Required Step 1 fields
-- `use_case` - What they want to build
-- `user_type` - Role/profession category
-- `status` - pending, approved, rejected, invited, converted
-- `step_completed` - 1 or 2
-- Optional Step 2 fields for deeper insights
-
-#### `invitation_codes`
-Manages invitation codes for signup.
-
-**Key Fields:**
-- `code` - Unique invitation code (format: XXXX-XXXX-XXXX)
-- `status` - active, used, expired, revoked
-- `max_uses` - Default 1 (single-use)
-- `current_uses` - Tracks usage count
-- `used_by_user_id` - Links to auth.users on use
-- `expires_at` - Optional expiration date
-
-### Helper Functions
-
-**`generate_invitation_code()`**
-- Generates random codes in format XXXX-XXXX-XXXX
-- Excludes similar characters (I, O, 0, 1) to prevent confusion
-
-**`mark_invitation_code_used(code, user_id)`**
-- Atomically marks a code as used
-- Updates usage counters
-- Links to user account
-- Returns success/failure
-
-## Installation
-
-### 1. Run Database Migration
-
-```bash
-# Using Supabase CLI
-supabase migration up create_invitation_system
-
-# Or manually execute the SQL file
-# File: supabase/migrations/create_invitation_system.sql
+```text
+Landing page
+  -> submitInvitationRequestStep1
+  -> users.invitation_requests (pending, step_completed = 1)
+  -> best-effort applicant acknowledgement email
+  -> best-effort admin notification email
+  -> optional submitInvitationRequestStep2
+  -> same request row (step_completed = 2)
 ```
 
-### 2. Verify Tables Created
-
-Check that the following tables exist in your Supabase database:
-- `invitation_requests`
-- `invitation_codes`
-
-### 3. Deploy Application
-
-The landing page is already integrated into `app/page.tsx` and will be live immediately.
-
-## Usage
-
-### For Users
-
-#### Requesting Access
-1. Click "Request Access" on the landing page
-2. Fill out Step 1 (required fields)
-3. Optionally complete Step 2 for priority consideration
-4. Wait for invitation email from admin
-
-#### Using an Invitation Code
-1. Click "Enter Invitation Code"
-2. Enter code in format XXXX-XXXX-XXXX
-3. Get redirected to sign-up page with code pre-filled
-4. Complete account creation
-
-### For Administrators
-
-#### Reviewing Requests (Manual Process)
-
-Query pending requests:
-```sql
-SELECT 
-  full_name,
-  company,
-  email,
-  use_case,
-  user_type,
-  created_at
-FROM invitation_requests
-WHERE status = 'pending'
-ORDER BY created_at DESC;
-```
-
-#### Generating Invitation Codes
-
-Create a new invitation code:
-```sql
-INSERT INTO invitation_codes (code, invitation_request_id, status)
-VALUES (
-  generate_invitation_code(),
-  'request-uuid-here',  -- Optional: link to a specific request
-  'active'
-);
-
--- Get the generated code
-SELECT code FROM invitation_codes 
-WHERE invitation_request_id = 'request-uuid-here';
-```
-
-Or manually specify a code:
-```sql
-INSERT INTO invitation_codes (code, status, max_uses)
-VALUES ('ABCD-EFGH-JKLM', 'active', 1);
-```
-
-#### Approving Requests
-
-```sql
-UPDATE invitation_requests
-SET 
-  status = 'approved',
-  notes = 'Approved for early access - great use case',
-  reviewed_by = 'admin-user-id',
-  reviewed_at = NOW()
-WHERE id = 'request-uuid';
-```
-
-#### Managing Codes
-
-Revoke a code:
-```sql
-UPDATE invitation_codes
-SET status = 'revoked'
-WHERE code = 'XXXX-XXXX-XXXX';
-```
-
-Check code usage:
-```sql
-SELECT 
-  code,
-  status,
-  current_uses,
-  max_uses,
-  used_by_user_id,
-  used_at
-FROM invitation_codes
-WHERE code = 'XXXX-XXXX-XXXX';
-```
-
-## File Structure
+The public form calls server actions in `features/landing/actions.ts`. Those actions use the server-only Supabase admin client because the request table contains private applicant data and is not directly writable or readable by anonymous browser clients. Every new request is explicitly assigned to the platform system organization with personal visibility.
 
-```
-features/landing/
-├── README.md                           # This file
-├── index.ts                            # Barrel exports
-├── types.ts                            # TypeScript types
-├── actions.ts                          # Server actions
-└── components/
-    ├── InvitationCodeModal.tsx         # Enter invitation code
-    └── RequestAccessModal.tsx          # Request access form
+An email address with an existing pending or approved request receives the same success-shaped response without exposing the existing private request ID. A previously rejected email may submit a new request.
 
-app/
-├── page.tsx                            # New landing page
-└── page-original.tsx                   # Backup of previous homepage
+The admin notification links to the canonical production review surface:
 
-supabase/migrations/
-└── create_invitation_system.sql        # Database migration
-```
+`https://manage.aimatrx.com/administration/users/invitations`
 
-## API Reference
+## Admin review and code issuance
 
-### Server Actions
+The invitations table is owned by the protected users administration surface. Its mutation route is `app/api/admin/invitation-requests/[id]/route.ts` and requires a super-admin session.
 
-All actions are located in `features/landing/actions.ts`.
-
-#### `submitInvitationRequestStep1(data)`
-Submits Step 1 of invitation request (required fields).
+Approval currently performs these operations:
 
-**Parameters:**
-- `data: InvitationRequestStep1`
-
-**Returns:**
-- `ActionResponse<{ requestId: string }>`
-
-**Example:**
-```typescript
-const result = await submitInvitationRequestStep1({
-  full_name: 'John Smith',
-  company: 'Acme Corp',
-  email: 'john@acme.com',
-  use_case: 'Building AI workflows for sales automation',
-  user_type: 'business_executive'
-});
-
-if (result.success) {
-  console.log('Request ID:', result.data.requestId);
-}
-```
-
-#### `submitInvitationRequestStep2(requestId, data)`
-Submits Step 2 of invitation request (optional fields).
-
-**Parameters:**
-- `requestId: string`
-- `data: InvitationRequestStep2`
-
-**Returns:**
-- `ActionResponse`
-
-#### `validateInvitationCode(code)`
-Validates an invitation code.
-
-**Parameters:**
-- `code: string` - Format: XXXX-XXXX-XXXX
-
-**Returns:**
-- `ActionResponse<{ valid: boolean; codeId?: string }>`
-
-#### `markInvitationCodeUsed(code, userId)`
-Marks an invitation code as used (called during signup).
-
-**Parameters:**
-- `code: string`
-- `userId: string` - auth.users ID
-
-**Returns:**
-- `ActionResponse`
-
-## Components
-
-### `<InvitationCodeModal />`
-Modal for entering and validating invitation codes.
-
-**Props:**
-- `open: boolean` - Controls modal visibility
-- `onOpenChange: (open: boolean) => void` - Callback for state changes
-
-**Features:**
-- Auto-formats code input (XXXX-XXXX-XXXX)
-- Real-time validation
-- Error handling with clear messages
-- Smooth transitions to signup page
-
-### `<RequestAccessModal />`
-Two-step form modal for requesting platform access.
-
-**Props:**
-- `open: boolean`
-- `onOpenChange: (open: boolean) => void`
-
-**Features:**
-- Multi-step form with progress indicator
-- Conditional field display (e.g., "Other" specification)
-- iOS-friendly input sizes (≥16px to prevent zoom)
-- Skip option for Step 2
-- Beautiful success state
-- Comprehensive validation
-
-## SEO Optimization
-
-The landing page includes:
-- **Enhanced metadata** with relevant keywords
-- **OpenGraph tags** for social sharing
-- **Structured content** for search engines
-- **Fast loading** with SSR and lazy-loaded modals
-- **Mobile-responsive** design
-- **Semantic HTML** structure
-
-## Security Considerations
-
-### Current Implementation (As Requested - Simple)
-- Basic email validation
-- Code format validation
-- SQL injection protection via Supabase SDK
-- Row Level Security (RLS) policies enabled
-
-### Future Enhancements (If Needed)
-- Rate limiting on request submissions
-- CAPTCHA integration
-- Email verification for requests
-- Admin dashboard for managing requests
-- Automated invitation email system
-- Analytics tracking
-
-## Performance
-
-### Optimizations Implemented
-1. **Server-Side Rendering** - Initial page loads instantly
-2. **Lazy Loading** - Modals only load when needed
-3. **Code Splitting** - Dynamic imports for modal components
-4. **Minimal Dependencies** - Uses existing UI components
-5. **Optimized Images** - (Add when logo/images are included)
-
-### Metrics to Monitor
-- Page load time (target: < 2s)
-- Time to Interactive (target: < 3s)
-- Form submission success rate
-- Code validation success rate
-
-## Troubleshooting
-
-### Common Issues
-
-**Issue: Invitation code not validating**
-- Verify code exists in database: `SELECT * FROM invitation_codes WHERE code = 'XXXX-XXXX-XXXX'`
-- Check status is 'active'
-- Verify not expired: `expires_at IS NULL OR expires_at > NOW()`
-- Check usage count: `current_uses < max_uses`
-
-**Issue: Request submission failing**
-- Check email uniqueness
-- Verify required fields are filled
-- Check database connection
-- Review server logs for detailed errors
-
-**Issue: Modal not opening**
-- Check browser console for errors
-- Verify dynamic imports are loading
-- Ensure JavaScript is enabled
-
-## Future Enhancements
-
-Potential features for future iterations:
-
-1. **Admin Dashboard**
-   - View and manage all requests
-   - Generate codes with one click
-   - Email templates for invitations
-   - Analytics and insights
-
-2. **Automated Workflows**
-   - Auto-generate codes for approved requests
-   - Email automation
-   - Waitlist management
-   - Priority scoring
-
-3. **Enhanced Security**
-   - Rate limiting
-   - CAPTCHA
-   - Email verification
-   - IP tracking
-
-4. **Analytics**
-   - Conversion tracking
-   - Request source attribution
-   - User journey analytics
-   - A/B testing
-
-## Support
-
-For issues or questions:
-1. Check this README
-2. Review server logs
-3. Query database tables directly
-4. Contact development team
-
----
-
-**Last Updated:** November 20, 2024  
-**Version:** 1.0.0  
-**Status:** Production Ready
+1. Refuse the action unless the request is still pending.
+2. Generate a random `XXXX-XXXX-XXXX` code with `public.generate_invitation_code()`.
+3. Insert a personal-visibility row in `users.invitation_codes`, explicitly assigned to the platform system organization, with one allowed use and a 30-day expiry.
+4. Mark the request approved with reviewer identity, timestamp, and optional notes.
+5. Attempt to email the code and signup link to the applicant.
+
+Rejection records the reviewer, timestamp, notes, and optional rejection reason, then attempts a notification email. The admin UI distinguishes a completed database decision from a failed email instead of claiming the applicant was notified.
+
+Code issuance and request approval are currently two database writes rather than one atomic RPC. If the second write fails after the code row is created, an orphan code is possible. This is a known integrity gap.
+
+## Code privacy and validation
+
+Invitation codes are credentials. Code rows use personal visibility and anonymous roles have no table or column privileges on `users.invitation_codes`. Exact-code validation happens in `validateInvitationCode()` using the server-only admin client and returns only `{ valid: boolean }`; it never returns a row ID or code record to the browser.
+
+`public.mark_invitation_code_used(text, uuid)` is restricted to the service role. The helper in `features/landing/actions.ts` is not currently called by signup and must not be treated as proof of code consumption.
+
+## What account creation actually does
+
+As of the verification date, `/sign-up` ignores the `invitation` query parameter. Email/password signup and OAuth signup do not validate, reserve, or consume an invitation code. The route can be visited directly without first requesting access.
+
+Therefore:
+
+- **Requesting access works.**
+- **Admin approval and code email exist.**
+- **Code validation in the landing modal works.**
+- **Account creation is not invitation-gated.**
+- **Issued codes are not marked used by signup.**
+- **The `invited` and `converted` request statuses are not currently advanced by signup.**
+
+Closing this gap requires one atomic server-side account-creation contract that validates and consumes the code exactly once, associates the resulting user, advances the request lifecycle, and covers both password and OAuth signup without losing the invitation during redirects.
+
+## Data and delivery
+
+Primary tables:
+
+- `users.invitation_requests`: applicant details, optional follow-up answers, lifecycle status, and review metadata.
+- `users.invitation_codes`: private code credential, request relationship, usage count, expiry, recipient, and eventual user relationship.
+
+Application email uses the shared Resend client in `lib/email/client.ts`. Invitation templates live in `features/invitations/emailService.ts`. `RESEND_API_KEY`, `EMAIL_FROM`, and `ADMIN_EMAIL` configure this application-email path; Supabase authentication email uses a separate SMTP configuration.
+
+Request and review database writes do not roll back when email delivery fails. That is intentional for intake durability, but delivery failures must stay visible to administrators and logs.
+
+## Known gaps
+
+- Signup does not enforce or consume invitation codes.
+- Approval is not atomic across code creation and request status update.
+- The 30-day expiry is hardcoded rather than governed by a feature knob.
+- Public request submission has no dedicated rate limit or abuse challenge.
+- Review actions rely on row metadata and application logs; there is no separate durable review-event ledger.
+- Invitation email templates interpolate applicant/admin-provided text and need an explicit HTML-escaping audit.
+
+Do not describe the system as fully invitation-only until the signup contract is implemented and verified through both password and OAuth paths.
+
+## Operational checks
+
+When request submission fails:
+
+1. Check application logs for `submitInvitationRequestStep1` and structured Supabase errors.
+2. Verify the server runtime has valid Supabase service-role configuration.
+3. Confirm the write carried the platform system organization and personal visibility.
+4. Verify the row in `users.invitation_requests`; do not infer database failure from an email failure.
+5. Test with a transaction-rolled-back canary whenever possible so no applicant record or email is retained.
+
+After schema changes, apply and verify the migration live, update the shared migration ledger, regenerate database types, and run the migration and type gates.
+
+## Change log
+
+- `2026-08-28` — Restored public request intake through a server-only write boundary after regenerated RLS removed the legacy anonymous insert policy; added explicit organization/visibility ownership, duplicate-request privacy, private code validation, honest email status, repeat-review protection, canonical admin links, and this verified system map.

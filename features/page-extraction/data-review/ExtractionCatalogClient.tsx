@@ -33,7 +33,7 @@ import {
   LoadingTapButton,
   PlusTapButton,
   RefreshCwTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 

@@ -9,12 +9,19 @@
  * into a route because there is no request-detail route in the product and inventing a URL
  * that 404s is the dead end the law exists to prevent.
  *
- * 🚨 THE CANCEL CONTROL IS ABSENT WHERE IT IS NOT LAWFUL, NEVER DISABLED (SPEC-UI-IA §4.2).
- * `hr.leave_request_cancel`, read live: `submitted` withdraws (no ledger entry ever existed),
- * `approved` opens a cancellation workflow, `taken` refuses outright ("a correction is a
- * balance adjustment, not a cancellation"), and every other state refuses as
- * `not_cancellable`. So the button exists for exactly two states and is in the DOM for no
- * others.
+ * 🚨 THE CONTROL IS ABSENT WHERE IT IS NOT LAWFUL, NEVER DISABLED (SPEC-UI-IA §4.2).
+ * Read live off the two doors, and there are exactly three lawful acts, one per state:
+ * `draft` DISCARDS (`hr.leave_request_discard` — never filed, so nothing is reversed),
+ * `submitted` WITHDRAWS (`hr.leave_request_cancel`; no ledger entry ever existed), `approved`
+ * ASKS TO CANCEL (a `leave_cancellation` workflow, because the hours are encumbered). `taken`,
+ * `partially_taken`, `denied` and `cancelled` have no control at all — each is a thing that
+ * HAPPENED, and both doors refuse them with the act that IS available. So the button is in the
+ * DOM for exactly three states.
+ *
+ * 🚨 DISCARD IS NOT CANCEL, AND ONE CONTROL MUST NEVER SERVE BOTH. They call different doors
+ * with different consequences; `hr.leave_request_cancel` answers a draft with
+ * `not_cancellable`, which is precisely the gap that left a draft on this page forever. The
+ * action descriptor below carries WHICH door, so the two can never drift into one button.
  *
  * 🚨 NO SECOND INBOX. Nothing here approves, denies, escalates or reassigns anything.
  * `/hr/tasks` is THE inbox and the workflow engine projects leave steps into it.
@@ -32,7 +39,7 @@ import { isHrDenied, isHrFailed } from "@/features/hr/types";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
-import { cancelLeaveRequest } from "../api/service";
+import { cancelLeaveRequest, discardLeaveRequest } from "../api/service";
 import type { LeaveRequestState, MyLeaveRequest } from "../api/types";
 import { formatHours } from "./LeaveBalanceBlock";
 
@@ -53,22 +60,48 @@ function stateTone(state: LeaveRequestState | null): "default" | "secondary" | "
   return "secondary";
 }
 
-/** Which states the server will actually act on, and what it will do. */
-function cancelAction(
-  state: LeaveRequestState | null,
-): { label: string; title: string; body: string } | null {
+/**
+ * Which states the server will actually act on, which DOOR does it, and what it will do.
+ *
+ * `door` is the point of this shape: `discard` and `cancel` are different acts on different
+ * server functions, and a descriptor that carried only wording would let one button send a
+ * draft to the cancel door — which refuses it.
+ */
+type RequestAction = {
+  door: "discard" | "cancel";
+  label: string;
+  title: string;
+  body: string;
+  /** Said after it works, in the same words as the act. */
+  done: string;
+};
+
+function requestAction(state: LeaveRequestState | null): RequestAction | null {
+  if (state === "draft") {
+    return {
+      door: "discard",
+      label: "Discard",
+      title: "Discard this request?",
+      body: "It was never sent, so nothing has been taken from your balance and nobody was asked about it. Discarding removes it from this page.",
+      done: "Discarded. Nothing was taken from your balance.",
+    };
+  }
   if (state === "submitted") {
     return {
+      door: "cancel",
       label: "Withdraw",
       title: "Withdraw this request?",
       body: "It has not been decided yet, so nothing has been taken from your balance. Withdrawing removes it from your approver's list.",
+      done: "Withdrawn. Nothing was taken from your balance.",
     };
   }
   if (state === "approved") {
     return {
+      door: "cancel",
       label: "Ask to cancel",
       title: "Ask to cancel this approved time off?",
       body: "These hours are already held against your balance, so cancelling has to be approved like the original request was. Your approver will see the request.",
+      done: "Sent. Your approver will decide on the cancellation.",
     };
   }
   return null;
@@ -85,32 +118,33 @@ export function LeaveRequestList({ requests, onChanged }: LeaveRequestListProps)
   const [pending, setPending] = useState<MyLeaveRequest | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const action = pending ? cancelAction(pending.state) : null;
+  const action = pending ? requestAction(pending.state) : null;
 
-  async function confirmCancel() {
-    if (!pending) return;
+  async function confirmAction() {
+    if (!pending || !action) return;
     setBusy(true);
-    const res = await cancelLeaveRequest({ requestId: pending.id });
+    const res =
+      action.door === "discard"
+        ? await discardLeaveRequest({ requestId: pending.id })
+        : await cancelLeaveRequest({ requestId: pending.id });
     setBusy(false);
     setPending(null);
 
     if (!res.ok) {
-      /* The server's own sentence, verbatim — `reason` is a code and never reaches the page. */
+      /* The server's own sentence, verbatim — `reason` is a code and never reaches the page.
+         Both doors refuse in the same dialect and each refusal already names what to do
+         instead, so there is nothing for this page to add. */
       toast.error(
         isHrDenied(res)
-          ? (res.detail ?? "That could not be cancelled, and no reason was given.")
+          ? (res.detail ?? "That did not go through, and no reason was given.")
           : isHrFailed(res)
             ? res.message
-            : "That could not be cancelled.",
+            : "That did not go through.",
       );
       return;
     }
 
-    toast.success(
-      res.data.outcome === "withdrawn"
-        ? "Withdrawn. Nothing was taken from your balance."
-        : "Sent. Your approver will decide on the cancellation.",
-    );
+    toast.success(action.done);
     onChanged();
   }
 
@@ -132,7 +166,7 @@ export function LeaveRequestList({ requests, onChanged }: LeaveRequestListProps)
       <ul className="flex flex-col gap-2">
         {requests.map((req) => {
           const open = openId === req.id;
-          const act = cancelAction(req.state);
+          const act = requestAction(req.state);
           const advisories = req.conflictCheck?.advisory ?? [];
           const hard = req.conflictCheck?.hard ?? [];
 
@@ -288,7 +322,7 @@ export function LeaveRequestList({ requests, onChanged }: LeaveRequestListProps)
         confirmLabel={action?.label ?? "Confirm"}
         cancelLabel="Keep it"
         busy={busy}
-        onConfirm={confirmCancel}
+        onConfirm={confirmAction}
       />
 
       {busy ? (

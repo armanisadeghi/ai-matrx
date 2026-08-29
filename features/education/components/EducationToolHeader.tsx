@@ -10,7 +10,7 @@
 // this component IS the page identity (core-route-headers doctrine).
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import HeaderActions from "@/features/shell/components/header/variants/shared/HeaderActions";
 import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 

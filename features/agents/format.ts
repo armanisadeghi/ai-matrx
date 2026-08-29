@@ -7,7 +7,7 @@ import type {
   ChangeType,
   DiffNode,
   DiffResult,
-} from "@/components/diff/engine/types";
+} from "@ai-matrx/diff/structural";
 import type { AgentVersionHistoryItem } from "@/features/agents/redux/agent-definition/thunks";
 
 /**

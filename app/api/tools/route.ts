@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { serverToolsService } from '@/utils/supabase/server-tools-service';
-import { filterAndSortBySearch } from '@/utils/search-scoring';
+import { filterAndSortBySearch } from '@ai-matrx/kit/search-scoring';
 
 export async function GET(request: NextRequest) {
   try {

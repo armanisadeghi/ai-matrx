@@ -35,7 +35,7 @@ import {
 import type { TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
-import { runWithConcurrency } from "@/lib/async/run-with-concurrency";
+import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
 
 import { planKeys } from "../data/hooks";
 

@@ -90,27 +90,3 @@ export const selectCanSubmitModel = createSelector(
     return true;
   },
 );
-
-export const selectModelHasDraftContent = createSelector(
-  [
-    selectModelInputConversationId,
-    (state: RootState) => state.instanceUserInput.byConversationId,
-    (state: RootState) => state.instanceVariableValues.byConversationId,
-    (state: RootState) => state.instanceResources.byConversationId,
-  ],
-  (conversationId, inputs, variables, resources) => {
-    if (!conversationId) return false;
-    if ((inputs[conversationId]?.text.trim().length ?? 0) > 0) return true;
-    if ((inputs[conversationId]?.messageParts?.length ?? 0) > 0) return true;
-    if (
-      Object.values(variables[conversationId]?.userValues ?? {}).some(
-        (value) =>
-          value != null &&
-          (typeof value !== "string" || value.trim().length > 0),
-      )
-    ) {
-      return true;
-    }
-    return Object.keys(resources[conversationId] ?? {}).length > 0;
-  },
-);

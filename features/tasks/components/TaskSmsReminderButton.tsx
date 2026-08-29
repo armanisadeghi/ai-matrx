@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { BellRingTapButton } from "@/components/icons/tap-buttons";
+import { BellRingTapButton } from "@ai-matrx/tap-target/buttons";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   enqueueMyTaskSmsReminder,

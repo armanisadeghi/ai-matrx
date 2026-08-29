@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { getPlacementTypeMeta } from "../constants";
 import { useShortcutDirectory } from "../hooks/useShortcutDirectory";
 import type {

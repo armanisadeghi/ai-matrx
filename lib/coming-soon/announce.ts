@@ -9,7 +9,13 @@
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { getComingSoon } from "./registry";
 
-const STAGE_LINE: Record<string, string> = {
+/**
+ * How each stage is worded to a user. EXPORTED because the dialog is no longer
+ * the only surface that renders a promise: a whole unbuilt ROUTE renders one too
+ * (`HrPillarSurface`), and two spellings of "not started yet" on one product is
+ * the drift this registry exists to prevent.
+ */
+export const STAGE_LINE: Record<string, string> = {
   planned: "On the roadmap — not started yet.",
   building: "Being built right now.",
   blocked: "Built, but not switched on yet.",

@@ -29,7 +29,7 @@ import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,

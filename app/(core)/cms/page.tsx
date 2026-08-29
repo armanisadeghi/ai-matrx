@@ -39,7 +39,7 @@ import {
   Users,
 } from "lucide-react";
 import { CmsHubHeader } from "@/features/cms/components/CmsHubHeader";
-import { PlusTapButton } from "@/components/icons/tap-buttons";
+import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { CMS_HUB_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsHubContextMenuProps";
 import { createCmsHubExtraSections } from "@/features/cms/agent-context/cmsHubExtraSections";

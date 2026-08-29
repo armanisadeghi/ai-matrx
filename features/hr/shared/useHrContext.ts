@@ -18,6 +18,25 @@
 // Rules 3 and 4 are partly the server's: `hr_my_context(null)` already applies rule
 // 3. This hook adds the slug lane (the server takes a uuid only) and re-resolves
 // when the picker's org turns out not to be HR-reachable.
+//
+// 🚨 TWO LAWS GOVERN THE RE-RESOLVE, AND THEY ARE THE WHOLE POINT OF THIS FILE.
+//
+//  A. **AN EXPLICIT `?org=` IS THE ANSWER, NOT A SUGGESTION.** Rule 1 resolves FIRST,
+//     including when that employer has HR switched OFF. The module-off employer is
+//     not a dead end that needs rescuing: SPEC-UI-IA §6 and R-L1 §D both rule that
+//     `/hr?org=<thatOrg>` renders the ENABLE-DOOR for an owner/admin and a plain
+//     not-enabled page for everyone else — which is exactly what `HrPageState` does
+//     with `isHrModuleOff`. `hr_my_context` deliberately keeps such an org in
+//     `employers` for its owner/admin for that reason. Swapping the user into a
+//     DIFFERENT employer here would hide the one door they came for.
+//
+//  B. **NO EMPLOYER IS EVER SUBSTITUTED IN SILENCE.** The re-resolve below is a real
+//     rescue — a multi-employer admin whose global active org is her personal
+//     workspace would otherwise land in an empty HR with no way in — but a rescue the
+//     user is not told about is indistinguishable from the silent-employer-switch
+//     defect this module's URL rules exist to prevent. So whenever the employer that
+//     OPENS is not the employer that was ASKED FOR, `substitution` is set, and
+//     `HrShell` states it on the page with the way back. Never drop that.
 
 "use client";
 
@@ -44,6 +63,28 @@ import type {
   HrMyContext,
 } from "../types";
 
+/**
+ * The employer that opened is NOT the employer that was asked for. Set only when
+ * that actually happened; `null` is the ordinary case.
+ *
+ * `askedRef` is what belongs in a `?org=` to get back to what they asked for —
+ * null when we could not open it at all and there is nothing honest to link to.
+ */
+export type HrEmployerSubstitution = {
+  /** The employer that was asked for, when we are allowed to name it. */
+  askedName: string | null;
+  /** A slug or uuid for the asked-for employer, for the way back. */
+  askedRef: string | null;
+  /**
+   * `module-off` — they asked for a real employer of theirs that has HR switched off.
+   * `unavailable` — the ref named no employer they can do HR in (worded so it does
+   * not disclose whether the organization exists — same law as `HrNoAccess`).
+   */
+  reason: "module-off" | "unavailable";
+  /** The employer actually opened. */
+  openedName: string;
+};
+
 export type HrContextValue = {
   /** Every employer this person can do HR in — including one whose module is OFF, when they can turn it on. */
   employers: HrEmployer[];
@@ -58,6 +99,11 @@ export type HrContextValue = {
    * has one (a readable, shareable door), otherwise the uuid.
    */
   orgRef: string | null;
+  /**
+   * Set when the employer that opened is not the one that was asked for. `HrShell`
+   * states it on the page — see law B at the top of this file. Never swap in silence.
+   */
+  substitution: HrEmployerSubstitution | null;
   /** True on the FIRST resolve only. A refresh keeps the last context on screen. */
   isLoading: boolean;
   error: HrDenied | HrFailed | null;
@@ -71,6 +117,7 @@ const EMPTY: HrContextValue = {
   persona: null,
   capabilities: [],
   orgRef: null,
+  substitution: null,
   isLoading: true,
   error: null,
   refresh: () => {},
@@ -95,6 +142,54 @@ function orgRefFor(
 }
 
 /**
+ * Law B's whole implementation: compare what was asked for with what opened, and
+ * describe the difference in the words the page will say. Returns null — the
+ * ordinary case — whenever the employer that opened IS the one that was asked for,
+ * and whenever nothing was asked for at all (SPEC-UI-IA rule 3's silent default for
+ * a person with exactly one HR employer stays silent, deliberately: nobody named
+ * anything else, so nothing was overridden).
+ */
+export function describeSubstitution({
+  orgParam,
+  activeOrgId,
+  askedEmployer,
+  resolved,
+}: {
+  orgParam: string | null;
+  activeOrgId: string | null;
+  askedEmployer: HrEmployer | null;
+  resolved: HrMyContext;
+}): HrEmployerSubstitution | null {
+  const opened = resolved.active;
+  if (!opened) return null;
+
+  // Nothing was named: no `?org=`, and no active-organization selection to override.
+  if (!orgParam && !activeOrgId) return null;
+
+  const askedId = askedEmployer?.organization_id ?? (orgParam ? null : activeOrgId);
+  if (askedId && askedId === opened.organization_id) return null;
+  // A `?org=` that resolved to an employer we DID open is handled by the line above;
+  // an active-org selection we could not even name (they have left it since) is not
+  // something to announce — there is no employer to point at and nothing was lost.
+  if (!orgParam && !askedEmployer) return null;
+
+  const openedName =
+    resolved.employers.find(
+      (e) => e.organization_id === opened.organization_id,
+    )?.name ?? "this employer";
+
+  return {
+    askedName: askedEmployer?.name ?? null,
+    askedRef: askedEmployer
+      ? askedEmployer.slug?.trim() || askedEmployer.organization_id
+      : null,
+    reason:
+      askedEmployer && !askedEmployer.module_enabled ? "module-off" : "unavailable",
+    openedName,
+  };
+}
+
+/**
  * Does the actual resolution. `<HrProvider>` is its only intended caller — every
  * other surface reads the result through `useHrContext()`.
  */
@@ -107,6 +202,8 @@ export function useHrContextResolver(
   const { activeOrgId } = useActiveOrganizationPicker();
 
   const [context, setContext] = useState<HrMyContext | null>(null);
+  const [substitution, setSubstitution] =
+    useState<HrEmployerSubstitution | null>(null);
   const [error, setError] = useState<HrDenied | HrFailed | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [reloadToken, setReloadToken] = useState(0);
@@ -154,20 +251,68 @@ export function useHrContextResolver(
           }
         }
 
-        // Rule 3, for the case the server could not apply it: we asked for an org
-        // that is not HR-reachable (the picker's org), so the server returned no
-        // active employer even though exactly one exists.
-        if (!resolved.active && resolved.employers.length === 1) {
-          const only = resolved.employers[0];
-          const third = await fetchHrContext(only.organization_id);
-          if (cancelled) return;
-          if (third.ok) resolved = third.data;
+        // ── Who was asked for, and did they get it? ─────────────────────────
+        // The URL's employer, resolved against the list the server just returned.
+        // A `?org=` that names nothing here is a ref this person cannot do HR in —
+        // we never learn (and never say) whether the organization exists.
+        const askedEmployer =
+          resolved.employers.find((e) =>
+            orgParam
+              ? e.organization_id === orgParam || e.slug === orgParam
+              : e.organization_id === activeOrgId,
+          ) ?? null;
+
+        // 🚨 LAW A — AN EXPLICIT `?org=` IS HONORED, MODULE ON OR OFF. When the URL
+        // named an employer we opened, we are DONE: a module-off employer renders the
+        // enable-door (SPEC-UI-IA §6 / R-L1 §D), which is the door they came for.
+        const urlHonored =
+          orgParam !== null &&
+          askedEmployer !== null &&
+          askedEmployer.organization_id === resolved.active?.organization_id;
+
+        // 🚨 SCOPE TO THE PERSON'S REAL HR EMPLOYER, OR AN ADMIN IS LOCKED OUT.
+        // `useHrPersona().can` reads `active.capabilities`, so if `active` is null OR resolved
+        // to an org where HR is OFF, every HR control is hidden — the inverse of a leak. This
+        // bit a real admin (Priya): her global `activeOrgId` was her personal workspace
+        // (module off), so `active` came back with an EMPTY capability set while she holds 21
+        // capabilities in her actual workplace. When exactly ONE of her employers has HR on,
+        // that is unambiguously her HR context — re-fetch for it. (The server applies the same
+        // default when asked with no org; this covers the case where the client asked for the
+        // wrong org.) Zero or many HR-enabled employers stays as-is — the picker decides.
+        //
+        // It runs ONLY when the URL did not already answer the question (law A).
+        const activeIsHrReachable = resolved.active?.module_enabled === true;
+        if (!urlHonored && !activeIsHrReachable) {
+          const hrEmployers = resolved.employers.filter((e) => e.module_enabled);
+          const target =
+            hrEmployers.length === 1
+              ? hrEmployers[0].organization_id
+              : !resolved.active && resolved.employers.length === 1
+                ? resolved.employers[0].organization_id
+                : null;
+          if (target && target !== resolved.active?.organization_id) {
+            const scoped = await fetchHrContext(target);
+            if (cancelled) return;
+            if (scoped.ok) resolved = scoped.data;
+          }
         }
 
         setContext(resolved);
+        // 🚨 LAW B — SAY IT OUT LOUD. Something was asked for (a `?org=`, or the
+        // user's own active-organization selection) and a DIFFERENT employer opened.
+        // Silence here is the silent-employer-switch defect wearing a helpful hat.
+        setSubstitution(
+          describeSubstitution({
+            orgParam,
+            activeOrgId: activeOrgId ?? null,
+            askedEmployer,
+            resolved,
+          }),
+        );
         setError(null);
       } else {
         setError(result);
+        setSubstitution(null);
       }
       setIsLoading(false);
     })();
@@ -187,7 +332,26 @@ export function useHrContextResolver(
     active,
     persona: active?.persona ?? null,
     capabilities: active?.capabilities ?? [],
-    orgRef: orgRefFor(employers, active),
+    /*
+      🚨 THE EMPLOYER TRAVELS FROM THE FIRST PAINT, NOT FROM HYDRATION.
+
+      `orgRefFor` reads the RESOLVED context, so it is null until `hr_my_context` answers. Every
+      `?org=`-carrying link built from this value therefore rendered bare for the first render and
+      only grew its employer once the fetch landed — measured on 2026-08-28 as
+      `413ms → /hr/tasks`, `801ms → /hr/tasks?org=zzz-throwaway-surface-test-org`. A click inside
+      that window drops the employer exactly as a hardcoded literal would, and lands the user in
+      whatever their active-org selection happens to name. A link that is only correct after
+      hydration is a race, not a fix.
+
+      `orgParam` is `?org=` read straight off `useSearchParams()` — present synchronously, on the
+      very first render, and it is by definition the employer this page was asked for. It is a
+      FALLBACK, never an override: the moment the context resolves, `orgRefFor` wins, so a server
+      substitution (law B) still corrects the value rather than being papered over. With no `?org=`
+      in the URL there is nothing to fall back to and this stays null, which is the honest answer —
+      the destination then resolves the employer the same way this page just did.
+    */
+    orgRef: orgRefFor(employers, active) ?? orgParam,
+    substitution,
     isLoading,
     error,
     refresh,

@@ -35,9 +35,9 @@ import {
   getDiffStructure,
   mergeFromDecisions,
   type DiffStructureItem,
-} from "./text/engine/hunks";
+} from "@ai-matrx/diff/text";
 import { GUTTER, LINE_BG } from "./text/diffColors";
-import type { TextDiffOptions } from "./text/engine/types";
+import type { TextDiffOptions } from "@ai-matrx/diff/text";
 
 type HunkStatus = "pending" | "applied" | "rejected";
 

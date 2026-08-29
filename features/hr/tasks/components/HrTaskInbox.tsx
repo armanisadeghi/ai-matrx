@@ -12,17 +12,32 @@ import { toast } from "@/lib/toast";
 import { HrRefusalNotice } from "@/features/hr/tasks/components/HrRefusalNotice";
 import { HrFailureResolveDialog } from "@/features/hr/tasks/components/HrFailureResolveDialog";
 import { HrTaskTable } from "@/features/hr/tasks/components/HrTaskTable";
+import { hrTaskHref, hrTasksHref } from "@/features/hr/routes";
+import {
+    HrDisclosureClaimed,
+    HrEmployerSubstitutionNotice,
+} from "@/features/hr/shared/HrStates";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 import { isScope } from "@/features/hr/tasks/envelope";
 import { useHrInbox } from "@/features/hr/tasks/hooks/useHrInbox";
 import { bulkDecide } from "@/features/hr/tasks/service";
 import { groupByUrgency, relativeDue, URGENCY_LABEL } from "@/features/hr/tasks/urgency";
+// The ONE place this platform words a failure class — shared with the pay-period health panel
+// rather than forked here (SPEC-UI-IA: a token is never a sentence).
+import { failureWords } from "@/features/hr/time/periods/workflowHealth";
 import type {
     HrBulkOutcome,
     HrInboxRow,
     HrInboxScope,
     HrRefusal,
 } from "@/features/hr/tasks/types";
-import { HR_DECISION_VERB, inboxRowLine, isRefusal } from "@/features/hr/tasks/types";
+import {
+    decidedRowLine,
+    HR_DECISION_PAST_LABEL,
+    HR_DECISION_VERB,
+    inboxRowLine,
+    isRefusal,
+} from "@/features/hr/tasks/types";
 
 const SCOPES: { key: HrInboxScope; label: string; hint: string }[] = [
     { key: "mine", label: "Mine", hint: "Waiting on you" },
@@ -78,6 +93,12 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
     const scope: HrInboxScope =
         scopeParam && isScope(scopeParam) ? scopeParam : initialScope;
     const flowKey = params.get("flow");
+    /*
+      The employer every door off this inbox has to keep. Five of the six `/hr/tasks…` hrefs on
+      this page were spelled by hand and dropped it; `setScope` below was the one that did not,
+      and only because it rebuilds the WHOLE query string rather than composing a new one.
+    */
+    const { orgRef } = useHrContext();
 
     const { inbox, refusal, error, loading, reload } = useHrInbox(scope, flowKey);
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -95,7 +116,14 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
         const query = new URLSearchParams(params.toString());
         query.set("scope", next);
         setSelectedIds([]);
-        startTransition(() => router.replace(`/hr/tasks?${query.toString()}`));
+        // hr-url-exempt: rebuilt from `useSearchParams()`, so every existing key — `org`
+        // first among them — is carried over verbatim. A builder call here would have to
+        // re-enumerate `flow` and anything a future filter adds, and would silently drop
+        // whatever it forgot. See `features/hr/__tests__/no-hand-built-hr-urls.test.ts`.
+        startTransition(() =>
+            // hr-url-exempt: the query-copy rationale is documented immediately above.
+            router.replace(`/hr/tasks?${query.toString()}`),
+        );
     }
 
     async function runBulk(intent: "approve" | "reject", reason?: string) {
@@ -167,6 +195,15 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
 
     return (
         <div className="flex h-full flex-col overflow-hidden">
+            {/*
+              🚨 THIS ROUTE HAS NO `HrShell`, SO IT OWES THE DISCLOSURE ITSELF.
+              `/hr/tasks` is a `PageHeader` route: nothing above it states which
+              employer opened, so a `?org=` that resolved to a different one would be
+              silent here — the defect `useHrContext` law B exists to prevent. The
+              notice renders null in the ordinary case; the claim stops the embedded
+              `HrDecisionPanel` below from repeating it.
+            */}
+            <HrEmployerSubstitutionNotice className="mx-4 mt-3 shrink-0" />
             <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
                 {SCOPES.map((option) => {
                     // §5.9: scopes are shown only where the persona has them.
@@ -188,7 +225,9 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                 })}
                 {flowKey ? (
                     <Button size="sm" variant="ghost" asChild>
-                        <Link href={`/hr/tasks?scope=${scope}`}>Clear “{flowKey}” filter</Link>
+                        <Link href={hrTasksHref(orgRef, { scope })}>
+                            Clear “{flowKey}” filter
+                        </Link>
                     </Button>
                 ) : null}
                 {inbox ? (
@@ -289,6 +328,9 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                             isLoading={loading}
                             selectedIds={selectedIds}
                             onSelectedIdsChange={setSelectedIds}
+                            // A decision taken in the row window must leave this queue, exactly
+                            // as one taken on the request's own page does.
+                            onRowDecided={() => void reload(true)}
                             emptyTitle="Nothing here"
                             bulkActions={(selected) => (
                                 <div className="flex items-center gap-2">
@@ -338,10 +380,13 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                     className="flex items-center justify-between gap-3 p-3 text-sm"
                                 >
                                     <Link
-                                        href={`/hr/tasks/${row.instance_id}?step=${row.step_id}`}
+                                        href={hrTaskHref(row.instance_id, orgRef, { step: row.step_id })}
                                         className="truncate font-medium hover:underline"
                                     >
-                                        {row.flow_key}
+                                        {/* The one section whose point is "this decides itself
+                                            unless you act" named the thing about to happen with a
+                                            machine key. Same label path as every other list. */}
+                                        {row.flow_label ?? row.flow_key}
                                     </Link>
                                     <span className="shrink-0 text-destructive">
                                         applies {relativeDue(row.timeout_at)}
@@ -361,20 +406,33 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                     >
                         <ul className="divide-y divide-border rounded-lg border border-border bg-card">
                             {inbox.failures_assigned_to_me.map((row) => (
-                                <li key={row.failure_id} className="flex items-center gap-3 p-3 text-sm">
-                                    <Link
-                                        href={`/hr/tasks/${row.instance_id}?failure=${row.failure_id}`}
-                                        className="truncate font-medium hover:underline"
-                                    >
-                                        {row.failure_class}
-                                    </Link>
-                                    <span className="text-muted-foreground">{row.state}</span>
+                                <li key={row.failure_id} className="flex items-start gap-3 p-3 text-sm">
+                                    {/* 🚨 A CLASS TOKEN NAMES A CATEGORY, NOT A THING. These rows
+                                        read `distinct_actor_required`, `unactionable_no_reach`,
+                                        `approver_ineligible` — three machine strings offered to a
+                                        manager as their to-do list. The request is named from the
+                                        door's label, and the class is worded by `failureWords`,
+                                        the ONE place this platform words a failure class (it is
+                                        also what the pay-period health panel reads). */}
+                                    <div className="min-w-0 flex-1">
+                                        <Link
+                                            href={hrTaskHref(row.instance_id, orgRef, { failure: row.failure_id })}
+                                            className="block truncate font-medium hover:underline"
+                                        >
+                                            {row.flow_label ?? row.flow_key ?? "This request"} —
+                                            could not finish
+                                        </Link>
+                                        <div className="truncate text-xs text-muted-foreground">
+                                            {failureWords(row.failure_class)}
+                                        </div>
+                                    </div>
+                                    <span className="shrink-0 text-muted-foreground">{row.state}</span>
                                     {/* A queue that lists what you cannot act on is a permanent
                                         reminder, not a queue. The terminal opens HERE as well as
                                         on the request, because the operator is already looking at
                                         the row. */}
                                     <Button
-                                        className="ml-auto shrink-0"
+                                        className="shrink-0"
                                         size="sm"
                                         variant="outline"
                                         onClick={() =>
@@ -420,7 +478,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                 <li key={row.instance_id} className="flex items-start gap-3 p-3 text-sm">
                                     <div className="min-w-0 flex-1">
                                         <Link
-                                            href={`/hr/tasks/${row.instance_id}`}
+                                            href={hrTaskHref(row.instance_id, orgRef)}
                                             className="block truncate font-medium hover:underline"
                                         >
                                             {/* Their own request, in the words the approver
@@ -446,16 +504,46 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                         title="Recently decided"
                         subtitle="Your own decisions, last 30 days"
                     >
+                        {/*
+                            🚨 A WALL OF VERBS IS NOT A HISTORY.
+                            This rendered `{row.decision}` as the whole link text, so a manager's
+                            own thirty days was ~40 consecutive rows reading "approved" and a
+                            timestamp — the machine verb, no employee, no kind of request, and the
+                            link went to an instance the row never named. An employee's own read
+                            "attested" forty times over.
+
+                            Fixed the way this lane has now fixed it twice before — the
+                            bulk-decide outcome panel and the attestation panel: the DOOR names
+                            the thing, through `hr._wf_display`, which is also the thing that
+                            decides whether this reader may be told the subject's name. Nothing is
+                            joined in the browser, so nothing is disclosed that the door did not
+                            already decide to disclose. `decidedRowLine` is `inboxRowLine`'s
+                            counterpart, and deliberately identical in shape, so a request cannot
+                            be worded one way in the queue and another in the history.
+                        */}
                         <ul className="divide-y divide-border rounded-lg border border-border bg-card">
                             {inbox.recently_decided.map((row) => (
-                                <li key={row.decision_id} className="flex items-center gap-3 p-3 text-sm">
-                                    <Link
-                                        href={`/hr/tasks/${row.instance_id}`}
-                                        className="truncate font-medium hover:underline"
-                                    >
-                                        {row.decision}
-                                    </Link>
-                                    <span className="text-muted-foreground">
+                                <li
+                                    key={row.decision_id}
+                                    className="flex items-start gap-3 p-3 text-sm"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <Link
+                                            href={hrTaskHref(row.instance_id, orgRef)}
+                                            className="block truncate font-medium hover:underline"
+                                        >
+                                            {decidedRowLine(row)}
+                                        </Link>
+                                        <div className="truncate text-xs text-muted-foreground">
+                                            {/* The verb is a label on the row, not the row's
+                                                name. The step it closed says WHICH decision this
+                                                was, on a flow with several. */}
+                                            {HR_DECISION_PAST_LABEL[row.decision] ?? row.decision}
+                                            {row.step_label ? ` · ${row.step_label}` : ""}
+                                            {row.reason ? ` · ${row.reason}` : ""}
+                                        </div>
+                                    </div>
+                                    <span className="shrink-0 text-muted-foreground">
                                         {row.decided_at
                                             ? new Date(row.decided_at).toLocaleString()
                                             : ""}

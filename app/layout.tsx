@@ -1,5 +1,7 @@
 // app/layout.tsx
 import "./globals.css";
+// Tap-button geometry (the .matrx-tap-* system) ships in the package.
+import "@ai-matrx/tap-target/styles.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";

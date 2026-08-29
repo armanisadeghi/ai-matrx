@@ -22,7 +22,7 @@ import {
 import type { AgentVersionHistoryItem } from "@/features/agents/redux/agent-definition/thunks";
 import { useSmartVersionFetch } from "@/features/agents/hooks/useSmartVersionFetch";
 import type { EnrichedVersion } from "@/features/agents/hooks/useSmartVersionFetch";
-import { formatChangeType } from "@/components/diff/engine/diff-utils";
+import { formatChangeType } from "@ai-matrx/diff/structural";
 import { VersionIdBadge } from "./VersionIdBadge";
 import {
   MOBILE_TABLE,

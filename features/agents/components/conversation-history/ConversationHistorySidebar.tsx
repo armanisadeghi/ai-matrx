@@ -88,7 +88,7 @@ import { toast } from "@/lib/toast";
 import {
   LoadingTapButton,
   RefreshCwTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 
 export interface ConversationHistorySidebarProps {
   /** Unique scope key (same across mounts that should share state). */

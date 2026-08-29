@@ -100,6 +100,22 @@ export interface MediaRef {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Metadata a caller may already know when all it has is a durable file id.
+ * These values seed the canonical Redux record before field hydration runs;
+ * omitted keys remain genuinely unloaded and are fetched on demand.
+ */
+export interface FileIdentityHint {
+  fileName?: string;
+  mimeType?: string | null;
+  fileSize?: number | null;
+  visibility?: Visibility;
+  /** Permanent public delivery only. Never place a signed URL here. */
+  publicUrl?: string | null;
+  /** Permanent public CDN delivery only. Never place a signed URL here. */
+  cdnUrl?: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // 2. DB row types — straight from Supabase-generated Database type
 // ---------------------------------------------------------------------------

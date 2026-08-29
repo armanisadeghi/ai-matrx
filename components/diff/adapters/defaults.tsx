@@ -2,8 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import type { FieldAdapter, FieldDiffProps } from "./types";
-import type { DiffNode } from "../engine/types";
-import { formatValue, filterChanges } from "../engine/diff-utils";
+import type { DiffNode } from "@ai-matrx/diff/structural";
+import { formatValue, filterChanges } from "@ai-matrx/diff/structural";
 import { InlineTextDiff } from "./InlineTextDiff";
 
 /* ------------------------------------------------------------------ */

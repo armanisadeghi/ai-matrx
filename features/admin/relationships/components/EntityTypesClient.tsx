@@ -38,7 +38,7 @@ import {
   enumUrlCodec,
   stringUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 type EntityTypeFacet = "all" | "active" | "inactive";
 

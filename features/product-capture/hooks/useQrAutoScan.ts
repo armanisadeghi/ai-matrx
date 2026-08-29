@@ -15,7 +15,7 @@
 
 import { useEffect, useRef } from "react";
 
-import { decodeQrFromElement } from "@/lib/qr/decode";
+import { decodeQrFromElement } from "@ai-matrx/kit/qr";
 
 const SCAN_INTERVAL_MS = 250;
 const QR_REPEAT_COOLDOWN_MS = 4000;

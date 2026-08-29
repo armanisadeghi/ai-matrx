@@ -68,7 +68,6 @@ import {
   selectCollapsedSettingsColumnCount,
   selectIsSubmittingAllSettings,
   selectLockedAgentId,
-  selectLockedSetup,
   selectSettingsColumns,
 } from "../redux/selectors";
 
@@ -84,7 +83,6 @@ export function SettingsToolbar({
   const dispatch = useAppDispatch();
 
   const lockedAgentId = useAppSelector(selectLockedAgentId);
-  const lockedSetup = useAppSelector(selectLockedSetup);
   const activeSetId = useAppSelector(selectActiveSettingsSetId);
   const activeSetName = useAppSelector(selectActiveSettingsSetName);
   const isSubmittingAll = useAppSelector(selectIsSubmittingAllSettings);
@@ -101,10 +99,6 @@ export function SettingsToolbar({
   const [resetKeepInputsConfirm, setResetKeepInputsConfirm] = useState(false);
 
   const handleSubmitAll = async () => {
-    // Preflight: walk the locked setup and surface SPECIFIC missing
-    // pieces rather than a generic "fill it in" message. The locked
-    // input is a single page-level form so the user can fix it inline
-    // immediately — no dialog needed.
     if (!lockedAgentId) {
       toast.error("Pick an agent in the Locked input section first.");
       return;
@@ -114,22 +108,6 @@ export function SettingsToolbar({
         "Add at least one variant. Click the 'Add variant' button to start.",
       );
       return;
-    }
-    if (!lockedSetup.userMessage.trim()) {
-      // Variables may be filled but no message — the agent still needs
-      // something to act on for most use cases. Allow it with a warning
-      // if at least one variable is set; otherwise hard-block.
-      const hasVars = Object.values(lockedSetup.variables).some((v) => {
-        if (v == null) return false;
-        if (typeof v === "string") return v.trim().length > 0;
-        return true;
-      });
-      if (!hasVars) {
-        toast.error(
-          "Add a user message in the Locked input section before submitting.",
-        );
-        return;
-      }
     }
     try {
       maybeShuffleForBlind(columns, setSettingsColumns);

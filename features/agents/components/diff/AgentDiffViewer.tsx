@@ -13,7 +13,7 @@ import {
 import type {
   DiffTemporalMetadata,
   ViewMode,
-} from "@/components/diff/engine/types";
+} from "@ai-matrx/diff/structural";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { useDiffEnrichment } from "@/features/agents/hooks/useDiffEnrichment";
 import { compareAgentDefinitions } from "./compare-agent-definitions";

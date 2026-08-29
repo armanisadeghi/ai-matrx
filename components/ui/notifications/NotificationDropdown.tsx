@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { BellTapButton, BellRingTapButton } from '@/components/icons/tap-buttons';
+import { BellTapButton, BellRingTapButton } from '@ai-matrx/tap-target/buttons';
 import { Notification, NotificationDropdownProps } from '@/types/notification.types';
 import NotificationItem from './NotificationItem';
 import { cn } from '@/lib/utils';

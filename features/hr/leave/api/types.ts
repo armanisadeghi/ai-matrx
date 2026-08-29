@@ -70,7 +70,30 @@ export interface LeaveFigures {
   usedTaken: number | null;
   approvedUpcoming: number | null;
   pendingApproval: number | null;
+  /**
+   * §5's ACCOUNTING IDENTITY: `latest balance_after − Pending approval`. §17 asserts it, and it
+   * goes negative the moment pending exceeds the bank.
+   *
+   * 🚨 THIS IS NOT WHAT THE PANEL RENDERS UNDER "What you can book right now" — see
+   * {@link bookableNow}. Round 42 found `Available −16 h` on the employee's own panel, under that
+   * exact caption, for a request `hr.leave_wf_validate` had CORRECTLY accepted against the
+   * projected balance at its start date. The number was right as accounting and impossible as a
+   * bookable quantity.
+   */
   available: number | null;
+  /**
+   * `greatest(0, ledger_balance − pending_approval)` — the quantity the caption actually names,
+   * and the one the panel renders. A bookable quantity is never negative.
+   */
+  bookableNow: number | null;
+  /**
+   * `greatest(0, pending_approval − ledger_balance)` — the hours already asked for that are riding
+   * on time not yet earned. Non-zero is what makes `hr._leave_sentence` explain the clamp instead
+   * of leaving a silently-floored number on screen.
+   */
+  pendingBeyondBalance: number | null;
+  /** The latest `starts_on` over requests in `submitted` — the date the overhang is spent by. */
+  pendingLatestStart: string | null;
 
   /** Latest `balance_after` at `as_of`. The identity's right-hand side. */
   ledgerBalance: number | null;
@@ -237,6 +260,18 @@ export interface LeaveRequestPreview {
   breakdownSentence: string | null;
   figures: LeaveFigures;
   projection: LeaveProjection | null;
+  /**
+   * 🚨 WHAT THIS REQUEST IS BEING SPENT AGAINST, IN WORDS, BEFORE THE BUTTON.
+   *
+   * `hr.leave_wf_validate` decides affordability on `hr.leave_project_balance(…, starts_on)`, and
+   * `hr.leave_request_preview` has always made that identical call. Until round 42 the form
+   * rendered only `projection.projectionNote`, which is non-null ONLY for policies that do not
+   * project at all — so on every accruing policy the number the engine was about to decide on was
+   * fetched and thrown away, and the employee pressed Send against a current balance the decision
+   * would never use. Server-composed (§5: the sentence is never assembled per screen), and it
+   * carries the projected figure WITH the date it assumes.
+   */
+  projectionSentence: string | null;
   policyName: string | null;
   incrementMinutes: number | null;
   mandatedUses: string[];
@@ -270,6 +305,22 @@ export type LeaveCancelOutcome = "withdrawn" | "cancellation_requested";
 export interface LeaveCancelResult {
   outcome: LeaveCancelOutcome | string | null;
   workflowInstanceId: string | null;
+}
+
+/**
+ * `hr_leave_request_discard` — a DRAFT only, and it is not a cancellation.
+ *
+ * A draft was never filed, so there is nothing to reverse: no ledger entry, no encumbered
+ * hours, no approver to tell. The server soft-deletes the row and says so — `balanceMoved` is
+ * its own assertion that no figure changed, and `workflowInstanceKept` records that the
+ * instance (evidence, never deleted) is still there. Neither is re-derived here.
+ */
+export interface LeaveDiscardResult {
+  outcome: "discarded" | string | null;
+  leaveRequestId: string | null;
+  workflowInstanceId: string | null;
+  workflowInstanceKept: boolean;
+  balanceMoved: boolean;
 }
 
 // ── hr.leave_ledger_view (§12) ───────────────────────────────────────────────

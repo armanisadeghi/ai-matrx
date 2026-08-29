@@ -50,7 +50,7 @@ import {
   enumUrlCodec,
   stringUrlCodec,
   useUrlState,
-} from "@/lib/url-state/useUrlState";
+} from "@ai-matrx/kit/url-state";
 
 export type ReachabilityMode = "contents" | "containers";
 

@@ -17,7 +17,7 @@ import { TaskCopyForAiButton } from "@/features/tasks/components/TaskCopyForAiBu
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ChevronRight, Loader2 } from "lucide-react";
 
 /**

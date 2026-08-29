@@ -32,7 +32,7 @@ import { supabase } from "@/utils/supabase/client";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { fileIdToMediaRef } from "@/features/files/redux/converters";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 /**
  * Accept Invitation Page

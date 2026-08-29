@@ -21,6 +21,9 @@
  *  3. **NULL IS WITHHELD, NEVER `0`.** A figure the server did not send renders dark with the
  *     reason. `0.0` hours available and "we were not told" are different facts and an
  *     employee acts differently on each.
+ *  3a. **A BOOKABLE QUANTITY IS NEVER NEGATIVE.** The "Available" tile renders
+ *     `figures.bookableNow`, not `figures.available` — see the comment on the tile itself. The
+ *     accounting identity keeps its own key; the caption gets the number it actually names.
  *  4. **EVERY FIGURE IS A DOOR** to the ledger rows that produced it (§12) — and a door that
  *     cannot be built exactly is not built at all (see `PENDING` below).
  */
@@ -215,10 +218,35 @@ export function LeaveBalanceBlock({
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+          {/*
+            🚨 THE CAPTION AND THE NUMBER NOW ANSWER THE SAME QUESTION (round 42, D3).
+
+            This tile used to render `figures.available` — §5's accounting identity
+            `latest balance_after − Pending approval` — under the caption *"What you can book right
+            now."* Those are two different questions, and once pending exceeded the bank the answer
+            went negative: an employee whose 40-hour September request had just been ACCEPTED read
+            **Available −16 h** in red. The engine was not wrong. `hr.leave_wf_validate` decides on
+            `hr.leave_project_balance(…, starts_on)`, so 40 hours were genuinely affordable by
+            September; the panel was answering on a current basis and calling it the bookable one.
+
+            `bookable_now` is `greatest(0, ledger_balance − pending_approval)` — computed in
+            `hr.leave_figures` beside the identity it is derived from, never re-derived here. And a
+            clamp on its own would be a second lie, so it never ships alone: `pending_beyond_balance`
+            drives BOTH the sub-caption below and `hr._leave_sentence`'s overhang branch, which
+            quotes the engine's own projected figure and the date it assumes (§5: a projected figure
+            is never shown without the word and the date).
+
+            `available` is untouched and still the ledger's truth — it is what the §12 door behind
+            this tile reconciles against, and §17 asserts it.
+          */}
           <Figure
             label="Available"
-            value={figures.available}
-            definition="What you can book right now."
+            value={figures.bookableNow}
+            definition={
+              (figures.pendingBeyondBalance ?? 0) > 0
+                ? "What you can book right now. The rest of what you have asked for is booked against time you have not earned yet."
+                : "What you can book right now."
+            }
             href={ledgerHref}
             emphasis
           />

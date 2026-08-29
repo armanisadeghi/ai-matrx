@@ -21,6 +21,7 @@ import { GenericStructuredView } from "@ai-matrx/content-ir-react";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";
 import { ContentIrHostBoundary } from "@/features/content-ir/host/ContentIrHostBoundary";
 import { readIrRouteMarker } from "@/features/content-ir/react/kind-route";
+import { collectKindProblems } from "@/features/content-ir/react/kind-problems";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { reportKindComponentIncident } from "@/features/content-ir/react/db-component/kindComponentIncident";
 import { KindFixItBar } from "@/features/content-ir/react/fixit/KindFixItBar";
@@ -87,11 +88,19 @@ const GenericStructuredBlock: React.FC<GenericStructuredBlockProps> = (
     envelope?.root.kind && envelope.root.status === "complete"
       ? envelope.root.kind
       : null;
+  // THE ERRORS TAB (Arman, 2026-08-29): everything the parser and the route
+  // recorded about this value being a broken/unroutable kind instance,
+  // surfaced in-band. A kind on this floor is never anonymous again.
+  const problems = collectKindProblems(
+    envelope,
+    readIrRouteMarker(props.metadata),
+  );
   return (
     <ContentIrHostBoundary>
       <StructuredValueTabs
         value={value}
         raw={props.content}
+        problems={problems}
         header={
           settledKind ? (
             <KindFixItBar kind={settledKind} value={value} />

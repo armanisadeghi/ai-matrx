@@ -33,7 +33,7 @@ import {
   makeSelectScope,
   makeSelectScopeType,
 } from "@/features/scopes/redux/selectors/tree";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { DynamicIcon } from "@ai-matrx/icons";
 import { cn } from "@/utils/cn";
 
 interface ActiveScopeChipsProps {

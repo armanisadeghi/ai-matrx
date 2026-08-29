@@ -24,7 +24,7 @@ import React, {
   Suspense,
   useMemo,
 } from "react";
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
   ThumbsUpTapButton,
   ThumbsDownTapButton,
@@ -32,7 +32,7 @@ import {
   CheckTapButton,
   PencilTapButton,
   MoreHorizontalTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { StreamingSpeakerButton } from "@/features/tts/components/StreamingSpeakerButton";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";

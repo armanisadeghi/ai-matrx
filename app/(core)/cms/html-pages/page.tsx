@@ -9,7 +9,7 @@ import { CmsHubHeader } from "@/features/cms/components/CmsHubHeader";
 import {
   LoadingTapButton,
   PlusTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {

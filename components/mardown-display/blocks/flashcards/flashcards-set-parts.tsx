@@ -11,7 +11,7 @@ import {
   Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { WrenchTapButton } from "@/components/icons/tap-buttons";
+import { WrenchTapButton } from "@ai-matrx/tap-target/buttons";
 import { cn } from "@/styles/themes/utils";
 import FlashcardItem from "./FlashcardItem";
 import {

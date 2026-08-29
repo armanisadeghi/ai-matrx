@@ -3,7 +3,7 @@
 import {
   PanelLeftTapButton,
   MenuTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { TasksAssistStrip } from "@/features/tasks/components/TasksAssistStrip";
 import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";

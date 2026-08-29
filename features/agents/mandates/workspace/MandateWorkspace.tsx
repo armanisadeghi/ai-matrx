@@ -17,6 +17,9 @@
 //   §3 Organization context — one line, collapsed. This surface is PERSONAL;
 //      org editing lives on the org route.
 //   §4 Your override — the stepwise flow (OverrideFlow).
+// Plus: RUN THIS JOB — run the mandate you are looking at, agent holder or
+// workflow holder alike (super-admin gated; the server endpoint is
+// `require_super_admin`).
 //
 // No prose paragraphs. Sections state facts; the data does the talking.
 
@@ -46,7 +49,15 @@ import { useMandateGoal } from "../useMandateGoal";
 import { MandateNotesPanel } from "../components/MandateNotesPanel";
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
 import { splitMandateKey } from "../mandate-key";
+import {
+  agentHolderOfBinding,
+  holderOfMandate,
+  isFloatingBinding,
+  isFloatingMandate,
+} from "@/lib/supabase/mandateStorage";
 import { OverrideFlow, type WorkspacePrincipal } from "./OverrideFlow";
+import { RunThisJobSection } from "./RunThisJobSection";
+import { Section } from "./Section";
 import {
   useMandateWorkspaceData,
   type MandateBindingRowDb,
@@ -78,8 +89,10 @@ function resolveForPrincipal(
   orgIds: ReadonlySet<string>,
   principal: WorkspacePrincipal,
 ) {
-  const swapping = (b: MandateBindingRowDb) =>
-    b.is_enabled && (b.agent_id !== null || b.agent_version_id !== null);
+  const swapping = (b: MandateBindingRowDb) => {
+    const holder = agentHolderOfBinding(b);
+    return b.is_enabled && (holder.holderId !== null || holder.versionId !== null);
+  };
   const userBinding =
     principal.kind === "org"
       ? null
@@ -105,9 +118,18 @@ function resolveForPrincipal(
       ? "org"
       : "system";
 
-  const versionId = winner?.agent_version_id ?? (winner ? null : data.mandate.default_agent_version_id);
-  const agentIdRaw = winner?.agent_id ?? (winner ? null : data.mandate.default_agent_id);
-  const useLatest = winner ? winner.use_latest === true : data.mandate.use_latest === true;
+  // The WINNING layer answers alone: a binding that wins supplies its own
+  // Holder and its own float/pin state, and the mandate default is consulted
+  // only when no binding won at all.
+  const systemHolder = holderOfMandate(data.mandate);
+  const winnerHolder = winner ? agentHolderOfBinding(winner) : null;
+  const versionId = winnerHolder
+    ? winnerHolder.versionId
+    : systemHolder.versionId;
+  const agentIdRaw = winnerHolder ? winnerHolder.holderId : systemHolder.holderId;
+  const useLatest = winner
+    ? isFloatingBinding(winner)
+    : isFloatingMandate(data.mandate);
 
   const version = versionId ? (data.versionsById[versionId] ?? null) : null;
   const agentId = version?.agentId ?? agentIdRaw;
@@ -187,6 +209,11 @@ export function MandateWorkspace({
 
         <JobSection data={data} />
         <FulfillmentSection data={data} resolution={resolution} onChanged={refresh} />
+
+        {/* Run it — the workspace's own run affordance, super-admin gated
+            (the server endpoint is require_super_admin) and identical in both
+            hosts. Renders nothing for everyone else. */}
+        <RunThisJobSection data={data} />
         {principal.kind === "user" ? (
           <OrgOverridesDisclosure
             resolution={resolution}
@@ -217,32 +244,6 @@ export function MandateWorkspace({
         />
       </div>
     </div>
-  );
-}
-
-// ── Section chrome (ShortcutEditorNext anatomy — eyebrow title, calm body) ──
-
-function Section({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="space-y-2">
-      <div className="flex items-baseline gap-2">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-          {title}
-        </h3>
-        {hint ? (
-          <span className="text-[11px] text-muted-foreground/70">{hint}</span>
-        ) : null}
-      </div>
-      {children}
-    </section>
   );
 }
 
@@ -445,8 +446,9 @@ function FulfillmentSection({
               onClick={() => {
                 void copyAndOpen(
                   {
-                    defaultAgentId: data.mandate.default_agent_id,
-                    defaultAgentVersionId: data.mandate.default_agent_version_id,
+                    defaultAgentId: holderOfMandate(data.mandate).holderId,
+                    defaultAgentVersionId: holderOfMandate(data.mandate)
+                      .versionId,
                   },
                   { connect: () => onChanged() },
                 );
@@ -514,9 +516,10 @@ function OrgOverridesDisclosure({
       {open ? (
         <div className="space-y-2 border-t border-border/40 px-3 py-2.5">
           {orgBindings.map((b) => {
-            const agentId = b.agent_version_id
+            const bindingHolder = agentHolderOfBinding(b);
+            const agentId = bindingHolder.versionId
               ? null // version identity resolves via the workspace load when needed
-              : b.agent_id;
+              : bindingHolder.holderId;
             const agent = agentId ? agentsById[agentId] : null;
             return (
               <div key={b.id} className="flex flex-wrap items-center gap-2 text-[12px]">

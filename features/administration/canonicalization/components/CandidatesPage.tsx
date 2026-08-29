@@ -46,7 +46,7 @@ import {
   STALE_REGISTRY_TABLE_COPY,
   UNREGISTERED_CANDIDATES_TABLE_COPY,
 } from "../utils/aiExport";
-import { enumUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
+import { enumUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 
 type CandidateView = "m2m" | "unregistered" | "stale";
 

@@ -33,6 +33,7 @@ import {
   type MandateCodeTruth,
   type MandateDefinitionRow,
 } from "./service";
+import { contractOfMandate } from "@/lib/supabase/mandateStorage";
 
 export interface RebindRequest {
   /** The agent to bind. */
@@ -86,10 +87,18 @@ export function useGuardedRebind({
     async (request: RebindRequest) => {
       setSaving(true);
       try {
+        // THE REBIND WRITE. An admin rebind always names an AGENT Holder —
+        // this console binds agents, and the workflow/orchestra Holder path is
+        // the binding editor, not the mandate default. `useLatest` decides
+        // whether the version pin is stored or cleared; the storage router
+        // turns that into `use_latest` or a NULL version id per schema.
         await updateMandateDefinition(mandate.id, {
-          default_agent_id: request.agentId,
-          default_agent_version_id: request.versionId ?? null,
-          use_latest: request.useLatest ?? true,
+          holder: {
+            holderType: "agent",
+            holderId: request.agentId,
+            versionId: request.versionId ?? null,
+            useLatest: request.useLatest ?? true,
+          },
         });
         toast.success(request.successMessage);
         setPending(null);
@@ -135,7 +144,8 @@ export function useGuardedRebind({
         const impact = computeRebindImpact({
           currentVariables,
           candidateVariables,
-          contractRequired: parseMandateContract(mandate.contract).requiredVariables,
+          contractRequired: parseMandateContract(contractOfMandate(mandate))
+            .requiredVariables,
           codeSuppliedVariables: codeTruth?.code_variables,
         });
         if (impact.clean && !impact.indeterminate) {
@@ -147,7 +157,7 @@ export function useGuardedRebind({
         setChecking(false);
       }
     },
-    [codeTruth?.code_variables, currentAgentId, dispatch, mandate.contract, store, write],
+    [codeTruth?.code_variables, currentAgentId, dispatch, mandate, store, write],
   );
 
   const dialog = pending ? (

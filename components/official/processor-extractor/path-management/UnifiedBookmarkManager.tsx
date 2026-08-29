@@ -31,7 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { getConfigEntry, getConfigSelectOptions } from "@/components/mardown-display/markdown-classification/processors/json-config-system/config-registry";
-import { filterAndSortBySearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 
 interface UnifiedBookmarkManagerProps {
   onJumpToBookmark?: (bookmark: Bookmark) => void;

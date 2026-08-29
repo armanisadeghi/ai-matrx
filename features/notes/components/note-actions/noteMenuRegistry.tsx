@@ -43,7 +43,7 @@ import {
 } from "../../redux/thunks";
 import { isNoteContentEmpty } from "../../utils/noteUtils";
 import { downloadNoteAsMarkdown } from "../../utils/exportNotesMarkdown";
-import { confirm } from "@/components/dialogs/confirm/confirmDialogOpener";
+import { confirm } from "@ai-matrx/kit/confirm";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 
 export interface NoteMenuContext {

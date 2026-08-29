@@ -1,5 +1,5 @@
 import { Clock3, Loader2 } from "lucide-react";
-import type { DiffChangeMoment, DiffTemporalMetadata } from "../engine/types";
+import type { DiffChangeMoment, DiffTemporalMetadata } from "@ai-matrx/diff/structural";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
 
 function ChangeMoment({ moment }: { moment: DiffChangeMoment | undefined }) {

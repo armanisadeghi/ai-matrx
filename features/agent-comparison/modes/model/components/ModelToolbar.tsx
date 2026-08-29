@@ -55,7 +55,6 @@ import {
   selectCollapsedModelColumnCount,
   selectIsSubmittingAllModel,
   selectLockedAgentId,
-  selectModelHasDraftContent,
   selectModelColumns,
 } from "../redux/selectors";
 
@@ -68,7 +67,6 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
   const dispatch = useAppDispatch();
 
   const lockedAgentId = useAppSelector(selectLockedAgentId);
-  const hasDraftContent = useAppSelector(selectModelHasDraftContent);
   const activeSetId = useAppSelector(selectActiveModelSetId);
   const activeSetName = useAppSelector(selectActiveModelSetName);
   const isSubmittingAll = useAppSelector(selectIsSubmittingAllModel);
@@ -92,12 +90,6 @@ export function ModelToolbar({ runsWindowOpen, onToggleRunsWindow }: Props) {
     if (columns.length === 0) {
       toast.error(
         "Add at least one model variant. Click 'Add model' to start.",
-      );
-      return;
-    }
-    if (!hasDraftContent) {
-      toast.error(
-        "Add a message, variable value, or attachment before submitting.",
       );
       return;
     }

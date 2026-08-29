@@ -31,7 +31,7 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { extractErrorMessage } from "@/utils/errors";
 import { cn } from "@/lib/utils";
 import { useNotes } from "@/features/notes/hooks/useNotes";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import type { ResolveKind } from "../constants";
 import { useSourceResolvers } from "../useSourceResolvers";
 

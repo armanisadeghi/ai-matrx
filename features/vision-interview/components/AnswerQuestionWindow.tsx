@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
-import { useDurableDraft } from "@/hooks/useDurableDraft";
+import { useDurableDraft } from "@ai-matrx/kit/drafts";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {

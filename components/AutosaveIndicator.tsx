@@ -8,7 +8,7 @@
 "use client";
 
 import { Check, Loader2, CircleDot, AlertCircle } from "lucide-react";
-import type { AutosaveStatus } from "@/hooks/useAutosave";
+import type { AutosaveStatus } from "@ai-matrx/kit/autosave";
 import { cn } from "@/lib/utils";
 
 export function AutosaveIndicator({

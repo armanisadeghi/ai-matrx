@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Compass } from "lucide-react";
 import ShellIcon from "@/features/shell/components/ShellIcon";
-import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
+import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
 import { cn } from "@/lib/utils";
 import { PinButton } from "@/components/favorites/PinButton";

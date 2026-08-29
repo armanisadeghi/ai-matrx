@@ -24,14 +24,14 @@ import {
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import {
   useOpenCuratedIconPickerWindow,
   type CuratedIconPickerHandle,
 } from "@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow";
 import type { UserListItem } from "@/features/user-lists/types";
 import { useStructuredLists, type PicklistSummary } from "./useStructuredLists";
-import { idMatchesQuery } from "@/utils/search-scoring";
+import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 
 interface StructuredListManagerV2Props {
   /** Pin to a specific list and hide the switcher (e.g. in a modal). */

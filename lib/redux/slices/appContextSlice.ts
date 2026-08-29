@@ -475,7 +475,7 @@ export const appContextPolicy = definePolicy<AppContextState>({
       // load and paint before spending network/CPU on memberships and the
       // default-org preference. Stale/manual refreshes pass through instantly
       // once the session's one-time idle gate has completed.
-      const { whenPageIdle } = await import("@/utils/idle-scheduler");
+      const { whenPageIdle } = await import("@ai-matrx/kit/idle-scheduler");
       if (!(await whenPageIdle(signal))) return null;
       const { resolveActiveOrgContext } = await import(
         "@/lib/organizations/resolveActiveOrgContext"

@@ -24,6 +24,17 @@
  *
  * 🚨 **THE SCOPE LIVES IN THE URL**, so a scoped register is linkable, bookmarkable and shareable
  * with the person who has to act on it — the same property `hrPunchesHref` already relies on.
+ *
+ * 🚨 **`?org=` IS AN ANSWER, AND THIS CONTROL MUST NOT RE-ASK IT.**
+ * Arriving at `/hr/time/punches?org=<employer>` used to read *"This register has no scope yet.
+ * Choose a person, or an employer"* above a list of every employer — telling somebody to choose an
+ * employer they had already named in the URL. The employer and the SUBJECT are two different
+ * questions: `?org=` settles which employer, `?employment=` / `?scope=org` settle whose punches.
+ * Once `?org=` is present only the second question is open, and only the second is asked.
+ *
+ * The employer in the URL is never overridden here, and `scope=org` is never assumed from it: an
+ * employer-wide register is a large, separately-gated read, so it stays something a person asks
+ * for. What changed is that asking for it no longer means re-picking the employer.
  */
 
 import { useState } from "react";
@@ -75,11 +86,24 @@ export function PunchRegisterScopePicker({
     query.delete("scope");
     if (next.employment) query.set("employment", next.employment);
     if (next.scope) query.set("scope", next.scope);
+    // hr-url-exempt: `query` starts as a COPY of the current search params, so `org`
+    // survives untouched — this rebuild preserves the employer rather than dropping it.
+    // A builder call here would have to re-list every filter this picker does not own.
+    // See `features/hr/__tests__/no-hand-built-hr-urls.test.ts`.
+    // hr-url-exempt: the query-copy rationale is documented immediately above.
     router.push(`/hr/time/punches?${query.toString()}`);
     setOpen(false);
   }
 
+  /*
+   * The employer `?org=` resolved to. `useHrContext` applies SPEC-UI-IA §1 rule 1, so when the URL
+   * carries an employer this IS that employer — which is exactly why this control may state it
+   * rather than ask for it.
+   */
   const activeEmployer = employers.find((e) => e.organization_id === active?.organization_id);
+  const orderedEmployers = activeEmployer
+    ? [activeEmployer, ...employers.filter((e) => e !== activeEmployer)]
+    : employers;
 
   return (
     <div className="rounded-lg border border-border bg-card">
@@ -101,8 +125,18 @@ export function PunchRegisterScopePicker({
               </span>
               .
             </>
+          ) : activeEmployer ? (
+            /*
+             * THE EMPLOYER IS ALREADY SETTLED — by `?org=` or by the context it resolved to — so
+             * it is STATED, not asked for. Only the subject is still open.
+             */
+            <>
+              This register is set to{" "}
+              <span className="font-medium text-foreground">{activeEmployer.name}</span>. Choose
+              whose punches to show.
+            </>
           ) : (
-            // The server's instruction, answered by the control directly below it.
+            // No employer resolved at all: then it genuinely is both questions.
             <>This register has no scope yet. Choose a person, or an employer.</>
           )}
         </p>
@@ -146,7 +180,7 @@ export function PunchRegisterScopePicker({
           <div>
             <div className="mb-2 flex items-center gap-1.5 text-[12px] font-medium text-foreground">
               <Building2 className="h-3.5 w-3.5" aria-hidden />
-              Everyone at one employer
+              {activeEmployer ? "Everyone here" : "Everyone at one employer"}
             </div>
             {employers.length === 0 ? (
               <p className="text-[12px] text-muted-foreground">
@@ -154,26 +188,42 @@ export function PunchRegisterScopePicker({
               </p>
             ) : (
               <ul className="space-y-1">
-                {employers.map((employer) => (
-                  <li key={employer.organization_id}>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="w-full justify-start"
-                      onClick={() => {
-                        const query = new URLSearchParams(params?.toString() ?? "");
-                        query.delete("employment");
-                        query.set("org", employer.slug ?? employer.organization_id);
-                        query.set("scope", "org");
-                        router.push(`/hr/time/punches?${query.toString()}`);
-                        setOpen(false);
-                      }}
-                    >
-                      {employer.name}
-                    </Button>
-                  </li>
-                ))}
+                {/*
+                  🚨 THE EMPLOYER ALREADY IN THE URL COMES FIRST, AS THE PRIMARY ACTION.
+                  It is not one option among several: `?org=` already named it, and re-listing it
+                  level with the others is what made this control read as "you have not chosen an
+                  employer" to somebody who had. The rest stay reachable — an employer-wide
+                  register IS one of the doors this page opens — but below, and secondary.
+                */}
+                {orderedEmployers.map((employer) => {
+                  const isActive =
+                    employer.organization_id === activeEmployer?.organization_id;
+                  return (
+                    <li key={employer.organization_id}>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={isActive ? "default" : "outline"}
+                        className="w-full justify-start"
+                        onClick={() => {
+                          const query = new URLSearchParams(params?.toString() ?? "");
+                          query.delete("employment");
+                          // Rewriting `org` for the ACTIVE employer is a no-op that also
+                          // normalises a uuid in the URL to the readable slug; for any other
+                          // employer it is the deliberate full context change §1 requires.
+                          query.set("org", employer.slug ?? employer.organization_id);
+                          query.set("scope", "org");
+                          // hr-url-exempt: the same copy-then-amend rebuild, and this branch explicitly
+                          // RE-SETS `org` above for the employer being switched to (§1's full context change).
+                          router.push(`/hr/time/punches?${query.toString()}`);
+                          setOpen(false);
+                        }}
+                      >
+                        {isActive ? `Everyone at ${employer.name}` : employer.name}
+                      </Button>
+                    </li>
+                  );
+                })}
               </ul>
             )}
             {/*

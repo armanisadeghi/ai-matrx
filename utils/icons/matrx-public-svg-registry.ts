@@ -1,10 +1,23 @@
 /**
- * Matrx-owned SVG assets under `/public`. Stored icon ids use the form
- * `svg:<path-without-leading-slash-and-without-extension>` e.g. `svg:icons/Home`
- * → served at `/icons/Home.svg`.
+ * Matrx-owned SVG assets under `/public` — HOST WIRING for
+ * @ai-matrx/icons' injectable svg registry.
  *
- * Add new entries when you add files under `public/`.
+ * The DATA lives here (add new entries when you add files under `public/`);
+ * the registry mechanics live in the package. Importing this module registers
+ * every path (module-scope side effect) — `app/Providers.tsx` imports it for
+ * side effect so every tree has the registry populated before any `svg:` icon
+ * resolves. The original function names re-export the package equivalents.
+ *
+ * Stored icon ids use the form `svg:<path-without-leading-slash-and-without-
+ * extension>` e.g. `svg:icons/Home` → served at `/icons/Home.svg`.
  */
+import {
+  registerSvgIcons,
+  parseSvgIconPath,
+  isSvgIconValue,
+  listSvgIconValues,
+} from "@ai-matrx/icons";
+
 export const MATRX_PUBLIC_SVG_PATHS: Record<string, string> = {
   "icons/Home": "/icons/Home.svg",
   "icons/brands/microsoft": "/icons/brands/microsoft.svg",
@@ -31,25 +44,8 @@ export const MATRX_PUBLIC_SVG_PATHS: Record<string, string> = {
   "dark-turbulence-noise": "/dark-turbulence-noise.svg",
 };
 
-const SVG_PREFIX = "svg:";
+registerSvgIcons(MATRX_PUBLIC_SVG_PATHS);
 
-export function parseMatrxSvgPublicPath(value: string): string | null {
-  if (!value.startsWith(SVG_PREFIX)) {
-    return null;
-  }
-  const id = value.slice(SVG_PREFIX.length).replace(/^\/+/, "");
-  const path = MATRX_PUBLIC_SVG_PATHS[id];
-  return path ?? null;
-}
-
-export function isMatrxSvgIconValue(value: string | null | undefined): boolean {
-  if (!value || !value.startsWith(SVG_PREFIX)) {
-    return false;
-  }
-  const id = value.slice(SVG_PREFIX.length).replace(/^\/+/, "");
-  return Boolean(MATRX_PUBLIC_SVG_PATHS[id]);
-}
-
-export function listMatrxSvgIconValues(): string[] {
-  return Object.keys(MATRX_PUBLIC_SVG_PATHS).map((id) => `${SVG_PREFIX}${id}`);
-}
+export const parseMatrxSvgPublicPath = parseSvgIconPath;
+export const isMatrxSvgIconValue = isSvgIconValue;
+export const listMatrxSvgIconValues = listSvgIconValues;

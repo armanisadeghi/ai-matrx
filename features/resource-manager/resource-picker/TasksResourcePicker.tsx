@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProjectsWithTasks } from "@/features/tasks/hooks/useTaskManager";
 import type { ProjectWithTasks, DatabaseTask } from "@/features/tasks/types";
-import { filterAndSortBySearch, matchesSearch } from "@/utils/search-scoring";
+import { filterAndSortBySearch, matchesSearch } from "@ai-matrx/kit/search-scoring";
 import { usePickerInputFocus } from "./usePickerInputFocus";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 

@@ -23,7 +23,7 @@ import type {
 import { studioRunsService } from "@/features/podcasts/studio/runs/service";
 import { stashPendingStart } from "@/features/podcasts/studio/runs/pendingStart";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 export function CreateView() {
   const { isAuthenticated } = useApiAuth();

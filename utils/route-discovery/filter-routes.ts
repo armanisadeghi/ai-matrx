@@ -2,7 +2,7 @@
  * Shared route search/filter for route index pages and the admin dashboard.
  */
 
-import { formatTitleCase } from "@/utils/text/text-case-converter";
+import { formatTitleCase } from "@ai-matrx/kit/text-case";
 
 export interface RouteSearchRow {
   /** Route segment path (no basePath prefix). */

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { sendInvitationRequestApprovalEmail, sendInvitationRequestRejectionEmail } from "@/features/invitations/emailService";
 
 /**
@@ -62,6 +63,13 @@ export async function PATCH(
       );
     }
 
+    if (invitationRequest.status !== "pending") {
+      return NextResponse.json(
+        { success: false, msg: "Only pending requests can be reviewed" },
+        { status: 409 }
+      );
+    }
+
     if (action === "approve") {
       // Generate invitation code
       const { data: codeData, error: codeError } = await adminSupabase.rpc(
@@ -76,7 +84,7 @@ export async function PATCH(
         );
       }
 
-      const invitationCode = codeData as string;
+      const invitationCode = codeData;
 
       // Create invitation code record
       const expiresAt = new Date();
@@ -88,6 +96,8 @@ export async function PATCH(
           code: invitationCode,
           invitation_request_id: params.id,
           created_by: authUser.id,
+          organization_id: SYSTEM_ORGANIZATION_ID,
+          visibility: "personal",
           expires_at: expiresAt.toISOString(),
           max_uses: 1,
           status: "active",
@@ -134,7 +144,9 @@ export async function PATCH(
 
       return NextResponse.json({
         success: true,
-        msg: "Invitation request approved and code sent",
+        msg: emailResult.success
+          ? "Invitation request approved and code sent"
+          : "Invitation request approved, but the email failed to send",
         data: { invitationCode, emailSent: emailResult.success },
       });
     } else {

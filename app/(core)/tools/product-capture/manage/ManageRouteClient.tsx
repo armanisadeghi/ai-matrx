@@ -10,7 +10,7 @@ import { Camera, MessageCircleQuestion } from "lucide-react";
 import {
   TapTargetButton,
   TapTargetButtonSolid,
-} from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target";
 import { ProductCaptureHeader } from "@/features/product-capture/components/ProductCaptureHeader";
 import { PipelineWorkspace } from "@/features/product-capture/components/pipeline/PipelineWorkspace";
 
@@ -24,12 +24,14 @@ export function ManageHeader() {
           <TapTargetButton
             icon={<MessageCircleQuestion className="h-4 w-4" />}
             label="Q&A"
+            mobileIconOnly
             href="/tools/product-capture/answer"
             ariaLabel="Open the quick-answer queue"
           />
           <TapTargetButtonSolid
             icon={<Camera className="h-4 w-4" />}
             label="Capture"
+            mobileIconOnly
             href="/tools/product-capture"
             ariaLabel="Open the capture screen"
           />
@@ -39,6 +41,10 @@ export function ManageHeader() {
   );
 }
 
-export function ManageBody({ initialItemId }: { initialItemId: string | null }) {
+export function ManageBody({
+  initialItemId,
+}: {
+  initialItemId: string | null;
+}) {
   return <PipelineWorkspace initialItemId={initialItemId} />;
 }

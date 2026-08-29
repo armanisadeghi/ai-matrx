@@ -91,7 +91,7 @@ export function NotFoundContent({
   const items = customItems || getDefaultItems();
 
   return (
-    <div className="min-h-dvh bg-textured flex flex-col items-center justify-center p-6">
+    <div className="matrx-touch-targets min-h-dvh bg-textured flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-2xl">
         <div className="flex items-start gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-muted">
@@ -125,7 +125,7 @@ export function NotFoundContent({
             Go back
           </Button>
           <Button asChild size="sm" variant="outline">
-            <Link href="/dashboard">
+            <Link href="/dashboard" data-tap-target>
               <Home className="mr-1.5 h-4 w-4" aria-hidden />
               AI Matrx home
             </Link>

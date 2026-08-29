@@ -18,6 +18,7 @@ import type {
   ViewMode,
   VisibleColumns,
 } from "@/features/files/types";
+import { DEFAULT_VISIBLE_COLUMNS } from "@/features/files/types";
 
 /**
  * Placements offered by the Files browser context menu.
@@ -176,6 +177,52 @@ export function buildFileRowOverrides(
     active_file_public_url: durablePublicUrl(file),
     active_file_summary: summary,
     focused_row_id: file.id,
+  };
+}
+
+/**
+ * Complete `matrx-user/files` scope for a file rendered outside the Files
+ * browser (chat chips, product tiles, preview surfaces). The surface manifest
+ * declares browser-state values as always available, so embedded file menus
+ * must emit honest empty/default list state instead of passing a three-field
+ * partial scope that trips the menu diagnostics guard.
+ */
+export function buildEmbeddedFileContextData(
+  file: CloudFileRecord,
+): Record<string, unknown> {
+  return {
+    ...buildFilesContextData({
+      section: "embedded",
+      treeStatus: "loaded",
+      activeFile: file,
+      selectedFiles: [],
+      focusedId: file.id,
+      visibleFiles: [file],
+      visibleFolders: [],
+      searchQuery: "",
+      chipFilter: null,
+      kindFilter: "all",
+      columnFilters: {
+        name: "",
+        type: [],
+        extension: "",
+        mime: "",
+        path: "",
+        owner: [],
+        modified: "any",
+        created: "any",
+        size: "any",
+        access: "any",
+        rag: [],
+      },
+      sortBy: "updated_at",
+      sortDir: "desc",
+      viewMode: "list",
+      detailsLevel: "compact",
+      visibleColumns: { ...DEFAULT_VISIBLE_COLUMNS },
+      uploads: [],
+    }),
+    ...buildFileRowOverrides(file),
   };
 }
 

@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 605 active entity tokens. A token here is FK-valid for
+// 650 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -54,7 +54,6 @@ export type EntityTypeToken =
   | "agent_exemplar"
   | "agent_mandate_note"
   | "agent_prompt_remediation"
-  | "agent_provision"
   | "agent_run"
   | "agent_run_stage"
   | "agent_shortcut"
@@ -116,6 +115,53 @@ export type EntityTypeToken =
   | "coding_session"
   | "coding_session_entry"
   | "comment"
+  | "commerce_asset_allocation"
+  | "commerce_asset_grading"
+  | "commerce_asset_identifier"
+  | "commerce_asset_lot_event"
+  | "commerce_asset_mandate_result"
+  | "commerce_asset_price_factor"
+  | "commerce_asset_reshoot_request"
+  | "commerce_asset_review"
+  | "commerce_asset_unknown"
+  | "commerce_cloud_sync_connection"
+  | "commerce_ebay_business_policy"
+  | "commerce_ebay_category"
+  | "commerce_ebay_category_aspect"
+  | "commerce_ebay_category_tree"
+  | "commerce_ebay_custom_policy"
+  | "commerce_ebay_inventory_item"
+  | "commerce_ebay_inventory_item_group"
+  | "commerce_ebay_inventory_item_group_member"
+  | "commerce_ebay_inventory_location"
+  | "commerce_ebay_listing"
+  | "commerce_ebay_marketplace_policy"
+  | "commerce_ebay_media_asset"
+  | "commerce_ebay_notification_destination"
+  | "commerce_ebay_notification_event"
+  | "commerce_ebay_notification_subscription"
+  | "commerce_ebay_notification_topic"
+  | "commerce_ebay_offer"
+  | "commerce_ebay_order"
+  | "commerce_ebay_order_line_item"
+  | "commerce_ebay_shipping_fulfillment"
+  | "commerce_ebay_store_category"
+  | "commerce_human_correction"
+  | "commerce_intake_artifact"
+  | "commerce_intake_asset"
+  | "commerce_intake_batch"
+  | "commerce_marketplace_account"
+  | "commerce_marketplace_account_deletion_audit"
+  | "commerce_marketplace_api_call"
+  | "commerce_marketplace_rate_budget"
+  | "commerce_marketplace_site"
+  | "commerce_marketplace_sync_run"
+  | "commerce_prediction_outcome"
+  | "commerce_product"
+  | "commerce_product_channel_ref"
+  | "commerce_product_media"
+  | "commerce_product_variant"
+  | "commerce_recall_audit"
   | "comparison_set"
   | "contact_medium"
   | "contact_submission"
@@ -178,8 +224,6 @@ export type EntityTypeToken =
   | "domain_classification"
   | "esign_campaign"
   | "esign_campaign_member"
-  | "esign_config_definition"
-  | "esign_config_value"
   | "esign_consent_disclosure"
   | "esign_envelope"
   | "esign_envelope_certificate"
@@ -375,9 +419,7 @@ export type EntityTypeToken =
   | "library_doc"
   | "mandate"
   | "mandate_binding"
-  | "mandate_binding_new"
-  | "mandate_definition_new"
-  | "mandate_treatment_new"
+  | "mandate_treatment"
   | "marketing_initiative"
   | "masterwork_corpus_item"
   | "masterwork_run"
@@ -418,18 +460,21 @@ export type EntityTypeToken =
   | "platform_actor_session"
   | "platform_actor_token"
   | "platform_actor_token_event"
+  | "platform_org_knob_override"
   | "platform_outcome_event"
   | "platform_outsider_consumer"
   | "platform_saved_view"
+  | "platform_user_knob_override"
   | "podcast_race"
   | "processed_document"
   | "processed_document_page"
   | "product_capture_file"
   | "product_capture_item"
   | "product_capture_payload"
+  | "product_capture_product"
   | "product_capture_question"
   | "project"
-  | "provision_new"
+  | "provision"
   | "purpose"
   | "quiz_session"
   | "rag_ingest_run"
@@ -792,6 +837,39 @@ export type ComponentEntityToken =
   | "canvas_item_state"
   | "cmp_entry"
   | "coding_session_entry"
+  | "commerce_asset_allocation"
+  | "commerce_asset_grading"
+  | "commerce_asset_identifier"
+  | "commerce_asset_lot_event"
+  | "commerce_asset_mandate_result"
+  | "commerce_asset_price_factor"
+  | "commerce_asset_reshoot_request"
+  | "commerce_asset_review"
+  | "commerce_asset_unknown"
+  | "commerce_ebay_business_policy"
+  | "commerce_ebay_custom_policy"
+  | "commerce_ebay_inventory_item"
+  | "commerce_ebay_inventory_item_group"
+  | "commerce_ebay_inventory_item_group_member"
+  | "commerce_ebay_inventory_location"
+  | "commerce_ebay_listing"
+  | "commerce_ebay_media_asset"
+  | "commerce_ebay_notification_subscription"
+  | "commerce_ebay_offer"
+  | "commerce_ebay_order"
+  | "commerce_ebay_order_line_item"
+  | "commerce_ebay_shipping_fulfillment"
+  | "commerce_ebay_store_category"
+  | "commerce_human_correction"
+  | "commerce_intake_artifact"
+  | "commerce_intake_asset"
+  | "commerce_marketplace_site"
+  | "commerce_marketplace_sync_run"
+  | "commerce_prediction_outcome"
+  | "commerce_product_channel_ref"
+  | "commerce_product_media"
+  | "commerce_product_variant"
+  | "commerce_recall_audit"
   | "content_ir_kind_component"
   | "content_ir_kind_component_incident"
   | "content_ir_kind_conformance"
@@ -921,6 +999,7 @@ export type ComponentEntityToken =
   | "processed_document_page"
   | "product_capture_file"
   | "product_capture_payload"
+  | "product_capture_product"
   | "product_capture_question"
   | "redaction_mapping"
   | "research_analysis"
@@ -1052,7 +1131,6 @@ export type ScopeableEntityToken =
   | "agent_exemplar"
   | "agent_mandate_note"
   | "agent_prompt_remediation"
-  | "agent_provision"
   | "agent_run"
   | "agent_run_stage"
   | "agent_shortcut"
@@ -1114,6 +1192,53 @@ export type ScopeableEntityToken =
   | "coding_session"
   | "coding_session_entry"
   | "comment"
+  | "commerce_asset_allocation"
+  | "commerce_asset_grading"
+  | "commerce_asset_identifier"
+  | "commerce_asset_lot_event"
+  | "commerce_asset_mandate_result"
+  | "commerce_asset_price_factor"
+  | "commerce_asset_reshoot_request"
+  | "commerce_asset_review"
+  | "commerce_asset_unknown"
+  | "commerce_cloud_sync_connection"
+  | "commerce_ebay_business_policy"
+  | "commerce_ebay_category"
+  | "commerce_ebay_category_aspect"
+  | "commerce_ebay_category_tree"
+  | "commerce_ebay_custom_policy"
+  | "commerce_ebay_inventory_item"
+  | "commerce_ebay_inventory_item_group"
+  | "commerce_ebay_inventory_item_group_member"
+  | "commerce_ebay_inventory_location"
+  | "commerce_ebay_listing"
+  | "commerce_ebay_marketplace_policy"
+  | "commerce_ebay_media_asset"
+  | "commerce_ebay_notification_destination"
+  | "commerce_ebay_notification_event"
+  | "commerce_ebay_notification_subscription"
+  | "commerce_ebay_notification_topic"
+  | "commerce_ebay_offer"
+  | "commerce_ebay_order"
+  | "commerce_ebay_order_line_item"
+  | "commerce_ebay_shipping_fulfillment"
+  | "commerce_ebay_store_category"
+  | "commerce_human_correction"
+  | "commerce_intake_artifact"
+  | "commerce_intake_asset"
+  | "commerce_intake_batch"
+  | "commerce_marketplace_account"
+  | "commerce_marketplace_account_deletion_audit"
+  | "commerce_marketplace_api_call"
+  | "commerce_marketplace_rate_budget"
+  | "commerce_marketplace_site"
+  | "commerce_marketplace_sync_run"
+  | "commerce_prediction_outcome"
+  | "commerce_product"
+  | "commerce_product_channel_ref"
+  | "commerce_product_media"
+  | "commerce_product_variant"
+  | "commerce_recall_audit"
   | "comparison_set"
   | "contact_medium"
   | "contact_submission"
@@ -1161,8 +1286,6 @@ export type ScopeableEntityToken =
   | "domain_classification"
   | "esign_campaign"
   | "esign_campaign_member"
-  | "esign_config_definition"
-  | "esign_config_value"
   | "esign_consent_disclosure"
   | "esign_envelope"
   | "esign_envelope_certificate"
@@ -1357,9 +1480,7 @@ export type ScopeableEntityToken =
   | "library_doc"
   | "mandate"
   | "mandate_binding"
-  | "mandate_binding_new"
-  | "mandate_definition_new"
-  | "mandate_treatment_new"
+  | "mandate_treatment"
   | "marketing_initiative"
   | "masterwork_corpus_item"
   | "masterwork_run"
@@ -1400,18 +1521,21 @@ export type ScopeableEntityToken =
   | "platform_actor_session"
   | "platform_actor_token"
   | "platform_actor_token_event"
+  | "platform_org_knob_override"
   | "platform_outcome_event"
   | "platform_outsider_consumer"
   | "platform_saved_view"
+  | "platform_user_knob_override"
   | "podcast_race"
   | "processed_document"
   | "processed_document_page"
   | "product_capture_file"
   | "product_capture_item"
   | "product_capture_payload"
+  | "product_capture_product"
   | "product_capture_question"
   | "project"
-  | "provision_new"
+  | "provision"
   | "purpose"
   | "quiz_session"
   | "rag_ingest_run"
@@ -1641,6 +1765,10 @@ export type ListedEntityToken =
   | "browser_login_recipe"
   | "browser_profile"
   | "browser_site_policy"
+  | "commerce_cloud_sync_connection"
+  | "commerce_intake_batch"
+  | "commerce_marketplace_account"
+  | "commerce_product"
   | "content_ir_kind"
   | "content_ir_kind_instance"
   | "crm_blocklist_entry"
@@ -1654,7 +1782,6 @@ export type ListedEntityToken =
   | "custom_field_target"
   | "dataset"
   | "esign_campaign"
-  | "esign_config_definition"
   | "esign_consent_disclosure"
   | "esign_envelope"
   | "esign_provider_binding"
@@ -1691,8 +1818,6 @@ export type ListedEntityToken =
   | "learn_doc"
   | "mandate"
   | "mandate_binding"
-  | "mandate_binding_new"
-  | "mandate_definition_new"
   | "marketing_initiative"
   | "ops_proof_check"
   | "ops_proof_scenario"
@@ -1738,7 +1863,6 @@ export const ENTITY_TYPE_METADATA = {
   "agent_exemplar": { token: "agent_exemplar", schema: "agent", table: "exemplar", label: "Agent Test Case", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_mandate_note": { token: "agent_mandate_note", schema: "agent", table: "mandate_note", label: "Mandate Note", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_prompt_remediation": { token: "agent_prompt_remediation", schema: "agent", table: "prompt_remediation", label: "Agent Prompt Remediation", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "agent_provision": { token: "agent_provision", schema: "agent", table: "provision", label: "Mandate Provision", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_run": { token: "agent_run", schema: "chat", table: "agent_run", label: "Agent Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_run_stage": { token: "agent_run_stage", schema: "chat", table: "agent_run_stage", label: "Agent Run Stage", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_shortcut": { token: "agent_shortcut", schema: "agent", table: "shortcut", label: "Agent Shortcut", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: true, titleColumn: "label", contentRole: "utility", referenceCategory: null },
@@ -1800,6 +1924,53 @@ export const ENTITY_TYPE_METADATA = {
   "coding_session": { token: "coding_session", schema: "chat", table: "coding_session", label: "Coding Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "coding_session_entry": { token: "coding_session_entry", schema: "chat", table: "coding_session_entry", label: "Coding Session Entry", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "comment": { token: "comment", schema: "platform", table: "comments", label: "Comment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_allocation": { token: "commerce_asset_allocation", schema: "commerce", table: "asset_allocation", label: "Asset Allocation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_grading": { token: "commerce_asset_grading", schema: "commerce", table: "asset_grading", label: "Asset Grading", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_identifier": { token: "commerce_asset_identifier", schema: "commerce", table: "asset_identifier", label: "Asset Identifier", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_lot_event": { token: "commerce_asset_lot_event", schema: "commerce", table: "asset_lot_event", label: "Asset Lot Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_mandate_result": { token: "commerce_asset_mandate_result", schema: "commerce", table: "asset_mandate_result", label: "Asset Mandate Result", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_price_factor": { token: "commerce_asset_price_factor", schema: "commerce", table: "asset_price_factor", label: "Asset Price Factor", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_reshoot_request": { token: "commerce_asset_reshoot_request", schema: "commerce", table: "asset_reshoot_request", label: "Asset Reshoot Request", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_review": { token: "commerce_asset_review", schema: "commerce", table: "asset_review", label: "Asset Review", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_asset_unknown": { token: "commerce_asset_unknown", schema: "commerce", table: "asset_unknown", label: "Asset Unknown", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_cloud_sync_connection": { token: "commerce_cloud_sync_connection", schema: "commerce", table: "cloud_sync_connection", label: "Cloud Sync Connection", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_business_policy": { token: "commerce_ebay_business_policy", schema: "commerce", table: "ebay_business_policy", label: "eBay Business Policy", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_category": { token: "commerce_ebay_category", schema: "commerce", table: "ebay_category", label: "eBay Category", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_category_aspect": { token: "commerce_ebay_category_aspect", schema: "commerce", table: "ebay_category_aspect", label: "eBay Category Aspect", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_category_tree": { token: "commerce_ebay_category_tree", schema: "commerce", table: "ebay_category_tree", label: "eBay Category Tree", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_custom_policy": { token: "commerce_ebay_custom_policy", schema: "commerce", table: "ebay_custom_policy", label: "eBay Custom Policy", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_inventory_item": { token: "commerce_ebay_inventory_item", schema: "commerce", table: "ebay_inventory_item", label: "eBay Inventory Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_inventory_item_group": { token: "commerce_ebay_inventory_item_group", schema: "commerce", table: "ebay_inventory_item_group", label: "eBay Inventory Item Group", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_inventory_item_group_member": { token: "commerce_ebay_inventory_item_group_member", schema: "commerce", table: "ebay_inventory_item_group_member", label: "eBay Inventory Item Group Member", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_inventory_location": { token: "commerce_ebay_inventory_location", schema: "commerce", table: "ebay_inventory_location", label: "eBay Inventory Location", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_listing": { token: "commerce_ebay_listing", schema: "commerce", table: "ebay_listing", label: "eBay Listing", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_marketplace_policy": { token: "commerce_ebay_marketplace_policy", schema: "commerce", table: "ebay_marketplace_policy", label: "eBay Marketplace Policy", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_media_asset": { token: "commerce_ebay_media_asset", schema: "commerce", table: "ebay_media_asset", label: "eBay Media Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_notification_destination": { token: "commerce_ebay_notification_destination", schema: "commerce", table: "ebay_notification_destination", label: "eBay Notification Destination", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_notification_event": { token: "commerce_ebay_notification_event", schema: "commerce", table: "ebay_notification_event", label: "eBay Notification Event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_notification_subscription": { token: "commerce_ebay_notification_subscription", schema: "commerce", table: "ebay_notification_subscription", label: "eBay Notification Subscription", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_notification_topic": { token: "commerce_ebay_notification_topic", schema: "commerce", table: "ebay_notification_topic", label: "eBay Notification Topic", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_offer": { token: "commerce_ebay_offer", schema: "commerce", table: "ebay_offer", label: "eBay Offer", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_order": { token: "commerce_ebay_order", schema: "commerce", table: "ebay_order", label: "eBay Order", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_order_line_item": { token: "commerce_ebay_order_line_item", schema: "commerce", table: "ebay_order_line_item", label: "eBay Order Line Item", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_shipping_fulfillment": { token: "commerce_ebay_shipping_fulfillment", schema: "commerce", table: "ebay_shipping_fulfillment", label: "eBay Shipping Fulfillment", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_ebay_store_category": { token: "commerce_ebay_store_category", schema: "commerce", table: "ebay_store_category", label: "eBay Store Category", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_human_correction": { token: "commerce_human_correction", schema: "commerce", table: "human_correction", label: "Human Correction", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_intake_artifact": { token: "commerce_intake_artifact", schema: "commerce", table: "intake_artifact", label: "Intake Artifact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_intake_asset": { token: "commerce_intake_asset", schema: "commerce", table: "intake_asset", label: "Intake Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_intake_batch": { token: "commerce_intake_batch", schema: "commerce", table: "intake_batch", label: "Intake Batch", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_marketplace_account": { token: "commerce_marketplace_account", schema: "commerce", table: "marketplace_account", label: "Marketplace Account", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_marketplace_account_deletion_audit": { token: "commerce_marketplace_account_deletion_audit", schema: "commerce", table: "marketplace_account_deletion_audit", label: "Marketplace Account Deletion Audit", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_marketplace_api_call": { token: "commerce_marketplace_api_call", schema: "commerce", table: "marketplace_api_call", label: "Marketplace API Call", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_marketplace_rate_budget": { token: "commerce_marketplace_rate_budget", schema: "commerce", table: "marketplace_rate_budget", label: "Marketplace Rate Budget", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_marketplace_site": { token: "commerce_marketplace_site", schema: "commerce", table: "marketplace_site", label: "Marketplace Site", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_marketplace_sync_run": { token: "commerce_marketplace_sync_run", schema: "commerce", table: "marketplace_sync_run", label: "Marketplace Sync Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_prediction_outcome": { token: "commerce_prediction_outcome", schema: "commerce", table: "prediction_outcome", label: "Prediction Outcome", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_product": { token: "commerce_product", schema: "commerce", table: "product", label: "Product", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_product_channel_ref": { token: "commerce_product_channel_ref", schema: "commerce", table: "product_channel_ref", label: "Product Channel Reference", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_product_media": { token: "commerce_product_media", schema: "commerce", table: "product_media", label: "Product Media", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_product_variant": { token: "commerce_product_variant", schema: "commerce", table: "product_variant", label: "Product Variant", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "commerce_recall_audit": { token: "commerce_recall_audit", schema: "commerce", table: "recall_audit", label: "Recall Audit", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "comparison_set": { token: "comparison_set", schema: "agent", table: "cmp_comparison_sets", label: "Comparison Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "contact_medium": { token: "contact_medium", schema: "crm", table: "contact_medium", label: "Contact Medium", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "display_value", contentRole: "utility", referenceCategory: null },
   "contact_submission": { token: "contact_submission", schema: "communication", table: "contact_submissions", label: "Contact Submission", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -1862,8 +2033,6 @@ export const ENTITY_TYPE_METADATA = {
   "domain_classification": { token: "domain_classification", schema: "platform", table: "domain_classification", label: "Domain Classification", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "esign_campaign": { token: "esign_campaign", schema: "esign", table: "campaign", label: "Signature campaign", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "esign_campaign_member": { token: "esign_campaign_member", schema: "esign", table: "campaign_member", label: "Campaign member", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "esign_config_definition": { token: "esign_config_definition", schema: "esign", table: "config_definition", label: "E-sign configuration definition", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "esign_config_value": { token: "esign_config_value", schema: "esign", table: "config_value", label: "E-sign configuration value", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "esign_consent_disclosure": { token: "esign_consent_disclosure", schema: "esign", table: "consent_disclosure", label: "E-sign consent disclosure", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "esign_envelope": { token: "esign_envelope", schema: "esign", table: "envelope", label: "Signature envelope", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "esign_envelope_certificate": { token: "esign_envelope_certificate", schema: "esign", table: "envelope_certificate", label: "Completion certificate", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2057,11 +2226,9 @@ export const ENTITY_TYPE_METADATA = {
   "league_membership": { token: "league_membership", schema: "education", table: "league_membership", label: "League Membership", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "learn_doc": { token: "learn_doc", schema: "education", table: "learn_doc", label: "Study Guide", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "library_doc": { token: "library_doc", schema: "rag", table: "library_docs", label: "Library Document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
-  "mandate": { token: "mandate", schema: "agent", table: "mandate", label: "Mandate", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "mandate_binding": { token: "mandate_binding", schema: "agent", table: "mandate_binding", label: "Mandate Binding", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "mandate_binding_new": { token: "mandate_binding_new", schema: "mandate", table: "binding", label: "Mandate Binding (new)", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "mandate_definition_new": { token: "mandate_definition_new", schema: "mandate", table: "definition", label: "Mandate Definition (new)", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "mandate_treatment_new": { token: "mandate_treatment_new", schema: "mandate", table: "treatment", label: "Mandate Treatment (new)", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "mandate": { token: "mandate", schema: "mandate", table: "definition", label: "Mandate Definition (new)", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "mandate_binding": { token: "mandate_binding", schema: "mandate", table: "binding", label: "Mandate Binding (new)", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "mandate_treatment": { token: "mandate_treatment", schema: "mandate", table: "treatment", label: "Mandate Treatment (new)", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "marketing_initiative": { token: "marketing_initiative", schema: "marketing", table: "initiative", label: "Initiative", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "masterwork_corpus_item": { token: "masterwork_corpus_item", schema: "platform", table: "masterwork_corpus_item", label: "Masterwork Corpus Piece", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "masterwork_run": { token: "masterwork_run", schema: "platform", table: "masterwork_run", label: "Masterwork Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Masterwork", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2102,18 +2269,21 @@ export const ENTITY_TYPE_METADATA = {
   "platform_actor_session": { token: "platform_actor_session", schema: "platform", table: "actor_session", label: "Actor session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "platform_actor_token": { token: "platform_actor_token", schema: "platform", table: "actor_token", label: "Actor token", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "platform_actor_token_event": { token: "platform_actor_token_event", schema: "platform", table: "actor_token_event", label: "Actor token event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "platform_org_knob_override": { token: "platform_org_knob_override", schema: "platform", table: "org_knob_override", label: "Organization Knob Override", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "platform_outcome_event": { token: "platform_outcome_event", schema: "platform", table: "outcome_event", label: "Outcome Event", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "platform_outsider_consumer": { token: "platform_outsider_consumer", schema: "platform", table: "outsider_consumer", label: "Outsider consumer", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "platform_saved_view": { token: "platform_saved_view", schema: "platform", table: "saved_view", label: "Saved view", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "platform_user_knob_override": { token: "platform_user_knob_override", schema: "platform", table: "user_knob_override", label: "User Knob Override", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "podcast_race": { token: "podcast_race", schema: "podcast", table: "pc_race", label: "Podcast Race Episode", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "processed_document": { token: "processed_document", schema: "docproc", table: "processed_documents", label: "Processed document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "processed_document_page": { token: "processed_document_page", schema: "docproc", table: "processed_document_pages", label: "Processed document page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "product_capture_file": { token: "product_capture_file", schema: "workbench", table: "product_capture_file", label: "Product Capture File", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "product_capture_item": { token: "product_capture_item", schema: "workbench", table: "product_capture_item", label: "Product Capture Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "product_capture_payload": { token: "product_capture_payload", schema: "workbench", table: "product_capture_payload", label: "Product Capture Payload", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "product_capture_product": { token: "product_capture_product", schema: "workbench", table: "product_capture_product", label: "Product Capture Product", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "product_capture_question": { token: "product_capture_question", schema: "workbench", table: "product_capture_question", label: "Product Capture Question", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces", referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
-  "provision_new": { token: "provision_new", schema: "mandate", table: "provision", label: "Mandate Provision (new)", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "provision": { token: "provision", schema: "mandate", table: "provision", label: "Mandate Provision (new)", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "purpose": { token: "purpose", schema: "platform", table: "purpose", label: "Purpose", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "quiz_session": { token: "quiz_session", schema: "education", table: "quiz_sessions", label: "Quiz Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
   "rag_ingest_run": { token: "rag_ingest_run", schema: "rag", table: "ingest_run", label: "Ingest Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -2347,7 +2517,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "agent_exemplar",
   "agent_mandate_note",
   "agent_prompt_remediation",
-  "agent_provision",
   "agent_run",
   "agent_run_stage",
   "agent_shortcut",
@@ -2409,6 +2578,53 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "coding_session",
   "coding_session_entry",
   "comment",
+  "commerce_asset_allocation",
+  "commerce_asset_grading",
+  "commerce_asset_identifier",
+  "commerce_asset_lot_event",
+  "commerce_asset_mandate_result",
+  "commerce_asset_price_factor",
+  "commerce_asset_reshoot_request",
+  "commerce_asset_review",
+  "commerce_asset_unknown",
+  "commerce_cloud_sync_connection",
+  "commerce_ebay_business_policy",
+  "commerce_ebay_category",
+  "commerce_ebay_category_aspect",
+  "commerce_ebay_category_tree",
+  "commerce_ebay_custom_policy",
+  "commerce_ebay_inventory_item",
+  "commerce_ebay_inventory_item_group",
+  "commerce_ebay_inventory_item_group_member",
+  "commerce_ebay_inventory_location",
+  "commerce_ebay_listing",
+  "commerce_ebay_marketplace_policy",
+  "commerce_ebay_media_asset",
+  "commerce_ebay_notification_destination",
+  "commerce_ebay_notification_event",
+  "commerce_ebay_notification_subscription",
+  "commerce_ebay_notification_topic",
+  "commerce_ebay_offer",
+  "commerce_ebay_order",
+  "commerce_ebay_order_line_item",
+  "commerce_ebay_shipping_fulfillment",
+  "commerce_ebay_store_category",
+  "commerce_human_correction",
+  "commerce_intake_artifact",
+  "commerce_intake_asset",
+  "commerce_intake_batch",
+  "commerce_marketplace_account",
+  "commerce_marketplace_account_deletion_audit",
+  "commerce_marketplace_api_call",
+  "commerce_marketplace_rate_budget",
+  "commerce_marketplace_site",
+  "commerce_marketplace_sync_run",
+  "commerce_prediction_outcome",
+  "commerce_product",
+  "commerce_product_channel_ref",
+  "commerce_product_media",
+  "commerce_product_variant",
+  "commerce_recall_audit",
   "comparison_set",
   "contact_medium",
   "contact_submission",
@@ -2471,8 +2687,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "domain_classification",
   "esign_campaign",
   "esign_campaign_member",
-  "esign_config_definition",
-  "esign_config_value",
   "esign_consent_disclosure",
   "esign_envelope",
   "esign_envelope_certificate",
@@ -2668,9 +2882,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "library_doc",
   "mandate",
   "mandate_binding",
-  "mandate_binding_new",
-  "mandate_definition_new",
-  "mandate_treatment_new",
+  "mandate_treatment",
   "marketing_initiative",
   "masterwork_corpus_item",
   "masterwork_run",
@@ -2711,18 +2923,21 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "platform_actor_session",
   "platform_actor_token",
   "platform_actor_token_event",
+  "platform_org_knob_override",
   "platform_outcome_event",
   "platform_outsider_consumer",
   "platform_saved_view",
+  "platform_user_knob_override",
   "podcast_race",
   "processed_document",
   "processed_document_page",
   "product_capture_file",
   "product_capture_item",
   "product_capture_payload",
+  "product_capture_product",
   "product_capture_question",
   "project",
-  "provision_new",
+  "provision",
   "purpose",
   "quiz_session",
   "rag_ingest_run",

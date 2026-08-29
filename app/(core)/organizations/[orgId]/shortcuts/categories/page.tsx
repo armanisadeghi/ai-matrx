@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Eye, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
   AlertDialog,
   AlertDialogAction,

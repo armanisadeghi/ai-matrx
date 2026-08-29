@@ -119,7 +119,7 @@ function loadEnv(): { url: string; key: string } | null {
 /**
  * Paginated PostgREST read. A bare select caps at 1000 rows and would make
  * every "is anything mapped to this?" answer confidently wrong — the exact
- * class `lib/supabase/readAllRows.ts` exists to kill.
+ * class `readAllRows` (@ai-matrx/data/db) exists to kill.
  */
 async function readAll<T>(
   env: { url: string; key: string },

@@ -14,7 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/components/ui/use-toast";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { DocumentListCard } from "@/features/data-tables/components/DocumentListCard";
 import { DocumentsHubTable } from "@/features/data-tables/components/DocumentsHubTable";
 import { DocumentsHubToolbar } from "@/features/data-tables/components/DocumentsHubToolbar";

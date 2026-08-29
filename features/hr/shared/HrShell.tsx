@@ -54,6 +54,7 @@ import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { cn } from "@/lib/utils";
 
 import { hrHref, hrSwitchEmployerHref } from "../routes";
+import { HrDisclosureClaimed, HrEmployerSubstitutionNotice } from "./HrStates";
 import { resolveHrNav } from "./hr-nav";
 import { useHrContext } from "./useHrContext";
 import { isOrgSteward, useHrPersona } from "./useHrPersona";
@@ -83,7 +84,8 @@ export function HrShell({
 }: HrShellProps) {
   const { active, employers, orgRef, isLoading } = useHrContext();
   const { persona, employmentId, all } = useHrPersona();
-  const pathname = usePathname() ?? hrHref();
+  // No pathname exists only before an employer context can be resolved.
+  const pathname = usePathname() ?? hrHref(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useClippedContentGuard(scrollRef, { label: "HR page body" });
@@ -154,6 +156,15 @@ export function HrShell({
           className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden"
         >
           <div className={cn(subNav ? null : "pt-[var(--shell-header-h)]")}>
+            {/*
+              🚨 The employer we opened is not always the one that was asked for —
+              `useHrContext` law B. When it is not, the page says so HERE, above
+              everything, with the way back. Never let the switcher label be the only
+              evidence that HR changed employers on somebody.
+            */}
+            <div className="px-4 pt-3 empty:hidden sm:px-6">
+              <HrEmployerSubstitutionNotice />
+            </div>
             {crumbs.length > 0 || description ? (
               <div className="px-4 pt-3 sm:px-6">
                 {crumbs.length > 0 ? (
@@ -183,7 +194,14 @@ export function HrShell({
               </div>
             ) : null}
           </div>
-          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+          {/*
+            The shell states the substitution above, so it CLAIMS the disclosure —
+            otherwise the `HrPageState` inside the page would state it a second time.
+            See `HrDisclosureClaimed` in `HrStates`.
+          */}
+          <div className="flex min-h-0 flex-1 flex-col">
+            <HrDisclosureClaimed>{children}</HrDisclosureClaimed>
+          </div>
         </div>
       </div>
     </>

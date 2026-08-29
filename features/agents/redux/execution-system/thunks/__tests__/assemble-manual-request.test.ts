@@ -283,6 +283,49 @@ describe("assembleManualRequest — live read contract", () => {
     });
   });
 
+  test("an image-only request is valid user input without typed text", () => {
+    const state = makeStoredAssemblyState({ userInput: "" });
+    const image: ManagedResource = {
+      resourceId: "image-only",
+      blockType: "image",
+      source: { file_id: "image-file-id" },
+      preview: null,
+      status: "ready",
+      errorMessage: null,
+      userEdited: false,
+      editedContent: null,
+      options: {
+        keepFresh: false,
+        editable: false,
+        convertToText: false,
+        optionalContext: false,
+      },
+      finalPayload: {
+        type: "media",
+        kind: "image",
+        file_id: "image-file-id",
+      },
+      sortOrder: 0,
+    };
+    (
+      state as RootState & {
+        instanceResources: {
+          byConversationId: Record<string, Record<string, ManagedResource>>;
+        };
+      }
+    ).instanceResources.byConversationId[CONVERSATION_ID] = {
+      "image-only": image,
+    };
+
+    expect(assembleRequest(state, CONVERSATION_ID)?.user_input).toEqual([
+      {
+        type: "media",
+        kind: "image",
+        file_id: "image-file-id",
+      },
+    ]);
+  });
+
   test("missing selection is rejected even when a personal organization exists", async () => {
     const state = makeStoredAssemblyState({
       organizationId: null,

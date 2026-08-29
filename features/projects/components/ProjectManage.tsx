@@ -38,7 +38,7 @@ import {
 import { getOrganizationBySlugOrId } from "@/features/organizations/service";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ProjectContextSection } from "./ProjectContextSection";
 import type { Project } from "@/features/projects/types";
 import { GeneralSettings } from "./GeneralSettings";

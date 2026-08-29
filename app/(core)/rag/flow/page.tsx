@@ -9,7 +9,7 @@
  */
 import { Database, FileText, Search } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { RagFlowVisualization } from "@/features/rag/components/visualization/RagFlowVisualization";
 
 export default function Page() {

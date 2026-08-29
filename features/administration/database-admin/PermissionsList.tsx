@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Key, RefreshCw, Search, Plus, Settings } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { DatabasePermission } from "./types";
-import { stringUrlCodec, useUrlState } from "@/lib/url-state/useUrlState";
+import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
 
 interface PermissionsListProps {
   permissions?: DatabasePermission[];

@@ -134,7 +134,6 @@ export function SmartAgentInputStacked({
           surfaceKey={surfaceKey}
           disableSend={sendBlocked}
           autoFocus={false}
-          requireTextForSubmit
           showExpandToggle={false}
         />
         <div className="flex min-h-6 items-center justify-end">

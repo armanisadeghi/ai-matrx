@@ -51,6 +51,10 @@ import { RESERVED_SHAPE_SLUGS } from "@/features/content-ir/studio/constants";
 import { isReservedDirectiveSlug } from "@/features/content-ir/directives/grammar";
 
 import type { ShapeWriteClient } from "@/features/content-ir/studio/shape-authoring-service";
+import {
+  INVALIDATION_KEYS,
+  fireInvalidation,
+} from "@/lib/invalidation/invalidation-registry";
 
 /** The proposal envelope the schema_proposal block carries. */
 export interface ShapeProposalInput {
@@ -582,6 +586,12 @@ export async function createShapeFromPlan(
       `The Shape's canonical example failed to write: ${exampleError.message}.`,
     );
   }
+
+  // The registry may already have LATCHED a miss for these slugs (the payload
+  // that prompted this Shape was sighted before the rows existed). Fire the
+  // definitions invalidation so the warm tier re-reads and the new Shape
+  // renders in THIS session — the first try is the one that matters.
+  fireInvalidation(INVALIDATION_KEYS.kindDefinitions);
 
   return {
     rootDefinitionId: root.id,

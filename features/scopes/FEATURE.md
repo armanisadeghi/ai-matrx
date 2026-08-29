@@ -36,7 +36,7 @@ this directory.
    synthesize or persist a fake personal org id in Redux, routes, RPC args, or edges.
 9. **Templates are read-only catalog here.** Mutations happen in seed scripts / admin paths.
 10. **Transport failures warn; database refusals scream.** `service/rpcResult.ts` uses
-    `lib/net/errors.ts` for browser-network and upstream-connect/reset classification. Never
+    `@ai-matrx/data/net` (the NetError vocabulary) for browser-network and upstream-connect/reset classification. Never
     downgrade an error carrying a Postgres code or HTTP status.
 
 ## File map

@@ -56,7 +56,7 @@ const DialogPortal = ({
 const DialogClose = DialogPrimitive.Close;
 import { Cross2Icon } from "@radix-ui/react-icons";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { treeContainsComponent } from "@/lib/react/treeContainsComponent";
+import { treeContainsComponent } from "@ai-matrx/kit/react-tree";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
 import {
   RadixDialogModalProvider,

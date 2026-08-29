@@ -6,11 +6,11 @@ import type {
   FieldAdapter,
   FieldDiffProps,
 } from "@/components/diff/adapters/types";
-import type { DiffNode } from "@/components/diff/engine/types";
+import type { DiffNode } from "@ai-matrx/diff/structural";
 import {
   filterChanges,
   formatValue,
-} from "@/components/diff/engine/diff-utils";
+} from "@ai-matrx/diff/structural";
 import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
 
 interface VariableLike {

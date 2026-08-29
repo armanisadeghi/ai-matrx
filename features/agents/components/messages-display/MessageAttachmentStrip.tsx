@@ -26,6 +26,7 @@ function AttachmentItem({
   const tile = item.refs.fileId ? (
     <FileResourceChip
       fileId={item.refs.fileId}
+      fileHint={item.refs.fileHint}
       nameOverride={item.title}
       size="xs"
       onOpen={onOpen}
