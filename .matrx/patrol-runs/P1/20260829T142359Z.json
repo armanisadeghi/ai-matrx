@@ -98,6 +98,19 @@
       },
       "previousEventHash": "0c3e84e4ee160f4c02969b631651a13b56ef3b0ae364d85bd1bfb2836ebec08d",
       "eventHash": "bbfc9d4d11b1b267e0b38aa20007fe3f642071ba908998cd745577e8fc3337a0"
+    },
+    {
+      "sequence": 7,
+      "state": "closed",
+      "at": "2026-08-29T14:30:58.733Z",
+      "actor": "p1-fleet-retry",
+      "summary": "P1 retry closed: one verified rule-citation dead end fixed, independently certified, integrated, and released; live automation restored to ACTIVE.",
+      "evidence": [
+        "No approvals or exceptions required.",
+        "Generated P1 prompt matches live configuration and Monday 01:10 schedule."
+      ],
+      "previousEventHash": "bbfc9d4d11b1b267e0b38aa20007fe3f642071ba908998cd745577e8fc3337a0",
+      "eventHash": "fe2ac9a7880aecc55dd10647d231c765118b856a3223be086a01794e2e926f60"
     }
   ]
 }

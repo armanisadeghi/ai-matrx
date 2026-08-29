@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260829T142359Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-29T14:30:53.334Z",
-  "summary": "Certified Rulebook rule-door repair is integrated and contained in v0.4.1441.",
+  "state": "closed",
+  "updatedAt": "2026-08-29T14:30:58.733Z",
+  "summary": "P1 retry closed: one verified rule-citation dead end fixed, independently certified, integrated, and released; live automation restored to ACTIVE.",
   "source": "20260829T142359Z.json",
-  "eventHash": "bbfc9d4d11b1b267e0b38aa20007fe3f642071ba908998cd745577e8fc3337a0"
+  "eventHash": "fe2ac9a7880aecc55dd10647d231c765118b856a3223be086a01794e2e926f60"
 }
