@@ -227,6 +227,7 @@ describe("MatrxDataTable accessibility & mobile presentation", () => {
     expect(markup).toContain("data-matrx-cell-content");
     expect(markup).toContain("[overflow-wrap:anywhere]");
     expect(markup).toContain("sm:[&amp;_*]:whitespace-normal");
+    expect(markup).toContain("sm:min-w-[var(--matrx-col-w)]");
     expect(markup).toContain(longSnakeCaseName);
   });
 

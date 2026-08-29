@@ -1516,10 +1516,12 @@ function MatrxDataTableCore<T>({
                               colIdx === 0 &&
                               "max-sm:sticky max-sm:left-0 max-sm:z-20 max-sm:bg-inherit max-sm:backdrop-blur-sm",
                             // Consumer widths are desktop tuning: applied from `sm`
-                            // up via a CSS var, so mobile stays content-sized
-                            // (nowrap + a hard width would bleed into the next cell).
+                            // up via a CSS var. The minimum is load-bearing: without
+                            // it, a crowded table crushes a declared 190px column to a
+                            // few characters wide instead of using the canonical
+                            // horizontal-scroll surface.
                             col.width !== undefined &&
-                              "sm:w-[var(--matrx-col-w)]",
+                              "sm:w-[var(--matrx-col-w)] sm:min-w-[var(--matrx-col-w)]",
                             col.headerClassName,
                             col.align === "center" && "text-center",
                             col.align === "right" && "text-right",
@@ -1707,7 +1709,7 @@ function MatrxDataTableCore<T>({
                                     colIdx === 0 &&
                                     "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit",
                                   col.width !== undefined &&
-                                    "sm:w-[var(--matrx-col-w)] sm:max-w-[var(--matrx-col-w)]",
+                                    "sm:w-[var(--matrx-col-w)] sm:min-w-[var(--matrx-col-w)] sm:max-w-[var(--matrx-col-w)]",
                                   col.className,
                                   col.align === "center" && "text-center",
                                   col.align === "right" && "text-right",
