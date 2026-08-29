@@ -1,5 +1,54 @@
 # P10 — Type suppression debt
 
+## Eradication waves — 2026-08-29
+
+### Certified Batch 1
+
+- Permanent run `2026-08-29T191203Z` closed after candidate
+  `fb8e110a2f715f727ab21706a874ca44c16a3354` was independently **CERTIFIED** and integrated as an
+  ancestor of `origin/main`. The authority ref is
+  `refs/heads/patrol-runs/P10/2026-08-29T191203Z`.
+- `AgentAppRenderer.tsx` regained file-level type checking and now projects every supported app
+  field. `useHierarchy.ts` uses the typed thunk dispatcher and a discriminated service-update
+  contract. The batch removed one `@ts-nocheck`, eleven `as any` casts, and three non-null
+  assertions: **15 targeted hatches across two source files**, with zero replacements.
+- Independent certifier `/root/p10_batch1_certifier` passed the exact three-file diff, scoped ESLint,
+  four focused suites / 33 tests, and the public-app projection, query-guard, thunk-dispatch, and
+  update-service contracts.
+
+### Batch 2 candidate and proof
+
+- Permanent run `2026-08-29T192327Z` owns exact candidate
+  `e50911c1cb1540d437de227662b545addb0dff3f`. The independently certified repair unit is path-scoped
+  to `features/ai-models/{service.ts,FEATURE.md}` and
+  `features/agents/{FEATURE.md,redux/agent-definition/converters.ts}`; a shared-checkout integration
+  commit preserved the source edits alongside unrelated work, so unrelated paths are not batch
+  evidence.
+- `features/ai-models/service.ts` replaced all 20 `as unknown as` casts with runtime parsers at API
+  and JSONB ingress plus generated-compatible update builders. Agent-definition conversion removed
+  24 of 29 `as unknown as` casts and all four `?? {}` fallbacks by validating model tiers,
+  directives, UI gates, skill/tool configuration, and organization identity at the boundary.
+- The four focused suites / 16 tests pass; scoped ESLint has zero errors and one unchanged barrel
+  warning; scoped diff checks and the patrol-manifest contract pass. Full type-check passed before
+  the patrol edits and currently reports only concurrent errors in unowned
+  `features/agent-comparison/modes/*/redux/thunks.ts`; neither candidate source file has a diagnostic.
+- Whole-repository ratchet after the repairs remains open at 7,850 hatches. Five categories exceed
+  the frozen baseline: `as unknown as` +267, `Record<string, any>` +4, non-null assertions +10,
+  `?? {}` +137, and `?? ""` +876. This is not a zero proof and maintenance mode is not allowed.
+
+### Next repair wave
+
+- Five complex agent-definition JSON reads remain: messages, variable definitions, settings,
+  context policies, and output schema. The next bounded wave must introduce or reuse their canonical
+  runtime schemas and remove the upstream whole-RPC-row assertion; it must not replace the five
+  assertions with a looser cast.
+- Recursive learning: generated DB/API boundaries are a proven automatic recipe when validation is
+  placed at ingress and writes are constructed from generated shapes. The detector should rank
+  whole-file disables and concentrated generated-boundary casts separately, and identify groups
+  that lack a canonical runtime schema so the next patrol can route them directly to schema work.
+
+---
+
 ## Full pass — 2026-08-15 · closed 2026-08-18
 
 ### Resumed lifecycle resolution — 2026-08-18
