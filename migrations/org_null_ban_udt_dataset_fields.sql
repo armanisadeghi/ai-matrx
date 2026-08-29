@@ -58,13 +58,18 @@
 BEGIN;
 
 -- ── 1. Pre-state — recorded, then asserted against at the end ────────────────
+-- The ids that are NULL now (the ONLY rows allowed to change), and a fingerprint
+-- over every row that ALREADY carries an org (which must not move by one byte).
+CREATE TEMP TABLE _org_null_udt_targets ON COMMIT DROP AS
+SELECT id FROM workbench.udt_dataset_fields WHERE organization_id IS NULL;
+
 CREATE TEMP TABLE _org_null_udt_pre ON COMMIT DROP AS
 SELECT
-  (SELECT count(*) FROM workbench.udt_dataset_fields)                                  AS total_rows,
-  (SELECT count(*) FROM workbench.udt_dataset_fields WHERE organization_id IS NULL)    AS null_org,
+  (SELECT count(*) FROM workbench.udt_dataset_fields)                                   AS total_rows,
+  (SELECT count(*) FROM workbench.udt_dataset_fields WHERE organization_id IS NULL)     AS null_org,
   (SELECT count(*) FROM workbench.udt_dataset_fields WHERE organization_id IS NOT NULL) AS has_org,
   (SELECT coalesce(md5(string_agg(id::text || ':' || organization_id::text, ',' ORDER BY id)), '')
-     FROM workbench.udt_dataset_fields WHERE organization_id IS NOT NULL)              AS preexisting_org_fingerprint;
+     FROM workbench.udt_dataset_fields WHERE organization_id IS NOT NULL)               AS untouched_fingerprint;
 
 DO $$
 DECLARE v_null int; v_derivable int;
@@ -174,7 +179,7 @@ BEGIN
   END IF;
 
   INSERT INTO workbench.udt_datasets (table_name, user_id, created_by, organization_id, visibility)
-  VALUES ('_zz_org_null_probe_dataset', v_user, v_user, v_sys, 'private')
+  VALUES ('_zz_org_null_probe_dataset', v_user, v_user, v_sys, 'personal')
   RETURNING id INTO v_ds;
 
   -- GREEN: an INSERT that OMITS organization_id must come out carrying the
