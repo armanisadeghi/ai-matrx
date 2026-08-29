@@ -29,6 +29,7 @@ import {
   setResourceStatus,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { generateResourceId } from "@/features/agents/redux/execution-system/utils/ids";
+import { requireExecutionOrganizationId } from "@/features/agents/redux/execution-system/utils/required-organization";
 import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
 import { revokeTrackedObjectUrl } from "@/lib/media/object-url-registry";
 import type { ResourceBlockType } from "@/features/agents/types/instance.types";
@@ -68,6 +69,15 @@ export function useUploadAgentResources(
 
   return async (files: File[]) => {
     if (files.length === 0) return;
+
+    // The file and the conversation will be joined by a tenant-checked
+    // association. Stamp the same canonical execution organization on the
+    // upload instead of letting a personal upload silently fall back to the
+    // user's personal workspace.
+    const organizationId = requireExecutionOrganizationId(
+      store.getState(),
+      conversationId,
+    );
 
     const staged = files.map((file) => {
       const local = normalize({ kind: "file", file });
@@ -118,6 +128,9 @@ export function useUploadAgentResources(
               uploadPath,
             ),
             visibility: "personal",
+            metadata: {
+              scope: { organization_id: organizationId },
+            },
             createShareLink: true,
             shareLinkPermissionLevel: "viewer",
           },

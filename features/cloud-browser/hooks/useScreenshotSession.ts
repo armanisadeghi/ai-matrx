@@ -20,6 +20,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { BackendApiError } from "@/lib/api/errors";
 import {
   SCREENSHOT_ACTIVITY_DEBOUNCE_MS,
   SCREENSHOT_AUTO_OFF_MS,
@@ -43,6 +44,7 @@ export function useScreenshotSession(runId: string | null, rapid = false) {
   const autoOffRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activityCaptureRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handledActivityRef = useRef<number | null>(null);
+  const captureInFlightRef = useRef(false);
 
   const clearTimers = useCallback(() => {
     if (cadenceRef.current) clearInterval(cadenceRef.current);
@@ -53,26 +55,59 @@ export function useScreenshotSession(runId: string | null, rapid = false) {
     activityCaptureRef.current = null;
   }, []);
 
-  const capture = useCallback(async () => {
-    if (!runId) return;
-    const frame = await requestScreenshot(runId);
-    dispatch(pushFrame(frame));
-  }, [dispatch, runId]);
-
   const stop = useCallback(() => {
     clearTimers();
     dispatch(stopScreenshotSession());
   }, [clearTimers, dispatch]);
 
+  const capture = useCallback(async () => {
+    if (!runId || captureInFlightRef.current) return;
+    captureInFlightRef.current = true;
+    try {
+      const frame = await requestScreenshot(runId);
+      dispatch(pushFrame(frame));
+    } catch (error) {
+      const details =
+        error instanceof BackendApiError &&
+        typeof error.details === "object" &&
+        error.details !== null &&
+        !Array.isArray(error.details)
+          ? error.details
+          : null;
+      const workerIsBeingReplaced =
+        error instanceof BackendApiError &&
+        error.code === "worker_unreachable" &&
+        error.status === 503 &&
+        details !== null &&
+        Reflect.get(details, "retryable") === true;
+
+      // The canonical API client already records the structured failure.
+      // A retryable worker replacement may recover on the next cadence; every
+      // other failure ends this bounded session so timers cannot spam the same
+      // error or leak an unhandled promise rejection.
+      if (!workerIsBeingReplaced) stop();
+    } finally {
+      captureInFlightRef.current = false;
+    }
+  }, [dispatch, runId, stop]);
+
   const start = useCallback(() => {
     if (!runId) return;
-    dispatch(startScreenshotSession({ autoOffAt: Date.now() + SCREENSHOT_AUTO_OFF_MS }));
+    dispatch(
+      startScreenshotSession({
+        autoOffAt: Date.now() + SCREENSHOT_AUTO_OFF_MS,
+      }),
+    );
     void capture();
   }, [capture, dispatch, runId]);
 
   /** Re-arm resets the 5-minute clock (interaction / explicit "keep watching"). */
   const rearm = useCallback(() => {
-    dispatch(rearmScreenshotSession({ autoOffAt: Date.now() + SCREENSHOT_AUTO_OFF_MS }));
+    dispatch(
+      rearmScreenshotSession({
+        autoOffAt: Date.now() + SCREENSHOT_AUTO_OFF_MS,
+      }),
+    );
   }, [dispatch]);
 
   // Idle heartbeat + auto-off, driven entirely from the active flag.
@@ -85,7 +120,15 @@ export function useScreenshotSession(runId: string | null, rapid = false) {
     );
     autoOffRef.current = setTimeout(() => stop(), SCREENSHOT_AUTO_OFF_MS);
     return clearTimers;
-  }, [session.active, session.autoOffAt, runId, rapid, capture, clearTimers, stop]);
+  }, [
+    session.active,
+    session.autoOffAt,
+    runId,
+    rapid,
+    capture,
+    clearTimers,
+    stop,
+  ]);
 
   // Event-driven capture: browser tool activity → one debounced frame.
   useEffect(() => {

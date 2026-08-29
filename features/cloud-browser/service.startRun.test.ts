@@ -5,7 +5,7 @@
  */
 
 import { postJson } from "@/lib/python-client";
-import { loadSnapshot, loadSnapshotForRun } from "./service";
+import { listProfiles, loadSnapshot, loadSnapshotForRun } from "./service";
 
 jest.mock("@/lib/python-client", () => ({
   getJson: jest.fn(),
@@ -50,6 +50,8 @@ const runRow = {
 };
 
 type QueryResult = { data: unknown; error: null };
+let mockMaybeSingleRun: typeof runRow | null = null;
+const mockGetResourceAccess = jest.fn(async () => ({ level: "admin" }));
 
 function queryFor(table: string) {
   const result = (): QueryResult => {
@@ -64,7 +66,10 @@ function queryFor(table: string) {
   for (const method of ["select", "eq", "in", "is", "order", "limit", "gt"]) {
     q[method] = () => q;
   }
-  q.maybeSingle = async () => ({ data: null, error: null });
+  q.maybeSingle = async () => ({
+    data: table === "run" ? mockMaybeSingleRun : null,
+    error: null,
+  });
   q.single = async () =>
     table === "run"
       ? { data: runRow, error: null }
@@ -91,11 +96,21 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 
 jest.mock("@/utils/permissions/access", () => ({
-  getResourceAccess: jest.fn(async () => ({ level: "admin" })),
+  getResourceAccess: (...args: unknown[]) => mockGetResourceAccess(...args),
 }));
 
 describe("run admission", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockMaybeSingleRun = null;
+    mockGetResourceAccess.mockResolvedValue({ level: "admin" });
+  });
+
+  it("drops super-admin-readable profiles with no canonical access", async () => {
+    mockGetResourceAccess.mockResolvedValue({ level: "none" });
+
+    await expect(listProfiles()).resolves.toEqual([]);
+  });
 
   it("does not start a browser for a run that is not live", async () => {
     // The handoff seam must never conjure a browser off a stream event — that
@@ -135,5 +150,15 @@ describe("run admission", () => {
         activation_key: expect.any(String),
       }),
     );
+  });
+
+  it("does not replace an exact terminal run with a new browser", async () => {
+    mockMaybeSingleRun = { ...runRow, state: "failed" };
+
+    const snapshot = await loadSnapshot(profileRow.id, runRow.id);
+
+    expect(snapshot.activeProfileId).toBe(profileRow.id);
+    expect(snapshot.run).toBeNull();
+    expect(postJson).not.toHaveBeenCalled();
   });
 });
