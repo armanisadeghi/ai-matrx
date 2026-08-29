@@ -66,6 +66,22 @@
       },
       "previousEventHash": "3db2b24ee4fce63afc1440f876cb0b4f79e3c3e896b1a1045f07bda4add17e95",
       "eventHash": "46f1491b1f86a0679cf1737008451865bed07f4c35899fdd13f53541b607484b"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-29T19:29:16.395Z",
+      "actor": "/root",
+      "summary": "Certified Batch 2 is an ancestor of origin/main; queue delivery record.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P10/2026-08-29T192327Z"
+      ],
+      "delivery": {
+        "candidateSha": "e50911c1cb1540d437de227662b545addb0dff3f",
+        "preservedRef": "refs/heads/patrol-runs/P10/2026-08-29T192327Z"
+      },
+      "previousEventHash": "46f1491b1f86a0679cf1737008451865bed07f4c35899fdd13f53541b607484b",
+      "eventHash": "108f40cfdaac88e9eeda08990da3c8a855384916a0c0271901b05fa8f37c5b96"
     }
   ]
 }
