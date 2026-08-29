@@ -958,6 +958,67 @@
         }
       }
     },
+    "/ebay/account-deletion": {
+      "get": {
+        "tags": [
+          "eBay Integrations"
+        ],
+        "summary": "Ebay Account Deletion Challenge",
+        "operationId": "ebay_account_deletion_challenge_ebay_account_deletion_get",
+        "parameters": [
+          {
+            "name": "challenge_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "title": "Challenge Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EbayChallengeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "eBay Integrations"
+        ],
+        "summary": "Ebay Account Deletion Notification",
+        "operationId": "ebay_account_deletion_notification_ebay_account_deletion_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai-models": {
       "get": {
         "tags": [
@@ -104095,6 +104156,20 @@
           "hours"
         ],
         "title": "EarningCodeTotal"
+      },
+      "EbayChallengeResponse": {
+        "properties": {
+          "challengeResponse": {
+            "type": "string",
+            "title": "Challengeresponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "challengeResponse"
+        ],
+        "title": "EbayChallengeResponse"
       },
       "EbaySandboxTaxonomyResult": {
         "properties": {

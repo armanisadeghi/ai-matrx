@@ -524,6 +524,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ebay/account-deletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ebay Account Deletion Challenge */
+        get: operations["ebay_account_deletion_challenge_ebay_account_deletion_get"];
+        put?: never;
+        /** Ebay Account Deletion Notification */
+        post: operations["ebay_account_deletion_notification_ebay_account_deletion_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai-models": {
         parameters: {
             query?: never;
@@ -40092,6 +40110,11 @@ export interface components {
             /** Amount */
             amount?: string | null;
         };
+        /** EbayChallengeResponse */
+        EbayChallengeResponse: {
+            /** Challengeresponse */
+            challengeResponse: string;
+        };
         /**
          * EbaySandboxTaxonomyResult
          * @description Safe proof result; no provider token or credential material.
@@ -76084,6 +76107,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ebay_account_deletion_challenge_ebay_account_deletion_get: {
+        parameters: {
+            query: {
+                challenge_code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EbayChallengeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ebay_account_deletion_notification_ebay_account_deletion_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
