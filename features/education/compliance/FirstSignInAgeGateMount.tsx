@@ -34,9 +34,22 @@
 // /education/family can always set it. Deliberately no "don't ask again" —
 // COPPA declaration is not a preference to opt out of.
 
+// SUPPRESSED ON `/portal` (the departed-member portal, app/(portal)) — DEFERRED, NOT WAIVED.
+// Decided 2026-08-29 (continued-access HANDOFF §5): the portal's whole content is one
+// income-disclosure consent decision, and this popup opened on top of it. Suppression is
+// honest here precisely because this prompt is a NUDGE, not a block (see above): skipping it
+// removes no COPPA protection — the same undeclared account is asked again on any general
+// platform surface next session, and the per-action gate still bites inside education AI,
+// which the portal does not offer. We deliberately do NOT satisfy the gate from the
+// employment record instead: employment does not prove 18+ (minors are legally employable),
+// so deriving a band from it would fabricate a declaration the person never made.
+// The suppression must not touch `markAskedThisSession` — a portal visit is not "asked".
+// Scope: exactly the `(portal)` route group's URL space, nothing wider.
+
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { coppaService } from "./coppaService";
 import { useAiComplianceGate } from "./useAiComplianceGate";
 
@@ -64,10 +77,14 @@ function markAskedThisSession(): void {
 export function FirstSignInAgeGateMount() {
   const gate = useAiComplianceGate({ declarationVariant: "first_run" });
   const { loading, gate: verdict, promptDeclarationIfNeeded, reload } = gate;
+  const pathname = usePathname();
+  // The departed-member portal — see the header block. Deferred, never waived.
+  const onPortal = pathname === "/portal" || pathname?.startsWith("/portal/");
   // The silent signup-metadata apply is tried at most once per mount.
   const triedMetaApply = useRef(false);
 
   useEffect(() => {
+    if (onPortal) return;
     if (loading) return;
     // Signed-in AND undeclared is the only case this mount owns. A declared
     // account, a guest, or a still-loading gate is a no-op.
@@ -103,7 +120,8 @@ export function FirstSignInAgeGateMount() {
     return () => {
       cancelled = true;
     };
-  }, [loading, verdict, promptDeclarationIfNeeded, reload]);
+  }, [onPortal, loading, verdict, promptDeclarationIfNeeded, reload]);
 
+  if (onPortal) return null;
   return <gate.Gate />;
 }
