@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
@@ -120,9 +121,19 @@ export default function TagManager() {
     refresh();
   }, [tagToDelete, refresh]);
 
+  // EXPENSIVE: consolidation is a paid LLM synthesis over every source on the
+  // tag. Name the cost, the wait, and — when a consolidation already exists —
+  // the fact that running it again spends that money a second time.
   const handleConsolidate = useCallback(
-    async (tagId: string) => {
-      await api.consolidateTag(topicId, tagId);
+    async (tag: ResearchTag) => {
+      const sources = tag.source_count ?? 0;
+      const ok = await confirm({
+        title: `Consolidate “${tag.name}”?`,
+        description: `This runs a paid AI synthesis across the ${sources} source${sources === 1 ? "" : "s"} assigned to this tag and takes a few minutes. Cost scales with how many sources are on the tag. If this tag has been consolidated before, running it again duplicates that spend and replaces the current consolidation.`,
+        confirmLabel: "Run consolidation",
+      });
+      if (!ok) return;
+      await api.consolidateTag(topicId, tag.id);
       refresh();
     },
     [api, topicId, refresh],
@@ -266,7 +277,8 @@ export default function TagManager() {
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 rounded-full"
-                  onClick={() => handleConsolidate(tag.id)}
+                  title="Consolidate this tag (paid AI synthesis)"
+                  onClick={() => handleConsolidate(tag)}
                 >
                   <Layers className="h-3.5 w-3.5" />
                 </Button>
@@ -322,10 +334,15 @@ export default function TagManager() {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Tag</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete &ldquo;{tagToDelete?.name}&rdquo;?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{tagToDelete?.name}&rdquo;?
-              This action cannot be undone.
+              Removes the tag from {tagToDelete?.source_count ?? 0} source
+              {(tagToDelete?.source_count ?? 0) === 1 ? "" : "s"} and cannot be
+              undone. The sources themselves stay, but this grouping is gone —
+              rebuilding it means re-assigning every source and re-running its
+              paid AI consolidation.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

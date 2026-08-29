@@ -8,6 +8,7 @@ import { useResearchTags, useResearchSynthesis } from '../../hooks/useResearchSt
 import { useResearchStream } from '../../hooks/useResearchStream';
 import { useStreamDebug } from '../../context/ResearchContext';
 import MarkdownStream from '@/components/MarkdownStream';
+import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
 import { ContentActionBar } from '@/components/content-actions/ContentActionBar';
 import { StoppedEarlyNote } from '../shared/StoppedEarlyNote';
 import { ResearchUsedBy } from '../shared/ResearchUsedBy';
@@ -59,8 +60,28 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
 
     const consolidating = stream.isStreaming;
 
+    // EXPENSIVE: consolidation is a paid LLM synthesis over every source on the
+    // tag. Re-consolidating spends that money again AND replaces the text on
+    // screen, so the confirm has to say both before the run starts.
     const handleConsolidate = useCallback(async () => {
         if (consolidating) return;
+        const ok = await confirm(
+            consolidation
+                ? {
+                      title: `Re-consolidate ${tag ? `“${tag.name}”` : 'this tag'}?`,
+                      description:
+                          'This runs the paid AI synthesis over every source on this tag again and takes a few minutes — it duplicates the money already spent on the consolidation you are looking at, and the result replaces the current consolidation. If the current one is still good, close this and keep it.',
+                      confirmLabel: 'Re-consolidate',
+                      variant: 'destructive',
+                  }
+                : {
+                      title: `Consolidate ${tag ? `“${tag.name}”` : 'this tag'}?`,
+                      description:
+                          'This runs a paid AI synthesis across every source assigned to this tag and takes a few minutes. Cost scales with how many sources are on the tag.',
+                      confirmLabel: 'Run consolidation',
+                  },
+        );
+        if (!ok) return;
         setStreamingText('');
         const response = await api.consolidateTag(topicId, tagId);
         stream.startStream(response, {
@@ -79,7 +100,7 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
             },
         });
         debug.pushEvents(stream.rawEvents, 'consolidate');
-    }, [api, topicId, tagId, stream, refetch, debug, consolidating]);
+    }, [api, topicId, tagId, stream, refetch, debug, consolidating, consolidation, tag]);
 
     return (
         <div className="p-3 sm:p-4 space-y-3">

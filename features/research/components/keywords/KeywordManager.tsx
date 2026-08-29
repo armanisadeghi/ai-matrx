@@ -23,6 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useTopicContext } from "../../context/ResearchContext";
 import {
   useResearchKeywords,
@@ -303,7 +304,18 @@ export default function KeywordManager() {
     await commitAdd(kw);
   };
 
+  // DESTRUCTIVE: deleting a keyword row cascades — its search results and its
+  // per-keyword synthesis go with it, and none of it comes back. Name the
+  // keyword and the exact count before the row disappears.
   const handleDelete = async (keyword: ResearchKeyword) => {
+    const resultCount = keyword.result_count ?? 0;
+    const ok = await confirm({
+      title: `Delete “${keyword.keyword}”?`,
+      description: `This permanently deletes the keyword along with its ${resultCount} search result${resultCount === 1 ? "" : "s"} and any synthesis already written for it. The research already paid for on this keyword is gone — re-adding it means searching, reading, and analyzing all over again.`,
+      confirmLabel: "Delete keyword",
+      variant: "destructive",
+    });
+    if (!ok) return;
     setDeletingId(keyword.id);
     try {
       await deleteKeywordService(keyword.id);

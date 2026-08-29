@@ -371,6 +371,12 @@ export function PipelineGraph() {
   }, [api, topicId, startStream, confirmRun]);
 
   const handleSynthesize = useCallback(async () => {
+    const ok = await confirmRun(
+      "Synthesize and write the report?",
+      "Runs a paid AI synthesis per keyword and writes or updates the topic report from the analyzed sources.",
+      "Cost scales with how many keywords and analyses you have; the report is written from what exists rather than discarded and restarted.",
+    );
+    if (!ok) return;
     const controller = new AbortController();
     const response = await api.synthesize(
       topicId,
@@ -385,13 +391,19 @@ export function PipelineGraph() {
     await startStream(response, "synthesize", controller, {
       iterationMode: "initial",
     });
-  }, [api, topicId, startStream]);
+  }, [api, topicId, startStream, confirmRun]);
 
   // Tags is a MANUAL branch — `/run` never emits tag events, so the only way to
   // produce tags is this standalone pass. Toast on failure: unlike the auto
   // pipeline steps these are user-initiated one-shots, so a thrown request
   // (network / 4xx) must surface rather than vanish as an unhandled rejection.
   const handleAutoTag = useCallback(async () => {
+    const ok = await confirmRun(
+      "Auto-tag every source you've read?",
+      "Runs a paid AI pass over the sources you have already read to propose and assign tags.",
+      "It is an AI call across many sources, so cost scales with how many sources the topic holds.",
+    );
+    if (!ok) return;
     try {
       const controller = new AbortController();
       const response = await api.autoTag(topicId, {}, controller.signal);
@@ -399,9 +411,21 @@ export function PipelineGraph() {
     } catch (err) {
       toast.error((err as Error).message ?? "Could not start auto-tag");
     }
-  }, [api, topicId, startStream]);
+  }, [api, topicId, startStream, confirmRun]);
 
   const handleAutoConsolidate = useCallback(async () => {
+    // Not routed through `confirmRun`: unlike the pipeline steps this pass does
+    // NOT skip work that is already done — a tag consolidated yesterday is
+    // written again — so the shared "already-complete steps are skipped" line
+    // would be a lie here.
+    const ok = await confirm({
+      title: "Consolidate every tag?",
+      description:
+        "This runs a paid AI consolidation for each tag, synthesizing all of that tag's sources into one view. It is an AI run per tag over many sources and takes minutes. Tags that already have a consolidation are written again, which duplicates the money already spent on them and replaces the consolidation currently shown for each one.",
+      confirmLabel: "Run it",
+      variant: "destructive",
+    });
+    if (!ok) return;
     try {
       const controller = new AbortController();
       const response = await api.autoConsolidate(
@@ -414,6 +438,7 @@ export function PipelineGraph() {
       toast.error((err as Error).message ?? "Could not start consolidation");
     }
   }, [api, topicId, startStream]);
+
 
   // DESTRUCTIVE: "rebuild" throws the current synthesized report away and
   // writes a new one from scratch. "Update report" is the additive sibling —
