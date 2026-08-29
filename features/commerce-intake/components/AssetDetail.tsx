@@ -13,9 +13,10 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Loader2, RotateCw } from "lucide-react";
+import { Camera, Loader2, QrCode, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
@@ -32,9 +33,11 @@ import {
   listAssetArtifacts,
   listIdentifiers,
   loadAsset,
+  replaceIdentifier,
   setAssetAttributes,
   setAssetNotes,
 } from "../service";
+import { PrintLabelDialog } from "../labels/components/PrintLabelDialog";
 
 interface AttributeRow {
   key: string;
@@ -52,6 +55,18 @@ export function AssetDetail({ assetId }: { assetId: string }) {
   // A Retry that cannot succeed is the lie the access gate exists to kill, so
   // the gate's retry re-runs the real load rather than re-rendering the shell.
   const [reloadNonce, setReloadNonce] = useState(0);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [pendingRetire, setPendingRetire] = useState<AssetIdentifier | null>(
+    null,
+  );
+
+  const reloadIdentifiers = useCallback(async () => {
+    try {
+      setIdentifiers(await listIdentifiers(assetId));
+    } catch (err) {
+      console.error("[commerce-intake] identifier reload failed", err);
+    }
+  }, [assetId]);
 
   const assetRef = useRef<IntakeAsset | null>(null);
   const adopt = useCallback((next: IntakeAsset | null) => {
@@ -195,6 +210,15 @@ export function AssetDetail({ assetId }: { assetId: string }) {
               variant="outline"
               size="sm"
               className="h-9"
+              onClick={() => setPrintOpen(true)}
+            >
+              <QrCode className="mr-1.5 h-4 w-4" />
+              Print label
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9"
               onClick={() =>
                 router.push(`/commerce/intake?asset=${asset.id}`)
               }
@@ -259,10 +283,19 @@ export function AssetDetail({ assetId }: { assetId: string }) {
                 {i.isPrimary && !i.replacedAt && (
                   <span className="text-xs text-primary">primary</span>
                 )}
-                {i.replacedAt && (
+                {i.replacedAt ? (
                   <span className="text-xs text-muted-foreground">
                     replaced
                   </span>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto h-6 px-2 text-xs text-muted-foreground"
+                    onClick={() => setPendingRetire(i)}
+                  >
+                    Retire
+                  </Button>
                 )}
               </li>
             ))}
@@ -294,6 +327,42 @@ export function AssetDetail({ assetId }: { assetId: string }) {
           )}
         />
       </PanelSection>
+
+      <PrintLabelDialog
+        asset={asset}
+        identifiers={identifiers}
+        open={printOpen}
+        onOpenChange={setPrintOpen}
+        onChanged={() => void reloadIdentifiers()}
+      />
+
+      {/* Replacement lifecycle: retire stamps replaced_at + reason — never a
+          delete; the value's slot in the live unique index frees up. */}
+      <ConfirmDialog
+        open={pendingRetire !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingRetire(null);
+        }}
+        title="Retire this identifier?"
+        description={
+          pendingRetire
+            ? `"${pendingRetire.value}" is marked replaced (kept for history, no longer live). A new label or ID can then take its place.`
+            : ""
+        }
+        confirmLabel="Retire"
+        onConfirm={async () => {
+          if (!pendingRetire) return;
+          try {
+            await replaceIdentifier(pendingRetire.id, "retired_manually");
+            setPendingRetire(null);
+            await reloadIdentifiers();
+            toast.success("Identifier retired.");
+          } catch (err) {
+            console.error("[commerce-intake] identifier retire failed", err);
+            toast.error("Could not retire the identifier.");
+          }
+        }}
+      />
     </div>
   );
 }

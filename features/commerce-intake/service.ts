@@ -778,8 +778,39 @@ export async function addIdentifier(args: {
     })
     .select(IDENTIFIER_COLUMNS)
     .single();
-  if (error) throw error;
+  if (error) {
+    // The live (org, kind, value) unique index (2026-08-29) makes a duplicate
+    // a first-class refusal, not a mystery 23505.
+    if ((error as { code?: string }).code === "23505") {
+      throw new Error(
+        `That ${args.kind.replace(/_/g, " ")} is already on another item.`,
+      );
+    }
+    throw error;
+  }
   return toIdentifier(data as IdentifierRow);
+}
+
+/**
+ * Retire an identifier row — the REPLACEMENT LIFECYCLE write (`replaced_at` +
+ * `replaced_reason`), never a delete: the history of what a device was called
+ * is chain-of-custody data. Retiring frees the (org, kind, value) slot in the
+ * live unique index, so a re-issued label can be assigned afterwards.
+ */
+export async function replaceIdentifier(
+  identifierId: string,
+  reason: string,
+): Promise<void> {
+  const { error } = await db()
+    .from("asset_identifier")
+    .update({
+      replaced_at: new Date().toISOString(),
+      replaced_reason: reason,
+      is_primary: false,
+    })
+    .eq("id", identifierId)
+    .is("replaced_at", null);
+  if (error) throw error;
 }
 
 export async function listIdentifiers(

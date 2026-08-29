@@ -26,9 +26,11 @@
  * - `serialized` (QR mode): a scan closes the current asset and opens a new
  *   one keyed by an `asset_identifier` row (`our_qr`, primary). QR dedupe is
  *   BY ABSENCE (4 s out of frame, in `useQrAutoScan`), so shooting a burst
- *   with no QR in frame continues the same item, and deliberately
- *   re-scanning the same code after absence starts the NEXT UNIT of that
- *   product as a new asset.
+ *   with no QR in frame continues the same item. Since the 2026-08-29
+ *   claim-on-scan upgrade a code that is already live on an asset SWITCHES
+ *   TO that asset (per-org uniqueness is DB-enforced — duplicates are
+ *   unrepresentable); a pooled printed label claims itself onto the item;
+ *   see the processQrCode decision-function comment.
  * - `untracked`: no asset rows — artifacts attach to the BATCH in
  *   `sequence_index` order and delineator frames (`is_delineator`) mark the
  *   item boundaries for downstream segmentation. Typed/voice-note text
@@ -69,6 +71,9 @@ import {
   setAssetNotes,
 } from "../service";
 import { uploadIntakeArtifact } from "../uploads";
+import { normalizeScannedCode } from "../labels/codes";
+import { claimLabelCode, resolveScannedValue } from "../labels/service";
+import type { ScanResolution } from "../labels/types";
 
 const NOTES_AUTOSAVE_MS = 800;
 
@@ -635,10 +640,73 @@ export function useIntakeSession(
     [],
   );
 
+  /**
+   * THE DECISION FUNCTION of a scan (2026-08-29 claim-on-scan upgrade). The
+   * serialization plumbing around it (qrChain, the latest-closure ref, the
+   * bounded superseded loop) is UNCHANGED — only what a code MEANS changed:
+   *
+   * 1. The value is normalized first: printed pool labels carry the resolver
+   *    URL `https://aimatrx.com/l/<code>`; the bare code and the URL form are
+   *    the same scan.
+   * 2. Reverse lookup (live unique index): a code already live on an asset
+   *    SWITCHES TO that asset — never a duplicate identifier row. This
+   *    supersedes the old "same code after absence = next unit" behavior,
+   *    which the per-org uniqueness index now forbids by design.
+   * 3. A pooled `available` code runs the normal assign/switch flow and then
+   *    stamps the claim (`label_code available → assigned`).
+   * 4. A voided code is refused with a toast.
+   * 5. An unknown value keeps the legacy behavior (fresh our_qr string).
+   */
   const processQrCode = useCallback(
     async (code: string): Promise<"assigned" | "switched"> => {
-      const trimmed = code.trim();
+      const trimmed = normalizeScannedCode(code);
       if (!trimmed) return "assigned";
+
+      let resolution: ScanResolution = { type: "unknown" };
+      if (organizationId) {
+        try {
+          resolution = await resolveScannedValue(organizationId, trimmed);
+        } catch (err) {
+          // Lookup failure degrades to legacy behavior — safe, because the
+          // DB's unique index still refuses a duplicate identifier write.
+          console.error("[commerce-intake] scan lookup failed", err);
+        }
+      }
+
+      if (resolution.type === "void") {
+        toast.error("That label was voided — use a different one.");
+        return "assigned";
+      }
+      if (resolution.type === "asset") {
+        if (currentAssetRef.current?.id === resolution.assetId) {
+          // The code is this item's own label — nothing to do.
+          return "assigned";
+        }
+        // The code names an EXISTING asset: open it (never a duplicate).
+        await resumeAsset(resolution.assetId);
+        return "switched";
+      }
+
+      /** Stamp the pool claim after the identifier row landed (step 3). */
+      const claimIfPooled = async () => {
+        if (resolution.type !== "pooled") return;
+        const asset = currentAssetRef.current;
+        if (!asset) return;
+        try {
+          const claimed = await claimLabelCode(resolution.code, asset.id);
+          if (!claimed) {
+            // Another device stamped this code in the same instant. OUR
+            // identifier row won the unique index (theirs failed), so the
+            // item keeps the code; only the pool back-link disagrees.
+            console.warn(
+              "[commerce-intake] label claim raced; identifier row stands",
+            );
+          }
+        } catch (err) {
+          console.error("[commerce-intake] label claim failed", err);
+        }
+      };
+
       const assignToCurrent = async (): Promise<boolean> => {
         const asset = currentAssetRef.current;
         // An untouched, code-less current item just takes the code.
@@ -660,7 +728,10 @@ export function useIntakeSession(
         }
         return true;
       };
-      if (await assignToCurrent()) return "assigned";
+      if (await assignToCurrent()) {
+        await claimIfPooled();
+        return "assigned";
+      }
       // Anything else — including a deliberate re-scan of the SAME code
       // after 4 s out of frame (the next unit of the same product) — closes
       // the current item and opens a new one carrying the code. Bounded loop:
@@ -672,10 +743,14 @@ export function useIntakeSession(
         if (outcome === "failed") return "assigned"; // flush failed — stay on the item
         if (outcome === "finished") {
           await ensureAsset({ qrCode: trimmed });
+          await claimIfPooled();
           return "switched";
         }
         // superseded: the session now holds a different, freshly adopted item
-        if (await assignToCurrent()) return "assigned";
+        if (await assignToCurrent()) {
+          await claimIfPooled();
+          return "assigned";
+        }
         // The adopted item already carries THIS code (an overlapping create
         // landed what we wanted) — never close it photo-less; it is current.
         if (currentAssetRef.current?.qrCode === trimmed) return "switched";
@@ -688,6 +763,7 @@ export function useIntakeSession(
       ensureAsset,
       finishCurrentAsset,
       organizationId,
+      resumeAsset,
     ],
   );
 

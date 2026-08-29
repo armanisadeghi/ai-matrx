@@ -35,6 +35,11 @@ Live demo (all of it wired): `app/(dev)/demos/tests/qr-labels/qr-label-generator
 (Manual entry / papaparse CSV of `qr_value, line1..line6` / preview + print +
 PDF + calibration).
 
+First production consumer: `features/commerce-intake/labels/` (the pooled
+label-code system — mint → print → claim-on-scan; batches at
+`/commerce/labels`), which feeds `{ labels, templateId }` through every entry
+point above and defaults `ecLevel` from the `commerce.labels.qr_ec_level` knob.
+
 ## Template registry (`label-templates.ts`)
 
 `LabelTemplate` = `{id, name, stockCode, sheetWIn, sheetHIn, marginTopIn,
