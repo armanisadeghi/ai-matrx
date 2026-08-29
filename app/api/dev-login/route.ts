@@ -10,9 +10,23 @@ import { createClient } from "@/utils/supabase/server";
  * Behavior:
  *   - Hard-refuses unless NODE_ENV !== 'production' AND host is localhost/127.0.0.1.
  *   - Requires ?token= to match process.env.DEV_LOGIN_TOKEN.
- *   - If a valid session already exists, just 302s to `next` (no re-login).
+ *   - If the AI_ADMIN_USERNAME session already exists, just 302s to `next` (no re-login).
+ *   - If SOMEBODY ELSE is signed in, signs them out and signs the admin in — see below.
  *   - Otherwise signs in with AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD and 302s to `next`.
  *   - `next` must be a relative path starting with "/". Defaults to "/dashboard".
+ *
+ * 🚨 THIS ROUTE MUST END WITH THE ADMIN SIGNED IN, OR IT IS A TRAP.
+ *
+ * It used to 302 on ANY existing session. Agents share one browser profile, so a
+ * probe persona left over from an earlier session (`zzz.*@example.invalid`, a plain
+ * member of the fixture orgs) survived the "log in as admin" step in silence — and
+ * the next walk read that persona's perfectly correct member-level render as an
+ * authorization DEFECT and reported an owner rendering as "Member". A dev-login that
+ * can leave you as somebody else is worse than no dev-login: it makes every
+ * screenshot taken after it untrustworthy, and nothing on the page says why.
+ *
+ * Callers should still assert who they are (decode `/api/session-token`) — but the
+ * route no longer requires that vigilance to be correct.
  */
 export async function GET(request: NextRequest) {
   if (process.env.NODE_ENV === "production") {
@@ -55,14 +69,6 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    return NextResponse.redirect(destination);
-  }
-
   const email = process.env.AI_ADMIN_USERNAME;
   const password = process.env.AI_ADMIN_PASSWORD;
   if (!email || !password) {
@@ -70,6 +76,23 @@ export async function GET(request: NextRequest) {
       { error: "AI_ADMIN_USERNAME / AI_ADMIN_PASSWORD not configured" },
       { status: 500 },
     );
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const same =
+      (user.email ?? "").trim().toLowerCase() === email.trim().toLowerCase();
+    if (same) return NextResponse.redirect(destination);
+    // Somebody else is holding this browser profile. Evict them — this route's
+    // whole contract is "you are now the admin", and honoring an unrelated session
+    // is how an agent walks a surface as the wrong person without noticing.
+    console.warn(
+      `[dev-login] evicting a stale session for ${user.email ?? user.id} — signing in as ${email}`,
+    );
+    await supabase.auth.signOut();
   }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });
