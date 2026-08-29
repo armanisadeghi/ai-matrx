@@ -56365,6 +56365,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      _schema_migration_slot_grandfather: {
+        Row: {
+          filenames: string[]
+          noted_at: string
+          slot: string
+          source: string
+        }
+        Insert: {
+          filenames: string[]
+          noted_at?: string
+          slot: string
+          source: string
+        }
+        Update: {
+          filenames?: string[]
+          noted_at?: string
+          slot?: string
+          source?: string
+        }
+        Relationships: []
+      }
       _schema_migrations: {
         Row: {
           applied_at: string
@@ -63534,6 +63555,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      migration_slot: { Args: { p_filename: string }; Returns: string }
       mkt_initiative_list_facets: {
         Args: {
           p_deep?: boolean
