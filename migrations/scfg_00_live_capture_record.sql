@@ -1,4 +1,5 @@
 -- scfg_00_live_capture_record.sql
+-- migrate: skip: capture record only — preserves pre-cutover live state; never meant to apply
 -- ============================================================================
 -- SCOPED CONFIGURATION — Phase 0 pre-flight capture (RECORD, NOT A MIGRATION).
 -- Do not apply. This file preserves the live state of every function and data
