@@ -189,6 +189,7 @@ describe("resolveComponent — compiled floor (pre-warm)", () => {
         pinnedKindVersion: null,
         updatedAt: null,
         createdBy: null,
+        hasComponentSource: false,
         isActive: true,
         resolvedBy: "compiled",
       } satisfies ComponentResolution);

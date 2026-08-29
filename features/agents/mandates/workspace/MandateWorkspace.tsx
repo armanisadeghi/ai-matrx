@@ -50,7 +50,7 @@ import { MandateNotesPanel } from "../components/MandateNotesPanel";
 import { useCopyMandateAgent } from "../useCopyMandateAgent";
 import { splitMandateKey } from "../mandate-key";
 import {
-  holderOfBinding,
+  agentHolderOfBinding,
   holderOfMandate,
   isFloatingBinding,
   isFloatingMandate,
@@ -90,7 +90,7 @@ function resolveForPrincipal(
   principal: WorkspacePrincipal,
 ) {
   const swapping = (b: MandateBindingRowDb) => {
-    const holder = holderOfBinding(b);
+    const holder = agentHolderOfBinding(b);
     return b.is_enabled && (holder.holderId !== null || holder.versionId !== null);
   };
   const userBinding =
@@ -122,7 +122,7 @@ function resolveForPrincipal(
   // Holder and its own float/pin state, and the mandate default is consulted
   // only when no binding won at all.
   const systemHolder = holderOfMandate(data.mandate);
-  const winnerHolder = winner ? holderOfBinding(winner) : null;
+  const winnerHolder = winner ? agentHolderOfBinding(winner) : null;
   const versionId = winnerHolder
     ? winnerHolder.versionId
     : systemHolder.versionId;
@@ -516,7 +516,7 @@ function OrgOverridesDisclosure({
       {open ? (
         <div className="space-y-2 border-t border-border/40 px-3 py-2.5">
           {orgBindings.map((b) => {
-            const bindingHolder = holderOfBinding(b);
+            const bindingHolder = agentHolderOfBinding(b);
             const agentId = bindingHolder.versionId
               ? null // version identity resolves via the workspace load when needed
               : bindingHolder.holderId;

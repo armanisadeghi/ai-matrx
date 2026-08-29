@@ -95,8 +95,8 @@ import {
   type MandateRow,
 } from "./mandate-health";
 import {
+  agentHolderOfBinding,
   contractOfMandate,
-  holderOfBinding,
   holderOfMandate,
   isFloatingMandate,
 } from "@/lib/supabase/mandateStorage";
@@ -507,7 +507,7 @@ export function MandatesConsole() {
     const overrides: MandateOverrideSummary[] | undefined =
       selectedRow && data
         ? (data.bindingsByMandateId[selectedRow.id] ?? []).map((b) => {
-            const bindingHolder = holderOfBinding(b);
+            const bindingHolder = agentHolderOfBinding(b);
             const versionAgentId = bindingHolder.versionId
               ? data.versionsById[bindingHolder.versionId]?.agentId
               : undefined;

@@ -58,7 +58,7 @@ import { parseMandateContract } from "@/features/agents/mandates/overrides";
 import { parseMandateWave1 } from "@/features/agents/mandates/provision-shapes";
 import {
   contractOfMandate,
-  holderOfBinding,
+  agentHolderOfBinding,
   holderOfMandate,
   isFloatingMandate,
 } from "@/lib/supabase/mandateStorage";
@@ -1438,7 +1438,7 @@ function OverridesList({
     <div className="space-y-1 text-xs">
       <div className="font-medium text-muted-foreground">All bindings</div>
       {bindings.map((b) => {
-        const bindingHolder = holderOfBinding(b);
+        const bindingHolder = agentHolderOfBinding(b);
         const versionAgentId = bindingHolder.versionId
           ? data.versionsById[bindingHolder.versionId]?.agentId
           : undefined;

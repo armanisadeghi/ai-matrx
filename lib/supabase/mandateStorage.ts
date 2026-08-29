@@ -246,6 +246,30 @@ export function holderOfBinding(row: MandateRowLike): HolderRef {
 }
 
 /**
+ * The AGENT a binding names — null on every non-agent Holder.
+ *
+ * This is NOT the same accessor as {@link holderOfBinding}, and the difference
+ * is the whole point. Pre-cutover the binding had an agent-only `agent_id`
+ * column that a workflow binding left NULL by construction; post-cutover
+ * `holder_id` is POLYMORPHIC and a workflow binding fills it with a workflow
+ * id. So a surface that used to read `agent_id` — an agent-name lookup, an
+ * agent picker's current value, "does this binding swap the agent" — must ask
+ * for the agent specifically, or it starts treating a workflow id as an agent
+ * id the moment the switch flips.
+ *
+ * Resolution paths that have already REFUSED a non-agent Holder (the client
+ * resolvers' `assertExecutableHolder`) use `holderOfBinding` instead, so they
+ * follow the Holder the day workflows execute.
+ */
+export function agentHolderOfBinding(row: MandateRowLike): HolderRef {
+  const holder = holderOfBinding(row);
+  if (holder.holderType !== "agent") {
+    return { holderType: holder.holderType, holderId: null, versionId: null };
+  }
+  return holder;
+}
+
+/**
  * A mandate row's contract, in the blob shape every existing reader expects.
  * Post-cutover the blob is gone and this reassembles it from the promoted
  * columns, so no surface has to know which side of the switch it is on.

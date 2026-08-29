@@ -65,8 +65,8 @@ import {
 import { compareContracts, compareStoredContract } from "../contract-compare";
 import { parseBindingWave1, parseMandateWave1 } from "../provision-shapes";
 import {
+  agentHolderOfBinding,
   contractOfMandate,
-  holderOfBinding,
 } from "@/lib/supabase/mandateStorage";
 
 /** Externally-owned override store (e.g. research's per-topic
@@ -146,7 +146,7 @@ export function MandateAgentPicker({
   const overrideAgentId = override
     ? override.agentId
     : data?.myBinding?.is_enabled
-      ? holderOfBinding(data.myBinding).holderId
+      ? agentHolderOfBinding(data.myBinding).holderId
       : null;
   const overrideAgentName = overrideAgentId
     ? ([...ownedAgents, ...sharedAgents].find((a) => a.id === overrideAgentId)

@@ -29,8 +29,8 @@ import {
 } from "../provision-shapes";
 import { parseMandateContract, type MandateContract } from "../contract";
 import {
+  agentHolderOfBinding,
   contractOfMandate,
-  holderOfBinding,
   holderOfMandate,
   mandateBindings,
   mandateDefinitions,
@@ -132,7 +132,7 @@ export function useMandateWorkspaceData(
       // 3. Holder identities. Version pins resolve to their master for the
       //    identity read; version_number rides along for drift.
       const systemHolder = holderOfMandate(mandate);
-      const bindingHolders = bindings.map((b) => holderOfBinding(b));
+      const bindingHolders = bindings.map((b) => agentHolderOfBinding(b));
       const versionIds = [
         systemHolder.versionId,
         ...bindingHolders.map((h) => h.versionId),

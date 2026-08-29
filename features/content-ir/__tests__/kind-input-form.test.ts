@@ -170,6 +170,7 @@ describe("decideKindInputPath — the routing law", () => {
     pinnedKindVersion: null,
     updatedAt: null,
     createdBy: null,
+    hasComponentSource: false,
     isActive: true,
     resolvedBy: "compiled" as const,
   });
