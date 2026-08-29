@@ -7,8 +7,8 @@
 // state from the URL (`?brand`, `?site`, `?view`, `?focus`, `?data`), so this
 // route needs no props and no server-side branch.
 //
-// `(core)` route conventions: chrome via <PageHeader>, `pr-14` on the header
-// row to clear the shell's fixed 44px user-menu avatar, and a Suspense boundary
+// `(core)` route conventions: chrome via <PageHeader>, whose center slot is
+// already bounded before the shell's user-menu avatar, and a Suspense boundary
 // because the workspace reads search params on the client.
 
 import type { Metadata } from "next";
@@ -28,8 +28,7 @@ export default function PressRoomPage() {
   return (
     <>
       <PageHeader>
-        {/* pr-14 clears the shell's fixed 44px user-menu avatar. */}
-        <div className="flex w-full min-w-0 items-center gap-2 pr-14">
+        <div className="flex w-full min-w-0 items-center gap-2">
           <h1 className="truncate text-sm font-medium text-foreground">
             Press Room
           </h1>

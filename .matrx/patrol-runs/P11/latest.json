@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P11",
-  "runId": "2026-08-26T161415Z",
-  "state": "closed",
-  "updatedAt": "2026-08-26T16:24:38Z",
-  "summary": "Closed clean P11 Education family rotation: 0 findings, 0 fixes, 0 approvals, no mutation batch",
-  "source": "2026-08-26T161415Z.json",
-  "eventHash": "4b72af68aa9df373097218284a506db3cdbc03ef063c9fafe311cb39e3dde796"
+  "runId": "2026-08-29T161426Z",
+  "state": "certifying",
+  "updatedAt": "2026-08-29T16:16:52.197Z",
+  "summary": "Candidate 81508305e1241e81803824dbe8cd27520390dc87 preserved for independent adversarial certification",
+  "source": "2026-08-29T161426Z.json",
+  "eventHash": "7e4799dc2d503ec847d33452817b4080c625483f15f135207cb3a0dc9dd106e8"
 }

@@ -21,7 +21,7 @@ export default function MarketingMonitoringPage() {
   return (
     <>
       <PageHeader>
-        <div className="flex w-full min-w-0 items-center pr-14">
+        <div className="flex w-full min-w-0 items-center">
           <h1 className="truncate text-sm font-medium text-foreground">
             Monitoring
           </h1>

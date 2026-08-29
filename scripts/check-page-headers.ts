@@ -10,6 +10,7 @@
  * Modes:
  *   pnpm check:page-headers          scan all route files under app/
  *   pnpm check:page-headers --strict exit 1 when violations found
+ *   pnpm check:page-headers --core-only report only the AppShell-owned scope
  *
  * See features/shell/components/header/variants/USAGE.md
  */
@@ -49,13 +50,14 @@ interface Violation {
   reason: string;
 }
 
-function parseArgs(): { strict: boolean } {
+function parseArgs(): { strict: boolean; coreOnly: boolean } {
   const strict = process.argv.includes("--strict");
+  const coreOnly = process.argv.includes("--core-only");
   if (process.argv.includes("-h") || process.argv.includes("--help")) {
-    console.log("Usage: check-page-headers [--strict]");
+    console.log("Usage: check-page-headers [--strict] [--core-only]");
     process.exit(0);
   }
-  return { strict };
+  return { strict, coreOnly };
 }
 
 function walkTsx(dir: string, out: string[] = []): string[] {
@@ -120,6 +122,23 @@ function scanFile(path: string): Violation[] {
   const hasPageHeader =
     src.includes("PageHeader") || src.includes("PageSpecificHeaderPortal");
 
+  if (relative(APP_DIR, path).startsWith("(core)/") && hasPageHeader) {
+    const pageHeaderBlocks =
+      src.match(/<PageHeader\b[\s\S]*?<\/PageHeader>/g) ?? [];
+    const clearanceHack = pageHeaderBlocks.find((block) =>
+      /className\s*=\s*(?:["'][^"']*\bpr-(?:12|14)\b[^"']*["']|\{`[^`]*\bpr-(?:12|14)\b[^`]*`\})/s.test(
+        block,
+      ),
+    );
+    if (clearanceHack) {
+      violations.push({
+        file: rel,
+        reason:
+          "Adds pr-12/pr-14 avatar clearance inside <PageHeader>. The shell center slot is already bounded between its left and right controls; remove the redundant padding.",
+      });
+    }
+  }
+
   const marker = FAUX_HEADER_MARKERS.find((m) => src.includes(m));
   if (!marker) return violations;
 
@@ -157,8 +176,13 @@ function scanCompactRouteNav(path: string): Violation[] {
 }
 
 function main() {
-  const { strict } = parseArgs();
-  const files = walkTsx(APP_DIR).filter(isRouteFile);
+  const { strict, coreOnly } = parseArgs();
+  const files = walkTsx(APP_DIR)
+    .filter(isRouteFile)
+    .filter(
+      (path) =>
+        !coreOnly || relative(APP_DIR, path).startsWith("(core)/"),
+    );
   const featureHeaderFiles = walkHeaderComponents(FEATURES_DIR);
   const violations = [
     ...files.flatMap(scanFile),

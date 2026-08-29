@@ -75,7 +75,7 @@ export default function BakeoffPickerPage() {
   return (
     <>
       <PageHeader>
-        <div className="flex items-center gap-2 pr-14">
+        <div className="flex items-center gap-2">
           <FlaskConical className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Run-page bake-off — pick a workflow, pick a design</span>
         </div>
