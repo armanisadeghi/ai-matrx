@@ -23,6 +23,7 @@ interface OAuthSession {
   redirectUri: string;
   returnUrl: string;
   endpointOverride: string | null;
+  resource: string | null;
   state: string;
 }
 
@@ -123,6 +124,9 @@ export async function GET(req: NextRequest) {
       redirect_uri: session.redirectUri,
       code_verifier: session.codeVerifier,
     });
+    if (session.resource) {
+      tokenBody.set("resource", session.resource);
+    }
 
     const tokenHeaders: Record<string, string> = {
       "Content-Type": "application/x-www-form-urlencoded",

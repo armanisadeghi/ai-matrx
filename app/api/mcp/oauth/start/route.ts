@@ -179,6 +179,7 @@ export async function GET(req: NextRequest) {
       server.oauth_scopes ??
       protectedResource?.scopes_supported ??
       authServer.scopes_supported;
+    const resource = protectedResource?.resource ?? null;
     let tokenEndpointAuthMethod = selectDcrTokenEndpointAuthMethod(authServer);
 
     let clientId: string | undefined;
@@ -269,6 +270,7 @@ export async function GET(req: NextRequest) {
       redirectUri,
       returnUrl: returnUrl ?? "/",
       endpointOverride,
+      resource,
       state,
     });
 
@@ -296,6 +298,9 @@ export async function GET(req: NextRequest) {
     // 3. Auth server metadata scopes
     if (requestedScopes?.length) {
       params.set("scope", requestedScopes.join(" "));
+    }
+    if (resource) {
+      params.set("resource", resource);
     }
 
     const authUrl = `${authServer.authorization_endpoint}?${params.toString()}`;
