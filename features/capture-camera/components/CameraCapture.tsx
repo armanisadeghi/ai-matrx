@@ -185,7 +185,10 @@ export function CameraCapture({
       valueLabel: aspect === "full" ? undefined : aspect,
       onPress: () =>
         setAspect(
-          (a) => ASPECT_CYCLE[(ASPECT_CYCLE.indexOf(a) + 1) % ASPECT_CYCLE.length],
+          (a) =>
+            ASPECT_CYCLE[
+              (ASPECT_CYCLE.indexOf(a) + 1) % ASPECT_CYCLE.length
+            ] ?? "full",
         ),
     },
     ...(controls.exposureSupported
@@ -338,7 +341,14 @@ export function CameraCapture({
           )}
           <div className="bg-black/65 px-3 pb-safe backdrop-blur-[2px]">
             {slots.aboveModeSelector}
-            <div className="relative flex items-center justify-center py-2.5">
+            {/* The domain action (Next/Break) gets its own right-aligned row —
+                overlaying it on the mode labels collides on narrow phones. */}
+            {slots.modeRowTrailing && (
+              <div className="flex justify-end pb-1 pt-1.5">
+                {slots.modeRowTrailing}
+              </div>
+            )}
+            <div className="flex items-center justify-center py-2.5">
               <ModeSelector
                 mode={mode}
                 onModeChange={onModeChange}
@@ -347,9 +357,6 @@ export function CameraCapture({
                 uploadDisabled={shutterDisabled && !blocked}
                 extraModes={slots.extraModes}
               />
-              {slots.modeRowTrailing && (
-                <div className="absolute right-0">{slots.modeRowTrailing}</div>
-              )}
             </div>
             <div className="flex items-center justify-between px-2 pb-4 pt-1">
               <div className="flex w-16 justify-start">

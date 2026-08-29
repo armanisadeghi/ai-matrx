@@ -5,7 +5,10 @@ manual test script below). Routes: `/commerce/intake` (capture) · `/commerce/in
 (capture + client-run instant analysis) · `/commerce/intake/assets` (hub list) ·
 `/commerce/intake/assets/[id]` (asset detail) · `/commerce/intake/answer`
 (answer queue) · `/commerce/labels` (label batches) · `/commerce/labels/[batchId]`
-(print run detail) · `/l/[code]` (public label resolver) · `/commerce/intake/admin` (map). Project brief + contracts:
+(print run detail) · `/l/[code]` (public label resolver) · `/commerce/intake/admin` (map) ·
+`/commerce/intake/v2` + `/v2/instant` (ISOLATED iPhone-style rebuild on `features/capture-camera/`
+— same engine and write rules, new chrome; replaces `/commerce/intake` only after Arman approves;
+read [`features/capture-camera/FEATURE.md`](../capture-camera/FEATURE.md) before touching it). Project brief + contracts:
 `/Users/armanisadeghi/code/common-docs/projects/ebay-store-management/BUILD.md` (W4) +
 `PROTOTYPE-CONCEPTS.md` (the concepts are REQUIREMENTS; the prototype's storage is not).
 
@@ -219,6 +222,7 @@ On a phone, logged into an org:
 
 ## Change log
 
+- 2026-08-29 — **`/commerce/intake/v2` — the iPhone-style rebuild (isolated).** `IntakeCaptureScreenV2` renders the new `features/capture-camera` chrome (`CameraCapture` + required cloud port + slots) over the UNCHANGED engine: `useIntakeSession`, both write rules, QR-by-absence, uploads.ts, instant lane. Commerce affordances attach via slots (QR toggle, serial, notes, voice, Next/Break, Process). Adds: two-tap options grid (Flash/Timer/Grid/Aspect/Exposure + QR/Notes tiles), instant crop/rotate via `ImageEditSheet` (MediaPager gained optional `onEdit`, photos with local pixels only), cloud Library sheet from the recents thumb, iOS-sheet camera-blocked state. v1 untouched; swap gated on approval. type-check green.
 - 2026-08-29 — **Registered `commerce` with PostgREST.**
   `migrations/expose_commerce_schema_postgrest_2026_08_29.sql` appends the schema to the
   authenticator's live `pgrst.db_schemas` value and reloads PostgREST. The migration reads and
