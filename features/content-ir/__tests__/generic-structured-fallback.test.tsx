@@ -240,10 +240,16 @@ describe("R6 generic fallback at the render seam", () => {
     });
   });
 
-  it("[strangler seam] a kind with NO definition at all stays untouched, by reference", () => {
+  it("[unregistered] a kind with NO definition reaches the honest generic floor", () => {
     const block = kindBlock("kind_the_platform_never_heard_of", { a: 1 });
-    expect(applyIrKindRoute(block)).toBe(block);
-    expect(block.type).toBe("code");
+    const routed = applyIrKindRoute(block);
+    expect(routed.type).toBe(GENERIC_STRUCTURED_COMPONENT_KEY);
+    expect(markerOf(routed)).toEqual({
+      by: "generic",
+      key: GENERIC_STRUCTURED_COMPONENT_KEY,
+      unverified: true,
+      reason: "unregistered",
+    });
   });
 
   it("[strangler seam] a pending region (no kind yet) stays untouched, by reference", () => {
