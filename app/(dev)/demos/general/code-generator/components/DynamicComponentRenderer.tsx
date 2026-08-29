@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { staticLucideIconMap } from "@/components/official/icons/IconResolver";
+import { staticLucideIconMap } from "@ai-matrx/icons";
 import { LiveProvider, LiveError, LivePreview } from "react-live";
 import * as UIComponents from "@/components/ui/react-live-scope";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";

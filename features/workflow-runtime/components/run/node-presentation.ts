@@ -14,7 +14,7 @@
  * these rows by the components that render them.
  */
 
-import { kebabCaseToLucidePascalCase } from "@/utils/icons/lucide-name-normalize";
+import { kebabCaseToLucidePascalCase } from "@ai-matrx/icons";
 
 import type { WorkflowDefinitionLike } from "../../trigger-points";
 

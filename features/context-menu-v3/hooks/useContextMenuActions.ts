@@ -40,7 +40,7 @@ import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-displa
 import { getRelatedSurfaces } from "@/features/surfaces/runtime/fetchRelatedSurfaces";
 import { useOpenSurfaceContextWindow } from "@/features/overlays/openers/surfaceContextWindow";
 import { useOpenSurfaceAgentBindWindow } from "@/features/overlays/openers/surfaceAgentBindWindow";
-import { getIconComponent } from "@/components/official/icons/IconResolver";
+import { getIconComponent } from "@ai-matrx/icons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectIsDebugMode,

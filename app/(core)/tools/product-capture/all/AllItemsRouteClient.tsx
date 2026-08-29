@@ -23,12 +23,14 @@ export function AllItemsHeader() {
           <TapTargetButton
             icon={<TableProperties className="h-4 w-4" />}
             label="Pipeline"
+            mobileIconOnly
             href="/tools/product-capture/manage"
             ariaLabel="Open the pipeline manager"
           />
           <TapTargetButtonSolid
             icon={<Camera className="h-4 w-4" />}
             label="Capture"
+            mobileIconOnly
             href="/tools/product-capture"
             ariaLabel="Open the capture screen"
           />

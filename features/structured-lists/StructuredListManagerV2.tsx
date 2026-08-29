@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import {
   useOpenCuratedIconPickerWindow,
   type CuratedIconPickerHandle,

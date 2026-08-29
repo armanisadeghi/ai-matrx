@@ -11,9 +11,9 @@ import {
   Search,
   LayoutGrid,
 } from "lucide-react";
-import IconResolver, {
+import { IconResolver,
   isRegisteredOrLucideIconName,
-} from "@/components/official/icons/IconResolver";
+} from "@ai-matrx/icons";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useOpenCuratedIconPickerWindow } from "@/features/window-panels/windows/icons/useOpenCuratedIconPickerWindow";
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import {
   collectLucideIconNameCandidates,
   extractLucideJsxIconName,
-} from "@/utils/icons/lucide-name-normalize";
+} from "@ai-matrx/icons";
 import { LUCIDE_ICONS_GALLERY_URL } from "@/utils/icons/lucide-gallery-url";
 
 export interface IconInputWithValidationProps {

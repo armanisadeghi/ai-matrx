@@ -29,7 +29,7 @@ import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { ContextValueType } from "@/features/scopes/types";
 import type { OrgNode, ScopeNode, ScopeTypeNode } from "@/features/scopes/types";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { DynamicIcon } from "@ai-matrx/icons";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";

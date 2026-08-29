@@ -29,8 +29,10 @@ jest.mock("@/features/organizations/peek/ResourcePeekHost", () => ({
     __esModule: true,
     ResourcePeekHost: () => null,
 }));
-jest.mock("@/components/official/icons/IconResolver", () => ({
+jest.mock("@ai-matrx/icons", () => ({
     __esModule: true,
+    IconResolver: () => null,
+    DynamicIcon: () => null,
     default: () => null,
 }));
 
@@ -82,7 +84,10 @@ jest.mock("@/features/agents/redux/agent-shortcut-categories/selectors", () => (
     selectAllCategoriesMap: jest.fn(() => ({})),
 }));
 jest.mock("@/lib/redux/hooks", () => ({
-    useAppSelector: (sel: (s: unknown) => unknown) => sel({}),
+    // userAuth: the shortcut CRUD hook reads selectUserId since the
+    // org-context write change (2026-08-27) — an empty state crashes render.
+    useAppSelector: (sel: (s: unknown) => unknown) =>
+        sel({ userAuth: { id: "user-1", createdAt: null } }),
     useAppDispatch: () => jest.fn(),
 }));
 jest.mock("@/features/surfaces/utils/surface-display", () => ({

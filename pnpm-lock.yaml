@@ -22,13 +22,16 @@ importers:
         version: 0.3.0
       '@ai-matrx/content-ir-react':
         specifier: latest
-        version: 0.5.0(@ai-matrx/content-ir@0.3.0)(react@19.2.7)
+        version: 0.5.1(@ai-matrx/content-ir@0.3.0)(react@19.2.7)
       '@ai-matrx/data':
         specifier: latest
         version: 0.2.1
       '@ai-matrx/design-system':
         specifier: latest
         version: 0.1.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@ai-matrx/icons':
+        specifier: latest
+        version: 0.1.1(lucide-react@1.22.0(react@19.2.7))(react-icons@5.6.0(react@19.2.7))(react@19.2.7)
       '@ai-matrx/kit':
         specifier: latest
         version: 0.5.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7))
@@ -790,8 +793,8 @@ packages:
     resolution: {integrity: sha512-vZmhIMGgVGzFwQA1YafFjdsZ8fWQlsPFKc357iiKFmu23WsMbR/kqqOTlE8mFlpBfX53HfWQ/xePx+d/+LsVFA==}
     engines: {node: '>=20'}
 
-  '@ai-matrx/content-ir-react@0.5.0':
-    resolution: {integrity: sha512-f2OkY/9YvdYEA7+VzbveXT0p2Jk1l1os+kxoKS0JkEYIFrjXy1lJOZWa+qZqNMJnnunbiyboqPqsef2x1jUQJg==}
+  '@ai-matrx/content-ir-react@0.5.1':
+    resolution: {integrity: sha512-DvEMlydbe8QZzCQAYpurC2PCmkN7OVZ7YM3l3crrK1PMdLsjpMty54NesoXNrq3A5960VtOPphNq4vE2QvYwTA==}
     engines: {node: '>=20'}
     peerDependencies:
       '@ai-matrx/content-ir': 0.3.0
@@ -811,6 +814,17 @@ packages:
     peerDependencies:
       react: 19.2.7
       react-dom: 19.2.7
+
+  '@ai-matrx/icons@0.1.1':
+    resolution: {integrity: sha512-i/VboAg1R4mLSpWR+6NsVgY4cNqIlflYVp8uDcEdnQjCHpLXw3raYrTbrwTiCmeTac4y3bNjk/TkIqfPuSkffA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      lucide-react: '>=0.400.0'
+      react: 19.2.7
+      react-icons: '>=5.0.0'
+    peerDependenciesMeta:
+      react-icons:
+        optional: true
 
   '@ai-matrx/kit@0.5.1':
     resolution: {integrity: sha512-j8LzQ9Lxc977Dil+cAIHdIBOXTqKu4HD9OC1TFj2p3setkEHAYEiGoZAdH16ypziWIiIaxJ9M0ePBqieqKQI0A==}
@@ -12985,7 +12999,7 @@ snapshots:
 
   '@ai-matrx/agents@0.5.0': {}
 
-  '@ai-matrx/content-ir-react@0.5.0(@ai-matrx/content-ir@0.3.0)(react@19.2.7)':
+  '@ai-matrx/content-ir-react@0.5.1(@ai-matrx/content-ir@0.3.0)(react@19.2.7)':
     dependencies:
       '@ai-matrx/content-ir': 0.3.0
       react: 19.2.7
@@ -13009,6 +13023,13 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
+
+  '@ai-matrx/icons@0.1.1(lucide-react@1.22.0(react@19.2.7))(react-icons@5.6.0(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      lucide-react: 1.22.0(react@19.2.7)
+      react: 19.2.7
+    optionalDependencies:
+      react-icons: 5.6.0(react@19.2.7)
 
   '@ai-matrx/kit@0.5.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sonner@2.0.7(react-dom@19.2.7(react@19.2.7))(react@19.2.7))':
     dependencies:

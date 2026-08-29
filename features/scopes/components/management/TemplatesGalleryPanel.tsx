@@ -16,7 +16,7 @@ import { Card } from "@/components/ui/card";
 import { useTemplates } from "@/features/scopes/hooks/useTemplates";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { DynamicIcon } from "@ai-matrx/icons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createScopesScope,

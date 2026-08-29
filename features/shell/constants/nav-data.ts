@@ -1117,9 +1117,14 @@ export const primaryNavItems: ShellNavItem[] = [
       static, server-agnostic data with no per-org runtime gate, and giving it one would make
       every page in the app resolve HR context just to draw a sidebar. So it passes `null`
       VISIBLY — which is exactly the case `routes.ts` reserves `null` for — and the honesty is
-      moved to the LANDING: every `/hr/*` route renders `HrShell`, whose pinned context bar names
-      the employer it opened and offers the switcher. The sidebar therefore never claims an
-      employer it does not know; the page it opens states the one it resolved.
+      moved to the LANDING: the page names the employer it opened. Where a route mounts `HrShell`
+      that is the pinned context bar plus the switcher; on the thirteen `/hr` routes that mount
+      `PageHeader` instead — `/hr/tasks`, `/hr/tasks/[instanceId]` and the `/hr/me/*` family — it
+      is `HrPageState`'s substitution notice (`useHrContext` law B). Corrected 2026-08-29: this
+      comment used to claim EVERY `/hr/*` route renders `HrShell`, which was never true, and the
+      routes it was wrong about were the deep-link landings where employers actually get crossed.
+      The sidebar therefore never claims an employer it does not know; the page it opens states
+      the one it resolved.
 
       Building them also keeps this file HONEST ABOUT PATHS: a route renamed in `routes.ts` now
       moves the sidebar with it instead of leaving eighteen 404s nobody grep'd for.

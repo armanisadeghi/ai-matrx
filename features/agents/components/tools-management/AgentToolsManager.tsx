@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { DynamicIcon } from "@ai-matrx/icons";
 import {
   Wrench,
   Search,

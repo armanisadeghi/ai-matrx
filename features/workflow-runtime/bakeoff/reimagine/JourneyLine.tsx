@@ -15,7 +15,7 @@
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import {
   FAMILY_ICON,
   FAMILY_STYLE,

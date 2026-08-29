@@ -28,7 +28,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { ElapsedTime } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
 import {

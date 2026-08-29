@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 import { AgentExecutionTestModal } from "./AgentExecutionTestModal";
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { DynamicIcon } from "@ai-matrx/icons";
 import {
   getAllDisplayTypes,
   getDisplayMeta,

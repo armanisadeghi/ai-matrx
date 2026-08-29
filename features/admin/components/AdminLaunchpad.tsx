@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { IconExternalLink, IconRefresh, IconSearch } from "@tabler/icons-react";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

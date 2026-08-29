@@ -31,7 +31,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { cn } from "@/lib/utils";
 
 import {

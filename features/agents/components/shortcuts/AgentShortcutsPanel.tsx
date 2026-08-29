@@ -35,7 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import { LinkAgentToShortcutModal } from "@/features/agent-shortcuts/components/LinkAgentToShortcutModal";

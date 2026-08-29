@@ -16,9 +16,9 @@ import React, { useMemo, useRef, useState } from "react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import IconResolver, {
+import { IconResolver,
   getCuratedIconIdsForPicker,
-} from "@/components/official/icons/IconResolver";
+} from "@ai-matrx/icons";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import { TapTargetLabeled } from "@/components/icons/TapTargetLabeled";
 import {

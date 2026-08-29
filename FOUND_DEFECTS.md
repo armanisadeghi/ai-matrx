@@ -15,6 +15,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D289 — shortcuts-panel-doors jest suite broken by panel growth since 2026-08-27 (no CI job runs it)
+
+`features/agents/components/shortcuts/__tests__/shortcuts-panel-doors.test.tsx` fails 5/5. Not one break but layers: `22b787b9fa` (2026-08-27, org-context shortcut writes) made `useAgentShortcutCrud` read `selectUserId` against the test's empty store (now provisioned with `userAuth` — first layer fixed 2026-08-29 during the icons C9 swap, which also repointed the suite's IconResolver mock to `@ai-matrx/icons`); the next layer is `LinkAgentToShortcutModal` mounting with selectors the suite never mocks (`shortcuts.filter` on undefined at its line ~169). The suite runs in NO CI job (jest jobs are scoped to content-ir/workflow-runtime/hr), so each panel feature added since 08-15 broke it silently. Fix: mock the modal (it has its own concerns) or provision its selectors; then consider adding the file to a CI jest scope.
+
 ### D288 — kind-render cracks still open after the 2026-08-29 audit (grouped remainder)
 
 The 2026-08-29 "kind slips through the cracks" audit found 27 ways a `__kind` payload renders as raw JSON/generic. The four production-dominant ones were fixed same-session (readAllRows on `content_ir` warm reads; miss TTL + `refresh()` + `kind-definitions` invalidation on `kindRegistry`; splitter structural brace counting; kind preservation on structural raws + `broken-instance` route in the 0.3.0 packages) plus the in-band Errors tab / `KindEscapedNotice` tripwire. Open remainder, in expected-volume order:

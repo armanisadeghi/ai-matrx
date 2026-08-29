@@ -108,8 +108,10 @@ export const TOOL_RENDERER_IMPORTS_CONFIG: CapabilityConfig[] = [
     description: "All Lucide icons (missing names render a placeholder)",
   },
   {
+    // Legacy alias: DB-stored renderers reference this path; the module now
+    // lives in the @ai-matrx/icons package.
     path: "@/components/official/icons/IconResolver",
-    loader: () => import("@/components/official/icons/IconResolver"),
+    loader: () => import("@ai-matrx/icons"),
     scopeStrategy: "named",
     exports: ["DynamicIcon", "renderIcon", "getIconComponent"],
     core: true,

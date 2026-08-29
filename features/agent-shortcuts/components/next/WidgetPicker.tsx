@@ -1,6 +1,6 @@
 "use client";
 
-import { DynamicIcon } from "@/components/official/icons/IconResolver";
+import { DynamicIcon } from "@ai-matrx/icons";
 import { cn } from "@/styles/themes/utils";
 import {
   getAllDisplayTypes,

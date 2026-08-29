@@ -28,7 +28,7 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import {
   adminDomainHref,
   adminNavigationRegistry,

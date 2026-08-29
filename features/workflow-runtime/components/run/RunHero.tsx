@@ -19,7 +19,7 @@ import { CheckCircle2, CircleDashed, Loader2 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { ElapsedTime } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 
 import {

@@ -12,7 +12,7 @@
 import { Check, ChevronDown, ChevronRight, Gift } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 
 import type { NodeAggregatePhase } from "../../redux/workflow-runs.selectors";
 import {

@@ -31,7 +31,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronLeft, Globe, Plus, TrendingUp } from "lucide-react";
 
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 import {
   ROUTE_MENU_ICON_SIZE,

@@ -11,8 +11,8 @@ import MarkdownStream from "@/components/MarkdownStream";
 
 const IconResolver = dynamic(
   () =>
-    import("@/components/official/icons/IconResolver").then((m) => ({
-      default: m.default,
+    import("@ai-matrx/icons").then((m) => ({
+      default: m.IconResolver,
     })),
   { ssr: false },
 );

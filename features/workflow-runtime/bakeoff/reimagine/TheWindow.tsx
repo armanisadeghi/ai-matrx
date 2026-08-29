@@ -20,7 +20,7 @@ import { Crosshair, PackageOpen, Pin, Send } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import IconResolver from "@/components/official/icons/IconResolver";
+import { IconResolver } from "@ai-matrx/icons";
 import DbEmitRenderer from "@/features/workflow-emit/DbEmitRenderer";
 import type { EmitMode } from "@/features/workflow-emit/types";
 import {

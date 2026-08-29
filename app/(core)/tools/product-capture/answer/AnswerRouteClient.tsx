@@ -20,6 +20,7 @@ export function AnswerHeader() {
         <TapTargetButton
           icon={<TableProperties className="h-4 w-4" />}
           label="Pipeline"
+          mobileIconOnly
           href="/tools/product-capture/manage"
           ariaLabel="Open the pipeline manager"
         />

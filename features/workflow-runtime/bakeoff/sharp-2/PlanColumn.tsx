@@ -14,7 +14,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { getIconComponent } from "@/components/official/icons/IconResolver";
+import { getIconComponent } from "@ai-matrx/icons";
 import type { NodeAggregatePhase } from "../../redux/workflow-runs.selectors";
 import { PHASE_LABEL, PhaseIcon } from "../../components/readout-parts";
 import {

@@ -87,8 +87,10 @@ export const ALLOWED_IMPORTS_CONFIG: AllowedImportConfig[] = [
     safeProxy: true, // Wrap in proxy to return fallback for non-existent icons
   },
   {
+    // Legacy alias: user-authored components reference this path; the module
+    // now lives in the @ai-matrx/icons package.
     path: "@/components/official/icons/IconResolver",
-    loader: () => require("@/components/official/icons/IconResolver"),
+    loader: () => require("@ai-matrx/icons"),
     scopeStrategy: "named",
     exports: ["DynamicIcon", "renderIcon", "getIconComponent"],
   },
@@ -543,7 +545,7 @@ export function buildComponentScope(
   // can render any icon by name without importing each Lucide export.
   if (!scope.DynamicIcon) {
     try {
-      const iconResolver = require("@/components/official/icons/IconResolver");
+      const iconResolver = require("@ai-matrx/icons");
       scope.DynamicIcon = iconResolver.DynamicIcon;
       scope.renderIcon = iconResolver.renderIcon;
       scope.getIconComponent = iconResolver.getIconComponent;
