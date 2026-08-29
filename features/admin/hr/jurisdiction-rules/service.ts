@@ -2,8 +2,8 @@
 //
 // The browser half of the D25 jurisdiction-rules admin doors.
 //
-// 🚨 THE `hr` SCHEMA IS NOT EXPOSED TO PostgREST. Never `.schema("hr")` — every
-// door is a `public.hr_*` SECURITY DEFINER function reached through
+// 🚨 THE `hr` SCHEMA IS NOT EXPOSED TO PostgREST. Never target that schema
+// from the browser client — every door is a `public.hr_*` SECURITY DEFINER function reached through
 // `supabase.rpc`. This is still the DIRECT lane (React → Supabase); no Next.js
 // API route, no Python hop.
 //
