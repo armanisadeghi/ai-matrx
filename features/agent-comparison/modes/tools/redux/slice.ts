@@ -10,9 +10,8 @@ const initialState: ToolsBattleState = {
     sourceAgentId: null,
     agentVersion: null,
     agentVersionId: null,
-    variables: {},
-    userMessage: "",
   },
+  inputConversationId: null,
   columns: [],
   activeSetId: null,
   activeSetName: null,
@@ -100,14 +99,11 @@ const slice = createSlice({
     setLocked(state, action: PayloadAction<Partial<ToolsLockedSetup>>) {
       state.locked = { ...state.locked, ...action.payload };
     },
-    setLockedVariable(
+    setToolsInputConversationId(
       state,
-      action: PayloadAction<{ name: string; value: unknown }>,
+      action: PayloadAction<string | null>,
     ) {
-      state.locked.variables[action.payload.name] = action.payload.value;
-    },
-    setLockedUserMessage(state, action: PayloadAction<string>) {
-      state.locked.userMessage = action.payload;
+      state.inputConversationId = action.payload;
     },
 
     submitAllStarted(state) {
@@ -130,9 +126,8 @@ const slice = createSlice({
         sourceAgentId: null,
         agentVersion: null,
         agentVersionId: null,
-        variables: {},
-        userMessage: "",
       };
+      state.inputConversationId = null;
       state.columns = [];
       state.activeSetId = null;
       state.activeSetName = null;
@@ -150,8 +145,7 @@ export const {
   setToolsColumnCollapsed,
   reorderToolsColumns,
   setLocked,
-  setLockedVariable,
-  setLockedUserMessage,
+  setToolsInputConversationId,
   submitAllStarted,
   submitAllFinished,
   setActiveToolsSet,

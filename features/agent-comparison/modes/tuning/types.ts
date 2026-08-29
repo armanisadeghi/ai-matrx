@@ -36,12 +36,12 @@ export interface TuningLockedSetup {
   sourceAgentId: string | null;
   agentVersion: "current" | number | null;
   agentVersionId: string | null;
-  variables: Record<string, unknown>;
-  userMessage: string;
 }
 
 export interface TuningBattleState {
   locked: TuningLockedSetup;
+  /** Cache-only instance that owns the canonical shared Smart Agent Input. */
+  inputConversationId: string | null;
   columns: TuningColumn[];
   activeSetId: string | null;
   activeSetName: string | null;

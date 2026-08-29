@@ -28,12 +28,12 @@ export interface ToolsLockedSetup {
   sourceAgentId: string | null;
   agentVersion: "current" | number | null;
   agentVersionId: string | null;
-  variables: Record<string, unknown>;
-  userMessage: string;
 }
 
 export interface ToolsBattleState {
   locked: ToolsLockedSetup;
+  /** Cache-only instance that owns the canonical shared Smart Agent Input. */
+  inputConversationId: string | null;
   columns: ToolsColumn[];
   activeSetId: string | null;
   activeSetName: string | null;

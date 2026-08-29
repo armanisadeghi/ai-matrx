@@ -59,14 +59,12 @@ export interface VariationsLockedSetup {
   sourceAgentId: string | null;
   agentVersion: "current" | number | null;
   agentVersionId: string | null;
-  /** Test-input variable values, broadcast to every variation on submit. */
-  variables: Record<string, unknown>;
-  /** Test message, broadcast to every variation on submit. */
-  userMessage: string;
 }
 
 export interface VariationsBattleState {
   locked: VariationsLockedSetup;
+  /** Cache-only instance that owns the canonical shared Smart Agent Input. */
+  inputConversationId: string | null;
   columns: VariationColumn[];
   activeSetId: string | null;
   activeSetName: string | null;

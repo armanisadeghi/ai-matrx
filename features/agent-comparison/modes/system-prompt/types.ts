@@ -26,12 +26,12 @@ export interface SystemPromptLockedSetup {
   sourceAgentId: string | null;
   agentVersion: "current" | number | null;
   agentVersionId: string | null;
-  variables: Record<string, unknown>;
-  userMessage: string;
 }
 
 export interface SystemPromptBattleState {
   locked: SystemPromptLockedSetup;
+  /** Cache-only instance that owns the canonical shared Smart Agent Input. */
+  inputConversationId: string | null;
   columns: SystemPromptColumn[];
   activeSetId: string | null;
   activeSetName: string | null;

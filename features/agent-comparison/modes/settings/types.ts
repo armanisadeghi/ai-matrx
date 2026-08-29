@@ -1,7 +1,7 @@
 /**
  * Settings-mode types.
  *
- * In this mode the agent + version + variables + user message are LOCKED
+ * In this mode the agent + version + shared request are LOCKED
  * across every column. The varied dimension is the LLM settings overrides
  * (model, temperature, reasoning effort, max output tokens, etc.). Each
  * column runs the same locked request under its own overrides so the user
@@ -38,14 +38,12 @@ export interface SettingsLockedSetup {
   agentVersion: "current" | number | null;
   /** agx_version.id for non-"current" pins; null otherwise. */
   agentVersionId: string | null;
-  /** Variable values the user filled in (locked across columns). */
-  variables: Record<string, unknown>;
-  /** User message broadcast to every column on submit. */
-  userMessage: string;
 }
 
 export interface SettingsBattleState {
   locked: SettingsLockedSetup;
+  /** Cache-only instance that owns the canonical shared Smart Agent Input. */
+  inputConversationId: string | null;
   columns: SettingsColumn[];
   /** Persisted set id (null = unsaved scratchpad). */
   activeSetId: string | null;

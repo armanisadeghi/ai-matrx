@@ -10,9 +10,8 @@ const initialState: VariationsBattleState = {
     sourceAgentId: null,
     agentVersion: null,
     agentVersionId: null,
-    variables: {},
-    userMessage: "",
   },
+  inputConversationId: null,
   columns: [],
   activeSetId: null,
   activeSetName: null,
@@ -110,14 +109,11 @@ const slice = createSlice({
     setLocked(state, action: PayloadAction<Partial<VariationsLockedSetup>>) {
       state.locked = { ...state.locked, ...action.payload };
     },
-    setLockedVariable(
+    setVariationsInputConversationId(
       state,
-      action: PayloadAction<{ name: string; value: unknown }>,
+      action: PayloadAction<string | null>,
     ) {
-      state.locked.variables[action.payload.name] = action.payload.value;
-    },
-    setLockedUserMessage(state, action: PayloadAction<string>) {
-      state.locked.userMessage = action.payload;
+      state.inputConversationId = action.payload;
     },
 
     submitAllStarted(state) {
@@ -140,9 +136,8 @@ const slice = createSlice({
         sourceAgentId: null,
         agentVersion: null,
         agentVersionId: null,
-        variables: {},
-        userMessage: "",
       };
+      state.inputConversationId = null;
       state.columns = [];
       state.activeSetId = null;
       state.activeSetName = null;
@@ -161,8 +156,7 @@ export const {
   setVariationColumnPaused,
   reorderVariationColumns,
   setLocked,
-  setLockedVariable,
-  setLockedUserMessage,
+  setVariationsInputConversationId,
   submitAllStarted,
   submitAllFinished,
   setActiveVariationsSet,

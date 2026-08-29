@@ -24,9 +24,8 @@ const initialState: SettingsBattleState = {
     agentId: null,
     agentVersion: null,
     agentVersionId: null,
-    variables: {},
-    userMessage: "",
   },
+  inputConversationId: null,
   columns: [],
   activeSetId: null,
   activeSetName: null,
@@ -120,14 +119,11 @@ const settingsSlice = createSlice({
     ) {
       state.locked = { ...state.locked, ...action.payload };
     },
-    setLockedVariable(
+    setSettingsInputConversationId(
       state,
-      action: PayloadAction<{ name: string; value: unknown }>,
+      action: PayloadAction<string | null>,
     ) {
-      state.locked.variables[action.payload.name] = action.payload.value;
-    },
-    setLockedUserMessage(state, action: PayloadAction<string>) {
-      state.locked.userMessage = action.payload;
+      state.inputConversationId = action.payload;
     },
 
     // ── Submit guard ───────────────────────────────────────────
@@ -153,9 +149,8 @@ const settingsSlice = createSlice({
         agentId: null,
         agentVersion: null,
         agentVersionId: null,
-        variables: {},
-        userMessage: "",
       };
+      state.inputConversationId = null;
       state.columns = [];
       state.activeSetId = null;
       state.activeSetName = null;
@@ -173,8 +168,7 @@ export const {
   setSettingsColumnCollapsed,
   reorderSettingsColumns,
   setLocked,
-  setLockedVariable,
-  setLockedUserMessage,
+  setSettingsInputConversationId,
   submitAllStarted,
   submitAllFinished,
   setActiveSettingsSet,
