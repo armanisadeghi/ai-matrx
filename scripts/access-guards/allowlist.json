@@ -21,7 +21,8 @@
   },
 
   "lowestTierDefault": [
-    { "file": "migrations/working_document_shareable.sql", "justification": "Working documents are personal user-authored scratch documents by design; this migration makes the existing access-kernel fallback explicit without changing behavior. Users may deliberately share them afterward.", "addedBy": "codex (baseline merge)", "date": "2026-07-29" }
+    { "file": "migrations/working_document_shareable.sql", "justification": "Working documents are personal user-authored scratch documents by design; this migration makes the existing access-kernel fallback explicit without changing behavior. Users may deliberately share them afterward.", "addedBy": "codex (baseline merge)", "date": "2026-07-29" },
+    { "file": "migrations/invitation_codes_private_credentials.sql", "justification": "Invitation codes are private credentials issued to individual recipients, never organization work or public catalog rows; the server validates exact candidates and anonymous callers cannot enumerate them.", "addedBy": "codex integration maintainer", "date": "2026-08-28" }
   ],
   "activeOrgAccess": [],
   "handRolledLadder": [
