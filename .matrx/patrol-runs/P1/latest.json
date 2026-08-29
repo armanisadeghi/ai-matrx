@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P1",
   "runId": "20260829T142359Z",
-  "state": "certified",
-  "updatedAt": "2026-08-29T14:28:57.748Z",
-  "summary": "Independent adversarial review CERTIFIED exact candidate bd224a57bc with no batch-caused defect.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-29T14:30:15.520Z",
+  "summary": "Certified P1 candidate is integrated on origin/main and queued for the serialized release lane.",
   "source": "20260829T142359Z.json",
-  "eventHash": "083975c734166ade0a91c30095858a4f0342cb2051905c81d3e77b68d2449565"
+  "eventHash": "0c3e84e4ee160f4c02969b631651a13b56ef3b0ae364d85bd1bfb2836ebec08d"
 }
