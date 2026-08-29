@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P6",
   "runId": "e266c3f6-22ec-4f63-8446-e251e5b46f25",
-  "state": "certifying",
-  "updatedAt": "2026-08-29T14:27:03.806Z",
-  "summary": "Submitted the 11-file, 15-finding P6 batch and reconciled projections for exact-candidate adversarial review.",
+  "state": "certified",
+  "updatedAt": "2026-08-29T14:33:47.240Z",
+  "summary": "CERTIFIED exact candidate 508177a056c6b5be446cbc609ca9dca9e6a1e244; no concrete batch-caused defect.",
   "source": "e266c3f6-22ec-4f63-8446-e251e5b46f25.json",
-  "eventHash": "a7b73d1f2a1626a695c0d23d96f99eb5b22ae288f2584712be30d7d92b90ddf6"
+  "eventHash": "39e3d9af059e3cc2be46ba2fe8cbc9b8d03c4e9546ac9b45188969675163579e"
 }
