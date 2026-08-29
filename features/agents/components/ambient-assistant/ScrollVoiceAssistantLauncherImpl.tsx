@@ -6,7 +6,6 @@ import { AudioLines, Keyboard, Mic, MicOff, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SmartAgentInput } from "@/features/agents/components/inputs/smart-input/SmartAgentInput";
 import { ambientAssistantMandateChain } from "./ambientAssistantMandates";
-import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useMandate } from "@/features/agents/mandates/useMandate";
 import { useMandateChain } from "@/features/agents/mandates/useMandateChain";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -88,62 +87,37 @@ function DismissButton({ onDismiss }: DismissButtonProps) {
 }
 
 function GuestAmbientVoiceAssistant({
-  primaryAgentId,
-  surfaceKey,
-  sourceFeature,
   onDismiss,
-}: Omit<ActiveAmbientVoiceAssistantProps, "communicatorAgentId">) {
-  const openedConversationRef = useRef<string | null>(null);
-  const openQuickChat = useOpenQuickChatSheet();
-  const { conversationId, close } = useAgentLauncher(primaryAgentId, {
-    surfaceKey,
-    sourceFeature,
-    ready: true,
-    retainOnUnmount: true,
-    preferFresh: true,
-    config: {
-      allowChat: true,
-      responseDensity: "compact",
-    },
-  });
-  const submissionPhase = useAppSelector(
-    selectSubmissionPhase(conversationId ?? ""),
-  );
-  const requestVoiceSignIn = useAuthGuardedAction(() => undefined, {
-    featureName: "Voice assistant",
+}: Pick<ActiveAmbientVoiceAssistantProps, "onDismiss">) {
+  const requestSignIn = useAuthGuardedAction(() => undefined, {
+    featureName: "Education assistant",
     featureDescription:
-      "Sign in to talk with the AI Matrx voice agent on any Education page.",
+      "Sign in to ask or talk with the AI Matrx assistant on any Education page.",
   });
-
-  useEffect(() => {
-    if (
-      !conversationId ||
-      submissionPhase !== "pending" ||
-      openedConversationRef.current === conversationId
-    ) {
-      return;
-    }
-    openedConversationRef.current = conversationId;
-    openQuickChat({
-      initialConversationId: conversationId,
-      title: "Assistant",
-    });
-    onDismiss();
-  }, [conversationId, onDismiss, openQuickChat, submissionPhase]);
-
-  const dismiss = () => {
-    if (conversationId) close(conversationId);
-    onDismiss();
-  };
 
   return (
     <div className="pointer-events-none fixed bottom-5 left-1/2 z-[35] w-[min(470px,calc(100vw-2rem))] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-      <AmbientTextMode
-        conversationId={conversationId}
-        surfaceKey={surfaceKey}
-        onVoice={requestVoiceSignIn}
-      />
-      <DismissButton onDismiss={dismiss} />
+      <div className="flex items-center gap-2 opacity-75 transition-opacity hover:opacity-100 focus-within:opacity-100">
+        <Button
+          type="button"
+          variant="ghost"
+          className="pointer-events-auto h-9 min-w-0 flex-1 justify-start rounded-full border border-border bg-glass px-4 text-sm text-muted-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass hover:bg-glass-hover hover:text-foreground"
+          onClick={requestSignIn}
+        >
+          Ask AI Matrx
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          className="pointer-events-auto h-9 shrink-0 gap-1.5 rounded-full border border-primary/25 bg-glass px-3 text-xs font-medium text-primary shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,transform] hover:scale-[1.03] hover:border-primary/60 hover:bg-glass-hover"
+          onClick={requestSignIn}
+          aria-label="Sign in to use voice"
+        >
+          <AudioLines className="h-3.5 w-3.5" />
+          Voice
+        </Button>
+      </div>
+      <DismissButton onDismiss={onDismiss} />
     </div>
   );
 }
@@ -323,23 +297,20 @@ function ActiveAmbientVoiceAssistant({
   );
 }
 
-export default function ScrollVoiceAssistantLauncherImpl() {
-  const pathname = usePathname();
-  const runtime = useSurfaceRuntime();
+function AuthenticatedAmbientVoiceAssistant({
+  pathname,
+  surfaceKey,
+  sourceFeature,
+  onDismiss,
+}: {
+  pathname: string;
+  surfaceKey: string;
+  sourceFeature: SourceFeature;
+  onDismiss: () => void;
+}) {
   const primary = useMandateChain(ambientAssistantMandateChain(pathname));
   const communicator = useMandate(VOICE_COMMUNICATOR_MANDATE_KEY);
-  const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const [dismissed, setDismissed] = useState(false);
-
-  if (dismissed) return null;
-
-  const routeSlug = pathname.split("/").filter(Boolean)[0] ?? "chat";
-  const sourceFeature =
-    sourceFeatureFromSurfaceName(runtime?.surfaceName) ??
-    sourceFeatureFromSurfaceName(`matrx-user/${routeSlug}`) ??
-    "chat";
-  const surfaceKey = `ambient-voice-assistant:${pathname}`;
-  const loading = primary.loading || (isAuthenticated && communicator.loading);
+  const loading = primary.loading || communicator.loading;
   const primaryMandate = primary.mandate;
   const communicatorMandate = communicator.mandate;
 
@@ -359,7 +330,7 @@ export default function ScrollVoiceAssistantLauncherImpl() {
         variant="ghost"
         size="icon"
         className="pointer-events-auto absolute -right-2 -top-2 h-7 w-7 rounded-full border border-glass-edge bg-card shadow-glass"
-        onClick={() => setDismissed(true)}
+        onClick={onDismiss}
         aria-label="Dismiss assistant until refresh"
       >
         <X className="h-3.5 w-3.5" />
@@ -371,22 +342,7 @@ export default function ScrollVoiceAssistantLauncherImpl() {
     return unavailableLauncher;
   }
 
-  if (isAuthenticated && (communicator.error || !communicatorMandate)) {
-    return unavailableLauncher;
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <GuestAmbientVoiceAssistant
-        primaryAgentId={primaryMandate.agentId}
-        surfaceKey={surfaceKey}
-        sourceFeature={sourceFeature}
-        onDismiss={() => setDismissed(true)}
-      />
-    );
-  }
-
-  if (!communicatorMandate) {
+  if (communicator.error || !communicatorMandate) {
     return unavailableLauncher;
   }
 
@@ -395,6 +351,34 @@ export default function ScrollVoiceAssistantLauncherImpl() {
       primaryAgentId={primaryMandate.agentId}
       communicatorAgentId={communicatorMandate.agentId}
       surfaceKey={surfaceKey}
+      sourceFeature={sourceFeature}
+      onDismiss={onDismiss}
+    />
+  );
+}
+
+export default function ScrollVoiceAssistantLauncherImpl() {
+  const pathname = usePathname();
+  const runtime = useSurfaceRuntime();
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) return null;
+
+  if (!isAuthenticated) {
+    return <GuestAmbientVoiceAssistant onDismiss={() => setDismissed(true)} />;
+  }
+
+  const routeSlug = pathname.split("/").filter(Boolean)[0] ?? "chat";
+  const sourceFeature =
+    sourceFeatureFromSurfaceName(runtime?.surfaceName) ??
+    sourceFeatureFromSurfaceName(`matrx-user/${routeSlug}`) ??
+    "chat";
+
+  return (
+    <AuthenticatedAmbientVoiceAssistant
+      pathname={pathname}
+      surfaceKey={`ambient-voice-assistant:${pathname}`}
       sourceFeature={sourceFeature}
       onDismiss={() => setDismissed(true)}
     />

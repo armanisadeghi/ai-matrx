@@ -395,7 +395,7 @@ model overrides.
 - **Agent/project linkage is association-only.** `agent.definition` has no `project_id`; creation/duplication RPCs must not write one, and list/search/access RPCs must not read or expose one. Resolve project context through `platform.associations`.
 - **Authenticated agent reads recover one transient missing-session boundary.** Wrap idempotent RPC reads such as `agx_get_access_level` with `runWithSessionRetry`; a browser request that briefly reaches PostgREST as `anon` must re-resolve the session once, while a real authenticated 42501 remains a fault.
 - **Never send while the mic is recording or finishing transcription.** Mid-voice submit drops the trailing audio and leaves the recorder running. Gate send (button + Enter) on `isRecording || isTranscribing` via `AgentMicrophoneButton.onRecordingStateChange` — wired in `SmartAgentInput*` and sibling composers.
-- **The ambient page assistant is a `SmartAgentInput` presentation, never a second composer.** Use `presentation="ambient"` plus `ambientLayout="single-line" | "multiline"`; both suppress context/resources/run controls without changing the execution contract. `ScrollAssistantLauncher inputVariant` chooses those text forms or `text-voice` per page, reveals only after 72px of real content scroll or a 600ms mouse dwell in the bottom 96px, and owns the floating dismiss control. `text-voice` starts listening on the SAME click that selects Voice and adds the canonical Voice Communication Layer to the SAME primary conversation; it never starts a second brain. Its Agent resolves page/section → module → `ambient.page_guidance`; changing a mandate's own default makes that level an explicit override. Mobile mounts no variant.
+- **The ambient page assistant is a `SmartAgentInput` presentation, never a second composer.** Use `presentation="ambient"` plus `ambientLayout="single-line" | "multiline"`; both suppress context/resources/run controls without changing the execution contract. `ScrollAssistantLauncher inputVariant` chooses those text forms or `text-voice` per page, reveals only after 72px of real content scroll or a 600ms mouse dwell in the bottom 96px, and owns the floating dismiss control. `text-voice` starts listening on the SAME click that selects Voice and adds the canonical Voice Communication Layer to the SAME primary conversation; it never starts a second brain. Its Agent resolves page/section → module → `ambient.page_guidance`; changing a mandate's own default makes that level an explicit override. **Guests get the auth gate before any mandate hook or database read mounts.** Mobile mounts no variant.
 
 ---
 
@@ -406,6 +406,8 @@ model overrides.
 - **Cross-links:** `features/agents/migration/MASTER-PLAN.md`, [`features/scopes/FEATURE.md`](../scopes/FEATURE.md)
 
 ## Change Log
+
+- `2026-08-29` — **Guest ambient assistants stop at the auth boundary.** The Education text/voice launcher renders a sign-in affordance without mounting `useMandateChain`, `useMandate`, `SmartAgentInput`, or a conversation; only the authenticated subtree resolves `ambient.page_guidance` and `voice.communicator`.
 
 - `2026-08-29` — Agent-definition converters now validate model tiers, directives, UI gates, and
   skill/tool configuration at JSON ingress, then construct generated writes without assertions.
