@@ -24,6 +24,8 @@ import { listAttentionQueue, recordRecallVerdict } from "../service";
 export function AttentionQueue() {
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
   const [items, setItems] = useState<AttentionItem[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!organizationId) return;
@@ -32,13 +34,22 @@ export function AttentionQueue() {
       .then((rows) => {
         if (!cancelled) setItems(rows);
       })
-      .catch((e: unknown) =>
-        toast.error(e instanceof Error ? e.message : "Could not load the queue."),
-      );
+      .catch((e: unknown) => {
+        if (!cancelled)
+          setLoadError(
+            e instanceof Error ? e.message : "Could not load the queue.",
+          );
+      });
     return () => {
       cancelled = true;
     };
-  }, [organizationId]);
+  }, [organizationId, reloadKey]);
+
+  const retryLoad = () => {
+    setItems(null);
+    setLoadError(null);
+    setReloadKey((k) => k + 1);
+  };
 
   const verdict = async (item: AttentionItem, v: RecallVerdict) => {
     try {
@@ -53,6 +64,15 @@ export function AttentionQueue() {
   if (!organizationId)
     return (
       <p className="p-6 text-sm text-muted-foreground">Pick an organization first.</p>
+    );
+  if (loadError)
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3">
+        <p className="px-6 text-center text-sm text-destructive">{loadError}</p>
+        <Button variant="outline" size="sm" onClick={retryLoad}>
+          Try again
+        </Button>
+      </div>
     );
   if (!items)
     return (

@@ -43,6 +43,8 @@ import { ConfidenceChip, confidenceBand } from "./ConfidenceChip";
 export function DraftReviewQueue() {
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
   const [items, setItems] = useState<DraftItem[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [index, setIndex] = useState(0);
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
@@ -56,13 +58,22 @@ export function DraftReviewQueue() {
       .then((rows) => {
         if (!cancelled) setItems(rows);
       })
-      .catch((e: unknown) =>
-        toast.error(e instanceof Error ? e.message : "Could not load the drafts."),
-      );
+      .catch((e: unknown) => {
+        if (!cancelled)
+          setLoadError(
+            e instanceof Error ? e.message : "Could not load the drafts.",
+          );
+      });
     return () => {
       cancelled = true;
     };
-  }, [organizationId]);
+  }, [organizationId, reloadKey]);
+
+  const retryLoad = () => {
+    setItems(null);
+    setLoadError(null);
+    setReloadKey((k) => k + 1);
+  };
 
   const item = items?.[index] ?? null;
 
@@ -120,6 +131,15 @@ export function DraftReviewQueue() {
       <p className="p-6 text-sm text-muted-foreground">
         Pick an organization first.
       </p>
+    );
+  if (loadError)
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3">
+        <p className="px-6 text-center text-sm text-destructive">{loadError}</p>
+        <Button variant="outline" size="sm" onClick={retryLoad}>
+          Try again
+        </Button>
+      </div>
     );
   if (!items)
     return (

@@ -46,6 +46,8 @@ const BUCKET_LABELS: Record<ValueBucket, string> = {
 export function TriageQueue() {
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
   const [items, setItems] = useState<TriageItem[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [index, setIndex] = useState(0);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
@@ -57,13 +59,22 @@ export function TriageQueue() {
       .then((rows) => {
         if (!cancelled) setItems(rows);
       })
-      .catch((e: unknown) =>
-        toast.error(e instanceof Error ? e.message : "Could not load the queue."),
-      );
+      .catch((e: unknown) => {
+        if (!cancelled)
+          setLoadError(
+            e instanceof Error ? e.message : "Could not load the queue.",
+          );
+      });
     return () => {
       cancelled = true;
     };
-  }, [organizationId]);
+  }, [organizationId, reloadKey]);
+
+  const retryLoad = () => {
+    setItems(null);
+    setLoadError(null);
+    setReloadKey((k) => k + 1);
+  };
 
   const item = items?.[index] ?? null;
 
@@ -112,6 +123,15 @@ export function TriageQueue() {
       <p className="p-6 text-sm text-muted-foreground">
         Pick an organization first.
       </p>
+    );
+  if (loadError)
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3">
+        <p className="px-6 text-center text-sm text-destructive">{loadError}</p>
+        <Button variant="outline" size="sm" onClick={retryLoad}>
+          Try again
+        </Button>
+      </div>
     );
   if (!items)
     return (

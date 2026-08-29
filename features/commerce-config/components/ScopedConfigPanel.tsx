@@ -51,14 +51,24 @@ export function ScopedConfigPanel() {
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
   const { isAdmin } = useUserRole(organizationId ?? undefined);
   const [knobs, setKnobs] = useState<ScopedKnob[] | null>(null);
+  /** The org the loaded knob rows belong to — a save must never write one
+   *  org's values under another org's id (org switch mid-session). */
+  const [loadedOrgId, setLoadedOrgId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Org switch: the previous org's values must neither render nor save.
+    setKnobs(null);
+    setLoadedOrgId(null);
+    setError(null);
     if (!organizationId) return;
     let cancelled = false;
     fetchScopedKnobs({ organizationId })
       .then((rows) => {
-        if (!cancelled) setKnobs(rows);
+        if (!cancelled) {
+          setKnobs(rows);
+          setLoadedOrgId(organizationId);
+        }
       })
       .catch((e: unknown) => {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -78,7 +88,7 @@ export function ScopedConfigPanel() {
   if (error) {
     return <p className="p-6 text-sm text-destructive">{error}</p>;
   }
-  if (!knobs) {
+  if (!knobs || loadedOrgId !== organizationId) {
     return (
       <div className="space-y-3 p-6">
         <Skeleton className="h-8 w-64" />
@@ -89,8 +99,14 @@ export function ScopedConfigPanel() {
   }
 
   const save = async (tier: Tier, knob: ScopedKnob, value: Json | null) => {
+    // Guard against a stale closure racing an org switch: write only to the
+    // org these rows were loaded for.
+    if (loadedOrgId !== organizationId) {
+      toast.error("The organization changed — reload before saving.");
+      return;
+    }
     const args = {
-      organizationId,
+      organizationId: loadedOrgId,
       feature: knob.feature,
       key: knob.key,
       value,

@@ -453,17 +453,32 @@ async function listHighImpactUnknowns(organizationId: string) {
     },
     "commerce"
   >;
-  const { data, error } = await client
-    .schema("commerce")
-    .from("asset_unknown")
-    .select("id, intake_asset_id, question, value_impact, created_at")
-    .eq("organization_id", organizationId)
-    .eq("value_impact", "high")
-    .is("answered_at", null)
-    .is("deferred_at", null)
-    .order("created_at", { ascending: false });
-  if (error) throw error;
-  return data ?? [];
+  type UnknownRow = {
+    id: string;
+    intake_asset_id: string;
+    question: string;
+    value_impact: string | null;
+    created_at: string;
+  };
+  // Complete by contract (the attention queue IS the safety net) — a bare
+  // .select() silently caps at 1000 rows.
+  return readAllRows<UnknownRow>(
+    ({ from, to }) =>
+      client
+        .schema("commerce")
+        .from("asset_unknown")
+        .select("id, intake_asset_id, question, value_impact, created_at", {
+          count: "exact",
+        })
+        .eq("organization_id", organizationId)
+        .eq("value_impact", "high")
+        .is("answered_at", null)
+        .is("deferred_at", null)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to),
+    { label: "commerce.asset_unknown[high-impact]" },
+  );
 }
 
 /** Record the human verdict on a recall-audit row. Verdict-only write — the

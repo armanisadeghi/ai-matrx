@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { currentRequestLoginHref } from "@/utils/auth/server-login-href";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 
 import { AssetDetailBody, AssetDetailHeader } from "./AssetDetailRouteClient";
@@ -15,9 +16,11 @@ export default async function IntakeAssetPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { isAuthenticated } = await getServerAuth();
-  if (!isAuthenticated) redirect("/login?next=/commerce/intake/assets");
   const { id } = await params;
+  const { isAuthenticated } = await getServerAuth();
+  // The asset deep link is the destination — it must survive the auth bounce.
+  if (!isAuthenticated)
+    redirect(await currentRequestLoginHref(`/commerce/intake/assets/${id}`));
   return (
     <>
       <AssetDetailHeader assetId={id} />

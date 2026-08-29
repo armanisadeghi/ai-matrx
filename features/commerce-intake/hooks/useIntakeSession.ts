@@ -140,6 +140,9 @@ export function useIntakeSession(
   const notesDirtyRef = useRef(false);
   const notesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const ensureAssetPromiseRef = useRef<Promise<IntakeAsset> | null>(null);
+  /** The QR seed the in-flight ensureAsset create was started with — a scan
+   *  carrying a DIFFERENT code must never ride that promise. */
+  const ensureAssetSeedRef = useRef<string | null>(null);
   const ensureBatchPromiseRef = useRef<Promise<IntakeBatch> | null>(null);
   const previewUrlsRef = useRef(new Map<string, string>());
   /** Monotonic per-batch capture ordinal (continued from the DB on resume). */
@@ -178,11 +181,17 @@ export function useIntakeSession(
     if (!organizationId) {
       throw new Error("No organization resolved yet — try again in a moment.");
     }
+    const forMode = modeRef.current;
     const create = ensureOpenBatch({
       organizationId,
-      captureMode: modeRef.current,
+      captureMode: forMode,
     })
       .then(async (b) => {
+        if (modeRef.current !== forMode) {
+          // The mode toggled while this batch was being opened — never adopt
+          // it; resolve the caller onto the batch for the CURRENT mode.
+          return ensureBatch();
+        }
         batchRef.current = b;
         setBatch(b);
         sequenceRef.current = await maxSequenceIndex(b.id);
@@ -190,7 +199,9 @@ export function useIntakeSession(
         return b;
       })
       .finally(() => {
-        ensureBatchPromiseRef.current = null;
+        if (ensureBatchPromiseRef.current === create) {
+          ensureBatchPromiseRef.current = null;
+        }
       });
     ensureBatchPromiseRef.current = create;
     return create;
@@ -198,44 +209,53 @@ export function useIntakeSession(
 
   // ── Notes autosave (policy 1: ONE writer for visible text) ────────────────
 
-  const flushNotes = useCallback(async (asset: IntakeAsset | null) => {
-    if (!notesDirtyRef.current) return;
-    // Untracked mode: the note draft appends onto the batch notes.
-    if (!asset) {
-      const b = batchRef.current;
-      const text = notesRef.current.trim();
-      if (!b || modeRef.current !== "untracked" || !text) return;
+  /** Returns true when the draft is safely persisted (or there was nothing
+   *  to save); false when the save failed — the draft stays dirty so nothing
+   *  downstream may discard it. */
+  const flushNotes = useCallback(
+    async (asset: IntakeAsset | null): Promise<boolean> => {
+      if (!notesDirtyRef.current) return true;
+      // Untracked mode: the note draft appends onto the batch notes.
+      if (!asset) {
+        const b = batchRef.current;
+        const text = notesRef.current.trim();
+        if (!b || modeRef.current !== "untracked" || !text) return true;
+        notesDirtyRef.current = false;
+        setNotesSaving(true);
+        try {
+          await appendToBatchNotes(b.id, text);
+          notesRef.current = "";
+          setNotesState("");
+          return true;
+        } catch (err) {
+          notesDirtyRef.current = true;
+          console.error("[commerce-intake] batch note flush failed", err);
+          toast.error("Notes could not be saved — check your connection.");
+          return false;
+        } finally {
+          setNotesSaving(false);
+        }
+      }
       notesDirtyRef.current = false;
       setNotesSaving(true);
       try {
-        await appendToBatchNotes(b.id, text);
-        notesRef.current = "";
-        setNotesState("");
+        const saved = await setAssetNotes(asset, notesRef.current);
+        if (currentAssetRef.current?.id === saved.id) {
+          currentAssetRef.current = saved;
+          setCurrentAsset(saved);
+        }
+        return true;
       } catch (err) {
         notesDirtyRef.current = true;
-        console.error("[commerce-intake] batch note flush failed", err);
+        console.error("[commerce-intake] notes autosave failed", err);
         toast.error("Notes could not be saved — check your connection.");
+        return false;
       } finally {
         setNotesSaving(false);
       }
-      return;
-    }
-    notesDirtyRef.current = false;
-    setNotesSaving(true);
-    try {
-      const saved = await setAssetNotes(asset, notesRef.current);
-      if (currentAssetRef.current?.id === saved.id) {
-        currentAssetRef.current = saved;
-        setCurrentAsset(saved);
-      }
-    } catch (err) {
-      notesDirtyRef.current = true;
-      console.error("[commerce-intake] notes autosave failed", err);
-      toast.error("Notes could not be saved — check your connection.");
-    } finally {
-      setNotesSaving(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   const scheduleNotesSave = useCallback(() => {
     if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
@@ -285,25 +305,48 @@ export function useIntakeSession(
   /** The current asset, created on first use (never an empty row). */
   const ensureAsset = useCallback(
     async (seed?: { qrCode: string }): Promise<IntakeAsset> => {
+      const requestedSeed = seed?.qrCode ?? null;
       const existing = currentAssetRef.current;
       if (existing) return existing;
-      if (ensureAssetPromiseRef.current) return ensureAssetPromiseRef.current;
-      const create = (async () => {
-        const b = await ensureBatch();
-        if (!organizationId) {
-          throw new Error("No organization resolved yet.");
-        }
-        const asset = await createAsset({
-          batchId: b.id,
-          organizationId,
-          qrCode: seed?.qrCode ?? null,
+      const pending = ensureAssetPromiseRef.current;
+      if (
+        pending &&
+        (requestedSeed === null || requestedSeed === ensureAssetSeedRef.current)
+      ) {
+        return pending;
+      }
+      // Either no create is in flight, or the in-flight create carries a
+      // DIFFERENT QR seed (a second scan raced the first insert) — a new item
+      // must never bind to the first code. Chain: let the in-flight create
+      // settle, then create the item carrying THIS code.
+      const start = pending
+        ? pending.then(
+            () => undefined,
+            () => undefined,
+          )
+        : Promise.resolve();
+      const create = start
+        .then(async () => {
+          const b = await ensureBatch();
+          if (!organizationId) {
+            throw new Error("No organization resolved yet.");
+          }
+          const asset = await createAsset({
+            batchId: b.id,
+            organizationId,
+            qrCode: requestedSeed,
+          });
+          adoptAsset(asset, []);
+          return asset;
+        })
+        .finally(() => {
+          if (ensureAssetPromiseRef.current === create) {
+            ensureAssetPromiseRef.current = null;
+            ensureAssetSeedRef.current = null;
+          }
         });
-        adoptAsset(asset, []);
-        return asset;
-      })().finally(() => {
-        ensureAssetPromiseRef.current = null;
-      });
       ensureAssetPromiseRef.current = create;
+      ensureAssetSeedRef.current = requestedSeed;
       return create;
     },
     [ensureBatch, organizationId, adoptAsset],
@@ -314,19 +357,19 @@ export function useIntakeSession(
    * the notes flush lands FIRST, then the `pipeline_state='captured'` status
    * write — and NOTHING else — is the pipeline handoff.
    */
-  const finishCurrentAsset = useCallback(() => {
+  /** Returns false when the notes flush failed — the draft is kept, the item
+   *  stays open (policy 4: the flush lands BEFORE the close, or no close). */
+  const finishCurrentAsset = useCallback(async (): Promise<boolean> => {
     const asset = currentAssetRef.current;
     if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
-    void (async () => {
-      await flushNotes(asset);
-      if (!asset) return;
-      try {
-        await finishAsset(asset);
-      } catch (err) {
+    const flushed = await flushNotes(asset);
+    if (!flushed) return false;
+    if (asset) {
+      void finishAsset(asset).catch((err: unknown) => {
         console.error("[commerce-intake] item close failed", err);
         toast.error("Item saved, but could not be marked captured.");
-      }
-    })();
+      });
+    }
     persistResume({ assetId: null });
     previewUrlsRef.current.forEach((url) => revokeTrackedObjectUrl(url));
     previewUrlsRef.current.clear();
@@ -336,10 +379,11 @@ export function useIntakeSession(
     notesRef.current = "";
     notesDirtyRef.current = false;
     setNotesState("");
+    return true;
   }, [flushNotes, persistResume]);
 
   const nextItem = useCallback(() => {
-    finishCurrentAsset();
+    void finishCurrentAsset();
   }, [finishCurrentAsset]);
 
   const resumeAsset = useCallback(
@@ -349,7 +393,8 @@ export function useIntakeSession(
         toast.error("That item no longer exists.");
         return;
       }
-      finishCurrentAsset();
+      const finished = await finishCurrentAsset();
+      if (!finished) return; // draft kept; the failure is already toasted
       const b = batchRef.current;
       if (!b || b.id !== asset.batchId) {
         const loaded = await loadBatch(asset.batchId);
@@ -439,11 +484,16 @@ export function useIntakeSession(
     (mode: BatchCaptureMode) => {
       if (mode === modeRef.current) return;
       // Finish the open item; the next artifact resolves the right batch.
-      finishCurrentAsset();
+      // (finishCurrentAsset snapshots the old mode/batch synchronously, so
+      // flipping the refs right after is safe.)
+      void finishCurrentAsset();
       modeRef.current = mode;
       setCaptureModeState(mode);
       batchRef.current = null;
       setBatch(null);
+      // A batch create racing this toggle must not land captures on the
+      // old-mode batch — drop the in-flight promise with the mode it carried.
+      ensureBatchPromiseRef.current = null;
       persistResume({ batchId: "", assetId: null, mode });
     },
     [finishCurrentAsset, persistResume],
@@ -492,7 +542,8 @@ export function useIntakeSession(
       // Anything else — including a deliberate re-scan of the SAME code
       // after 4 s out of frame (the next unit of the same product) — closes
       // the current item and opens a new one carrying the code.
-      finishCurrentAsset();
+      const finished = await finishCurrentAsset();
+      if (!finished) return "assigned"; // notes flush failed — stay on the item
       await ensureAsset({ qrCode: trimmed });
       return "switched";
     },
@@ -613,6 +664,13 @@ export function useIntakeSession(
 
   const addPhoto = useCallback(
     (blob: Blob, opts: { isDelineator?: boolean } = {}) => {
+      // Untracked Break: the delineator ends a segment, so the segment's note
+      // draft flushes onto the batch notes NOW — otherwise it lingers and is
+      // misattributed to the next segment. flushNotes snapshots the draft
+      // synchronously and keeps it (with a toast) on failure.
+      if (opts.isDelineator && modeRef.current === "untracked") {
+        void flushNotes(null);
+      }
       const file = new File(
         [blob],
         `intake-${Date.now()}-${sequenceRef.current + 1}.jpg`,
@@ -626,7 +684,7 @@ export function useIntakeSession(
         // Surfaced on the artifact chip; nothing further to do here.
       });
     },
-    [startArtifact],
+    [startArtifact, flushNotes],
   );
 
   const addVideo = useCallback(
