@@ -277,6 +277,7 @@ The old root-level "Agent/Chat/Conversation — Single Source of Truth" doc is a
 
 ## Change log
 
+- `2026-08-29` — codex: **every owned user media attachment now creates the same durable file authorization edge as documents.** `useAttachResource` awaits the canonical role-less `file → conversation` RPC before accepting image/audio/video attachments on an existing conversation; provisional first turns keep `file_id` in the canonical media part and the server writes the edge once the conversation row exists. Persisted message metadata seeds the central file Redux record, which fetches only missing render fields, and `InlineMediaRef` automatically uses ID-backed authenticated bytes unless the file is explicitly public with a permanent CDN URL.
 - `2026-08-28` — codex: **typed user input became optional end to end.** Shared
   Smart Agent Input, new-chat, compact assistant, and every Battle toolbar
   stopped deriving submit eligibility from text presence. Attached resources

@@ -39,6 +39,13 @@ export interface EnsureCloudFileOptions {
   hint?: FileIdentityHint;
 }
 
+interface RequestState {
+  key: string;
+  status: Extract<EnsureCloudFileStatus, "missing" | "error">;
+  error: string | null;
+  readError: unknown;
+}
+
 export function useEnsureCloudFile(
   fileId: string | null | undefined,
   options: EnsureCloudFileOptions = {},
@@ -50,32 +57,20 @@ export function useEnsureCloudFile(
     fileId ? selectFileById(state, fileId) : undefined,
   );
   const ready = areCloudFileFieldsLoaded(existing, fields);
-  const [status, setStatus] = useState<EnsureCloudFileStatus>(() =>
-    !fileId || isSyntheticId(fileId) ? "idle" : ready ? "ready" : "loading",
-  );
-  const [error, setError] = useState<string | null>(null);
-  const [readError, setReadError] = useState<unknown>(null);
+  const [requestState, setRequestState] = useState<RequestState | null>(null);
   const [attempt, setAttempt] = useState(0);
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
+  const requestKey = `${fileId ?? ""}:${attempt}`;
 
   useEffect(() => {
     if (!fileId || isSyntheticId(fileId)) {
-      setStatus("idle");
-      setError(null);
-      setReadError(null);
       return undefined;
     }
     if (ready) {
-      setStatus("ready");
-      setError(null);
-      setReadError(null);
       return undefined;
     }
 
     let cancelled = false;
-    setStatus("loading");
-    setError(null);
-    setReadError(null);
 
     void (async () => {
       try {
@@ -83,9 +78,14 @@ export function useEnsureCloudFile(
           ensureCloudFileFields({ fileId, fields, hint }),
         ).unwrap();
         if (cancelled) return;
-        setStatus(outcome);
-        setError(null);
-        setReadError(null);
+        if (outcome === "missing") {
+          setRequestState({
+            key: requestKey,
+            status: "missing",
+            error: null,
+            readError: null,
+          });
+        }
       } catch (requestError) {
         if (cancelled) return;
         const message =
@@ -97,16 +97,32 @@ export function useEnsureCloudFile(
           fileId,
           requestError,
         );
-        setStatus("error");
-        setError(message);
-        setReadError(requestError);
+        setRequestState({
+          key: requestKey,
+          status: "error",
+          error: message,
+          readError: requestError,
+        });
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [attempt, dispatch, fields, fileId, hint, ready]);
+  }, [dispatch, fields, fileId, hint, ready, requestKey]);
 
-  return { status, error, readError, retry };
+  const currentRequest = requestState?.key === requestKey ? requestState : null;
+  const status: EnsureCloudFileStatus =
+    !fileId || isSyntheticId(fileId)
+      ? "idle"
+      : ready
+        ? "ready"
+        : (currentRequest?.status ?? "loading");
+
+  return {
+    status,
+    error: currentRequest?.error ?? null,
+    readError: currentRequest?.readError ?? null,
+    retry,
+  };
 }

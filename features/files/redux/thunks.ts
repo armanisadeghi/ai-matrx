@@ -626,7 +626,6 @@ export const createFolder = createAsyncThunk<
   // Reject NUL + ASCII control characters. These can be paste-injected
   // and confuse downstream object stores or any layer that materialises
   // the path on disk. Mirrors the rule in `validateRenameInput`.
-  // eslint-disable-next-line no-control-regex
   if (/[\x00-\x1f\x7f]/.test(folderName)) {
     throw new Error("Folder names cannot contain control characters.");
   }

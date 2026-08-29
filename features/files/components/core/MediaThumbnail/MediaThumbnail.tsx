@@ -263,7 +263,6 @@ function ImageThumb({
 
   if (failed) return <>{fallback}</>;
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       key={retryKey}
       src={src}

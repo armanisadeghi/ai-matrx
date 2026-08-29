@@ -79,6 +79,7 @@ in the same change.
     `cache/`, `virtual-sources/`, `upload/`, `providers/`, `services/`, `api/` stay ring-fenced.
 18. **Docs are updated in the same change as the code.** Stale docs cascade across parallel agents.
 19. **`FileAcquisitionActions` is the one source chooser.** Local file/folder inputs, existing-Matrx-Files selection, and Google Drive connect/import belong there; hosts select a presentation and disable sources with props. Drag/drop and paste remain host gestures, but their resulting `File[]` must enter the same upload callback. Never synthesize an input, query a page-wide file input, or fork a partial source menu.
+20. **A selectable file thumbnail is `SelectableFileThumbnail`.** Its thumbnail opens the canonical File Preview WindowPanel, its independent 44px control changes selection, and `FileRightClickMenu` supplies the universal menu. Hosts provide labels/icons and the selection callback; they never rebuild any of those three behaviors.
 
 ## Local commands
 
@@ -90,6 +91,11 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-29 — File selection becomes a reusable preview/menu primitive.**
+  `SelectableFileThumbnail` composes the existing metadata hydration, `MediaThumbnail`, File Preview
+  WindowPanel opener, universal `FileRightClickMenu`, and a distinct 44px selection control. Product
+  Capture is its first consumer. ESLint now blocks resolving an owned file ID to a browser URL and
+  fetching that URL back for bytes; callers ask `fileHandler` for `blob`/`array_buffer` directly.
 - **2026-08-29 — ID-backed media hydrates only the canonical fields it lacks.** Message/API hints
   seed the shared `cloudFiles` record, `_loadedFields` distinguishes absent values from loaded
   nulls, and concurrent preview/chip consumers share a bounded direct-Supabase read. Private image

@@ -215,8 +215,8 @@ function edgeMetadata(fileId: string | null, existing?: Json): Json {
   return meta as Json;
 }
 
-/** Create a `token → conversation` attachment edge (idempotent). */
-async function attachDocumentEdge(
+/** Create the canonical role-less `file → conversation` edge (idempotent). */
+async function attachConversationFileEdge(
   dispatch: AppDispatch,
   conversationId: string,
   sourceId: string,
@@ -260,11 +260,38 @@ export function useAttachResource(
     const blockType = refineBlockType(baseBlockType, resource.data);
     const resourcePreviewLabel = cleanDocumentLabel(resourceLabel(resource));
 
-    // A real (non-media) file → a durable association edge to the conversation.
-    // The picker awaits this edge before it closes, so the user cannot submit a
-    // turn from the composer while the durable association is still in flight.
+    // Every owned file attached to a real conversation gets the same durable
+    // authorization edge before this function reports success. Provisional
+    // chats carry file_id in the request; the server execution boundary writes
+    // the edge immediately after the real conversation row materializes.
+    const attachedFileId = extractFileId(resource.data);
+    const isDurableConversation =
+      !selectIsCacheOnly(conversationId)(getState());
+
+    if (attachedFileId && isDurableConversation && blockType !== "document") {
+      const result = await attachConversationFileEdge(
+        dispatch,
+        conversationId,
+        attachedFileId,
+        attachedFileId,
+        resourcePreviewLabel,
+        undefined,
+      );
+      if (!result.ok) {
+        console.error("[attached-file] attach failed", {
+          conversationId,
+          fileId: attachedFileId,
+          error: result.error,
+        });
+        toast.error(`Couldn't attach file: ${result.error}`);
+        return false;
+      }
+    }
+
+    // Documents are reference-first: their association replaces a provider
+    // binary part and unlocks the complete server-side representation family.
     if (blockType === "document") {
-      const fileId = extractFileId(resource.data);
+      const fileId = attachedFileId;
       if (fileId) {
         // Durable edges require a real chat.conversation row. New saved-agent
         // chats are provisional until turn 1, while Builder/manual mode uses a
@@ -272,7 +299,7 @@ export function useAttachResource(
         // canonical FILE identity in request.context; turning it into a binary
         // document here bypasses clean/raw extraction and is the regression
         // that sent large stored PDFs directly to providers.
-        if (selectIsCacheOnly(conversationId)(getState())) {
+        if (!isDurableConversation) {
           attachPendingFileReference(
             dispatch,
             getState(),
@@ -315,7 +342,7 @@ export function useAttachResource(
         // avoids a read/replace race that could erase a policy written by
         // another tab between refresh and mutation.
         if (existingEdge) return true;
-        const result = await attachDocumentEdge(
+        const result = await attachConversationFileEdge(
           dispatch,
           conversationId,
           fileId,

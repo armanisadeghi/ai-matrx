@@ -841,7 +841,6 @@ export function InlineMediaRef({
     // sizing). Fall back to plain <img> to stay layout-agnostic.
   }
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       key={durableSrc.retryKey}
       ref={mediaElementRef as React.Ref<HTMLImageElement> | undefined}
