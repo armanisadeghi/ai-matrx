@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P6",
   "runId": "e266c3f6-22ec-4f63-8446-e251e5b46f25",
-  "state": "fixing",
-  "updatedAt": "2026-08-29T14:22:51.944Z",
-  "summary": "Auto-approved a 10-file decorative-glyph deletion batch covering 15 verified user-visible lines.",
+  "state": "certifying",
+  "updatedAt": "2026-08-29T14:27:03.806Z",
+  "summary": "Submitted the 11-file, 15-finding P6 batch and reconciled projections for exact-candidate adversarial review.",
   "source": "e266c3f6-22ec-4f63-8446-e251e5b46f25.json",
-  "eventHash": "475296121de3aea914630d3a27675f8fa2e427ac7a928594bd0e5b1d4e0dc9bc"
+  "eventHash": "a7b73d1f2a1626a695c0d23d96f99eb5b22ae288f2584712be30d7d92b90ddf6"
 }
