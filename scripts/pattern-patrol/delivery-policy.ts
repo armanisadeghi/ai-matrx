@@ -385,7 +385,9 @@ export function checkPatrolCommits(input: {
     }
     if (!trailers) {
       problems.push(
-        `${commitSha}: patrol work has no certification/delivery trailers`,
+        ...recordAppendProblems(repoRoot, commitSha, paths).map(
+          (problem) => `${commitSha}: ${problem}`,
+        ),
       );
       continue;
     }
