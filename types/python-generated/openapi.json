@@ -13459,6 +13459,49 @@
         }
       }
     },
+    "/mcp-connections/{server_id}/new-relic/account-status": {
+      "post": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "New Relic Account Status",
+        "description": "Return only the accounts visible to one authorized New Relic identity.",
+        "operationId": "new_relic_account_status_mcp_connections__server_id__new_relic_account_status_post",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewRelicAccountStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mcp-connections/{server_id}/oauth-tokens": {
       "post": {
         "tags": [
@@ -15024,6 +15067,52 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VimeoPublicVideoResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/moodle-integrations/official-demos/{site_key}/public-config": {
+      "get": {
+        "tags": [
+          "Moodle Integrations"
+        ],
+        "summary": "Official Demo Public Config",
+        "operationId": "official_demo_public_config_moodle_integrations_official_demos__site_key__public_config_get",
+        "parameters": [
+          {
+            "name": "site_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "school",
+                "sandbox"
+              ],
+              "type": "string",
+              "title": "Site Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoodlePublicConfigResult"
                 }
               }
             }
@@ -132333,6 +132422,82 @@
         "title": "ModelReport",
         "description": "A distinct model class and every node that (transitively) uses it —\nfixing one shared model shows its blast radius here."
       },
+      "MoodlePublicConfigResult": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "moodle"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "site_key": {
+            "type": "string",
+            "enum": [
+              "school",
+              "sandbox"
+            ],
+            "title": "Site Key"
+          },
+          "site_url": {
+            "type": "string",
+            "title": "Site Url"
+          },
+          "site_name": {
+            "type": "string",
+            "title": "Site Name"
+          },
+          "guest_login_enabled": {
+            "type": "boolean",
+            "title": "Guest Login Enabled"
+          },
+          "web_services_enabled": {
+            "type": "boolean",
+            "title": "Web Services Enabled"
+          },
+          "mobile_web_service_enabled": {
+            "type": "boolean",
+            "title": "Mobile Web Service Enabled"
+          },
+          "maintenance_enabled": {
+            "type": "boolean",
+            "title": "Maintenance Enabled"
+          },
+          "login_type": {
+            "type": "integer",
+            "maximum": 3,
+            "minimum": 1,
+            "title": "Login Type"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "show_login_form": {
+            "type": "boolean",
+            "title": "Show Login Form"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_key",
+          "site_url",
+          "site_name",
+          "guest_login_enabled",
+          "web_services_enabled",
+          "mobile_web_service_enabled",
+          "maintenance_enabled",
+          "login_type",
+          "language",
+          "show_login_form"
+        ],
+        "title": "MoodlePublicConfigResult",
+        "description": "Bounded projection of Moodle's unauthenticated mobile public config."
+      },
       "MoveArgs": {
         "properties": {
           "new_parent_id": {
@@ -132844,6 +133009,37 @@
         ],
         "title": "NeighbourSelection",
         "description": "One plan page selected as a likely competitor of the target, with the\nreason it was selected. The reason is not decoration — it is what lets a\nhuman (or a later audit) see whether the selector actually knew."
+      },
+      "NewRelicAccountStatus": {
+        "properties": {
+          "server_id": {
+            "type": "string",
+            "title": "Server Id"
+          },
+          "accounts": {
+            "type": "string",
+            "title": "Accounts"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "default": "list_available_new_relic_accounts"
+          },
+          "include_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Include Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_id",
+          "accounts"
+        ],
+        "title": "NewRelicAccountStatus",
+        "description": "Provider-formatted account visibility from the discovery-only MCP tool."
       },
       "NewsroomSyncBody": {
         "properties": {

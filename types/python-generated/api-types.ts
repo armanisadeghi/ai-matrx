@@ -5225,6 +5225,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mcp-connections/{server_id}/new-relic/account-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * New Relic Account Status
+         * @description Return only the accounts visible to one authorized New Relic identity.
+         */
+        post: operations["new_relic_account_status_mcp_connections__server_id__new_relic_account_status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mcp-connections/{server_id}/oauth-tokens": {
         parameters: {
             query?: never;
@@ -5855,6 +5875,23 @@ export interface paths {
         };
         /** Public Video */
         get: operations["public_video_vimeo_integrations_public_videos__video_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/moodle-integrations/official-demos/{site_key}/public-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Official Demo Public Config */
+        get: operations["official_demo_public_config_moodle_integrations_official_demos__site_key__public_config_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -51049,6 +51086,45 @@ export interface components {
             /** Referenced By */
             referenced_by: string[];
         };
+        /**
+         * MoodlePublicConfigResult
+         * @description Bounded projection of Moodle's unauthenticated mobile public config.
+         */
+        MoodlePublicConfigResult: {
+            /**
+             * Provider
+             * @default moodle
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default public_no_auth
+             */
+            access?: string;
+            /**
+             * Site Key
+             * @enum {string}
+             */
+            site_key: "school" | "sandbox";
+            /** Site Url */
+            site_url: string;
+            /** Site Name */
+            site_name: string;
+            /** Guest Login Enabled */
+            guest_login_enabled: boolean;
+            /** Web Services Enabled */
+            web_services_enabled: boolean;
+            /** Mobile Web Service Enabled */
+            mobile_web_service_enabled: boolean;
+            /** Maintenance Enabled */
+            maintenance_enabled: boolean;
+            /** Login Type */
+            login_type: number;
+            /** Language */
+            language: string;
+            /** Show Login Form */
+            show_login_form: boolean;
+        };
         /** MoveArgs */
         MoveArgs: {
             /** New Parent Id */
@@ -51249,6 +51325,23 @@ export interface components {
             score?: number;
             /** Reasons */
             reasons?: string[];
+        };
+        /**
+         * NewRelicAccountStatus
+         * @description Provider-formatted account visibility from the discovery-only MCP tool.
+         */
+        NewRelicAccountStatus: {
+            /** Server Id */
+            server_id: string;
+            /** Accounts */
+            accounts: string;
+            /**
+             * Tool Name
+             * @default list_available_new_relic_accounts
+             */
+            tool_name?: string;
+            /** Include Tags */
+            include_tags?: string[];
         };
         /** NewsroomSyncBody */
         NewsroomSyncBody: {
@@ -84163,6 +84256,37 @@ export interface operations {
             };
         };
     };
+    new_relic_account_status_mcp_connections__server_id__new_relic_account_status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewRelicAccountStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     persist_tokens_mcp_connections__server_id__oauth_tokens_post: {
         parameters: {
             query?: never;
@@ -85309,6 +85433,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VimeoPublicVideoResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    official_demo_public_config_moodle_integrations_official_demos__site_key__public_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_key: "school" | "sandbox";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MoodlePublicConfigResult"];
                 };
             };
             /** @description Validation Error */
