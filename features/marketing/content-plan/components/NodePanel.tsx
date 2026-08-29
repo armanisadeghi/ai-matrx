@@ -42,6 +42,10 @@ import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
 
 import { AgentPayloadButton } from "./AgentPayloadSheet";
+import {
+  confirmPublishPage,
+  confirmRewritePage,
+} from "../lib/reality-actions";
 import { NODE_TYPE_LABELS } from "../constants";
 import {
   contentPlanKpiLine,
@@ -954,8 +958,14 @@ export function NodePanel({
                     blockedReason: cmsSiteId
                       ? null
                       : "No website linked yet — link one in Setup first.",
+                    // Rebuilding an EXISTING page throws away whatever is
+                    // unsaved in the CMS editor, so the rail asks exactly what
+                    // the reality card asks (one shared handler, so the two
+                    // paths cannot drift). Creating loses nothing — no gate.
                     run: () =>
-                      void (cmsPage ? reality.write() : reality.create()),
+                      void (cmsPage
+                        ? confirmRewritePage(reality)
+                        : reality.create()),
                   },
                   p7_publish: {
                     action: "Publish the page",
@@ -968,7 +978,13 @@ export function NodePanel({
                           reality.verdict.state === "retired"
                         ? `This page is ${reality.verdict.state} — write its content first.`
                         : null,
-                    run: () => void reality.publish(),
+                    // Going live on the public internet is confirmed here the
+                    // same way the reality card confirms it.
+                    run: () =>
+                      void confirmPublishPage(
+                        reality,
+                        node.route ?? node.label,
+                      ),
                   },
                 }}
               />

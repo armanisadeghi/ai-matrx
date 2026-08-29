@@ -25,6 +25,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -164,6 +165,20 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
     if (!entry.description.trim()) {
       toast.error("Describe the image before generating it.");
       return;
+    }
+    // Regenerating throws away the image already on this entry AND spends a
+    // fresh paid generation — gated wherever it is offered (the button and
+    // both menu overrides), never on the first generation, which loses
+    // nothing. Law: destructive-and-expensive-actions.
+    if (entry.file_id) {
+      const ok = await confirm({
+        title: "Replace this image?",
+        description:
+          "The image currently on this entry is replaced and cannot be recovered, and a new paid image generation runs.",
+        confirmLabel: "Regenerate it",
+        variant: "destructive",
+      });
+      if (!ok) return;
     }
     setGeneratingId(entry.id);
     try {

@@ -32,7 +32,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import {
+    confirmPublishPage,
+    confirmRewritePage,
+} from "../lib/reality-actions";
 
 import { type NodeReality } from "../hooks/useNodeReality";
 import { useElapsedSeconds, writeStageLabel } from "../hooks/useRunStage";
@@ -117,18 +120,14 @@ export function NodeRealityCard({
 
     /**
      * Rewriting overwrites the CMS draft — human work included — so it is
-     * confirmed wherever it is offered. It is only reachable on a page that is
-     * NOT yet published: the server's authoring pipeline refuses published
-     * pages outright, so offering it there would be a button that cannot work.
+     * confirmed wherever it is offered (the confirmation itself lives in
+     * `../lib/reality-actions`, shared with the pipeline rail). It is only
+     * reachable on a page that is NOT yet published: the server's authoring
+     * pipeline refuses published pages outright, so offering it there would be
+     * a button that cannot work.
      */
     async function rewrite() {
-        const ok = await confirm({
-            title: "Rewrite this page from the brief?",
-            description:
-                "The AI replaces the current draft with a fresh version written from this page's brief. Anything unsaved in the CMS editor is lost.",
-            confirmLabel: "Rewrite it",
-        });
-        if (ok) void reality.write();
+        await confirmRewritePage(reality);
     }
 
     async function runAction() {
@@ -152,13 +151,7 @@ export function NodeRealityCard({
                 return;
             }
             case "publish": {
-                const ok = await confirm({
-                    title: "Publish this page?",
-                    description: `${node.route ?? node.label} becomes visible to the public immediately.`,
-                    confirmLabel: "Publish it",
-                    variant: "destructive",
-                });
-                if (ok) void reality.publish();
+                await confirmPublishPage(reality, node.route ?? node.label);
                 return;
             }
             default:
