@@ -61,3 +61,14 @@ platform grew five competing level ladders — see
 Read-only sibling: **Entitlements & Usage** (`/administration/users/entitlements`,
 `features/admin/users/components/EntitlementsTableClient.tsx`) — enforcement
 flags and the 30-day usage rollup.
+
+## Scoped configuration (2026-08-29)
+
+Every knob row now shows **who may override it** — `overridable_by`
+(platform-locked / org / org+user, with `override_direction`) — and a live
+**override count** from `platform.knob_override_count`, merged into the same
+load. The scoped system's SoR is
+`../../../../common-docs/systems/platform/feature-knobs/FEATURE.md`; client
+primitives live in [`lib/scoped-config/`](../../../lib/scoped-config/service.ts).
+Overridability is CURATED in dedicated migrations (never a seed's on-conflict);
+this panel edits values, not scopes.
