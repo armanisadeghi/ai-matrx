@@ -73,6 +73,13 @@ interface ResourcePickerMenuProps {
   showDebugActive?: boolean;
   /** Limit the canonical picker to resource kinds supported by this host. */
   allowedViewIds?: readonly Exclude<ResourcePickerViewId, null>[];
+  /**
+   * List pickers attach repeatedly by default. Single-value hosts (for
+   * example, a scalar agent setting) opt into closing after the first pick.
+   * Direct-entry pickers such as URL and YouTube remain one-and-done in both
+   * modes because they produce one resource per completed form.
+   */
+  selectionMode?: "single" | "multiple";
 }
 
 export function ResourcePickerMenu({
@@ -84,6 +91,7 @@ export function ResourcePickerMenu({
   onDebugClick,
   showDebugActive,
   allowedViewIds,
+  selectionMode = "multiple",
 }: ResourcePickerMenuProps) {
   const [activeView, setActiveView] = useState<ResourcePickerViewId>(null);
   const [currentUrl, setCurrentUrl] = useState<string>("");
@@ -131,9 +139,12 @@ export function ResourcePickerMenu({
       );
       return;
     }
-    const next = attachedGoogleFileIds.includes(file.fileId)
-      ? [...attachedGoogleFileIds]
-      : [...attachedGoogleFileIds, file.fileId];
+    // Read at click time so rapid multi-picks cannot overwrite the file added
+    // by the previous dispatch before React has rendered the new selector.
+    const current = selectGoogleFileIds(store.getState(), conversationId);
+    const next = current.includes(file.fileId)
+      ? [...current]
+      : [...current, file.fileId];
     dispatch(
       setContextEntry({
         conversationId,
@@ -143,14 +154,19 @@ export function ResourcePickerMenu({
       }),
     );
     toast.success(`${file.name} attached.`);
-    onClose();
+    if (selectionMode === "single") onClose();
   };
 
-  const selectOne = async (resource: Resource) => {
+  const selectResource = async (resource: Resource, listSelection: boolean) => {
     const selected = await onResourceSelected(resource);
-    if (selected !== false) onClose();
+    if (selected !== false && (!listSelection || selectionMode === "single")) {
+      onClose();
+    }
     return selected;
   };
+
+  const selectOne = (resource: Resource) => selectResource(resource, false);
+  const selectFromList = (resource: Resource) => selectResource(resource, true);
 
   // Show specific resource picker based on selection
   if (activeView) {
@@ -170,7 +186,7 @@ export function ResourcePickerMenu({
                 // before any host is allowed to dismiss the picker.
                 let completed = true;
                 for (const file of files) {
-                  const selected = await onResourceSelected({
+                  const selected = await selectFromList({
                     type: "file",
                     data: file,
                   });
@@ -179,14 +195,15 @@ export function ResourcePickerMenu({
                     break;
                   }
                 }
-                if (completed) onClose();
+                if (completed && selectionMode === "single") onClose();
               }}
             />
           }
           onBack={() => setActiveView(null)}
-          onSelect={async (selection) => {
-            await selectOne({ type: "file", data: selection });
-          }}
+          selectionMode={selectionMode}
+          onSelect={(selection) =>
+            selectFromList({ type: "file", data: selection })
+          }
         />
       );
     }
@@ -230,7 +247,7 @@ export function ResourcePickerMenu({
                 ],
               }),
             );
-            onClose();
+            if (selectionMode === "single") onClose();
           }}
         />
       );
@@ -241,7 +258,7 @@ export function ResourcePickerMenu({
         <NotesResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(note) => {
-            void selectOne({ type: "note", data: note });
+            void selectFromList({ type: "note", data: note });
           }}
         />
       );
@@ -252,7 +269,7 @@ export function ResourcePickerMenu({
         <TasksResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(selection) => {
-            void selectOne(selection);
+            void selectFromList(selection);
           }}
         />
       );
@@ -273,7 +290,7 @@ export function ResourcePickerMenu({
         <WorkbooksResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(workbook) => {
-            void selectOne({
+            void selectFromList({
               type: "workbook",
               data: { id: workbook.id, name: workbook.workbook_name },
             });
@@ -287,7 +304,7 @@ export function ResourcePickerMenu({
         <DocumentsResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(document) => {
-            void selectOne({
+            void selectFromList({
               type: "document",
               data: { id: document.id, title: document.document_name },
             });
@@ -301,7 +318,7 @@ export function ResourcePickerMenu({
         <TablesResourcePicker
           onBack={() => setActiveView(null)}
           onSelect={(reference) => {
-            void selectOne({ type: "table", data: reference });
+            void selectFromList({ type: "table", data: reference });
           }}
         />
       );
@@ -381,7 +398,7 @@ export function ResourcePickerMenu({
       return (
         <ContextValuesResourcePicker
           onBack={() => setActiveView(null)}
-          onSelect={(resource) => void selectOne(resource)}
+          onSelect={(resource) => void selectFromList(resource)}
         />
       );
     }

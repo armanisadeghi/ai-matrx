@@ -72,7 +72,6 @@ export function ResourcePickerButton({
           onClose={() => setIsOpen(false)}
           onResourceSelected={(resource) => {
             onResourceSelected?.(resource);
-            setIsOpen(false);
           }}
           attachmentCapabilities={attachmentCapabilities}
           position={windowPosition}
@@ -93,7 +92,6 @@ export function ResourcePickerButton({
         <ResourcePickerMenu
           onResourceSelected={(resource) => {
             onResourceSelected?.(resource);
-            setIsOpen(false);
           }}
           onClose={() => setIsOpen(false)}
           attachmentCapabilities={attachmentCapabilities}

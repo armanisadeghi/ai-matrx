@@ -143,6 +143,7 @@ function AgentResourcePickerAction({
       >
         <ResourcePickerMenu
           allowedViewIds={AGENT_RESOURCE_PICKER_VIEWS}
+          selectionMode={batch ? "multiple" : "single"}
           onResourceSelected={(selection) => {
             void onSelected(selection).then((attached) => {
               if (attached && !batch) setOpen(false);

@@ -35,6 +35,9 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { cn } from "@/lib/utils";
 import {
   getFileDetailsByUrl,
@@ -130,7 +133,15 @@ export type FileSelection = {
 
 interface FilesResourcePickerProps {
   onBack: () => void;
-  onSelect: (selection: FileSelection) => void;
+  onSelect: (
+    selection: FileSelection,
+  ) => boolean | void | Promise<boolean | void>;
+  /**
+   * Multiple mode stages files with checkboxes and submits the batch together.
+   * Single mode preserves the scalar-picker contract used by media fields and
+   * imperative `openFilePicker` callers.
+   */
+  selectionMode?: "single" | "multiple";
   /**
    * Optional: restrict the picker to specific top-level folders (e.g.
    * `["Images", "Documents"]`). Ignored if empty or omitted.
@@ -240,64 +251,114 @@ function sortFiles(files: CloudFileRecord[], sort: FileSort) {
 interface FileRowProps {
   file: CloudFileRecord;
   onSelect: (file: CloudFileRecord) => void;
+  multiple: boolean;
+  selected: boolean;
 }
 
-function FileRow({ file, onSelect }: FileRowProps) {
+function FileRow({ file, onSelect, multiple, selected }: FileRowProps) {
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(file)}
-      className="flex w-full items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/60 transition-colors text-left"
+    <div
+      className={cn(
+        "group flex w-full items-center gap-2 rounded px-2 py-1.5 transition-colors hover:bg-muted/60",
+        selected && "bg-primary/10 hover:bg-primary/15",
+      )}
     >
-      <MediaThumbnail
-        file={file}
-        iconSize={14}
-        rounded="rounded-md"
-        className="h-10 w-10 shrink-0 border border-border/50"
-      />
-      <div className="flex-1 min-w-0">
-        <div className="text-xs truncate text-foreground">{file.fileName}</div>
-        <FileMeta
-          file={{
-            fileSize: file.fileSize,
-            updatedAt: file.updatedAt,
-            visibility: file.visibility,
-          }}
-          hide={{ visibility: true }}
-          className="mt-0.5 text-[10px]"
+      {multiple ? (
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => onSelect(file)}
+          aria-label={`${selected ? "Remove" : "Select"} ${file.fileName}`}
+          className="h-4 w-4 shrink-0"
         />
-      </div>
-    </button>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => onSelect(file)}
+        className="flex min-w-0 flex-1 items-center gap-2 rounded text-left"
+      >
+        <MediaThumbnail
+          file={file}
+          iconSize={14}
+          rounded="rounded-md"
+          className="h-10 w-10 shrink-0 border border-border/50"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-xs text-foreground">
+            {file.fileName}
+          </div>
+          <FileMeta
+            file={{
+              fileSize: file.fileSize,
+              updatedAt: file.updatedAt,
+              visibility: file.visibility,
+            }}
+            hide={{ visibility: true }}
+            className="mt-0.5 text-[10px]"
+          />
+        </div>
+      </button>
+      <EntityDoorControls
+        token="file"
+        id={file.id}
+        name={file.fileName}
+        className="shrink-0"
+      />
+    </div>
   );
 }
 
 interface FileGridTileProps {
   file: CloudFileRecord;
   onSelect: (file: CloudFileRecord) => void;
+  multiple: boolean;
+  selected: boolean;
 }
 
-function FileGridTile({ file, onSelect }: FileGridTileProps) {
+function FileGridTile({
+  file,
+  onSelect,
+  multiple,
+  selected,
+}: FileGridTileProps) {
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(file)}
-      title={file.fileName}
-      className="group flex flex-col overflow-hidden rounded-md border border-border/60 bg-card hover:border-primary/40 hover:ring-1 hover:ring-primary/30 transition-all text-left"
+    <div
+      className={cn(
+        "group relative overflow-hidden rounded-md border bg-card transition-all hover:border-primary/40 hover:ring-1 hover:ring-primary/30",
+        selected ? "border-primary ring-1 ring-primary/30" : "border-border/60",
+      )}
     >
-      <div className="relative aspect-square w-full bg-muted/40">
-        <MediaThumbnail
-          file={file}
-          iconSize={24}
-          rounded="rounded-none"
-          className="absolute inset-0 h-full w-full"
+      {multiple ? (
+        <Checkbox
+          checked={selected}
+          onCheckedChange={() => onSelect(file)}
+          aria-label={`${selected ? "Remove" : "Select"} ${file.fileName}`}
+          className="absolute left-1.5 top-1.5 z-10 h-4 w-4 bg-background/90"
         />
+      ) : null}
+      <div className="absolute right-1 top-1 z-10 rounded bg-background/85">
+        <EntityDoorControls token="file" id={file.id} name={file.fileName} />
       </div>
-      <div className="px-1.5 py-1 min-w-0">
-        <div className="text-[10px] truncate text-foreground">
-          {truncateFilename(file.fileName, 16)}
+      <button
+        type="button"
+        onClick={() => onSelect(file)}
+        title={file.fileName}
+        className="flex w-full flex-col text-left"
+      >
+        <div className="relative aspect-square w-full bg-muted/40">
+          <MediaThumbnail
+            file={file}
+            iconSize={24}
+            rounded="rounded-none"
+            className="absolute inset-0 h-full w-full"
+          />
         </div>
-      </div>
-    </button>
+        <div className="min-w-0 px-1.5 py-1">
+          <div className="truncate text-[10px] text-foreground">
+            {truncateFilename(file.fileName, 16)}
+          </div>
+        </div>
+      </button>
+    </div>
   );
 }
 
@@ -305,6 +366,8 @@ interface FileListOrGridProps {
   files: CloudFileRecord[];
   viewMode: PickerViewMode;
   onSelect: (file: CloudFileRecord) => void;
+  multiple: boolean;
+  selectedFileIds: ReadonlySet<string>;
   className?: string;
 }
 
@@ -312,6 +375,8 @@ function FileListOrGrid({
   files,
   viewMode,
   onSelect,
+  multiple,
+  selectedFileIds,
   className,
 }: FileListOrGridProps) {
   const { visibleCount, hasMore, sentinelRef, loadMore } = useInfiniteWindow({
@@ -329,7 +394,13 @@ function FileListOrGrid({
       <div className={className}>
         <div className="grid grid-cols-3 gap-1.5 px-1">
           {visibleFiles.map((file) => (
-            <FileGridTile key={file.id} file={file} onSelect={onSelect} />
+            <FileGridTile
+              key={file.id}
+              file={file}
+              onSelect={onSelect}
+              multiple={multiple}
+              selected={selectedFileIds.has(file.id)}
+            />
           ))}
         </div>
         {hasMore ? (
@@ -349,7 +420,13 @@ function FileListOrGrid({
   return (
     <div className={className}>
       {visibleFiles.map((file) => (
-        <FileRow key={file.id} file={file} onSelect={onSelect} />
+        <FileRow
+          key={file.id}
+          file={file}
+          onSelect={onSelect}
+          multiple={multiple}
+          selected={selectedFileIds.has(file.id)}
+        />
       ))}
       {hasMore ? (
         <button
@@ -379,6 +456,8 @@ interface TreeNodeProps {
   fileSort: FileSort;
   /** Source file ids from `usePdfStudioDocs` — required for `pdf-extractor`. */
   processedFileIds: ReadonlySet<string>;
+  multiple: boolean;
+  selectedFileIds: ReadonlySet<string>;
   defaultOpen?: boolean;
 }
 
@@ -391,6 +470,8 @@ function FolderNode({
   fileFilter,
   fileSort,
   processedFileIds,
+  multiple,
+  selectedFileIds,
   defaultOpen = false,
 }: TreeNodeProps) {
   const [open, setOpen] = useState(defaultOpen);
@@ -500,6 +581,8 @@ function FolderNode({
                     fileFilter={fileFilter}
                     fileSort={fileSort}
                     processedFileIds={processedFileIds}
+                    multiple={multiple}
+                    selectedFileIds={selectedFileIds}
                   />
                 );
               })}
@@ -514,6 +597,8 @@ function FolderNode({
                   files={childFiles}
                   viewMode={viewMode}
                   onSelect={onFileSelect}
+                  multiple={multiple}
+                  selectedFileIds={selectedFileIds}
                 />
               </div>
             </>
@@ -531,6 +616,7 @@ function FolderNode({
 export function FilesResourcePicker({
   onBack,
   onSelect,
+  selectionMode = "single",
   allowedBuckets,
   initialFilter = "all",
   fillHost = false,
@@ -578,6 +664,9 @@ export function FilesResourcePicker({
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<PickerViewMode>("list");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(
+    new Set(),
+  );
   const [fileFilter, setFileFilter] = useState<FileFilter>(initialFilter);
   const [fileSort, setFileSort] = useState<FileSort>("updated");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -749,8 +838,7 @@ export function FilesResourcePicker({
     return all;
   }, [rootFolderIds, foldersById, allowedBuckets]);
 
-  const handleFileSelect = async (file: CloudFileRecord) => {
-    setIsProcessing(true);
+  const submitFile = async (file: CloudFileRecord) => {
     try {
       // Durable renderable URL — bind the record's own `url` when present,
       // else build it from the file id. Never expires.
@@ -781,7 +869,7 @@ export function FilesResourcePicker({
 
       const realMime =
         baseDetails.mimetype || file.mimeType || "application/octet-stream";
-      onSelect({
+      return await onSelect({
         fileId: file.id,
         url: fileUrl,
         type: realMime,
@@ -793,6 +881,43 @@ export function FilesResourcePicker({
       });
     } catch (error) {
       console.error("Error getting file URL:", error);
+      return false;
+    }
+  };
+
+  const handleFileSelect = (file: CloudFileRecord) => {
+    if (selectionMode === "multiple") {
+      setSelectedFileIds((current) => {
+        const next = new Set(current);
+        if (next.has(file.id)) next.delete(file.id);
+        else next.add(file.id);
+        return next;
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    void submitFile(file).finally(() => setIsProcessing(false));
+  };
+
+  const clearSelectedFiles = () => setSelectedFileIds(new Set());
+
+  const addSelectedFiles = async () => {
+    if (selectedFileIds.size === 0) return;
+    const availableFiles = new Map(
+      [...allFiles, ...resolvedProcessedFiles].map((file) => [file.id, file]),
+    );
+    const remaining = new Set(selectedFileIds);
+    setIsProcessing(true);
+    try {
+      for (const fileId of selectedFileIds) {
+        const file = availableFiles.get(fileId);
+        if (!file) continue;
+        const selected = await submitFile(file);
+        if (selected === false) break;
+        remaining.delete(fileId);
+      }
+      setSelectedFileIds(remaining);
     } finally {
       setIsProcessing(false);
     }
@@ -826,39 +951,63 @@ export function FilesResourcePicker({
           )
         }
         actions={
-          <div
-            role="radiogroup"
-            aria-label="View mode"
-            className="inline-flex shrink-0 items-center rounded-md border border-border bg-background p-0.5"
-          >
-            {(
-              [
-                { mode: "list" as const, icon: List, label: "List view" },
-                { mode: "grid" as const, icon: Grid3x3, label: "Grid view" },
-              ] as const
-            ).map(({ mode, icon: Icon, label }) => {
-              const active = viewMode === mode;
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  aria-label={label}
-                  title={label}
+          <div className="flex min-w-0 items-center gap-1">
+            {selectionMode === "multiple" && selectedFileIds.size > 0 ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-1.5 text-[10px] text-muted-foreground"
                   disabled={isProcessing}
-                  onClick={() => setViewMode(mode)}
-                  className={cn(
-                    "flex h-5 w-5 items-center justify-center rounded",
-                    active
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:bg-accent/60",
-                  )}
+                  onClick={clearSelectedFiles}
                 >
-                  <Icon className="h-3 w-3" aria-hidden="true" />
-                </button>
-              );
-            })}
+                  Clear
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-1.5 text-[10px] text-primary hover:bg-primary/10"
+                  disabled={isProcessing}
+                  onClick={() => void addSelectedFiles()}
+                >
+                  Add ({selectedFileIds.size})
+                </Button>
+              </>
+            ) : null}
+            <div
+              role="radiogroup"
+              aria-label="View mode"
+              className="inline-flex shrink-0 items-center rounded-md border border-border bg-background p-0.5"
+            >
+              {(
+                [
+                  { mode: "list" as const, icon: List, label: "List view" },
+                  { mode: "grid" as const, icon: Grid3x3, label: "Grid view" },
+                ] as const
+              ).map(({ mode, icon: Icon, label }) => {
+                const active = viewMode === mode;
+                return (
+                  <button
+                    key={mode}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    aria-label={label}
+                    title={label}
+                    disabled={isProcessing}
+                    onClick={() => setViewMode(mode)}
+                    className={cn(
+                      "flex h-5 w-5 items-center justify-center rounded",
+                      active
+                        ? "bg-accent text-accent-foreground"
+                        : "text-muted-foreground hover:bg-accent/60",
+                    )}
+                  >
+                    <Icon className="h-3 w-3" aria-hidden="true" />
+                  </button>
+                );
+              })}
+            </div>
           </div>
         }
       />
@@ -959,6 +1108,8 @@ export function FilesResourcePicker({
                     files={visibleProcessedFiles}
                     viewMode={viewMode}
                     onSelect={handleFileSelect}
+                    multiple={selectionMode === "multiple"}
+                    selectedFileIds={selectedFileIds}
                   />
                 </div>
               )
@@ -981,6 +1132,8 @@ export function FilesResourcePicker({
                     files={visibleSearchResults}
                     viewMode={viewMode}
                     onSelect={handleFileSelect}
+                    multiple={selectionMode === "multiple"}
+                    selectedFileIds={selectedFileIds}
                   />
                 </div>
               )
@@ -999,6 +1152,8 @@ export function FilesResourcePicker({
                       files={visibleRecentFiles}
                       viewMode={viewMode}
                       onSelect={handleFileSelect}
+                      multiple={selectionMode === "multiple"}
+                      selectedFileIds={selectedFileIds}
                     />
                   </div>
                 )}
@@ -1018,6 +1173,8 @@ export function FilesResourcePicker({
                         fileFilter={fileFilter}
                         fileSort={fileSort}
                         processedFileIds={processedFileIds}
+                        multiple={selectionMode === "multiple"}
+                        selectedFileIds={selectedFileIds}
                       />
                     ))}
                   </div>

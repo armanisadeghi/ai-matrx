@@ -21,7 +21,14 @@
  */
 
 import { useState, useCallback, useMemo } from "react";
-import { Image as ImageIcon, X, Plus, FileText, Video, FileAudio } from "lucide-react";
+import {
+  Image as ImageIcon,
+  X,
+  Plus,
+  FileText,
+  Video,
+  FileAudio,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -142,10 +149,13 @@ export function AgentSettingMediaPicker({
   // Always normalize value to an array of refs internally; collapse to
   // single on emit if multi=false.
   const refs: MediaRef[] = useMemo(
-    () => (multi ? coerceToRefs(value) : (() => {
-      const r = coerceToRef(value);
-      return r ? [r] : [];
-    })()),
+    () =>
+      multi
+        ? coerceToRefs(value)
+        : (() => {
+            const r = coerceToRef(value);
+            return r ? [r] : [];
+          })(),
     [value, multi],
   );
 
@@ -169,7 +179,7 @@ export function AgentSettingMediaPicker({
       } else {
         onChange(newRef);
       }
-      setIsOpen(false);
+      if (!multi) setIsOpen(false);
     },
     [refs, multi, onChange],
   );
@@ -240,6 +250,7 @@ export function AgentSettingMediaPicker({
             <ResourcePickerMenu
               onResourceSelected={handleResourceSelected}
               onClose={() => setIsOpen(false)}
+              selectionMode={multi ? "multiple" : "single"}
               attachmentCapabilities={attachmentCapabilities}
             />
           </PopoverContent>
