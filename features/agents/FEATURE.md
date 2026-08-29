@@ -4,7 +4,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-08-28`
+**Last updated:** `2026-08-29`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -276,7 +276,7 @@ Find every place an agent is used and detect when a usage no longer matches the 
 - `features/agents/services/mcp.service.ts` — MCP catalog + metadata-only connection upsert (`upsert_mcp_connection` carries NO tokens)
 - `features/agents/services/mcp-connections.service.ts` — vault-backed MCP operations via aidream `/api/mcp-connections/*` (discover/invoke/refresh/credentials/disconnect); the browser never holds an MCP token (vault Phase 4 — see `features/secrets/FEATURE.md` § MCP connections)
 - `features/agents/services/mcp-client/` — tool schema types only (the browser JSON-RPC client + token refresh were deleted in the vault cutover)
-- `features/agents/services/mcp-oauth/` — MCP OAuth discovery/PKCE helpers for the Next.js start/callback boundary
+- `features/agents/services/mcp-oauth/` — MCP OAuth discovery/PKCE helpers for the Next.js start/callback boundary; discovered RFC 9728 `resource` identity is sent in both RFC 8707 authorization and token requests
 
 ---
 
@@ -407,6 +407,7 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-29` — **MCP OAuth preserves protected-resource identity.** The start route now carries the RFC 9728 `resource` value into the RFC 8707 authorization request and the attempt cookie; the callback repeats it during token exchange. Providers such as Monday.com that require resource indicators no longer reject the canonical hosted-MCP flow as an invalid request.
 - `2026-08-29` — **Agent attachments now upload into the conversation's organization.** The canonical paste/drag-drop hook resolves the same durable execution organization used by request assembly and stamps it into file metadata, preventing a personal-workspace file from reaching a Titanium conversation and failing the server's tenant-checked `file → conversation` association.
 - `2026-08-28` — **Conversation materialization proof is scoped to the authenticated viewer.** `useConversationMaterialized` no longer caches a readable conversation by bare UUID for the module lifetime; the cache key includes the current Redux auth user, so an in-app account transition cannot reuse the previous viewer's proof and call viewer-gated attachment RPCs under the new session. A forcing hook test proves the same conversation returns to pending and rechecks persistence after identity changes.
 

@@ -147,4 +147,25 @@ describe("MCP DCR persistence boundary", () => {
     );
     expect(callbackRoute).not.toContain("if (session.clientSecret)");
   });
+
+  it("carries RFC 8707 protected-resource identity through authorization and token exchange", () => {
+    const startRoute = readFileSync(
+      join(process.cwd(), "app/api/mcp/oauth/start/route.ts"),
+      "utf8",
+    );
+    const callbackRoute = readFileSync(
+      join(process.cwd(), "app/api/mcp/oauth/callback/route.ts"),
+      "utf8",
+    );
+
+    expect(startRoute).toContain(
+      "const resource = protectedResource?.resource ?? null",
+    );
+    expect(startRoute).toContain('params.set("resource", resource)');
+    expect(startRoute).toContain("resource,");
+    expect(callbackRoute).toContain("resource: string | null");
+    expect(callbackRoute).toContain(
+      'tokenBody.set("resource", session.resource)',
+    );
+  });
 });
