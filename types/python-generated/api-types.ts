@@ -6132,6 +6132,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/datacite/public/doi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Doi */
+        get: operations["public_doi_datacite_public_doi_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/artic/public/artwork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Artwork */
+        get: operations["public_artwork_artic_public_artwork_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/tvmaze/public/show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Show */
+        get: operations["public_show_tvmaze_public_show_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/modrinth/public/project": {
         parameters: {
             query?: never;
@@ -6175,6 +6226,40 @@ export interface paths {
         };
         /** Public Course */
         get: operations["public_course_coursera_public_course_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pubmed/public/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Summary */
+        get: operations["public_summary_pubmed_public_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/federal-register/public/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Document */
+        get: operations["public_document_federal_register_public_document_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -17209,11 +17294,57 @@ export interface paths {
          */
         get: operations["list_mandates_mandates_get"];
         put?: never;
-        post?: never;
+        /**
+         * Create Mandate
+         * @description Create a UI-authored mandate — the same key validation as the code path,
+         *     with the validator's message returned verbatim on a 422.
+         */
+        post: operations["create_mandate_mandates_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/mandates/{mandate_key}/goal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Mandate Goal
+         * @description Set the goal (grounding becomes 'H'). Works on ANY mandate — the boot
+         *     sync refreshes goals only over grounding 'A', so an 'H' edit is permanent.
+         */
+        patch: operations["patch_mandate_goal_mandates__mandate_key__goal_patch"];
+        trace?: never;
+    };
+    "/mandates/{mandate_key}/draft-inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Patch Mandate Draft Inputs
+         * @description Replace the mandate's descriptive input list (pre-Provision inputs).
+         */
+        patch: operations["patch_mandate_draft_inputs_mandates__mandate_key__draft_inputs_patch"];
         trace?: never;
     };
     "/agent-usage/sync": {
@@ -27570,6 +27701,56 @@ export interface components {
              * @default false
              */
             deleted?: boolean;
+        };
+        /**
+         * ArtICPublicArtwork
+         * @description Safe CC0 projection of one public Art Institute artwork record.
+         */
+        ArtICPublicArtwork: {
+            /**
+             * Kind
+             * @default artic_public_artwork
+             * @constant
+             */
+            __kind?: "artic_public_artwork";
+            /**
+             * Provider
+             * @default art_institute_of_chicago
+             * @constant
+             */
+            provider?: "art_institute_of_chicago";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Source License
+             * @default CC0-1.0
+             * @constant
+             */
+            source_license?: "CC0-1.0";
+            /** Artwork Id */
+            artwork_id: number;
+            /** Title */
+            title: string;
+            /** Artwork Url */
+            artwork_url: string;
+            /** Artist Display */
+            artist_display?: string | null;
+            /** Date Display */
+            date_display?: string | null;
+            /** Place Of Origin */
+            place_of_origin?: string | null;
+            /** Medium Display */
+            medium_display?: string | null;
+            /** Department Title */
+            department_title?: string | null;
+            /** Gallery Title */
+            gallery_title?: string | null;
+            /** Is Public Domain */
+            is_public_domain: boolean;
         };
         /** Asset */
         Asset: {
@@ -38038,6 +38219,46 @@ export interface components {
             /** Run Count */
             run_count: number;
         };
+        /**
+         * DataCitePublicDoi
+         * @description Safe bounded projection of one public DataCite DOI record.
+         */
+        DataCitePublicDoi: {
+            /**
+             * Kind
+             * @default datacite_public_doi
+             * @constant
+             */
+            __kind?: "datacite_public_doi";
+            /**
+             * Provider
+             * @default datacite
+             * @constant
+             */
+            provider?: "datacite";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Doi */
+            doi: string;
+            /** Doi Url */
+            doi_url: string;
+            /** Title */
+            title: string;
+            /** Creator Names */
+            creator_names: string[];
+            /** Publisher */
+            publisher?: string | null;
+            /** Publication Year */
+            publication_year?: number | null;
+            /** Resource Type */
+            resource_type?: string | null;
+            /** Language */
+            language?: string | null;
+        };
         /** DataForSeoEndpointExampleOut */
         DataForSeoEndpointExampleOut: {
             /** Endpoint */
@@ -40456,6 +40677,20 @@ export interface components {
              * @default false
              */
             accept?: boolean;
+        };
+        /**
+         * DraftInputItem
+         * @description One descriptive input — description is the only required field.
+         */
+        DraftInputItem: {
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description: string;
+            /** Kind */
+            kind?: string | null;
+            /** Required */
+            required?: boolean | null;
         };
         /**
          * DraftOutcome
@@ -43020,6 +43255,46 @@ export interface components {
             fault_domain: string;
             /** Count */
             count: number;
+        };
+        /**
+         * FederalRegisterPublicDocument
+         * @description Safe bounded projection of one public Federal Register document.
+         */
+        FederalRegisterPublicDocument: {
+            /**
+             * Kind
+             * @default federal_register_public_document
+             * @constant
+             */
+            __kind?: "federal_register_public_document";
+            /**
+             * Provider
+             * @default federal_register
+             * @constant
+             */
+            provider?: "federal_register";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Document Number */
+            document_number: string;
+            /** Title */
+            title: string;
+            /** Document Type */
+            document_type: string;
+            /** Publication Date */
+            publication_date: string;
+            /** Agencies */
+            agencies: string[];
+            /** Abstract */
+            abstract: string;
+            /** Document Url */
+            document_url: string;
+            /** Official Pdf Url */
+            official_pdf_url: string;
         };
         /**
          * FeedbackIterationRequest
@@ -50385,6 +50660,53 @@ export interface components {
             /** Computed At */
             computed_at: string;
         };
+        /** MandateCreateRequest */
+        MandateCreateRequest: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Label */
+            label: string;
+            /** Goal */
+            goal: string;
+            /** Description */
+            description?: string | null;
+            /** Output Kind */
+            output_kind?: string | null;
+            /** Output Constraints */
+            output_constraints?: string | null;
+            /**
+             * Draft Inputs
+             * @default []
+             */
+            draft_inputs?: components["schemas"]["DraftInputItem"][];
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** MandateCreatedResponse */
+        MandateCreatedResponse: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Mandate Id */
+            mandate_id: string;
+            /** Goal Grounding */
+            goal_grounding: string;
+            /** Origin */
+            origin: string;
+        };
+        /** MandateDraftInputsPatchRequest */
+        MandateDraftInputsPatchRequest: {
+            /** Draft Inputs */
+            draft_inputs: components["schemas"]["DraftInputItem"][];
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** MandateDraftInputsResponse */
+        MandateDraftInputsResponse: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Draft Inputs */
+            draft_inputs: components["schemas"]["DraftInputItem"][];
+        };
         /** MandateExemplarTestResults */
         MandateExemplarTestResults: {
             /** Exemplar Id */
@@ -50393,6 +50715,22 @@ export interface components {
             exemplar_label: string;
             /** Results */
             results: components["schemas"]["MandateTestResult"][];
+        };
+        /** MandateGoalPatchRequest */
+        MandateGoalPatchRequest: {
+            /** Goal */
+            goal: string;
+            /** Organization Id */
+            organization_id?: string | null;
+        };
+        /** MandateGoalResponse */
+        MandateGoalResponse: {
+            /** Mandate Key */
+            mandate_key: string;
+            /** Goal */
+            goal: string;
+            /** Goal Grounding */
+            goal_grounding: string;
         };
         /**
          * MandateOption
@@ -59067,6 +59405,44 @@ export interface components {
             reference_sources?: string[];
             /** Error */
             error?: string | null;
+        };
+        /**
+         * PubMedPublicSummary
+         * @description Safe bounded projection of one public PubMed citation summary.
+         */
+        PubMedPublicSummary: {
+            /**
+             * Kind
+             * @default pubmed_public_summary
+             * @constant
+             */
+            __kind?: "pubmed_public_summary";
+            /**
+             * Provider
+             * @default pubmed
+             * @constant
+             */
+            provider?: "pubmed";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Pmid */
+            pmid: string;
+            /** Title */
+            title: string;
+            /** Journal */
+            journal: string;
+            /** Publication Date */
+            publication_date: string;
+            /** Languages */
+            languages: string[];
+            /** Publication Types */
+            publication_types: string[];
+            /** Pubmed Url */
+            pubmed_url: string;
         };
         /**
          * PublicAiVisibilityBody
@@ -68999,6 +69375,58 @@ export interface components {
         SystemTasksResponse: {
             /** Tasks */
             tasks: components["schemas"]["SystemTaskItem"][];
+        };
+        /**
+         * TVmazePublicShow
+         * @description Safe bounded projection of one public TVmaze show record.
+         */
+        TVmazePublicShow: {
+            /**
+             * Kind
+             * @default tvmaze_public_show
+             * @constant
+             */
+            __kind?: "tvmaze_public_show";
+            /**
+             * Provider
+             * @default tvmaze
+             * @constant
+             */
+            provider?: "tvmaze";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Source License
+             * @default CC BY-SA
+             * @constant
+             */
+            source_license?: "CC BY-SA";
+            /** Show Id */
+            show_id: number;
+            /** Name */
+            name: string;
+            /** Tvmaze Url */
+            tvmaze_url: string;
+            /** Show Type */
+            show_type?: string | null;
+            /** Language */
+            language?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Premiered */
+            premiered?: string | null;
+            /** Ended */
+            ended?: string | null;
+            /** Runtime Minutes */
+            runtime_minutes?: number | null;
+            /** Average Runtime Minutes */
+            average_runtime_minutes?: number | null;
+            /** Genres */
+            genres: string[];
         };
         /** TableCellBookmark */
         TableCellBookmark: {
@@ -87260,6 +87688,99 @@ export interface operations {
             };
         };
     };
+    public_doi_datacite_public_doi_get: {
+        parameters: {
+            query: {
+                doi: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataCitePublicDoi"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_artwork_artic_public_artwork_get: {
+        parameters: {
+            query: {
+                artwork_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtICPublicArtwork"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_show_tvmaze_public_show_get: {
+        parameters: {
+            query: {
+                show_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TVmazePublicShow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_project_modrinth_public_project_get: {
         parameters: {
             query: {
@@ -87340,6 +87861,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CourseraPublicCourse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_summary_pubmed_public_summary_get: {
+        parameters: {
+            query: {
+                pmid: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PubMedPublicSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_document_federal_register_public_document_get: {
+        parameters: {
+            query: {
+                document_number: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FederalRegisterPublicDocument"];
                 };
             };
             /** @description Validation Error */
@@ -106477,6 +107060,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["aidream__api__routers__mandate_bindings__MandateCatalogResponse"];
+                };
+            };
+        };
+    };
+    create_mandate_mandates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MandateCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateCreatedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_mandate_goal_mandates__mandate_key__goal_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MandateGoalPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateGoalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_mandate_draft_inputs_mandates__mandate_key__draft_inputs_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MandateDraftInputsPatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MandateDraftInputsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

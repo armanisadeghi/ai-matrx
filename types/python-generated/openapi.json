@@ -15678,6 +15678,138 @@
         }
       }
     },
+    "/datacite/public/doi": {
+      "get": {
+        "tags": [
+          "DataCite Integrations"
+        ],
+        "summary": "Public Doi",
+        "operationId": "public_doi_datacite_public_doi_get",
+        "parameters": [
+          {
+            "name": "doi",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 7,
+              "maxLength": 255,
+              "title": "Doi"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataCitePublicDoi"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/artic/public/artwork": {
+      "get": {
+        "tags": [
+          "Art Institute of Chicago Integrations"
+        ],
+        "summary": "Public Artwork",
+        "operationId": "public_artwork_artic_public_artwork_get",
+        "parameters": [
+          {
+            "name": "artwork_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Artwork Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ArtICPublicArtwork"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tvmaze/public/show": {
+      "get": {
+        "tags": [
+          "TVmaze Integrations"
+        ],
+        "summary": "Public Show",
+        "operationId": "public_show_tvmaze_public_show_get",
+        "parameters": [
+          {
+            "name": "show_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Show Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TVmazePublicShow"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/modrinth/public/project": {
       "get": {
         "tags": [
@@ -15793,6 +15925,94 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CourseraPublicCourse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pubmed/public/summary": {
+      "get": {
+        "tags": [
+          "PubMed Integrations"
+        ],
+        "summary": "Public Summary",
+        "operationId": "public_summary_pubmed_public_summary_get",
+        "parameters": [
+          {
+            "name": "pmid",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 10,
+              "title": "Pmid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PubMedPublicSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/federal-register/public/document": {
+      "get": {
+        "tags": [
+          "Federal Register Integrations"
+        ],
+        "summary": "Public Document",
+        "operationId": "public_document_federal_register_public_document_get",
+        "parameters": [
+          {
+            "name": "document_number",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 10,
+              "maxLength": 10,
+              "title": "Document Number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FederalRegisterPublicDocument"
                 }
               }
             }
@@ -44642,6 +44862,152 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Create Mandate",
+        "description": "Create a UI-authored mandate — the same key validation as the code path,\nwith the validator's message returned verbatim on a 422.",
+        "operationId": "create_mandate_mandates_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MandateCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateCreatedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/{mandate_key}/goal": {
+      "patch": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Patch Mandate Goal",
+        "description": "Set the goal (grounding becomes 'H'). Works on ANY mandate — the boot\nsync refreshes goals only over grounding 'A', so an 'H' edit is permanent.",
+        "operationId": "patch_mandate_goal_mandates__mandate_key__goal_patch",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MandateGoalPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateGoalResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mandates/{mandate_key}/draft-inputs": {
+      "patch": {
+        "tags": [
+          "Mandates"
+        ],
+        "summary": "Patch Mandate Draft Inputs",
+        "description": "Replace the mandate's descriptive input list (pre-Provision inputs).",
+        "operationId": "patch_mandate_draft_inputs_mandates__mandate_key__draft_inputs_patch",
+        "parameters": [
+          {
+            "name": "mandate_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mandate Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MandateDraftInputsPatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MandateDraftInputsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/agent-usage/sync": {
@@ -71833,6 +72199,138 @@
         ],
         "title": "ArchiveWorkflowResponse"
       },
+      "ArtICPublicArtwork": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "artic_public_artwork",
+            "title": "Kind",
+            "default": "artic_public_artwork"
+          },
+          "provider": {
+            "type": "string",
+            "const": "art_institute_of_chicago",
+            "title": "Provider",
+            "default": "art_institute_of_chicago"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "source_license": {
+            "type": "string",
+            "const": "CC0-1.0",
+            "title": "Source License",
+            "default": "CC0-1.0"
+          },
+          "artwork_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Artwork Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "artwork_url": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Artwork Url"
+          },
+          "artist_display": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist Display"
+          },
+          "date_display": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Display"
+          },
+          "place_of_origin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Place Of Origin"
+          },
+          "medium_display": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medium Display"
+          },
+          "department_title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department Title"
+          },
+          "gallery_title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gallery Title"
+          },
+          "is_public_domain": {
+            "type": "boolean",
+            "title": "Is Public Domain"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "artwork_id",
+          "title",
+          "artwork_url",
+          "is_public_domain"
+        ],
+        "title": "ArtICPublicArtwork",
+        "description": "Safe CC0 projection of one public Art Institute artwork record."
+      },
       "Asset": {
         "properties": {
           "file_id": {
@@ -98464,6 +98962,113 @@
         ],
         "title": "DailySpendPoint"
       },
+      "DataCitePublicDoi": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "datacite_public_doi",
+            "title": "Kind",
+            "default": "datacite_public_doi"
+          },
+          "provider": {
+            "type": "string",
+            "const": "datacite",
+            "title": "Provider",
+            "default": "datacite"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "doi": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 7,
+            "title": "Doi"
+          },
+          "doi_url": {
+            "type": "string",
+            "maxLength": 320,
+            "minLength": 1,
+            "title": "Doi Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "creator_names": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 25,
+            "title": "Creator Names"
+          },
+          "publisher": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publisher"
+          },
+          "publication_year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9999,
+                "minimum": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publication Year"
+          },
+          "resource_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Type"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "doi",
+          "doi_url",
+          "title",
+          "creator_names"
+        ],
+        "title": "DataCitePublicDoi",
+        "description": "Safe bounded projection of one public DataCite DOI record."
+      },
       "DataForSeoEndpointExampleOut": {
         "properties": {
           "endpoint": {
@@ -104927,6 +105532,54 @@
         "type": "object",
         "title": "DraftBriefBody"
       },
+      "DraftInputItem": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "required": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Required"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "description"
+        ],
+        "title": "DraftInputItem",
+        "description": "One descriptive input — description is the only required field."
+      },
       "DraftOutcome": {
         "properties": {
           "draft_id": {
@@ -111387,6 +112040,91 @@
           "count"
         ],
         "title": "FaultDomainCount"
+      },
+      "FederalRegisterPublicDocument": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "federal_register_public_document",
+            "title": "Kind",
+            "default": "federal_register_public_document"
+          },
+          "provider": {
+            "type": "string",
+            "const": "federal_register",
+            "title": "Provider",
+            "default": "federal_register"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "document_number": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 10,
+            "title": "Document Number"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "document_type": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Document Type"
+          },
+          "publication_date": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 10,
+            "title": "Publication Date"
+          },
+          "agencies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 24,
+            "title": "Agencies"
+          },
+          "abstract": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "Abstract"
+          },
+          "document_url": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Document Url"
+          },
+          "official_pdf_url": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Official Pdf Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "document_number",
+          "title",
+          "document_type",
+          "publication_date",
+          "agencies",
+          "abstract",
+          "document_url",
+          "official_pdf_url"
+        ],
+        "title": "FederalRegisterPublicDocument",
+        "description": "Safe bounded projection of one public Federal Register document."
       },
       "FeedbackIterationRequest": {
         "properties": {
@@ -130834,6 +131572,159 @@
         ],
         "title": "MandateCoverageResponse"
       },
+      "MandateCreateRequest": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "goal": {
+            "type": "string",
+            "title": "Goal"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "output_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Kind"
+          },
+          "output_constraints": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Constraints"
+          },
+          "draft_inputs": {
+            "items": {
+              "$ref": "#/components/schemas/DraftInputItem"
+            },
+            "type": "array",
+            "title": "Draft Inputs",
+            "default": []
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "label",
+          "goal"
+        ],
+        "title": "MandateCreateRequest"
+      },
+      "MandateCreatedResponse": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "mandate_id": {
+            "type": "string",
+            "title": "Mandate Id"
+          },
+          "goal_grounding": {
+            "type": "string",
+            "title": "Goal Grounding"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "mandate_id",
+          "goal_grounding",
+          "origin"
+        ],
+        "title": "MandateCreatedResponse"
+      },
+      "MandateDraftInputsPatchRequest": {
+        "properties": {
+          "draft_inputs": {
+            "items": {
+              "$ref": "#/components/schemas/DraftInputItem"
+            },
+            "type": "array",
+            "title": "Draft Inputs"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "draft_inputs"
+        ],
+        "title": "MandateDraftInputsPatchRequest"
+      },
+      "MandateDraftInputsResponse": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "draft_inputs": {
+            "items": {
+              "$ref": "#/components/schemas/DraftInputItem"
+            },
+            "type": "array",
+            "title": "Draft Inputs"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "draft_inputs"
+        ],
+        "title": "MandateDraftInputsResponse"
+      },
       "MandateExemplarTestResults": {
         "properties": {
           "exemplar_id": {
@@ -130859,6 +131750,54 @@
           "results"
         ],
         "title": "MandateExemplarTestResults"
+      },
+      "MandateGoalPatchRequest": {
+        "properties": {
+          "goal": {
+            "type": "string",
+            "title": "Goal"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "goal"
+        ],
+        "title": "MandateGoalPatchRequest"
+      },
+      "MandateGoalResponse": {
+        "properties": {
+          "mandate_key": {
+            "type": "string",
+            "title": "Mandate Key"
+          },
+          "goal": {
+            "type": "string",
+            "title": "Goal"
+          },
+          "goal_grounding": {
+            "type": "string",
+            "title": "Goal Grounding"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mandate_key",
+          "goal",
+          "goal_grounding"
+        ],
+        "title": "MandateGoalResponse"
       },
       "MandateOption": {
         "properties": {
@@ -151140,6 +152079,85 @@
         "type": "object",
         "title": "PruneResult",
         "description": "Outcome of one retention pass."
+      },
+      "PubMedPublicSummary": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "pubmed_public_summary",
+            "title": "Kind",
+            "default": "pubmed_public_summary"
+          },
+          "provider": {
+            "type": "string",
+            "const": "pubmed",
+            "title": "Provider",
+            "default": "pubmed"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "pmid": {
+            "type": "string",
+            "maxLength": 10,
+            "minLength": 1,
+            "title": "Pmid"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "journal": {
+            "type": "string",
+            "maxLength": 500,
+            "title": "Journal"
+          },
+          "publication_date": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Publication Date"
+          },
+          "languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 12,
+            "title": "Languages"
+          },
+          "publication_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 24,
+            "title": "Publication Types"
+          },
+          "pubmed_url": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Pubmed Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pmid",
+          "title",
+          "journal",
+          "publication_date",
+          "languages",
+          "publication_types",
+          "pubmed_url"
+        ],
+        "title": "PubMedPublicSummary",
+        "description": "Safe bounded projection of one public PubMed citation summary."
       },
       "PublicAiVisibilityBody": {
         "properties": {
@@ -175783,6 +176801,156 @@
           "tasks"
         ],
         "title": "SystemTasksResponse"
+      },
+      "TVmazePublicShow": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "tvmaze_public_show",
+            "title": "Kind",
+            "default": "tvmaze_public_show"
+          },
+          "provider": {
+            "type": "string",
+            "const": "tvmaze",
+            "title": "Provider",
+            "default": "tvmaze"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "source_license": {
+            "type": "string",
+            "const": "CC BY-SA",
+            "title": "Source License",
+            "default": "CC BY-SA"
+          },
+          "show_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Show Id"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "tvmaze_url": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Tvmaze Url"
+          },
+          "show_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Show Type"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "premiered": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Premiered"
+          },
+          "ended": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended"
+          },
+          "runtime_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1440,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime Minutes"
+          },
+          "average_runtime_minutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1440,
+                "minimum": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Runtime Minutes"
+          },
+          "genres": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Genres"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "show_id",
+          "name",
+          "tvmaze_url",
+          "genres"
+        ],
+        "title": "TVmazePublicShow",
+        "description": "Safe bounded projection of one public TVmaze show record."
       },
       "TableCellBookmark": {
         "properties": {
