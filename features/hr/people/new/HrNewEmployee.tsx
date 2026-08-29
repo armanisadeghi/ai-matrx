@@ -67,7 +67,11 @@ import { cn } from "@/lib/utils";
 import { HrPageState } from "../../shared/HrStates";
 import { useHrContext } from "../../shared/useHrContext";
 import { useHrPersona } from "../../shared/useHrPersona";
-import { createHrEmployee, scanHrDuplicates } from "../../service";
+import {
+  createHrEmployee,
+  restoreHrEmployee,
+  scanHrDuplicates,
+} from "../../service";
 import { fingerprintHrSsn, storeHrSsn } from "../identity/storeSsn";
 import { useBackendApi } from "@/hooks/useBackendApi";
 import { hrEmployeeHref, hrPeopleHref, hrSettingsHref } from "../../routes";
@@ -130,6 +134,19 @@ export function HrNewEmployee({
     employeeId: string | null;
     acknowledged: boolean;
     overrideReason: string;
+  } | null>(null);
+  // 🚨 `employee_archived` is a REFUSAL WITH A NEXT STEP, not an error (hr_l1_68/68a).
+  // The person already has a record in this employer — §1.1 gives them exactly one, for life —
+  // and it is archived, so nothing can be created beside it. The server no longer hands back a
+  // door because there is no page that renders an archived record; it hands back the record's
+  // id and `restorable: true`, and the restore happens right here, the way `rehire_required`
+  // opens the rehire panel instead of sending anybody anywhere.
+  const [archived, setArchived] = useState<{
+    employeeId: string;
+    employeeNumber: string | null;
+    archivedAt: string | null;
+    detail: string;
+    restoring: boolean;
   } | null>(null);
 
   const [form, setForm] = useState({
@@ -329,6 +346,7 @@ export function HrNewEmployee({
   const submit = async () => {
     if (!organizationId) return;
     setRefusal(null);
+    setArchived(null);
     setSaving(true);
 
     // 🚨 THE SCAN RUNS FIRST, ALWAYS, AND ITS RESULT GATES THE WRITE.
@@ -445,7 +463,53 @@ export function HrNewEmployee({
       return;
     }
 
+    // 🚨 `employee_archived` OFFERS THE RESTORE instead of reading as an error. The record
+    // exists, it is archived, and the one act that unblocks the hire is bringing it back —
+    // which is a decision an HR admin makes, not something this form does silently.
+    if (
+      ack.refusal.reason === "employee_archived" &&
+      typeof ack.refusal.payload.employee_id === "string"
+    ) {
+      setArchived({
+        employeeId: ack.refusal.payload.employee_id,
+        employeeNumber:
+          typeof ack.refusal.payload.archived_employee_number === "string"
+            ? ack.refusal.payload.archived_employee_number
+            : null,
+        archivedAt:
+          typeof ack.refusal.payload.archived_at === "string"
+            ? ack.refusal.payload.archived_at
+            : null,
+        detail:
+          ack.refusal.detail ??
+          "This person already has an archived employee record in this employer.",
+        restoring: false,
+      });
+      return;
+    }
+
     setRefusal(ack.refusal);
+  };
+
+  const onRestoreArchived = async () => {
+    if (!archived || archived.restoring) return;
+    setArchived((current) => (current ? { ...current, restoring: true } : current));
+    const result = await restoreHrEmployee({ employeeId: archived.employeeId });
+    const ack = readWriteAck<{ employee_id: string }>(
+      result,
+      "That record was not restored.",
+    );
+    if (!ack.ok) {
+      setArchived((current) =>
+        current ? { ...current, restoring: false } : current,
+      );
+      setRefusal(ack.refusal);
+      return;
+    }
+    toast.success(
+      "Record restored. Their history is back — record the return from their profile.",
+    );
+    router.push(hrEmployeeHref(archived.employeeId, null, { org: orgRef }));
   };
 
   // ── States ─────────────────────────────────────────────────────────────
@@ -1029,6 +1093,18 @@ export function HrNewEmployee({
               />
             ) : null}
 
+            {/* ── Archived record (§1.1 — one record per person, for life) ── */}
+            {archived ? (
+              <ArchivedRecordPanel
+                detail={archived.detail}
+                employeeNumber={archived.employeeNumber}
+                archivedAt={archived.archivedAt}
+                restoring={archived.restoring}
+                canRestore={can("identity.write")}
+                onRestore={onRestoreArchived}
+              />
+            ) : null}
+
             {refusal ? <RefusalNotice refusal={refusal} org={orgRef} /> : null}
 
             <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
@@ -1353,6 +1429,65 @@ function Created({
           <Link href={hrPeopleHref({ org })}>Back to the directory</Link>
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The archived-record panel (hr_l1_68 / 68a).
+ *
+ * NOT a `RefusalNotice`. That component renders a sentence and a "Go fix that" link, and there is
+ * no page that renders an archived record to link TO — `hr_employee_profile` answers
+ * `not_reachable` for one and the directory filters archived rows out. The act that unblocks the
+ * hire happens here.
+ */
+function ArchivedRecordPanel({
+  detail,
+  employeeNumber,
+  archivedAt,
+  restoring,
+  canRestore,
+  onRestore,
+}: {
+  detail: string;
+  employeeNumber: string | null;
+  archivedAt: string | null;
+  restoring: boolean;
+  canRestore: boolean;
+  onRestore: () => void;
+}) {
+  return (
+    <div className="space-y-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-3">
+      <p className="text-sm text-foreground">{detail}</p>
+      {employeeNumber || archivedAt ? (
+        <p className="text-xs text-muted-foreground">
+          {[
+            employeeNumber ? `Employee number ${employeeNumber}` : null,
+            archivedAt
+              ? `archived ${new Date(archivedAt).toLocaleDateString()}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      ) : null}
+      {canRestore ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="min-h-11 lg:min-h-9"
+          disabled={restoring}
+          onClick={onRestore}
+        >
+          {restoring ? "Restoring…" : "Restore their record"}
+        </Button>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Restoring an archived record needs the same access as hiring. Ask
+          someone who has it.
+        </p>
+      )}
     </div>
   );
 }

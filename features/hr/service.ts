@@ -874,6 +874,29 @@ export function createHrEmployee(
   );
 }
 
+/**
+ * Un-archive an employee record (hr_l1_68).
+ *
+ * 🚨 THE REFUSAL THAT NAMES THIS CALL. `hr.employee` is 1:1 with `crm.party` inside an employer
+ * (SPEC-EMPLOYEES §1.1), and the unique key counts ARCHIVED rows — so an archived record blocks
+ * re-creating the person, and `hr_employee_create` answers `reason: "employee_archived"` with
+ * `restorable: true`. Until this door existed there was nothing in the system that could
+ * un-archive one, and the refusal reported the collision as `employee_number_taken` — a number
+ * sentence about a number that was free everywhere.
+ *
+ * Same `identity.write` capability as the hire it unblocks, and it restores only what was
+ * archived in the same act, so the spells come back with the person.
+ */
+export function restoreHrEmployee(args: {
+  employeeId: string;
+}): Promise<HrResult<HrWriteAck>> {
+  return callHrWrite(
+    "hr_employee_restore",
+    { p_payload: { employee_id: args.employeeId } },
+    { envelope: true, whatFailed: "Restoring this archived record" },
+  );
+}
+
 export function updateHrEmployee(args: {
   employeeId: string;
   patch: Record<string, unknown>;
