@@ -98,6 +98,14 @@ export interface UseIntakeSessionResult {
 
   addPhoto: (blob: Blob, opts?: { isDelineator?: boolean }) => void;
   addVideo: (blob: Blob, fileName: string, durationMs: number) => void;
+  /**
+   * Upload lane: photos/videos already on the device (shot earlier, sent
+   * over, taken on another camera) join the capture exactly like a live
+   * shot — same folder, same artifact rows, same `sequence_index` stream
+   * (untracked mode included). Non-media files are skipped with a toast.
+   * Returns how many files were accepted.
+   */
+  addUploads: (input: File[] | FileList) => number;
   /** Voice note artifact — transcript stays null; the pipeline fills it. */
   addAudioNote: (blob: Blob, durationMs: number) => void;
   setNotes: (text: string) => void;
@@ -116,12 +124,51 @@ export interface UseIntakeSessionOptions {
   /** Open with this asset current (the `?asset=` deep link). Wins over the
    *  localStorage mid-item resume. */
   initialAssetId?: string | null;
+  /**
+   * WHICH LANE OWNS THE TERMINAL WRITE (see IntakeCaptureScreen's `mode`).
+   *
+   * `"standard"` — finishing an item writes `pipeline_state='captured'`, the
+   * transition the server-side W5 pipeline sweeps on, and resuming an asset
+   * re-marks it mid-capture so finishing later re-fires that handoff.
+   *
+   * 🚨 `"instant"` — the client runs the analysis itself
+   * (`useInstantIntakeAnalysis`), whose result seam writes
+   * `captured → awaiting_triage` directly. This lane NEVER re-fires the
+   * `captured` status write and never reopens a finished asset — either
+   * write would hand an already-analyzed asset to the server pipeline too.
+   */
+  lane?: "standard" | "instant";
+}
+
+/**
+ * Best-effort duration of an uploaded video file (the artifact row's CHECK
+ * requires `duration_ms` on non-photo kinds). A file whose metadata cannot be
+ * read resolves to 1 ms — the capture is never blocked on a probe.
+ */
+function probeVideoDurationMs(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const url = createTrackedObjectUrl(file);
+    const video = document.createElement("video");
+    const done = (ms: number) => {
+      revokeTrackedObjectUrl(url);
+      video.removeAttribute("src");
+      resolve(Math.max(1, Math.round(ms)));
+    };
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      const seconds = video.duration;
+      done(Number.isFinite(seconds) ? seconds * 1000 : 1);
+    };
+    video.onerror = () => done(1);
+    video.src = url;
+  });
 }
 
 export function useIntakeSession(
   options: UseIntakeSessionOptions = {},
 ): UseIntakeSessionResult {
-  const { initialAssetId = null } = options;
+  const { initialAssetId = null, lane = "standard" } = options;
+  const instantLane = lane === "instant";
   const organizationId = useAppSelector(selectEffectiveOrganizationId);
 
   const [captureMode, setCaptureModeState] =
@@ -382,7 +429,10 @@ export function useIntakeSession(
     if (notesTimerRef.current) clearTimeout(notesTimerRef.current);
     const flushed = await flushNotes(asset);
     if (!flushed) return "failed";
-    if (asset) {
+    if (asset && !instantLane) {
+      // 🚨 Instant lane: the analysis's own result seam owns the terminal
+      // write (`captured → awaiting_triage`); re-firing `captured` here
+      // would hand an already-analyzed asset to the server pipeline too.
       void finishAsset(asset).catch((err: unknown) => {
         console.error("[commerce-intake] item close failed", err);
         toast.error("Item saved, but could not be marked captured.");
@@ -404,7 +454,7 @@ export function useIntakeSession(
     notesDirtyRef.current = false;
     setNotesState("");
     return "finished";
-  }, [flushNotes, persistResume]);
+  }, [flushNotes, persistResume, instantLane]);
 
   const nextItem = useCallback(() => {
     void finishCurrentAsset();
@@ -447,6 +497,9 @@ export function useIntakeSession(
       );
       // Back on the capture surface = mid-capture again; finishing later
       // re-fires the same status transition (more photos ARE a reprocess).
+      // The INSTANT lane opts out: reopening an instant-processed asset is
+      // exactly how it would leak into the server pipeline on a later close.
+      if (instantLane) return;
       void reopenAsset(asset)
         .then((saved) => {
           if (currentAssetRef.current?.id === saved.id) {
@@ -458,7 +511,7 @@ export function useIntakeSession(
           console.error("[commerce-intake] asset reopen failed", err);
         });
     },
-    [finishCurrentAsset, adoptAsset],
+    [finishCurrentAsset, adoptAsset, instantLane],
   );
 
   // Resume on mount (once per org resolution): an explicit `?asset=` deep
@@ -788,6 +841,43 @@ export function useIntakeSession(
     [startArtifact],
   );
 
+  const addUploads = useCallback(
+    (input: File[] | FileList): number => {
+      const files = Array.from(input);
+      let accepted = 0;
+      let skipped = 0;
+      for (const file of files) {
+        const kind: ArtifactKind | null = file.type.startsWith("image/")
+          ? "photo"
+          : file.type.startsWith("video/")
+            ? "video"
+            : null;
+        if (!kind) {
+          skipped += 1;
+          continue;
+        }
+        accepted += 1;
+        const previewUrl = createTrackedObjectUrl(file);
+        void (async () => {
+          // Non-photo artifact rows must carry duration_ms (live CHECK) —
+          // probe the uploaded video's metadata before the row is written.
+          const durationMs =
+            kind === "video" ? await probeVideoDurationMs(file) : null;
+          await startArtifact(file, kind, { previewUrl, durationMs });
+        })().catch(() => {
+          // Surfaced on the artifact chip.
+        });
+      }
+      if (skipped > 0) {
+        toast.error(
+          `${skipped} file${skipped === 1 ? "" : "s"} skipped — only photos and videos can be added.`,
+        );
+      }
+      return accepted;
+    },
+    [startArtifact],
+  );
+
   const addAudioNote = useCallback(
     (blob: Blob, durationMs: number) => {
       const file = toAudioFile(blob, {
@@ -853,6 +943,7 @@ export function useIntakeSession(
     notesSaving,
     addPhoto,
     addVideo,
+    addUploads,
     addAudioNote,
     setNotes,
     addManualIdentifier,

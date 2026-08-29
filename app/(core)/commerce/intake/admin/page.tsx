@@ -47,6 +47,19 @@ const COMMERCE_INTAKE_ADMIN_MAP: FeatureAdminMap = {
       ],
     },
     {
+      url: "/commerce/intake/instant",
+      label: "Capture surface — instant lane",
+      description:
+        "Same capture surface plus the Process button: the client runs the commerce_intake.instant_analysis mandate on the asset's photos and streams the electronics_intake_analysis record into a bottom sheet. A processed asset goes captured → awaiting_triage directly (never re-fires 'captured'), so the W5 server sweep can't double-process it.",
+      filePath: "app/(core)/commerce/intake/instant/page.tsx",
+      status: "Live",
+      notes: [
+        "Serialized (QR) mode only — untracked batches have no asset until segmentation",
+        "Durable seams live on intake_asset.metadata (instant_run pointer + instant_analysis record)",
+        "Disclosure via useDeclaredSurfaceMandates — the top Agents menu, never page content",
+      ],
+    },
+    {
       url: "/commerce/intake/assets",
       label: "Assets list (hub)",
       description:
@@ -92,6 +105,13 @@ const COMMERCE_INTAKE_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/commerce-intake/hooks/useIntakeSession.ts",
       description:
         "The session engine: open-batch resolution, lazy asset creation, monotonic per-batch sequence_index (DB-continued on resume), notes flush-before-close, the captured status write, localStorage mid-item resume.",
+      status: "Live",
+    },
+    {
+      name: "useInstantIntakeAnalysis",
+      filePath: "features/commerce-intake/hooks/useInstantIntakeAnalysis.ts",
+      description:
+        "The instant lane: mandate-keyed client run (useLiveAgentRun) with three durability seams — conversation pointer before first token, result persisted on settle (captured → awaiting_triage), recovery/rejoin/backfill on return.",
       status: "Live",
     },
     {

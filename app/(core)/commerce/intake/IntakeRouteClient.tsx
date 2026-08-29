@@ -28,8 +28,11 @@ const IntakeCaptureScreen = dynamic(
 
 export default function IntakeRouteClient({
   initialAssetId,
+  mode = "standard",
 }: {
   initialAssetId: string | null;
+  /** "instant" adds the client-run Process lane (/commerce/intake/instant). */
+  mode?: "standard" | "instant";
 }) {
-  return <IntakeCaptureScreen initialAssetId={initialAssetId} />;
+  return <IntakeCaptureScreen initialAssetId={initialAssetId} mode={mode} />;
 }

@@ -82,6 +82,57 @@ export interface IntakeAsset {
   version: number;
   /** Primary our_qr value, joined from asset_identifier (null = untracked). */
   qrCode: string | null;
+  /**
+   * The asset's `metadata` jsonb, carried so writers can MERGE (capture_open,
+   * the instant lane's `instant_run` pointer + `instant_analysis` record) —
+   * a patch that replaces the whole column would wipe sibling keys.
+   */
+  metadata: Record<string, unknown>;
+}
+
+// ── The instant lane (client-run analysis; see hooks/useInstantIntakeAnalysis) ─
+
+/**
+ * THE INSTANT LANE'S DURABLE RUN POINTER — written onto
+ * `intake_asset.metadata.instant_run` the moment the run's conversation
+ * exists, BEFORE a single token streams, so an unmounted surface can never
+ * orphan a paid run. The settled record lands beside it as
+ * `metadata.instant_analysis` (the raw `electronics_intake_analysis` kind
+ * object, `__kind` marker and all, saved verbatim).
+ */
+export interface InstantRunPointer {
+  version: 1;
+  conversationId: string;
+  startedAt: string;
+}
+
+/** Narrow a stored `metadata.instant_run` value; null for anything unusable. */
+export function readInstantRunPointer(
+  data: unknown,
+): InstantRunPointer | null {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const raw = data as Record<string, unknown>;
+  const conversationId = raw.conversationId;
+  if (typeof conversationId !== "string" || conversationId.length === 0) {
+    return null;
+  }
+  return {
+    version: 1,
+    conversationId,
+    startedAt:
+      typeof raw.startedAt === "string"
+        ? raw.startedAt
+        : new Date(0).toISOString(),
+  };
+}
+
+/** Narrow a stored `metadata.instant_analysis` value (agent-written jsonb). */
+export function readInstantResult(
+  data: unknown,
+): Record<string, unknown> | null {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  const record = data as Record<string, unknown>;
+  return Object.keys(record).length > 0 ? record : null;
 }
 
 /** One stored artifact link as the UI lists it. */

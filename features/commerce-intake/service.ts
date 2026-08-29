@@ -46,6 +46,7 @@ import type {
   IntakeAssetRow,
   IntakeBatch,
   IntakeBatchRow,
+  InstantRunPointer,
   PipelineState,
   StreamKind,
 } from "./types";
@@ -58,7 +59,7 @@ function db() {
 const BATCH_COLUMNS =
   "id, organization_id, stream_kind, capture_mode, label, status, notes, version";
 const ASSET_COLUMNS =
-  "id, intake_batch_id, organization_id, tracking_mode, quantity, pipeline_state, notes, attributes, featured_artifact_id, composition, created_at, version";
+  "id, intake_batch_id, organization_id, tracking_mode, quantity, pipeline_state, notes, attributes, featured_artifact_id, composition, metadata, created_at, version";
 const ARTIFACT_COLUMNS =
   "id, intake_batch_id, intake_asset_id, file_id, artifact_kind, sequence_index, is_delineator, created_at";
 const IDENTIFIER_COLUMNS =
@@ -105,9 +106,26 @@ type AssetRow = Pick<
   | "attributes"
   | "featured_artifact_id"
   | "composition"
+  | "metadata"
   | "created_at"
   | "version"
 >;
+
+function toMetadata(
+  value: IntakeAssetRow["metadata"],
+): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+/** jsonb write cast for merged metadata — every value merged in is JSON-safe
+ *  by construction (booleans, the pointer object, the agent's jsonb record),
+ *  but `Record<string, unknown>` is not assignable to the generated Json. */
+function asMetadataColumn(
+  value: Record<string, unknown>,
+): NonNullable<IntakeAssetRow["metadata"]> {
+  return value as NonNullable<IntakeAssetRow["metadata"]>;
+}
 
 function toAttributes(
   value: IntakeAssetRow["attributes"],
@@ -136,6 +154,7 @@ function toAsset(row: AssetRow, qrCode: string | null = null): IntakeAsset {
     createdAt: row.created_at,
     version: row.version,
     qrCode,
+    metadata: toMetadata(row.metadata),
   };
 }
 
@@ -558,9 +577,11 @@ export async function setAssetAttributes(
  * item's capture life.
  */
 export async function finishAsset(asset: IntakeAsset): Promise<IntakeAsset> {
-  return guardedAssetWrite(asset, () => ({
+  return guardedAssetWrite(asset, (current) => ({
     pipeline_state: "captured" as PipelineState,
-    metadata: { capture_open: false },
+    // MERGE — the metadata column also carries the instant lane's durable
+    // seams; replacing it wholesale would orphan a paid run.
+    metadata: asMetadataColumn({ ...current.metadata, capture_open: false }),
   }));
 }
 
@@ -568,8 +589,55 @@ export async function finishAsset(asset: IntakeAsset): Promise<IntakeAsset> {
  *  row mid-capture again so finishing later re-fires the same transition —
  *  more photos ARE a reprocess. */
 export async function reopenAsset(asset: IntakeAsset): Promise<IntakeAsset> {
-  return guardedAssetWrite(asset, () => ({
-    metadata: { capture_open: true },
+  return guardedAssetWrite(asset, (current) => ({
+    metadata: asMetadataColumn({ ...current.metadata, capture_open: true }),
+  }));
+}
+
+// ── The instant lane (client-run analysis; see hooks/useInstantIntakeAnalysis) ─
+//
+// WHERE THE SEAMS LIVE, AND WHY: `commerce.asset_mandate_result` is the W5
+// pipeline's OWN durable ledger — its `step` CHECK enumerates the pipeline
+// steps and W5 reads the latest non-superseded succeeded row per step as that
+// step's output under its own idempotency contract (pending-before-run,
+// BatchRouter custom_id, superseded_by chaining). A client-lane row there
+// would be read back as a pipeline step's output and corrupt that contract,
+// so the instant lane persists on the asset row itself:
+// `metadata.instant_run` (the pointer) + `metadata.instant_analysis` (the
+// settled record, `__kind` marker and all) — merged, CAS-guarded, no DDL.
+
+/** SEAM 1 — the durable run pointer, before the first token streams. */
+export async function saveInstantRunPointer(
+  asset: IntakeAsset,
+  pointer: InstantRunPointer,
+): Promise<IntakeAsset> {
+  return guardedAssetWrite(asset, (current) => ({
+    metadata: asMetadataColumn({ ...current.metadata, instant_run: { ...pointer } }),
+  }));
+}
+
+/**
+ * SEAM 2 (and 3's backfill) — persist the settled record AND take the asset
+ * out of the server pipeline's reach in ONE write. An instant-processed asset
+ * moves `captured → awaiting_triage` (never re-fires `captured`): the W5
+ * sweep only picks up captured/extracting/grouped/researching/valuing, so
+ * this is the commerce mirror of product-capture's skip-captured semantics —
+ * the analysis is done and a human triages next. A row already past
+ * `captured` keeps its state; only the record merges in.
+ */
+export async function saveInstantResult(
+  asset: IntakeAsset,
+  record: Record<string, unknown>,
+): Promise<IntakeAsset> {
+  return guardedAssetWrite(asset, (current) => ({
+    ...(current.pipelineState === "captured"
+      ? { pipeline_state: "awaiting_triage" as PipelineState }
+      : {}),
+    metadata: asMetadataColumn({
+      ...current.metadata,
+      instant_analysis: record,
+      capture_open: false,
+    }),
   }));
 }
 

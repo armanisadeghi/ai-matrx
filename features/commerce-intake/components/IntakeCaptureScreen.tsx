@@ -32,11 +32,13 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 import {
+  BrainCircuit,
   Camera as CameraIcon,
   Check,
   Eye,
   EyeOff,
   FileAudio,
+  ImagePlus,
   LayoutGrid,
   Loader2,
   PackagePlus,
@@ -74,23 +76,98 @@ import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { NotesPanel } from "@/features/product-capture/components/NotesPanel";
 import { VoiceNoteButton } from "@/features/product-capture/components/VoiceNoteButton";
 import { MediaPager } from "@/features/product-capture/components/MediaPager";
+import { InstantProcessSheet } from "@/features/product-capture/components/InstantProcessSheet";
 import { useQrAutoScan } from "@/features/product-capture/hooks/useQrAutoScan";
+
+import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 
 import type { PendingIntakeArtifact } from "../types";
 import { useIntakeSession } from "../hooks/useIntakeSession";
+import {
+  INTAKE_INSTANT_ANALYSIS_MANDATE_KEY,
+  useInstantIntakeAnalysis,
+} from "../hooks/useInstantIntakeAnalysis";
 
 const PHOTO_JPEG_QUALITY = 0.92;
+
+// The instant surface's one fixed AI job, registered in the top Agents menu
+// (agent-disclosure law — never as visible page content). Stable identity so
+// the declaration effect doesn't churn.
+const INSTANT_MANDATE_REFS = [
+  {
+    mandateKey: INTAKE_INSTANT_ANALYSIS_MANDATE_KEY,
+    does: "Analyzes the current intake asset's photos into an intake record when you tap Process — streamed live.",
+  },
+];
+const NO_MANDATE_REFS: typeof INSTANT_MANDATE_REFS = [];
 
 export interface IntakeCaptureScreenProps {
   /** Open with this asset current (the `?asset=` deep link). */
   initialAssetId?: string | null;
+  /**
+   * Process-mode lanes (ported from the product-capture trial):
+   * - `"standard"` — capture only; the server-side W5 pipeline picks assets
+   *   up on the `pipeline_state='captured'` write (finishAsset).
+   * - `"instant"` — adds the Process button: the CLIENT runs the analysis
+   *   through the `commerce_intake.instant_analysis` mandate and streams the
+   *   result into a bottom sheet; on success the asset goes
+   *   `captured → awaiting_triage` directly, so the server lane never
+   *   double-processes it. Serialized (QR) mode only — untracked batches
+   *   have no asset to analyze until segmentation.
+   */
+  mode?: "standard" | "instant";
 }
 
 export function IntakeCaptureScreen({
   initialAssetId = null,
+  mode = "standard",
 }: IntakeCaptureScreenProps) {
   const router = useRouter();
-  const session = useIntakeSession({ initialAssetId });
+  const instantMode = mode === "instant";
+  const session = useIntakeSession({
+    initialAssetId,
+    lane: instantMode ? "instant" : "standard",
+  });
+  useDeclaredSurfaceMandates(
+    instantMode ? INSTANT_MANDATE_REFS : NO_MANDATE_REFS,
+  );
+
+  // ── Instant lane (mode="instant") ────────────────────────────────────────
+  const instant = useInstantIntakeAnalysis({
+    asset: session.currentAsset,
+    enabled: instantMode,
+  });
+  const [processOpen, setProcessOpen] = useState(false);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+
+  const runInstant = useCallback(() => {
+    const asset = session.currentAsset;
+    if (!asset) return;
+    setLaunchError(null);
+    setProcessOpen(true);
+    void instant.process(asset).catch((err: unknown) => {
+      setLaunchError(
+        err instanceof Error ? err.message : "Processing failed — try again.",
+      );
+    });
+  }, [session.currentAsset, instant]);
+
+  const onProcess = useCallback(() => {
+    // A run in flight, or a saved result: the button OPENS the sheet rather
+    // than paying for the analysis twice. Closing the sheet never cancels a
+    // run — the hook's seams persist it regardless.
+    if (instant.isRunning || instant.storedResult) {
+      setProcessOpen(true);
+      return;
+    }
+    runInstant();
+  }, [instant.isRunning, instant.storedResult, runInstant]);
+
+  const onInstantNextItem = useCallback(() => {
+    setProcessOpen(false);
+    instant.dismiss();
+    session.nextItem();
+  }, [instant, session]);
 
   // ── Camera lease (scanner contract) ──────────────────────────────────────
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -102,6 +179,7 @@ export function IntakeCaptureScreen({
   const leaseRef = useRef<CameraLease | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const fallbackInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const devices = useSyncExternalStore(
     subscribeMediaDevices,
@@ -280,6 +358,24 @@ export function IntakeCaptureScreen({
       e.target.value = "";
       if (!file) return;
       session.addPhoto(file);
+    },
+    [session],
+  );
+
+  // Upload lane: photos/videos the worker already has on the device (shot
+  // earlier, sent to them, or from another camera) join the capture exactly
+  // like a live shot — same folder, same artifact rows, same sequence_index
+  // stream (untracked mode included), many files at once.
+  const handleUploadChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      const picked = files ? session.addUploads(files) : 0;
+      e.target.value = "";
+      if (picked > 0) {
+        toast.success(
+          `Adding ${picked} file${picked === 1 ? "" : "s"} to this capture…`,
+        );
+      }
     },
     [session],
   );
@@ -493,13 +589,24 @@ export function IntakeCaptureScreen({
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/80 px-8 text-center">
           <p className="text-sm text-white/90">
             The in-page camera isn&apos;t available here. Use your device
-            camera instead — each photo is added the moment you take it.
-            Notes and voice notes keep working.
+            camera instead, or upload photos and videos you already have —
+            either way they are added the moment you pick them. Notes and
+            voice notes keep working.
           </p>
-          <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
-            <CameraIcon className="mr-1.5 h-4 w-4" />
-            Open system camera
-          </Button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
+              <CameraIcon className="mr-1.5 h-4 w-4" />
+              Open system camera
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => uploadInputRef.current?.click()}
+            >
+              <ImagePlus className="mr-1.5 h-4 w-4" />
+              Upload from device
+            </Button>
+          </div>
         </div>
       )}
 
@@ -509,6 +616,18 @@ export function IntakeCaptureScreen({
         accept="image/*"
         capture="environment"
         onChange={handleFallbackChange}
+        className="hidden"
+      />
+
+      {/* Upload lane: the device's own photos/videos, many at a time. No
+          `capture` attribute — that is what makes the OS open the gallery /
+          files picker rather than the camera. */}
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept="image/*,video/*"
+        multiple
+        onChange={handleUploadChange}
         className="hidden"
       />
 
@@ -574,35 +693,84 @@ export function IntakeCaptureScreen({
           />
         </div>
 
-        {/* Photo/video toggle */}
-        <div className="flex justify-center pb-1">
-          <div className="flex rounded-full bg-white/10 p-0.5">
+        {/* Capture source control: one stable, equal-width row. Upload is an
+            immediate action; Photo and Video remain the persistent modes. */}
+        <div className="flex justify-center px-2 pb-1">
+          <div className="grid w-full max-w-sm grid-cols-3 rounded-full bg-white/10 p-1">
             <button
               type="button"
               onClick={() => setMediaMode("photo")}
               disabled={recording}
+              aria-pressed={mediaMode === "photo"}
               className={cn(
-                "flex h-8 items-center gap-1.5 rounded-full px-4 text-xs font-medium",
-                mediaMode === "photo" ? "bg-white text-black" : "text-white/80",
+                "flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-40",
+                mediaMode === "photo"
+                  ? "bg-white text-black"
+                  : "text-white/80 hover:bg-white/10 hover:text-white",
               )}
             >
-              <CameraIcon className="h-3.5 w-3.5" />
+              <CameraIcon className="h-4 w-4 shrink-0" />
               Photo
             </button>
             <button
               type="button"
               onClick={() => setMediaMode("video")}
               disabled={recording}
+              aria-pressed={mediaMode === "video"}
               className={cn(
-                "flex h-8 items-center gap-1.5 rounded-full px-4 text-xs font-medium",
-                mediaMode === "video" ? "bg-white text-black" : "text-white/80",
+                "flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-40",
+                mediaMode === "video"
+                  ? "bg-white text-black"
+                  : "text-white/80 hover:bg-white/10 hover:text-white",
               )}
             >
-              <Video className="h-3.5 w-3.5" />
+              <Video className="h-4 w-4 shrink-0" />
               Video
+            </button>
+            <button
+              type="button"
+              onClick={() => uploadInputRef.current?.click()}
+              disabled={recording || session.organizationId === null}
+              aria-label="Upload photos or videos from this device"
+              className="flex h-11 min-w-0 items-center justify-center gap-1.5 rounded-full px-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 disabled:opacity-40"
+            >
+              <ImagePlus className="h-4 w-4 shrink-0" />
+              Upload
             </button>
           </div>
         </div>
+
+        {/* Instant lane: the Process affordance (mode="instant", serialized
+            only — an untracked batch has no asset to analyze until
+            segmentation). */}
+        {instantMode && qrMode && (
+          <div className="px-2 pb-1">
+            <Button
+              className="h-11 w-full rounded-full"
+              onClick={onProcess}
+              disabled={
+                currentAsset === null ||
+                recording ||
+                // A saved analysis is always viewable; only a NEW run waits
+                // for this asset's uploads to land.
+                (session.uploadingCount > 0 && !instant.storedResult)
+              }
+            >
+              {instant.isRunning || instant.restoring ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <BrainCircuit className="mr-1.5 h-4 w-4" />
+              )}
+              {instant.isRunning
+                ? "Analyzing…"
+                : instant.storedResult
+                  ? "View analysis"
+                  : session.uploadingCount > 0
+                    ? "Waiting for uploads…"
+                    : "Process item"}
+            </Button>
+          </div>
+        )}
 
         {/* List · shutter · next/break */}
         <div className="flex items-center justify-between py-2">
@@ -684,6 +852,28 @@ export function IntakeCaptureScreen({
           </p>
         )}
       </div>
+
+      {instantMode && (
+        <InstantProcessSheet
+          open={processOpen}
+          onOpenChange={setProcessOpen}
+          conversationId={instant.conversationId}
+          pending={
+            processOpen &&
+            instant.isRunning &&
+            !instant.conversationId &&
+            !launchError
+          }
+          isRunning={instant.isRunning}
+          error={launchError ?? instant.error}
+          storedResult={instant.storedResult}
+          hasStoredRun={instant.hasStoredRun}
+          restoredHasStream={instant.restoredHasStream}
+          restoring={instant.restoring}
+          onReanalyze={runInstant}
+          onNextItem={onInstantNextItem}
+        />
+      )}
 
       <NotesPanel
         open={notesOpen && !controlsHidden}

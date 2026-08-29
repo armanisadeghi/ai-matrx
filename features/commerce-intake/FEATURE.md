@@ -1,8 +1,9 @@
 # Commerce Intake — FEATURE.md
 
 **Status:** Built (W4 of the ebay-store-management build; real-phone session pending — see the
-manual test script below). Routes: `/commerce/intake` (capture) · `/commerce/intake/assets`
-(hub list) · `/commerce/intake/assets/[id]` (asset detail) · `/commerce/intake/answer`
+manual test script below). Routes: `/commerce/intake` (capture) · `/commerce/intake/instant`
+(capture + client-run instant analysis) · `/commerce/intake/assets` (hub list) ·
+`/commerce/intake/assets/[id]` (asset detail) · `/commerce/intake/answer`
 (answer queue) · `/commerce/intake/admin` (map). Project brief + contracts:
 `/Users/armanisadeghi/code/common-docs/projects/ebay-store-management/BUILD.md` (W4) +
 `PROTOTYPE-CONCEPTS.md` (the concepts are REQUIREMENTS; the prototype's storage is not).
@@ -35,6 +36,35 @@ independently.
   cards; one-tap choice chips / Yes-No; text with mic **dictation that fills the draft for
   editing, never auto-submits**; three exits — Answer · Skip for now (`skip_count`++, back of
   queue) · Not a quick answer (`deferred_at` + reason, out of the flow).
+- **Upload lane (both modes):** photos/videos already on the device join the capture through
+  `session.addUploads` — mime-routed (image→photo, video→video; anything else skipped with a
+  toast), same fileHandler folder, same `intake_artifact` rows, same monotonic
+  `sequence_index` (untracked delineator semantics untouched). Uploaded videos get their
+  `duration_ms` probed client-side (the artifact CHECK requires it). The control is the
+  equal-width Photo · Video · Upload row (product-capture pattern); the picker input carries
+  NO `capture` attribute (that is what opens the gallery instead of the camera), and the
+  camera-blocked overlay offers Upload alongside the OS camera.
+- **Instant lane** (`/commerce/intake/instant`, serialized mode only): the Process button runs
+  the analysis CLIENT-side through the mandate **`commerce_intake.instant_analysis`**
+  (`mandate.definition`; default Holder: Electronics Intake Analyzer, output kind
+  `electronics_intake_analysis`; rebindable in the mandate UI — swap the agent or bind a
+  pricing workflow later, no deploy). `useInstantIntakeAnalysis` ports the proven
+  product-capture architecture: photos attach as multimodal parts via
+  `fileHandler.toContentPart` (NEVER `user_input`; notes ride the `dock_notes` variable),
+  streaming renders through `InstantProcessSheet` → `LiveRunDisplay` / `KindInstanceRender`
+  (the ONE pipeline, `__kind` kept), and three durability seams make a paid run unlosable:
+  (1) the conversation pointer merges onto `intake_asset.metadata.instant_run` BEFORE the
+  first token; (2) on settle, `saveInstantResult` persists `metadata.instant_analysis` AND
+  moves the asset `captured → awaiting_triage` in one write; (3) returning to an asset
+  rehydrates the transcript, rejoins a still-running turn (`reconnectServerOperation`) and
+  backfills an orphaned result. 🚨 **Instant items never enter the server pipeline twice:**
+  the W5 sweep only picks up captured/extracting/grouped/researching/valuing, the result seam
+  skips past `captured`, and the instant lane's session never re-fires `finishAsset` or
+  `reopenAsset` (the commerce mirror of product-capture's skip-captured semantics).
+  `asset_mandate_result` is deliberately NOT written from the client — its `step` CHECK and
+  W5's idempotency contract (pending-before-run, custom_id, superseded_by) make it the
+  pipeline's OWN ledger; a client row there would be read back as a step output. Disclosure:
+  `useDeclaredSurfaceMandates` registers the job in the top Agents menu — never page content.
 - **Generic editable rows** (§2 policy 5): `AssetDetail` renders `intake_asset.attributes`
   through the shared `EditableRows` + `CommitField` primitives — human-correctable
   agent-written values without bespoke forms.
@@ -84,8 +114,11 @@ features/commerce-intake/
   service.ts      direct-Supabase CRUD (batches/assets/artifacts/identifiers/unknowns),
                   guarded CAS writes, finishAsset (THE status write), queue ordering
   uploads.ts      the ONE cloud boundary (fileHandler.upload → recordArtifact)
-  hooks/useIntakeSession.ts       the session engine (see rules above)
-  components/IntakeCaptureScreen.tsx  full-screen surface (mode toggle, Break, honesty chips)
+  hooks/useIntakeSession.ts       the session engine (see rules above; `lane` picks which
+                                  write closes an item — standard `captured` vs instant)
+  hooks/useInstantIntakeAnalysis.ts  the instant lane (mandate run + 3 durability seams)
+  components/IntakeCaptureScreen.tsx  full-screen surface (mode toggle, Break, honesty chips,
+                                  Photo·Video·Upload row, instant Process button)
   components/IntakeAnswerQueue.tsx    the answer queue
   components/AssetDetail.tsx          notes / identifiers / EditableRows attributes / Reprocess
   components/AssetsList.tsx           complete org list (readAllRows)
@@ -141,3 +174,17 @@ On a phone, logged into an org:
 - 2026-08-29 — `--schema commerce` added to `db-types`; live regeneration completed. Removed the hand-declared row
   twins and the cast-only `CommerceIntakeSchema`. Persistence now compiles against
   `Database["commerce"]` directly.
+- 2026-08-29 — Ported the product-capture trial's two newest lanes into this canonical
+  feature (Arman's directive; product-capture itself untouched): (1) the upload lane
+  (`addUploads`, equal-width Photo·Video·Upload control, camera-blocked Upload button,
+  video-duration probe for the artifact CHECK); (2) the instant lane —
+  `/commerce/intake/instant`, `useInstantIntakeAnalysis`, mandate row
+  `commerce_intake.instant_analysis` created live in `mandate.definition`
+  (migrations/commerce_intake_instant_mode_2026_08_29.sql; key follows the W5
+  `commerce_intake.*` family and the `mandate:<feature>.<key>` source-feature pattern),
+  durable seams on `intake_asset.metadata` (`instant_run` + `instant_analysis`), terminal
+  write `captured → awaiting_triage` keeping instant items out of the W5 sweep. Asset
+  metadata now round-trips on `IntakeAsset` and every metadata write MERGES (a wholesale
+  replace would orphan a run). Reused product-capture's generic leaves
+  (`InstantProcessSheet`, NotesPanel/VoiceNoteButton/MediaPager/useQrAutoScan) — they move
+  here when the prototype retires.
