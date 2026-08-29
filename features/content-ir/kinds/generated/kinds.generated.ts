@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 489 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 490 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "b5238e67683b";
+export const KIND_REGISTRY_FINGERPRINT = "a027707e25f5";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -11876,6 +11876,158 @@ export interface RenderedText {
 }
 
 /**
+ * Kind `resale_intelligence_report` (registry v2).
+ */
+export interface ResaleIntelligenceReport {
+  __kind: "resale_intelligence_report";
+  pricing: {
+    currency?: string;
+    floor_note?: string;
+    ceiling_note?: string;
+    scenario_pricing?: {
+    untested_as_is_listing?: {
+    note?: string;
+    range?: number[];
+  };
+    confirmed_dead_or_no_boot?: {
+    note?: string;
+    range?: number[];
+  };
+    with_genuine_rad_sfp_optics_present?: {
+    note?: string;
+    range?: number[];
+  };
+    with_power_cord_and_rack_ears_added_from_stock?: {
+    note?: string;
+    range?: number[];
+  };
+    powers_on_link_verified_cli_accessible_factory_reset?: {
+    note?: string;
+    range?: number[];
+  };
+  };
+    comparable_data_points?: ({
+    price?: number;
+    __kind: "resale_price_comparable";
+    source?: string;
+    weight?: string;
+    platform?: string;
+    price_range?: number[];
+    verification?: string;
+    configuration?: string;
+    listing_state?: string;
+    condition_tier?: string;
+    part_number_match?: string;
+    accessories_included?: string;
+  })[];
+    realistic_range_for_this_item?: {
+    low?: number;
+    high?: number;
+    basis?: string;
+    currency?: string;
+    confidence?: string;
+    most_likely_realized?: number;
+    condition_assumptions?: string;
+  };
+  };
+  sellability?: {
+    best_channels?: ({
+    __kind: "resale_sales_channel";
+    channel?: string;
+    rationale?: string;
+  })[];
+    buyer_profile?: string;
+    demand_signal?: string;
+    market_saturation?: string;
+    sell_through_note?: string;
+    estimated_time_to_sell?: string;
+  };
+  reconciliation?: {
+    conflicts?: ({
+    topic?: string;
+    __kind: "resale_report_conflict";
+    confidence?: string;
+    resolution?: string;
+    report_a_claim?: string;
+    report_b_claim?: string;
+    resolution_basis?: string;
+  })[];
+    agreed_facts?: string[];
+    single_source_facts?: ({
+    claim?: string;
+    __kind: "resale_single_source_fact";
+    source?: string;
+    treatment?: string;
+    importance?: string;
+    verification_status?: string;
+  })[];
+  };
+  report_metadata?: {
+    arbiter_role?: string;
+    generated_at_utc?: string;
+    confidence_in_final_record?: string;
+    verification_status_disclosure?: string;
+    independent_web_verification_performed?: boolean;
+  };
+  item_identification: {
+    brand?: string;
+    model?: string;
+    category?: string;
+    mac_address?: string;
+    part_number?: string;
+    product_line?: string;
+    ordering_code?: string;
+    serial_number?: string;
+    variant_decode?: {
+    N?: string;
+    "(D)"?: string;
+    TWC?: string;
+    GE30?: string;
+    "2SFP/2UTP2SFP"?: string;
+  };
+    asset_id_on_unit?: string;
+    hardware_revision?: string;
+    estimated_age_inference?: string;
+    identification_confidence?: string;
+  };
+  final_recommendation?: {
+    action?: string;
+    verdict?: string;
+    do_not_do?: string;
+    estimated_net_recovery?: string;
+  };
+  unresolved_questions?: ({
+    __kind: "resale_open_question";
+    question?: string;
+    how_to_close?: string;
+    what_was_tried?: string;
+    impact_if_wrong?: string;
+  })[];
+  verification_checklist?: ({
+    check?: string;
+    __kind: "resale_verification_check";
+    priority?: string;
+    why_it_matters?: string;
+  })[];
+  functionality_dependency?: {
+    justification?: string;
+    classification?: string;
+  };
+  conditional_value_factors?: ({
+    __kind: "resale_conditional_factor";
+    impact?: string;
+    condition?: string;
+    if_condition_absent?: string;
+  })[];
+  item_specific_value_factors?: ({
+    __kind: "resale_value_factor";
+    detail?: string;
+    factor?: string;
+    price_impact?: string;
+  })[];
+}
+
+/**
  * Audit of whether the gathered research evidence covers the claims a report needs to make.
  *  *
  *  * Kind `research_coverage_audit` (registry v4).
@@ -19316,6 +19468,7 @@ export type GeneratedKindSlug =
   | "regex_extract_result"
   | "regex_replace_result"
   | "rendered_text"
+  | "resale_intelligence_report"
   | "research_coverage_audit"
   | "research_cross_cutting_tags"
   | "research_page_analysis"
@@ -19808,6 +19961,7 @@ export interface KindPayloadBySlug {
   "regex_extract_result": RegexExtractResult;
   "regex_replace_result": RegexReplaceResult;
   "rendered_text": RenderedText;
+  "resale_intelligence_report": ResaleIntelligenceReport;
   "research_coverage_audit": ResearchCoverageAudit;
   "research_cross_cutting_tags": ResearchCrossCuttingTags;
   "research_page_analysis": ResearchPageAnalysis;
@@ -20304,6 +20458,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "regex_extract_result",
   "regex_replace_result",
   "rendered_text",
+  "resale_intelligence_report",
   "research_coverage_audit",
   "research_cross_cutting_tags",
   "research_page_analysis",
