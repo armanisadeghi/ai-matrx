@@ -44,8 +44,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database, Json } from "@/types/database.types";
 
-/** OFF until the Phase 1W window. See RUNBOOK-1W.md step 4b. */
-export const MANDATE_SCHEMA_CUTOVER = false;
+/** ON — the Phase 1W window completed 2026-08-29. See RUNBOOK-1W.md. */
+export const MANDATE_SCHEMA_CUTOVER = true;
 
 type Client = SupabaseClient<Database>;
 
@@ -71,33 +71,18 @@ export const MANDATE_STORAGE_LABEL = MANDATE_SCHEMA_CUTOVER ? "mandate.*" : "age
  * stops being type-checked (both arrow functions are real, compiled code).
  */
 
-const definitionTableAgent = (supabase: Client) => supabase.schema("agent").from("mandate");
-const definitionTableNew = (supabase: Client) => supabase.schema("mandate").from("definition");
-const provisionTableAgent = (supabase: Client) => supabase.schema("agent").from("provision");
-const provisionTableNew = (supabase: Client) => supabase.schema("mandate").from("provision");
-const bindingTableAgent = (supabase: Client) => supabase.schema("agent").from("mandate_binding");
-const bindingTableNew = (supabase: Client) => supabase.schema("mandate").from("binding");
+const definitionTable = (supabase: Client) => supabase.schema("mandate").from("definition");
+const provisionTable = (supabase: Client) => supabase.schema("mandate").from("provision");
+const bindingTable = (supabase: Client) => supabase.schema("mandate").from("binding");
 
 /** The mandate definition table: `agent.mandate` or `mandate.definition`. */
-export const mandateDefinitions = (
-  MANDATE_SCHEMA_CUTOVER ? definitionTableNew : definitionTableAgent
-) as typeof MANDATE_SCHEMA_CUTOVER extends true
-  ? typeof definitionTableNew
-  : typeof definitionTableAgent;
+export const mandateDefinitions = definitionTable;
 
 /** The provision table: `agent.provision` or `mandate.provision`. */
-export const mandateProvisions = (
-  MANDATE_SCHEMA_CUTOVER ? provisionTableNew : provisionTableAgent
-) as typeof MANDATE_SCHEMA_CUTOVER extends true
-  ? typeof provisionTableNew
-  : typeof provisionTableAgent;
+export const mandateProvisions = provisionTable;
 
 /** The binding table: `agent.mandate_binding` or `mandate.binding`. */
-export const mandateBindings = (
-  MANDATE_SCHEMA_CUTOVER ? bindingTableNew : bindingTableAgent
-) as typeof MANDATE_SCHEMA_CUTOVER extends true
-  ? typeof bindingTableNew
-  : typeof bindingTableAgent;
+export const mandateBindings = bindingTable;
 
 /**
  * Mandate notes. NOT part of the schema move — `agent.mandate_note` stays where
@@ -113,30 +98,17 @@ export function mandateNotes(supabase: Client) {
 /* Row types — aliases that follow the switch, so call sites never repoint.    */
 /* -------------------------------------------------------------------------- */
 
-type AgentMandateRow = Database["agent"]["Tables"]["mandate"]["Row"];
 type NewMandateRow = Database["mandate"]["Tables"]["definition"]["Row"];
-type AgentBindingRow = Database["agent"]["Tables"]["mandate_binding"]["Row"];
 type NewBindingRow = Database["mandate"]["Tables"]["binding"]["Row"];
-type AgentProvisionRow = Database["agent"]["Tables"]["provision"]["Row"];
 type NewProvisionRow = Database["mandate"]["Tables"]["provision"]["Row"];
 
-export type MandateDefinitionRow = typeof MANDATE_SCHEMA_CUTOVER extends true
-  ? NewMandateRow
-  : AgentMandateRow;
-export type MandateBindingRow = typeof MANDATE_SCHEMA_CUTOVER extends true
-  ? NewBindingRow
-  : AgentBindingRow;
-export type MandateProvisionRow = typeof MANDATE_SCHEMA_CUTOVER extends true
-  ? NewProvisionRow
-  : AgentProvisionRow;
+export type MandateDefinitionRow = NewMandateRow;
+export type MandateBindingRow = NewBindingRow;
+export type MandateProvisionRow = NewProvisionRow;
 export type MandateNoteRow = Database["agent"]["Tables"]["mandate_note"]["Row"];
 
-export type MandateDefinitionUpdate = typeof MANDATE_SCHEMA_CUTOVER extends true
-  ? Database["mandate"]["Tables"]["definition"]["Update"]
-  : Database["agent"]["Tables"]["mandate"]["Update"];
-export type MandateBindingUpdate = typeof MANDATE_SCHEMA_CUTOVER extends true
-  ? Database["mandate"]["Tables"]["binding"]["Update"]
-  : Database["agent"]["Tables"]["mandate_binding"]["Update"];
+export type MandateDefinitionUpdate = Database["mandate"]["Tables"]["definition"]["Update"];
+export type MandateBindingUpdate = Database["mandate"]["Tables"]["binding"]["Update"];
 
 /* -------------------------------------------------------------------------- */
 /* Column-list fragments — the ONLY place a moved column is NAMED in a select. */
