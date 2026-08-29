@@ -27,8 +27,6 @@ import {
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
 } from "@/features/agents/redux/agent-definition/thunks";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { setOverrides } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.slice";
 import { generateConversationId } from "@/features/agents/redux/execution-system/utils/ids";
 import { fetchModelById } from "@/features/ai-models/redux/modelRegistrySlice";
