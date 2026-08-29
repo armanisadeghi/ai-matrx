@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P11",
+  "runId": "2026-08-29T161426Z",
+  "baseSha": "20551a187a25e2f58d83d6d35c610cc0f0618770",
+  "createdAt": "2026-08-29T16:14:36.541Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-29T16:14:36.541Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "P11 structural-novelty scan found five redundant avatar-clearance hacks in canonical PageHeader center content",
+      "evidence": [
+        "Baseline pnpm type-check PASS",
+        "Baseline pnpm check:scroll-chain:strict PASS across 7873 files, 1021 route pages, and 272 layouts",
+        "Baseline pnpm check:page-headers reports zero core findings and seven unchanged out-of-scope public/dev warnings",
+        "Exact-worktree preview lease occupied by /Users/armanisadeghi/code/matrx-frontend; not reused or stopped",
+        "Verified PageHeader center is already bounded between shell-owned flanks; five pr-14 center rows redundantly reserve avatar width"
+      ],
+      "previousEventHash": null,
+      "eventHash": "6575dcd7c77b7c5e91b49be67ce97007309793b006dd3f4efe8e14d2499bd17f"
+    }
+  ]
+}

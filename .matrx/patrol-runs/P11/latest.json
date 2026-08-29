@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P11",
-  "runId": "2026-08-26T161415Z",
-  "state": "closed",
-  "updatedAt": "2026-08-26T16:24:38Z",
-  "summary": "Closed clean P11 Education family rotation: 0 findings, 0 fixes, 0 approvals, no mutation batch",
-  "source": "2026-08-26T161415Z.json",
-  "eventHash": "4b72af68aa9df373097218284a506db3cdbc03ef063c9fafe311cb39e3dde796"
+  "runId": "2026-08-29T161426Z",
+  "state": "discovered",
+  "updatedAt": "2026-08-29T16:14:36.541Z",
+  "summary": "P11 structural-novelty scan found five redundant avatar-clearance hacks in canonical PageHeader center content",
+  "source": "2026-08-29T161426Z.json",
+  "eventHash": "6575dcd7c77b7c5e91b49be67ce97007309793b006dd3f4efe8e14d2499bd17f"
 }
