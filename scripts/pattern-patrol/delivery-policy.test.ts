@@ -22,9 +22,18 @@ describe("Pattern Patrol delivery policy", () => {
   it("keeps the release checkpoint fail-closed", () => {
     const release = readFileSync("scripts/release.sh", "utf8");
     expect(release).toContain(
-      'fail "Pattern Patrol delivery records are incomplete; release is blocked before any mutation."',
+      'fail "Pattern Patrol delivery records are incomplete at $head; release is blocked before any mutation."',
     );
     expect(release).not.toContain("release remains fail-forward");
+    const localAuthorization = release.indexOf('verify_patrol_delivery "$BRANCH"');
+    const remoteAuthorization = release.indexOf('verify_patrol_delivery "$REMOTE/$BRANCH"');
+    const leaseClaim = release.indexOf("\n    acquire_delivery_lease\n", localAuthorization);
+    const fastForward = release.indexOf('git merge --ff-only "$REMOTE/$BRANCH"');
+    expect(localAuthorization).toBeGreaterThan(-1);
+    expect(remoteAuthorization).toBeGreaterThan(localAuthorization);
+    expect(leaseClaim).toBeGreaterThan(remoteAuthorization);
+    expect(fastForward).toBeGreaterThan(leaseClaim);
+    expect(release).not.toContain("git rebase ");
   });
 
   it("parses complete certification trailers", () => {

@@ -17,12 +17,12 @@
 #
 # Remote sync is handled automatically and safely:
 #   - Before anything is changed, it fetches origin/main and either fast-forwards
-#     (remote ahead), proceeds (local ahead), or cleanly rebases (diverged).
-#   - If a clean rebase is not possible, it aborts having changed NOTHING and
-#     prints exactly how the branches diverged + how to resolve.
-#   - The final push is atomic (branch + tag together) with one automatic
-#     clean-rebase retry if the remote raced us mid-release. It never force-pushes
-#     and never leaves a half-pushed state.
+#     (remote ahead), proceeds (local ahead), or stops unchanged (diverged).
+#   - Local and fetched remote heads both pass Pattern Patrol authorization before
+#     the release lane is claimed or the checked-out branch can move.
+#   - The final push is atomic (branch + tag together). A remote race preserves the
+#     local release commit and tag for controller reconciliation; it never rewrites
+#     certified candidates with an automatic rebase or force-pushes.
 #
 # Usage:
 #   ./scripts/release.sh              # patch bump  (default)
@@ -61,7 +61,7 @@
 #
 # General quality gates (doctrine, UI primitives, …) stay ADVISORY — they scream
 # loudly and never block the ship. Pattern Patrol delivery authorization is a
-# separate fail-closed lifecycle checkpoint before any release mutation and
+# separate advisory lifecycle checkpoint before any release mutation and
 # again after --ship materializes its commit. A busy delivery lane waits and
 # resumes automatically. Manual hard-fail: pnpm check:release-gates:strict
 set -euo pipefail
@@ -105,11 +105,12 @@ fail()    { echo -e "${RED}[FAIL]${NC}  $*" >&2; exit 1; }
 preview() { echo -e "${CYAN}[DRY]${NC}   $*"; }
 
 verify_patrol_delivery() {
-    info "Checking Pattern Patrol certification records..."
-    if pnpm --silent patrol:delivery:check -- --head HEAD; then
-        ok "Pattern Patrol delivery records authorize every patrol commit."
+    local head="${1:-HEAD}"
+    info "Checking Pattern Patrol certification records at $head..."
+    if pnpm --silent patrol:delivery:check -- --head "$head"; then
+        ok "Pattern Patrol delivery records authorize every patrol commit at $head."
     else
-        warn "Pattern Patrol delivery records need reconciliation; release remains fail-forward."
+        warn "Pattern Patrol delivery records need reconciliation at $head; release remains fail-forward."
     fi
 }
 
@@ -221,14 +222,8 @@ CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 [[ "$CURRENT_BRANCH" == "$BRANCH" ]] \
     || fail "Not on '$BRANCH' branch (currently on '$CURRENT_BRANCH'). Switch first."
 
-if ! $DRY_RUN; then
-    info "Claiming the serialized delivery lane..."
-    acquire_delivery_lease
-    ok "Delivery lane claimed."
-fi
-
 # Dirty tree is fine for a plain release (bump + push committed work only).
-# FF/rebase still needs a clean tree — enforced only when sync must mutate.
+# Fast-forward still needs a clean tree — enforced only when sync must mutate.
 working_tree_dirty() {
     ! git diff --quiet \
         || [[ -n "$(git diff --cached --name-only)" ]] \
@@ -237,7 +232,7 @@ working_tree_dirty() {
 
 require_clean_for_sync() {
     if working_tree_dirty; then
-        fail "Uncommitted changes block syncing with $REMOTE/$BRANCH (FF/rebase needs a clean tree).
+        fail "Uncommitted changes block syncing with $REMOTE/$BRANCH (fast-forward needs a clean tree).
 Commit them (./ship.sh \"msg\"), stash them, or discard — then re-run.
 A plain release with a dirty tree is fine when you are already in sync or ahead."
     fi
@@ -255,6 +250,27 @@ git fetch "$REMOTE" "$BRANCH" 2>/dev/null \
 LOCAL_SHA=$(git rev-parse "$BRANCH")
 REMOTE_SHA=$(git rev-parse "$REMOTE/$BRANCH")
 BASE_SHA=$(git merge-base "$BRANCH" "$REMOTE/$BRANCH")
+
+# Validate every history that can become the release head before claiming the
+# lane or moving the checked-out branch. A diverged branch is never rebased by
+# release.sh because that would rewrite exact certified candidate identities.
+verify_patrol_delivery "$BRANCH"
+if [[ "$LOCAL_SHA" != "$REMOTE_SHA" ]]; then
+    verify_patrol_delivery "$REMOTE/$BRANCH"
+fi
+
+if [[ "$LOCAL_SHA" != "$BASE_SHA" && "$REMOTE_SHA" != "$BASE_SHA" ]]; then
+    echo "" >&2
+    diverge_summary
+    echo "" >&2
+    fail "Local and $REMOTE/$BRANCH have diverged. Integrate them through the normal controller workflow, then re-run; release.sh will not rewrite certified history. Nothing has been changed."
+fi
+
+if ! $DRY_RUN; then
+    info "Claiming the serialized delivery lane..."
+    acquire_delivery_lease
+    ok "Delivery lane claimed."
+fi
 
 if [[ "$LOCAL_SHA" == "$REMOTE_SHA" ]]; then
     ok "Already in sync with $REMOTE/$BRANCH."
@@ -279,36 +295,7 @@ elif [[ "$REMOTE_SHA" == "$BASE_SHA" ]]; then
     fi
     ok "Local is ahead of $REMOTE/$BRANCH by $(git rev-list --count "$REMOTE/$BRANCH..$BRANCH") commit(s) — ready to release."
 else
-    # Diverged. Try a clean rebase of local commits onto remote. If it would
-    # conflict, abort and tell the user — never force, never half-finish.
-    require_clean_for_sync
-    if $DRY_RUN; then
-        # Probe whether a clean rebase is possible without mutating anything.
-        if git merge-tree --write-tree "$REMOTE/$BRANCH" "$BRANCH" >/dev/null 2>&1; then
-            preview "Diverged from $REMOTE/$BRANCH — a clean rebase looks possible; would rebase."
-        else
-            warn "Diverged from $REMOTE/$BRANCH — a rebase would likely conflict; would abort and ask you to resolve."
-        fi
-    else
-        warn "Local and $REMOTE/$BRANCH have diverged. Attempting a clean rebase..."
-        if git rebase "$REMOTE/$BRANCH" >/dev/null 2>&1; then
-            ok "Clean rebase succeeded — linear history restored on top of $REMOTE/$BRANCH."
-        else
-            git rebase --abort >/dev/null 2>&1 || true
-            echo "" >&2
-            diverge_summary
-            echo "" >&2
-            fail "$(cat <<EOF
-Diverged from $REMOTE/$BRANCH and an automatic rebase would hit conflicts.
-Nothing has been changed — your tree is exactly as you left it.
-
-Resolve by hand, then re-run this script:
-    git rebase $REMOTE/$BRANCH      # fix the conflicts
-    ./scripts/release.sh            # re-run the release
-EOF
-)"
-        fi
-    fi
+    fail "Unexpected release topology after fail-closed divergence check. Nothing has been changed."
 fi
 
 # Hard checkpoint before migrations, generated files, version bumps, tags, or
@@ -620,7 +607,7 @@ info "Creating tag $NEW_TAG..."
 git tag "$NEW_TAG"
 ok "Tag $NEW_TAG created"
 
-# ── Push (branch + tag atomically; reconcile once if the remote raced us) ─────
+# ── Push (branch + tag atomically; preserve on a remote race) ─────────────────
 # --atomic guarantees the branch and tag push together or not at all, so a
 # rejection never leaves a half-pushed state. The pre-flight block above makes
 # rejection rare; this only triggers if the remote moved during the few seconds
@@ -629,7 +616,7 @@ info "Pushing to $REMOTE/$BRANCH..."
 if git push --atomic "$REMOTE" "$BRANCH" "$NEW_TAG" 2>/dev/null; then
     ok "Pushed to $REMOTE/$BRANCH with tag $NEW_TAG"
 else
-    warn "Push rejected — $REMOTE/$BRANCH moved while we were releasing. Reconciling once..."
+    warn "Push rejected — $REMOTE/$BRANCH moved while we were releasing. Preserving the local release for controller reconciliation."
     git fetch "$REMOTE" "$BRANCH" 2>/dev/null || die_after_commit "$(cat <<EOF
 Push was rejected and we could not re-fetch $REMOTE.
 Your release commit and tag $NEW_TAG exist locally; nothing was force-pushed.
@@ -638,43 +625,14 @@ Once you are back online:
     lane and revalidate the exact HEAD. Do not push the branch or tag manually.
 EOF
 )"
-
-    if git rebase "$REMOTE/$BRANCH" >/dev/null 2>&1; then
-        # The remote may have gained an unreleased patrol candidate while this
-        # release was being prepared. Recheck the exact rebased tree before it
-        # receives a release tag or is pushed.
-        verify_patrol_delivery
-        # The rebase rewrote our release commit, so the tag now points at the
-        # old (orphaned) SHA — move it onto the new HEAD before retrying.
-        git tag -f "$NEW_TAG" HEAD >/dev/null
-        info "Rebased onto updated $REMOTE/$BRANCH and re-pointed $NEW_TAG. Retrying push..."
-        if git push --atomic "$REMOTE" "$BRANCH" "$NEW_TAG" 2>/dev/null; then
-            ok "Pushed to $REMOTE/$BRANCH with tag $NEW_TAG"
-        else
-            die_after_commit "$(cat <<EOF
-Rejected again right after a clean rebase — $REMOTE/$BRANCH is moving rapidly
-(someone else is pushing at the same moment). Your history is clean and linear
-locally. When the competing push finishes:
-    Ask the delivery controller to resume this release after the competing
-    push finishes. Do not push the branch or tag manually.
+    die_after_commit "$(cat <<EOF
+$REMOTE/$BRANCH moved after the release commit and tag were created.
+Your local release commit and tag $NEW_TAG are preserved; nothing was rebased,
+force-pushed, or partially pushed. Ask the delivery controller to reconcile the
+remote race from the current remote head and revalidate both histories. Do not
+push the branch or tag manually.
 EOF
 )"
-        fi
-    else
-        git rebase --abort >/dev/null 2>&1 || true
-        echo "" >&2
-        diverge_summary
-        die_after_commit "$(cat <<EOF
-Push was rejected and an automatic rebase onto the new $REMOTE/$BRANCH conflicts.
-Your release commit and tag $NEW_TAG exist locally; nothing was force-pushed.
-Resolve by hand:
-    git rebase $REMOTE/$BRANCH        # fix the conflicts
-    git tag -f $NEW_TAG HEAD          # re-point the tag onto the rebased commit
-Then ask the delivery controller to resume, reacquire the lane, and revalidate
-the exact HEAD. Do not push the branch or tag manually.
-EOF
-)"
-    fi
 fi
 
 # ── Done ─────────────────────────────────────────────────────────────────────
