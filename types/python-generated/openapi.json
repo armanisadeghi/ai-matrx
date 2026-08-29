@@ -14999,6 +14999,48 @@
         }
       }
     },
+    "/vimeo-integrations/public/videos/{video_id}": {
+      "get": {
+        "tags": [
+          "Vimeo Integrations"
+        ],
+        "summary": "Public Video",
+        "operationId": "public_video_vimeo_integrations_public_videos__video_id__get",
+        "parameters": [
+          {
+            "name": "video_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Video Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VimeoPublicVideoResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/zotero/public-libraries/{library_type}/{library_id}/items": {
       "get": {
         "tags": [
@@ -15094,6 +15136,74 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SpotifyPublicMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/twitch/streams": {
+      "get": {
+        "tags": [
+          "Twitch"
+        ],
+        "summary": "Public Streams",
+        "operationId": "public_streams_twitch_streams_get",
+        "parameters": [
+          {
+            "name": "credential_item_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "title": "Credential Item Id"
+            }
+          },
+          {
+            "name": "user_login",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "title": "User Login"
+            }
+          },
+          {
+            "name": "first",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20,
+              "minimum": 1,
+              "default": 20,
+              "title": "First"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwitchStreamsResult"
                 }
               }
             }
@@ -178737,6 +178847,149 @@
         "title": "TurnRange",
         "description": "Identify one or more contiguous turns to compact.\n\n``from_user_message_id`` — the user message that starts the first\nturn in the range. Required.\n\n``to_user_message_id`` — the user message that starts the FIRST turn\nAFTER the range. The turn-range covers everything from\n``from_user_message_id`` up to but NOT including\n``to_user_message_id``. If omitted, the range extends to the end of\nthe conversation (inclusive of the final turn)."
       },
+      "TwitchStream": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "user_login": {
+            "type": "string",
+            "title": "User Login"
+          },
+          "user_name": {
+            "type": "string",
+            "title": "User Name"
+          },
+          "game_id": {
+            "type": "string",
+            "title": "Game Id",
+            "default": ""
+          },
+          "game_name": {
+            "type": "string",
+            "title": "Game Name",
+            "default": ""
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "live",
+              ""
+            ],
+            "title": "Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags"
+          },
+          "viewer_count": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Viewer Count"
+          },
+          "started_at": {
+            "type": "string",
+            "title": "Started At"
+          },
+          "language": {
+            "type": "string",
+            "title": "Language"
+          },
+          "thumbnail_url": {
+            "type": "string",
+            "title": "Thumbnail Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "user_login",
+          "user_name",
+          "type",
+          "viewer_count",
+          "started_at",
+          "language",
+          "thumbnail_url"
+        ],
+        "title": "TwitchStream",
+        "description": "Safe projection of one public Twitch stream record."
+      },
+      "TwitchStreamsResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "twitch_public_streams",
+            "title": "Kind",
+            "default": "twitch_public_streams"
+          },
+          "environment": {
+            "type": "string",
+            "enum": [
+              "mock",
+              "production"
+            ],
+            "title": "Environment"
+          },
+          "streams": {
+            "items": {
+              "$ref": "#/components/schemas/TwitchStream"
+            },
+            "type": "array",
+            "title": "Streams"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          },
+          "requested_first": {
+            "type": "integer",
+            "title": "Requested First"
+          },
+          "requested_user_logins": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requested User Logins"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Scopes"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "environment",
+          "requested_first"
+        ],
+        "title": "TwitchStreamsResult",
+        "description": "Credential-free output from one public-stream page."
+      },
       "TypeLeak": {
         "properties": {
           "path": {
@@ -184613,6 +184866,112 @@
           "height"
         ],
         "title": "ViewportBlock"
+      },
+      "VimeoPublicVideoResult": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider",
+            "default": "vimeo"
+          },
+          "access": {
+            "type": "string",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "video_id": {
+            "type": "string",
+            "title": "Video Id"
+          },
+          "uri": {
+            "type": "string",
+            "title": "Uri"
+          },
+          "video_url": {
+            "type": "string",
+            "title": "Video Url"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "author_name": {
+            "type": "string",
+            "title": "Author Name"
+          },
+          "author_url": {
+            "type": "string",
+            "title": "Author Url"
+          },
+          "account_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account Type"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "duration_seconds": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Duration Seconds"
+          },
+          "width": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "title": "Height"
+          },
+          "thumbnail_url": {
+            "type": "string",
+            "title": "Thumbnail Url"
+          },
+          "upload_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upload Date"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "video_id",
+          "uri",
+          "video_url",
+          "title",
+          "author_name",
+          "author_url",
+          "duration_seconds",
+          "width",
+          "height",
+          "thumbnail_url"
+        ],
+        "title": "VimeoPublicVideoResult",
+        "description": "Safe public metadata projection; provider-controlled HTML is excluded."
       },
       "VirtualAdapterDescriptor": {
         "properties": {

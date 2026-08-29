@@ -5846,6 +5846,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vimeo-integrations/public/videos/{video_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Video */
+        get: operations["public_video_vimeo_integrations_public_videos__video_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/zotero/public-libraries/{library_type}/{library_id}/items": {
         parameters: {
             query?: never;
@@ -5872,6 +5889,23 @@ export interface paths {
         };
         /** Get Public Metadata */
         get: operations["get_public_metadata_spotify_public_metadata_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/twitch/streams": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Streams */
+        get: operations["public_streams_twitch_streams_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -70021,6 +70055,77 @@ export interface components {
             to_user_message_id?: string | null;
         };
         /**
+         * TwitchStream
+         * @description Safe projection of one public Twitch stream record.
+         */
+        TwitchStream: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: string;
+            /** User Login */
+            user_login: string;
+            /** User Name */
+            user_name: string;
+            /**
+             * Game Id
+             * @default
+             */
+            game_id?: string;
+            /**
+             * Game Name
+             * @default
+             */
+            game_name?: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "live" | "";
+            /**
+             * Title
+             * @default
+             */
+            title?: string;
+            /** Tags */
+            tags?: string[];
+            /** Viewer Count */
+            viewer_count: number;
+            /** Started At */
+            started_at: string;
+            /** Language */
+            language: string;
+            /** Thumbnail Url */
+            thumbnail_url: string;
+        };
+        /**
+         * TwitchStreamsResult
+         * @description Credential-free output from one public-stream page.
+         */
+        TwitchStreamsResult: {
+            /**
+             * Kind
+             * @default twitch_public_streams
+             * @constant
+             */
+            __kind?: "twitch_public_streams";
+            /**
+             * Environment
+             * @enum {string}
+             */
+            environment: "mock" | "production";
+            /** Streams */
+            streams?: components["schemas"]["TwitchStream"][];
+            /** Cursor */
+            cursor?: string | null;
+            /** Requested First */
+            requested_first: number;
+            /** Requested User Logins */
+            requested_user_logins?: string[];
+            /** Scopes */
+            scopes?: string[];
+        };
+        /**
          * TypeLeak
          * @description One exact point where typing stops.
          */
@@ -72344,6 +72449,48 @@ export interface components {
              * @constant
              */
             resize_negotiation?: "disabled";
+        };
+        /**
+         * VimeoPublicVideoResult
+         * @description Safe public metadata projection; provider-controlled HTML is excluded.
+         */
+        VimeoPublicVideoResult: {
+            /**
+             * Provider
+             * @default vimeo
+             */
+            provider?: string;
+            /**
+             * Access
+             * @default public_no_auth
+             */
+            access?: string;
+            /** Video Id */
+            video_id: string;
+            /** Uri */
+            uri: string;
+            /** Video Url */
+            video_url: string;
+            /** Title */
+            title: string;
+            /** Author Name */
+            author_name: string;
+            /** Author Url */
+            author_url: string;
+            /** Account Type */
+            account_type?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Duration Seconds */
+            duration_seconds: number;
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /** Thumbnail Url */
+            thumbnail_url: string;
+            /** Upload Date */
+            upload_date?: string | null;
         };
         /**
          * VirtualAdapterDescriptor
@@ -85144,6 +85291,37 @@ export interface operations {
             };
         };
     };
+    public_video_vimeo_integrations_public_videos__video_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                video_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VimeoPublicVideoResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_public_library_items_zotero_public_libraries__library_type___library_id__items_get: {
         parameters: {
             query?: {
@@ -85196,6 +85374,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpotifyPublicMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_streams_twitch_streams_get: {
+        parameters: {
+            query: {
+                credential_item_id: string;
+                user_login?: string[];
+                first?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TwitchStreamsResult"];
                 };
             };
             /** @description Validation Error */
