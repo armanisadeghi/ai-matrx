@@ -15766,6 +15766,50 @@
         }
       }
     },
+    "/met-museum/public/object": {
+      "get": {
+        "tags": [
+          "Metropolitan Museum of Art Integrations"
+        ],
+        "summary": "Public Object",
+        "operationId": "public_object_met_museum_public_object_get",
+        "parameters": [
+          {
+            "name": "object_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Object Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetMuseumPublicObject"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tvmaze/public/show": {
       "get": {
         "tags": [
@@ -16013,6 +16057,50 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FederalRegisterPublicDocument"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/library-of-congress/public/item": {
+      "get": {
+        "tags": [
+          "Library of Congress Integrations"
+        ],
+        "summary": "Public Item",
+        "operationId": "public_item_library_of_congress_public_item_get",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 80,
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryOfCongressPublicItem"
                 }
               }
             }
@@ -129053,6 +129141,116 @@
         ],
         "title": "LibraryListResponse"
       },
+      "LibraryOfCongressPublicItem": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "library_of_congress_public_item",
+            "title": "Kind",
+            "default": "library_of_congress_public_item"
+          },
+          "provider": {
+            "type": "string",
+            "const": "library_of_congress",
+            "title": "Provider",
+            "default": "library_of_congress"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "item_id": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 3,
+            "title": "Item Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "date": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Date"
+          },
+          "contributors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 24,
+            "title": "Contributors"
+          },
+          "subjects": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Subjects"
+          },
+          "item_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 16,
+            "title": "Item Types"
+          },
+          "languages": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 16,
+            "title": "Languages"
+          },
+          "online_formats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 16,
+            "title": "Online Formats"
+          },
+          "digitized": {
+            "type": "boolean",
+            "title": "Digitized"
+          },
+          "access_restricted": {
+            "type": "boolean",
+            "title": "Access Restricted"
+          },
+          "item_url": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Item Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "title",
+          "date",
+          "contributors",
+          "subjects",
+          "item_types",
+          "languages",
+          "online_formats",
+          "digitized",
+          "access_restricted",
+          "item_url"
+        ],
+        "title": "LibraryOfCongressPublicItem",
+        "description": "Safe bounded projection of one public loc.gov collection item."
+      },
       "LibraryPagePreview": {
         "properties": {
           "page_index": {
@@ -134957,6 +135155,150 @@
         "type": "object",
         "title": "MessageUpdate",
         "description": "Fields the client can edit on an existing ``cx_message`` row.\n\nEvery field is optional — only fields the caller actually sets are\nwritten to the DB. ``content`` accepts the same structured JSON the\nserver would have written (list of parts) — callers that want to\nedit a simple text message should still send the list form."
+      },
+      "MetMuseumPublicObject": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "met_museum_public_object",
+            "title": "Kind",
+            "default": "met_museum_public_object"
+          },
+          "provider": {
+            "type": "string",
+            "const": "metropolitan_museum_of_art",
+            "title": "Provider",
+            "default": "metropolitan_museum_of_art"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "source_license": {
+            "type": "string",
+            "const": "CC0-1.0",
+            "title": "Source License",
+            "default": "CC0-1.0"
+          },
+          "object_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Object Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "object_url": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Object Url"
+          },
+          "artist_display_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist Display Name"
+          },
+          "object_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Object Date"
+          },
+          "culture": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Culture"
+          },
+          "period": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period"
+          },
+          "dynasty": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dynasty"
+          },
+          "medium": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medium"
+          },
+          "department": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Department"
+          },
+          "is_public_domain": {
+            "type": "boolean",
+            "title": "Is Public Domain"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "object_id",
+          "title",
+          "object_url",
+          "is_public_domain"
+        ],
+        "title": "MetMuseumPublicObject",
+        "description": "Safe CC0 projection of one public Met collection record."
       },
       "MicrosoftAuthorizationRequest": {
         "properties": {

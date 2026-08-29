@@ -6166,6 +6166,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/met-museum/public/object": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Object */
+        get: operations["public_object_met_museum_public_object_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tvmaze/public/show": {
         parameters: {
             query?: never;
@@ -6260,6 +6277,23 @@ export interface paths {
         };
         /** Public Document */
         get: operations["public_document_federal_register_public_document_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/library-of-congress/public/item": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Item */
+        get: operations["public_item_library_of_congress_public_item_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -49818,6 +49852,52 @@ export interface components {
             /** Offset */
             offset: number;
         };
+        /**
+         * LibraryOfCongressPublicItem
+         * @description Safe bounded projection of one public loc.gov collection item.
+         */
+        LibraryOfCongressPublicItem: {
+            /**
+             * Kind
+             * @default library_of_congress_public_item
+             * @constant
+             */
+            __kind?: "library_of_congress_public_item";
+            /**
+             * Provider
+             * @default library_of_congress
+             * @constant
+             */
+            provider?: "library_of_congress";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Item Id */
+            item_id: string;
+            /** Title */
+            title: string;
+            /** Date */
+            date: string;
+            /** Contributors */
+            contributors: string[];
+            /** Subjects */
+            subjects: string[];
+            /** Item Types */
+            item_types: string[];
+            /** Languages */
+            languages: string[];
+            /** Online Formats */
+            online_formats: string[];
+            /** Digitized */
+            digitized: boolean;
+            /** Access Restricted */
+            access_restricted: boolean;
+            /** Item Url */
+            item_url: string;
+        };
         /** LibraryPagePreview */
         LibraryPagePreview: {
             /** Page Index */
@@ -52054,6 +52134,58 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * MetMuseumPublicObject
+         * @description Safe CC0 projection of one public Met collection record.
+         */
+        MetMuseumPublicObject: {
+            /**
+             * Kind
+             * @default met_museum_public_object
+             * @constant
+             */
+            __kind?: "met_museum_public_object";
+            /**
+             * Provider
+             * @default metropolitan_museum_of_art
+             * @constant
+             */
+            provider?: "metropolitan_museum_of_art";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Source License
+             * @default CC0-1.0
+             * @constant
+             */
+            source_license?: "CC0-1.0";
+            /** Object Id */
+            object_id: number;
+            /** Title */
+            title: string;
+            /** Object Url */
+            object_url: string;
+            /** Artist Display Name */
+            artist_display_name?: string | null;
+            /** Object Date */
+            object_date?: string | null;
+            /** Culture */
+            culture?: string | null;
+            /** Period */
+            period?: string | null;
+            /** Dynasty */
+            dynasty?: string | null;
+            /** Medium */
+            medium?: string | null;
+            /** Department */
+            department?: string | null;
+            /** Is Public Domain */
+            is_public_domain: boolean;
         };
         /** MicrosoftAuthorizationRequest */
         MicrosoftAuthorizationRequest: {
@@ -87750,6 +87882,37 @@ export interface operations {
             };
         };
     };
+    public_object_met_museum_public_object_get: {
+        parameters: {
+            query: {
+                object_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MetMuseumPublicObject"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_show_tvmaze_public_show_get: {
         parameters: {
             query: {
@@ -87923,6 +88086,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FederalRegisterPublicDocument"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_item_library_of_congress_public_item_get: {
+        parameters: {
+            query: {
+                item_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryOfCongressPublicItem"];
                 };
             };
             /** @description Validation Error */
