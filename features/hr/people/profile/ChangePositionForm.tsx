@@ -408,7 +408,12 @@ export function ChangePositionForm({
               scheduled or stamped against it.
             </p>
             <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
-              <Link href={hrSettingsHref("structure", { focus: nextLocation.id })}>
+              <Link
+                href={hrSettingsHref("structure", {
+                  org: organizationId,
+                  focus: nextLocation.id,
+                })}
+              >
                 Set its jurisdiction
               </Link>
             </Button>
@@ -425,7 +430,7 @@ export function ChangePositionForm({
         </Field>
       </EffectiveDatedForm>
 
-      {refusal ? <Refusal refusal={refusal} /> : null}
+      {refusal ? <Refusal refusal={refusal} organizationId={organizationId} /> : null}
     </section>
   );
 }
@@ -436,8 +441,10 @@ export function ChangePositionForm({
  */
 function Refusal({
   refusal,
+  organizationId,
 }: {
   refusal: { reason: string; detail: string | null };
+  organizationId: string;
 }) {
   const needsStructure = refusal.reason === "location_without_jurisdiction";
 
@@ -449,7 +456,7 @@ function Refusal({
       </p>
       {needsStructure ? (
         <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
-          <Link href={hrSettingsHref("structure")}>
+          <Link href={hrSettingsHref("structure", { org: organizationId })}>
             Open departments, locations and job titles
           </Link>
         </Button>

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { HrTimeShell } from "@/features/hr/time/HrTimeShell";
+import { HrLoading } from "@/features/hr/shared/HrStates";
 import { EmploymentPeriodDetail } from "@/features/hr/time/timesheet/EmploymentPeriodDetail";
 
 /**
@@ -22,22 +23,13 @@ export default async function EmploymentTimesheetPage({
   const { period } = await searchParams;
 
   return (
-    <>
-      <PageHeader>
-        <h1 className="text-sm font-semibold">Timesheet</h1>
-      </PageHeader>
-      <div className="h-full overflow-y-auto overflow-x-hidden">
-        <Suspense
-          fallback={
-            <div className="h-full animate-pulse bg-card/40" aria-label="Loading the timesheet" />
-          }
-        >
-          <EmploymentPeriodDetail
-            employmentId={employmentId}
-            payPeriodId={period ?? null}
-          />
-        </Suspense>
-      </div>
-    </>
+    <HrTimeShell title="Timesheet">
+      <Suspense fallback={<HrLoading variant="table" rows={8} />}>
+        <EmploymentPeriodDetail
+          employmentId={employmentId}
+          payPeriodId={period ?? null}
+        />
+      </Suspense>
+    </HrTimeShell>
   );
 }

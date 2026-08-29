@@ -83,7 +83,8 @@ export function HrShell({
 }: HrShellProps) {
   const { active, employers, orgRef, isLoading } = useHrContext();
   const { persona, employmentId, all } = useHrPersona();
-  const pathname = usePathname() ?? hrHref();
+  // No pathname exists only before an employer context can be resolved.
+  const pathname = usePathname() ?? hrHref(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useClippedContentGuard(scrollRef, { label: "HR page body" });

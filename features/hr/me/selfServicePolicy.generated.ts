@@ -25,7 +25,7 @@ export const HR_SELF_SERVICE_POLICY: Record<
   string,
   Record<string, HrSelfServicePolicy>
 > = {
-  // hr.employee — 37 columns
+  // hr.employee — 36 columns
   hr_employee: {
     created_at: "hr_only",
     created_by: "hr_only",
@@ -37,7 +37,6 @@ export const HR_SELF_SERVICE_POLICY: Record<
     custom: "hr_only",
     deleted_at: "hr_only",
     directory_opt_out: "free",
-    directory_status: "hr_only",
     display_name: "hr_only",
     employee_number: "hr_only",
     former_names: "hr_only",

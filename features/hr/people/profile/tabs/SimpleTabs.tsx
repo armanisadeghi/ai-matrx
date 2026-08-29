@@ -248,6 +248,14 @@ export function HostedTab({
    * the subject themselves", and only the self arm was mounted — behind a login. The staff a shared
    * kiosk exists for have no login, so nobody could issue them a PIN and nobody could receive one.
    * This tab is the HR arm.
+   *
+   * 🚨 BUT `hr.people.tab-time` IS STILL stage:"building", AND THIS TAB WAS THE ONLY ONE OF THE SIX
+   * NOT SAYING SO. The early return above skipped the "What lands here?" door that every sibling
+   * stub renders, so a partly-built tab presented itself as a finished one: the PIN control is here,
+   * and this person's timesheet, punch history and published shifts — which the registry entry names
+   * as still owed — simply were not, with nothing on screen to say they were coming. That is the
+   * worse half of the honesty rule, because there is no 404 to notice. The panel keeps the whole tab;
+   * the door sits under it and names the rest.
    */
   if (segment === "time") {
     return (
@@ -267,6 +275,11 @@ export function HostedTab({
               ? undefined
               : profile.header.login_user_id !== null
           }
+        />
+        <Waiting
+          id={hosted.comingSoonId}
+          sentence="Their timesheet, punch history and published shifts land on this same panel — the Time lane is building them now."
+          action="What else lands here?"
         />
       </TabShell>
     );

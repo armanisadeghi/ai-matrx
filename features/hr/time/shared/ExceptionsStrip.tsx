@@ -28,6 +28,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { hrTimeExceptionsHref } from "@/features/hr/routes";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import { resolveAttendanceException } from "../api/service";
 import type {
@@ -94,7 +95,7 @@ export function ExceptionsStrip({
    */
   error,
   /** Pre-filters the route 31 door — a group's door lands on ITS kind, not the whole queue. */
-  queueHref = hrTimeExceptionsHref(),
+  queueHref,
   mockCase,
   onResolved,
   className,
@@ -106,6 +107,8 @@ export function ExceptionsStrip({
   onResolved: () => void;
   className?: string;
 }) {
+  const { orgRef } = useHrContext();
+  const resolvedQueueHref = queueHref ?? hrTimeExceptionsHref(orgRef);
   const open = exceptions.filter((exc) => exc.resolutionState === "open");
   const groups = groupByKind(open);
 
@@ -117,7 +120,7 @@ export function ExceptionsStrip({
       <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-sm font-semibold">Open exceptions</h2>
         <Link
-          href={queueHref}
+          href={resolvedQueueHref}
           className="inline-flex items-center gap-1 text-xs font-medium underline underline-offset-4"
         >
           Open the full queue
@@ -140,7 +143,8 @@ export function ExceptionsStrip({
             <KindGroupBlock
               key={group.kind}
               group={group}
-              queueHref={queueHref}
+              queueHref={resolvedQueueHref}
+              orgRef={orgRef}
               mockCase={mockCase}
               onResolved={onResolved}
             />
@@ -154,11 +158,13 @@ export function ExceptionsStrip({
 function KindGroupBlock({
   group,
   queueHref,
+  orgRef,
   mockCase,
   onResolved,
 }: {
   group: KindGroup;
   queueHref: string;
+  orgRef: ReturnType<typeof useHrContext>["orgRef"];
   mockCase?: HrFixtureCase;
   onResolved: () => void;
 }) {
@@ -183,7 +189,7 @@ function KindGroupBlock({
           />
           {/* THE GROUP'S OWN DOOR, pre-filtered to this kind. */}
           <Link
-            href={hrTimeExceptionsHref(undefined, { kind: group.kind })}
+            href={hrTimeExceptionsHref(orgRef, { kind: group.kind })}
             className="text-xs underline underline-offset-4"
           >
             See all

@@ -70,7 +70,7 @@ export function PunchRegister({
   canEdit?: boolean;
 }) {
   const mockCase = useHrMockCase();
-  const { active } = useHrContext();
+  const { active, orgRef } = useHrContext();
   const organizationId = orgScope ? (active?.organization_id ?? null) : null;
   const { prefs } = useListViewPrefs("hr-time-punches", { pageSize: DEFAULT_PAGE_SIZE });
   const [query, setQuery] = useState<MatrxDataTableQueryState>({
@@ -182,7 +182,7 @@ export function PunchRegister({
           <div className="min-h-0 flex-1">
             <MatrxDataTable<PunchRow>
               data={rows}
-              columns={punchColumns()}
+              columns={punchColumns(orgRef)}
               getRowId={(row) => row.id}
               isLoading={register.loading}
               isFetching={register.refreshing}
@@ -232,7 +232,9 @@ export function PunchRegister({
   );
 }
 
-function punchColumns(): MatrxColumnDef<PunchRow>[] {
+function punchColumns(
+  orgRef: ReturnType<typeof useHrContext>["orgRef"],
+): MatrxColumnDef<PunchRow>[] {
   return [
     {
       id: "localWorkDate",
@@ -241,7 +243,7 @@ function punchColumns(): MatrxColumnDef<PunchRow>[] {
       // The door onto this punch's day in the COMPUTED lane — the only place hours may be read.
       cell: (row) => (
         <Link
-          href={hrTimesheetHref(row.employmentId)}
+          href={hrTimesheetHref(row.employmentId, orgRef)}
           className="underline underline-offset-4"
         >
           {formatLocalDate(row.localWorkDate, { weekday: true })}

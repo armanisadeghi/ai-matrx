@@ -4,19 +4,24 @@
 //
 // The status chip, and the ONE place the directory's `row_basis` becomes words.
 //
-// 🚨 TWO DIFFERENT FACTS, TWO DIFFERENT SOURCES — never interchange them:
+// 🚨 THE STATUS IS DERIVED FROM THE EMPLOYMENT SPELLS, ON BOTH SURFACES. The
+// directory row's `directory_status` and the profile header's `header.status`
+// are now two calls to the SAME server-side resolution as of the same date, so
+// the list and the record cannot disagree about whether somebody works here.
 //
-//   • THE PROFILE HEADER's status comes from `profile.header.status`, which the
-//     server resolved through `hr.employment_as_of(employee_id, today)`. That is
-//     the calculation-grade answer.
-//   • THE DIRECTORY ROW's status is `directory_status`, a trigger-maintained
-//     convenience column that may be up to one day stale for a future-dated
-//     change that just landed (SPEC-EMPLOYEES §5.1). It is sanctioned for the
-//     LIST and nowhere else.
+// 🚨 WHAT THIS COMMENT USED TO SAY WAS FALSE, AND THE FALSE SENTENCE IS WHY THE
+// BUG SURVIVED. It described `directory_status` as "a trigger-maintained
+// convenience column that may be up to one day stale". No such trigger has ever
+// existed: the column was `DEFAULT 'active'`, and the only writer in the entire
+// database was `public.hr_employee_create`, so separation, rehire and leave
+// never moved it. Live, across every organization, ZERO rows read 'terminated'
+// while three people had been offboarded — one of them through this product —
+// and this chip captioned all three "Active" while the headcount counted them.
+// A code comment asserting a mechanism that does not exist is not documentation;
+// it is the thing that stops the next reader from checking. (D4, 2026-08-29;
+// the column is gone — migration `hr_l1_60`.)
 //
-// This component renders whichever string it is handed. It is the CALLER's job
-// to hand it the right one, and the profile header is wired to `header.status`
-// precisely so a stale list value can never reach it.
+// This component renders whichever string it is handed.
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";

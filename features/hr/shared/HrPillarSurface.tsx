@@ -73,10 +73,14 @@ export function HrPillarSurface({
           <h2 className="text-sm font-semibold text-foreground">
             {promise.label}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">{promise.promise}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {promise.promise}
+          </p>
 
           {stageLine ? (
-            <p className="mt-3 text-xs font-medium text-foreground">{stageLine}</p>
+            <p className="mt-3 text-xs font-medium text-foreground">
+              {stageLine}
+            </p>
           ) : null}
 
           {/* A blocked promise with no named blocker is an untracked defect

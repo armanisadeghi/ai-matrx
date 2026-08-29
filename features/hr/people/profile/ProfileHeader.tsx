@@ -4,12 +4,19 @@
 //
 // The header, on every tab (SPEC-EMPLOYEES §2.3.0).
 //
-// 🚨 THE STATUS COMES FROM `header.status`, WHICH THE SERVER RESOLVED THROUGH
-// `hr.employment_as_of(employee_id, today)` — NEVER from `directory_status`.
-// `directory_status` is a trigger-maintained convenience column that can be up
-// to a day stale for a future-dated change that just landed; it is sanctioned
-// for the LIST and nowhere else. Wiring the header to it is the single easiest
-// way to make this page quietly lie about whether somebody works here.
+// 🚨 THE STATUS COMES FROM `header.status`, WHICH THE SERVER RESOLVED FROM THE
+// EMPLOYMENT FACTS AS OF THE VIEWED DATE — `hr.employment_as_of(employee_id,
+// as_of).status`, falling back to `hr.employee_directory_status(employee_id,
+// as_of)` for the two populations that resolver correctly answers NOTHING for:
+// somebody who has left, and somebody who has not started. Before D4 that
+// fallback did not exist and this header rendered NO CHIP AT ALL for a
+// terminated person while the directory captioned them "Active".
+//
+// There is no `directory_status` COLUMN any more, and there must never be one
+// again: it was `DEFAULT 'active'` with no writer past creation, so separation,
+// rehire and leave never moved it (D4, migration `hr_l1_60`). Whether somebody
+// works here is a fact about their spells on a DATE, which no stored flag can
+// hold across a day boundary.
 //
 // 🚨 AT MOST ONE PENDING CHIP (§6.2). Not one per change. `PendingChip` takes
 // the count and is a door to the pending panel.
@@ -81,7 +88,7 @@ export function ProfileHeader({
           <h1 className="min-w-0 truncate text-lg font-semibold text-foreground">
             {header.display_name}
           </h1>
-          {/* Resolved as-of TODAY by the server. Never `directory_status`. */}
+          {/* Resolved from the spells as of the viewed date, by the server. */}
           <HrStatusChip status={header.status} />
           <HrWorkerClassChip workerClass={header.worker_class} />
           {header.pronouns ? (

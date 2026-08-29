@@ -139,7 +139,7 @@ function PunchChainRow({
                   </button>
                 ) : (
                   <Link
-                    href={hrPunchesHref(undefined, { employment: punch.employmentId })}
+                    href={hrPunchesHref(orgRef, { employment: punch.employmentId })}
                     className="underline decoration-dotted underline-offset-2 hover:text-foreground"
                   >
                     Open the punch that replaced it

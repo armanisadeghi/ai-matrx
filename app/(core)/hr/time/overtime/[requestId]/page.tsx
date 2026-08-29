@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 
-import PageHeader from "@/features/shell/components/header/PageHeader";
+import { HrTimeShell } from "@/features/hr/time/HrTimeShell";
+import { HrLoading } from "@/features/hr/shared/HrStates";
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { OvertimeRequestPage } from "@/features/hr/time/overtime/components/OvertimePages";
 
@@ -16,32 +17,23 @@ import { OvertimeRequestPage } from "@/features/hr/time/overtime/components/Over
  * surface can carry a corrective-action door.
  */
 export const metadata = createRouteMetadata("/hr/time/overtime", {
-    titlePrefix: "Overtime request",
-    title: "Time",
-    description:
-        "One overtime request: the thresholds it would cross, the decision trail, and what happens if the hours are worked anyway.",
+  titlePrefix: "Overtime request",
+  title: "Time",
+  description:
+    "One overtime request: the thresholds it would cross, the decision trail, and what happens if the hours are worked anyway.",
 });
 
 export default async function HrTimeOvertimeRequestRoute({
-    params,
+  params,
 }: {
-    params: Promise<{ requestId: string }>;
+  params: Promise<{ requestId: string }>;
 }) {
-    const { requestId } = await params;
-    return (
-        <>
-            <PageHeader>
-                <h1 className="text-sm font-semibold">Overtime request</h1>
-            </PageHeader>
-            <div className="h-full overflow-hidden">
-                <Suspense
-                    fallback={
-                        <div className="h-full animate-pulse bg-card/40" aria-label="Loading this request" />
-                    }
-                >
-                    <OvertimeRequestPage requestId={requestId} />
-                </Suspense>
-            </div>
-        </>
-    );
+  const { requestId } = await params;
+  return (
+    <HrTimeShell title="Overtime request">
+      <Suspense fallback={<HrLoading variant="panel" rows={6} />}>
+        <OvertimeRequestPage requestId={requestId} />
+      </Suspense>
+    </HrTimeShell>
+  );
 }

@@ -102,7 +102,12 @@ export const HR_PROFILE_TAB_LABELS: Record<HrProfileTab, string> = {
   relations: "Relations",
 };
 
-/** `hr.employee.directory_status`. */
+/**
+ * The directory's status vocabulary — DERIVED per person from their employment
+ * spells as of today by `hr.employee_directory_status`, never a stored column.
+ * There was a `hr.employee.directory_status` column; it had no writer past
+ * creation and is gone (D4, `hr_l1_60`).
+ */
 export const HR_DIRECTORY_STATUSES = [
   "prehire",
   "active",

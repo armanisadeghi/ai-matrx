@@ -38,6 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { toast } from "@/lib/toast";
 import { hrPunchesHref, hrTimeExceptionsHref, hrTimePeriodHref } from "@/features/hr/routes";
+import { useHrContext } from "@/features/hr/shared/useHrContext";
 
 import { getTimesheet } from "../api/service";
 import type { Timesheet } from "../api/types";
@@ -74,6 +75,7 @@ export function EmploymentPeriodDetail({
   payPeriodId: string | null;
 }) {
   const mockCase = useHrMockCase();
+  const { orgRef } = useHrContext();
   const ready = Boolean(payPeriodId);
 
   const query = useHrTimeQuery<Timesheet>(
@@ -93,7 +95,12 @@ export function EmploymentPeriodDetail({
           emptySentence="Pick a pay period to see this person's timesheet."
         >
           {query.data ? (
-            <DetailBody timesheet={query.data} mockCase={mockCase} onChanged={query.refetch} />
+            <DetailBody
+              timesheet={query.data}
+              mockCase={mockCase}
+              orgRef={orgRef}
+              onChanged={query.refetch}
+            />
           ) : null}
         </HrTimeReadState>
       </div>
@@ -104,10 +111,12 @@ export function EmploymentPeriodDetail({
 function DetailBody({
   timesheet,
   mockCase,
+  orgRef,
   onChanged,
 }: {
   timesheet: Timesheet;
   mockCase: ReturnType<typeof useHrMockCase>;
+  orgRef: ReturnType<typeof useHrContext>["orgRef"];
   onChanged: () => void;
 }) {
   if (timesheet.noTimesheetReason) {
@@ -157,7 +166,7 @@ function DetailBody({
 
       <ExceptionsStrip
         exceptions={timesheet.openExceptions}
-        queueHref={hrTimeExceptionsHref(undefined, { employment: timesheet.employmentId })}
+        queueHref={hrTimeExceptionsHref(orgRef, { employment: timesheet.employmentId })}
         mockCase={mockCase}
         onResolved={onChanged}
       />
@@ -179,7 +188,7 @@ function DetailBody({
             double-pays.
           </p>
           <Link
-            href={hrTimePeriodHref(timesheet.payPeriod.id)}
+            href={hrTimePeriodHref(timesheet.payPeriod.id, orgRef)}
             className="mt-2 inline-flex text-sm font-medium underline underline-offset-4"
           >
             Open the pay period to record an adjustment
@@ -193,7 +202,7 @@ function DetailBody({
             reason is always required, and the employee is always told what changed and why.
           </p>
           <Link
-            href={hrPunchesHref(undefined, { employment: timesheet.employmentId })}
+            href={hrPunchesHref(orgRef, { employment: timesheet.employmentId })}
             className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium underline underline-offset-4"
           >
             <PencilLine className="h-4 w-4" aria-hidden />

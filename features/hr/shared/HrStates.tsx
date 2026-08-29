@@ -289,7 +289,8 @@ export function HrError({
             variant="outline"
             className="min-h-11 sm:min-h-9"
           >
-            <Link href={hrHref()}>Back to HR</Link>
+            {/* This error state can render before employer context exists. */}
+            <Link href={hrHref(null)}>Back to HR</Link>
           </Button>
         </div>
         {code ? (
@@ -356,7 +357,8 @@ export function HrNoAccess({
  */
 export function HrEmployerPicker({ className }: { className?: string } = {}) {
   const { employers, isLoading } = useHrContext();
-  const pathname = usePathname() ?? hrHref();
+  // The picker is itself the pre-employer-context state.
+  const pathname = usePathname() ?? hrHref(null);
 
   if (isLoading) return <HrLoading variant="cards" rows={3} className={className} />;
 

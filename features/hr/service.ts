@@ -264,10 +264,49 @@ async function callHrRaw(
         `[hr] ${fn} rejected by a database constraint (${error.code}) — the surface should have caught this first:`,
         error.message,
       );
+
+      /*
+        🚨 A READ IS NOT A SAVE, AND THIS BRANCH USED TO CALL EVERY ONE OF THEM ONE.
+        Opening `/hr/people/not-a-uuid/personal` — a READ, from a URL, with no form
+        on the screen and nothing to write — announced itself as "This employee
+        record could not be SAVED because of a value in the wrong format. This
+        screen should have caught that before asking the server, so it is a defect
+        in the form… nothing was changed." Every clause of that is false on a read:
+        there was no form, no save, and "nothing was changed" implies something
+        might have been. It also told somebody their data had been rejected when
+        what was actually wrong was the address they typed.
+
+        The write sentence below is correct and stays: a constraint the FORM should
+        have caught is a defect in the form, and saying so is how it gets fixed.
+      */
+      if (options.write) {
+        return failed(
+          `${options.whatFailed} could not be saved because of ${integrity}. ` +
+            "This screen should have caught that before asking the server, so it is a " +
+            "defect in the form rather than something you did — the details are in the log.",
+          error.code ?? null,
+        );
+      }
+
+      /*
+        On a READ, `22P02` has exactly one cause worth a sentence: the identifier in
+        the URL is not a real record id. Say THAT, in the words a person can act on
+        ("check the link"), instead of describing a value they never typed into a
+        field they never saw.
+      */
+      if (error.code === "22P02") {
+        return failed(
+          `${options.whatFailed} could not be opened, because the address it was ` +
+            "asked for is not a valid record id. Check the link you followed — " +
+            "nothing here has been changed or lost.",
+          error.code ?? null,
+        );
+      }
+
       return failed(
-        `${options.whatFailed} could not be saved because of ${integrity}. ` +
-          "This screen should have caught that before asking the server, so it is a " +
-          "defect in the form rather than something you did — the details are in the log.",
+        `${options.whatFailed} could not be loaded because of ${integrity}. ` +
+          "That is a defect in what this screen asked for rather than something you " +
+          "did — the details are in the log.",
         error.code ?? null,
       );
     }
