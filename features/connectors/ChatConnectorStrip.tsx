@@ -3,108 +3,79 @@
 /**
  * ChatConnectorStrip — the connector strip, wired to real account state.
  *
- * `ConnectorStrip` is presentational on purpose: it raises a connect intent and
- * knows nothing about Google or OAuth. This container is the one place that
- * answers "what has this user actually connected?" and "what happens when they
- * click?", so every surface that mounts the strip gets the same answers.
+ * `ConnectorStrip` is presentational on purpose. This container draws exactly
+ * three live integrations from a fair randomized bag and opens the complete
+ * live directory through the canonical WindowPanel overlay.
  *
- * Clicking opens the floating connect window OVER the conversation. It never
- * navigates to settings — being sent away from your work to attach a file is
- * the dead end this whole path exists to remove.
- *
- * MCP-backed connectors are resolved generically by matching the connector id
- * to the canonical MCP server slug. Adding the next official MCP provider is a
- * registry entry, not another connect-flow implementation.
+ * Every eligible integration appears once before the bag resets. At a cycle
+ * boundary, the previous visit's three are deferred so consecutive visits do
+ * not repeat when the catalogue is large enough.
  */
 
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
-import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
-import { useMcpCatalog } from "@/features/agents/hooks/useMcpTools";
-import { fetchCatalog } from "@/features/agents/redux/mcp/mcp.slice";
-import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
-import { mcpConnectionRouteFor } from "@/features/agent-connections/mcp-connection-route";
-import { toast } from "@/lib/toast";
+import { useEffect, useRef, useState } from "react";
+import { useOpenLiveIntegrationsWindow } from "@/features/overlays/openers/liveIntegrationsWindow";
 import { ConnectorStrip } from "./ConnectorStrip";
-import { googleConnectedIds } from "./google-status";
-import type { ConnectorId } from "./types";
+import { drawConnectorRotation, parseConnectorRotationState } from "./rotation";
+import { useLiveConnectors } from "./useLiveConnectors";
+
+const ROTATION_STORAGE_KEY = "matrx.connector-strip.rotation.v1";
 
 export interface ChatConnectorStripProps {
   className?: string;
 }
 
 export function ChatConnectorStrip({ className }: ChatConnectorStripProps) {
-  const dispatch = useAppDispatch();
-  const inventory = useGoogleConnectionInventory();
-  const mcp = useMcpCatalog();
-  const openGoogleConnect = useOpenGoogleConnectWindow();
+  const { items, connect, isLoading } = useLiveConnectors();
+  const openLiveIntegrations = useOpenLiveIntegrationsWindow();
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const hasDrawnRef = useRef(false);
+  const eligibleSignature = items
+    .map(({ connector }) => connector.id)
+    .sort()
+    .join("|");
 
-  const rows = inventory.data?.connections ?? [];
-  const connectedIds: ConnectorId[] = googleConnectedIds(rows);
-  for (const server of mcp.catalog) {
-    if (server.connectionStatus === "connected") {
-      connectedIds.push(server.slug);
-    }
-  }
+  useEffect(() => {
+    if (isLoading || !eligibleSignature || hasDrawnRef.current) return;
+    hasDrawnRef.current = true;
+    const eligibleIds = eligibleSignature.split("|");
 
-  const onConnect = (id: ConnectorId) => {
-    if (id === "google-workspace" || id === "gmail") {
-      openGoogleConnect({
-        reason:
-          id === "gmail"
-            ? "so an agent can draft email you review before it sends"
-            : "so an agent can work with docs and sheets you choose",
-      });
-      return;
-    }
-
-    const server = mcp.catalog.find((entry) => entry.slug === id);
-    if (server && mcpConnectionRouteFor(server) === "configure") {
-      window.location.assign(
-        `/user-settings/integrations?provider=${encodeURIComponent(server.slug)}`,
+    let previous = null;
+    try {
+      previous = parseConnectorRotationState(
+        window.localStorage.getItem(ROTATION_STORAGE_KEY),
       );
-      return;
-    }
-    const connectable =
-      server &&
-      (server.serverStatus === "active" ||
-        server.serverStatus === "beta" ||
-        server.serverStatus === "community") &&
-      server.authStrategy === "oauth_discovery" &&
-      Boolean(server.endpointUrl);
-    if (!connectable) {
-      toast.error(`${server?.name ?? id} is not available to connect yet`, {
-        description: "Open Integrations to review its current availability.",
-      });
-      return;
+    } catch (cause) {
+      console.warn("[connectors] Rotation state could not be read", cause);
     }
 
-    void startMcpOAuthPopup(server.serverId).then((outcome) => {
-      if (outcome.ok) {
-        dispatch(fetchCatalog());
-        toast.success(`Connected to ${server.name}`);
-      } else if (!outcome.cancelled) {
-        toast.error(`Could not connect to ${server.name}`, {
-          description: outcome.error,
-        });
-      }
-    });
-  };
+    const result = drawConnectorRotation(eligibleIds, previous);
+    setSelectedIds(result.selectedIds);
 
-  // While the inventory is still loading, everything would render as
-  // "not connected" and the strip would flash a nag at a user who has already
-  // connected. Wait for the answer instead.
-  if (
-    inventory.isLoading ||
-    (mcp.status === "loading" && mcp.catalog.length === 0)
-  ) {
-    return null;
-  }
+    try {
+      window.localStorage.setItem(
+        ROTATION_STORAGE_KEY,
+        JSON.stringify(result.state),
+      );
+    } catch (cause) {
+      console.warn("[connectors] Rotation state could not be saved", cause);
+    }
+  }, [eligibleSignature, isLoading]);
+
+  const itemById = new Map(items.map((item) => [item.connector.id, item]));
+  const selectedItems = selectedIds
+    .map((id) => itemById.get(id))
+    .filter((item) => item !== undefined);
+
+  if (isLoading || selectedItems.length === 0) return null;
 
   return (
     <ConnectorStrip
-      connectedIds={connectedIds}
-      onConnect={onConnect}
+      connectors={selectedItems.map(({ connector }) => connector)}
+      resolveStatus={(connector) =>
+        itemById.get(connector.id)?.status ?? "not_connected"
+      }
+      onConnect={(id) => void connect(id)}
+      onShowMore={() => openLiveIntegrations()}
       className={className}
     />
   );

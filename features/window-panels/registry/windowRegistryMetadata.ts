@@ -1828,6 +1828,18 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobileSidebarAs: "drawer",
   },
 
+  // ── Live Integrations ─────────────────────────────────────────────────────
+  {
+    slug: "live-integrations-window",
+    overlayId: "liveIntegrationsWindow",
+    kind: "window",
+    label: "Live Integrations",
+    defaultData: {},
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+  },
+
   // ── Agent Placeholder Windows ─────────────────────────────────────────────
   {
     slug: "agent-optimizer-window",

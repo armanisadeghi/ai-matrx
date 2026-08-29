@@ -61,6 +61,8 @@ export default function ConnectorStripDemo() {
 
   const raise = (id: string) =>
     setLog((prev) => [`onConnect("${id}")`, ...prev].slice(0, 8));
+  const raiseMore = () =>
+    setLog((prev) => ["onShowMore()", ...prev].slice(0, 8));
 
   const toggle = (id: string) =>
     setLive((prev) =>
@@ -82,7 +84,11 @@ export default function ConnectorStripDemo() {
 
       <Case title="Nothing connected" note="the first-run offer">
         <FakeAgentInput>
-          <ConnectorStrip connectedIds={[]} onConnect={raise} />
+          <ConnectorStrip
+            connectedIds={[]}
+            onConnect={raise}
+            onShowMore={raiseMore}
+          />
         </FakeAgentInput>
       </Case>
 
@@ -91,41 +97,37 @@ export default function ConnectorStripDemo() {
         note="color = connected; Notion raises the shared MCP connect intent"
       >
         <FakeAgentInput>
-          <ConnectorStrip connectedIds={["google-workspace"]} onConnect={raise} />
+          <ConnectorStrip
+            connectedIds={["google-workspace"]}
+            onConnect={raise}
+            onShowMore={raiseMore}
+          />
         </FakeAgentInput>
       </Case>
 
       <Case
         title="All connected"
-        note="collapses to one muted door — never nags"
+        note="the three management doors and More remain available"
       >
         <FakeAgentInput>
           <ConnectorStrip
             resolveStatus={() => "connected"}
             onConnect={raise}
+            onShowMore={raiseMore}
           />
         </FakeAgentInput>
       </Case>
 
       <Case
-        title="All connected + hideWhenAllConnected"
-        note="renders nothing at all"
+        title="Compact variant"
+        note="marks only, names live in the tooltip"
       >
-        <FakeAgentInput>
-          <ConnectorStrip
-            resolveStatus={() => "connected"}
-            hideWhenAllConnected
-            onConnect={raise}
-          />
-        </FakeAgentInput>
-      </Case>
-
-      <Case title="Compact variant" note="marks only, names live in the tooltip">
         <FakeAgentInput>
           <ConnectorStrip
             variant="compact"
             connectedIds={["gmail"]}
             onConnect={raise}
+            onShowMore={raiseMore}
           />
         </FakeAgentInput>
       </Case>
@@ -150,7 +152,11 @@ export default function ConnectorStripDemo() {
             ))}
           </div>
           <FakeAgentInput>
-            <ConnectorStrip connectedIds={live} onConnect={raise} />
+            <ConnectorStrip
+              connectedIds={live}
+              onConnect={raise}
+              onShowMore={raiseMore}
+            />
           </FakeAgentInput>
         </div>
       </Case>
@@ -184,10 +190,9 @@ export default function ConnectorStripDemo() {
           ))}
         </div>
         <p className="text-[11px] text-muted-foreground">
-          {CONNECTORS.length} in the catalogue ·{" "}
-          {connectorsFor("strip").length} earn a slot under the input · Google
-          Search Console is directory-only (connectable today, just too niche
-          for the strip).
+          {CONNECTORS.length} in the catalogue · {connectorsFor("strip").length}{" "}
+          earn a slot under the input · Google Search Console is directory-only
+          (connectable today, just too niche for the strip).
         </p>
       </Case>
 
@@ -199,7 +204,10 @@ export default function ConnectorStripDemo() {
             </span>
           ) : (
             log.map((line, i) => (
-              <div key={`${line}-${i}`} className={i === 0 ? "text-foreground" : undefined}>
+              <div
+                key={`${line}-${i}`}
+                className={i === 0 ? "text-foreground" : undefined}
+              >
                 {line}
               </div>
             ))

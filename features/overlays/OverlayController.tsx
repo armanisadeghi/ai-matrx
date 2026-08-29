@@ -217,6 +217,10 @@ const AgentCreateAppWindow = lazyOverlay(
 const GoogleConnectWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/google/GoogleConnectWindow"),
 );
+const LiveIntegrationsWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/connectors/LiveIntegrationsWindow"),
+);
 const AgentSkillsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentSkillsWindow"),
   { ssr: false },
@@ -1164,6 +1168,9 @@ export default function OverlayController() {
     ),
     googleConnectWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "googleConnectWindow"),
+    ),
+    liveIntegrationsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "liveIntegrationsWindow"),
     ),
     agentDataStorageWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentDataStorageWindow"),
@@ -2465,6 +2472,16 @@ export default function OverlayController() {
           />
         );
       })()}
+
+      {/* liveIntegrationsWindow */}
+      {isOpenById.liveIntegrationsWindow && (
+        <LiveIntegrationsWindow
+          isOpen
+          onClose={() =>
+            dispatch(closeOverlay({ overlayId: "liveIntegrationsWindow" }))
+          }
+        />
+      )}
 
       {/* agentSkillsWindow */}
       {(() => {

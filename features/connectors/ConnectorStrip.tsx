@@ -10,11 +10,11 @@
 // Design rules it must keep:
 //  - One line. It sits under a chat input and must never compete with it.
 //  - Color means connected. An unconnected mark is monochrome and muted.
-//  - It stops nagging: once everything is connected it collapses to a single
-//    near-invisible door (or disappears entirely with `hideWhenAllConnected`).
+//  - Exactly the connectors supplied by the host stay visible, whether they
+//    are connected or not. A final More door opens the complete live set.
 
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, Ellipsis } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -38,10 +38,8 @@ export interface ConnectorStripProps extends ConnectorStatusSource {
   connectors?: ConnectorDefinition[];
   /** `compact` drops the names and renders marks only. */
   variant?: "default" | "compact";
-  /** Return nothing at all once every connector is connected. */
-  hideWhenAllConnected?: boolean;
-  /** Where the collapsed "all connected" summary goes. */
-  directoryHref?: string;
+  /** Opens the complete live-integrations surface. */
+  onShowMore?: () => void;
   className?: string;
 }
 
@@ -65,8 +63,7 @@ export function ConnectorStrip({
   onConnect,
   connectors,
   variant = "default",
-  hideWhenAllConnected = false,
-  directoryHref = "/user-settings/integrations",
+  onShowMore,
   className,
   connectedIds,
   resolveStatus,
@@ -78,29 +75,9 @@ export function ConnectorStrip({
     status: statusOf(connector, { connectedIds, resolveStatus }, connectedSet),
   }));
 
-  const outstanding = rows.filter((row) => row.status !== "connected");
-  const connectedCount = rows.length - outstanding.length;
   const compact = variant === "compact";
 
   if (rows.length === 0) return null;
-
-  // Everything connected — never nag. Collapse to one muted door, or nothing.
-  if (outstanding.length === 0) {
-    if (hideWhenAllConnected) return null;
-    return (
-      <div className={cn("flex h-4 items-center", className)}>
-        <Link
-          href={directoryHref}
-          className="relative inline-flex h-4 items-center gap-1 rounded-full px-1 text-[10px] leading-none text-muted-foreground/60 transition-colors before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] hover:text-foreground sm:before:hidden"
-        >
-          <Check className="h-2.5 w-2.5 text-success/80" aria-hidden />
-          <span>
-            {connectedCount} {connectedCount === 1 ? "tool" : "tools"} connected
-          </span>
-        </Link>
-      </div>
-    );
-  }
 
   return (
     <TooltipProvider delayDuration={250}>
@@ -132,7 +109,9 @@ export function ConnectorStrip({
           ) : (
             <>
               {mark}
-              <span className="max-w-[10rem] truncate">{connector.name}</span>
+              <span className="max-w-[4rem] truncate sm:max-w-[10rem]">
+                {connector.name}
+              </span>
               {connected && (
                 <Check className="h-2 w-2 text-success/80" aria-hidden />
               )}
@@ -203,6 +182,28 @@ export function ConnectorStrip({
             </Tooltip>
           );
         })}
+        {onShowMore && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  CHIP_BASE,
+                  compact ? "w-5 justify-center px-0" : "gap-1 px-1.5",
+                  "border-border/60 bg-card/60 text-muted-foreground hover:border-border hover:bg-accent hover:text-foreground",
+                )}
+                onClick={onShowMore}
+                aria-label="Show all live integrations"
+              >
+                <Ellipsis className="h-3 w-3" aria-hidden />
+                {!compact && <span>More</span>}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              Show all live integrations
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </TooltipProvider>
   );

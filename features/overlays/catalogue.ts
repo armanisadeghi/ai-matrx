@@ -245,6 +245,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  liveIntegrationsWindow: {
+    label: "Live Integrations",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentSidebarOverlay: {
     label: "Agent Sidebar Overlay",
     instanceMode: "multi",

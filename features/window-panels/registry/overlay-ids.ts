@@ -62,6 +62,7 @@ export const OVERLAY_IDS = [
   "mandateWindow",
   "agentSkillsWindow",
   "googleConnectWindow",
+  "liveIntegrationsWindow",
   "agentSidebarOverlay",
   "agentToastOverlay",
   "aiVoiceWindow",

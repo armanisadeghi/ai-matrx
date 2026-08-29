@@ -2,13 +2,13 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-19`
+**Last updated:** `2026-08-29`
 
 ---
 
 ## Purpose
 
-The user-facing catalogue of external systems a person can attach to their account, plus **`ConnectorStrip`** — the one-line reminder that sits _under the agent input_ and offers the connections a conversation could use. This feature owns the **catalogue and the presentation**. It never owns a connect flow: the strip raises `onConnect(providerId)` and the host opens the OAuth/window panel.
+The user-facing catalogue of external systems a person can attach to their account, plus **`ConnectorStrip`** — the one-line reminder that sits _under the agent input_ and offers the connections a conversation could use. Normal chat shows exactly three fairly rotated live integrations and a `More` door. `More` opens the complete live-only catalogue in a canonical `WindowPanel`; local-only and coming-soon Settings placeholders are deliberately excluded.
 
 ---
 
@@ -19,7 +19,11 @@ The user-facing catalogue of external systems a person can attach to their accou
 - `features/connectors/ConnectorStrip.tsx` — `<ConnectorStrip />`. Client, presentational, props-driven.
 - `features/connectors/DirectoryConnectorCards.tsx` — the directory presence for the first-party Google connectors, mounted on `/user-settings/integrations` (features/settings `IntegrationsSettingsPage`) between the GitHub card and the MCP catalog grid. Status from the Google connection inventory via `google-status.ts`; Docs/Sheets and Gmail connect through the floating Google connect window, Search Console doors to `/marketing/connections/google` (its OAuth lives there — never a wrong-scope popup).
 - `features/connectors/google-status.ts` — the ONE Google scope→connector mapping (`GOOGLE_CONNECTOR_SCOPES`, `googleConnectedIds`, `googleConnectionFor`). Both containers resolve through it; a scope mapping anywhere else is a fork.
-- `features/connectors/ChatConnectorStrip.tsx` — the container that answers "what has this user actually connected" from the Google inventory plus the per-user MCP catalog. Google connectors open the floating Google connect window; MCP-backed connectors match their connector id to the canonical MCP server slug and use the shared MCP OAuth popup. Mounted under the real chat composer by `AgentConversationColumn`. Any new surface mounting the strip should reuse this container rather than resolving status again.
+- `features/connectors/ChatConnectorStrip.tsx` — draws exactly three providers from the persisted fair-rotation bag, resolves their live state, and opens the full integrations window from `More`. Mounted under the real chat composer by `AgentConversationColumn`.
+- `features/connectors/LiveIntegrationsList.tsx` — searchable, live-only provider list shared by the floating window. Every named provider has a real Connect, Configure, or Manage door.
+- `features/connectors/useLiveConnectors.ts` — the ONE container for connection state and actions across the strip and full list. Google uses the Google connect window; MCP entries use the canonical route selector and OAuth/no-auth/GitHub/configure path.
+- `features/connectors/live-connectors.ts` — merges seeded Google/Gmail/Notion definitions with the usable MCP catalogue and enforces the live boundary.
+- `features/connectors/rotation.ts` — pure randomized-bag selection and persisted-state parser.
 - `features/marketing/google/hooks.ts` — the shared Google inventory query is **auth-gated**. Core routes mount before async auth hydration; querying `users.integration_connections` while anonymous is a producer bug because the table is intentionally granted only to `authenticated`.
 
 **Config**
@@ -30,7 +34,8 @@ The user-facing catalogue of external systems a person can attach to their accou
 
 **Routes**
 
-- `app/(dev)/demos/connector-strip/page.dev.tsx` — every state side by side (nothing / some / all connected, `hideWhenAllConnected`, compact, surface filters, raised intents).
+- `features/window-panels/windows/connectors/LiveIntegrationsWindow.tsx` — canonical floating all-live-integrations window; fullscreen on mobile.
+- `app/(dev)/demos/connector-strip/page.dev.tsx` — every strip state side by side (nothing / some / all connected, compact, surface filters, raised intents).
 
 **Redux slice(s)** — none. This feature holds no state.
 
@@ -40,7 +45,7 @@ The user-facing catalogue of external systems a person can attach to their accou
 
 ## Data model
 
-No tables of its own. The connected-set is whatever the host resolves. Google connectors use `features/marketing/google/service.ts → listGoogleConnectionInventory()` (Supabase-direct), the same source `features/google-workspace/connection.ts` uses. MCP-backed connectors use the existing `useMcpCatalog()` selector over each signed-in user's `tool.mcp_user_conn` state; credentials remain in the Unified Credential Vault and never enter this feature.
+No tables of its own. Google connectors use `features/marketing/google/service.ts → listGoogleConnectionInventory()` (Supabase-direct), the same source `features/google-workspace/connection.ts` uses. MCP-backed connectors use the existing `useMcpCatalog()` selector over each signed-in user's `tool.mcp_user_conn` state; credentials remain in the Unified Credential Vault and never enter this feature. The fair rotation stores only provider ids and bag progress in browser `localStorage` under `matrx.connector-strip.rotation.v1`.
 
 **Key types** (`types.ts`)
 
@@ -57,26 +62,32 @@ No tables of its own. The connected-set is whatever the host resolves. Google co
 
 ```tsx
 <ConnectorStrip
-  connectedIds={connectedIds} // e.g. ["google-workspace"]
+  connectors={threeRotatedLiveConnectors}
+  resolveStatus={resolveLiveStatus}
   onConnect={(id) => openConnectPanel(id)}
+  onShowMore={() => openLiveIntegrationsWindow()}
 />
 ```
 
-Trigger: the composer renders. The strip reads `connectorsFor("strip")`, maps each entry to a status, and renders one 16px-tall visual row. On coarse pointers, invisible pseudo-elements preserve a 40px hit area without consuming layout height. Exit: the user clicks a chip → `onConnect(id)` fires; the strip changes nothing itself.
+Trigger: the composer renders. `ChatConnectorStrip` merges the three seeded providers with the usable live MCP catalogue, draws three ids from a shuffled bag without replacement, and renders one 16px-tall visual row plus `More`. On coarse pointers, invisible pseudo-elements preserve a 40px hit area without consuming layout height. Exit: a provider chip raises its canonical connection/management action; `More` opens the full window.
 
 ### (b) A connector the user already has
 
 Status `connected` → the mark paints **brand color** (every other state is `currentColor`/muted), a `Check` appears, and — when the definition has `manageHref` — the chip becomes a real `<Link>` to the management surface (THE DOOR LAW). No `manageHref` → the chip is inert, never a fake button.
 
-### (c) Everything connected
+### (c) Fair rotation across visits
 
-The strip **stops nagging**: it collapses to one muted `N tools connected` link to `directoryHref` (default `/user-settings/integrations`), or renders nothing at all with `hideWhenAllConnected`.
+Each visit consumes the next three ids from a shuffled bag. No provider repeats until every eligible provider has had one placement. At a bag boundary, the previous visit's ids are deferred, preventing consecutive overlap whenever the catalogue is large enough. A changed eligible catalogue invalidates the old bag safely.
 
-### (d) A connector we do not support yet
+### (d) The live-only `More` window
+
+The WindowPanel always includes Google, Gmail, and Notion, then adds MCP catalogue entries whose server status is `active`, `beta`, or `community` and which can be used from the web app now. Disconnected providers need a real remote endpoint and a direct OAuth, GitHub, or no-auth route. An already-connected remote provider remains visible so its management door is never lost. Local-only (`stdio`) and `coming_soon` entries never appear.
+
+### (e) A connector we do not support yet
 
 `comingSoonId` set → status is `unavailable` regardless of the connected-set, the chip is dashed + `soon`, and clicking calls `announceComingSoon(id)` against `lib/coming-soon/registry.ts`. **Never a bare "coming soon" string.** Notion no longer uses this path: it is an active MCP-backed connector.
 
-### (e) Adding a provider
+### (f) Adding a provider
 
 One entry in `registry.ts`: id (generic to the provider, permanent), name (today's truth), blurb (one user-facing line), a local mark, and `surfaces`. For an official OAuth MCP provider, the id must match the canonical `tool.mcp_server.slug`; `ChatConnectorStrip` then resolves connection state and OAuth generically. Nothing in `ConnectorStrip.tsx` changes.
 
@@ -84,8 +95,11 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Invariants & gotchas
 
-- **The strip owns no connect logic.** It raises an intent. Any Google/Notion/OAuth call inside this directory is a defect.
-- **`surfaces` is the gate, not a hint.** `"strip"` is reserved for connections that change what a _normal conversation_ can do; niche but real connectors (Google Search Console) are `["directory"]` only — directory-only is **not** the same as coming-soon.
+- **`ConnectorStrip` owns no connect logic.** It raises intents. `useLiveConnectors` is the sole container that turns those intents into canonical connection flows.
+- **Normal chat shows exactly three plus `More`.** Connection state never collapses or hides those discovery/management doors.
+- **Rotation is fair, not merely random.** Selection is without replacement across a complete bag; do not replace it with independent random draws that can favor one provider indefinitely.
+- **The full window is live-only.** An entry's presence in Settings does not prove it is usable. Never admit local-only or coming-soon placeholders.
+- **`surfaces` is the seeded first-party gate.** Dynamic live MCP providers join through `buildLiveConnectorDefinitions`; niche first-party definitions such as Google Search Console remain directory-only.
 - **The `id` is generic; the `name` carries today's truth.** `google-workspace` covers any file the user picks or we create — Docs and Sheets are today's support, not the ceiling. Never bake a feature list into an id or a file name.
 - **Color means connected.** This is a deliberate departure from ChatGPT/Claude/v0, which keep composer chrome monochrome. Here the paint-on-connect is the reward and the only status signal that survives at 11px. An unconnected mark must stay `currentColor`.
 - **One line, 16px, always.** It sits under a chat input; it may never wrap or compete. Overflow scrolls horizontally (`overflow-x-auto scrollbar-hide`) — this is why nothing breaks at 375px.
@@ -97,8 +111,8 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Related features
 
-- Depends on: `features/google-workspace` (`GOOGLE_WORKSPACE_SETTINGS_HREF`), `features/agents` MCP catalog/OAuth primitives, `lib/coming-soon`, `components/ui/tooltip`.
-- Depended on by: `ChatConnectorStrip` → `AgentConversationColumn` (the real chat composer); a future connector **directory** page consumes `connectorsFor("directory")`.
+- Depends on: `features/google-workspace` (`GOOGLE_WORKSPACE_SETTINGS_HREF`), `features/agents` MCP catalog/OAuth primitives, `features/window-panels`, `features/overlays`, `lib/coming-soon`, `components/ui/tooltip`.
+- Depended on by: `ChatConnectorStrip` → `AgentConversationColumn` (the real chat composer); Settings also consumes the seeded first-party directory definitions.
 - Cross-links: `features/google-workspace/FEATURE.md`, `lib/coming-soon/FEATURE.md`, `features/agent-connections/FEATURE.md` (the agent-facing "what can this agent reach" hub — a different question from "what has this human attached").
 
 ---
@@ -115,11 +129,13 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 - `ConnectorDefinition` + `CONNECTORS` (`features/connectors/`) — Why new: there was no catalogue of _user-attachable external systems_. Considered extending: `features/agent-connections` (agent reach: skills, MCP, render blocks — a different axis) and `components/icons/maker-brand.ts` (`MakerBrandId` is keyed to `ai.model_public.maker`, i.e. AI model makers; Notion/Gmail are not model makers). Rejected because both would blur two distinct registries.
 - `ConnectorStrip` (`features/connectors/ConnectorStrip.tsx`) — Why new: no existing component renders a sub-composer, status-bearing offer row. Considered extending: shortcut chip rows in the composer. Rejected because those raise prompt intents, not account-connection intents, and carry no connected/unavailable state.
+- `LiveIntegrationsList` + `LiveIntegrationsWindow` — Why new: the canonical Settings surface truthfully includes setup placeholders and local-only integrations, while chat needs the smaller set usable from the web app now. The list reuses the same catalogue and connect actions as the strip instead of creating a second provider registry.
 
 ---
 
 ## Change log
 
+- `2026-08-29` — Chat now shows three fairly rotated live integrations plus `More`. The shuffled bag prevents provider favoritism and consecutive repeats when possible; `More` opens a searchable WindowPanel containing every web-usable live integration while excluding local-only and coming-soon Settings entries.
 - `2026-08-29` — Aligned the normal-chat connector row to the composer's inner content line and shortened the Workspace chip label to `Google`; the capability detail remains in its description and tooltip.
 - `2026-08-29` — Halved the connector reminder's vertical footprint across every Smart Agent Input: the visual row is now 16px with a 2px composer gap, while coarse-pointer hit areas remain 40px via non-layout pseudo-elements.
 - `2026-08-28` — Auth-gated the shared Google inventory query so `/chat/new` cannot read the authenticated-only connection table during pre-hydration anonymous state.
