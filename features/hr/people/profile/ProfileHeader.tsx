@@ -4,19 +4,28 @@
 //
 // The header, on every tab (SPEC-EMPLOYEES §2.3.0).
 //
-// 🚨 THE STATUS COMES FROM `header.status`, WHICH THE SERVER RESOLVED FROM THE
-// EMPLOYMENT FACTS AS OF THE VIEWED DATE — `hr.employment_as_of(employee_id,
-// as_of).status`, falling back to `hr.employee_directory_status(employee_id,
-// as_of)` for the two populations that resolver correctly answers NOTHING for:
-// somebody who has left, and somebody who has not started. Before D4 that
-// fallback did not exist and this header rendered NO CHIP AT ALL for a
-// terminated person while the directory captioned them "Active".
+// 🚨 THE STATUS COMES FROM `header.status`, WHICH IS ONE CALL TO
+// `hr.employee_directory_status(employee_id, as_of)` — the SAME function the
+// directory row resolves through, as of the SAME date, so the list and the
+// record cannot disagree about whether somebody works here.
+//
+// It did not always say that, and the difference is the whole of D4B. The
+// server used to coalesce the RAW `hr.employment.status` enum over the
+// derivation, making the derivation a mere fallback for the two populations
+// `hr.employment_as_of` answers nothing for (somebody who has left, somebody
+// who has not started). Everybody else got the raw spell enum, whose values
+// (`pending`, `suspended`) are not the four this chip speaks — and a person
+// hired yesterday came back `pending`, captioned "Not started yet", through a
+// `?as_of=` date a user can type into the URL. (Migration `hr_l1_63`.)
 //
 // There is no `directory_status` COLUMN any more, and there must never be one
 // again: it was `DEFAULT 'active'` with no writer past creation, so separation,
-// rehire and leave never moved it (D4, migration `hr_l1_60`). Whether somebody
-// works here is a fact about their spells on a DATE, which no stored flag can
-// hold across a day boundary.
+// rehire and leave never moved it (D4, migration `hr_l1_60`). Nor may the
+// derivation read a status column in the enum's clothing: it consulted
+// `em.status = 'pending'` — a value nothing ever writes twice — and froze all
+// seven future hires at "Not started yet" permanently, hire date or no hire
+// date (D4A, `hr_l1_63`). Whether somebody works here is a fact about the DATES
+// on their spells, which no stored word can hold across a day boundary.
 //
 // 🚨 AT MOST ONE PENDING CHIP (§6.2). Not one per change. `PendingChip` takes
 // the count and is a door to the pending panel.

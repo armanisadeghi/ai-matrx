@@ -21,14 +21,24 @@
 // it is the thing that stops the next reader from checking. (D4, 2026-08-29;
 // the column is gone — migration `hr_l1_60`.)
 //
-// This component renders whichever string it is handed.
+// 🚨 AND `pending` IS NOT IN THESE MAPS ANY MORE — IT IS THE REASON D4A WAS
+// INVISIBLE FOR A DAY. `pending` is a value of the RAW `hr.employment.status`
+// enum, not of the derived vocabulary, and mapping it to "Not started yet" gave
+// a raw leak a caption that looked *plausible*: seven future hires whose hire
+// dates had arrived rendered as people who had not started, and nothing on the
+// screen suggested a bug. Every producer of a status in the database now goes
+// through `hr.employee_directory_status` — `hr_directory_list`, `hr_org_summary`,
+// `hr_duplicate_scan`, `hr.employee_by_party`, `hr.member_employee_links` and,
+// since `hr_l1_63`, `hr_employee_profile` — so the only four values that can
+// arrive are the four below. A fifth means the server regressed, and this
+// component now SAYS SO instead of dressing it up. (D4A/D4B, `hr_l1_63`.)
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { HR_DIRECTORY_STATUSES } from "../../constants";
 
 const LABELS: Record<string, string> = {
   prehire: "Not started yet",
-  pending: "Not started yet",
   active: "Active",
   on_leave: "On leave",
   terminated: "Former",
@@ -37,11 +47,14 @@ const LABELS: Record<string, string> = {
 /** Semantic tokens only. `prehire` and `on_leave` are FACTS, never warnings. */
 const TONES: Record<string, string> = {
   prehire: "border-border bg-muted/60 text-muted-foreground",
-  pending: "border-border bg-muted/60 text-muted-foreground",
   active: "border-transparent bg-success/15 text-success",
   on_leave: "border-border bg-muted/60 text-muted-foreground",
   terminated: "border-border bg-muted/60 text-muted-foreground",
 };
+
+/** Counted, not just logged — so a regression is a number somebody can read. */
+let offVocabularyRenders = 0;
+const screamedFor = new Set<string>();
 
 export function HrStatusChip({
   status,
@@ -51,15 +64,34 @@ export function HrStatusChip({
   className?: string;
 }) {
   if (!status) return null;
-  const label = LABELS[status] ?? status.replace(/_/g, " ");
+
+  const known = (HR_DIRECTORY_STATUSES as readonly string[]).includes(status);
+  if (!known) {
+    offVocabularyRenders += 1;
+    if (!screamedFor.has(status)) {
+      screamedFor.add(status);
+      // eslint-disable-next-line no-console
+      console.error(
+        `[HrStatusChip] OFF-VOCABULARY STATUS "${status}" (render #${offVocabularyRenders}). ` +
+          `The doors may only emit ${HR_DIRECTORY_STATUSES.join(" | ")}. A raw ` +
+          `hr.employment.status enum value reaching this chip is the D4A/D4B defect ` +
+          `returning — see migration hr_l1_63.`,
+      );
+    }
+  }
+
+  const label = known ? LABELS[status] : `⚠ ${status.replace(/_/g, " ")}`;
   return (
     <Badge
       variant="outline"
       className={cn(
         "px-1.5 py-0 text-[0.6875rem] font-normal",
-        TONES[status] ?? "border-border text-muted-foreground",
+        known
+          ? TONES[status]
+          : "border-destructive bg-destructive/10 text-destructive",
         className,
       )}
+      title={known ? undefined : `Unrecognised status "${status}" — server bug (hr_l1_63).`}
     >
       {label}
     </Badge>

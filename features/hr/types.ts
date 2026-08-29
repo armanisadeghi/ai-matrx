@@ -382,7 +382,20 @@ export type HrProfileHeader = {
   party_id: string | null;
   /** Absent — not null — unless the viewer is self or hr_admin. See `legal_name`. */
   login_user_id?: string | null;
-  status: string | null;
+  /**
+   * 🚨 THE DERIVED VOCABULARY, NEVER THE RAW SPELL ENUM (D4B, migration
+   * `hr_l1_63`). This was typed `string | null`, and that looseness is what let
+   * the defect typecheck: the server used to coalesce the RAW
+   * `hr.employment.status` enum (`pending|active|on_leave|suspended|terminated`)
+   * over the derivation, so `pending` reached this field — and `HrStatusChip`
+   * captioned it "Not started yet" for a person whose hire date had already
+   * arrived. The header now always answers through
+   * `hr.employee_directory_status(employee_id, as_of)`, the same function the
+   * directory row answers through, so this is the same four-value union
+   * `HrDirectoryRow.directory_status` carries. Anything else is a server bug,
+   * and this type is what makes it one at compile time.
+   */
+  status: HrDirectoryStatus | null;
   spell_number: number | null;
   hire_date: string | null;
   worker_class: HrWorkerClass | null;

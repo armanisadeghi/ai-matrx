@@ -46,7 +46,7 @@ import { join, relative, sep } from "node:path";
 const REPO = join(__dirname, "..", "..", "..");
 
 /** The two trees the HR module's own navigation is written in. */
-const TREES = [join("features", "hr"), join("app", "(core)", "hr")];
+const TREES = ["features", "app", "components", "lib"];
 
 /**
  * The URL BUILDERS. These files exist to assemble `/hr/*` strings; banning the
