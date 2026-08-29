@@ -7,11 +7,11 @@ import {
 import { parseAutomationToml } from "./check-manifest";
 
 describe("Pattern Patrol typed manifest", () => {
-  it("owns ten unique product patrols plus fleet health", () => {
-    expect(PATROLS).toHaveLength(10);
-    expect(new Set(PATROLS.map((patrol) => patrol.patrolId)).size).toBe(10);
-    expect(new Set(PATROLS.map((patrol) => patrol.automationId)).size).toBe(10);
-    expect(automationUpdateSpecs()).toHaveLength(11);
+  it("owns thirteen unique product patrols plus fleet health", () => {
+    expect(PATROLS).toHaveLength(13);
+    expect(new Set(PATROLS.map((patrol) => patrol.patrolId)).size).toBe(13);
+    expect(new Set(PATROLS.map((patrol) => patrol.automationId)).size).toBe(13);
+    expect(automationUpdateSpecs()).toHaveLength(14);
   });
 
   it("generates every required common contract once per product prompt", () => {
@@ -62,6 +62,18 @@ describe("Pattern Patrol typed manifest", () => {
     expect(
       PATROLS.find((patrol) => patrol.patrolId === "P8")?.runInstruction,
     ).toContain("every verified generic loader automatically");
+  });
+
+  it("keeps P5's compact two-icon copy contract in the typed prompt source", () => {
+    const p5 = PATROLS.find((patrol) => patrol.patrolId === "P5");
+    expect(p5?.runInstruction).toContain("compact two-icon CopyButtons pair");
+    expect(p5?.runInstruction).toContain("JSON inside the Copy-for-AI dropdown");
+    expect(p5?.runInstruction).toContain("Never create large or visibly labeled copy buttons");
+
+    const livePrompt = automationUpdateSpecs().find(
+      (spec) => spec.id === "pattern-patrol-p5-copy-everywhere",
+    )?.prompt;
+    expect(livePrompt).toContain(p5?.runInstruction);
   });
 
   it("generates a registry row for every automation", () => {

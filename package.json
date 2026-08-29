@@ -210,7 +210,7 @@
         "validate:local": "node scripts/validate.mjs --local",
         "validate:no-sync": "node scripts/validate.mjs --no-sync",
         "validate:no-lint": "node scripts/validate.mjs --no-lint",
-        "sync:matrx-packages": "pnpm update \"@ai-matrx/*\" --latest && pnpm check:matrx-packages",
+        "sync:matrx-packages": "pnpm update \"@ai-matrx/*\" && pnpm check:matrx-packages",
         "check:matrx-packages": "node scripts/check-matrx-packages.mjs",
         "sync-types": "pnpm sync:matrx-packages && node scripts/sync-types.mjs",
         "sync-types:local": "pnpm sync:matrx-packages && node scripts/sync-types.mjs --local",

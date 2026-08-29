@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import NodeDialog, { type NodeDialogState } from "./NodeDialog";
 import TaxonomyMap from "./TaxonomyMap";
 import TaxonomyTree from "./TaxonomyTree";
@@ -86,7 +87,13 @@ export default function TaxonomyAdminClient() {
   }, [rows]);
 
   const handleDelete = async (node: TaxonomyTreeNode) => {
-    if (!window.confirm(`Delete ${node.level} "${node.name}" (${node.slug})?`)) return;
+    const approved = await confirm({
+      title: `Delete ${node.level} "${node.name}"?`,
+      description: `This removes ${node.slug} from the feature registry.`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!approved) return;
     const supabase = createClient();
     const { error } = await supabase.rpc("admin_taxonomy_delete", { p_id: node.id });
     if (error) {

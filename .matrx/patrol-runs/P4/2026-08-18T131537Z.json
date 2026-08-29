@@ -89,6 +89,22 @@
       },
       "previousEventHash": "3313b6892ffdd24c122dea31a954626a9007d63fc08c51ed99ebde89454fd4d9",
       "eventHash": "0aa7333885e27f9d78928c9d2d85e9762801d9ac47d2a86fe5b0d8fc1b674184"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-29T14:21:56.488Z",
+      "actor": "pattern-patrol-fleet-health",
+      "summary": "Delivered certified P4 detector repair; first shipped in v0.4.790; 48 exception decisions remain open",
+      "evidence": [],
+      "delivery": {
+        "candidateSha": "86fe855c6465c53464fe77ef8875fc25dff3010c",
+        "preservedRef": "refs/heads/patrol-runs/P4/2026-08-18T131537Z",
+        "integratedSha": "f290fda8cb9902673e524041d4d545f597474aa9",
+        "release": "v0.4.790"
+      },
+      "previousEventHash": "0aa7333885e27f9d78928c9d2d85e9762801d9ac47d2a86fe5b0d8fc1b674184",
+      "eventHash": "8dc295ae9564f1b32b1451ba2764c7496c6f48ae7b09b65302fb234e258461d3"
     }
   ]
 }

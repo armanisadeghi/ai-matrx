@@ -797,7 +797,7 @@ function CropOverlay({
           </Button>
           {savedId ? (
             <span className="text-[11px] text-green-600 dark:text-green-400">
-              Saved as document ✓
+              Saved as document
             </span>
           ) : (
             <Button
@@ -975,7 +975,7 @@ function PageReorderView({
             </Button>
             {savedId ? (
               <span className="text-[11px] text-green-600 dark:text-green-400">
-                Saved ✓
+                Saved
               </span>
             ) : (
               <Button

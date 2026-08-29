@@ -100,7 +100,7 @@ export default function FactCheckerApp({
             rateLimitInfo.remaining <= 2 &&
             rateLimitInfo.remaining > 0 && (
               <p className="text-xs text-amber-600 dark:text-amber-400 px-1">
-                ⚠️ {rateLimitInfo.remaining} free{" "}
+                {rateLimitInfo.remaining} free{" "}
                 {rateLimitInfo.remaining === 1 ? "check" : "checks"} left.{" "}
                 <a href="/sign-up" className="underline font-semibold">
                   Sign up for unlimited.

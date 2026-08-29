@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P7",
+  "runId": "01a00ab2-19eb-73c3-bb37-c2b6cacde9f9",
+  "baseSha": "a88478e861364e6bd95bae53982b28f61cadb4fd",
+  "createdAt": "2026-08-29T14:24:21.227Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-29T14:24:21.227Z",
+      "actor": "pattern-patrol-p7-worker",
+      "summary": "Resumed the usage-limit-aborted P7 scheduled run and opened the missing controller-era permanent record.",
+      "evidence": [
+        "The prior task stopped before creating P7/latest.json, refreshing its report, memory, or inbox; that abort is recorded as orchestration failure, not a clean run.",
+        "Fresh isolated origin/main baseline passed type-check and scope-aware detection found two executable browser-native confirms in two files."
+      ],
+      "previousEventHash": null,
+      "eventHash": "9c4a76dadee56ef096715b09075a78d7869a1f5dc5f0da289c50a6b1b89a72ee"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-29T14:24:21.763Z",
+      "actor": "pattern-patrol-p7-worker",
+      "summary": "Replaced both verified browser-native confirms with the canonical awaited destructive confirm host.",
+      "evidence": [
+        "Taxonomy deletion and kind-variant deletion preserve their original yes/no acknowledgement boundary and destructive action ordering.",
+        "No product policy, permissions, data meaning, chunk boundary, or shared primitive changed."
+      ],
+      "previousEventHash": "9c4a76dadee56ef096715b09075a78d7869a1f5dc5f0da289c50a6b1b89a72ee",
+      "eventHash": "0db5834922e81524b12d12044a667399219af52655e9891bb9de48d55092a8ef"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-29T14:25:11.505Z",
+      "actor": "pattern-patrol-p7-worker",
+      "summary": "Exact two-file P7 candidate is ready for independent adversarial certification.",
+      "evidence": [
+        "Baseline to post: pnpm type-check PASS to PASS; scope-aware P7 ESLint findings 4 to 0.",
+        "The only changed product behavior is replacement of blocking native browser chrome with the canonical awaited destructive confirmation dialog."
+      ],
+      "previousEventHash": "0db5834922e81524b12d12044a667399219af52655e9891bb9de48d55092a8ef",
+      "eventHash": "d9490610dc5415d9ef7a3529115ce09c1f1b8f4e7d135230ba1a051ba55f7ec8"
+    }
+  ]
+}

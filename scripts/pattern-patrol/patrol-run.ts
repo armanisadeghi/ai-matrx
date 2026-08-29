@@ -53,7 +53,7 @@ function now(args: Args): string {
 
 function usage(): never {
   throw new Error(
-    "usage: patrol-run init|transition|verify|certify|deliver|record-escape --patrol P# --run <task-id> [command options]",
+    "usage: patrol-run init|transition|verify|certify|deliver|record-escape|reconcile --patrol P# --run <task-id> [command options]",
   );
 }
 
@@ -243,6 +243,37 @@ function main(): void {
           integratedSha: one(args, "integrated-sha"),
           release: one(args, "release"),
           reason: one(args, "reason"),
+        },
+      });
+      publishPatrolRunAuthority({
+        repoRoot,
+        record: next,
+        candidateSha,
+        authorityRef,
+        actor,
+      });
+      return savePatrolRun(repoRoot, next);
+    });
+    console.log(savedPath);
+    return;
+  }
+  if (args.command === "reconcile") {
+    const authorityRef = one(args, "authority-ref");
+    const candidateSha = one(args, "candidate");
+    const actor = one(args, "actor");
+    const escapedEventHash = one(args, "escaped-event-hash");
+    const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
+      const record = loadPatrolRun(path);
+      const next = appendPatrolRunEvent(record, {
+        state: "reconciled",
+        at: now(args),
+        actor,
+        summary: one(args, "summary"),
+        evidence: many(args, "evidence"),
+        reconciliation: {
+          candidateSha,
+          escapedEventHash,
+          checks: many(args, "check"),
         },
       });
       publishPatrolRunAuthority({

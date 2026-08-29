@@ -1277,7 +1277,7 @@ export function ImageAssetUploader({
                 className="text-xs px-2 py-0.5 rounded-full border border-success/40 text-success bg-success/5"
                 title={vLabel}
               >
-                {vLabel} ✓
+                {vLabel}
               </span>
             ))}
           </div>

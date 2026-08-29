@@ -124,7 +124,7 @@ export const PATROLS = [
     rrule: "FREQ=WEEKLY;BYDAY=WE;BYHOUR=0;BYMINUTE=10",
     cadence: "Wednesdays 12:10 AM",
     runInstruction:
-      "Apply the canonical Copy and Copy for AI affordances automatically when the data surface and placement are established. Missing primitives become focused tasks; escalate only competing interaction/layout choices.",
+      "Apply the canonical compact two-icon CopyButtons pair automatically when the data surface and placement are established: one icon-only Copy control plus one icon-only Copy-for-AI control, with JSON inside the Copy-for-AI dropdown rather than a third control. Never create large or visibly labeled copy buttons. Missing primitives become focused tasks; escalate only competing interaction/layout choices.",
   },
   {
     patrolId: "P6",
