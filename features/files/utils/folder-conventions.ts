@@ -73,6 +73,12 @@ export const CloudFolders = {
    *  Captures). User-produced, so visible. */
   PRODUCT_CAPTURES: "Product Captures",
 
+  /** Commerce intake (W4 capture app): per-asset media filed under
+   *  `Commerce Intake/<orgId>/<batchId>/<asset-leaf>` via
+   *  `folderForIntakeAsset` (same server one-path-one-org rule as Captures).
+   *  User-produced, so visible. */
+  COMMERCE_INTAKE: "Commerce Intake",
+
   /**
    * Static app assets (sounds, hero images, model-card thumbnails, demo
    * data) owned by an admin service account and rendered globally.
@@ -379,6 +385,21 @@ export function folderForProductCaptureItem(orgId: string, leaf: string): string
     .replace(/[^A-Za-z0-9._@-]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return `${CloudFolders.PRODUCT_CAPTURES}/${orgId.trim()}/${safe}`;
+}
+
+/**
+ * Commerce-intake artifact folder for one asset (or the batch-level stream in
+ * untracked mode — pass the batch id as `leaf`). Fixed at creation, NEVER
+ * renamed — a QR/serial that arrives later lives on identifier rows only
+ * (PROTOTYPE-CONCEPTS P13: the cloud path is never renamed).
+ */
+export function folderForIntakeAsset(
+  orgId: string,
+  batchId: string,
+  leaf: string,
+): string {
+  const safe = leaf.replace(/[^A-Za-z0-9._@-]+/g, "-").replace(/^-+|-+$/g, "");
+  return `${CloudFolders.COMMERCE_INTAKE}/${orgId.trim()}/${batchId.trim()}/${safe || batchId.trim()}`;
 }
 
 // ---------------------------------------------------------------------------
