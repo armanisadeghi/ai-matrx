@@ -3,7 +3,7 @@ import { AgentSaveStatus } from "../shared/AgentSaveStatus";
 import { AgentOptionsMenu } from "../shared/AgentOptionsMenu";
 import Link from "next/link";
 import { AgentSelectorIsland } from "../shared/AgentSelectorIsland";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { AgentNewRunButton } from "../shared/AgentNewRunButton";
 
 interface AgentRunHeaderProps {

@@ -19,7 +19,7 @@ import {
 import {
   LayersTapButton,
   PanelRightTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { cn } from "@/lib/utils";
 
 function useCanvasHeaderToggle() {

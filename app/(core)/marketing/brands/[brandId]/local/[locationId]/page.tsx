@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import LocalListingsWorkspace from "@/features/marketing/local/LocalListingsWorkspace";
 import { marketingRoutes } from "@/features/marketing/lib/routes";

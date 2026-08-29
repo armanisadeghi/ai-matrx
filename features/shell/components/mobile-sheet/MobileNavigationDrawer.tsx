@@ -7,7 +7,7 @@ import {
   BottomSheet,
   BottomSheetBody,
 } from "@/components/official/bottom-sheet/BottomSheet";
-import { XTapButton } from "@/components/icons/tap-buttons";
+import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import type {
   ShellNavChild,
   ShellNavItem,

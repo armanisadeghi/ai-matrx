@@ -43,7 +43,7 @@ import {
   MoreHorizontalTapButton,
   PanelLeftTapButton,
   PanelRightTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { PageJumperTapGroup } from "@/features/pdf/components/PageJumperTapGroup";
 import { downloadFile } from "@/features/files/api/files";
 import { useOpenShareModalWindow } from "@/features/overlays/openers/shareModalWindow";

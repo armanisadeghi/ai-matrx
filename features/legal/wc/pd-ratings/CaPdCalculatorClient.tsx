@@ -16,8 +16,8 @@ import {
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
   BottomSheet,
   BottomSheetHeader,

@@ -20,7 +20,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { ZapTapButton } from "@/components/icons/tap-buttons";
+import { ZapTapButton } from "@ai-matrx/tap-target/buttons";
 import { useQuickActions } from "../hooks/useQuickActions";
 
 export function QuickActionsMenu() {

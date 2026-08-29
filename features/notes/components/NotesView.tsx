@@ -43,8 +43,8 @@ import {
   HistoryTapButton,
   RetryTapButton,
   LoadingTapButton,
-} from "@/components/icons/tap-buttons";
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { MandateDoorLink } from "@/features/agents/mandates/components/MandateDoorLink";
 import {

@@ -35,7 +35,7 @@ import { ArtifactRenderDynamic as ArtifactRender } from "@/features/canvas/artif
 import { hasArtifactRenderer } from "@/features/canvas/artifact-types/artifact-renderer-keys";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 // ── CanvasItemPreview ─────────────────────────────────────────────────────────
 

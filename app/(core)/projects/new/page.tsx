@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ProjectCreatePanel } from "@/features/projects/components/ProjectCreatePanel";
 import type { Project } from "@/features/projects/types";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 export default function NewProjectPage() {
   const router = useRouter();

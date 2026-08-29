@@ -10,7 +10,7 @@ import {
 import { FlashcardGradeButtonRow } from "@/features/flashcards/components/study/FlashcardGradeButton";
 import { VoiceTestButton } from "@/features/flashcards/fast-fire/voice-test/VoiceTestButton";
 import { FlashcardGoDeeperTrigger } from "./FlashcardGoDeeperTrigger";
-import { WrenchTapButton } from "@/components/icons/tap-buttons";
+import { WrenchTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   FlashcardFaceImage,
   hasFaceImage,

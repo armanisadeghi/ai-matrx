@@ -13,7 +13,7 @@ import {
   PanelLeftTapButton,
   MessageTapButton,
   HistoryTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectSideOpen,

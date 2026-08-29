@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { CreateAgentAppFormWrapper } from "@/features/agent-apps/components/CreateAgentAppFormWrapper";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 interface NewAgentAppPageProps {
   searchParams: Promise<{ agent_id?: string }>;

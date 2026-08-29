@@ -12,7 +12,7 @@ import React, { useEffect, useRef, useCallback } from "react";
 import {
   Volume2TapButton,
   PauseTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { useSpeech } from "@/features/audio/service/useSpeech";
 import type { SpeakerVariant } from "../types";
 

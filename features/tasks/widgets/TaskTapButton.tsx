@@ -5,7 +5,7 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import {
   CheckSquareTapButton,
   LinkTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import {
   Popover,
   PopoverAnchor,

@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import {
   BugTapButton,
   type TapButtonProps,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 

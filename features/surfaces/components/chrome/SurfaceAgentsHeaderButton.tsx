@@ -18,7 +18,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Loader2 } from "lucide-react";
 
-import { RobotTapButton } from "@/components/icons/tap-buttons";
+import { RobotTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   Popover,
   PopoverContent,

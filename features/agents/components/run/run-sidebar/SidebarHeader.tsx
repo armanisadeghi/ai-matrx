@@ -3,7 +3,7 @@ import { AgentSelectorIsland } from "../../shared/AgentSelectorIsland";
 import {
   PanelLeftTapButton,
   ChevronLeftTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { PowerTapButton } from "@/components/icons/ai-tap-buttons";
 import {
   SearchGroup,

@@ -33,7 +33,7 @@ import { isGovernedActionDenial } from "@/features/access-gate/lib/governedActio
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { RefreshCwTapButton } from "@/components/icons/tap-buttons";
+import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";

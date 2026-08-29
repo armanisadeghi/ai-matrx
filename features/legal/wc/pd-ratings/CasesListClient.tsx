@@ -27,7 +27,7 @@ import {
 } from "./api/claims";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CrumbTrailHeader } from "@/features/shell/components/header/templates/CrumbTrailHeader";
-import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 
 const CASES_TRAIL = [
   { label: "Legal", href: "/legal" },

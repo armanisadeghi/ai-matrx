@@ -11,7 +11,7 @@
 'use client';
 
 import React, { useState, useCallback, lazy, Suspense } from 'react';
-import { Volume2TapButton } from '@/components/icons/tap-buttons';
+import { Volume2TapButton } from '@ai-matrx/tap-target/buttons';
 import type { SpeakerVariant } from '../types';
 
 export interface SpeakerButtonProps {

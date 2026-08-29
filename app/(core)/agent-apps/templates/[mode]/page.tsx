@@ -9,7 +9,7 @@ import type { AppDisplayMode } from "@/features/agent-apps/types";
 import type { Metadata } from "next";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 const VALID_MODES: AppDisplayMode[] = [
   "form",

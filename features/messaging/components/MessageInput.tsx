@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SendTapButton } from "@/components/icons/tap-buttons";
+import { SendTapButton } from "@ai-matrx/tap-target/buttons";
 import { AttachReferenceButton } from "@/features/matrx-envelope/components/AttachReferenceButton";
 import { ReferencePickerChip } from "@/features/matrx-envelope/components/ReferencePickerChip";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";

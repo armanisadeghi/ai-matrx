@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { DISPLAY_MODE_OPTIONS } from "@/features/agent-apps/sample-code/templates";
 import PageHeader from "@/features/shell/components/header/PageHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 
 const MODE_ICONS: Record<string, string> = {

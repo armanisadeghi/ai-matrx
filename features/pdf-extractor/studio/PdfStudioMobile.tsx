@@ -44,7 +44,7 @@ import { useRouter } from "next/navigation";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { cn } from "@/lib/utils";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
 import { PdfAiContent } from "../components/PdfAiContent";

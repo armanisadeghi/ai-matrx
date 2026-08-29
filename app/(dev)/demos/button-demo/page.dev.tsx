@@ -1,4 +1,4 @@
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
   OpenAITapButton,
   AnthropicTapButton,
@@ -79,8 +79,8 @@ import {
   BuildTapButton,
   RunTapButton,
   HistoryTapButton,
-} from "@/components/icons/tap-buttons";
-import { TapTargetLabeled as Labeled } from "@/components/icons/TapTargetLabeled";
+} from "@ai-matrx/tap-target/buttons";
+import { TapTargetLabeled as Labeled } from "@ai-matrx/tap-target";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/demos/button-demo", {

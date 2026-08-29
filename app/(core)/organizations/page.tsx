@@ -30,7 +30,7 @@ import {
 import { format } from "date-fns";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

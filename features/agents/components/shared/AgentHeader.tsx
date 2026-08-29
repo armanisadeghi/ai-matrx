@@ -6,7 +6,7 @@ import { AgentSaveStatus } from "./AgentSaveStatus";
 import { AgentOptionsMenu } from "./AgentOptionsMenu";
 import { AgentReferenceCopyButton } from "./AgentReferenceCopyButton";
 import { AgentHeaderMobile } from "./AgentHeaderMobile";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 interface AgentHeaderProps {
   agentId: string;

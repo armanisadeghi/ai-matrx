@@ -10,7 +10,7 @@ import { Camera, TableProperties } from "lucide-react";
 import {
   TapTargetButton,
   TapTargetButtonSolid,
-} from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target";
 import { ProductCaptureHeader } from "@/features/product-capture/components/ProductCaptureHeader";
 import { AllItemsTable } from "@/features/product-capture/components/AllItemsTable";
 

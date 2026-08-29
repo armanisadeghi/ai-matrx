@@ -95,7 +95,7 @@ import {
   type LibraryStatusFilter,
 } from "@/features/rag/constants/libraryStatusFilters";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
-import { TapTargetButton, TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import type {
   DocStatus,
   LibraryDocSummary,

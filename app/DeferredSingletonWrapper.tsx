@@ -30,6 +30,11 @@ import "@/features/window-panels/utils/lazy-bundle-guard";
 // component resolves an `svg:` icon value. The package ships EMPTY; without
 // this the icons would silently fall back.
 import "@/utils/icons/matrx-public-svg-registry";
+// Side-effect import: registers next/link into @ai-matrx/tap-target's link
+// registry for the CLIENT graph (Providers.tsx covers the server graph) —
+// unregistered, internal-href tap buttons render plain <a> and would
+// hydration-mismatch against the SSR output.
+import "@/components/icons/tap-target-setup";
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";

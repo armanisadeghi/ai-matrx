@@ -39,7 +39,7 @@ import {
   MoreHorizontalTapButton,
   SearchTapButton,
   XTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,7 +47,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import { FileContextMenu } from "@/features/files/components/core/FileContextMenu/FileContextMenu";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";

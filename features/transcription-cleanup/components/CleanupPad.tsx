@@ -88,7 +88,7 @@ import {
   type MicrophoneIconButtonHandle,
 } from "@/features/audio/components/MicrophoneIconButton";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
-import { FilesTapButton } from "@/components/icons/tap-buttons";
+import { FilesTapButton } from "@ai-matrx/tap-target/buttons";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import {
   useFloatingRunWindow,

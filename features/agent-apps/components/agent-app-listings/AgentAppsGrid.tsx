@@ -81,7 +81,7 @@ import {
   createAgentAppsScope,
 } from "@/features/surfaces/manifests/agent-apps.manifest";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { RefreshCwTapButton, XTapButton } from "@/components/icons/tap-buttons";
+import { RefreshCwTapButton, XTapButton } from "@ai-matrx/tap-target/buttons";
 import { AgentAppsGridSkeleton } from "./AgentAppsGridSkeleton";
 
 const SORT_OPTIONS: { value: AgentAppSortOption; label: string }[] = [

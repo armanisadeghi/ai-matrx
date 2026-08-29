@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BrainCircuit, Loader2, MonitorPlay, Save } from "lucide-react";
 
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { useIsMobile } from "@/hooks/use-mobile";

@@ -42,7 +42,7 @@ import {
   HistoryTapButton,
   PencilTapButton,
   SettingsTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 
 interface AgentAppCardProps {
   app: AgentAppCardModel;

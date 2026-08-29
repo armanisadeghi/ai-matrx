@@ -62,6 +62,15 @@ interface NullRow {
   /** true when the DDL guard's entity-looking-or-registered test also matches. */
   guarded_class: boolean;
 }
+/** A live CHECK constraint mentioning organization_id — the EVIDENCE half of an
+ *  exemption. Added to the snapshot 2026-08-29 (migration
+ *  migrations/org_null_ratchet_constraint_evidence.sql). */
+interface OrgConstraint {
+  schema: string;
+  table: string;
+  constraint: string;
+  definition: string;
+}
 interface OrgNullSnapshot {
   generated_at: string;
   system_org_id: string;
@@ -69,9 +78,18 @@ interface OrgNullSnapshot {
   null_org_rows_total: number;
   null_org_rows: NullRow[];
   nullable_org_columns: { schema: string; table: string }[];
+  org_constraints?: OrgConstraint[];
 }
 interface KnownWriter {
   table: string;
+  reason: string;
+}
+/** A table where NULL is not debt but the SHAPE THE DATABASE DEMANDS. */
+interface OrgLessByConstraint {
+  table: string;
+  /** The live CHECK constraint that forces it. Verified against the catalog on
+   *  every run — an exemption whose constraint is gone is not an exemption. */
+  constraint: string;
   reason: string;
 }
 interface Baseline {
@@ -88,6 +106,12 @@ interface Baseline {
    * at all, and why a reason is mandatory.
    */
   known_null_org_writers: KnownWriter[];
+  /**
+   * Tables where a NULL organization_id is REQUIRED by a live CHECK constraint
+   * — see honourExemptions() for the full reasoning and why this is not just
+   * another allowlist.
+   */
+  org_less_by_constraint?: OrgLessByConstraint[];
 }
 
 const key = (t: { schema: string; table: string }) => `${t.schema}.${t.table}`;
@@ -111,9 +135,72 @@ const key = (t: { schema: string; table: string }) => `${t.schema}.${t.table}`;
  * the record that the exception was reviewed, not the exception itself. An
  * entry is removed when the write path is fixed, never to quiet a gate.
  */
+/**
+ * THE CONSTRAINT-BACKED EXEMPTION, and why it is not "the allowlist again".
+ *
+ * Five tables in this ratchet's scan set do not use `organization_id` as an
+ * OWNER column at all, and a live CHECK constraint says so in SQL:
+ *
+ *   platform.retention_policy      scope selector — 'global'/'taxonomy_node'/
+ *                                  'entity' policies REQUIRE org IS NULL
+ *   platform.entity_grants         grant TARGET — 'global'/'industry' audiences
+ *                                  REQUIRE org IS NULL
+ *   users.integration_connections  XOR owner — owner_type='user' REQUIRES NULL
+ *   users.user_secrets             XOR owner — a personal secret REQUIRES NULL
+ *   users.credential_items         XOR owner — same
+ *
+ * On these, "fixing" a row by stamping an org does not produce a better row; it
+ * produces a CHECK VIOLATION. Counting them as debt made the ratchet's number
+ * grow every time a user saved a personal credential — a gate that cries wolf
+ * is a gate somebody eventually mutes, which is the exact failure this whole
+ * ratchet exists to prevent.
+ *
+ * 🚨 An exemption is only as good as its EVIDENCE. A plain allowlist is an
+ * assertion ("trust me"), and assertions rot in silence: drop the constraint in
+ * some unrelated migration and the entry keeps excusing real debt forever —
+ * the silent-green pathology moved one layer down. So every entry NAMES the
+ * constraint it rests on, and this function checks that constraint against the
+ * live catalog (`org_constraints`, from the snapshot RPC) on EVERY run. A
+ * missing constraint does not quietly downgrade to "still exempt": it SCREAMS,
+ * and in --strict it blocks. Human judgement supplies the reason; the database
+ * supplies the premise; neither is trusted on its own.
+ *
+ * An entry is removed when the table's design changes, never to quiet a gate.
+ */
+function honourExemptions(
+  base: Baseline,
+  snap: OrgNullSnapshot,
+): { honoured: Map<string, OrgLessByConstraint>; broken: OrgLessByConstraint[] } {
+  const claimed = base.org_less_by_constraint ?? [];
+  const live = new Set(
+    (snap.org_constraints ?? []).map((c) => `${c.schema}.${c.table}:${c.constraint}`),
+  );
+  const honoured = new Map<string, OrgLessByConstraint>();
+  const broken: OrgLessByConstraint[] = [];
+  for (const e of claimed) {
+    if (live.has(`${e.table}:${e.constraint}`)) honoured.set(e.table, e);
+    else broken.push(e);
+  }
+  return { honoured, broken };
+}
+
 function readBaseline(): Baseline {
   const base = JSON.parse(readFileSync(BASELINE_PATH, "utf8")) as Baseline;
   const writers = base.known_null_org_writers ?? [];
+  // Same reason-required contract as the writers list, for the same reason:
+  // the file is the record that an exception was REVIEWED, not the exception.
+  const badExempt = (base.org_less_by_constraint ?? []).filter(
+    (e) => !e.table || !e.constraint || !e.reason || e.reason.trim().length < 12,
+  );
+  if (badExempt.length) {
+    console.error(
+      `${C.red}[FAIL]${C.reset} org_less_by_constraint entries missing a table, constraint, or real reason: ${badExempt.map((e) => e.table || "?").join(", ")}`,
+    );
+    console.error(
+      `  ${C.dim}Every exemption must NAME the CHECK constraint that forces the NULL — that named constraint is what gets verified live.${C.reset}`,
+    );
+    process.exit(2);
+  }
   const bad = writers.filter((w) => !w.table || !w.reason || w.reason.trim().length < 12);
   if (bad.length) {
     console.error(
@@ -150,10 +237,12 @@ function report(snap: OrgNullSnapshot, base: Baseline): boolean {
   const fixedCols = [...baseCols].filter((c) => !liveCols.includes(c)).sort();
   const rowGrowth = snap.null_org_rows_total - base.null_org_rows_total;
   const known = new Map(base.known_null_org_writers.map((w) => [w.table, w.reason]));
-  // Growth attributable to a KNOWN live writer never blocks; everything else does.
+  const { honoured, broken } = honourExemptions(base, snap);
+  // Growth never blocks when it is attributable to a KNOWN live writer, or to a
+  // table whose NULL is demanded by a live CHECK constraint. Everything else does.
   const unexplained = snap.null_org_rows
     .map((r) => ({ ref: key(r), delta: r.null_rows - (base.null_org_rows_by_table[key(r)] ?? 0) }))
-    .filter((r) => r.delta > 0 && !known.has(r.ref));
+    .filter((r) => r.delta > 0 && !known.has(r.ref) && !honoured.has(r.ref));
   let blocking = false;
 
   console.log("");
@@ -170,6 +259,28 @@ function report(snap: OrgNullSnapshot, base: Baseline): boolean {
     );
     if (STRICT) blocking = true;
   }
+
+  // 🚨 A claimed exemption whose CHECK constraint is GONE is not an exemption —
+  // it is unexcused debt wearing an excuse, and it must be louder than the debt
+  // itself. This is the assertion that stops the exemption list from becoming
+  // the next silent green.
+  if (broken.length) {
+    console.log("");
+    console.log(
+      `  ${STRICT ? `${C.red}[FAIL]` : `${C.yellow}[WARN]`}${C.reset} ${C.bold}NO NULL ORG EXEMPTION BROKEN${C.reset} — ` +
+        `${broken.length} table(s) claim a constraint that no longer exists:`,
+    );
+    for (const e of broken) {
+      console.log(`  ${C.red}  ${e.table}${C.reset} ${C.dim}claims${C.reset} ${e.constraint} ${C.dim}— not in the live catalog${C.reset}`);
+    }
+    console.log(
+      `  ${C.cyan}     Either the constraint was dropped (the table is now real debt — remove the${C.reset}`,
+    );
+    console.log(
+      `  ${C.cyan}     exemption and fix the writer) or it was renamed (re-point the entry).${C.reset}`,
+    );
+    if (STRICT) blocking = true;
+  }
   console.log("");
 
   // ── ROWS ──────────────────────────────────────────────────────────────────
@@ -179,7 +290,14 @@ function report(snap: OrgNullSnapshot, base: Baseline): boolean {
   } else {
     for (const r of snap.null_org_rows.sort((a, b) => b.null_rows - a.null_rows)) {
       const mark = r.guarded_class ? `${C.yellow}!${C.reset}` : `${C.dim}·${C.reset}`;
-      const live = known.has(key(r)) ? `  ${C.red}LIVE WRITER${C.reset}` : "";
+      // Exempt tables stay VISIBLE and labelled with the constraint that
+      // justifies them — an exemption you cannot see is indistinguishable from
+      // a gate that forgot to look.
+      const live = known.has(key(r))
+        ? `  ${C.red}LIVE WRITER${C.reset}`
+        : honoured.has(key(r))
+          ? `  ${C.dim}by-constraint: ${honoured.get(key(r))!.constraint}${C.reset}`
+          : "";
       console.log(`  ${mark} ${key(r).padEnd(46)} ${String(r.null_rows).padStart(8)}${live}`);
     }
   }
@@ -191,24 +309,52 @@ function report(snap: OrgNullSnapshot, base: Baseline): boolean {
     // may not hold a release hostage while its own fix is queued.
     blocking = blocking || (STRICT && unexplained.length > 0);
     console.log("");
-    console.log(
-      `${unexplained.length && STRICT ? C.red : C.yellow}${C.bold}  NO NULL ORG VIOLATED — ${rowGrowth} NEW NULL-org row(s) since the baseline.${C.reset}`,
-    );
+    // The headline counts what is actually WRONG. Leading with raw growth when
+    // most of it is constraint-mandated is how a gate teaches people to ignore
+    // it — the same cry-wolf dynamic that let 136 rows accumulate behind a
+    // green badge. Raw growth is still printed, just not as the accusation.
+    const unexplainedRows = unexplained.reduce((n, u) => n + u.delta, 0);
+    if (unexplainedRows > 0) {
+      console.log(
+        `${STRICT ? C.red : C.yellow}${C.bold}  NO NULL ORG VIOLATED — ${unexplainedRows} NEW unexplained NULL-org row(s) since the baseline.${C.reset}`,
+      );
+      console.log(
+        `  ${C.dim}(${rowGrowth} total new; the remainder is accounted for below.)${C.reset}`,
+      );
+    } else {
+      console.log(
+        `  ${C.green}${C.bold}No unexplained NULL-org growth.${C.reset} ${C.dim}${rowGrowth} new row(s), every one accounted for below.${C.reset}`,
+      );
+    }
     for (const [table, reason] of known) {
       console.log(`  ${C.red}known live writer:${C.reset} ${table}`);
       console.log(`  ${C.dim}    ${reason.slice(0, 150)}…${C.reset}`);
     }
+    // Growth on a constraint-backed table is not a violation at all — it is the
+    // table working. Named, with its verified constraint, so the number is
+    // explained rather than merely absorbed.
+    const byConstraint = snap.null_org_rows
+      .map((r) => ({ ref: key(r), delta: r.null_rows - (base.null_org_rows_by_table[key(r)] ?? 0) }))
+      .filter((r) => r.delta > 0 && honoured.has(r.ref));
+    for (const b of byConstraint) {
+      console.log(
+        `  ${C.dim}by-constraint (verified live):${C.reset} ${b.ref} +${b.delta} ${C.dim}— ${honoured.get(b.ref)!.constraint}${C.reset}`,
+      );
+    }
     if (!unexplained.length) {
       console.log(
-        `  ${C.yellow}All of it is attributable to a KNOWN live writer above — RED, but not blocking.${C.reset}`,
+        `  ${C.dim}Every new row is a KNOWN live writer or a verified by-constraint table. Not blocking.${C.reset}`,
       );
     } else {
       for (const u of unexplained) console.log(`  ${C.red}unexplained: ${u.ref} +${u.delta}${C.reset}`);
+      // The fix hint belongs with an actual defect. Printing it under a clean
+      // by-constraint report would tell the reader to "fix" rows the database
+      // requires to be exactly as they are.
+      console.log(`  ${C.cyan}fix: find the write path and give the row its organization. System/global/builtin${C.reset}`);
+      console.log(`  ${C.cyan}     content → the system org (${snap.system_org_id}). User content → the creator's${C.reset}`);
+      console.log(`  ${C.cyan}     personal org (public.ensure_personal_organization), or attach the${C.reset}`);
+      console.log(`  ${C.cyan}     public._stamp_org_default backstop. NULL is never the answer. (db-rules §2.)${C.reset}`);
     }
-    console.log(`  ${C.cyan}fix: find the write path and give the row its organization. System/global/builtin${C.reset}`);
-    console.log(`  ${C.cyan}     content → the system org (${snap.system_org_id}). User content → the creator's${C.reset}`);
-    console.log(`  ${C.cyan}     personal org (public.ensure_personal_organization), or attach the${C.reset}`);
-    console.log(`  ${C.cyan}     public._stamp_org_default backstop. NULL is never the answer. (db-rules §2.)${C.reset}`);
   } else if (rowGrowth < 0) {
     console.log(`  ${C.green}${-rowGrowth} fewer than baseline — shrink it: pnpm check:org-null --update-baseline${C.reset}`);
   } else {
@@ -251,10 +397,18 @@ async function main(): Promise<number> {
     const liveCols = snap.nullable_org_columns.map(key).sort();
     // A ratchet only ever tightens — per table, so shrinking one table can never
     // silently buy headroom for another that grew.
+    const { honoured: exempt } = honourExemptions(base, snap);
     const byTable: Record<string, number> = { ...base.null_org_rows_by_table };
     for (const r of snap.null_org_rows) {
       const ref = key(r);
-      byTable[ref] = Math.min(byTable[ref] ?? Number.POSITIVE_INFINITY, r.null_rows);
+      // A by-constraint table's NULL count is not debt — it rises whenever a
+      // user saves a personal credential. Pinning it to a historical low would
+      // manufacture permanent phantom growth and re-teach everyone to scroll
+      // past this gate, so those track CURRENT. Everything else only ratchets
+      // DOWN, and a broken exemption blocks before this line is ever reached.
+      byTable[ref] = exempt.has(ref)
+        ? r.null_rows
+        : Math.min(byTable[ref] ?? Number.POSITIVE_INFINITY, r.null_rows);
     }
     for (const ref of Object.keys(byTable)) {
       if (!snap.null_org_rows.some((r) => key(r) === ref)) delete byTable[ref]; // fixed to zero
@@ -278,10 +432,18 @@ async function main(): Promise<number> {
     console.log(JSON.stringify({ baseline: base, snapshot: snap }, null, 2));
     const liveCols = new Set(snap.nullable_org_columns.map(key));
     const known = new Set(base.known_null_org_writers.map((w) => w.table));
+    // Same exemption rules as the human report, so --json and the printed
+    // verdict can never disagree about what counts as growth.
+    const { honoured, broken } = honourExemptions(base, snap);
     const grew =
       snap.null_org_rows.some(
-        (r) => !known.has(key(r)) && r.null_rows > (base.null_org_rows_by_table[key(r)] ?? 0),
-      ) || [...liveCols].some((c) => !base.nullable_org_columns.includes(c));
+        (r) =>
+          !known.has(key(r)) &&
+          !honoured.has(key(r)) &&
+          r.null_rows > (base.null_org_rows_by_table[key(r)] ?? 0),
+      ) ||
+      [...liveCols].some((c) => !base.nullable_org_columns.includes(c)) ||
+      broken.length > 0;
     return STRICT && grew ? 1 : 0;
   }
 

@@ -33,8 +33,8 @@ const StackedVariableInputs = dynamic(
     ),
   { ssr: false },
 );
-import { TapTargetButtonTransparent } from "@/components/icons/TapTargetButton";
-import { PlusTapButton } from "@/components/icons/tap-buttons";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { PlusTapButton } from "@ai-matrx/tap-target/buttons";
 import { InputActionButtons } from "./InputActionButtons";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";

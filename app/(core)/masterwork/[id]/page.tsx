@@ -6,7 +6,7 @@
 
 import { use } from "react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { RulebookDetailPage } from "@/features/masterwork/components/detail/RulebookDetailPage";
 
 export default function RulebookRoute({

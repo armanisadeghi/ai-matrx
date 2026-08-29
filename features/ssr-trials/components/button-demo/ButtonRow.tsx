@@ -1,4 +1,4 @@
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
   BellTapButton,
   PlusTapButton,
@@ -11,7 +11,7 @@ import {
   RedoTapButton,
   CopyTapButton,
   TrashTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 
 export default function ButtonRow() {
   return (

@@ -39,13 +39,13 @@ const PublicVariableInputs = dynamic(
 import {
   TapTargetButtonTransparent,
   TapTargetButtonSolid,
-} from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target";
 import {
   PlusTapButton,
   ArrowUpTapButton,
   MicTapButton,
   MicOffTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import {
   Popover,
   PopoverContent,

@@ -15,7 +15,7 @@ jest.mock("@/features/matrx-envelope/components/ReferencePickerChip", () => ({
   ReferencePickerChip: () => null,
 }));
 
-jest.mock("@/components/icons/tap-buttons", () => ({
+jest.mock("@ai-matrx/tap-target/buttons", () => ({
   SendTapButton: ({ ariaLabel }: { ariaLabel: string }) => (
     <button aria-label={ariaLabel} />
   ),

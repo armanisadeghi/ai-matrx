@@ -9,8 +9,8 @@ import {
   ChevronRight,
   MoreHorizontal,
 } from "lucide-react";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import { TapTargetButtonTransparent } from "@/components/icons/TapTargetButton";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 import {
   ChevronLeftTapButton,
   ChevronRightTapButton,
-} from "@/components/icons/tap-buttons";
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target/buttons";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 
 export interface PageJumperTapGroupProps {
   /** 1-based page number, or null when no page is selected. */

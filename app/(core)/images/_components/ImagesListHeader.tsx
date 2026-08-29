@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { ImageIcon } from "lucide-react";
-import { PlusTapButton, ZapTapButton } from "@/components/icons/tap-buttons";
+import { PlusTapButton, ZapTapButton } from "@ai-matrx/tap-target/buttons";
 import { IMAGES_ROOT_PATH, findImagesRoute } from "./imagesRoutes";
 
 export function ImagesListHeader() {

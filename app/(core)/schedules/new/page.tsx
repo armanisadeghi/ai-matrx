@@ -5,7 +5,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { ScheduleForm } from "@/features/scheduling/components/form/ScheduleForm";
 
 // useSearchParams must sit under a Suspense boundary (repo precedent:

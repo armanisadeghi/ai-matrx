@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
-} from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target";
 import { LensChip as CanonicalLensChip } from "@/features/scopes/components/active-context/LensChip";
 import { nodeKey, summarizeSelection, type PickNode } from "./engine";
 import { KindGlyph } from "./parts";

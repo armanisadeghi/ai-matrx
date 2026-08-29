@@ -1,6 +1,6 @@
 "use client";
 
-import { GhostTapButton } from "@/components/icons/tap-buttons";
+import { GhostTapButton } from "@ai-matrx/tap-target/buttons";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { useChatIncognito } from "./ChatIncognitoProvider";
 

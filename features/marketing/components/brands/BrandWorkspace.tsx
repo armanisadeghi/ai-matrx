@@ -50,7 +50,7 @@ import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEdit
 import { GscPortfolioClassBar } from "@/features/marketing/search-console/components/ambassador/GscPortfolioClassBar";
 import { CaptureThumb } from "@/features/marketing/components/shared/CaptureThumb";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingBrandScope } from "@/features/surfaces/manifests/marketing-brand.manifest";
 import { buildBrandContextXml } from "@/features/marketing/lib/surface-context";

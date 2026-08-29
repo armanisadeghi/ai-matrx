@@ -29,7 +29,7 @@ import { History } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
 import { IconResolver } from "@ai-matrx/icons";
 import { cn } from "@/lib/utils";

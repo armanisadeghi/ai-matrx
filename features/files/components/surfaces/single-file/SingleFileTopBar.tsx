@@ -55,8 +55,8 @@ import { FileLineageChip } from "../FileLineageChip";
 import { encodeFolderPathSegments } from "@/features/files/utils/url-state";
 import { NavSidebar } from "../desktop/NavSidebar";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 
 export interface SingleFileTopBarProps {
   fileId: string;

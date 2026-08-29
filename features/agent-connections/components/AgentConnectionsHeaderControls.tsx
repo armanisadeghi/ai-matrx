@@ -1,6 +1,6 @@
 "use client";
 
-import { PanelLeftTapButton } from "@/components/icons/tap-buttons";
+import { PanelLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { usePanelControls } from "@/features/resizable-panels/PanelControlProvider";
 import { useIsMobile } from "@/hooks/use-mobile";
 

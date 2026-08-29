@@ -31,7 +31,7 @@ import { Copy, Check, Edit, Send, MoreHorizontal } from "lucide-react";
 import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
-} from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { SpeakerButton } from "@/features/tts/components/SpeakerButton";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";

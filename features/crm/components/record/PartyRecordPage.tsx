@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { Building2, User } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { AssociationCardGrid } from "@/features/scopes/components/associations/AssociationCardGrid";

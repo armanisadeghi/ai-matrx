@@ -67,7 +67,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   ChevronLeftTapButton,
   MoreHorizontalTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { cn } from "@/lib/utils";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";

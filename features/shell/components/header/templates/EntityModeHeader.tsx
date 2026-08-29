@@ -28,12 +28,12 @@ import {
   RouteModeNav,
   type RouteNavItem,
 } from "@/features/shell/components/header/RouteModeNav";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   TapTargetButton,
   TapTargetButtonDestructive,
   TapTargetButtonSolid,
-} from "@/components/icons/TapTargetButton";
+} from "@ai-matrx/tap-target";
 import {
   BottomSheet,
   BottomSheetBody,

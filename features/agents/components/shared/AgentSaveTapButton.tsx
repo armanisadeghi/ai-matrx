@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AlertTriangle, Loader2, Save } from "lucide-react";
-import { TapTargetButton } from "@/components/icons/TapTargetButton";
+import { TapTargetButton } from "@ai-matrx/tap-target";
 import {
   AlertDialog,
   AlertDialogAction,

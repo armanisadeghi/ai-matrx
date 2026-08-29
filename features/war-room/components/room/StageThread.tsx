@@ -9,7 +9,7 @@
 // projector (shows the projected tab without mutating the saved one).
 
 import { useEffect } from "react";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectThreadAnchorType,

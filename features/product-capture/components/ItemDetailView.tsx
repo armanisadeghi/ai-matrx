@@ -25,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { toast } from "@/lib/toast";
 

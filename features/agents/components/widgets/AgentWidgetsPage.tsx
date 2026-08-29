@@ -27,7 +27,7 @@ import { AgentSelectorIsland } from "@/features/agents/components/shared/AgentSe
 import { AgentModeController } from "@/features/agents/components/shared/AgentModeController";
 import { AgentSaveStatus } from "@/features/agents/components/shared/AgentSaveStatus";
 import { AgentOptionsMenu } from "@/features/agents/components/shared/AgentOptionsMenu";
-import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   getAllDisplayTypes,
   getDisplayMeta,

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Star } from "lucide-react";
-import { XTapButton } from "@/components/icons/tap-buttons";
+import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import ShellIcon from "@/features/shell/components/ShellIcon";
 import { resolveShellIconName } from "@/features/shell/shellIconMap";
 import { iconColorMap } from "@/features/shell/constants/nav-data";

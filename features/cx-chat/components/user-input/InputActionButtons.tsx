@@ -1,8 +1,8 @@
 "use client";
 
 import { Loader2, Bug } from "lucide-react";
-import { TapTargetButtonSolid } from "@/components/icons/TapTargetButton";
-import { ArrowUpTapButton } from "@/components/icons/tap-buttons";
+import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { ArrowUpTapButton } from "@ai-matrx/tap-target/buttons";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 
 interface InputActionButtonsProps {

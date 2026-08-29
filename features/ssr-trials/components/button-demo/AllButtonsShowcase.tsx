@@ -1,4 +1,4 @@
-import { TapTargetButtonGroup } from "@/components/icons/TapTargetButton";
+import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import {
   MenuTapButton,
   PlusTapButton,
@@ -18,7 +18,7 @@ import {
   SquarePenTapButton,
   FilterTapButton,
   XTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import {
   SearchToolbar,
   SearchGroup,

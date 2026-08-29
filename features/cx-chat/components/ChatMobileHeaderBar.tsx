@@ -15,7 +15,7 @@ import Link from "next/link";
 import {
   MenuTapButton,
   SquarePenTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import ChatMobileAgentName from "./ChatMobileAgentName";
 import ChatMobileAdminToggles from "./ChatMobileAdminToggles";
 

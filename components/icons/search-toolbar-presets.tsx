@@ -7,7 +7,7 @@ import {
   MenuTapButton,
   SettingsTapButton,
   MaximizeTapButton,
-} from "./tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 
 // ---------------------------------------------------------------------------
 // Ready-to-use toolbar presets — server components.

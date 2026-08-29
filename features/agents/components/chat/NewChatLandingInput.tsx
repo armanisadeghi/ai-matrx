@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   ArrowUpTapButton,
   StopTapButton,
-} from "@/components/icons/tap-buttons";
+} from "@ai-matrx/tap-target/buttons";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { usePasteImageResource } from "@/features/agents/components/inputs/resources/usePasteImageResource";
 import { AgentMicrophoneButton } from "@/features/agents/components/inputs/smart-input/AgentMicrophoneButton";
