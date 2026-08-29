@@ -44,7 +44,7 @@ and Runs floating windows.
 | Per-column UI (display + variables + input + streaming) | `AgentConversationColumn` |
 | Conversation lifecycle (create instance, mint id, init slices) | `createManualInstance` from `features/agents/redux/execution-system/thunks/create-instance.thunk` |
 | Triggering a run | `launchConversation` thunk |
-| Shared model-mode request composer | `SmartAgentInput` + `copyInstanceRequestDraft` |
+| Shared locked-mode request composer | `SharedBattleInput` + `copyInstanceRequestDraft` |
 | Per-column tab content (Context, Session) | `ContextSlotsTab`, `SessionStatsPanel` (imported from `run-controls/`) |
 | Agent + version dropdowns | `AgentListDropdown` + `SearchableSelect` (pattern lifted from `AgentComparisonPage`) |
 | Resizable horizontal split (N panels) | `ResizablePanelGroup` / `ResizablePanel` / `ResizableHandle` wrappers |
@@ -90,17 +90,17 @@ and Runs floating windows.
   - If `activeSetId` is set, upsert per-entry `cmp_comparison_entries`
     rows after all settle.
 
-### Model mode shared request
+### Locked-mode shared requests
 
-- `/agents/battle/model` mounts the canonical `SmartAgentInput` against a
-  dedicated cache-only execution instance. It never substitutes hand-built
-  variable fields or a plain textarea.
+- **Every shared-request mode mounts `SharedBattleInput`** against a dedicated
+  cache-only execution instance: Model, Settings, System Prompt, Tools, Tuning,
+  and Variations. Hand-built variable fields and chat textareas are banned.
 - The composer therefore keeps the normal file picker, paste/drop uploads,
   voice input, variable UI, context, resource chips, and run controls.
-- `submitAllModel` calls the shared `copyInstanceRequestDraft` execution
-  primitive before launching each column. It copies text/message parts,
-  variables and resource policies, files/resources, context, run settings, and
-  client tools. Per-column model overrides are deliberately not copied.
+- Every mode's Submit All thunk calls `copyInstanceRequestDraft` before
+  launching each column. It copies text/message parts, variables and resource
+  policies, files/resources, context, run settings, and client tools while
+  preserving the mode's per-column varied axis.
 
 ### Shared Context window
 - Renders `ContextSlotsTab` for the **first** column.
@@ -162,7 +162,7 @@ attributable to this page in analytics.
   runs), lift these into a generic helper under
   `features/agents/redux/execution-system/`.
 - Multi-run request fan-out uses the generic execution-system
-  `copyInstanceRequestDraft`; model mode does not maintain a parallel text-only
+  `copyInstanceRequestDraft`; no Battle mode maintains a parallel text-only
   request shape.
 - `cmp_comparison_sets` and `cmp_comparison_entries` are intentionally
   generic — the future judge feature will write its scores into
@@ -177,6 +177,12 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-08-29 — **Every Agent Battle composer now uses the full Smart Agent
+  Input system.** Settings, System Prompt, Tools, Tuning, and Variations joined
+  Model on `SharedBattleInput` backed by a cache-only execution instance. Submit
+  All now fans out complete multimodal/resource-bearing request drafts through
+  `copyInstanceRequestDraft`; the five hand-built variable grids and text-only
+  message inputs were deleted.
 - 2026-08-28 — Loaded Request Mod conversations with an existing server row
   now continue by row identity even when no message persisted, preventing
   duplicate-id start requests after an empty or failed first turn.
@@ -242,4 +248,3 @@ attributable to this page in analytics.
   "skipped" tally) but stay editable. Persisted in the comparison set's
   per-entry metadata. Visual: column body dims with a "PAUSED — SKIPPED ON
   SUBMIT ALL" notice; editor-window tab gets a pause icon + italic label.
-

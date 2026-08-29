@@ -22,6 +22,10 @@ conversations + telemetry + feedback for whatever the mode hands it.
 
 ### Model vs Tuning vs Settings — when to use which
 
+- **All shared-request modes** use `SharedBattleInput` backed by a dedicated
+  cache-only execution instance. Submit All fans the complete request into
+  each column with `copyInstanceRequestDraft`; never add a parallel
+  `{ variables, userMessage }` draft or hand-built composer.
 - **Model** uses `apiEndpointMode: "agent"` + the per-conversation
   `instanceModelOverrides` slice. Each column writes a single `model`
   override; the Python server normalizes equivalent settings across
@@ -181,11 +185,10 @@ so every mode's column body can use it without re-implementing.
    etc.).
 5. **Reuse everything in the "Shared" table above.** Pass the column
    list / conversation ids into them; they don't care what's locked.
-6. **Submit-all glue** — your mode's submit thunk broadcasts the locked
-   inputs into each column's instance (`setUserInputText`,
-   `setUserVariableValues`, applicable `setBuilderAdvancedSettings`),
-   then calls `submitAllBattleColumns` (which is already mode-agnostic
-   — it just runs `smartExecute` per configured column).
+6. **Submit-all glue** — mount `SharedBattleInput` on a cache-only draft
+   instance and call `copyInstanceRequestDraft` for every target column before
+   `smartExecute`. Direct `setUserInputText` / `setUserVariableValues` fan-out
+   is a multimodal data-loss bug.
 
 ---
 
