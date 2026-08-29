@@ -14,7 +14,7 @@
  * or — when the note never reached the database — recover it as a new note.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { LifeBuoy, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -24,13 +24,13 @@ import {
   markTabInteraction,
 } from "../redux/slice";
 import { createNewNote, fetchNoteContent } from "../redux/thunks";
-import {
-  selectInstanceTabs,
-  selectNotesMap,
-} from "../redux/selectors";
+import { selectInstanceTabs, selectNotesMap } from "../redux/selectors";
 import { discardNoteDraft, listNoteDrafts } from "../utils/notesDrafts";
-import { subscribeDrafts } from "@ai-matrx/kit/drafts";
-import type { LocalDraft } from "@ai-matrx/kit/drafts";
+import {
+  getDraftsVersion,
+  subscribeDrafts,
+  type LocalDraft,
+} from "@ai-matrx/kit/drafts";
 
 interface NotesDraftRecoveryListProps {
   instanceId: string;
@@ -43,29 +43,20 @@ export function NotesDraftRecoveryList({
   const userId = useAppSelector((state) => state.userAuth.id);
   const notesMap = useAppSelector(selectNotesMap);
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
-  const [drafts, setDrafts] = useState<LocalDraft[]>([]);
-  const [readFor, setReadFor] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
-  // Read once per user, during render rather than in an effect: the draft
-  // store only changes on a capture (a page we are about to leave) or on an
-  // action taken right here, so re-reading costs renders and buys nothing.
-  if (readFor !== (userId ?? "")) {
-    setReadFor(userId ?? "");
-    setDrafts(listNoteDrafts(userId ?? null));
-  }
-
-  // A capture can land while this strip is already on screen — a save-failure
-  // escalation for a note that is not an open tab writes a draft the user
-  // would otherwise never be told about until a remount.
-  useEffect(
-    () => subscribeDrafts(() => setDrafts(listNoteDrafts(userId ?? null))),
-    [userId],
+  // The -1 server snapshot keeps SSR and the first client render identical;
+  // useSyncExternalStore publishes the real browser-store version after
+  // hydration and on every capture/discard.
+  const draftsVersion = useSyncExternalStore(
+    subscribeDrafts,
+    getDraftsVersion,
+    () => -1,
   );
+  const drafts = draftsVersion < 0 ? [] : listNoteDrafts(userId ?? null);
 
   const drop = useCallback((entityId: string) => {
     discardNoteDraft(entityId);
-    setDrafts((current) => current.filter((d) => d.entityId !== entityId));
   }, []);
 
   const pending = drafts.filter((d) => !(openTabs ?? []).includes(d.entityId));
@@ -143,7 +134,9 @@ export function NotesDraftRecoveryList({
                   disabled={busyKey === draft.key}
                   className="shrink-0 rounded-md bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60 cursor-pointer"
                 >
-                  {busyKey === draft.key ? "Recovering…" : "Recover as new note"}
+                  {busyKey === draft.key
+                    ? "Recovering…"
+                    : "Recover as new note"}
                 </button>
               )}
               <button

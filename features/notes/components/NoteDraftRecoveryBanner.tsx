@@ -15,7 +15,7 @@
  * lose work.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { Copy, Eye, LifeBuoy, Trash2, Undo2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -24,9 +24,13 @@ import {
   useOpenDiffViewerWindow,
   type DiffViewerWindowHandle,
 } from "@/features/overlays/openers/diffViewerWindow";
-import { selectNoteContent } from "../redux/selectors";
+import { selectNoteContent, selectNoteFetchStatus } from "../redux/selectors";
 import { discardNoteDraft, getNoteDraft } from "../utils/notesDrafts";
-import type { LocalDraft } from "@ai-matrx/kit/drafts";
+import {
+  getDraftsVersion,
+  subscribeDrafts,
+  type LocalDraft,
+} from "@ai-matrx/kit/drafts";
 
 function whenLabel(at: number): string {
   const minutes = Math.floor((Date.now() - at) / 60_000);
@@ -58,32 +62,40 @@ export function NoteDraftRecoveryBanner({
 }: NoteDraftRecoveryBannerProps) {
   const userId = useAppSelector((state) => state.userAuth.id);
   const content = useAppSelector(selectNoteContent(noteId)) ?? "";
-  const [draft, setDraft] = useState<LocalDraft | null>(null);
-  const [readFor, setReadFor] = useState<string | null>(null);
+  const fetchStatus = useAppSelector(selectNoteFetchStatus(noteId));
+  const draftsVersion = useSyncExternalStore(
+    subscribeDrafts,
+    getDraftsVersion,
+    () => -1,
+  );
   const openDiffViewer = useOpenDiffViewerWindow();
   const diffWindowRef = useRef<DiffViewerWindowHandle | null>(null);
+  const warnedDraftRef = useRef<string | null>(null);
 
-  // Read the draft store ONCE per (note, user), during render rather than in
-  // an effect — re-reading on every keystroke would resurrect a banner the
-  // user just dismissed, and an effect here would cascade a second render on
-  // every note switch. A draft that matches what the store already holds means
-  // the write landed after all; drop it silently.
-  const readKey = `${noteId}|${userId ?? ""}`;
-  if (readFor !== readKey) {
-    setReadFor(readKey);
-    const found = userId ? getNoteDraft(noteId, userId) : null;
-    if (found && found.content === (content || "")) {
-      discardNoteDraft(noteId);
-      setDraft(null);
-    } else {
-      setDraft(found);
-    }
-  }
+  // The -1 server snapshot keeps SSR and the first client render identical;
+  // useSyncExternalStore publishes the real browser-store version after
+  // hydration and on every capture/discard. Wait for the complete server note
+  // before comparing it with browser-only recovery state.
+  const storedDraft: LocalDraft | null =
+    draftsVersion < 0 || fetchStatus !== "full"
+      ? null
+      : getNoteDraft(noteId, userId);
+  const draft =
+    storedDraft && storedDraft.content !== content ? storedDraft : null;
+
+  // A matching draft means the write landed after all; drop it silently.
+  useEffect(() => {
+    if (!storedDraft || storedDraft.content !== content) return;
+    discardNoteDraft(noteId);
+  }, [content, noteId, storedDraft]);
 
   // A recovered draft means unsaved work reached the browser-only path — the
   // save path that allowed it is the real defect, so say so out loud.
   useEffect(() => {
     if (!draft) return;
+    const identity = `${draft.key}:${draft.capturedAt}`;
+    if (warnedDraftRef.current === identity) return;
+    warnedDraftRef.current = identity;
     console.warn(
       "[Notes] recovered a local draft for note",
       draft.entityId,
@@ -99,7 +111,6 @@ export function NoteDraftRecoveryBanner({
     discardNoteDraft(noteId);
     diffWindowRef.current?.close();
     diffWindowRef.current = null;
-    setDraft(null);
     toast.success("Recovered changes restored — saving them now.");
   };
 
@@ -107,7 +118,6 @@ export function NoteDraftRecoveryBanner({
     discardNoteDraft(noteId);
     diffWindowRef.current?.close();
     diffWindowRef.current = null;
-    setDraft(null);
   };
 
   const handleCopy = async () => {
