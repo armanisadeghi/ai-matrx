@@ -551,7 +551,8 @@ export const selectInstanceSummary = (conversationId: string) =>
         contextCount: Object.keys(context ?? {}).length,
         hasUserInput:
           (userInput?.text?.trim().length ?? 0) > 0 ||
-          (userInput?.messageParts?.length ?? 0) > 0,
+          (userInput?.messageParts?.length ?? 0) > 0 ||
+          Object.keys(resources ?? {}).length > 0,
         displayMode: uiState?.displayMode ?? "direct",
         requestCount: ids?.length ?? 0,
         latestRequestStatus,

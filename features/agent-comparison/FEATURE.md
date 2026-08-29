@@ -80,8 +80,9 @@ and Runs floating windows.
 
 ### Submit All
 - `submitAllBattleColumns` thunk:
-  - Snapshot every column where `agentId != null` AND the per-conversation
-    input has either `text` or `userValues` set.
+  - Snapshot every configured column where `agentId != null`. Typed text is
+    optional; variables, resources, context, tools, or the agent definition
+    itself may be the complete request.
   - For each, dispatch `launchConversation({ identity.surfaceKey: SURFACE_KEY,
     engine: { kind: "agent", agentId }, routing.apiEndpointMode: "agent",
     inputs: { userInput, variables }, origin.sourceFeature: "agent-battle" })`.
@@ -175,6 +176,11 @@ attributable to this page in analytics.
 
 ## Change Log
 
+- 2026-08-28 — **Submit All never requires typed user input.** Open Battle and
+  all locked-axis modes launch every configured column; Request Mod no longer
+  misclassifies image/file-only columns as empty, and the obsolete empty-input
+  preflight was deleted. A blocking release check rejects the known content-
+  gating patterns.
 - 2026-08-28 — Request Mod columns now inherit the shared Smart Agent Input's
   content-only textarea measurement, preventing the last/focused column from
   opening with an empty 200px composer while its siblings remain compact.

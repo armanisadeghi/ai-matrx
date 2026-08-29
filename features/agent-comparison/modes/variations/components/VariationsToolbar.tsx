@@ -57,7 +57,6 @@ import {
   selectCanSubmitVariations,
   selectCollapsedVariationColumnCount,
   selectIsSubmittingAllVariations,
-  selectLockedSetup,
   selectSourceAgentId,
   selectVariationColumns,
 } from "../redux/selectors";
@@ -78,7 +77,6 @@ export function VariationsToolbar({
   const dispatch = useAppDispatch();
 
   const sourceAgentId = useAppSelector(selectSourceAgentId);
-  const lockedSetup = useAppSelector(selectLockedSetup);
   const activeSetId = useAppSelector(selectActiveVariationsSetId);
   const activeSetName = useAppSelector(selectActiveVariationsSetName);
   const isSubmittingAll = useAppSelector(selectIsSubmittingAllVariations);
@@ -102,17 +100,6 @@ export function VariationsToolbar({
     if (columns.length === 0) {
       toast.error("Add at least one variation before submitting.");
       return;
-    }
-    if (!lockedSetup.userMessage.trim()) {
-      const hasVars = Object.values(lockedSetup.variables).some((v) => {
-        if (v == null) return false;
-        if (typeof v === "string") return v.trim().length > 0;
-        return true;
-      });
-      if (!hasVars) {
-        toast.error("Add a test message before submitting.");
-        return;
-      }
     }
     try {
       maybeShuffleForBlind(columns, setVariationColumns);

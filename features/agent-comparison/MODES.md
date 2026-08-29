@@ -104,8 +104,8 @@ runs the SAME real agent. There's no synthetic clone — each column
 just owns its own `conversationId` with its own per-instance
 `instanceUserInput` + `instanceVariableValues`. SmartAgentInput already
 manages both, so the per-column body is just `BoundColumn` without
-`hideInput`. Submit All skips columns that are empty (no text and no
-filled vars) rather than failing them.
+`hideInput`. Submit All launches every configured column; typed text is never
+a prerequisite, and files/resources remain valid request input.
 
 Cross-mode UX shipped in addition to the modes:
 - **ModePicker** (`shared/ModePicker.tsx`) — mounted at the top of every
@@ -139,7 +139,6 @@ than a mode-aware mega-slice.
 | `components/SharedContextWindow.tsx` | Shared context broadcast UI |
 | `components/SharedRunSettingsWindow.tsx` | Shared advanced settings broadcast |
 | `components/ComparisonSetLoaderDialog.tsx` | Save/load comparison sets (generic) |
-| `components/SubmitAllPreflightDialog.tsx` | Empty-input warning + shared follow-up |
 | `service/comparisonSetsService.ts` | `cmp_comparison_sets` + `cmp_comparison_entries` CRUD |
 | `service/responseFeedbackService.ts` | `cmp_response_feedback` CRUD |
 | Inside `redux/battleSlice.ts`: `feedbackRanks`, `feedbackByConversation`, `activeSetId`, `activeSetName` cache fields |
@@ -290,7 +289,7 @@ All three follow Mode 2's directory shape. Notable differences:
 - **Request Mod** (`modes/request-mod/`) — simplest mode: no synthetic
   agent. Page-level `LockedAgentSection` only picks the agent + version.
   Each column shows `BoundColumn` WITHOUT `hideInput` so users can fill
-  per-column variables + user message directly. Submit All preflights
-  per column, skipping empties. Persistence captures
+  per-column variables + user message directly. Submit All launches every
+  configured column without a content preflight. Persistence captures
   `metadata: { label, user_message, variables }` per entry.
   `apiEndpointMode: "agent"`.

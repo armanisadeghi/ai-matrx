@@ -26,7 +26,6 @@ import {
   selectShowAttachments,
   selectShowMicrophone,
 } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { selectInputCharCount } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { toggleVariablePanel } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectShouldShowVariables } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useSurfaceExecution } from "@/features/agents/hooks/useSurfaceExecution";
@@ -80,13 +79,9 @@ export function SingleRowActionButtons({
   const showAttachments = useAppSelector(selectShowAttachments(conversationId));
   const showMicrophone = useAppSelector(selectShowMicrophone(conversationId));
 
-  const charCount = useAppSelector(selectInputCharCount(conversationId));
-
-  // Same contract as InputActionButtons: while a run streams, Send queues
-  // via the Turn-Boundary Inbox (needs text) and Stop is its own button.
-  const isSendDisabled = isExecuting
-    ? charCount === 0 || disableSend || voiceBusy
-    : disableSend || voiceBusy || (minimal && charCount === 0);
+  // Same contract as InputActionButtons: content never controls submit
+  // eligibility. Stop remains its own action while a run streams.
+  const isSendDisabled = disableSend || voiceBusy;
 
   const handleVoiceBusyChange = useCallback(
     (state: { isRecording: boolean; isTranscribing: boolean }) => {
@@ -98,13 +93,11 @@ export function SingleRowActionButtons({
   );
 
   const handleSend = useCallback(() => {
-    if (disableSend || voiceBusy || (minimal && charCount === 0)) return;
+    if (disableSend || voiceBusy) return;
     dispatch(smartExecute({ conversationId, surfaceKey }));
   }, [
     disableSend,
     voiceBusy,
-    minimal,
-    charCount,
     conversationId,
     surfaceKey,
     dispatch,

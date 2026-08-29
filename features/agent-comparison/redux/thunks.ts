@@ -328,92 +328,6 @@ export const broadcastRunSettings = createAsyncThunk<
 // Submit All
 // =============================================================================
 
-/**
- * A column is submittable when:
- *   - It has an agent (instance exists), AND
- *   - Its per-instance input has text OR (only on its very first turn)
- *     at least one user-edited variable.
- *
- * After the first turn, agent variables are no longer part of the wire
- * payload — only the user message matters for continuing the chat — so
- * we tighten the gate accordingly.
- *
- * Mirrors the per-column SmartAgentInput gate — Submit All should never
- * fire a column the per-column send button itself would refuse.
- */
-function shouldSubmitColumn(col: BattleColumn, state: RootState): boolean {
-  if (!col.agentId) return false;
-  const userText =
-    state.instanceUserInput.byConversationId[col.conversationId]?.text ?? "";
-  if (userText) return true;
-  // First-turn fallback: variables count as input.
-  const messageCount =
-    state.messages.byConversationId[col.conversationId]?.orderedIds?.length ??
-    0;
-  if (messageCount > 0) return false;
-  const variables =
-    state.instanceVariableValues.byConversationId[col.conversationId]
-      ?.userValues ?? {};
-  return Object.keys(variables).length > 0;
-}
-
-/**
- * Returns whether each configured column has a message (or first-turn
- * variables) ready for submit. Used by the preflight dialog to render
- * the per-column readiness list.
- */
-export interface BattleColumnReadiness {
-  columnId: string;
-  conversationId: string;
-  agentId: string;
-  agentName: string;
-  hasMessage: boolean;
-  phase: "first-turn" | "continuation";
-}
-
-export function selectBattleReadiness(
-  state: RootState,
-): BattleColumnReadiness[] {
-  const out: BattleColumnReadiness[] = [];
-  for (const col of state.agentComparison.columns) {
-    if (!col.agentId) continue;
-    const agent = state.agentDefinition.agents?.[col.agentId];
-    const messageCount =
-      state.messages.byConversationId[col.conversationId]?.orderedIds?.length ??
-      0;
-    out.push({
-      columnId: col.columnId,
-      conversationId: col.conversationId,
-      agentId: col.agentId,
-      agentName: agent?.name ?? "Unconfigured",
-      hasMessage: shouldSubmitColumn(col, state),
-      phase: messageCount > 0 ? "continuation" : "first-turn",
-    });
-  }
-  return out;
-}
-
-/**
- * Broadcast a follow-up text to every EMPTY configured column (one whose
- * `shouldSubmitColumn` currently returns false). Columns that already have
- * input are left alone — the user explicitly typed something there.
- */
-export const broadcastFollowUpToEmpty = createAsyncThunk<
-  void,
-  { text: string },
-  ThunkApi
->(
-  "agentComparison/broadcastFollowUpToEmpty",
-  async ({ text }, { dispatch, getState }) => {
-    const state = getState();
-    for (const col of state.agentComparison.columns) {
-      if (!col.agentId) continue;
-      if (shouldSubmitColumn(col, state)) continue;
-      dispatch(setUserInputText({ conversationId: col.conversationId, text }));
-    }
-  },
-);
-
 export const submitAllBattleColumns = createAsyncThunk<
   { launched: number; skipped: number; failed: number },
   void,
@@ -429,9 +343,7 @@ export const submitAllBattleColumns = createAsyncThunk<
     const state = getState();
     // Snapshot the column list up front — submissions mutate per-instance
     // slices (autoclear etc.) so we don't want re-reads partway through.
-    const targets = state.agentComparison.columns.filter((col) =>
-      shouldSubmitColumn(col, state),
-    );
+    const targets = state.agentComparison.columns.filter((col) => col.agentId);
     const skipped = state.agentComparison.columns.length - targets.length;
 
     // Fire smartExecute on each column's existing instance — same path

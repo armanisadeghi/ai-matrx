@@ -59,7 +59,6 @@ import {
   selectCanSubmitSystemPrompt,
   selectCollapsedSystemPromptColumnCount,
   selectIsSubmittingAllSystemPrompt,
-  selectLockedSetup,
   selectSourceAgentId,
   selectSystemPromptColumns,
 } from "../redux/selectors";
@@ -76,7 +75,6 @@ export function SystemPromptToolbar({
   const dispatch = useAppDispatch();
 
   const sourceAgentId = useAppSelector(selectSourceAgentId);
-  const lockedSetup = useAppSelector(selectLockedSetup);
   const activeSetId = useAppSelector(selectActiveSystemPromptSetId);
   const activeSetName = useAppSelector(selectActiveSystemPromptSetName);
   const isSubmittingAll = useAppSelector(selectIsSubmittingAllSystemPrompt);
@@ -104,19 +102,6 @@ export function SystemPromptToolbar({
         "Add at least one variant. Click the 'Add variant' button to start.",
       );
       return;
-    }
-    if (!lockedSetup.userMessage.trim()) {
-      const hasVars = Object.values(lockedSetup.variables).some((v) => {
-        if (v == null) return false;
-        if (typeof v === "string") return v.trim().length > 0;
-        return true;
-      });
-      if (!hasVars) {
-        toast.error(
-          "Add a user message in the Locked input section before submitting.",
-        );
-        return;
-      }
     }
     try {
       maybeShuffleForBlind(columns, setSystemPromptColumns);

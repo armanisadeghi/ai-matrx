@@ -203,6 +203,7 @@ if $STRICT; then
         # is no backlog to grandfather — a finding is new, and it is a run the
         # user will never get.
         "autoRun never paired with a headless mode|pnpm check:autorun-headless"
+        "Agent submission never requires typed user_input|pnpm check:agent-submit-content"
         "Content IR / kinds test suite|pnpm test:content-ir"
         # Docs guards went STRICT 2026-08-15 (guards-advisory-to-strict): both
         # repos reached zero violations, so a finding here is new drift, not
@@ -412,6 +413,7 @@ else
         # is no backlog to grandfather — a finding is new, and it is a run the
         # user will never get.
         "autoRun never paired with a headless mode|pnpm check:autorun-headless"
+        "Agent submission never requires typed user_input|pnpm check:agent-submit-content"
         "Content IR / kinds test suite|pnpm test:content-ir"
         "URL identity twins (TS vs Python)|pnpm exec tsx scripts/check-url-identity.ts"
         # STRICT since 2026-08-15 (also in the strict list above): the Wave-5

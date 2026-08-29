@@ -54,9 +54,12 @@ export const selectHasUserInput =
   (conversationId: string) =>
   (state: RootState): boolean => {
     const entry = state.instanceUserInput.byConversationId[conversationId];
-    if (!entry) return false;
     return (
-      entry.text.trim().length > 0 || (entry.messageParts?.length ?? 0) > 0
+      (entry?.text.trim().length ?? 0) > 0 ||
+      (entry?.messageParts?.length ?? 0) > 0 ||
+      Object.keys(
+        state.instanceResources.byConversationId[conversationId] ?? {},
+      ).length > 0
     );
   };
 
