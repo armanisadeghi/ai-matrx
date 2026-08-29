@@ -45,6 +45,7 @@ import {
   Rainbow,
 } from "lucide-react";
 import { RAG_VOCAB } from "@/features/rag/constants/vocabulary";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectFileById } from "@/features/files/redux/selectors";
@@ -192,7 +193,20 @@ export function DocumentTab({
         <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={() => void ingest.run({ force: true })}
+            onClick={() => {
+              // THE DESTRUCTIVE/EXPENSIVE CLICK LAW: `force: true` rebuilds
+              // processing this document already has, at real AI cost. A hover
+              // tooltip is not a confirmation — state it and stop.
+              void (async () => {
+                const ok = await confirm({
+                  title: "Reprocess this document from scratch?",
+                  description: `Runs the whole Knowledge pipeline again — extract, clean, chunk, embed — and rebuilds the ${state.doc.total_pages ?? 0} pages and ${RAG_VOCAB.segmentsShort.toLowerCase()} this document already has. It spends AI compute every time and takes a while on a long document. Existing results stay in place until the new ones replace them.`,
+                  confirmLabel: "Reprocess",
+                });
+                if (!ok) return;
+                await ingest.run({ force: true });
+              })();
+            }}
             title="Force the full Knowledge pipeline to re-run end-to-end (streaming progress fills this panel below)."
             className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-0.5 text-[11px] font-medium hover:bg-accent"
           >

@@ -322,12 +322,16 @@ function StageActionPanel({
             ? `${status.current.toLocaleString()} / ${status.total.toLocaleString()} ${def.unit ?? ""}`
             : "—"}
         </Badge>
+        {/* THE DESTRUCTIVE/EXPENSIVE CLICK LAW, inline: this popover IS the
+            confirmation step for the Run button below it, so the consequence
+            is named here rather than behind a second dialog (double-prompting
+            is its own defect). Say what gets rebuilt and that it costs. */}
         <span className="text-muted-foreground">
           {status?.state === "done"
-            ? "Already complete — re-running will refresh."
+            ? `Already complete — running it again discards this stage's ${def.unit ?? "output"} and rebuilds them from scratch, at AI compute cost.`
             : status?.state === "partial"
-              ? "Partial — running will fill in the rest."
-              : "Not yet run."}
+              ? "Partial — running fills in only what is missing; finished work is kept, and the new work costs AI compute."
+              : "Not yet run. Running it costs AI compute and can take a few minutes on a long document."}
         </span>
       </div>
 

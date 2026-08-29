@@ -51,6 +51,7 @@ import {
   GitCompareArrows,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
 import { FileRightClickMenu } from "@/features/files/components/core/FileContextMenu/FileRightClickMenu";
@@ -340,7 +341,7 @@ export function LibraryDocDetailSheet({
    * Replaces the legacy POST /knowledge/library/{id}/reprocess fire-and-forget,
    * which a) hit Next.js with no auth and b) showed zero progress.
    */
-  const handleReprocess = () => {
+  const startProcessing = () => {
     if (!doc || !onRequestStageRun) {
       toast.error(
         "Reprocess is unavailable in this view — no stage runner wired.",
@@ -362,12 +363,31 @@ export function LibraryDocDetailSheet({
     }
   };
 
+  /**
+   * THE DESTRUCTIVE/EXPENSIVE CLICK LAW: on a document that is already fully
+   * processed, "Re-process" re-runs a paid pipeline over work the user already
+   * has and rebuilds it. Same specificity as the delete dialogs below — name
+   * the pages, the segments, the embeddings, and the cost.
+   */
+  const handleReprocess = async () => {
+    if (doc) {
+      const ok = await confirm({
+        title: "Re-process this document from scratch?",
+        description: `Runs the whole pipeline again over “${doc.name}” — extract, clean, chunk, embed — rebuilding the ${doc.pagesPersisted} page${doc.pagesPersisted === 1 ? "" : "s"}, ${doc.chunks} ${RAG_VOCAB.segmentsShort.toLowerCase()}, and ${doc.embeddingsOai} embedding${doc.embeddingsOai === 1 ? "" : "s"} this document already has. That is AI compute you pay for again, and a long document takes several minutes.`,
+        confirmLabel: "Re-process",
+      });
+      if (!ok) return;
+    }
+    startProcessing();
+  };
+
   // "Process Document" — same path as reprocess but labeled / iconed
   // differently when the doc has never finished a full pipeline yet, so
   // first-time users get a primary CTA instead of an ambiguous
   // "Re-process" button. The runner doesn't care which label triggered
-  // it.
-  const handleProcess = handleReprocess;
+  // it. It is NOT gated by the re-process confirm: first-time processing
+  // and finishing a partial run duplicate nothing.
+  const handleProcess = startProcessing;
   const hasNeverBeenProcessed = !!doc && doc.chunks === 0;
   const isPartiallyProcessed =
     !!doc && doc.chunks > 0 && doc.embeddingsOai < doc.chunks;
