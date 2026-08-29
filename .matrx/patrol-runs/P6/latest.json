@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P6",
   "runId": "e266c3f6-22ec-4f63-8446-e251e5b46f25",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-29T14:34:11.118Z",
-  "summary": "Retroactively queueing exact candidate 508177a056 after independent certification; automatic integration and v0.4.1441 release had already occurred before the verdict.",
+  "state": "delivered",
+  "updatedAt": "2026-08-29T14:34:23.048Z",
+  "summary": "DELIVERED: exact certified P6 candidate 508177a056 is on origin/main and contained in v0.4.1441; delivery ordering was reconciled after the automatic lane released before certification.",
   "source": "e266c3f6-22ec-4f63-8446-e251e5b46f25.json",
-  "eventHash": "90bbb7079a90b9ca8553d47005c6d948c8936f467c9515d5472bc641957440b8"
+  "eventHash": "62f18e63414c648535187741d42fe4c2274bd78ca14bb255edfee474acf3aa00"
 }
