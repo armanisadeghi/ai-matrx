@@ -19,7 +19,14 @@ jest.mock("../watch-desktop-delegation.thunk", () => ({
 jest.mock("@/features/agents/api/submit-tool-results", () => ({
   submitToolResult: mockSubmitToolResult,
 }));
-jest.mock("sonner", () => ({ toast: { error: mockToastError } }));
+jest.mock("sonner", () => ({
+  // Callable with error+warning: @ai-matrx/kit's createMatrxToast refuses a
+  // non-callable toast object at module load.
+  toast: Object.assign(jest.fn(), {
+    error: mockToastError,
+    warning: jest.fn(),
+  }),
+}));
 
 jest.mock("@/features/agents/types/widget-handle.types", () => ({
   isWidgetActionName: () => false,
