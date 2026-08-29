@@ -6115,6 +6115,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/homebrew/public/formula": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Formula */
+        get: operations["public_formula_homebrew_public_formula_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/modrinth/public/project": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Project */
+        get: operations["public_project_modrinth_public_project_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rubygems/public/gem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Gem */
+        get: operations["public_gem_rubygems_public_gem_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/canvas-integrations/read-proof": {
         parameters: {
             query?: never;
@@ -39644,6 +39695,10 @@ export interface components {
             /** Deleted */
             deleted: number;
         };
+        /** DiscoveryStatusResponse */
+        DiscoveryStatusResponse: {
+            [key: string]: components["schemas"]["JsonValue"];
+        };
         /** DiscoveryStepBody */
         DiscoveryStepBody: {
             /**
@@ -40727,10 +40782,20 @@ export interface components {
             /** Amount */
             amount?: string | null;
         };
+        /** EbayAccountDeletionAcknowledgement */
+        EbayAccountDeletionAcknowledgement: {
+            /** Status */
+            status: string;
+        };
         /** EbayChallengeResponse */
         EbayChallengeResponse: {
             /** Challengeresponse */
             challengeResponse: string;
+        };
+        /** EbayOAuthConnectResponse */
+        EbayOAuthConnectResponse: {
+            /** Authorization Url */
+            authorization_url: string;
         };
         /**
          * EbaySandboxTaxonomyResult
@@ -45619,6 +45684,50 @@ export interface components {
             replay_count?: number;
             /** By Enrollment */
             by_enrollment?: components["schemas"]["EnrollmentCostRow"][];
+        };
+        /**
+         * HomebrewPublicFormula
+         * @description Safe bounded projection of one public Homebrew/core formula.
+         */
+        HomebrewPublicFormula: {
+            /**
+             * Kind
+             * @default homebrew_public_formula
+             * @constant
+             */
+            __kind?: "homebrew_public_formula";
+            /**
+             * Provider
+             * @default homebrew
+             * @constant
+             */
+            provider?: "homebrew";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Name */
+            name: string;
+            /** Full Name */
+            full_name: string;
+            /** Formula Url */
+            formula_url: string;
+            /** Description */
+            description: string;
+            /** License */
+            license?: string | null;
+            /** Stable Version */
+            stable_version?: string | null;
+            /** Head Version */
+            head_version?: string | null;
+            /** Bottle Available */
+            bottle_available: boolean;
+            /** Deprecated */
+            deprecated: boolean;
+            /** Disabled */
+            disabled: boolean;
         };
         /** HumanLoginField */
         HumanLoginField: {
@@ -51989,6 +52098,62 @@ export interface components {
             referenced_by: string[];
         };
         /**
+         * ModrinthPublicProject
+         * @description Safe bounded projection of one public Modrinth project.
+         */
+        ModrinthPublicProject: {
+            /**
+             * Kind
+             * @default modrinth_public_project
+             * @constant
+             */
+            __kind?: "modrinth_public_project";
+            /**
+             * Provider
+             * @default modrinth
+             * @constant
+             */
+            provider?: "modrinth";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Project Id */
+            project_id: string;
+            /** Slug */
+            slug: string;
+            /** Project Url */
+            project_url: string;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Project Type */
+            project_type: string;
+            /** Status */
+            status: string;
+            /** Client Side */
+            client_side: string;
+            /** Server Side */
+            server_side: string;
+            /** Categories */
+            categories: string[];
+            /** Game Versions */
+            game_versions: string[];
+            /** Loaders */
+            loaders: string[];
+            /** Downloads */
+            downloads: number;
+            /** Followers */
+            followers: number;
+            /** Published At */
+            published_at: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /**
          * MoodlePublicConfigResult
          * @description Bounded projection of Moodle's unauthenticated mobile public config.
          */
@@ -58231,7 +58396,7 @@ export interface components {
             environment?: string;
             /** Proofs */
             proofs?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
         };
         /**
@@ -62515,6 +62680,50 @@ export interface components {
             };
         };
         /**
+         * RubyGemsPublicGem
+         * @description Safe bounded projection of one public RubyGems.org gem.
+         */
+        RubyGemsPublicGem: {
+            /**
+             * Kind
+             * @default rubygems_public_gem
+             * @constant
+             */
+            __kind?: "rubygems_public_gem";
+            /**
+             * Provider
+             * @default rubygems
+             * @constant
+             */
+            provider?: "rubygems";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Name */
+            name: string;
+            /** Project Url */
+            project_url: string;
+            /** Latest Version */
+            latest_version: string;
+            /** Version Created At */
+            version_created_at: string;
+            /** Platform */
+            platform: string;
+            /** Summary */
+            summary: string;
+            /** Licenses */
+            licenses: string[];
+            /** Yanked */
+            yanked: boolean;
+            /** Total Downloads */
+            total_downloads: number;
+            /** Version Downloads */
+            version_downloads: number;
+        };
+        /**
          * RuleApplied
          * @description One jurisdiction rule that contributed to a result.
          *
@@ -63618,6 +63827,11 @@ export interface components {
             metadata: {
                 [key: string]: unknown;
             };
+        };
+        /** ScenarioDeleteResponse */
+        ScenarioDeleteResponse: {
+            /** Deleted */
+            deleted: boolean;
         };
         /**
          * ScenarioPayload
@@ -65683,6 +65897,14 @@ export interface components {
              * @default false
              */
             is_default?: boolean;
+        };
+        /** SiteEvidenceMaterializeResponse */
+        SiteEvidenceMaterializeResponse: {
+            [key: string]: components["schemas"]["JsonValue"];
+        };
+        /** SiteEvidenceValuesResponse */
+        SiteEvidenceValuesResponse: {
+            [key: string]: components["schemas"]["JsonValue"];
         };
         /** SiteIntakeApplyBody */
         SiteIntakeApplyBody: {
@@ -77122,7 +77344,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["EbayAccountDeletionAcknowledgement"];
                 };
             };
         };
@@ -77142,9 +77364,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
+                    "application/json": components["schemas"]["EbayOAuthConnectResponse"];
                 };
             };
         };
@@ -86952,6 +87172,99 @@ export interface operations {
             };
         };
     };
+    public_formula_homebrew_public_formula_get: {
+        parameters: {
+            query: {
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomebrewPublicFormula"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_project_modrinth_public_project_get: {
+        parameters: {
+            query: {
+                project: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModrinthPublicProject"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_gem_rubygems_public_gem_get: {
+        parameters: {
+            query: {
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RubyGemsPublicGem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_proof_canvas_integrations_read_proof_get: {
         parameters: {
             query: {
@@ -89364,9 +89677,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DiscoveryStatusResponse"];
                 };
             };
             /** @description Validation Error */
@@ -89663,9 +89974,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SiteEvidenceValuesResponse"];
                 };
             };
         };
@@ -89690,9 +89999,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SiteEvidenceMaterializeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -105601,9 +105908,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
+                    "application/json": components["schemas"]["ScenarioDeleteResponse"];
                 };
             };
             /** @description Validation Error */

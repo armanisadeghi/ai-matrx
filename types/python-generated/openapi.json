@@ -1012,7 +1012,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/EbayAccountDeletionAcknowledgement"
+                }
               }
             }
           }
@@ -1032,11 +1034,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Start Seller Oauth Ebay Oauth Connect Get"
+                  "$ref": "#/components/schemas/EbayOAuthConnectResponse"
                 }
               }
             }
@@ -15636,6 +15634,138 @@
         }
       }
     },
+    "/homebrew/public/formula": {
+      "get": {
+        "tags": [
+          "Homebrew Integrations"
+        ],
+        "summary": "Public Formula",
+        "operationId": "public_formula_homebrew_public_formula_get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HomebrewPublicFormula"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/modrinth/public/project": {
+      "get": {
+        "tags": [
+          "Modrinth Integrations"
+        ],
+        "summary": "Public Project",
+        "operationId": "public_project_modrinth_public_project_get",
+        "parameters": [
+          {
+            "name": "project",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "Project"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModrinthPublicProject"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rubygems/public/gem": {
+      "get": {
+        "tags": [
+          "RubyGems.org Integrations"
+        ],
+        "summary": "Public Gem",
+        "operationId": "public_gem_rubygems_public_gem_get",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RubyGemsPublicGem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/canvas-integrations/read-proof": {
       "get": {
         "tags": [
@@ -19096,9 +19226,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Site Discovery Status Seo Keywords Discovery Status Get"
+                  "$ref": "#/components/schemas/DiscoveryStatusResponse"
                 }
               }
             }
@@ -19474,9 +19602,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Site Evidence Values Seo Site Evidence Values Get"
+                  "$ref": "#/components/schemas/SiteEvidenceValuesResponse"
                 }
               }
             }
@@ -19527,9 +19653,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Site Evidence Materialize Seo Sites  Site Id  Site Evidence Get"
+                  "$ref": "#/components/schemas/SiteEvidenceMaterializeResponse"
                 }
               }
             }
@@ -43681,11 +43805,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "boolean"
-                  },
-                  "title": "Response Delete Scenario Proof Runs Scenarios  Slug  Delete"
+                  "$ref": "#/components/schemas/ScenarioDeleteResponse"
                 }
               }
             }
@@ -102711,6 +102831,13 @@
         ],
         "title": "DiscardResponse"
       },
+      "DiscoveryStatusResponse": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "type": "object",
+        "title": "DiscoveryStatusResponse"
+      },
       "DiscoveryStepBody": {
         "properties": {
           "organization_id": {
@@ -105605,6 +105732,19 @@
         ],
         "title": "EarningCodeTotal"
       },
+      "EbayAccountDeletionAcknowledgement": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "EbayAccountDeletionAcknowledgement"
+      },
       "EbayChallengeResponse": {
         "properties": {
           "challengeResponse": {
@@ -105618,6 +105758,20 @@
           "challengeResponse"
         ],
         "title": "EbayChallengeResponse"
+      },
+      "EbayOAuthConnectResponse": {
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "title": "Authorization Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "authorization_url"
+        ],
+        "title": "EbayOAuthConnectResponse"
       },
       "EbaySandboxTaxonomyResult": {
         "properties": {
@@ -118058,6 +118212,113 @@
         "type": "object",
         "title": "HindsightCostsOut",
         "description": "Platform-wide Hindsight spend — what this system costs to run."
+      },
+      "HomebrewPublicFormula": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "homebrew_public_formula",
+            "title": "Kind",
+            "default": "homebrew_public_formula"
+          },
+          "provider": {
+            "type": "string",
+            "const": "homebrew",
+            "title": "Provider",
+            "default": "homebrew"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Full Name"
+          },
+          "formula_url": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Formula Url"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1,
+            "title": "Description"
+          },
+          "license": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "License"
+          },
+          "stable_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stable Version"
+          },
+          "head_version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Head Version"
+          },
+          "bottle_available": {
+            "type": "boolean",
+            "title": "Bottle Available"
+          },
+          "deprecated": {
+            "type": "boolean",
+            "title": "Deprecated"
+          },
+          "disabled": {
+            "type": "boolean",
+            "title": "Disabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "full_name",
+          "formula_url",
+          "description",
+          "bottle_available",
+          "deprecated",
+          "disabled"
+        ],
+        "title": "HomebrewPublicFormula",
+        "description": "Safe bounded projection of one public Homebrew/core formula."
       },
       "HumanLoginField": {
         "properties": {
@@ -134497,6 +134758,149 @@
         "title": "ModelReport",
         "description": "A distinct model class and every node that (transitively) uses it —\nfixing one shared model shows its blast radius here."
       },
+      "ModrinthPublicProject": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "modrinth_public_project",
+            "title": "Kind",
+            "default": "modrinth_public_project"
+          },
+          "provider": {
+            "type": "string",
+            "const": "modrinth",
+            "title": "Provider",
+            "default": "modrinth"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "project_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Project Id"
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Slug"
+          },
+          "project_url": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Project Url"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Description"
+          },
+          "project_type": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Project Type"
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Status"
+          },
+          "client_side": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Client Side"
+          },
+          "server_side": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Server Side"
+          },
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Categories"
+          },
+          "game_versions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "title": "Game Versions"
+          },
+          "loaders": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 30,
+            "title": "Loaders"
+          },
+          "downloads": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Downloads"
+          },
+          "followers": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Followers"
+          },
+          "published_at": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Published At"
+          },
+          "updated_at": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Updated At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "project_id",
+          "slug",
+          "project_url",
+          "title",
+          "description",
+          "project_type",
+          "status",
+          "client_side",
+          "server_side",
+          "categories",
+          "game_versions",
+          "loaders",
+          "downloads",
+          "followers",
+          "published_at",
+          "updated_at"
+        ],
+        "title": "ModrinthPublicProject",
+        "description": "Safe bounded projection of one public Modrinth project."
+      },
       "MoodlePublicConfigResult": {
         "properties": {
           "provider": {
@@ -149122,7 +149526,9 @@
           },
           "proofs": {
             "items": {
-              "additionalProperties": true,
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               "type": "object"
             },
             "type": "array",
@@ -159930,6 +160336,101 @@
         ],
         "title": "RowUpdate"
       },
+      "RubyGemsPublicGem": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "rubygems_public_gem",
+            "title": "Kind",
+            "default": "rubygems_public_gem"
+          },
+          "provider": {
+            "type": "string",
+            "const": "rubygems",
+            "title": "Provider",
+            "default": "rubygems"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "project_url": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Project Url"
+          },
+          "latest_version": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Latest Version"
+          },
+          "version_created_at": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Version Created At"
+          },
+          "platform": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Platform"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 2000,
+            "title": "Summary"
+          },
+          "licenses": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Licenses"
+          },
+          "yanked": {
+            "type": "boolean",
+            "title": "Yanked"
+          },
+          "total_downloads": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Total Downloads"
+          },
+          "version_downloads": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Version Downloads"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "project_url",
+          "latest_version",
+          "version_created_at",
+          "platform",
+          "summary",
+          "licenses",
+          "yanked",
+          "total_downloads",
+          "version_downloads"
+        ],
+        "title": "RubyGemsPublicGem",
+        "description": "Safe bounded projection of one public RubyGems.org gem."
+      },
       "RuleApplied": {
         "properties": {
           "class": {
@@ -162548,6 +163049,20 @@
           "metadata"
         ],
         "title": "ScanSummary"
+      },
+      "ScenarioDeleteResponse": {
+        "properties": {
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "deleted"
+        ],
+        "title": "ScenarioDeleteResponse"
       },
       "ScenarioPayload": {
         "properties": {
@@ -167696,6 +168211,20 @@
           "settings"
         ],
         "title": "SiteCrmFoldSettings"
+      },
+      "SiteEvidenceMaterializeResponse": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "type": "object",
+        "title": "SiteEvidenceMaterializeResponse"
+      },
+      "SiteEvidenceValuesResponse": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "type": "object",
+        "title": "SiteEvidenceValuesResponse"
       },
       "SiteIntakeApplyBody": {
         "properties": {
