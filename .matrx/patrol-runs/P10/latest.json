@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-29T192327Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-29T19:23:39.152Z",
-  "summary": "Repair implementation preserved; adding required feature documentation and focused proof.",
+  "state": "certified",
+  "updatedAt": "2026-08-29T19:29:11.722Z",
+  "summary": "CERTIFIED exact Batch 2 candidate; no batch-caused defect.",
   "source": "2026-08-29T192327Z.json",
-  "eventHash": "deec7ea11fc196bf90f34055897b7a6bba8f4f2841105728dc8945c27b6c2464"
+  "eventHash": "46f1491b1f86a0679cf1737008451865bed07f4c35899fdd13f53541b607484b"
 }

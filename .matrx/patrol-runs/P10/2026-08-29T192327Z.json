@@ -30,6 +30,42 @@
       ],
       "previousEventHash": "70e861f713db7ce381d6102779564554b8d89fa27361a52083ae851e0b395f81",
       "eventHash": "deec7ea11fc196bf90f34055897b7a6bba8f4f2841105728dc8945c27b6c2464"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-29T19:24:46.422Z",
+      "actor": "/root",
+      "summary": "Independent adversarial certification started for exact Batch 2 candidate.",
+      "evidence": [
+        "candidate:e50911c1cb1540d437de227662b545addb0dff3f",
+        "certifier:/root/p10_batch2_certifier"
+      ],
+      "previousEventHash": "deec7ea11fc196bf90f34055897b7a6bba8f4f2841105728dc8945c27b6c2464",
+      "eventHash": "3db2b24ee4fce63afc1440f876cb0b4f79e3c3e896b1a1045f07bda4add17e95"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-29T19:29:11.722Z",
+      "actor": "/root/p10_batch2_certifier",
+      "summary": "CERTIFIED exact Batch 2 candidate; no batch-caused defect.",
+      "evidence": [
+        "Exact four-path diff and diff-check PASS"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "e50911c1cb1540d437de227662b545addb0dff3f",
+        "certifierTaskId": "/root/p10_batch2_certifier",
+        "checks": [
+          "Full type-check PASS",
+          "Focused Jest 7 suites and 24 tests PASS",
+          "Scoped ESLint 0 errors; one unchanged barrel warning",
+          "Runtime organization identity and ingress parser contracts PASS"
+        ]
+      },
+      "previousEventHash": "3db2b24ee4fce63afc1440f876cb0b4f79e3c3e896b1a1045f07bda4add17e95",
+      "eventHash": "46f1491b1f86a0679cf1737008451865bed07f4c35899fdd13f53541b607484b"
     }
   ]
 }
