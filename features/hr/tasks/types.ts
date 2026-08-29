@@ -146,7 +146,16 @@ export type HrInboxChange = {
     to: string | null;
 };
 
-/** A row of `hr.workflow_notice`, the VIEW over `communication.notification`. */
+/**
+ * A row of `hr.workflow_notice`, the VIEW over `communication.notification`.
+ *
+ * `body` is the rendered sentence the recipient actually received ("Leave request for Tomo
+ * Iversen-G32 was rejected."). It is null whenever there is genuinely no sentence to show: a
+ * `render_pending` notice whose words are still being written, a `skipped` notice that was never
+ * sendable, a historical row from before the body was projected — and, on the DETAIL door, a
+ * notice addressed to somebody OTHER than the viewer, where withholding it is the entitlement
+ * rule and not a gap to work around.
+ */
 export type HrInboxNotice = {
     channel: string;
     status: string;
@@ -154,6 +163,7 @@ export type HrInboxNotice = {
     delivered_at: string | null;
     read_at: string | null;
     failure_reason: string | null;
+    body: string | null;
 };
 
 export type HrAutoApplyingRow = {

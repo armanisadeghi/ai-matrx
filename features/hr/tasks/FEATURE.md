@@ -205,6 +205,7 @@ the fix is in that pillar's flow declaration — never a second list on this pag
 
 # Change Log
 
+- 2026-08-29 — Delivery state now includes each distinct rendered notice body: the inbox table keeps it to one truncated line, while the full decision panel shows the complete sentence that recipients received.
 - 2026-08-28 — Restored `hr_wf_instance` to `VOLATILE` after the subject-display migration
   recreated it as `STABLE`, making governance refusals fail with read-only-transaction `25006`.
 - 2026-08-28 — Protected the `/hr` route family at the shared proxy boundary so guests reach

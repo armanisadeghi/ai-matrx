@@ -625,8 +625,12 @@ export function HrDecisionPanel({
                         <section className="space-y-2">
                             <h2 className="text-sm font-semibold">What was sent about this</h2>
                             <div className="rounded-lg border border-border bg-card p-3">
+                                {/* This section IS the question "what was sent about this", and
+                                    it has a full-width card to answer it in — so the rendered
+                                    sentence is shown whole rather than truncated. */}
                                 <HrDeliveryState
                                     notices={detail.notices}
+                                    showBody
                                 />
                             </div>
                         </section>

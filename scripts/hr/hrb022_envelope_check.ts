@@ -81,6 +81,10 @@ const LIVE_RESTRICTED_ROW = {
             delivered_at: "2026-08-27T00:01:04+00:00",
             read_at: null,
             failure_reason: null,
+            // The rendered sentence the recipient received. The door now projects it on every
+            // notice, so the fixture carries it too — a captured payload that is missing a key
+            // the live door ships stops being a test of the real shape.
+            body: "A pay change approval is waiting for your review.",
         },
     ],
 };

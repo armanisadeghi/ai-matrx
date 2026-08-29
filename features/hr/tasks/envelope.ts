@@ -201,9 +201,14 @@ export function parseAck(_source: Obj): Record<string, never> {
 
 function parseNotice(source: Obj): HrInboxNotice {
     // hr.wf_inbox builds these from the hr.workflow_notice VIEW: channel, status, sent_at,
-    // delivered_at, read_at, failure_reason. Every timestamp is nullable BY DESIGN — a NULL
+    // delivered_at, read_at, failure_reason, body. Every timestamp is nullable BY DESIGN — a NULL
     // read_at on an SMS is the truth (a carrier cannot tell us a person read anything), so it
     // stays null and the UI renders "delivered" rather than an empty cell or a fake tick.
+    //
+    // `body` is the rendered sentence the recipient received, and it is nullable for the same
+    // kind of reason: a notice still being rendered, one that was never sendable, a pre-projection
+    // historical row, or — on the detail door — a notice addressed to somebody else, which the
+    // door withholds deliberately. Null means "no sentence to show", never "look somewhere else".
     return {
         channel: typeof source.channel === "string" ? source.channel : "in_app",
         status: typeof source.status === "string" ? source.status : "",
@@ -211,6 +216,7 @@ function parseNotice(source: Obj): HrInboxNotice {
         delivered_at: optStr(source, "delivered_at") ?? null,
         read_at: optStr(source, "read_at") ?? null,
         failure_reason: optStr(source, "failure_reason") ?? null,
+        body: optStr(source, "body") ?? null,
     };
 }
 

@@ -160,7 +160,9 @@ export function HrTaskTable({
         sortable: true,
         filter: false,
         mobileHidden: true,
-        cell: (row) => <HrDeliveryState notices={row.notices} />,
+        // `showBody={false}` is stated, not defaulted: this is one narrow cell in a row per task,
+        // so the sentence is truncated to a single line rather than allowed to grow the row.
+        cell: (row) => <HrDeliveryState notices={row.notices} showBody={false} />,
     };
     if (showDelivery) columns.push(deliveryColumn);
 

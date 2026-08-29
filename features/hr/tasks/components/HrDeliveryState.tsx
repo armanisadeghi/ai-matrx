@@ -149,11 +149,56 @@ function statusLabel(status: string | null | undefined): string {
     return STATUS_LABEL[status] ?? "queued";
 }
 
-export function HrDeliveryState({ notices }: { notices: HrInboxNotice[] | undefined }) {
+/**
+ * 🚨 THE SENTENCE THE PERSON ACTUALLY RECEIVED, SHOWN AS TEXT.
+ *
+ * The chips say whether a notice landed; they never said WHAT it said. `hr.workflow_notice.body`
+ * is the rendered sentence itself — "Leave request for Tomo Iversen-G32 was rejected." — and an
+ * approver looking at "Email · delivered" has no way to know which words went out. It is shown
+ * here as visible text, never as a `title`: the whole reason this file carries no tooltip is that
+ * a hover cannot be touched, announced or screenshotted, and that applies twice over to the one
+ * string that IS the message.
+ *
+ * The email and in_app legs of the same event carry the SAME sentence, so the distinct bodies are
+ * shown once each — repeating a sentence per channel would say the same thing three times and
+ * read as three different notices.
+ *
+ * A notice with no body contributes nothing: null is a real state (still being rendered, never
+ * sendable, a historical row, or a notice addressed to somebody else that the detail door
+ * withholds on purpose), and inventing a placeholder for it would turn silence into noise.
+ */
+function distinctBodies(notices: HrInboxNotice[]): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const notice of notices) {
+        const body = notice.body?.trim();
+        if (!body || seen.has(body)) continue;
+        seen.add(body);
+        out.push(body);
+    }
+    return out;
+}
+
+/**
+ * `showBody` is the space budget, and BOTH call sites set it explicitly.
+ *
+ * - `HrTaskTable` is one narrow cell in a row per task: the sentence is clamped to a single
+ *   truncated line so a long notice cannot grow the row out of the table.
+ * - `HrDecisionPanel`'s "What was sent about this" is a full-width card with room to read: the
+ *   sentence wraps and is shown whole, because that panel exists to answer exactly this question.
+ */
+export function HrDeliveryState({
+    notices,
+    showBody,
+}: {
+    notices: HrInboxNotice[] | undefined;
+    showBody?: boolean;
+}) {
     if (!notices?.length) {
         return <span className="text-xs text-muted-foreground">No notice sent</span>;
     }
-    return (
+    const bodies = distinctBodies(notices);
+    const chips = (
         <div className="flex flex-wrap items-center gap-2">
             {notices.map((notice, index) => {
                 const Icon = CHANNEL_ICON[notice.channel] ?? Bell;
@@ -179,6 +224,31 @@ export function HrDeliveryState({ notices }: { notices: HrInboxNotice[] | undefi
                     </span>
                 );
             })}
+        </div>
+    );
+
+    // Nothing to say — render EXACTLY what this component rendered before the body existed. No
+    // wrapper, no empty paragraph, no "no body" placeholder: an absent sentence is absent.
+    if (!bodies.length) return chips;
+
+    return (
+        <div className="space-y-1">
+            {chips}
+            {bodies.map((body) => (
+                <p
+                    key={body}
+                    className={
+                        showBody
+                            ? "text-xs text-muted-foreground"
+                            : // One narrow table cell: clamped to a single line so a long notice
+                              // cannot grow the row. `min-w-0` because a flex/grid cell will not
+                              // let a child shrink below its content without it.
+                              "min-w-0 truncate text-xs text-muted-foreground"
+                    }
+                >
+                    {body}
+                </p>
+            ))}
         </div>
     );
 }
