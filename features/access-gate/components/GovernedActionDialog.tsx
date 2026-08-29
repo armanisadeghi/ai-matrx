@@ -108,7 +108,7 @@ export function GovernedActionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="matrx-touch-targets sm:max-w-xl">
         <DialogHeader>
           <div className="mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-destructive/10">
             <Trash2 className="h-5 w-5 text-destructive" aria-hidden />
