@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P10",
-  "runId": "2026-08-15T191639Z",
-  "state": "closed",
-  "updatedAt": "2026-08-18T19:23:00.292Z",
-  "summary": "Closed the resumed P10 run after independent certification and delivery reconciliation.",
-  "source": "2026-08-15T191639Z.json",
-  "eventHash": "a33d7b50b204670bf99bca1c7d93ef4aa5ba71a5c474c003bdc43da6fc0e56d9"
+  "runId": "2026-08-29T191203Z",
+  "state": "fixing",
+  "updatedAt": "2026-08-29T19:12:04.164Z",
+  "summary": "Claimed disjoint ranked repair units for bounded parallel implementation.",
+  "source": "2026-08-29T191203Z.json",
+  "eventHash": "4b7ac5c2f35e5188a30bbbccc768923700b48fbba92ef7428f5fda6eb7fe7730"
 }

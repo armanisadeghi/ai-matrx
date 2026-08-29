@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P10",
+  "runId": "2026-08-29T191203Z",
+  "baseSha": "ed26b413d1ba400cfb8d78490f00d34a44df0b32",
+  "createdAt": "2026-08-29T19:12:03.633Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-29T19:12:03.633Z",
+      "actor": "/root",
+      "summary": "Opened P10 eradication run from the closed prior record and current ranked backlog.",
+      "evidence": [
+        "manifest check PASS; type-check PASS; hatch baseline: as unknown as +311, Record<string, any> +4, value assertions +12, nullish object defaults +141, nullish string defaults +875; unrelated dirty paths captured"
+      ],
+      "previousEventHash": null,
+      "eventHash": "405c41c82c4ab220148b195af235899f893d70a02ed18946e5a3db5c688a959e"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-29T19:12:04.164Z",
+      "actor": "/root",
+      "summary": "Claimed disjoint ranked repair units for bounded parallel implementation.",
+      "evidence": [
+        "AgentAppRenderer whole-file disable; ai-model boundary casts; agent-definition converters; hierarchy dispatch and mutation casts"
+      ],
+      "previousEventHash": "405c41c82c4ab220148b195af235899f893d70a02ed18946e5a3db5c688a959e",
+      "eventHash": "4b7ac5c2f35e5188a30bbbccc768923700b48fbba92ef7428f5fda6eb7fe7730"
+    }
+  ]
+}
