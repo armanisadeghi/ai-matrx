@@ -116,7 +116,10 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
         // first among them — is carried over verbatim. A builder call here would have to
         // re-enumerate `flow` and anything a future filter adds, and would silently drop
         // whatever it forgot. See `features/hr/__tests__/no-hand-built-hr-urls.test.ts`.
-        startTransition(() => router.replace(`/hr/tasks?${query.toString()}`));
+        startTransition(() =>
+            // hr-url-exempt: the query-copy rationale is documented immediately above.
+            router.replace(`/hr/tasks?${query.toString()}`),
+        );
     }
 
     async function runBulk(intent: "approve" | "reject", reason?: string) {

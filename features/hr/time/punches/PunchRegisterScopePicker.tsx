@@ -90,6 +90,7 @@ export function PunchRegisterScopePicker({
     // survives untouched — this rebuild preserves the employer rather than dropping it.
     // A builder call here would have to re-list every filter this picker does not own.
     // See `features/hr/__tests__/no-hand-built-hr-urls.test.ts`.
+    // hr-url-exempt: the query-copy rationale is documented immediately above.
     router.push(`/hr/time/punches?${query.toString()}`);
     setOpen(false);
   }
