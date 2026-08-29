@@ -106,7 +106,9 @@ sales page after signing in.
 - **Protected product routes stop before product data loads.**
   [`protected-routes.ts`](./protected-routes.ts) is the shared proxy policy.
   A guest must see the sign-in experience, never a database, mandate, or
-  permissions error from inside the product.
+  permissions error from inside the product. Container workspaces such as
+  `/projects/**` and `/tasks/**` are protected even when their top-level module
+  landing has public acquisition content elsewhere.
 - **Session loss clears client authority before cleanup.**
   [`AuthSessionWatcher.tsx`](../../components/layout/AuthSessionWatcher.tsx)
   dispatches `clearUserAuth()` on `SIGNED_OUT` or a booted tab's empty
@@ -136,6 +138,9 @@ links and the nonexistent `/signup` route. `pnpm check:auth-destinations` runs
 the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
+
+- **2026-08-28** — Protected `/projects/**` and `/tasks/**` at the proxy boundary;
+  guests can no longer mount container workspaces and fan out anonymous reads.
 
 - **2026-08-26** — Session-retry operations now stop before PostgREST when the
   browser session is already absent, so the auth-event/React-effect race cannot
