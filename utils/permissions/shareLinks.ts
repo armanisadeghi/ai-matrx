@@ -10,6 +10,7 @@
  * `platform.share_links` directly from the client. See
  * `migrations/share_links_canonical_system.sql` and features/sharing/FEATURE.md.
  */
+import { shortLinkUrl } from "@ai-matrx/kit/short-link";
 import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ResourceType } from "./registry";
@@ -20,6 +21,8 @@ import { operationFailed } from "@/utils/errors";
 export interface ShareLink {
   id: string;
   token: string;
+  /** Token of the /r short alias (platform.short_links) — a URL alias only, never authorization. */
+  shortToken: string | null;
   permissionLevel: PermissionLevel;
   label: string | null;
   expiresAt: string | null;
@@ -114,10 +117,29 @@ export function shareLinkUrl(token: string): string {
   return `${base}/s/${token}`;
 }
 
+/**
+ * The URL to hand a person for a share link — the short alias when one exists
+ * (auto-shorten-every-share-link, owner ruling 2026-08-29), the full /s/ URL
+ * otherwise. The alias is a redirect only; the 64-hex share token stays the
+ * one authorization either way.
+ */
+export function shareUrlForLink(link: Pick<ShareLink, "token" | "shortToken">): string {
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+  return link.shortToken ? shortLinkUrl(base, link.shortToken) : shareLinkUrl(link.token);
+}
+
 /** Mint a share link for a resource (owner-only). Returns the token + URL. */
 export async function createShareLink(
   options: CreateShareLinkOptions,
-): Promise<{ success: boolean; token?: string; url?: string; error?: string }> {
+): Promise<{
+  success: boolean;
+  token?: string;
+  shortToken?: string | null;
+  url?: string;
+  error?: string;
+}> {
   try {
     const { data, error } = await supabase.rpc("create_share_link", {
       p_resource_type: options.resourceType,
@@ -128,11 +150,22 @@ export async function createShareLink(
       p_label: options.label ?? undefined,
     });
     if (error) return { success: false, error: error.message };
-    const res = data as { success: boolean; token?: string; error?: string };
+    const res = data as {
+      success: boolean;
+      token?: string;
+      short_token?: string | null;
+      error?: string;
+    };
     if (!res?.success || !res.token) {
       return { success: false, error: res?.error ?? "Failed to create link" };
     }
-    return { success: true, token: res.token, url: shareLinkUrl(res.token) };
+    const shortToken = res.short_token ?? null;
+    return {
+      success: true,
+      token: res.token,
+      shortToken,
+      url: shareUrlForLink({ token: res.token, shortToken }),
+    };
   } catch (err) {
     return {
       success: false,
@@ -154,6 +187,7 @@ export async function listShareLinks(
   return (data as Record<string, unknown>[]).map((r) => ({
     id: r.id as string,
     token: r.token as string,
+    shortToken: (r.short_token as string | null) ?? null,
     permissionLevel: r.permission_level as PermissionLevel,
     label: (r.label as string | null) ?? null,
     expiresAt: (r.expires_at as string | null) ?? null,

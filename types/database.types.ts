@@ -58671,6 +58671,7 @@ export type Database = {
           permission_level: Database["public"]["Enums"]["permission_level"]
           resource_id: string
           resource_type: string
+          short_token: string | null
           token: string
           use_count: number
         }
@@ -58688,6 +58689,7 @@ export type Database = {
           permission_level?: Database["public"]["Enums"]["permission_level"]
           resource_id: string
           resource_type: string
+          short_token?: string | null
           token: string
           use_count?: number
         }
@@ -58705,6 +58707,7 @@ export type Database = {
           permission_level?: Database["public"]["Enums"]["permission_level"]
           resource_id?: string
           resource_type?: string
+          short_token?: string | null
           token?: string
           use_count?: number
         }
@@ -59525,6 +59528,7 @@ export type Database = {
         Args: { p_partition: string }
         Returns: string
       }
+      _mint_share_short_alias: { Args: { p_share_id: string }; Returns: string }
       _outsider_parent_matches: {
         Args: { p_id: string; p_parent: string; p_resource: string }
         Returns: boolean
@@ -66854,6 +66858,7 @@ export type Database = {
         Args: { p_as_of?: string; p_employee_id: string }
         Returns: Json
       }
+      hr_employee_restore: { Args: { p_payload: Json }; Returns: Json }
       hr_employee_update: {
         Args: {
           p_employee_id: string
@@ -67989,6 +67994,7 @@ export type Database = {
           last_used_at: string
           max_uses: number
           permission_level: string
+          short_token: string
           token: string
           use_count: number
         }[]
@@ -69329,6 +69335,14 @@ export type Database = {
       shareable_owner_column: {
         Args: { p_registry_owner: string; p_schema: string; p_table: string }
         Returns: string
+      }
+      shorten_app_url: {
+        Args: {
+          p_expires_at?: string
+          p_organization_id: string
+          p_path: string
+        }
+        Returns: Json
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }

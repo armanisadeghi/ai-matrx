@@ -10,7 +10,7 @@ import {
   createShareLink,
   listShareLinks,
   revokeShareLink,
-  shareLinkUrl,
+  shareUrlForLink,
   type ShareLink,
 } from "@/utils/permissions/shareLinks";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -58,9 +58,9 @@ export function ShareLinkPanel({
   const activeLinks = links.filter((l) => l.isActive);
 
   const copy = useCallback(
-    async (token: string, id: string) => {
+    async (url: string, id: string) => {
       try {
-        await navigator.clipboard.writeText(shareLinkUrl(token));
+        await navigator.clipboard.writeText(url);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
         toast({
@@ -78,9 +78,9 @@ export function ShareLinkPanel({
     setCreating(true);
     const result = await createShareLink({ resourceType, resourceId });
     setCreating(false);
-    if (result.success && result.token) {
+    if (result.success && result.url) {
       await refresh();
-      await copy(result.token, "new");
+      await copy(result.url, "new");
     } else {
       toast({
         title: "Couldn't create link",
@@ -175,7 +175,7 @@ export function ShareLinkPanel({
             >
               <Input
                 readOnly
-                value={shareLinkUrl(link.token)}
+                value={shareUrlForLink(link)}
                 className="h-8 flex-1 text-xs font-mono"
                 onFocus={(e) => e.currentTarget.select()}
               />
@@ -190,7 +190,7 @@ export function ShareLinkPanel({
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 flex-shrink-0"
-                onClick={() => copy(link.token, link.id)}
+                onClick={() => copy(shareUrlForLink(link), link.id)}
                 title="Copy link"
               >
                 {copiedId === link.id ? (

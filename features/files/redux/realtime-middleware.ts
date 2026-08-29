@@ -87,6 +87,7 @@ interface PlatformShareLinkRow {
   resource_type?: string;
   resource_id?: string;
   token?: string;
+  short_token?: string | null;
   permission_level?: string;
   label?: string | null;
   expires_at?: string | null;
@@ -608,6 +609,7 @@ export const cloudFilesRealtimeMiddleware: Middleware = (store) => {
       {
         id: newRow.id,
         token: newRow.token,
+        shortToken: newRow.short_token ?? null,
         permissionLevel: (newRow.permission_level ??
           "viewer") as CloudShareLink["permissionLevel"],
         label: newRow.label ?? null,
