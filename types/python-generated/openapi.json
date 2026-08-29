@@ -13502,6 +13502,59 @@
         }
       }
     },
+    "/mcp-connections/{server_id}/grafana/dashboard-search": {
+      "post": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Grafana Dashboard Search",
+        "description": "Search dashboard metadata through Grafana's fixed read-only MCP tool.",
+        "operationId": "grafana_dashboard_search_mcp_connections__server_id__grafana_dashboard_search_post",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GrafanaDashboardSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrafanaDashboardSearchResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mcp-connections/{server_id}/oauth-tokens": {
       "post": {
         "tags": [
@@ -15123,6 +15176,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openedx-integrations/official-sandbox/demo-course": {
+      "get": {
+        "tags": [
+          "Open edX Integrations"
+        ],
+        "summary": "Official Sandbox Demo Course",
+        "operationId": "official_sandbox_demo_course_openedx_integrations_official_sandbox_demo_course_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpenEdxDemoCourseResult"
                 }
               }
             }
@@ -115509,6 +115583,52 @@
         ],
         "title": "GoogleTasksPreview"
       },
+      "GrafanaDashboardSearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Query",
+            "description": "Grafana dashboard search text."
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "GrafanaDashboardSearchRequest",
+        "description": "One bounded dashboard title/tag query; no arbitrary MCP arguments."
+      },
+      "GrafanaDashboardSearchResult": {
+        "properties": {
+          "server_id": {
+            "type": "string",
+            "title": "Server Id"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "dashboards": {
+            "type": "string",
+            "title": "Dashboards"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "default": "search_dashboards"
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_id",
+          "query",
+          "dashboards"
+        ],
+        "title": "GrafanaDashboardSearchResult",
+        "description": "Provider-formatted matches from Grafana's fixed read-only search tool."
+      },
       "GrantPermissionRequest": {
         "properties": {
           "grantee_id": {
@@ -135348,6 +135468,83 @@
           "last_modified_at"
         ],
         "title": "OneDriveSelectedFileResponse"
+      },
+      "OpenEdxDemoCourseResult": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "const": "openedx",
+            "title": "Provider",
+            "default": "openedx"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "environment": {
+            "type": "string",
+            "const": "official_sandbox",
+            "title": "Environment",
+            "default": "official_sandbox"
+          },
+          "site_url": {
+            "type": "string",
+            "title": "Site Url",
+            "default": "https://sandbox.openedx.org"
+          },
+          "course_id": {
+            "type": "string",
+            "title": "Course Id"
+          },
+          "course_name": {
+            "type": "string",
+            "title": "Course Name"
+          },
+          "organization": {
+            "type": "string",
+            "title": "Organization"
+          },
+          "course_number": {
+            "type": "string",
+            "title": "Course Number"
+          },
+          "pacing": {
+            "type": "string",
+            "enum": [
+              "self",
+              "instructor"
+            ],
+            "title": "Pacing"
+          },
+          "mobile_available": {
+            "type": "boolean",
+            "title": "Mobile Available"
+          },
+          "invitation_only": {
+            "type": "boolean",
+            "title": "Invitation Only"
+          },
+          "short_description": {
+            "type": "string",
+            "title": "Short Description"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "course_id",
+          "course_name",
+          "organization",
+          "course_number",
+          "pacing",
+          "mobile_available",
+          "invitation_only",
+          "short_description"
+        ],
+        "title": "OpenEdxDemoCourseResult",
+        "description": "Bounded public metadata for the official sandbox demo course."
       },
       "OpenRuntimeResponse": {
         "properties": {},

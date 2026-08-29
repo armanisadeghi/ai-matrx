@@ -5245,6 +5245,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mcp-connections/{server_id}/grafana/dashboard-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grafana Dashboard Search
+         * @description Search dashboard metadata through Grafana's fixed read-only MCP tool.
+         */
+        post: operations["grafana_dashboard_search_mcp_connections__server_id__grafana_dashboard_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mcp-connections/{server_id}/oauth-tokens": {
         parameters: {
             query?: never;
@@ -5892,6 +5912,23 @@ export interface paths {
         };
         /** Official Demo Public Config */
         get: operations["official_demo_public_config_moodle_integrations_official_demos__site_key__public_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openedx-integrations/official-sandbox/demo-course": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Official Sandbox Demo Course */
+        get: operations["official_sandbox_demo_course_openedx_integrations_official_sandbox_demo_course_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -44509,6 +44546,34 @@ export interface components {
              */
             access_mode?: "read_only";
         };
+        /**
+         * GrafanaDashboardSearchRequest
+         * @description One bounded dashboard title/tag query; no arbitrary MCP arguments.
+         */
+        GrafanaDashboardSearchRequest: {
+            /**
+             * Query
+             * @description Grafana dashboard search text.
+             */
+            query: string;
+        };
+        /**
+         * GrafanaDashboardSearchResult
+         * @description Provider-formatted matches from Grafana's fixed read-only search tool.
+         */
+        GrafanaDashboardSearchResult: {
+            /** Server Id */
+            server_id: string;
+            /** Query */
+            query: string;
+            /** Dashboards */
+            dashboards: string;
+            /**
+             * Tool Name
+             * @default search_dashboards
+             */
+            tool_name?: string;
+        };
         /** GrantPermissionRequest */
         GrantPermissionRequest: {
             /** Grantee Id */
@@ -52392,6 +52457,54 @@ export interface components {
             etag: string | null;
             /** Last Modified At */
             last_modified_at: string | null;
+        };
+        /**
+         * OpenEdxDemoCourseResult
+         * @description Bounded public metadata for the official sandbox demo course.
+         */
+        OpenEdxDemoCourseResult: {
+            /**
+             * Provider
+             * @default openedx
+             * @constant
+             */
+            provider?: "openedx";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Environment
+             * @default official_sandbox
+             * @constant
+             */
+            environment?: "official_sandbox";
+            /**
+             * Site Url
+             * @default https://sandbox.openedx.org
+             */
+            site_url?: string;
+            /** Course Id */
+            course_id: string;
+            /** Course Name */
+            course_name: string;
+            /** Organization */
+            organization: string;
+            /** Course Number */
+            course_number: string;
+            /**
+             * Pacing
+             * @enum {string}
+             */
+            pacing: "self" | "instructor";
+            /** Mobile Available */
+            mobile_available: boolean;
+            /** Invitation Only */
+            invitation_only: boolean;
+            /** Short Description */
+            short_description: string;
         };
         /** OpenRuntimeResponse */
         OpenRuntimeResponse: {
@@ -84287,6 +84400,41 @@ export interface operations {
             };
         };
     };
+    grafana_dashboard_search_mcp_connections__server_id__grafana_dashboard_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrafanaDashboardSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrafanaDashboardSearchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     persist_tokens_mcp_connections__server_id__oauth_tokens_post: {
         parameters: {
             query?: never;
@@ -85473,6 +85621,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    official_sandbox_demo_course_openedx_integrations_official_sandbox_demo_course_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenEdxDemoCourseResult"];
                 };
             };
         };
