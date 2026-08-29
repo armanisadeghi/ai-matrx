@@ -102,6 +102,25 @@ describe("Pattern Patrol typed manifest", () => {
     expect(livePrompt).toContain(instruction);
   });
 
+  it("makes P12 backlog-first with a hard three-Surface closure floor", () => {
+    const instruction = PATROLS.find(
+      (patrol) => patrol.patrolId === "P12",
+    )?.runInstruction;
+    expect(PATROLS.find((patrol) => patrol.patrolId === "P12")?.tier).toBe(
+      "M/C/R",
+    );
+    expect(instruction).toContain("Ranked Surface Queue");
+    expect(instruction).toContain(
+      "at least three unique canonical Surface IDs",
+    );
+    expect(instruction).toContain("Detector or machinery work never counts");
+    expect(instruction).toContain("exact production URL plus interaction path");
+    const livePrompt = automationUpdateSpecs().find(
+      (spec) => spec.id === "pattern-patrol-p12-surface-values-completeness",
+    )?.prompt;
+    expect(livePrompt).toContain(instruction);
+  });
+
   it("generates a registry row for every automation", () => {
     const table = registryScheduleTable();
     for (const patrol of PATROLS) {

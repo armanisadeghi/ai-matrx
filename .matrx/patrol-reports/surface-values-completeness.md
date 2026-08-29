@@ -22,6 +22,28 @@ Run classification: **inventory/machinery**, not a product Surface completion. N
 - Certification: **CERTIFIED** for exact candidate `2470f82af0a2726af49786c4a25a8451282e7a76`. The independent certifier found no batch-caused defect.
 - Delivery: **DELIVERED** — the certified candidate is preserved at `refs/heads/patrol-runs/P12/20260828T162115Z`, is an ancestor of release commit `e1968d0a6e`, and shipped successfully in `v0.4.1392`. Later releases continue to contain it; no redundant release is required.
 
+## Ranked Surface Queue
+
+This queue is the work authority for the next run. Consume the first `ready`
+rows before broad discovery. A row leaves only after its canonical Surface ID,
+complete manifest and values, live provider/emitter, route or host resolution,
+Locate anchors, applicable write/mirror contract, honest readiness, independent
+certification, and browser proof are recorded. A blocked row is retained and
+the next ready row replaces it toward the three-Surface floor.
+
+| Rank | Queue key                          | Canonical Surface ID target            | Host and interaction path                                                                                              | Status  |
+| ---: | ---------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------- |
+|    1 | `keywordQuickAnswersWindow`        | `matrx-user/keyword-quick-answers`     | Keyword Value Workbench → **Quick Answers**                                                                            | `ready` |
+|    2 | `keywordResearchWindow`            | `matrx-user/keyword-research`          | Any authenticated AppShell route → **Tools** → **Keyword Research**                                                     | `ready` |
+|    3 | `pageResearchWindow`               | `matrx-user/page-research`             | `/marketing/content-plan/[siteId]` → select a page node → **Run research for this page**                                | `ready` |
+
+These three form the first coherent pilot family: all are registered floating
+marketing/research windows with canonical components and live openers but no
+own manifest declaration. The completion run must replace route patterns with
+exact production URLs for the live records it certifies. After closing the
+tranche, promote the next three verified entries from the measured 374-unit
+backlog before doing optional detector work.
+
 ## Baseline and delta diagnostics
 
 - Isolation: the automation ran only in `/Users/armanisadeghi/.codex/worktrees/b923/matrx-frontend`; dependencies were installed locally with `pnpm install --offline --frozen-lockfile` and were never symlinked.

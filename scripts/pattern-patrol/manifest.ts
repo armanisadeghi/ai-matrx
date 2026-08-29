@@ -4,7 +4,7 @@
  * generated from this file; do not copy common contracts into patrol configs.
  */
 
-export type PatrolTier = "M" | "R" | "C/R" | "M/R";
+export type PatrolTier = "M" | "R" | "C/R" | "M/R" | "M/C/R";
 
 export interface PatrolDefinition {
   patrolId: `P${number}`;
@@ -217,13 +217,13 @@ export const PATROLS = [
     job: "Surface Values completeness",
     automationId: "pattern-patrol-p12-surface-values-completeness",
     automationName: "Pattern Patrol P12 · Surface Values completeness",
-    tier: "C/R",
+    tier: "M/C/R",
     recipePath: ".claude/skills/surface-authoring/SKILL.md",
     reportSlug: "surface-values-completeness",
     rrule: "FREQ=WEEKLY;BYDAY=TU,FR;BYHOUR=9;BYMINUTE=10",
     cadence: "Tuesdays and Fridays 9:10 AM",
     runInstruction:
-      "Inventory route leaves, overlays, window panels, dialogs, drawers, tabs, and other interactive surfaces against canonical manifests, route resolution, live emitters, Locate anchors, and readiness evidence. Create or complete clear declarations automatically in bounded batches; never treat a green manifest-only drift check as proof that every surface or loaded value is declared.",
+      "BACKLOG-FIRST COMPLETION CONTRACT: The P12 report's Ranked Surface Queue is the work authority. While it contains any ready item, do not perform broad discovery first: claim the first ready entries in order. Every non-clean run completes at least three unique canonical Surface IDs end to end, using multiple batches of at most 15 files when necessary. A Surface counts only when its identity and manifest, every loaded value and natural group, live provider/emitter, route or host resolution, Locate anchors, write targets and DB mirror sync when applicable, honest readiness, independent certification, and browser proof are complete. Blocked, invalid, duplicate, or already-compliant items do not count: record the outcome and take the next ready item until three close. Detector or machinery work never counts and may not replace closures while ready backlog exists. Only one systemic prerequisite blocking every ready candidate may end below three, and that run is AUTOMATION DEGRADED — ACTION REQUIRED. After three closures, refresh structural novelty and the scheduled full inventory, append newly verified items, and promote the next ready tranche. The final inbox names every completed Surface ID and gives its exact production URL plus interaction path; say ready to test only after a containing deployment is verified, otherwise say delivery pending. A detector-only run is labeled inventory/machinery and never a Surface enhancement.",
   },
   {
     patrolId: "P13",
