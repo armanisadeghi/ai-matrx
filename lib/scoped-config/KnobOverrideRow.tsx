@@ -13,7 +13,7 @@
 //   * the blast radius is said before saving (rule 9);
 //   * a refusal envelope from the door renders as the reason it carries.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Gavel, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,10 +66,24 @@ export function KnobOverrideRow(props: {
   const { knob, scopeKind, scopeId, organizationId, blastRadius, onChanged } = props;
   const overrideValue = scopeKind === "user" ? knob.user_override : knob.org_override;
   const isSetHere = overrideValue !== null && overrideValue !== undefined;
-  const [draft, setDraft] = useState<string>(() =>
-    isSetHere ? valueText(overrideValue) : "",
-  );
+  // What clearing falls back to: on the user rung the org's override (when one
+  // exists) is the parent, not the platform default.
+  const hasOrgParent =
+    scopeKind === "user" &&
+    knob.org_override !== null &&
+    knob.org_override !== undefined;
+  const inheritedValue = hasOrgParent ? knob.org_override : knob.platform_default;
+  const inheritedFrom = hasOrgParent ? "your organization" : "the platform";
+  const overrideText = isSetHere ? valueText(overrideValue) : "";
+  const [draft, setDraft] = useState<string>(overrideText);
   const [busy, setBusy] = useState(false);
+
+  // Re-sync the draft whenever the row starts representing different state —
+  // a clear, a refresh, or (on the personal tab) an organization switch. A
+  // stale draft would otherwise be one Save away from landing in the wrong org.
+  useEffect(() => {
+    setDraft(overrideText);
+  }, [knob.full_key, organizationId, scopeId, overrideText]);
 
   const write = async (value: unknown) => {
     setBusy(true);
@@ -88,7 +102,7 @@ export function KnobOverrideRow(props: {
       }
       toast.success(
         value === null
-          ? `${knob.label} now inherits the platform value`
+          ? `${knob.label} now inherits from ${inheritedFrom}`
           : `${knob.label} saved. ${blastRadius}`,
       );
       onChanged();
@@ -110,11 +124,11 @@ export function KnobOverrideRow(props: {
 
   const clear = async () => {
     const confirmed = await confirm({
-      title: `Use the platform value for ${knob.label}?`,
+      title: `Inherit ${knob.label} from ${inheritedFrom}?`,
       description: `The override is removed and this setting falls back to ${valueText(
-        knob.platform_default,
+        inheritedValue,
       )}${knob.unit ? ` ${knob.unit}` : ""}.`,
-      confirmLabel: "Use platform value",
+      confirmLabel: "Inherit it",
     });
     if (confirmed) await write(null);
   };
@@ -138,7 +152,7 @@ export function KnobOverrideRow(props: {
             </Badge>
           ) : (
             <Badge variant="outline" className="text-xs">
-              Inherited from platform
+              Inherited from {hasOrgParent ? "organization" : "platform"}
             </Badge>
           )}
           {knob.out_of_range && (
@@ -205,10 +219,10 @@ export function KnobOverrideRow(props: {
           size="sm"
           variant="ghost"
           disabled={busy || !isSetHere}
-          title="Remove the override and inherit the platform value"
+          title={`Remove the override and inherit from ${inheritedFrom}`}
           onClick={() => void clear()}
         >
-          Use platform value
+          Inherit
         </Button>
       </div>
     </div>

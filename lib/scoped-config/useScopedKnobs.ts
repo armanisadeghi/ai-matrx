@@ -8,7 +8,7 @@
 
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { fetchKnobIndex } from "./service";
 import type { ScopedKnob } from "./types";
@@ -34,6 +34,7 @@ export function useScopedKnobs(options: {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generation, setGeneration] = useState(0);
+  const loadedOrgRef = useRef<string | null>(null);
 
   const refresh = useCallback(() => setGeneration((n) => n + 1), []);
 
@@ -41,7 +42,15 @@ export function useScopedKnobs(options: {
     if (!organizationId) {
       setKnobs([]);
       setIsLoading(false);
+      loadedOrgRef.current = null;
       return;
+    }
+    // A NEW organization (including the id arriving after a null first render)
+    // is a first read, not a refresh: show loading rather than presenting the
+    // previous (or empty) list as this org's final answer.
+    if (loadedOrgRef.current !== organizationId) {
+      setIsLoading(true);
+      loadedOrgRef.current = organizationId;
     }
     let cancelled = false;
     (async () => {
