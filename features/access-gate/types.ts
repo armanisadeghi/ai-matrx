@@ -9,6 +9,7 @@
  */
 
 import type { JsonObject } from "@/types/json";
+import type { PermissionLevel } from "@/utils/permissions/types";
 
 /** What the platform actually knows about a failed read. */
 export type AccessGateStatus =
@@ -42,7 +43,7 @@ export type AccessRequestStatus =
   "pending" | "granted" | "declined" | "withdrawn" | "reported";
 
 /** The level a requester is asking for. Mirrors `iam.permissions.permission_level`. */
-export type RequestedLevel = "viewer" | "editor" | "admin";
+export type RequestedLevel = PermissionLevel;
 
 export type AccessRequestKind =
   "resource_access" | "resource_action" | "setting";

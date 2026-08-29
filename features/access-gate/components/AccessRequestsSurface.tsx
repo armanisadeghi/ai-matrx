@@ -63,6 +63,7 @@ import {
 import type {
   AccessRequestRow,
   AccessRequestStatus,
+  RequestedLevel,
 } from "@/features/access-gate/types";
 
 type Box = "inbox" | "sent";
@@ -269,7 +270,7 @@ export function AccessRequestsSurface() {
     }
   }
 
-  function decide(row: AccessRequestRow, level: "viewer" | "editor" | "admin") {
+  function decide(row: AccessRequestRow, level: RequestedLevel) {
     void run(
       row.id,
       async () => {

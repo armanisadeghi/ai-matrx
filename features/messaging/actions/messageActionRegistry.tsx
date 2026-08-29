@@ -28,7 +28,10 @@ import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import type { AccessRequestStatus } from "@/features/access-gate/types";
+import type {
+  AccessRequestStatus,
+  RequestedLevel,
+} from "@/features/access-gate/types";
 import { useOpenAgentFindUsagesWindow } from "@/features/overlays/openers/agentFindUsagesWindow";
 import type {
   AccessRequestActionPayload,
@@ -264,7 +267,7 @@ function AccessRequestChips({
 
   async function decide(
     decision: "grant" | "decline",
-    level?: "viewer" | "editor" | "admin",
+    level?: RequestedLevel,
   ) {
     setBusy(true);
     try {
