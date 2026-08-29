@@ -47,6 +47,10 @@ export interface InstantProcessSheetProps {
   error: string | null;
   /** The item's saved analysis — this run's, or one from an earlier visit. */
   storedResult: Record<string, unknown> | null;
+  /** An earlier run is on record for this item (pointer restored). */
+  hasStoredRun: boolean;
+  /** That restored run has a stream a viewer can actually render. */
+  restoredHasStream: boolean;
   /** Rehydrating an earlier run for this item. */
   restoring: boolean;
   /** Run the analysis again on the item's current photos. */
@@ -63,6 +67,8 @@ export function InstantProcessSheet({
   isRunning,
   error,
   storedResult,
+  hasStoredRun,
+  restoredHasStream,
   restoring,
   onReanalyze,
   onNextItem,
@@ -72,6 +78,13 @@ export function InstantProcessSheet({
   // rehydration that returned no request row, and it is what actually
   // persisted. The live path owns the frame only while a run is bound.
   const showStored = Boolean(storedResult) && !isRunning && !pending;
+  // Bind the viewer ONLY to a run it can render: live/pending, or a restored
+  // conversation that came back with a request row. A restored run with no
+  // stream would sit on "Starting…" forever — say what happened instead.
+  const showLive =
+    !showStored && (isRunning || pending || (hasStoredRun && restoredHasStream));
+  const showUnrecoverable =
+    !showStored && !showLive && !restoring && hasStoredRun && !error;
   const storedKind =
     typeof storedResult?.__kind === "string"
       ? storedResult.__kind
@@ -113,9 +126,15 @@ export function InstantProcessSheet({
               value={storedResult}
               variant="bare"
             />
+          ) : showUnrecoverable ? (
+            <p className="py-2 text-sm text-muted-foreground">
+              This item&apos;s earlier analysis did not finish, and there is
+              nothing left to replay. Re-analyze to run it again on the photos
+              you have now.
+            </p>
           ) : (
             <LiveRunDisplay
-              conversationId={conversationId}
+              conversationId={showLive ? conversationId : null}
               pending={pending || (restoring && !storedResult)}
               variant="bare"
               bodyClassName="max-h-none"
@@ -127,7 +146,7 @@ export function InstantProcessSheet({
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          {storedResult && !isRunning && (
+          {(storedResult || showUnrecoverable) && !isRunning && (
             <Button variant="outline" onClick={onReanalyze}>
               <BrainCircuit className="mr-1.5 h-4 w-4" />
               Re-analyze

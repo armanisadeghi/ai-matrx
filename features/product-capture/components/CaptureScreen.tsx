@@ -854,6 +854,8 @@ export function CaptureScreen({
           isRunning={instant.isRunning}
           error={launchError ?? instant.error}
           storedResult={instant.storedResult}
+          hasStoredRun={instant.hasStoredRun}
+          restoredHasStream={instant.restoredHasStream}
           restoring={instant.restoring}
           onReanalyze={runInstant}
           onNextItem={onInstantNextItem}

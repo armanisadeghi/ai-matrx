@@ -121,6 +121,12 @@ export interface UseInstantAnalysisResult {
   storedResult: Record<string, unknown> | null;
   /** A run was started for this item at some point (pointer on the item). */
   hasStoredRun: boolean;
+  /**
+   * The restored run has a stream a viewer can render. False with
+   * `hasStoredRun` true means the run is gone beyond recovery — say so and
+   * offer to re-analyze; never bind a viewer that would spin forever.
+   */
+  restoredHasStream: boolean;
   /** Rehydrating a previous run for the current item. */
   restoring: boolean;
   dismiss: () => void;
@@ -179,6 +185,14 @@ interface RestoredRun {
   itemId: string;
   run: InstantRunPointer | null;
   result: Record<string, unknown> | null;
+  /**
+   * The rehydrated conversation actually carries a request the stream viewer
+   * can render. A conversation can come back with messages but NO request row,
+   * and `<LiveRunDisplay>` derives its handle from exactly that row — binding
+   * it anyway leaves a "Starting…" spinner on screen forever for a run that
+   * ended long ago. Consumers branch on this instead.
+   */
+  hasStream: boolean;
 }
 
 export function useInstantAnalysis({
@@ -200,6 +214,7 @@ export function useInstantAnalysis({
   const forItem = restored?.itemId === itemId ? restored : null;
   const storedRun = forItem?.run ?? null;
   const storedResult = forItem?.result ?? null;
+  const restoredHasStream = forItem?.hasStream ?? false;
   // Nothing has landed for the item on screen yet — the lookup is in flight.
   const restoring = itemId !== null && forItem === null;
 
@@ -208,7 +223,13 @@ export function useInstantAnalysis({
       setRestored((prev) =>
         prev?.itemId === targetItemId
           ? { ...prev, ...patch }
-          : { itemId: targetItemId, run: null, result: null, ...patch },
+          : {
+              itemId: targetItemId,
+              run: null,
+              result: null,
+              hasStream: false,
+              ...patch,
+            },
       );
     },
     [],
@@ -275,6 +296,11 @@ export function useInstantAnalysis({
         return;
       }
       if (cancelled) return;
+      patchRestored(itemId, {
+        hasStream: Boolean(
+          selectLatestRequestId(pointer.conversationId)(store.getState()),
+        ),
+      });
 
       if (!result) {
         const recovered = await recoverOrphanedResult(
@@ -299,6 +325,12 @@ export function useInstantAnalysis({
         .unwrap()
         .then(async (outcome) => {
           if (cancelled || !outcome.followed) return;
+          // A rejoin mints the request row the viewer renders from.
+          patchRestored(itemId, {
+            hasStream: Boolean(
+              selectLatestRequestId(pointer.conversationId)(store.getState()),
+            ),
+          });
           const recovered = await recoverOrphanedResult(
             itemId,
             pointer.conversationId,
@@ -320,7 +352,7 @@ export function useInstantAnalysis({
     return () => {
       cancelled = true;
     };
-  }, [itemId, dispatch, recoverOrphanedResult, patchRestored]);
+  }, [itemId, dispatch, store, recoverOrphanedResult, patchRestored]);
 
   const process = useCallback(
     async (target: CaptureItem) => {
@@ -404,6 +436,7 @@ export function useInstantAnalysis({
     saved: storedResult !== null,
     storedResult,
     hasStoredRun: storedRun !== null,
+    restoredHasStream,
     restoring,
     dismiss: live.dismiss,
   };
