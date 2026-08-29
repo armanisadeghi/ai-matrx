@@ -10,12 +10,17 @@
  * read-only, never mutating, gated by `requireSuperAdmin()`.
  *
  * GET ?mode=tools            → recently-used tool names + counts + last_used
+ * GET ?mode=interactions     → inert, sanitized recent agent-card samples
  * GET ?tool=<name>&limit=N   → most recent N calls for that tool (default 10, max 25)
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import {
+  buildRecentInteractionSamples,
+  type PersistedInteractionRow,
+} from "@/features/agents/ui-first-tools/demo/recent-interaction-samples";
 
 // Columns the renderer needs to rebuild a ToolLifecycleEntry, plus owner context.
 const ROW_COLUMNS =
@@ -24,6 +29,13 @@ const ROW_COLUMNS =
 // How many recent rows to scan when aggregating the tool list (bounded).
 const TOOL_SCAN_LIMIT = 3000;
 const MAX_SAMPLES = 25;
+const INTERACTION_TOOLS = [
+  "apply_surface_write",
+  "user",
+  "update_plan",
+  "request_user_takeover",
+] as const;
+const INTERACTION_ROWS_PER_TOOL = 12;
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,7 +54,8 @@ export async function GET(request: NextRequest) {
     // ── Discovery: which tools have recent real usage ──────────────────────
     if (mode === "tools") {
       const { data, error } = await admin
-        .schema("chat").from("tool_call")
+        .schema("chat")
+        .from("tool_call")
         .select("tool_name, is_error, created_at")
         .is("deleted_at", null)
         .not("output", "is", null)
@@ -77,6 +90,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ tools, scanned: data?.length ?? 0 });
     }
 
+    // ── Agent-card review: real content, no real side effects ─────────────
+    if (mode === "interactions") {
+      const results = await Promise.all(
+        INTERACTION_TOOLS.map((toolName) =>
+          admin
+            .schema("chat")
+            .from("tool_call")
+            .select(
+              "id, call_id, tool_name, arguments, created_at, status, is_error",
+            )
+            .is("deleted_at", null)
+            .eq("tool_name", toolName)
+            .eq("is_error", false)
+            .order("created_at", { ascending: false })
+            .limit(INTERACTION_ROWS_PER_TOOL),
+        ),
+      );
+      const failed = results.find((result) => result.error);
+      if (failed?.error) throw failed.error;
+
+      const rows = results.flatMap(
+        (result) => (result.data ?? []) as PersistedInteractionRow[],
+      );
+      const samples = buildRecentInteractionSamples(rows).slice(0, MAX_SAMPLES);
+      return NextResponse.json({
+        samples,
+        generatedAt: new Date().toISOString(),
+        safety: {
+          inert: true,
+          secretsExcluded: true,
+          emailCallsExcluded: true,
+          originalOutputsExcluded: true,
+        },
+      });
+    }
+
     // ── Samples: recent calls for one tool ─────────────────────────────────
     const tool = (searchParams.get("tool") ?? "").trim();
     if (!tool) {
@@ -91,7 +140,8 @@ export async function GET(request: NextRequest) {
     );
 
     const { data, error } = await admin
-      .schema("chat").from("tool_call")
+      .schema("chat")
+      .from("tool_call")
       .select(ROW_COLUMNS)
       .is("deleted_at", null)
       .eq("tool_name", tool)

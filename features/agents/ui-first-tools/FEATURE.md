@@ -4,7 +4,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-28` (compact, fully reviewable approval questions)
+**Last updated:** `2026-08-28` (real-call interaction review gallery)
 
 > Universal client-delegated tool layer + ambient context envelope for the
 > Next.js surface. Mirrors the matrx-extend Chrome extension's UI-first
@@ -120,8 +120,11 @@ This feature exists because:
   feature coupling — reusable by any "here's what changed" surface (project /
   settings updates, version history), not just agents.
 - **Gallery:** `/demos/agent-cards` (`app/(dev)/demos/agent-cards/page.dev.tsx`)
-  previews every card kind live (clicks resolve + log the envelope) — the design
-  reference for this family.
+  is the design reference for this family. **Full gallery** previews every card
+  kind; **Recent calls** rebuilds persisted `user`, `update_plan`,
+  `request_user_takeover`, and `apply_surface_write` calls as inert cards through
+  the super-admin sample route. Replays never touch the original run and exclude
+  secrets, email calls, outputs, owner identity, and conversation identity.
 - `<TaskPanel ...>` — drawer panel opened by the chip.
 
 **Services**
@@ -361,6 +364,15 @@ server-side; the same Realtime subscription updates the panel with no delegation
 
 ## Change Log
 
+- `2026-08-28` — **The agent-card gallery can replay recent real calls safely.**
+  `/demos/agent-cards` now switches between the complete fixture matrix and
+  server-normalized persisted interactions, with timestamps, refresh, loading,
+  empty, and error states. `/api/admin/tool-call-samples?mode=interactions`
+  returns only inert `PendingAsk` descriptors: synthetic resolver IDs make every
+  action gallery-local, while secret prompts, Gmail calls, outputs, owners, and
+  conversation IDs never enter the response. The shared converter is covered by
+  focused tests for approvals, rich choices, secret exclusion, batch renumbering,
+  malformed rows, and failed calls.
 - `2026-08-28` — **Approval questions are compact and never hide the proposed
   value.** Approval cards now place the operation and field/title in one header
   row, move explanatory prose behind an accessible Details control, and align a

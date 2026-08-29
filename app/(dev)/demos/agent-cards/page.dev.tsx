@@ -11,8 +11,9 @@
  */
 
 import { useEffect, useState } from "react";
-import { RotateCcw } from "lucide-react";
+import { Database, LayoutGrid, RefreshCw, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MediumComponentLoading } from "@/components/matrx/LoadingComponents";
 import { AskCard } from "@/features/agents/ui-first-tools/ui/AskCard";
 import { ApprovalCard } from "@/features/agents/ui-first-tools/ui/ApprovalCard";
 import { BatchAskCard } from "@/features/agents/ui-first-tools/ui/BatchAskCard";
@@ -26,6 +27,14 @@ import type { AskUserResponse } from "@/features/agents/ui-first-tools/tools/sch
 import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
 
 const CONV = "demo-agent-cards";
+
+type GallerySource = "full" | "recent";
+
+interface RecentSamplesResponse {
+  samples?: PendingAsk[];
+  error?: string;
+  details?: string;
+}
 
 function approvalAsk(callId: string, approval: ApprovalChange): PendingAsk {
   return {
@@ -261,6 +270,54 @@ const SAMPLES: PendingAsk[] = [
 export default function AgentCardGalleryPage() {
   const [asks, setAsks] = useState<PendingAsk[]>(SAMPLES);
   const [log, setLog] = useState<{ callId: string; summary: string }[]>([]);
+  const [source, setSource] = useState<GallerySource>("full");
+  const [recentSamples, setRecentSamples] = useState<PendingAsk[]>([]);
+  const [recentState, setRecentState] = useState<
+    "idle" | "loading" | "ready" | "error"
+  >("idle");
+  const [recentError, setRecentError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    if (source !== "recent") return;
+    let active = true;
+
+    async function loadRecentSamples() {
+      try {
+        const response = await fetch(
+          "/api/admin/tool-call-samples?mode=interactions",
+          {
+            cache: "no-store",
+          },
+        );
+        const body = (await response.json()) as RecentSamplesResponse;
+        if (!response.ok) {
+          throw new Error(
+            body.details || body.error || "Recent calls could not be loaded.",
+          );
+        }
+        if (!active) return;
+        const next = Array.isArray(body.samples) ? body.samples : [];
+        setRecentSamples(next);
+        setAsks(next);
+        setLog([]);
+        setRecentState("ready");
+      } catch (error) {
+        if (!active) return;
+        setRecentError(
+          error instanceof Error
+            ? error.message
+            : "Recent calls could not be loaded.",
+        );
+        setRecentState("error");
+      }
+    }
+
+    void loadRecentSamples();
+    return () => {
+      active = false;
+    };
+  }, [source, refreshKey]);
 
   // Register a real resolver per visible card, so clicking actually resolves.
   useEffect(() => {
@@ -276,46 +333,150 @@ export default function AgentCardGalleryPage() {
 
   return (
     <div className="min-h-dvh bg-textured">
-      <div className="mx-auto max-w-2xl px-4 py-10">
-        <div className="mb-6 flex items-end justify-between gap-3">
+      <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
+        <div className="mb-4 flex flex-col gap-4 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">Agent cards</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              The inline ask + approval card family. Live — clicking resolves
-              the card and logs its response.
+              Review every inline interaction in one place. Every button
+              resolves only this gallery copy and logs its response below.
             </p>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
-              setAsks(SAMPLES);
+              setAsks(source === "full" ? SAMPLES : recentSamples);
               setLog([]);
             }}
-            className="gap-1.5"
+            className="h-11 shrink-0 gap-1.5 sm:h-9"
           >
             <RotateCcw className="size-3.5" />
             Reset
           </Button>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="mb-5 flex flex-col gap-2 rounded-xl border border-border/70 bg-card/70 p-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex gap-1">
+            <Button
+              variant={source === "full" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-11 flex-1 gap-1.5 sm:h-9 sm:flex-none"
+              onClick={() => {
+                setSource("full");
+                setAsks(SAMPLES);
+                setLog([]);
+              }}
+            >
+              <LayoutGrid className="size-3.5" />
+              Full gallery
+            </Button>
+            <Button
+              variant={source === "recent" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-11 flex-1 gap-1.5 sm:h-9 sm:flex-none"
+              onClick={() => {
+                setRecentState("loading");
+                setRecentError(null);
+                setSource("recent");
+              }}
+            >
+              <Database className="size-3.5" />
+              Recent calls
+            </Button>
+          </div>
+          {source === "recent" && recentState === "ready" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-11 gap-1.5 sm:h-9"
+              onClick={() => {
+                setRecentState("loading");
+                setRecentError(null);
+                setRefreshKey((key) => key + 1);
+              }}
+            >
+              <RefreshCw className="size-3.5" />
+              Refresh
+            </Button>
+          )}
+        </div>
+
+        {source === "recent" && (
+          <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
+            Read-only replays from persisted calls. Secret prompts, email calls,
+            outputs, owner identity, and conversation identity are excluded.
+          </p>
+        )}
+
+        {source === "recent" && recentState === "loading" && (
+          <div className="rounded-xl border border-border/60 bg-card/40 py-4">
+            <MediumComponentLoading />
+          </div>
+        )}
+
+        {source === "recent" && recentState === "error" && (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+            <p className="text-sm font-medium text-foreground">
+              Recent calls could not be loaded.
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">{recentError}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 h-11 gap-1.5 sm:h-9"
+              onClick={() => {
+                setRecentState("loading");
+                setRecentError(null);
+                setRefreshKey((key) => key + 1);
+              }}
+            >
+              <RefreshCw className="size-3.5" />
+              Try again
+            </Button>
+          </div>
+        )}
+
+        <div
+          className={
+            source === "recent" && recentState !== "ready"
+              ? "hidden"
+              : "flex flex-col gap-3"
+          }
+        >
           {groupPendingAsks(asks).map((group) => {
-            if (group.asks.length > 1) {
-              return <BatchAskCard key={group.key} asks={group.asks} />;
-            }
-            const a = group.asks[0];
-            if (a.kind === "approval") {
-              return <ApprovalCard key={a.callId} ask={a} />;
-            }
-            if (a.kind === "email_review") {
-              return <GmailReviewCard key={a.callId} ask={a} />;
-            }
-            return <AskCard key={a.callId} ask={a} />;
+            const first = group.asks[0];
+            const card = (() => {
+              if (group.asks.length > 1) {
+                return <BatchAskCard key={group.key} asks={group.asks} />;
+              }
+              if (first.kind === "approval") {
+                return <ApprovalCard key={first.callId} ask={first} />;
+              }
+              if (first.kind === "email_review") {
+                return <GmailReviewCard key={first.callId} ask={first} />;
+              }
+              return <AskCard key={first.callId} ask={first} />;
+            })();
+            return (
+              <div key={group.key} className="contents">
+                {source === "recent" && (
+                  <div className="mt-1 flex items-center justify-between gap-2 px-1 text-[11px] text-muted-foreground">
+                    <span>{humanizeToolName(first.toolName)}</span>
+                    <time dateTime={new Date(first.createdAtMs).toISOString()}>
+                      {formatTimestamp(first.createdAtMs)}
+                    </time>
+                  </div>
+                )}
+                {card}
+              </div>
+            );
           })}
-          {asks.length === 0 && (
+          {asks.length === 0 && recentState === "ready" && (
             <div className="rounded-2xl border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">
-              All cards resolved. Hit Reset to bring them back.
+              {recentSamples.length === 0
+                ? "No safe recent interactions were found."
+                : "All cards resolved. Hit Reset to bring them back."}
             </div>
           )}
         </div>
@@ -343,6 +504,22 @@ export default function AgentCardGalleryPage() {
       </div>
     </div>
   );
+}
+
+function humanizeToolName(toolName: string): string {
+  if (toolName === "apply_surface_write") return "Surface change approval";
+  if (toolName === "update_plan") return "Plan approval";
+  if (toolName === "request_user_takeover") return "User takeover";
+  return "Agent question";
+}
+
+function formatTimestamp(createdAtMs: number): string {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(createdAtMs);
 }
 
 function summarize(r: AskUserResponse): string {
