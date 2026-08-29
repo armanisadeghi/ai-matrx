@@ -469,11 +469,18 @@ export function fetchHrDirectory(args: {
   sort?: HrDirectorySort;
   direction?: "asc" | "desc";
 }): Promise<HrResult<HrDirectoryPage>> {
-  // verified aligned 2026-08-27 — the door was called live against the sandbox
-  // employer with real rows and its top-level keys were SET-COMPARED with the
+  // verified aligned 2026-08-29 — the door was called live against the sandbox
+  // employer through PostgREST with four REAL minted sessions (HR owner, hr_admin,
+  // plain employee, contractor) and its top-level keys were SET-COMPARED with the
   // declared type in both directions (declared-but-absent, present-but-undeclared).
-  // Wire: {as_of, capabilities, columns, limit, offset, persona, rows, total}. Exact
-  // match, and `HrDirectoryRow` matched its 23 row keys in both directions.
+  // Wire: {as_of, capabilities, columns, limit, offset, persona, rows, statuses,
+  // tier, total}. Exact match.
+  //
+  // 🚨 THE ROW SHAPE IS PER-VIEWER, WHICH IS THE POINT (`hr_l1_64`). An HR-tier
+  // caller gets 24 row keys; a directory-tier caller gets 17, because the seven
+  // working-record keys are REMOVED from the payload rather than nulled. That is why
+  // those seven are optional on `HrDirectoryRow` and why `page.columns` — not the
+  // presence of a field — is what a surface renders from.
   // NOTE this door IS offset-paged — unlike the audited list doors, whose fifth
   // argument is `p_cursor`. `p_offset` is correct here and only here.
   return callHrAligned<HrDirectoryPage>(

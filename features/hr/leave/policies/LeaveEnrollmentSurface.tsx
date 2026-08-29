@@ -157,11 +157,17 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
    * Somebody with no `employment_id` (a prehire whose spell has not started) is excluded —
    * `hr.leave_enroll` takes employment ids, and enrolling a person who has none is not a
    * thing the door can do.
+   *
+   * 🚨 `!= null`, NOT `!== null`. Since `hr_l1_64` the directory door OMITS `employment_id`
+   * entirely for a viewer below the working-record tier, so the absent case is `undefined`
+   * and a strict `!== null` would have called it present. This surface always runs at
+   * `leave_administrator` standing and so always receives the field — but a comparison that
+   * is only correct because of who happens to open the screen is not a comparison.
    */
   const candidates = useMemo(
     () =>
       directory.filter(
-        (row) => row.employment_id !== null && !enrolledIds.has(row.employment_id),
+        (row) => row.employment_id != null && !enrolledIds.has(row.employment_id),
       ),
     [directory, enrolledIds],
   );

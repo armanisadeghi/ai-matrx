@@ -302,7 +302,7 @@ export function LeaveReassignDialog({
         offset: 0,
       });
       if (cancelled) return;
-      setPeople(result.ok ? result.data.rows.filter((p) => p.employment_id !== null) : []);
+          setPeople(result.ok ? result.data.rows.filter((p) => p.employment_id != null) : []);
     })();
     return () => {
       cancelled = true;

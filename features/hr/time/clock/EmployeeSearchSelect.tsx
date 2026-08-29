@@ -123,7 +123,13 @@ export function EmployeeSearchSelect({
         setRefusal(null);
         setRows(
           result.data.rows
-            .filter((row) => row.employment_id !== null)
+            // 🚨 `!= null` COVERS BOTH ABSENCES. `hr_l1_64` OMITS `employment_id` and
+            // `worker_class` from the payload for a viewer below the working-record tier, so
+            // "not there" is `undefined` here, not `null`. This picker only ever runs at
+            // `time.read` standing, which carries `working_record.read` — but a gate whose
+            // correctness depends on that coincidence is a gate waiting to fail open, and
+            // §8's rule is that a gated worker class does not appear in the selector AT ALL.
+            .filter((row) => row.employment_id != null)
             // Both worker-class gates answer "may this person be punched for", so both are skipped
             // when the caller is choosing whose RECORD to read. See `purpose` on the props.
             .filter(
@@ -135,7 +141,8 @@ export function EmployeeSearchSelect({
               (row) =>
                 purpose === "evidence" ||
                 !punchEnabledWorkerClasses ||
-                (row.worker_class !== null && punchEnabledWorkerClasses.includes(row.worker_class)),
+                (row.worker_class != null &&
+                  punchEnabledWorkerClasses.includes(row.worker_class)),
             )
             .map((row) => ({
               // Non-null by the filter above.
