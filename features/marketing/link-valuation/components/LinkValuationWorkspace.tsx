@@ -21,6 +21,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Download, RotateCcw, Save, Upload } from "lucide-react";
 
 import { evaluateLink } from "../engine";
@@ -131,7 +132,18 @@ export function LinkValuationWorkspace() {
     });
   };
 
-  const restore = () => {
+  // Reset throws away tuning that only exists in this browser — nothing on a
+  // server to restore it from — so it names what is lost before it runs.
+  // Law: destructive-and-expensive-actions.
+  const restore = async () => {
+    const ok = await confirm({
+      title: `Reset "${config.name}" to the shipped version?`,
+      description:
+        "Every curve and weight you have tuned for this config in this browser is discarded and cannot be recovered. Export the JSON first if you want to keep it.",
+      confirmLabel: "Reset it",
+      variant: "destructive",
+    });
+    if (!ok) return;
     const restored = resetConfig(config.id);
     if (!restored) return;
     setConfigs(
@@ -146,7 +158,7 @@ export function LinkValuationWorkspace() {
     toast.success("Config JSON copied to the clipboard");
   };
 
-  const importJson = () => {
+  const importJson = async () => {
     const parsed = parseConfig(importText);
     if ("error" in parsed) {
       toast.error("Could not import that config", {
@@ -155,6 +167,18 @@ export function LinkValuationWorkspace() {
       return;
     }
     const next = parsed.config;
+    // An import carrying the id of a config already here overwrites it — say
+    // whose tuning is about to go. A brand-new id replaces nothing.
+    const existing = configs.find((entry) => entry.id === next.id);
+    if (existing) {
+      const ok = await confirm({
+        title: `Overwrite "${existing.name}"?`,
+        description: `A config with the id "${next.id}" is already saved in this browser. Importing replaces it, and its current curves and weights cannot be recovered.`,
+        confirmLabel: "Overwrite it",
+        variant: "destructive",
+      });
+      if (!ok) return;
+    }
     setConfigs([...configs.filter((entry) => entry.id !== next.id), next]);
     saveConfig(next);
     selectConfig(next.id);
@@ -212,7 +236,7 @@ export function LinkValuationWorkspace() {
               size="sm"
               variant="ghost"
               className="h-8 text-xs"
-              onClick={restore}
+              onClick={() => void restore()}
             >
               <RotateCcw className="mr-1 h-3.5 w-3.5" />
               Reset
@@ -282,7 +306,7 @@ export function LinkValuationWorkspace() {
               <Button
                 size="sm"
                 className="h-8 w-fit text-xs"
-                onClick={importJson}
+                onClick={() => void importJson()}
               >
                 <Upload className="mr-1 h-3.5 w-3.5" />
                 Import

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Ban, Play, RotateCcw } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -210,6 +211,20 @@ export function NewCrawlWorkspace() {
       });
       return;
     }
+    // A crawl is real time against a real website — say how big it is before
+    // it runs, and say that a second run walks pages already captured.
+    // Law: destructive-and-expensive-actions.
+    const rerun = status === "failed" || status === "complete";
+    const ok = await confirm({
+      title: rerun ? "Crawl this site again?" : "Start the crawl?",
+      description: `Up to ${launchOptions.max_pages} pages of ${site.domain}, ${launchOptions.concurrency} at a time. This fetches every page for real and can take several minutes.${
+        rerun
+          ? " Pages already captured are crawled again and their stored copy is refreshed."
+          : ""
+      }`,
+      confirmLabel: rerun ? "Run it again" : "Start crawling",
+    });
+    if (!ok) return;
     let terminalStatus: "complete" | "partial" | "failed" = "complete";
     setStreamEvents([]);
     setLocalSessionId(null);

@@ -22,6 +22,7 @@ import type { MatrxColumnDef } from "@/components/official/matrx-data-table/type
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
@@ -120,6 +121,25 @@ export function AuthorityRouterWorkspace() {
     runningRef.current = authority.run.status === "running";
   }, [authority.run.status]);
 
+  /**
+   * A re-run re-does the whole multi-signal join and AI analysis and replaces
+   * the route map you are looking at, so it asks first. The FIRST run has
+   * nothing to replace and is not gated. Law: destructive-and-expensive-actions.
+   */
+  const startAnalysis = async () => {
+    if (result) {
+      const ok = await confirm({
+        title: "Recalculate authority routes?",
+        description:
+          "This re-runs the full multi-signal join and AI analysis over this site, which takes real time. The current route map and every recommendation you have not yet added or dismissed is replaced.",
+        confirmLabel: "Recalculate",
+        variant: "destructive",
+      });
+      if (!ok) return;
+    }
+    void authority.start({ guidance, forceRefresh: Boolean(result) });
+  };
+
   const buildWriteHandlers = () => ({
     authority_guidance: (value: unknown) => {
       if (runningRef.current) {
@@ -195,12 +215,7 @@ export function AuthorityRouterWorkspace() {
               <Button
                 className="mt-3 w-full"
                 disabled={authority.run.status === "running"}
-                onClick={() =>
-                  void authority.start({
-                    guidance,
-                    forceRefresh: Boolean(result),
-                  })
-                }
+                onClick={() => void startAnalysis()}
               >
                 {authority.run.status === "running" ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
