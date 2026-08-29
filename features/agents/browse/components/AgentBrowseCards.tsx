@@ -59,7 +59,7 @@ function CardAction({
   return (
     <Link
       href={href}
-      className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:h-7"
+      className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:h-7"
       onClick={(e) => e.stopPropagation()}
     >
       <Icon className="h-3.5 w-3.5" />
@@ -182,7 +182,7 @@ export function AgentBrowseCards({
                   }
                   disabled={!row.is_owner}
                   onClick={() => onToggleFavorite(row)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-40 sm:h-7 sm:w-7"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-muted disabled:opacity-40 lg:h-7 lg:w-7"
                 >
                   <Star
                     className={cn(
@@ -195,7 +195,7 @@ export function AgentBrowseCards({
                   <button
                     type="button"
                     aria-label={`Actions for ${row.name}`}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground sm:h-7 sm:w-7"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground lg:h-7 lg:w-7"
                   >
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
