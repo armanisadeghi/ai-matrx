@@ -22,7 +22,8 @@
  *   reveal it with focus-within so its mic/menu buttons are never invisible
  *   tab stops.
  * - **Agent actions** — each runs an agent over the current text, streams the
- *   result into a popover, and replaces the field on Apply (never auto-mutates):
+ *   result into a popover with a persistent Copy control, and replaces the
+ *   field on Apply (never auto-mutates):
  *   - **Clean up** — ON by default (`enableCleanup={false}` to hide). Default
  *     agent from the `clean` role on `matrx-user/transcripts-cleanup`.
  *   - **Bound agents** — when `surfaceName` is set, lists agents from
@@ -99,10 +100,8 @@ import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerW
 import { useMicField } from "@/features/audio/hooks/useMicField";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
-import {
-  TapTargetButton,
-  TapTargetButtonSolid,
-} from "@ai-matrx/tap-target";
+import { TapTargetButton, TapTargetButtonSolid } from "@ai-matrx/tap-target";
+import { CheckTapButton, CopyTapButton } from "@ai-matrx/tap-target/buttons";
 import {
   Popover,
   PopoverTrigger,
@@ -152,6 +151,7 @@ import {
 import { ProTextareaAgentPanel } from "./ProTextareaAgentPanel";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
+import { writeClipboard } from "@/components/agent-copy/clipboard";
 import {
   ProTextFieldStatsBar,
   ProTextFieldStatsMenuItems,
@@ -1345,10 +1345,18 @@ function AgentActionPopoverBody({
   onBack: () => void;
   onCancel: () => void;
 }) {
+  const [resultCopied, setResultCopied] = useState(false);
   const isError = phase === "error" || phase === "timeout";
   const isComplete = phase === "complete";
   const hasResult = result.trim().length > 0;
   const hasRun = phase !== "idle";
+
+  const handleCopyResult = async () => {
+    await writeClipboard(result);
+    setResultCopied(true);
+    toast.success(`${title} result copied to clipboard`);
+    window.setTimeout(() => setResultCopied(false), 1500);
+  };
 
   return (
     <div className="flex flex-col">
@@ -1412,9 +1420,28 @@ function AgentActionPopoverBody({
               {error ?? "Something went wrong. Please try again."}
             </p>
           ) : hasResult ? (
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-              {result}
-            </p>
+            <div className="flex items-start gap-2">
+              <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {result}
+              </p>
+              <div className="sticky top-0 shrink-0">
+                {resultCopied ? (
+                  <CheckTapButton
+                    variant="transparent"
+                    onClick={handleCopyResult}
+                    ariaLabel={`${title} result copied`}
+                    className="text-primary"
+                  />
+                ) : (
+                  <CopyTapButton
+                    variant="transparent"
+                    onClick={handleCopyResult}
+                    ariaLabel={`Copy ${title.toLowerCase()} result`}
+                    className="text-muted-foreground"
+                  />
+                )}
+              </div>
+            </div>
           ) : (
             <div className="flex items-center gap-2 py-4 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
