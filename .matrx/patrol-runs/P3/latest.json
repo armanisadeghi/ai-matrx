@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "2026-08-27T131727Z",
-  "state": "closed",
-  "updatedAt": "2026-08-27T13:32:57.493Z",
-  "summary": "Closed P3 run after exact-SHA certification, delivery reconciliation, and durable routing of remaining evidence tasks.",
+  "state": "reconciled",
+  "updatedAt": "2026-08-29T14:43:18.521Z",
+  "summary": "Reconciled the preserved release-before-certification incident after exact-checkout representative interaction proof and a certified fail-closed controller repair.",
   "source": "2026-08-27T131727Z.json",
-  "eventHash": "7bc17712d6c2425c52e18be90a3336e0d74ddddf9186b6a619bbc7d142f440b5"
+  "eventHash": "fa1f2fec27bba592b0432555c89baca6df32459ad610188bed721683ed443b63"
 }
