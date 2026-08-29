@@ -72,3 +72,10 @@ load. The scoped system's SoR is
 primitives live in [`lib/scoped-config/`](../../../lib/scoped-config/service.ts).
 Overridability is CURATED in dedicated migrations (never a seed's on-conflict);
 this panel edits values, not scopes.
+
+## Complete-register reads (2026-08-29)
+
+The knob list is the COMPLETE platform register (400+ rows and growing), so
+`fetchFeatureKnobs` pages via `readAllRows` (`@ai-matrx/data/db`) — a bare
+`.select()` silently caps at 1000 and would hide whole features (the D190
+class). Ordered by the `(feature, key)` PK so pages never overlap.

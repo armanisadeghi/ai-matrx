@@ -7,6 +7,7 @@
 // already uses, and it keeps the browser talking straight to Postgres instead of
 // growing a server hop that would be a second authority.
 
+import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
 import type { Database } from "@/types/database.types";
 import type { Capability, FeatureKnob, Plan, PlanLimit } from "./types";
@@ -14,17 +15,27 @@ import type { Capability, FeatureKnob, Plan, PlanLimit } from "./types";
 type MeterPeriod = Database["billing"]["Enums"]["meter_period"];
 
 export async function fetchFeatureKnobs(): Promise<FeatureKnob[]> {
+  // The admin board treats this as the COMPLETE register (404+ rows and
+  // growing) — a bare .select() silently caps at 1000 and would hide whole
+  // features (e.g. commerce.*) from the platform tier. readAllRows pages it.
   const supabase = createClient();
-  const { data, error } = await supabase
-    .schema("platform")
-    .from("feature_knob")
-    .select(
-      "feature, key, value, default_value, value_type, unit, min_value, max_value, allowed_values, label, description, set_by, basis, review_due, overridable_by, override_direction, bound_value",
-    )
-    .order("feature")
-    .order("key");
-  if (error) throw error;
-  return (data ?? []) as FeatureKnob[];
+  const rows = await readAllRows<FeatureKnob>(
+    ({ from, to }) =>
+      supabase
+        .schema("platform")
+        .from("feature_knob")
+        .select(
+          "feature, key, value, default_value, value_type, unit, min_value, max_value, allowed_values, label, description, set_by, basis, review_due, overridable_by, override_direction, bound_value",
+          { count: "exact" },
+        )
+        // (feature, key) is the PK, so the paginated order is stable.
+        .order("feature")
+        .order("key")
+        .range(from, to)
+        .returns<FeatureKnob[]>(),
+    { label: "platform.feature_knob (limits admin)" },
+  );
+  return rows;
 }
 
 /**
