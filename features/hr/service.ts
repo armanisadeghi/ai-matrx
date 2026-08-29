@@ -25,6 +25,11 @@
 // `{kind:"failed"}` with a sentence, never a bare Postgres code (§2 error state).
 
 import { supabase } from "@/utils/supabase/client";
+import { readAllRows } from "@/lib/supabase/readAllRows";
+import {
+  HR_SEPARATION_REASON_DIMENSION,
+  type HrSeparationReasonCategory,
+} from "./people/directory/offboarding/types";
 
 import type {
   HrActivationSeedAck,
@@ -892,17 +897,94 @@ export function cancelHrPendingChange(args: {
   );
 }
 
-export function recordHrSeparation(
-  payload: Record<string, unknown>,
-): Promise<HrResult<HrWriteAck>> {
+/**
+ * Record a separation — the sanctioned termination write (SPEC-EMPLOYEES §4.10).
+ *
+ * 🚨 TYPED AND MAPPED FIELD-BY-FIELD, NOT AN UNTYPED PAYLOAD BAG.
+ * `hr_separation_record` takes a jsonb `p_payload`, and this used to forward an untyped
+ * `Record<string, unknown>` verbatim. That is the exact cast-at-a-seam class that silently
+ * dropped every field of the verification-request form until it was mapped key-by-key — an
+ * `unknown` bag lets a misnamed client key sail through as a no-op the door never sees. The
+ * door reads these keys (verified against `pg_proc`): `employment_id`, `separation_category`,
+ * `reason_category_id`, `initiator`, `last_day_worked`, `termination_date`, `rehire_eligible`,
+ * `rehire_eligible_note`, `notice_given_on`. They are named here, so a rename breaks the build
+ * rather than the write.
+ *
+ * `last_day_worked` and `termination_date` are DIFFERENT fields and the door requires both —
+ * final pay keys on one, benefits on the other.
+ */
+export function recordHrSeparation(args: {
+  employmentId: string;
+  separationCategory: string;
+  reasonCategoryId: string;
+  initiator: string;
+  lastDayWorked: string;
+  terminationDate: string;
+  rehireEligible: boolean | null;
+  rehireEligibleNote?: string | null;
+  noticeGivenOn?: string | null;
+}): Promise<HrResult<HrWriteAck>> {
   return callHrWrite(
     "hr_separation_record",
-    { p_payload: payload },
+    {
+      p_payload: {
+        employment_id: args.employmentId,
+        separation_category: args.separationCategory,
+        reason_category_id: args.reasonCategoryId,
+        initiator: args.initiator,
+        last_day_worked: args.lastDayWorked,
+        termination_date: args.terminationDate,
+        rehire_eligible: args.rehireEligible,
+        rehire_eligible_note: args.rehireEligibleNote ?? null,
+        notice_given_on: args.noticeGivenOn ?? null,
+      },
+    },
     {
       envelope: true,
       whatFailed: "This separation",
     },
   );
+}
+
+/**
+ * The offboarding reason menu — `platform.categories` on the `hr_separation_reason` dimension.
+ *
+ * 🚨 NOT AN `hr_*` DOOR, AND THAT IS LEGITIMATE. `hr.separation.reason_category_id` is a FK to
+ * `platform.categories`, a `platform` table exposed to PostgREST (`hr` is not). The rows are
+ * system rows in the globally-readable system org, so RLS grants every authenticated caller a
+ * read — the same non-RPC pattern the leave and time reason menus use. `readAllRows` because
+ * the list is treated as COMPLETE: a reason quietly missing from the menu is a separation
+ * nobody can record.
+ */
+export async function fetchHrSeparationReasonCategories(): Promise<
+  HrSeparationReasonCategory[]
+> {
+  const rows = await readAllRows<{
+    id: string;
+    slug: string | null;
+    name: string | null;
+    position: number | null;
+  }>(
+    ({ from, to }) =>
+      supabase
+        .schema("platform")
+        .from("categories")
+        .select("id, slug, name, position", { count: "exact" })
+        .eq("dimension", HR_SEPARATION_REASON_DIMENSION)
+        .is("deleted_at", null)
+        .order("position", { ascending: true })
+        .range(from, to),
+    { label: "hr-separation-reason-categories" },
+  );
+
+  return rows
+    .filter((r) => typeof r.slug === "string" && typeof r.name === "string")
+    .map((r) => ({
+      id: r.id,
+      slug: r.slug as string,
+      name: r.name as string,
+      position: r.position,
+    }));
 }
 
 export function upsertHrEngagement(

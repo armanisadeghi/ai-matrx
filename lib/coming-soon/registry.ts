@@ -629,20 +629,9 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "SPEC-EMPLOYEES §2.2 makes an export an AUDITED action (hr.access_audit action='export'). There is no hr_directory_export door, and a browser cannot write that audit row — so an unaudited CSV of everyone is deliberately NOT shipped. Copy / Copy for AI on the table remain available for the directory-tier columns already on screen.",
     surfaces: ["/hr/people — bulk action bar", "/hr/people — toolbar"],
   },
-  "hr.people.start-offboarding": {
-    id: "hr.people.start-offboarding",
-    label: "Start offboarding",
-    owner: "hr",
-    promise:
-      "Open the separation form — last day worked, termination date, reason, initiator, rehire eligibility — and hand off to the offboarding run once it is approved.",
-    stage: "blocked",
-    blockedBy:
-      "public.hr_separation_record IS live (verified against pg_proc 2026-08-26); what is missing is the separation FORM and the offboarding run it hands off to (routes 50/51), owned by the Onboarding & Offboarding lane. The directory offers the verb because SPEC-EMPLOYEES §2.2 puts it on the row.",
-    surfaces: [
-      "/hr/people — row menu",
-      "/hr/people/[employeeId]/job — spell actions",
-    ],
-  },
+  // "hr.people.start-offboarding" was a stage:"blocked" stub while hr_separation_record was
+  // already live. The separation FORM is now built (OffboardEmployeeDialog, wired from the
+  // /hr/people row menu), so the coming-soon entry is deleted — no dead path left behind.
   "hr.people.corrective-action": {
     id: "hr.people.corrective-action",
     label: "Start a corrective action",

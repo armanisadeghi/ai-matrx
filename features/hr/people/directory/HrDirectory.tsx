@@ -56,7 +56,11 @@ import {
   type HrDirectoryFacetOptions,
 } from "./directoryColumns";
 import { useHrDirectory, useHrDirectoryUrlState } from "./useHrDirectory";
-import { useHrEmployeeMenu } from "./useHrEmployeeMenu";
+import {
+  useHrEmployeeMenu,
+  type HrEmployeeMenuSubject,
+} from "./useHrEmployeeMenu";
+import { OffboardEmployeeDialog } from "./offboarding/OffboardEmployeeDialog";
 
 // ── Server-side facet options ───────────────────────────────────────────────
 //
@@ -184,7 +188,16 @@ export function HrDirectory() {
   });
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const buildMenu = useHrEmployeeMenu({ org: orgRef, can });
+  // The offboarding dialog is hosted HERE — the common ancestor of the table and card menus
+  // and the only `buildMenu` caller — mirroring how the create dialogs are hosted by their
+  // page (RelationsCaseList / VerificationsSurface). "Start offboarding" hands the subject up.
+  const [offboarding, setOffboarding] =
+    useState<HrEmployeeMenuSubject | null>(null);
+  const buildMenu = useHrEmployeeMenu({
+    org: orgRef,
+    can,
+    onStartOffboarding: setOffboarding,
+  });
 
   const canCreate = can("identity.write");
   const canBulk = can("working_record.read") || can("identity.write");
@@ -201,6 +214,7 @@ export function HrDirectory() {
   const showMyTeamTab = persona === "manager" || can("working_record.read");
 
   return (
+    <>
     <HrPageState
       loading={directory.isLoading}
       error={directory.error?.kind === "failed" ? directory.error : null}
@@ -388,6 +402,15 @@ export function HrDirectory() {
         )}
       </div>
     </HrPageState>
+    <OffboardEmployeeDialog
+      subject={offboarding}
+      onClose={() => setOffboarding(null)}
+      onDone={() => {
+        setOffboarding(null);
+        directory.refresh();
+      }}
+    />
+    </>
   );
 }
 

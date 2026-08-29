@@ -69,13 +69,23 @@ export type HrEmployeeMenuBuilder = (
 export function useHrEmployeeMenu(args: {
   org: HrOrgRef;
   can: (capability: HrCapability) => boolean;
+  /**
+   * Opens the offboarding dialog for this person. The parent surface owns the dialog and its
+   * mounted state (the `RelationsCaseList` / `VerificationsSurface` create-dialog pattern), so
+   * "Start offboarding" hands the subject up rather than hosting a dialog inside the menu.
+   * Absent → the verb is hidden (a surface that cannot host the dialog must not offer it).
+   */
+  onStartOffboarding?: (subject: HrEmployeeMenuSubject) => void;
 }): HrEmployeeMenuBuilder {
-  const { org, can } = args;
+  const { org, can, onStartOffboarding } = args;
   const openTaskQuickCreate = useOpenTaskQuickCreateWindow();
 
   return useCallback(
     (subject: HrEmployeeMenuSubject): ItemMenuConfig => {
-      const canOffboard = can("identity.write") && Boolean(subject.employmentId);
+      const canOffboard =
+        can("identity.write") &&
+        Boolean(subject.employmentId) &&
+        Boolean(onStartOffboarding);
       const alreadyGone = subject.status === "terminated";
 
       return {
@@ -162,10 +172,10 @@ export function useHrEmployeeMenu(args: {
                 label: "Start offboarding",
                 icon: DoorOpen,
                 tone: "destructive",
-                // ABSENT without the capability — never a greyed row.
+                // ABSENT without the capability (or a surface that can host the dialog) —
+                // never a greyed row. `canOffboard` already folds in `onStartOffboarding`.
                 hidden: !canOffboard || alreadyGone,
-                onSelect: () =>
-                  void announceComingSoon("hr.people.start-offboarding"),
+                onSelect: () => onStartOffboarding?.(subject),
               },
               {
                 id: "assign-training",
