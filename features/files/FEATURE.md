@@ -94,6 +94,12 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-29 — File-tree reads require a matching browser session.** The
+  canonical tree thunk now verifies that supabase-js has an access token for
+  the same user Redux requested before invoking `get_user_file_tree`. This
+  closes the hydration/sign-out race where server-seeded Redux identity could
+  issue the authenticated-only RPC as `anon` and report a false 42501.
+
 - 2026-08-29 — Registered `get_user_file_tree` as an intentional client-callable definer door so
   the database-wide grant guard preserves signed-in Files and Vault enumeration while anon remains
   denied.

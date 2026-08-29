@@ -78,6 +78,7 @@ import {
 import { toast } from "@/lib/toast";
 import { buildTreeState } from "./tree-utils";
 import { isHiddenFromUserTree } from "@/features/files/utils/folder-conventions";
+import { hasMatchingFileTreeSession } from "./file-tree-auth-boundary";
 import { invalidate as invalidateBlobCache } from "@/features/files/hooks/blob-cache";
 import { invalidateOfficeExtraction } from "@/features/files/hooks/office-extraction-cache";
 import {
@@ -257,6 +258,12 @@ export const loadUserFileTree = createAsyncThunk<
   { userId: string },
   ThunkApi
 >("cloudFiles/loadUserFileTree", async ({ userId }, { dispatch, getState }) => {
+  // Redux is server-seeded before client effects run, so during signed-out
+  // hydration or session teardown it can briefly retain a user UUID while
+  // supabase-js is already anonymous. Isolate that race at this canonical
+  // producer boundary instead of sending an authenticated-only RPC as anon.
+  if (!(await hasMatchingFileTreeSession(userId))) return;
+
   // In-flight dedupe. Several surfaces hydrate the tree on mount
   // (CloudFilesRealtimeProvider + every useCloudTree consumer), and their
   // effects all run in the same commit, so a status check in the component
