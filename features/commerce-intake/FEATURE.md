@@ -218,6 +218,12 @@ On a phone, logged into an org:
 
 ## Change log
 
+- 2026-08-29 — **Registered `commerce` with PostgREST.**
+  `migrations/expose_commerce_schema_postgrest_2026_08_29.sql` appends the schema to the
+  authenticator's live `pgrst.db_schemas` value and reloads PostgREST. The migration reads and
+  preserves the live fleet-wide list; it never restates a stale snapshot. This closes the
+  `PGRST106 Invalid schema: commerce` boundary that prevented every direct-Supabase intake read.
+
 - 2026-08-29 — **The label pool + claim-on-scan** (the DB/workflow half of the commerce QR
   system). DB: `commerce.label_batch` + `commerce.label_code` via `platform.create_entity_table`
   (both `iam.canonical_certify_ok` in-migration), plus THE uniqueness fix — partial unique
