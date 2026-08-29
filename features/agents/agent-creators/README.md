@@ -22,6 +22,12 @@ both voice-enabled. The response streams through the shared execution system,
 uses centralized JSON extraction, and is normalized by
 `utils/agent-config-extractor.ts`.
 
+**A completed run without usable JSON is a structured failure.**
+`AgentGenerator.tsx` captures `agent-json-result` with the exact request and
+conversation identities plus bounded structural diagnostics before showing the
+raw-response fallback. The fallback preserves user work; it does not replace
+the repair signal.
+
 `services/agentBuilderService.ts` then performs a **legacy minimal direct
 insert** into `agent.definition`: name, description, messages, variables,
 settings, and one default model. It does not persist the rich contract required
@@ -55,5 +61,6 @@ persona-first screens as its intake model.
 
 ## Change log
 
+- 2026-08-29 — Added exact structured capture for generator runs that finish without usable JSON.
 - 2026-08-12 — Replaced the stale route/status roadmap with current frontend
   truth and the Agent Creation Studio system pointer.

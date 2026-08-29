@@ -32,6 +32,7 @@ import { useAgentBuilder } from "../services/agentBuilderService";
 import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
 import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
 import { useDebugContext } from "@/hooks/useDebugContext";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 const GENERATOR_SHORTCUT = getSystemShortcut("agent-generator-01");
 
@@ -253,6 +254,21 @@ export function AgentGenerator({ onComplete }: AgentGeneratorProps) {
         position: TOAST_POSITION,
       });
     } else if (streamingText) {
+      captureError({
+        source: "agent-json-result",
+        message: "Agent generator completed without usable structured JSON",
+        requestId,
+        conversationId,
+        userMessage:
+          "Could not extract JSON — The raw response is still available below.",
+        raw: {
+          shortcutId: GENERATOR_SHORTCUT.id,
+          sourceFeature: "agent-generator",
+          answerTextLength: streamingText.length,
+          extractionRevision: jsonExtractionRevision,
+          extractionComplete: jsonExtractionComplete,
+        },
+      });
       toast.error("Could not extract JSON", {
         description: "The raw response is still available below.",
         duration: 5000,
