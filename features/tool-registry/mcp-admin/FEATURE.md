@@ -15,6 +15,11 @@ connection-test freshness plus four tabs — Tools (`tool.definition` rows linke
 by `managed_by_server_id`), Configs (`tool.mcp_config`), Connected users
 (`tool.mcp_user_conn`), and a read-only Metadata dump.
 
+Connection-test feedback distinguishes probe failures from configuration
+guidance. Missing endpoint discovery and stdio's unsupported network probe use
+an informational toast; only a probe that actually reaches the network and
+fails uses an error toast and enters structured error capture.
+
 `AddMcpServerDialog` is the one authoring surface: a three-step wizard
 (identity → transport & auth → review) whose Provision button calls the
 `provision_mcp_server` RPC, inserting the server, an `mcp.<slug>` executor, a
@@ -75,6 +80,10 @@ an agent must never assume one has run.
   per-user Connections page.
 
 ## Change Log
+
+- **2026-08-29** — Missing OAuth-discovered endpoints and stdio probe skips are
+  informational connection-test outcomes; real HTTP/network failures remain
+  error toasts. `getMcpTestNotificationLevel` tests enforce the boundary.
 
 - **2026-08-18** — Repaired `provision_mcp_server` after canonical organization
   ownership made `tool.definition.organization_id` and

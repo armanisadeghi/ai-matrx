@@ -55,6 +55,7 @@ import {
   countConnectedUsers,
   refreshServer,
   testMcpServer,
+  getMcpTestNotificationLevel,
   computeFreshness,
   computeTestFreshness,
   formatRelativeAge,
@@ -641,10 +642,13 @@ function ServerDetail({
     try {
       const result = await testMcpServer(server.id);
       setLatestTest(result);
-      if (result.ok) {
+      const notificationLevel = getMcpTestNotificationLevel(result);
+      if (notificationLevel === "success") {
         toast.success(
           `${server.slug} reachable (${result.statusCode}, ${result.latencyMs}ms)`,
         );
+      } else if (notificationLevel === "info") {
+        toast.info(`${server.slug}: ${result.message}`);
       } else {
         toast.error(
           `${server.slug} unhealthy: ${result.error ?? result.message}`,

@@ -209,6 +209,21 @@ export interface McpTestResult {
   message: string;
 }
 
+export type McpTestNotificationLevel = "success" | "info" | "error";
+
+/**
+ * A probe that could not run because the server has no network endpoint is an
+ * expected configuration state, not a runtime failure. Keep that state out of
+ * structured error capture while preserving real network/HTTP failures.
+ */
+export function getMcpTestNotificationLevel(
+  result: McpTestResult,
+): McpTestNotificationLevel {
+  if (result.ok) return "success";
+  if (result.endpointTested === null && result.error === null) return "info";
+  return "error";
+}
+
 /**
  * Probe an MCP server's endpoint URL from the Next.js server runtime.
  * Persists the outcome to tool_mcp_server.last_test_* so the freshness UI
