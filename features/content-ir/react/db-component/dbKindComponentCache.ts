@@ -90,6 +90,16 @@ export type DbKindCompileResult =
   | { ok: true; compiled: CompiledDbKindComponent }
   | { ok: false; error: string };
 
+/**
+ * A routed lazy warm row owns a real body, but the per-kind cold fetch has not
+ * landed it yet. This is loading, not a compile failure.
+ */
+export function isDbKindComponentBodyPending(
+  resolution: ComponentResolution,
+): boolean {
+  return resolution.hasComponentSource && resolution.componentSource === null;
+}
+
 const cache = new Map<string, DbKindCompileResult>();
 const screamedKeys = new Set<string>();
 

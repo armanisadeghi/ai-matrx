@@ -101,7 +101,7 @@ export function ScraperKindNested({
     resolution?.resolvedBy === "db" &&
     resolution.source === "db" &&
     resolution.isActive &&
-    Boolean(resolution.componentSource?.trim());
+    resolution.hasComponentSource;
 
   if (dbOverride) {
     return (

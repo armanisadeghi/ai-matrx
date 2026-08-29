@@ -128,6 +128,45 @@ describe("componentRegistry version tick + cold single-kind fetch", () => {
     expect(mockBySlug).toHaveBeenCalledTimes(1);
   });
 
+  it("requestComponent: a body-less warm shell is replaced by the cold body and repaints that kind", async () => {
+    const registry = new ComponentRegistry(() => []);
+    const listener = jest.fn();
+    registry.subscribeKind("lazy_body_kind", listener);
+    registry.ingestDbRows([
+      dbRow({
+        kind: "lazy_body_kind",
+        componentKey: "lazy_body_card",
+        componentSource: null,
+        propsTransform: null,
+        hasComponentSource: true,
+        updatedAt: "2026-08-29T00:00:00Z",
+      }),
+    ]);
+    listener.mockClear();
+    mockBySlug.mockResolvedValue([
+      dbRow({
+        kind: "lazy_body_kind",
+        componentKey: "lazy_body_card",
+        componentSource: "export default function Card(){return null}",
+        propsTransform: "export default (data) => data",
+        updatedAt: "2026-08-29T00:00:01Z",
+      }),
+    ]);
+
+    registry.requestComponent("lazy_body_kind", "web", "output");
+    registry.requestComponent("lazy_body_kind", "web", "output");
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(mockBySlug).toHaveBeenCalledTimes(1);
+    expect(registry.resolve("lazy_body_kind", "web", "output")).toMatchObject({
+      componentSource: "export default function Card(){return null}",
+      propsTransform: "export default (data) => data",
+      updatedAt: "2026-08-29T00:00:01Z",
+    });
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
   it("requestComponent: a miss is remembered (no re-fetch storm for unknown kinds)", async () => {
     const registry = new ComponentRegistry(() => []);
     mockBySlug.mockResolvedValue([]);

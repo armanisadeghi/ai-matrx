@@ -3,9 +3,8 @@
  *
  * DB-sourced kind components (K1 — the `source='db'` render path):
  *
- *  1. Loader projection — the warm projection carries `componentSource` /
- *     `propsTransform` / `pinnedKindVersion` and the resolver returns them
- *     for db rows (compiled entries answer null — byte-unchanged floor).
+ *  1. Loader projection — warm rows carry body presence without the body;
+ *     cold rows carry `componentSource` / `propsTransform` on demand.
  *  2. Route flip — an ACTIVE `source='db'` row WITH a component body routes
  *     to `db_kind_component` (db overrides bundled, R6); an inactive row
  *     does not; an active db-source row WITHOUT a body screams and falls
@@ -162,6 +161,28 @@ describe("applyIrKindRoute — the db-override flip", () => {
     });
   });
 
+  it("a body-less warm row with hasComponentSource routes to db_kind_component", () => {
+    componentRegistry.ingestDbRows([
+      dbRow({
+        kind: "k1_lazy_route",
+        componentKey: "k1_lazy_route_view",
+        isActive: true,
+        componentSource: null,
+        hasComponentSource: true,
+      }),
+    ]);
+
+    const routed = applyIrKindRoute(
+      kindBlock("k1_lazy_route", { title: "Loading" }),
+    );
+
+    expect(routed.type).toBe(DB_KIND_COMPONENT_KEY);
+    expect(routed.metadata?.[IR_ROUTE_KEY]).toEqual({
+      by: "db",
+      key: "k1_lazy_route_view",
+    });
+  });
+
   it("db overrides bundled: a compiled-bridge kind with an active db-source row renders the DB component, not the bridge", () => {
     componentRegistry.ingestDbRows([
       dbRow({
@@ -224,6 +245,42 @@ describe("applyIrKindRoute — the db-override flip", () => {
 });
 
 describe("DbKindComponentImpl — compile + render + error boundary", () => {
+  it("requests a body-less warm row and renders a loading face instead of a blank hole", () => {
+    const request = jest
+      .spyOn(componentRegistry, "requestComponent")
+      .mockImplementation(() => {});
+    componentRegistry.replaceDbRows([
+      dbRow({
+        kind: "k1_lazy_render",
+        componentKey: "k1_lazy_render_view",
+        isActive: true,
+        componentSource: null,
+        hasComponentSource: true,
+      }),
+    ]);
+    const block = kindBlock("k1_lazy_render", { title: "Loading body" });
+    const host = document.createElement("div");
+    document.body.appendChild(host);
+    let root: Root | null = null;
+
+    act(() => {
+      root = createRoot(host);
+      root.render(
+        <DbKindComponentImpl
+          content={block.content}
+          metadata={block.metadata}
+        />,
+      );
+    });
+
+    expect(request).toHaveBeenCalledWith("k1_lazy_render", "web", "output");
+    expect(host.textContent).toContain("Loading body");
+
+    act(() => root?.unmount());
+    host.remove();
+    request.mockRestore();
+  });
+
   it("compiles component_source via the shared compiler and renders {data, kind, config}; props_transform applies first", () => {
     componentRegistry.ingestDbRows([
       dbRow({

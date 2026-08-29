@@ -45,6 +45,11 @@ export interface KindComponentProjection {
    */
   componentSource: string | null;
   /**
+   * Whether this row owns a non-empty component body. Warm rows carry only
+   * this light flag; cold rows carry the body itself as well.
+   */
+  hasComponentSource?: boolean;
+  /**
    * Optional transform applied to the kind instance value BEFORE it reaches
    * the compiled component (same semantics as tool_ui's transform code): a
    * compiled `(data) => data` function body. Null = pass the value through.
@@ -147,9 +152,11 @@ function asConfigRecord(value: Json, kind: string): JsonObject {
 }
 
 /**
- * Warm tier: every non-deleted resolver row in one pair of reads, ordered
+ * Warm tier: every non-deleted resolver row as metadata only, ordered
  * is_default-first then sort_order so the FIRST row per (kind, platform,
- * role) is the one the registry keeps. The fallback cannot win here either:
+ * role) is the one the registry keeps. Component and transform BODIES never
+ * ride this list; a parallel id-only projection derives body presence without
+ * transferring the text. The fallback cannot win here either:
  * `content_ir.kind_component`'s `zzz_demote_generic_fallback` trigger pins
  * every `generic_structured` row to is_default=false / sort_order=1000, and
  * `sortKindComponentRows` demotes it again client-side.
@@ -170,29 +177,48 @@ export async function listKindComponentsFromTables(): Promise<
   // kind_component is past that; worse, this query orders `created_at ASC`
   // last, so the truncation ate the NEWEST rows first — "I just authored a
   // component and it doesn't render" (the crack-#1 outage, component half).
-  type WarmRow = RawKindComponentRow & {
+  type WarmRow = Omit<
+    RawKindComponentRow,
+    "component_source" | "props_transform"
+  > & {
     kind_definition?: { kind?: string; deleted_at?: string | null } | null;
   };
   let rows: WarmRow[];
+  let rowsWithComponentSource: Array<{ id: string }>;
   try {
-    rows = (await readAllRows(
-      ({ from, to }) =>
-        supabase
-          .schema("content_ir")
-          .from("kind_component")
-          .select(
-            "id, kind_definition_id, platform, role, component_key, source, is_active, config, component_source, props_transform, pinned_kind_version, updated_at, created_at, created_by, kind_definition!inner(kind, deleted_at)",
-            { count: "exact" },
-          )
-          .is("deleted_at", null)
-          .is("kind_definition.deleted_at", null)
-          .order("is_default", { ascending: false })
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: true })
-          .order("id", { ascending: true })
-          .range(from, to),
-      { label: "content_ir.kind_component" },
-    )) as WarmRow[];
+    [rows, rowsWithComponentSource] = await Promise.all([
+      readAllRows(
+        ({ from, to }) =>
+          supabase
+            .schema("content_ir")
+            .from("kind_component")
+            .select(
+              "id, kind_definition_id, platform, role, component_key, source, is_active, config, pinned_kind_version, updated_at, created_at, created_by, kind_definition!inner(kind, deleted_at)",
+              { count: "exact" },
+            )
+            .is("deleted_at", null)
+            .is("kind_definition.deleted_at", null)
+            .order("is_default", { ascending: false })
+            .order("sort_order", { ascending: true })
+            .order("created_at", { ascending: true })
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "content_ir.kind_component metadata" },
+      ) as Promise<WarmRow[]>,
+      readAllRows(
+        ({ from, to }) =>
+          supabase
+            .schema("content_ir")
+            .from("kind_component")
+            .select("id", { count: "exact" })
+            .is("deleted_at", null)
+            .not("component_source", "is", null)
+            .neq("component_source", "")
+            .order("id", { ascending: true })
+            .range(from, to),
+        { label: "content_ir.kind_component body presence" },
+      ) as Promise<Array<{ id: string }>>,
+    ]);
   } catch (error) {
     throw new KindComponentTablesError(
       `Failed to list kind_component: ${error instanceof Error ? error.message : String(error)}`,
@@ -206,15 +232,19 @@ export async function listKindComponentsFromTables(): Promise<
       .kind_definition;
     if (embedded?.kind) slugById.set(r.kind_definition_id, embedded.kind);
   }
-  return projectRows(rows, slugById);
+  return projectRows(
+    rows,
+    slugById,
+    new Set(rowsWithComponentSource.map((row) => row.id)),
+  );
 }
 
 /**
  * COLD tier — the eager lightweight single-kind fetch (streaming path).
  * The moment a cloud kind is identified mid-stream, this pulls ONLY that
- * kind's resolver rows with ONLY the render-essential columns (the same
- * columns the warm list reads — component body, transform, config, trust
- * flags, freshness; nothing else). Two small reads: slug → definition id,
+ * kind's resolver rows with ONLY the render-essential columns (including the
+ * component body and transform omitted by the warm metadata list). Two small
+ * reads: slug → definition id,
  * then that definition's component rows. Returns [] for an unknown kind.
  */
 export async function getKindComponentBySlug(
@@ -272,8 +302,8 @@ type RawKindComponentRow = {
   source: string;
   is_active: boolean;
   config: Json;
-  component_source: string | null;
-  props_transform: string | null;
+  component_source?: string | null;
+  props_transform?: string | null;
   pinned_kind_version: number | null;
   updated_at: string;
   created_at: string;
@@ -290,6 +320,7 @@ type RawKindComponentRow = {
 function projectRows(
   rows: RawKindComponentRow[],
   slugById: Map<string, string>,
+  rowsWithComponentSource?: ReadonlySet<string>,
 ): KindComponentProjection[] {
   const out: KindComponentProjection[] = [];
   // Re-apply the deterministic contract client-side (defense in depth — the
@@ -313,8 +344,12 @@ function projectRows(
       source: row.source,
       isActive: row.is_active,
       config: asConfigRecord(row.config, kind),
-      componentSource: row.component_source,
-      propsTransform: row.props_transform,
+      componentSource: row.component_source ?? null,
+      propsTransform: row.props_transform ?? null,
+      hasComponentSource:
+        rowsWithComponentSource?.has(row.id) ??
+        (typeof row.component_source === "string" &&
+          row.component_source.length > 0),
       pinnedKindVersion: row.pinned_kind_version,
       updatedAt: row.updated_at,
       createdAt: row.created_at,
