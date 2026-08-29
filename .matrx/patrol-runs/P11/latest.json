@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P11",
   "runId": "2026-08-29T161426Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-29T16:16:52.197Z",
-  "summary": "Candidate 81508305e1241e81803824dbe8cd27520390dc87 preserved for independent adversarial certification",
+  "state": "fixing",
+  "updatedAt": "2026-08-29T16:21:38.626Z",
+  "summary": "Repairing rejected detector scope and the verified scanner header callsite",
   "source": "2026-08-29T161426Z.json",
-  "eventHash": "7e4799dc2d503ec847d33452817b4080c625483f15f135207cb3a0dc9dd106e8"
+  "eventHash": "8ef69be392ab04a932752c949ce31417440e1754d242ddcb832a7f92233785ce"
 }
