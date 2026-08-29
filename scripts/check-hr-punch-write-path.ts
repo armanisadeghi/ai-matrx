@@ -294,6 +294,21 @@ const EXPECTED_CHECKS = [
   // mentions and prose are ignored). Falsified by re-creating the pre-fix `hr._wf_notify` line in a
   // throwaway function: the check went red on it and green again when it was dropped.
   "hr_deep_links_carry_the_employer",
+  // hr_l3_112: THE ATTESTATION STATEMENT IS THE LEGAL SUBSTANCE OF THE ATTESTATION.
+  // `hr.pay_period_employment.attestation_statement` is the wording an employee signed and the only
+  // thing route 5 can render under "What you agreed to, word for word" — `hr.timesheet_get` projects
+  // the ROW, never the knob. `hr.pay_period_transition` stamped it inside an
+  // `insert … on conflict (pay_period_id, employment_id) DO NOTHING`, while
+  // `hr._enroll_pay_period_rows` had already created that row at period generation — so the insert
+  // ALWAYS conflicted and the column was NEVER written. Measured live 2026-08-29: 1 of 200 rows
+  // carried a statement (the single row the submit genuinely inserted) and BOTH rows where a person
+  // actually attested were NULL — a signature with nothing above it, and nothing anywhere said so.
+  // Detector: `hr.attestations_without_a_statement()`. Deliberately scoped to rows where somebody
+  // ACTUALLY attested: a row nobody signed is not a broken record, and nothing is ever filled in on
+  // an employee's behalf. Proven red against the pre-backfill state and green after, in one
+  // transaction; the writer fix was then falsified end to end through the real doors (enrol →
+  // submit → the wording is on the row BEFORE the employee is asked → attest → byte-identical).
+  "every_attestation_records_its_statement",
 ] as const;
 
 interface ConformanceRow {
