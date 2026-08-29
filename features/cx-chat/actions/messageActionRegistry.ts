@@ -597,7 +597,9 @@ export function getMessageActions(ctx: MessageActionContext): MenuItem[] {
       iconColor: "text-emerald-500 dark:text-emerald-400",
       label: "Add to docs",
       action: () => {
-        void announceComingSoon("chat.add-to-docs");
+        toast.info("Coming soon", {
+          description: "Add to docs will be available shortly.",
+        });
         onClose();
       },
       category: "Actions",
