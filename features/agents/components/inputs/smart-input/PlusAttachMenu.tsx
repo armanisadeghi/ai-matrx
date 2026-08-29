@@ -79,8 +79,13 @@ interface PlusAttachMenuProps {
   onRequestInputExpand?: () => void;
 }
 
-/** Fixed shell height — never use max-h alone; inner sections flex within this box. */
-const PLUS_ATTACH_MENU_HEIGHT_CLASS = "h-[min(80dvh,640px)]";
+/**
+ * Fixed preferred shell height, collision-capped by Radix's measured space.
+ * The computed height remains definite for every inner flex/scroll chain, but
+ * a top-opening menu beside a low composer can no longer extend off-screen.
+ */
+const PLUS_ATTACH_MENU_HEIGHT_CLASS =
+  "h-[min(80dvh,640px)] max-h-[var(--radix-popover-content-available-height)]";
 
 type PlusMenuView = "menu" | "overrides" | "templates";
 
@@ -283,6 +288,7 @@ export function PlusAttachMenu({
                     unbounded, so their overflow regions grow and clip. */}
                 <ResourcePickerMenu
                   conversationId={conversationId}
+                  fillHost
                   onResourceSelected={handleResourceSelected}
                   onClose={closeMenu}
                   attachmentCapabilities={attachmentCapabilities}

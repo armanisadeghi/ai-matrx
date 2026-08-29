@@ -80,6 +80,8 @@ interface ResourcePickerMenuProps {
    * modes because they produce one resource per completed form.
    */
   selectionMode?: "single" | "multiple";
+  /** Fill a definite-height host and let each drill-in own its scroll area. */
+  fillHost?: boolean;
 }
 
 export function ResourcePickerMenu({
@@ -92,6 +94,7 @@ export function ResourcePickerMenu({
   showDebugActive,
   allowedViewIds,
   selectionMode = "multiple",
+  fillHost = false,
 }: ResourcePickerMenuProps) {
   const [activeView, setActiveView] = useState<ResourcePickerViewId>(null);
   const [currentUrl, setCurrentUrl] = useState<string>("");
@@ -201,6 +204,7 @@ export function ResourcePickerMenu({
           }
           onBack={() => setActiveView(null)}
           selectionMode={selectionMode}
+          fillHost={fillHost}
           onSelect={(selection) =>
             selectFromList({ type: "file", data: selection })
           }
@@ -439,7 +443,7 @@ export function ResourcePickerMenu({
 
   // Main menu view
   return (
-    <div className="py-1">
+    <div className={cn("py-1", fillHost && "h-full overflow-y-auto")}>
       {visibleCategories.map((category) => (
         <div key={category.category || "primary"} className="flex flex-col">
           {category.category ? (

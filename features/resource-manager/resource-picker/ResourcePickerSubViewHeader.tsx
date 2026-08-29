@@ -23,11 +23,11 @@ export function ResourcePickerSubViewHeader({
   disabled,
 }: ResourcePickerSubViewHeaderProps) {
   return (
-    <div className="flex h-8 shrink-0 items-center gap-1.5 border-b border-border pl-1 pr-2">
+    <div className="flex h-8 shrink-0 items-center gap-1.5 border-b border-border pl-1 pr-2 pointer-coarse:h-11">
       <Button
         variant="ghost"
         size="sm"
-        className="h-6 w-6 shrink-0 p-0"
+        className="h-6 w-6 shrink-0 p-0 pointer-coarse:h-10 pointer-coarse:w-10"
         onClick={onBack}
         disabled={disabled}
         aria-label="Back to attach menu"

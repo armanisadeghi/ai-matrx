@@ -957,7 +957,7 @@ export function FilesResourcePicker({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-1.5 text-[10px] text-muted-foreground"
+                  className="h-6 px-1.5 text-[10px] text-muted-foreground pointer-coarse:h-10"
                   disabled={isProcessing}
                   onClick={clearSelectedFiles}
                 >
@@ -966,7 +966,7 @@ export function FilesResourcePicker({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-1.5 text-[10px] text-primary hover:bg-primary/10"
+                  className="h-6 px-1.5 text-[10px] text-primary hover:bg-primary/10 pointer-coarse:h-10"
                   disabled={isProcessing}
                   onClick={() => void addSelectedFiles()}
                 >
@@ -997,7 +997,7 @@ export function FilesResourcePicker({
                     disabled={isProcessing}
                     onClick={() => setViewMode(mode)}
                     className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded",
+                      "flex h-5 w-5 items-center justify-center rounded pointer-coarse:h-10 pointer-coarse:w-10",
                       active
                         ? "bg-accent text-accent-foreground"
                         : "text-muted-foreground hover:bg-accent/60",
