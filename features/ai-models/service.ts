@@ -202,7 +202,7 @@ function parseConstraint(value: unknown, path: string): ModelConstraint {
   if (severity !== "error" && severity !== "warning" && severity !== "info") {
     throw boundaryError(`${path}.severity`, "error, warning, or info");
   }
-  const common = {
+  const common: Pick<ModelConstraint, "id" | "severity" | "message"> = {
     id: requireString(record.id, `${path}.id`),
     severity,
     message: requireString(record.message, `${path}.message`),

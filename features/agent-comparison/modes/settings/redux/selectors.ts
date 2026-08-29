@@ -12,12 +12,11 @@ const EMPTY_LOCKED: SettingsLockedSetup = {
   agentId: null,
   agentVersion: null,
   agentVersionId: null,
-  variables: {},
-  userMessage: "",
 };
 
 const DEFAULT_ROOT = {
   locked: EMPTY_LOCKED,
+  inputConversationId: null,
   columns: EMPTY_COLUMNS,
   activeSetId: null,
   activeSetName: null,
@@ -42,14 +41,9 @@ export const selectLockedAgentVersion = createSelector(
   (l) => l.agentVersion,
 );
 
-export const selectLockedUserMessage = createSelector(
-  [selectLockedSetup],
-  (l) => l.userMessage,
-);
-
-export const selectLockedVariables = createSelector(
-  [selectLockedSetup],
-  (l) => l.variables,
+export const selectSettingsInputConversationId = createSelector(
+  [selectRoot],
+  (r) => r.inputConversationId,
 );
 
 export const selectSettingsColumns = createSelector(
