@@ -48423,6 +48423,7 @@ export type Database = {
         Args: { p_organization_id: string; p_user_ids: string[] }
         Returns: Json
       }
+      membership_access_sweep: { Args: never; Returns: Json }
       my_compensation: {
         Args: { p_as_of?: string; p_employment_id: string }
         Returns: Json
@@ -48883,6 +48884,14 @@ export type Database = {
         Args: { p_window?: string }
         Returns: Json
       }
+      rehire_service_dates: {
+        Args: {
+          p_employee_id: string
+          p_hire_date: string
+          p_organization_id: string
+        }
+        Returns: Json
+      }
       resolve_rules: {
         Args: {
           p_as_of: string
@@ -48962,6 +48971,15 @@ export type Database = {
           p_organization_id?: string
         }
         Returns: string
+      }
+      sync_membership_to_employment: {
+        Args: {
+          p_actor?: string
+          p_employee_id: string
+          p_force_immediate?: boolean
+          p_origin_id?: string
+        }
+        Returns: Json
       }
       time_adjustment_create: {
         Args: {
@@ -59610,6 +59628,28 @@ export type Database = {
       continued_access_allows: {
         Args: { p_feature_key: string; p_org: string; p_user: string }
         Returns: boolean
+      }
+      continued_access_depart_apply: {
+        Args: {
+          p_access_cutoff_at?: string
+          p_actor: string
+          p_contact_email?: string
+          p_contact_phone?: string
+          p_organization_id: string
+          p_origin?: string
+          p_origin_id?: string
+          p_subject_user_id: string
+        }
+        Returns: Json
+      }
+      continued_access_return_apply: {
+        Args: {
+          p_actor: string
+          p_organization_id: string
+          p_reason?: string
+          p_subject_user_id: string
+        }
+        Returns: Json
       }
       continued_access_state: {
         Args: { p_org: string; p_user: string }
