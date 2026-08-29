@@ -13502,6 +13502,49 @@
         }
       }
     },
+    "/mcp-connections/{server_id}/cloudflare/account-metadata": {
+      "post": {
+        "tags": [
+          "MCP Connections"
+        ],
+        "summary": "Cloudflare Account Metadata",
+        "description": "Return only account id/name/type through an exact core-scope grant.",
+        "operationId": "cloudflare_account_metadata_mcp_connections__server_id__cloudflare_account_metadata_post",
+        "parameters": [
+          {
+            "name": "server_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Server Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CloudflareAccountMetadata"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mcp-connections/{server_id}/grafana/dashboard-search": {
       "post": {
         "tags": [
@@ -86345,6 +86388,37 @@
           "success"
         ],
         "title": "ClosePageResult"
+      },
+      "CloudflareAccountMetadata": {
+        "properties": {
+          "server_id": {
+            "type": "string",
+            "title": "Server Id"
+          },
+          "accounts": {
+            "type": "string",
+            "title": "Accounts"
+          },
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name",
+            "default": "execute"
+          },
+          "oauth_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Oauth Scopes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "server_id",
+          "accounts"
+        ],
+        "title": "CloudflareAccountMetadata",
+        "description": "Provider-formatted account metadata from one fixed Cloudflare API read."
       },
       "ClusterDetailResponse": {
         "properties": {

@@ -5245,6 +5245,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mcp-connections/{server_id}/cloudflare/account-metadata": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cloudflare Account Metadata
+         * @description Return only account id/name/type through an exact core-scope grant.
+         */
+        post: operations["cloudflare_account_metadata_mcp_connections__server_id__cloudflare_account_metadata_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mcp-connections/{server_id}/grafana/dashboard-search": {
         parameters: {
             query?: never;
@@ -33315,6 +33335,23 @@ export interface components {
             closed?: boolean;
             /** Active Page Id */
             active_page_id?: string | null;
+        };
+        /**
+         * CloudflareAccountMetadata
+         * @description Provider-formatted account metadata from one fixed Cloudflare API read.
+         */
+        CloudflareAccountMetadata: {
+            /** Server Id */
+            server_id: string;
+            /** Accounts */
+            accounts: string;
+            /**
+             * Tool Name
+             * @default execute
+             */
+            tool_name?: string;
+            /** Oauth Scopes */
+            oauth_scopes?: string[];
         };
         /** ClusterDetailResponse */
         ClusterDetailResponse: {
@@ -84387,6 +84424,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NewRelicAccountStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cloudflare_account_metadata_mcp_connections__server_id__cloudflare_account_metadata_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                server_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloudflareAccountMetadata"];
                 };
             };
             /** @description Validation Error */
