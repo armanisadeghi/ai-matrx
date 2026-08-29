@@ -1,7 +1,7 @@
 # Pattern Patrol P1 — No dead ends
 
-**Run:** 2026-08-29 07:23 PDT (America/Los_Angeles)  
-**Authority:** Tier M/R — automatic when the canonical entity door is unambiguous  
+**Run:** 2026-08-29 07:23 PDT (America/Los_Angeles)
+**Authority:** Tier M/R — automatic when the canonical entity door is unambiguous
 **State:** Closed — fixed, independently certified, integrated, and released
 
 ## Outcome
