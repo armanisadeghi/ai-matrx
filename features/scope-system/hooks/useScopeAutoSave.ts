@@ -5,7 +5,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
 import { toast } from "@/lib/toast";
 import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
-import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
+import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 
 type Status = "idle" | "saving" | "saved" | "error";
 

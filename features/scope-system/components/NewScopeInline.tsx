@@ -15,7 +15,7 @@ import {
   selectItemsLoadedForType,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
-import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
+import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 import {
   slugifyKey,
   toSlug,

@@ -14,7 +14,7 @@ import {
   selectValuesByScope,
   type ScopeContextRow,
 } from "@/features/scope-system/redux/scopeValuesSlice";
-import { buildScopeValuePayload } from "@/features/scope-system/utils/scopeValuePayload";
+import { buildScopeValuePayload } from "@/features/scopes/utils/scopeValuePayload";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { referenceConfigFromItem } from "@/features/scopes/utils/referenceCell";
 import { EditContextItemSheet } from "./EditContextItemSheet";

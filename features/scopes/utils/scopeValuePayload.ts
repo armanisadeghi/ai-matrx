@@ -1,4 +1,4 @@
-import type { ContextValueType } from "@/features/scope-system/redux/contextItemsSlice";
+import type { ContextValueType } from "@/features/scopes/types";
 
 /** The value_* columns a context-item cell can write to. */
 export interface ScopeValueColumns {

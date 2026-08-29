@@ -87,6 +87,7 @@ import { ClearContextButton } from "@/features/scopes/components/active-context/
 import { ContextSelectionSummary } from "./ContextSelectionSummary";
 import { formatOrgDisplayName } from "@/features/scopes/utils/formatOrgDisplayName";
 import { useOpenScopeEditWindow } from "@/features/overlays/openers/scopeEditWindow";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import type { OrgNode, ScopeTypeNode } from "@/features/scopes/types";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 
@@ -1127,16 +1128,19 @@ export function ContextAssignmentField({
     if (!v || !targetOrgId) return;
     if (writeMode === "live") {
       try {
-        const { createScope } =
-          await import("@/features/agent-context/redux/scope/scopesSlice");
+        // Canonical write path (Lane F W6): the RPC-backed createScope thunk
+        // folds the created row straight into the scopesTree slice — no
+        // legacy slice, no middleware-driven tree refresh needed.
+        const { createScope } = await import(
+          "@/features/scopes/redux/thunks/scopeTreeMutations"
+        );
         const created = await dispatch(
           createScope({ org_id: targetOrgId, type_id: typeId, name: v }),
-        ).unwrap();
-        setSelScopes((p) => new Set(p).add(created.id));
+        );
+        if (isScopesRpcErr(created)) throw new Error(created.error.message);
+        setSelScopes((p) => new Set(p).add(created.data.id));
         setAdding(null);
         toast.success(`Created "${v}"`);
-        // No manual tree refresh here: scopeTreeInvalidationMiddleware watches
-        // scopes/create/fulfilled and refreshes the tree app-wide once.
       } catch (e) {
         toast.error(
           e instanceof Error ? e.message : "Couldn't create the scope",

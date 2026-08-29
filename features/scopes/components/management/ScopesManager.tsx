@@ -2,15 +2,17 @@
 //
 // Per-org scopes page. Minimal org-identity header (logo / name / role +
 // links back to the org overview and settings), followed by a stack of
-// OrgHomeScopeSection cards — one per scope type — that drive the same
+// OrgScopeTypeSection cards — one per scope type — that drive the same
 // in-line preview + add/edit + open-detail flow used on the org overview.
 //
-// Reads/writes through the same Redux surface as the org overview page so
-// adds/edits are immediately reflected here.
+// Fully canonical (Lane F W7): reads from the scopesTree slice via
+// ensureScopeTree + makeSelectScopeTypesForOrg, writes through the sanctioned
+// RPC-backed thunks. No features/scope-system or features/agent-context
+// imports remain.
 
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -26,24 +28,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { orgHref } from "@/features/scopes/lib/scopeRoutes";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  fetchScopeTypes,
-  selectScopeTypesByOrg,
-  updateScopeType,
-} from "@/features/agent-context/redux/scope/scopeTypesSlice";
-import {
-  fetchScopes,
-  selectScopesByOrg,
-} from "@/features/agent-context/redux/scope/scopesSlice";
-import { OrgHomeScopeSection } from "@/features/scope-system/components/OrgHomeScopeSection";
-import { ScopeOnboarding } from "@/features/scope-system/components/ScopeOnboarding";
-import { AddScopeModal } from "@/features/scope-system/components/AddScopeModal";
-import { TemplateGalleryDrawer } from "@/features/scope-system/components/TemplateGalleryDrawer";
-import { ReorderDialog } from "@/features/scope-system/components/ReorderDialog";
+import { makeSelectScopeTypesForOrg } from "@/features/scopes/redux/selectors/tree";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
+import { updateScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
+import { OrgScopeTypeSection } from "@/features/scopes/components/management/OrgScopeTypeSection";
+import { ScopeOnboarding } from "@/features/scopes/components/management/ScopeOnboarding";
+import { AddScopeModal } from "@/features/scopes/components/management/AddScopeModal";
+import { TemplateGalleryDrawer } from "@/features/scopes/components/management/TemplateGalleryDrawer";
+import { ReorderDialog } from "@/features/scopes/components/management/ReorderDialog";
 import { useScopeSuggestions } from "@/features/kg-suggestions/hooks/useScopeSuggestions";
 import { KgSuggestionHint } from "@/features/kg-suggestions/components/KgSuggestionHint";
+import { isScopesRpcErr } from "@/features/scopes/types";
 import type { Organization } from "@/features/organizations/types";
 
 interface ScopesManagerProps {
@@ -56,37 +52,46 @@ interface ScopesManagerProps {
 
 export function ScopesManager({ organization, role }: ScopesManagerProps) {
   const dispatch = useAppDispatch();
-  const scopeTypes = useAppSelector((s) =>
-    selectScopeTypesByOrg(s, organization.id),
+  const selectScopeTypesForOrg = useMemo(
+    () => makeSelectScopeTypesForOrg(),
+    [],
   );
-  const orgScopes = useAppSelector((s) =>
-    selectScopesByOrg(s, organization.id),
+  const scopeTypes = useAppSelector((s) =>
+    selectScopeTypesForOrg(s, organization.id),
   );
   const [addScopeOpen, setAddScopeOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [reorderTypesOpen, setReorderTypesOpen] = useState(false);
   const suggestions = useScopeSuggestions();
+  const orgScopes = useMemo(
+    () => scopeTypes.flatMap((t) => t.scopes),
+    [scopeTypes],
+  );
   const orgSuggestions = orgScopes.flatMap((sc) => suggestions.forScope(sc.id));
 
   useEffect(() => {
-    dispatch(fetchScopeTypes(organization.id));
-    dispatch(fetchScopes({ org_id: organization.id }));
-  }, [dispatch, organization.id]);
+    void dispatch(ensureScopeTree());
+  }, [dispatch]);
 
   const slug = organization.slug ?? organization.id;
   const totalScopes = orgScopes.length;
   const canManage = role === "owner" || role === "admin";
 
+  const orderedTypes = useMemo(
+    () => [...scopeTypes].sort((a, b) => a.sort_order - b.sort_order),
+    [scopeTypes],
+  );
+
   async function saveTypeOrder(orderedIds: string[]) {
-    await Promise.all(
+    const results = await Promise.all(
       orderedIds.map((id, i) =>
-        dispatch(updateScopeType({ type_id: id, sort_order: i + 1 })).unwrap(),
+        dispatch(updateScopeType({ type_id: id, sort_order: i + 1 })),
       ),
     );
+    const failed = results.find(isScopesRpcErr);
+    if (failed) throw new Error(failed.error.message);
     toast.success("Order saved");
   }
-
-  const orgOverviewHref = orgHref(slug);
 
   return (
     <div className="space-y-6">
@@ -186,16 +191,12 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
           <ScopeOnboarding
             orgId={organization.id}
             isPersonal={organization.isPersonal ?? undefined}
-            onChanged={() => {
-              dispatch(fetchScopeTypes(organization.id));
-              dispatch(fetchScopes({ org_id: organization.id }));
-            }}
           />
         </Card>
       ) : (
         <>
-          {scopeTypes.map((scopeType) => (
-            <OrgHomeScopeSection
+          {orderedTypes.map((scopeType) => (
+            <OrgScopeTypeSection
               key={scopeType.id}
               scopeType={scopeType}
               orgId={organization.id}
@@ -257,7 +258,7 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
         onOpenChange={setReorderTypesOpen}
         title="Reorder scope types"
         description="Drag the handle or use the arrows, then save."
-        items={scopeTypes.map((t) => ({
+        items={orderedTypes.map((t) => ({
           id: t.id,
           label: t.label_plural,
           sublabel: t.label_singular,
