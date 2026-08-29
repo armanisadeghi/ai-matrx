@@ -37,9 +37,7 @@ export function LockedInputSection() {
   const dispatch = useAppDispatch();
   const sourceAgentId = useAppSelector(selectSourceAgentId);
   const agentVersion = useAppSelector(selectLockedAgentVersion);
-  const inputConversationId = useAppSelector(
-    selectToolsInputConversationId,
-  );
+  const inputConversationId = useAppSelector(selectToolsInputConversationId);
 
   const agent = useAppSelector((s) =>
     sourceAgentId ? selectAgentById(s, sourceAgentId) : undefined,
@@ -80,8 +78,7 @@ export function LockedInputSection() {
   const versionOptions: Option[] = [
     {
       value: "current",
-      label:
-        agent?.version != null ? `Current (v${agent.version})` : "Current",
+      label: agent?.version != null ? `Current (v${agent.version})` : "Current",
     },
     ...versionHistory.map((v) => ({
       value: v.version_number.toString(),
@@ -146,9 +143,7 @@ export function LockedInputSection() {
                     className={cn(
                       "inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium w-full",
                       "border border-border bg-background hover:bg-muted/50 transition-colors",
-                      agentName
-                        ? "text-foreground"
-                        : "text-muted-foreground",
+                      agentName ? "text-foreground" : "text-muted-foreground",
                     )}
                   >
                     <span className="truncate flex-1 text-left">
@@ -166,16 +161,16 @@ export function LockedInputSection() {
                   agentVersion == null
                     ? undefined
                     : agentVersion === "current"
-                    ? "current"
-                    : String(agentVersion)
+                      ? "current"
+                      : String(agentVersion)
                 }
                 onChange={handleVersionChange}
                 placeholder={
                   !sourceAgentId
                     ? "—"
                     : versionsLoading
-                    ? "Loading..."
-                    : "Version..."
+                      ? "Loading..."
+                      : "Version..."
                 }
                 searchPlaceholder="Search versions..."
                 className="!h-8 !py-0 !px-2 !border !text-xs !font-medium !bg-background"

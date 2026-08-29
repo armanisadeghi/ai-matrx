@@ -120,8 +120,7 @@ export const setLockedAgent = createAsyncThunk<
       dispatch,
       agentId,
       agentVersionId: null,
-      previousConversationId:
-        state.agentComparisonModel.inputConversationId,
+      previousConversationId: state.agentComparisonModel.inputConversationId,
       copyVariables: false,
     });
     dispatch(setModelInputConversationId(inputConversationId));
@@ -203,8 +202,7 @@ export const setLockedVersion = createAsyncThunk<
       dispatch,
       agentId,
       agentVersionId: pinnedVersionId,
-      previousConversationId:
-        post.agentComparisonModel.inputConversationId,
+      previousConversationId: post.agentComparisonModel.inputConversationId,
     });
     dispatch(setModelInputConversationId(inputConversationId));
 

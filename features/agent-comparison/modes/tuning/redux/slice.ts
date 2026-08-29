@@ -39,10 +39,7 @@ const slice = createSlice({
         collapsed: false,
       });
     },
-    removeTuningColumn(
-      state,
-      action: PayloadAction<{ columnId: string }>,
-    ) {
+    removeTuningColumn(state, action: PayloadAction<{ columnId: string }>) {
       state.columns = state.columns.filter(
         (c) => c.columnId !== action.payload.columnId,
       );
@@ -60,10 +57,7 @@ const slice = createSlice({
       if (idx === -1) return;
       state.columns[idx] = { ...state.columns[idx], ...action.payload.next };
     },
-    setTuningColumns(
-      state,
-      action: PayloadAction<TuningColumn[]>,
-    ) {
+    setTuningColumns(state, action: PayloadAction<TuningColumn[]>) {
       state.columns = action.payload;
     },
     renameTuningColumn(
@@ -102,16 +96,10 @@ const slice = createSlice({
       state.columns.splice(toIndex, 0, moved);
     },
 
-    setLocked(
-      state,
-      action: PayloadAction<Partial<TuningLockedSetup>>,
-    ) {
+    setLocked(state, action: PayloadAction<Partial<TuningLockedSetup>>) {
       state.locked = { ...state.locked, ...action.payload };
     },
-    setTuningInputConversationId(
-      state,
-      action: PayloadAction<string | null>,
-    ) {
+    setTuningInputConversationId(state, action: PayloadAction<string | null>) {
       state.inputConversationId = action.payload;
     },
 

@@ -26,9 +26,7 @@ export function SharedBattleInput({
         <span className="text-[11px] font-semibold text-foreground">
           Shared request
         </span>
-        <span className="text-[10px] text-muted-foreground">
-          {description}
-        </span>
+        <span className="text-[10px] text-muted-foreground">{description}</span>
       </div>
       <SmartAgentInput
         conversationId={conversationId}

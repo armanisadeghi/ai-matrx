@@ -24,6 +24,7 @@ import {
   destroyInstance,
 } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { copyInstanceRequestDraft } from "@/features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
@@ -31,8 +32,6 @@ import {
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
 } from "@/features/agents/redux/agent-definition/thunks";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   removeAgent,
   setAgentMessages,
@@ -56,11 +55,18 @@ import {
   resetSystemPrompt,
   setActiveSystemPromptSet,
   setLocked,
+  setSystemPromptInputConversationId,
   setSystemPromptColumns,
   submitAllFinished,
   submitAllStarted,
 } from "./slice";
 import type { SystemPromptColumn } from "../types";
+import {
+  createBattleInputDraft,
+  hydrateBattleInputDraft,
+  readBattleInputDraft,
+  replaceBattleInputDraft,
+} from "@/features/agent-comparison/shared/battleInputDraft";
 
 // =============================================================================
 // Page-wide constants
@@ -88,8 +94,9 @@ function extractSystemText(state: RootState, agentId: string): string {
   if (!agent?.messages) return "";
   const sys = agent.messages.find((m) => m.role === "system");
   if (!sys) return "";
-  const textBlock = (sys.content as Array<{ type?: string; text?: string }>)
-    .find((b) => b?.type === "text");
+  const textBlock = (
+    sys.content as Array<{ type?: string; text?: string }>
+  ).find((b) => b?.type === "text");
   return textBlock?.text ?? "";
 }
 
@@ -137,10 +144,7 @@ function writeSystemText(
  * prefix so leaving it would be harmless but wasteful), and drop the
  * slice entry.
  */
-function teardownColumn(
-  dispatch: AppDispatch,
-  col: SystemPromptColumn,
-) {
+function teardownColumn(dispatch: AppDispatch, col: SystemPromptColumn) {
   dispatch(destroyInstance(col.conversationId));
   if (isSyntheticAgentId(col.syntheticAgentId)) {
     dispatch(removeAgent(col.syntheticAgentId));
@@ -166,13 +170,16 @@ export const setLockedSourceAgent = createAsyncThunk<
   async ({ agentId }, { dispatch, getState }) => {
     const state = getState();
     const prev = state.agentComparisonSystemPrompt.locked;
-    if (prev.sourceAgentId === agentId) return;
+    if (
+      prev.sourceAgentId === agentId &&
+      state.agentComparisonSystemPrompt.inputConversationId
+    ) {
+      return;
+    }
 
     await Promise.allSettled([
       dispatch(fetchFullAgent(agentId)).unwrap(),
-      dispatch(
-        fetchAgentVersionHistory({ agentId, limit: 100 }),
-      ).unwrap(),
+      dispatch(fetchAgentVersionHistory({ agentId, limit: 100 })).unwrap(),
     ]);
 
     dispatch(
@@ -180,9 +187,18 @@ export const setLockedSourceAgent = createAsyncThunk<
         sourceAgentId: agentId,
         agentVersion: "current",
         agentVersionId: null,
-        variables: {},
       }),
     );
+
+    const inputConversationId = await replaceBattleInputDraft({
+      dispatch,
+      agentId,
+      agentVersionId: null,
+      previousConversationId:
+        state.agentComparisonSystemPrompt.inputConversationId,
+      copyVariables: false,
+    });
+    dispatch(setSystemPromptInputConversationId(inputConversationId));
 
     // Recreate every column with a fresh synthetic forked from the new
     // source agent. We do NOT carry over the old system-prompt edits;
@@ -228,7 +244,12 @@ export const setLockedVersion = createAsyncThunk<
     const { sourceAgentId, agentVersion } =
       state.agentComparisonSystemPrompt.locked;
     if (!sourceAgentId) return;
-    if (agentVersion === version) return;
+    if (
+      agentVersion === version &&
+      state.agentComparisonSystemPrompt.inputConversationId
+    ) {
+      return;
+    }
 
     if (version !== "current") {
       try {
@@ -243,7 +264,7 @@ export const setLockedVersion = createAsyncThunk<
     dispatch(
       setLocked({
         agentVersion: version,
-        agentVersionId: version === "current" ? null : versionId ?? null,
+        agentVersionId: version === "current" ? null : (versionId ?? null),
       }),
     );
 
@@ -253,9 +274,16 @@ export const setLockedVersion = createAsyncThunk<
     // was loaded.
     const post = getState();
     const forkSourceId =
-      version === "current"
-        ? sourceAgentId
-        : versionId ?? sourceAgentId;
+      version === "current" ? sourceAgentId : (versionId ?? sourceAgentId);
+
+    const inputConversationId = await replaceBattleInputDraft({
+      dispatch,
+      agentId: sourceAgentId,
+      agentVersionId: version === "current" ? null : (versionId ?? null),
+      previousConversationId:
+        post.agentComparisonSystemPrompt.inputConversationId,
+    });
+    dispatch(setSystemPromptInputConversationId(inputConversationId));
 
     for (const col of post.agentComparisonSystemPrompt.columns) {
       teardownColumn(dispatch, col);
@@ -361,33 +389,22 @@ export const submitAllSystemPrompt = createAsyncThunk<
     dispatch(submitAllStarted());
     try {
       const state = getState();
-      const { sourceAgentId, variables, userMessage } =
-        state.agentComparisonSystemPrompt.locked;
+      const { sourceAgentId } = state.agentComparisonSystemPrompt.locked;
+      const inputConversationId =
+        state.agentComparisonSystemPrompt.inputConversationId;
       const columns = state.agentComparisonSystemPrompt.columns;
 
-      if (!sourceAgentId || columns.length === 0) {
+      if (!sourceAgentId || !inputConversationId || columns.length === 0) {
         return { launched: 0, failed: 0, skipped: columns.length };
       }
 
-      // Locked-input page — broadcast the locked text + variables to
-      // every column's per-instance slices before firing.
       for (const col of columns) {
-        if (userMessage) {
-          dispatch(
-            setUserInputText({
-              conversationId: col.conversationId,
-              text: userMessage,
-            }),
-          );
-        }
-        if (Object.keys(variables).length > 0) {
-          dispatch(
-            setUserVariableValues({
-              conversationId: col.conversationId,
-              values: variables,
-            }),
-          );
-        }
+        dispatch(
+          copyInstanceRequestDraft({
+            sourceConversationId: inputConversationId,
+            targetConversationId: col.conversationId,
+          }),
+        );
       }
 
       const results = await Promise.allSettled(
@@ -439,6 +456,11 @@ export const clearSystemPromptBattle = createAsyncThunk<void, void, ThunkApi>(
   "agentComparisonSystemPrompt/clear",
   async (_arg, { dispatch, getState }) => {
     const state = getState();
+    if (state.agentComparisonSystemPrompt.inputConversationId) {
+      dispatch(
+        destroyInstance(state.agentComparisonSystemPrompt.inputConversationId),
+      );
+    }
     for (const col of state.agentComparisonSystemPrompt.columns) {
       teardownColumn(dispatch, col);
     }
@@ -536,13 +558,12 @@ function buildSystemPromptEntries(state: RootState): UpsertEntryInput[] {
 }
 
 function buildSetMetadata(state: RootState): Record<string, unknown> {
-  const {
-    sourceAgentId,
-    agentVersion,
-    agentVersionId,
-    variables,
-    userMessage,
-  } = state.agentComparisonSystemPrompt.locked;
+  const { sourceAgentId, agentVersion, agentVersionId } =
+    state.agentComparisonSystemPrompt.locked;
+  const { variables, userMessage } = readBattleInputDraft(
+    state,
+    state.agentComparisonSystemPrompt.inputConversationId,
+  );
   return {
     mode: "system-prompt",
     locked: {
@@ -607,6 +628,11 @@ export const loadSystemPromptBattleSet = createAsyncThunk<
   "agentComparisonSystemPrompt/loadSet",
   async ({ setId }, { dispatch, getState }) => {
     const before = getState();
+    if (before.agentComparisonSystemPrompt.inputConversationId) {
+      dispatch(
+        destroyInstance(before.agentComparisonSystemPrompt.inputConversationId),
+      );
+    }
     for (const col of before.agentComparisonSystemPrompt.columns) {
       teardownColumn(dispatch, col);
     }
@@ -665,18 +691,27 @@ export const loadSystemPromptBattleSet = createAsyncThunk<
           sourceAgentId: locked.source_agent_id,
           agentVersion: locked.agent_version ?? "current",
           agentVersionId: locked.agent_version_id ?? null,
-          variables: locked.variables ?? {},
-          userMessage: locked.user_message ?? "",
         }),
       );
+      const inputConversationId = await createBattleInputDraft({
+        dispatch,
+        agentId: locked.source_agent_id,
+        agentVersionId: locked.agent_version_id ?? null,
+      });
+      hydrateBattleInputDraft({
+        dispatch,
+        conversationId: inputConversationId,
+        userMessage: locked.user_message ?? "",
+        variables: locked.variables ?? {},
+      });
+      dispatch(setSystemPromptInputConversationId(inputConversationId));
     }
 
     const nextColumns: SystemPromptColumn[] = [];
     for (const entry of entries) {
       const columnId = crypto.randomUUID();
       const entryMeta = (entry.metadata ?? {}) as
-        | Partial<PersistedSystemPromptEntryMeta>
-        | undefined;
+        Partial<PersistedSystemPromptEntryMeta> | undefined;
 
       const fresh = getState();
       const syntheticId = forkSourceId

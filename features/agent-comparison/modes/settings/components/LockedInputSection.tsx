@@ -41,9 +41,7 @@ export function LockedInputSection() {
   const dispatch = useAppDispatch();
   const agentId = useAppSelector(selectLockedAgentId);
   const agentVersion = useAppSelector(selectLockedAgentVersion);
-  const inputConversationId = useAppSelector(
-    selectSettingsInputConversationId,
-  );
+  const inputConversationId = useAppSelector(selectSettingsInputConversationId);
 
   const agent = useAppSelector((s) =>
     agentId ? selectAgentById(s, agentId) : undefined,
@@ -85,8 +83,7 @@ export function LockedInputSection() {
   const versionOptions: Option[] = [
     {
       value: "current",
-      label:
-        agent?.version != null ? `Current (v${agent.version})` : "Current",
+      label: agent?.version != null ? `Current (v${agent.version})` : "Current",
     },
     ...versionHistory.map((v) => ({
       value: v.version_number.toString(),
@@ -176,16 +173,12 @@ export function LockedInputSection() {
                   agentVersion == null
                     ? undefined
                     : agentVersion === "current"
-                    ? "current"
-                    : String(agentVersion)
+                      ? "current"
+                      : String(agentVersion)
                 }
                 onChange={handleVersionChange}
                 placeholder={
-                  !agentId
-                    ? "—"
-                    : versionsLoading
-                    ? "Loading..."
-                    : "Version..."
+                  !agentId ? "—" : versionsLoading ? "Loading..." : "Version..."
                 }
                 searchPlaceholder="Search versions..."
                 className="!h-8 !py-0 !px-2 !border !text-xs !font-medium !bg-background"

@@ -107,9 +107,7 @@ export const setLockedAgent = createAsyncThunk<
     // Load the agent + its version history for the locked-axis pickers.
     await Promise.allSettled([
       dispatch(fetchFullAgent(agentId)).unwrap(),
-      dispatch(
-        fetchAgentVersionHistory({ agentId, limit: 100 }),
-      ).unwrap(),
+      dispatch(fetchAgentVersionHistory({ agentId, limit: 100 })).unwrap(),
     ]);
 
     dispatch(
@@ -124,8 +122,7 @@ export const setLockedAgent = createAsyncThunk<
       dispatch,
       agentId,
       agentVersionId: null,
-      previousConversationId:
-        state.agentComparisonSettings.inputConversationId,
+      previousConversationId: state.agentComparisonSettings.inputConversationId,
       copyVariables: false,
     });
     dispatch(setSettingsInputConversationId(inputConversationId));
@@ -204,20 +201,18 @@ export const setLockedVersion = createAsyncThunk<
     dispatch(
       setLocked({
         agentVersion: version,
-        agentVersionId: version === "current" ? null : versionId ?? null,
+        agentVersionId: version === "current" ? null : (versionId ?? null),
       }),
     );
 
     // Recreate every column's instance with the right version pin.
     const post = getState();
-    const pinnedVersionId =
-      version === "current" ? null : versionId ?? null;
+    const pinnedVersionId = version === "current" ? null : (versionId ?? null);
     const inputConversationId = await replaceBattleInputDraft({
       dispatch,
       agentId,
       agentVersionId: pinnedVersionId,
-      previousConversationId:
-        post.agentComparisonSettings.inputConversationId,
+      previousConversationId: post.agentComparisonSettings.inputConversationId,
     });
     dispatch(setSettingsInputConversationId(inputConversationId));
     for (const col of post.agentComparisonSettings.columns) {
@@ -236,9 +231,7 @@ export const setLockedVersion = createAsyncThunk<
         }),
       ).unwrap();
       if (Object.keys(prevOverrides).length > 0) {
-        dispatch(
-          setOverrides({ conversationId, changes: prevOverrides }),
-        );
+        dispatch(setOverrides({ conversationId, changes: prevOverrides }));
       }
       dispatch(
         replaceSettingsColumn({
@@ -263,35 +256,29 @@ export const addColumnToSettingsBattle = createAsyncThunk<
   string | null,
   { label?: string } | undefined,
   ThunkApi
->(
-  "agentComparisonSettings/addColumn",
-  async (arg, { dispatch, getState }) => {
-    const state = getState();
-    const { agentId, agentVersionId } = state.agentComparisonSettings.locked;
-    if (!agentId) return null;
+>("agentComparisonSettings/addColumn", async (arg, { dispatch, getState }) => {
+  const state = getState();
+  const { agentId, agentVersionId } = state.agentComparisonSettings.locked;
+  if (!agentId) return null;
 
-    const columnId = crypto.randomUUID();
-    const conversationId = generateConversationId();
-    const label =
-      arg?.label ??
-      `Variant ${state.agentComparisonSettings.columns.length + 1}`;
+  const columnId = crypto.randomUUID();
+  const conversationId = generateConversationId();
+  const label =
+    arg?.label ?? `Variant ${state.agentComparisonSettings.columns.length + 1}`;
 
-    await dispatch(
-      createManualInstance({
-        agentId,
-        conversationId,
-        initialAgentVersionId: agentVersionId,
-        apiEndpointMode: "agent",
-        sourceFeature: SETTINGS_SOURCE_FEATURE,
-      }),
-    ).unwrap();
+  await dispatch(
+    createManualInstance({
+      agentId,
+      conversationId,
+      initialAgentVersionId: agentVersionId,
+      apiEndpointMode: "agent",
+      sourceFeature: SETTINGS_SOURCE_FEATURE,
+    }),
+  ).unwrap();
 
-    dispatch(
-      addSettingsColumn({ columnId, conversationId, label }),
-    );
-    return columnId;
-  },
-);
+  dispatch(addSettingsColumn({ columnId, conversationId, label }));
+  return columnId;
+});
 
 export const removeColumnFromSettingsBattle = createAsyncThunk<
   void,
@@ -324,68 +311,65 @@ export const submitAllSettings = createAsyncThunk<
   { launched: number; failed: number; skipped: number },
   void,
   ThunkApi
->(
-  "agentComparisonSettings/submitAll",
-  async (_arg, { dispatch, getState }) => {
-    dispatch(submitAllStarted());
-    try {
-      const state = getState();
-      const { agentId } = state.agentComparisonSettings.locked;
-      const inputConversationId =
-        state.agentComparisonSettings.inputConversationId;
-      const columns = state.agentComparisonSettings.columns;
+>("agentComparisonSettings/submitAll", async (_arg, { dispatch, getState }) => {
+  dispatch(submitAllStarted());
+  try {
+    const state = getState();
+    const { agentId } = state.agentComparisonSettings.locked;
+    const inputConversationId =
+      state.agentComparisonSettings.inputConversationId;
+    const columns = state.agentComparisonSettings.columns;
 
-      if (!agentId || !inputConversationId || columns.length === 0) {
-        return { launched: 0, failed: 0, skipped: columns.length };
-      }
-
-      for (const col of columns) {
-        dispatch(
-          copyInstanceRequestDraft({
-            sourceConversationId: inputConversationId,
-            targetConversationId: col.conversationId,
-          }),
-        );
-      }
-
-      const results = await Promise.allSettled(
-        columns.map((col) =>
-          dispatch(
-            smartExecute({
-              conversationId: col.conversationId,
-              surfaceKey: SETTINGS_SURFACE_KEY,
-            }),
-          ).unwrap(),
-        ),
-      );
-
-      const failed = results.filter((r) => r.status === "rejected").length;
-      const launched = results.length - failed;
-
-      // Persist entries when a set is active.
-      const post = getState();
-      const activeSetId = post.agentComparisonSettings.activeSetId;
-      if (activeSetId) {
-        const entries = buildSettingsEntries(post);
-        try {
-          await replaceEntries(activeSetId, entries);
-          // Update set metadata with the latest locked snapshot.
-          await renameComparisonSet(activeSetId, post.agentComparisonSettings.activeSetName ?? "Untitled comparison");
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error(
-            "[settings] failed to persist comparison entries:",
-            err,
-          );
-        }
-      }
-
-      return { launched, failed, skipped: 0 };
-    } finally {
-      dispatch(submitAllFinished());
+    if (!agentId || !inputConversationId || columns.length === 0) {
+      return { launched: 0, failed: 0, skipped: columns.length };
     }
-  },
-);
+
+    for (const col of columns) {
+      dispatch(
+        copyInstanceRequestDraft({
+          sourceConversationId: inputConversationId,
+          targetConversationId: col.conversationId,
+        }),
+      );
+    }
+
+    const results = await Promise.allSettled(
+      columns.map((col) =>
+        dispatch(
+          smartExecute({
+            conversationId: col.conversationId,
+            surfaceKey: SETTINGS_SURFACE_KEY,
+          }),
+        ).unwrap(),
+      ),
+    );
+
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const launched = results.length - failed;
+
+    // Persist entries when a set is active.
+    const post = getState();
+    const activeSetId = post.agentComparisonSettings.activeSetId;
+    if (activeSetId) {
+      const entries = buildSettingsEntries(post);
+      try {
+        await replaceEntries(activeSetId, entries);
+        // Update set metadata with the latest locked snapshot.
+        await renameComparisonSet(
+          activeSetId,
+          post.agentComparisonSettings.activeSetName ?? "Untitled comparison",
+        );
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[settings] failed to persist comparison entries:", err);
+      }
+    }
+
+    return { launched, failed, skipped: 0 };
+  } finally {
+    dispatch(submitAllFinished());
+  }
+});
 
 // =============================================================================
 // Clear / reset
@@ -426,8 +410,8 @@ export const resetAllSettingsConversations = createAsyncThunk<
 
     for (const col of state.agentComparisonSettings.columns) {
       const savedOverrides = preserveInputs
-        ? state.instanceModelOverrides.byConversationId[col.conversationId]
-            ?.overrides ?? {}
+        ? (state.instanceModelOverrides.byConversationId[col.conversationId]
+            ?.overrides ?? {})
         : {};
 
       dispatch(destroyInstance(col.conversationId));
@@ -574,7 +558,10 @@ export const loadSettingsBattleSet = createAsyncThunk<
     dispatch(resetSettings());
 
     const { set, entries } = await loadComparisonSet(setId);
-    const meta = (set.metadata ?? {}) as { mode?: string; locked?: LoadedLockedSpec };
+    const meta = (set.metadata ?? {}) as {
+      mode?: string;
+      locked?: LoadedLockedSpec;
+    };
     if (meta.mode !== "settings") {
       throw new Error(
         `Comparison set "${set.name}" is not a settings-mode set (mode=${meta.mode ?? "?"})`,

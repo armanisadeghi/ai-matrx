@@ -22,6 +22,7 @@ import {
   destroyInstance,
 } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { copyInstanceRequestDraft } from "@/features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
@@ -30,8 +31,6 @@ import {
   fetchAgentVersionSnapshot,
   createAgent,
 } from "@/features/agents/redux/agent-definition/thunks";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   removeAgent,
   setAgentField,
@@ -61,11 +60,18 @@ import {
   resetVariations,
   setActiveVariationsSet,
   setLocked,
+  setVariationsInputConversationId,
   setVariationColumns,
   submitAllFinished,
   submitAllStarted,
 } from "./slice";
 import type { VariationAgentSnapshot, VariationColumn } from "../types";
+import {
+  createBattleInputDraft,
+  hydrateBattleInputDraft,
+  readBattleInputDraft,
+  replaceBattleInputDraft,
+} from "@/features/agent-comparison/shared/battleInputDraft";
 
 // =============================================================================
 // Page-wide constants
@@ -127,7 +133,10 @@ function applyVariationSnapshot(
     }),
   );
   dispatch(
-    setAgentContextPolicies({ id: agentId, contextPolicies: snap.contextPolicies }),
+    setAgentContextPolicies({
+      id: agentId,
+      contextPolicies: snap.contextPolicies,
+    }),
   );
   dispatch(setAgentTools({ id: agentId, tools: snap.tools }));
   dispatch(setAgentCustomTools({ id: agentId, customTools: snap.customTools }));
@@ -174,7 +183,12 @@ export const setLockedSourceAgent = createAsyncThunk<
   async ({ agentId }, { dispatch, getState }) => {
     const state = getState();
     const prev = state.agentComparisonVariations.locked;
-    if (prev.sourceAgentId === agentId) return;
+    if (
+      prev.sourceAgentId === agentId &&
+      state.agentComparisonVariations.inputConversationId
+    ) {
+      return;
+    }
 
     await Promise.allSettled([
       dispatch(fetchFullAgent(agentId)).unwrap(),
@@ -186,9 +200,18 @@ export const setLockedSourceAgent = createAsyncThunk<
         sourceAgentId: agentId,
         agentVersion: "current",
         agentVersionId: null,
-        variables: {},
       }),
     );
+
+    const inputConversationId = await replaceBattleInputDraft({
+      dispatch,
+      agentId,
+      agentVersionId: null,
+      previousConversationId:
+        state.agentComparisonVariations.inputConversationId,
+      copyVariables: false,
+    });
+    dispatch(setVariationsInputConversationId(inputConversationId));
 
     const post = getState();
     for (const col of post.agentComparisonVariations.columns) {
@@ -229,7 +252,12 @@ export const setLockedVersion = createAsyncThunk<
     const { sourceAgentId, agentVersion } =
       state.agentComparisonVariations.locked;
     if (!sourceAgentId) return;
-    if (agentVersion === version) return;
+    if (
+      agentVersion === version &&
+      state.agentComparisonVariations.inputConversationId
+    ) {
+      return;
+    }
 
     if (version !== "current") {
       try {
@@ -253,6 +281,15 @@ export const setLockedVersion = createAsyncThunk<
       post.agentComparisonVariations.locked,
     );
     if (!forkSourceId) return;
+
+    const inputConversationId = await replaceBattleInputDraft({
+      dispatch,
+      agentId: sourceAgentId,
+      agentVersionId: version === "current" ? null : (versionId ?? null),
+      previousConversationId:
+        post.agentComparisonVariations.inputConversationId,
+    });
+    dispatch(setVariationsInputConversationId(inputConversationId));
 
     for (const col of post.agentComparisonVariations.columns) {
       teardownColumn(dispatch, col);
@@ -430,36 +467,25 @@ export const submitAllVariations = createAsyncThunk<
     dispatch(submitAllStarted());
     try {
       const state = getState();
-      const { sourceAgentId, variables, userMessage } =
-        state.agentComparisonVariations.locked;
+      const { sourceAgentId } = state.agentComparisonVariations.locked;
+      const inputConversationId =
+        state.agentComparisonVariations.inputConversationId;
       const allColumns = state.agentComparisonVariations.columns;
       // Paused variations are excluded from Submit All — see VariationColumn.paused.
       const columns = allColumns.filter((c) => !c.paused);
       const pausedSkipped = allColumns.length - columns.length;
 
-      if (!sourceAgentId || columns.length === 0) {
+      if (!sourceAgentId || !inputConversationId || columns.length === 0) {
         return { launched: 0, failed: 0, skipped: pausedSkipped };
       }
 
-      // Broadcast the shared test input to every ACTIVE variation's per-instance
-      // slices before firing.
       for (const col of columns) {
-        if (userMessage) {
-          dispatch(
-            setUserInputText({
-              conversationId: col.conversationId,
-              text: userMessage,
-            }),
-          );
-        }
-        if (Object.keys(variables).length > 0) {
-          dispatch(
-            setUserVariableValues({
-              conversationId: col.conversationId,
-              values: variables,
-            }),
-          );
-        }
+        dispatch(
+          copyInstanceRequestDraft({
+            sourceConversationId: inputConversationId,
+            targetConversationId: col.conversationId,
+          }),
+        );
       }
 
       const results = await Promise.allSettled(
@@ -505,7 +531,13 @@ export const submitAllVariations = createAsyncThunk<
 export const clearVariationsBattle = createAsyncThunk<void, void, ThunkApi>(
   "agentComparisonVariations/clear",
   async (_arg, { dispatch, getState }) => {
-    for (const col of getState().agentComparisonVariations.columns) {
+    const state = getState();
+    if (state.agentComparisonVariations.inputConversationId) {
+      dispatch(
+        destroyInstance(state.agentComparisonVariations.inputConversationId),
+      );
+    }
+    for (const col of state.agentComparisonVariations.columns) {
       teardownColumn(dispatch, col);
     }
     dispatch(resetVariations());
@@ -604,13 +636,12 @@ function buildVariationEntries(state: RootState): UpsertEntryInput[] {
 }
 
 function buildSetMetadata(state: RootState): Record<string, unknown> {
-  const {
-    sourceAgentId,
-    agentVersion,
-    agentVersionId,
-    variables,
-    userMessage,
-  } = state.agentComparisonVariations.locked;
+  const { sourceAgentId, agentVersion, agentVersionId } =
+    state.agentComparisonVariations.locked;
+  const { variables, userMessage } = readBattleInputDraft(
+    state,
+    state.agentComparisonVariations.inputConversationId,
+  );
   return {
     mode: "variations",
     locked: {
@@ -673,7 +704,13 @@ export const loadVariationsBattleSet = createAsyncThunk<
 >(
   "agentComparisonVariations/loadSet",
   async ({ setId }, { dispatch, getState }) => {
-    for (const col of getState().agentComparisonVariations.columns) {
+    const before = getState();
+    if (before.agentComparisonVariations.inputConversationId) {
+      dispatch(
+        destroyInstance(before.agentComparisonVariations.inputConversationId),
+      );
+    }
+    for (const col of before.agentComparisonVariations.columns) {
       teardownColumn(dispatch, col);
     }
     dispatch(resetVariations());
@@ -733,10 +770,20 @@ export const loadVariationsBattleSet = createAsyncThunk<
           sourceAgentId: locked.source_agent_id,
           agentVersion: locked.agent_version ?? "current",
           agentVersionId: locked.agent_version_id ?? null,
-          variables: locked.variables ?? {},
-          userMessage: locked.user_message ?? "",
         }),
       );
+      const inputConversationId = await createBattleInputDraft({
+        dispatch,
+        agentId: locked.source_agent_id,
+        agentVersionId: locked.agent_version_id ?? null,
+      });
+      hydrateBattleInputDraft({
+        dispatch,
+        conversationId: inputConversationId,
+        userMessage: locked.user_message ?? "",
+        variables: locked.variables ?? {},
+      });
+      dispatch(setVariationsInputConversationId(inputConversationId));
     }
 
     const nextColumns: VariationColumn[] = [];

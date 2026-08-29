@@ -52,10 +52,7 @@ const settingsSlice = createSlice({
         collapsed: false,
       });
     },
-    removeSettingsColumn(
-      state,
-      action: PayloadAction<{ columnId: string }>,
-    ) {
+    removeSettingsColumn(state, action: PayloadAction<{ columnId: string }>) {
       state.columns = state.columns.filter(
         (c) => c.columnId !== action.payload.columnId,
       );
@@ -113,10 +110,7 @@ const settingsSlice = createSlice({
     },
 
     // ── Locked-axis setup ──────────────────────────────────────
-    setLocked(
-      state,
-      action: PayloadAction<Partial<SettingsLockedSetup>>,
-    ) {
+    setLocked(state, action: PayloadAction<Partial<SettingsLockedSetup>>) {
       state.locked = { ...state.locked, ...action.payload };
     },
     setSettingsInputConversationId(

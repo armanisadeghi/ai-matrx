@@ -60,10 +60,7 @@ const slice = createSlice({
       if (idx === -1) return;
       state.columns[idx] = { ...state.columns[idx], ...action.payload.next };
     },
-    setSystemPromptColumns(
-      state,
-      action: PayloadAction<SystemPromptColumn[]>,
-    ) {
+    setSystemPromptColumns(state, action: PayloadAction<SystemPromptColumn[]>) {
       state.columns = action.payload;
     },
     renameSystemPromptColumn(
@@ -102,10 +99,7 @@ const slice = createSlice({
       state.columns.splice(toIndex, 0, moved);
     },
 
-    setLocked(
-      state,
-      action: PayloadAction<Partial<SystemPromptLockedSetup>>,
-    ) {
+    setLocked(state, action: PayloadAction<Partial<SystemPromptLockedSetup>>) {
       state.locked = { ...state.locked, ...action.payload };
     },
     setSystemPromptInputConversationId(

@@ -21,6 +21,7 @@ import {
   destroyInstance,
 } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
+import { copyInstanceRequestDraft } from "@/features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import {
@@ -28,8 +29,6 @@ import {
   fetchAgentVersionHistory,
   fetchAgentVersionSnapshot,
 } from "@/features/agents/redux/agent-definition/thunks";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import {
   removeAgent,
   setAgentField,
@@ -54,11 +53,18 @@ import {
   resetTuning,
   setActiveTuningSet,
   setLocked,
+  setTuningInputConversationId,
   setTuningColumns,
   submitAllFinished,
   submitAllStarted,
 } from "./slice";
 import type { TuningColumn } from "../types";
+import {
+  createBattleInputDraft,
+  hydrateBattleInputDraft,
+  readBattleInputDraft,
+  replaceBattleInputDraft,
+} from "@/features/agent-comparison/shared/battleInputDraft";
 
 // =============================================================================
 // Page-wide constants
@@ -120,10 +126,7 @@ function applyTuningSnapshot(
  * prefix so leaving it would be harmless but wasteful), and drop the
  * slice entry.
  */
-function teardownColumn(
-  dispatch: AppDispatch,
-  col: TuningColumn,
-) {
+function teardownColumn(dispatch: AppDispatch, col: TuningColumn) {
   dispatch(destroyInstance(col.conversationId));
   if (isSyntheticAgentId(col.syntheticAgentId)) {
     dispatch(removeAgent(col.syntheticAgentId));
@@ -149,13 +152,16 @@ export const setLockedSourceAgent = createAsyncThunk<
   async ({ agentId }, { dispatch, getState }) => {
     const state = getState();
     const prev = state.agentComparisonTuning.locked;
-    if (prev.sourceAgentId === agentId) return;
+    if (
+      prev.sourceAgentId === agentId &&
+      state.agentComparisonTuning.inputConversationId
+    ) {
+      return;
+    }
 
     await Promise.allSettled([
       dispatch(fetchFullAgent(agentId)).unwrap(),
-      dispatch(
-        fetchAgentVersionHistory({ agentId, limit: 100 }),
-      ).unwrap(),
+      dispatch(fetchAgentVersionHistory({ agentId, limit: 100 })).unwrap(),
     ]);
 
     dispatch(
@@ -163,9 +169,17 @@ export const setLockedSourceAgent = createAsyncThunk<
         sourceAgentId: agentId,
         agentVersion: "current",
         agentVersionId: null,
-        variables: {},
       }),
     );
+
+    const inputConversationId = await replaceBattleInputDraft({
+      dispatch,
+      agentId,
+      agentVersionId: null,
+      previousConversationId: state.agentComparisonTuning.inputConversationId,
+      copyVariables: false,
+    });
+    dispatch(setTuningInputConversationId(inputConversationId));
 
     // Recreate every column with a fresh synthetic forked from the new
     // source agent. We do NOT carry over the old per-column tuning;
@@ -208,10 +222,14 @@ export const setLockedVersion = createAsyncThunk<
   "agentComparisonTuning/setLockedVersion",
   async ({ version, versionId }, { dispatch, getState }) => {
     const state = getState();
-    const { sourceAgentId, agentVersion } =
-      state.agentComparisonTuning.locked;
+    const { sourceAgentId, agentVersion } = state.agentComparisonTuning.locked;
     if (!sourceAgentId) return;
-    if (agentVersion === version) return;
+    if (
+      agentVersion === version &&
+      state.agentComparisonTuning.inputConversationId
+    ) {
+      return;
+    }
 
     if (version !== "current") {
       try {
@@ -226,7 +244,7 @@ export const setLockedVersion = createAsyncThunk<
     dispatch(
       setLocked({
         agentVersion: version,
-        agentVersionId: version === "current" ? null : versionId ?? null,
+        agentVersionId: version === "current" ? null : (versionId ?? null),
       }),
     );
 
@@ -236,9 +254,15 @@ export const setLockedVersion = createAsyncThunk<
     // was loaded.
     const post = getState();
     const forkSourceId =
-      version === "current"
-        ? sourceAgentId
-        : versionId ?? sourceAgentId;
+      version === "current" ? sourceAgentId : (versionId ?? sourceAgentId);
+
+    const inputConversationId = await replaceBattleInputDraft({
+      dispatch,
+      agentId: sourceAgentId,
+      agentVersionId: version === "current" ? null : (versionId ?? null),
+      previousConversationId: post.agentComparisonTuning.inputConversationId,
+    });
+    dispatch(setTuningInputConversationId(inputConversationId));
 
     for (const col of post.agentComparisonTuning.columns) {
       teardownColumn(dispatch, col);
@@ -271,48 +295,44 @@ export const addColumnToTuningBattle = createAsyncThunk<
   string | null,
   { label?: string } | undefined,
   ThunkApi
->(
-  "agentComparisonTuning/addColumn",
-  async (arg, { dispatch, getState }) => {
-    const state = getState();
-    const { sourceAgentId, agentVersion, agentVersionId } =
-      state.agentComparisonTuning.locked;
-    if (!sourceAgentId) return null;
+>("agentComparisonTuning/addColumn", async (arg, { dispatch, getState }) => {
+  const state = getState();
+  const { sourceAgentId, agentVersion, agentVersionId } =
+    state.agentComparisonTuning.locked;
+  if (!sourceAgentId) return null;
 
-    const forkSourceId =
-      agentVersion === "current" || !agentVersionId
-        ? sourceAgentId
-        : agentVersionId;
+  const forkSourceId =
+    agentVersion === "current" || !agentVersionId
+      ? sourceAgentId
+      : agentVersionId;
 
-    const syntheticId = forkAgentForVariant(dispatch, state, forkSourceId);
-    if (!syntheticId) return null;
+  const syntheticId = forkAgentForVariant(dispatch, state, forkSourceId);
+  if (!syntheticId) return null;
 
-    const columnId = crypto.randomUUID();
-    const conversationId = generateConversationId();
-    const label =
-      arg?.label ??
-      `Variant ${state.agentComparisonTuning.columns.length + 1}`;
+  const columnId = crypto.randomUUID();
+  const conversationId = generateConversationId();
+  const label =
+    arg?.label ?? `Variant ${state.agentComparisonTuning.columns.length + 1}`;
 
-    await dispatch(
-      createManualInstance({
-        agentId: syntheticId,
-        conversationId,
-        apiEndpointMode: "manual",
-        sourceFeature: TUNING_SOURCE_FEATURE,
-      }),
-    ).unwrap();
+  await dispatch(
+    createManualInstance({
+      agentId: syntheticId,
+      conversationId,
+      apiEndpointMode: "manual",
+      sourceFeature: TUNING_SOURCE_FEATURE,
+    }),
+  ).unwrap();
 
-    dispatch(
-      addTuningColumn({
-        columnId,
-        conversationId,
-        syntheticAgentId: syntheticId,
-        label,
-      }),
-    );
-    return columnId;
-  },
-);
+  dispatch(
+    addTuningColumn({
+      columnId,
+      conversationId,
+      syntheticAgentId: syntheticId,
+      label,
+    }),
+  );
+  return columnId;
+});
 
 export const removeColumnFromTuningBattle = createAsyncThunk<
   void,
@@ -338,81 +358,64 @@ export const submitAllTuning = createAsyncThunk<
   { launched: number; failed: number; skipped: number },
   void,
   ThunkApi
->(
-  "agentComparisonTuning/submitAll",
-  async (_arg, { dispatch, getState }) => {
-    dispatch(submitAllStarted());
-    try {
-      const state = getState();
-      const { sourceAgentId, variables, userMessage } =
-        state.agentComparisonTuning.locked;
-      const columns = state.agentComparisonTuning.columns;
+>("agentComparisonTuning/submitAll", async (_arg, { dispatch, getState }) => {
+  dispatch(submitAllStarted());
+  try {
+    const state = getState();
+    const { sourceAgentId } = state.agentComparisonTuning.locked;
+    const inputConversationId = state.agentComparisonTuning.inputConversationId;
+    const columns = state.agentComparisonTuning.columns;
 
-      if (!sourceAgentId || columns.length === 0) {
-        return { launched: 0, failed: 0, skipped: columns.length };
-      }
-
-      // Locked-input page — broadcast the locked text + variables to
-      // every column's per-instance slices before firing.
-      for (const col of columns) {
-        if (userMessage) {
-          dispatch(
-            setUserInputText({
-              conversationId: col.conversationId,
-              text: userMessage,
-            }),
-          );
-        }
-        if (Object.keys(variables).length > 0) {
-          dispatch(
-            setUserVariableValues({
-              conversationId: col.conversationId,
-              values: variables,
-            }),
-          );
-        }
-      }
-
-      const results = await Promise.allSettled(
-        columns.map((col) =>
-          dispatch(
-            smartExecute({
-              conversationId: col.conversationId,
-              surfaceKey: TUNING_SURFACE_KEY,
-            }),
-          ).unwrap(),
-        ),
-      );
-
-      const failed = results.filter((r) => r.status === "rejected").length;
-      const launched = results.length - failed;
-
-      const post = getState();
-      const activeSetId = post.agentComparisonTuning.activeSetId;
-      if (activeSetId) {
-        const entries = buildTuningEntries(post);
-        try {
-          await replaceEntries(activeSetId, entries);
-          await renameComparisonSet(
-            activeSetId,
-            post.agentComparisonTuning.activeSetName ??
-              "Untitled comparison",
-          );
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error(
-            "[tuning] failed to persist comparison entries:",
-            err,
-          );
-        }
-      }
-
-      return { launched, failed, skipped: 0 };
-    } finally {
-      dispatch(submitAllFinished());
+    if (!sourceAgentId || !inputConversationId || columns.length === 0) {
+      return { launched: 0, failed: 0, skipped: columns.length };
     }
-  },
-);
+
+    // Locked-input page — broadcast the locked text + variables to
+    // every column's per-instance slices before firing.
+    for (const col of columns) {
+      dispatch(
+        copyInstanceRequestDraft({
+          sourceConversationId: inputConversationId,
+          targetConversationId: col.conversationId,
+        }),
+      );
+    }
+
+    const results = await Promise.allSettled(
+      columns.map((col) =>
+        dispatch(
+          smartExecute({
+            conversationId: col.conversationId,
+            surfaceKey: TUNING_SURFACE_KEY,
+          }),
+        ).unwrap(),
+      ),
+    );
+
+    const failed = results.filter((r) => r.status === "rejected").length;
+    const launched = results.length - failed;
+
+    const post = getState();
+    const activeSetId = post.agentComparisonTuning.activeSetId;
+    if (activeSetId) {
+      const entries = buildTuningEntries(post);
+      try {
+        await replaceEntries(activeSetId, entries);
+        await renameComparisonSet(
+          activeSetId,
+          post.agentComparisonTuning.activeSetName ?? "Untitled comparison",
+        );
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[tuning] failed to persist comparison entries:", err);
+      }
+    }
+
+    return { launched, failed, skipped: 0 };
+  } finally {
+    dispatch(submitAllFinished());
+  }
+});
 
 // =============================================================================
 // Clear / reset
@@ -422,6 +425,11 @@ export const clearTuningBattle = createAsyncThunk<void, void, ThunkApi>(
   "agentComparisonTuning/clear",
   async (_arg, { dispatch, getState }) => {
     const state = getState();
+    if (state.agentComparisonTuning.inputConversationId) {
+      dispatch(
+        destroyInstance(state.agentComparisonTuning.inputConversationId),
+      );
+    }
     for (const col of state.agentComparisonTuning.columns) {
       teardownColumn(dispatch, col);
     }
@@ -522,13 +530,12 @@ function buildTuningEntries(state: RootState): UpsertEntryInput[] {
 }
 
 function buildSetMetadata(state: RootState): Record<string, unknown> {
-  const {
-    sourceAgentId,
-    agentVersion,
-    agentVersionId,
-    variables,
-    userMessage,
-  } = state.agentComparisonTuning.locked;
+  const { sourceAgentId, agentVersion, agentVersionId } =
+    state.agentComparisonTuning.locked;
+  const { variables, userMessage } = readBattleInputDraft(
+    state,
+    state.agentComparisonTuning.inputConversationId,
+  );
   return {
     mode: "tuning",
     locked: {
@@ -545,26 +552,23 @@ export const saveTuningBattleAs = createAsyncThunk<
   { id: string; name: string },
   { name: string },
   ThunkApi
->(
-  "agentComparisonTuning/saveAs",
-  async ({ name }, { dispatch, getState }) => {
-    const state = getState();
-    const userId = selectUserId(state);
-    if (!userId) throw new Error("Not signed in");
+>("agentComparisonTuning/saveAs", async ({ name }, { dispatch, getState }) => {
+  const state = getState();
+  const userId = selectUserId(state);
+  if (!userId) throw new Error("Not signed in");
 
-    const set = await createComparisonSet({
-      name,
-      userId,
-      metadata: buildSetMetadata(state),
-    });
-    const entries = buildTuningEntries(state);
-    if (entries.length > 0) {
-      await replaceEntries(set.id, entries);
-    }
-    dispatch(setActiveTuningSet({ id: set.id, name: set.name }));
-    return { id: set.id, name: set.name };
-  },
-);
+  const set = await createComparisonSet({
+    name,
+    userId,
+    metadata: buildSetMetadata(state),
+  });
+  const entries = buildTuningEntries(state);
+  if (entries.length > 0) {
+    await replaceEntries(set.id, entries);
+  }
+  dispatch(setActiveTuningSet({ id: set.id, name: set.name }));
+  return { id: set.id, name: set.name };
+});
 
 export const saveTuningBattle = createAsyncThunk<void, void, ThunkApi>(
   "agentComparisonTuning/save",
@@ -593,6 +597,11 @@ export const loadTuningBattleSet = createAsyncThunk<
   "agentComparisonTuning/loadSet",
   async ({ setId }, { dispatch, getState }) => {
     const before = getState();
+    if (before.agentComparisonTuning.inputConversationId) {
+      dispatch(
+        destroyInstance(before.agentComparisonTuning.inputConversationId),
+      );
+    }
     for (const col of before.agentComparisonTuning.columns) {
       teardownColumn(dispatch, col);
     }
@@ -651,18 +660,27 @@ export const loadTuningBattleSet = createAsyncThunk<
           sourceAgentId: locked.source_agent_id,
           agentVersion: locked.agent_version ?? "current",
           agentVersionId: locked.agent_version_id ?? null,
-          variables: locked.variables ?? {},
-          userMessage: locked.user_message ?? "",
         }),
       );
+      const inputConversationId = await createBattleInputDraft({
+        dispatch,
+        agentId: locked.source_agent_id,
+        agentVersionId: locked.agent_version_id ?? null,
+      });
+      hydrateBattleInputDraft({
+        dispatch,
+        conversationId: inputConversationId,
+        userMessage: locked.user_message ?? "",
+        variables: locked.variables ?? {},
+      });
+      dispatch(setTuningInputConversationId(inputConversationId));
     }
 
     const nextColumns: TuningColumn[] = [];
     for (const entry of entries) {
       const columnId = crypto.randomUUID();
       const entryMeta = (entry.metadata ?? {}) as
-        | Partial<PersistedTuningEntryMeta>
-        | undefined;
+        Partial<PersistedTuningEntryMeta> | undefined;
 
       const fresh = getState();
       const syntheticId = forkSourceId

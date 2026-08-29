@@ -1,9 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type {
-  ToolsBattleState,
-  ToolsColumn,
-  ToolsLockedSetup,
-} from "../types";
+import type { ToolsBattleState, ToolsColumn, ToolsLockedSetup } from "../types";
 
 const initialState: ToolsBattleState = {
   locked: {
@@ -99,10 +95,7 @@ const slice = createSlice({
     setLocked(state, action: PayloadAction<Partial<ToolsLockedSetup>>) {
       state.locked = { ...state.locked, ...action.payload };
     },
-    setToolsInputConversationId(
-      state,
-      action: PayloadAction<string | null>,
-    ) {
+    setToolsInputConversationId(state, action: PayloadAction<string | null>) {
       state.inputConversationId = action.payload;
     },
 
