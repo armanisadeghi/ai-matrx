@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ff48b527-3733-47e8-9f33-1dc4e326cfe2",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-17T19:45:33.038Z",
-  "summary": "Independently certified follow-up candidate queued for direct main integration.",
+  "state": "delivered",
+  "updatedAt": "2026-08-29T14:17:19.362Z",
+  "summary": "DELIVERED: exact certified follow-up candidate is on origin/main and first shipped in v0.4.763.",
   "source": "ff48b527-3733-47e8-9f33-1dc4e326cfe2.json",
-  "eventHash": "95bfc2eb0a9754086c6119c7b75aff6ce9c623c801b071a482bee794bb67fdea"
+  "eventHash": "829f000842ec08a0651eac71eac1a9ea0103c2d95bdd54dfa89dd68bcd6350aa"
 }
