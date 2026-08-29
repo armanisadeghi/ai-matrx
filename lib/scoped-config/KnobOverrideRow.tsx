@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 
-import { setKnobOverride } from "./service";
+import { setKnobOverride, setKnobRungLock } from "./service";
 import type { KnobScopeKindName, ScopedKnob } from "./types";
 
 function valueText(value: unknown): string {
@@ -61,9 +61,23 @@ export function KnobOverrideRow(props: {
   organizationId: string;
   /** What a save reaches — said before saving, per settings-ladder rule 9. */
   blastRadius: string;
+  /**
+   * Org screen only: render the per-key "personal overrides" switch (the
+   * scfg_50 rung lock — the org turning off user-level control of this one
+   * setting even though the platform allows it). Owner/admin gated in SQL.
+   */
+  showUserLockControl?: boolean;
   onChanged: () => void;
 }) {
-  const { knob, scopeKind, scopeId, organizationId, blastRadius, onChanged } = props;
+  const {
+    knob,
+    scopeKind,
+    scopeId,
+    organizationId,
+    blastRadius,
+    showUserLockControl,
+    onChanged,
+  } = props;
   const overrideValue = scopeKind === "user" ? knob.user_override : knob.org_override;
   const isSetHere = overrideValue !== null && overrideValue !== undefined;
   // What clearing falls back to: on the user rung the org's override (when one
@@ -122,6 +136,41 @@ export function KnobOverrideRow(props: {
     await write(parsed.value);
   };
 
+  const setUserLock = async (lock: boolean) => {
+    if (lock) {
+      const confirmed = await confirm({
+        title: `Turn off personal overrides for ${knob.label}?`,
+        description:
+          "Members can no longer set their own value for this setting, and any personal values they already saved stop applying (they are kept, and come back if you turn personal overrides on again).",
+        confirmLabel: "Turn them off",
+      });
+      if (!confirmed) return;
+    }
+    setBusy(true);
+    try {
+      const result = await setKnobRungLock({
+        feature: knob.feature,
+        key: knob.key,
+        organizationId,
+        lockedKinds: lock ? ["user"] : [],
+      });
+      if (!result.ok) {
+        toast.error(result.detail ?? `Refused: ${result.reason.replace(/_/g, " ")}`);
+        return;
+      }
+      toast.success(
+        lock
+          ? `Personal overrides are off for ${knob.label}.`
+          : `Personal overrides are allowed again for ${knob.label}.`,
+      );
+      onChanged();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const clear = async () => {
     const confirmed = await confirm({
       title: `Inherit ${knob.label} from ${inheritedFrom}?`,
@@ -132,6 +181,10 @@ export function KnobOverrideRow(props: {
     });
     if (confirmed) await write(null);
   };
+
+  // On the personal tab, a key the org has locked renders read-only: the org
+  // decided members don't steer this one, and the door would refuse anyway.
+  const lockedForMe = scopeKind === "user" && knob.user_override_locked;
 
   const enumOptions =
     knob.value_type === "enum" || knob.value_type === "boolean"
@@ -174,6 +227,23 @@ export function KnobOverrideRow(props: {
           )}
         </div>
         <p className="mt-1 text-sm text-muted-foreground">{knob.description}</p>
+        {showUserLockControl && knob.overridable_by.includes("user") && (
+          <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+            Personal overrides{" "}
+            <span className="font-medium">
+              {knob.user_override_locked ? "off for this organization" : "allowed"}
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-xs"
+              disabled={busy}
+              onClick={() => void setUserLock(!knob.user_override_locked)}
+            >
+              {knob.user_override_locked ? "Allow" : "Turn off"}
+            </Button>
+          </p>
+        )}
         <p className="mt-1 text-xs text-muted-foreground">
           Platform default {valueText(knob.platform_default)}
           {knob.unit ? ` ${knob.unit}` : ""}
@@ -186,6 +256,12 @@ export function KnobOverrideRow(props: {
           ) : null}
         </p>
       </div>
+      {lockedForMe ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Lock className="h-4 w-4" />
+          Your organization manages this setting.
+        </div>
+      ) : (
       <div className="flex items-start gap-2">
         {enumOptions ? (
           <select
@@ -225,6 +301,7 @@ export function KnobOverrideRow(props: {
           Inherit
         </Button>
       </div>
+      )}
     </div>
   );
 }

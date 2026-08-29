@@ -47,6 +47,10 @@ export type ScopedKnob = {
   override_direction: "any" | "lower_only" | "raise_only";
   bound_value: unknown;
   platform_locked: boolean;
+  /** Rungs THIS organization has locked for this key (scfg_50); [] if none. */
+  org_locked_kinds: KnobScopeKindName[];
+  /** Convenience: 'user' is in org_locked_kinds — personal overrides are off here. */
+  user_override_locked: boolean;
   platform_default: unknown;
   shipped_default: unknown;
   org_override: unknown;
@@ -76,6 +80,7 @@ export type KnobOverrideSetResult =
         | "unregistered_key"
         | "unknown_scope_kind"
         | "not_overridable"
+        | "org_locked"
         | "forbidden"
         | "validation"
         | "scope_not_in_organization"
@@ -96,3 +101,25 @@ export type KnobOverrideCount = {
   org_count: number;
   total_count: number;
 };
+
+/** platform.knob_rung_lock_set result (scfg_50). */
+export type KnobRungLockSetResult =
+  | {
+      ok: true;
+      feature: string;
+      key: string;
+      organization_id: string;
+      locked_kinds?: KnobScopeKindName[];
+      lock_removed?: boolean;
+    }
+  | {
+      ok: false;
+      reason:
+        | "not_authenticated"
+        | "forbidden"
+        | "unregistered_key"
+        | "unknown_scope_kind"
+        | "validation";
+      detail?: string;
+      scope_kind?: string;
+    };
