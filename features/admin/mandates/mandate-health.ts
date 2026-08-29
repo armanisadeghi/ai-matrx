@@ -8,6 +8,7 @@
 import { isJsonObject } from "@/types/json";
 import { parseMandateContract } from "@/features/agents/mandates/overrides";
 import { splitMandateKey } from "@/features/agents/mandates/mandate-key";
+import { parseMandateWave1 } from "@/features/agents/mandates/provision-shapes";
 import {
   contractOfMandate,
   holderOfMandate,
@@ -83,8 +84,12 @@ export interface MandateRow {
   inputKind: string;
   outputKind: string;
   /** The mandate's REAL inputs — the contract's required variables. Every run
-   * can also carry free user text on top of these. */
+   * can also carry free user text on top of these. EMPTY BY DESIGN for a
+   * mandate with a Provision: the Provision replaced this field, so read
+   * `provisionKey` before concluding a mandate has no declared inputs. */
   requiredVariables: string[];
+  /** The Provision that IS this mandate's input declaration, when it has one. */
+  provisionKey: string | null;
   requiredContextPolicyKeys: string[];
   /** The MANDATE's own Context Policy gate (`agent.mandate.auto_context_disabled`). */
   contextGateClosed: boolean;
@@ -221,15 +226,18 @@ export function buildRow(
     inputKind: inputKindOfMandate(mandate) ?? "—",
     outputKind: mandate.output_kind ?? "text",
     requiredVariables: contract.requiredVariables,
+    provisionKey: parseMandateWave1(mandate).provisionKey,
     requiredContextPolicyKeys: contract.requiredContextPolicyKeys,
     contextGateClosed,
     holderContextClosed,
     contextClosedEffective: holderContextClosed || contextGateClosed,
     requiredOutputKeys: contract.requiredOutputKeys,
+    // "user text only" is the truth ONLY when there is no Provision either —
+    // required_variables is stripped for every provisioned mandate.
     inputSummary:
       contract.requiredVariables.length > 0
         ? contract.requiredVariables.join(", ")
-        : "user text only",
+        : (parseMandateWave1(mandate).provisionKey ?? "user text only"),
     outputSummary:
       mandate.output_kind ??
       (contract.requiredOutputKeys.length > 0

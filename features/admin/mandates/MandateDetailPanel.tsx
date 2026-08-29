@@ -1069,6 +1069,33 @@ function FactsPanel({
   // Wave-1 columns (provision_key / pins / pinned_context) ride the full row
   // and are narrowed at ingress — see provision-shapes.ts.
   const wave1 = parseMandateWave1(row.mandate);
+  // The Inputs fact must read the OFFER, not `required_variables` — the latter
+  // is stripped for every provisioned mandate, which is what made this row
+  // read "user text only" on mandates with a full typed input declaration.
+  // fetchProvision is cached, so this is free once the Provision panel below
+  // has loaded the same key.
+  const [offeredNames, setOfferedNames] = useState<string[] | undefined>(
+    undefined,
+  );
+  const factProvisionKey = wave1.provisionKey;
+  useEffect(() => {
+    if (!factProvisionKey) {
+      setOfferedNames(undefined);
+      return;
+    }
+    let cancelled = false;
+    fetchProvision(factProvisionKey)
+      .then((offer) => {
+        if (cancelled) return;
+        setOfferedNames(offer ? offer.values.map((v) => v.name) : undefined);
+      })
+      .catch(() => {
+        // The cell names the provision key instead — still true.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [factProvisionKey]);
   return (
     <div className="grid grid-cols-[max-content_1fr] items-center gap-x-4 gap-y-1.5 rounded-md border border-border bg-card px-3 py-2.5">
       <Fact label="Agent">
@@ -1185,7 +1212,11 @@ function FactsPanel({
         </Fact>
       )}
       <Fact label="Inputs">
-        <MandateInputsCell row={row} maxChips={8} />
+        <MandateInputsCell
+          row={row}
+          maxChips={8}
+          offeredValues={offeredNames}
+        />
       </Fact>
       <Fact label="Output">
         <MandateOutputCell row={row} maxChips={8} />

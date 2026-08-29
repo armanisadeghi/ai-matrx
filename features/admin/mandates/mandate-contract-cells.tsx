@@ -19,20 +19,54 @@ const KIND_REGISTRY_BASE = "/administration/utilities/kind-registry";
 const CONTRACT_BADGE_CLASS =
   "h-auto min-h-5 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] px-1.5 py-0.5 text-left text-[10px] leading-tight";
 
-/** Required variables as chips, plus the ever-present free-text channel. */
+/**
+ * The mandate's declared inputs as chips, plus the ever-present free-text
+ * channel.
+ *
+ * 🚨 THE PROVISION IS THE INPUT DECLARATION (Wave 1C, 2026-08-22). This cell
+ * read ONLY `requiredVariables`, which is exactly the field a mandate with a
+ * Provision no longer has: `enforced_holder_contract` STRIPS
+ * `required_variables` once a provision is declared, because the Provision
+ * replaced it. So the better a mandate's input side got, the more confidently
+ * this cell announced "user text only" — 2026-08-29 that was 74 mandates, and
+ * every one of them was a lie about a real, declared, typed offer.
+ *
+ * `offeredValues` is the Provision's offer, passed by whoever loaded it
+ * (fetchProvisions). Precedence is provision-first, because a mandate that has
+ * one has nothing else. When a mandate names a provision whose offer has not
+ * loaded yet we say so and name the key — never "user text only", which would
+ * be the same lie with a shorter render path.
+ */
 export function MandateInputsCell({
   row,
   maxChips = 4,
+  offeredValues,
 }: {
   row: MandateRow;
   maxChips?: number;
+  /** The offered value names of `row.provisionKey`, when they have loaded. */
+  offeredValues?: readonly string[];
 }) {
-  const variables = row.requiredVariables;
+  const fromProvision = Boolean(row.provisionKey);
+  const variables =
+    fromProvision && offeredValues ? [...offeredValues] : row.requiredVariables;
+
   if (variables.length === 0) {
+    if (fromProvision) {
+      // Has an input declaration; we just do not hold its values yet.
+      return (
+        <span
+          className="text-xs text-muted-foreground"
+          title={`Inputs are declared by the Provision "${row.provisionKey}" — open the mandate to see every offered value.`}
+        >
+          <span className="font-mono text-[10px]">{row.provisionKey}</span>
+        </span>
+      );
+    }
     return (
       <span
         className="text-xs text-muted-foreground"
-        title="This mandate declares no required variables — it runs on the user's message alone."
+        title="This mandate declares no required variables and no Provision — it runs on the user's message alone."
       >
         user text only
       </span>
@@ -40,11 +74,11 @@ export function MandateInputsCell({
   }
   const shown = variables.slice(0, maxChips);
   const hidden = variables.length - shown.length;
+  const label = fromProvision
+    ? `Offered by ${row.provisionKey}: ${variables.join(", ")} — a mandate consumes what it needs; user text rides every run on top.`
+    : `Required variables: ${variables.join(", ")} — plus optional user text on every run.`;
   return (
-    <div
-      className="flex flex-wrap items-center gap-1"
-      title={`Required variables: ${variables.join(", ")} — plus optional user text on every run.`}
-    >
+    <div className="flex flex-wrap items-center gap-1" title={label}>
       {shown.map((name) => (
         <Badge
           key={name}

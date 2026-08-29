@@ -79,6 +79,7 @@ import {
 } from "./mandate-coverage";
 import { readMandateBenchSnapshot } from "./bench-draft";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
+import { fetchProvisions } from "@/features/agents/mandates/provisions";
 import { MandateDetailView } from "./MandateDetailPanel";
 import {
   CreateSystemTwinButton,
@@ -402,6 +403,52 @@ export function MandatesConsole() {
         : allRows.filter((row) => row.coverage === coverageFilter),
     [allRows, coverageFilter],
   );
+
+  // THE PROVISION IS THE INPUT DECLARATION. `required_variables` is stripped
+  // for every provisioned mandate, so the Inputs column has to read the offer
+  // to say anything true. One batched fetch for every provision on screen
+  // (fetchProvisions chunks + caches); until it lands the cell names the
+  // provision key rather than claiming "user text only".
+  const [offersByProvision, setOffersByProvision] = useState<
+    Map<string, string[]>
+  >(() => new Map());
+  const provisionKeys = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          allRows
+            .map((row) => row.provisionKey)
+            .filter((key): key is string => Boolean(key)),
+        ),
+      ).sort(),
+    [allRows],
+  );
+  useEffect(() => {
+    if (provisionKeys.length === 0) {
+      setOffersByProvision(new Map());
+      return;
+    }
+    let cancelled = false;
+    fetchProvisions(provisionKeys)
+      .then((offers) => {
+        if (cancelled) return;
+        const next = new Map<string, string[]>();
+        for (const [key, offer] of offers) {
+          next.set(
+            key,
+            offer.values.map((value) => value.name),
+          );
+        }
+        setOffersByProvision(next);
+      })
+      .catch(() => {
+        // Never break the console over the Inputs column — the cell falls back
+        // to naming the provision key, which is still true.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [provisionKeys]);
 
   const codeAgentDriftRows = rows.filter(
     (row) => row.health === "code ↔ agent drift",
@@ -879,7 +926,14 @@ export function MandatesConsole() {
         accessorKey: "inputSummary",
         header: "Inputs",
         width: 220,
-        cell: (r) => <MandateInputsCell row={r} />,
+        cell: (r) => (
+          <MandateInputsCell
+            row={r}
+            offeredValues={
+              r.provisionKey ? offersByProvision.get(r.provisionKey) : undefined
+            }
+          />
+        ),
       },
       {
         // The output promise — kind (a door), required output keys, or a
@@ -940,7 +994,7 @@ export function MandatesConsole() {
         width: 110,
       },
     ];
-  }, [toggleEnabled, lineageIndex, reload, catalogue]);
+  }, [toggleEnabled, lineageIndex, reload, catalogue, offersByProvision]);
 
   // The coverage board's rows open the workbench — the SAME selection the
   // table click, the right-click menu and `?mandate=` all drive.
