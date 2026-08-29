@@ -4,7 +4,7 @@
  * generated from this file; do not copy common contracts into patrol configs.
  */
 
-export type PatrolTier = "M" | "R" | "C/R" | "M/R" | "M/C/R";
+export type PatrolOperatingMode = "ERADICATION" | "MAINTENANCE";
 
 export interface PatrolDefinition {
   patrolId: `P${number}`;
@@ -12,7 +12,8 @@ export interface PatrolDefinition {
   job: string;
   automationId: string;
   automationName: string;
-  tier: PatrolTier;
+  mode: PatrolOperatingMode;
+  status: "ACTIVE" | "PAUSED";
   recipePath: string;
   reportSlug: string;
   rrule: string;
@@ -27,7 +28,7 @@ export interface AutomationUpdateSpec {
   name: string;
   prompt: string;
   rrule: string;
-  status: "ACTIVE";
+  status: "ACTIVE" | "PAUSED";
   model: "gpt-5.6-sol";
   reasoningEffort: "high";
   executionEnvironment: "worktree" | "local";
@@ -63,7 +64,8 @@ export const PATROLS = [
     job: "No dead ends",
     automationId: "pattern-patrol-p1-no-dead-ends",
     automationName: "Pattern Patrol P1 · No dead ends",
-    tier: "M/R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: ".claude/skills/no-dead-ends/SKILL.md",
     reportSlug: "no-dead-ends",
     rrule: "FREQ=WEEKLY;BYDAY=MO;BYHOUR=1;BYMINUTE=10",
@@ -77,7 +79,8 @@ export const PATROLS = [
     job: "Inventory law",
     automationId: "pattern-patrol-p2-inventory-law",
     automationName: "Pattern Patrol P2 · Inventory law",
-    tier: "C/R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: ".claude/skills/no-dead-ends/SKILL.md",
     reportSlug: "inventory-law",
     rrule: "FREQ=WEEKLY;BYDAY=TU;BYHOUR=0;BYMINUTE=10",
@@ -91,7 +94,8 @@ export const PATROLS = [
     job: "Mobile-friendly UI",
     automationId: "pattern-patrol-p3-mobile-friendly-ui",
     automationName: "Pattern Patrol P3 · Mobile-friendly UI",
-    tier: "M/R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: ".claude/skills/ios-mobile-first/SKILL.md",
     reportSlug: "mobile-friendly-ui",
     rrule: "FREQ=WEEKLY;BYDAY=MO,TH;BYHOUR=6;BYMINUTE=10",
@@ -105,7 +109,8 @@ export const PATROLS = [
     job: "Light/dark integrity",
     automationId: "pattern-patrol-p4-light-dark-integrity",
     automationName: "Pattern Patrol P4 · Light/dark integrity",
-    tier: "M/R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: ".claude/skills/light-dark-integrity/SKILL.md",
     reportSlug: "light-dark-integrity",
     rrule: "FREQ=WEEKLY;BYDAY=TU,FR;BYHOUR=6;BYMINUTE=10",
@@ -119,7 +124,8 @@ export const PATROLS = [
     job: "Copy everywhere",
     automationId: "pattern-patrol-p5-copy-everywhere",
     automationName: "Pattern Patrol P5 · Copy everywhere",
-    tier: "M/R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: ".claude/skills/agent-copy/SKILL.md",
     reportSlug: "copy-everywhere",
     rrule: "FREQ=WEEKLY;BYDAY=WE;BYHOUR=0;BYMINUTE=10",
@@ -133,7 +139,8 @@ export const PATROLS = [
     job: "No emojis in UI",
     automationId: "pattern-patrol-p6-no-emojis-in-ui",
     automationName: "Pattern Patrol P6 · No emojis in UI",
-    tier: "M/R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: ".claude/skills/no-emojis-in-ui/SKILL.md",
     reportSlug: "no-emojis-in-ui",
     rrule: "FREQ=WEEKLY;BYDAY=WE,SA;BYHOUR=6;BYMINUTE=10",
@@ -147,7 +154,8 @@ export const PATROLS = [
     job: "No browser dialogs",
     automationId: "pattern-patrol-p7-no-browser-dialogs",
     automationName: "Pattern Patrol P7 · No browser dialogs",
-    tier: "M/R",
+    mode: "ERADICATION",
+    status: "PAUSED",
     recipePath: "CLAUDE.md",
     reportSlug: "no-browser-dialogs",
     rrule: "FREQ=WEEKLY;BYDAY=TH,SU;BYHOUR=6;BYMINUTE=10",
@@ -161,7 +169,8 @@ export const PATROLS = [
     job: "Real loading states",
     automationId: "pattern-patrol-p8-real-loading-states",
     automationName: "Pattern Patrol P8 · Real loading states",
-    tier: "M/R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: ".claude/skills/real-loading-states/SKILL.md",
     reportSlug: "real-loading-states",
     rrule: "FREQ=WEEKLY;BYDAY=MO,FR;BYHOUR=12;BYMINUTE=10",
@@ -175,13 +184,14 @@ export const PATROLS = [
     job: "Coming-soon compliance",
     automationId: "pattern-patrol-p9-coming-soon-compliance",
     automationName: "Pattern Patrol P9 · Coming-soon compliance",
-    tier: "R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: "lib/coming-soon/FEATURE.md",
     reportSlug: "coming-soon-compliance",
     rrule: "FREQ=WEEKLY;BYDAY=TH;BYHOUR=0;BYMINUTE=10",
     cadence: "Thursdays 12:10 AM",
     runInstruction:
-      "Remain report-only until the standalone detector and bounded interaction proof are operational. Treat missing machinery as a focused system task, not a human approval request; do not mutate product code yet.",
+      "Start from the known coming-soon backlog. Repair missing detector or proof machinery as part of execution, then continue into bounded product repairs in the same run. Detection is never a terminal outcome while an actionable item exists; escalate only a genuine choice between building, registering, or retiring the advertised behavior.",
   },
   {
     patrolId: "P10",
@@ -189,13 +199,14 @@ export const PATROLS = [
     job: "Type suppression debt",
     automationId: "pattern-patrol-p10-type-suppression-debt",
     automationName: "Pattern Patrol P10 · Type suppression debt",
-    tier: "R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: ".claude/skills/type-safety/SKILL.md",
     reportSlug: "type-suppression-debt",
     rrule: "FREQ=WEEKLY;BYDAY=TU,SA;BYHOUR=12;BYMINUTE=10",
     cadence: "Tuesdays and Saturdays 12:10 PM",
     runInstruction:
-      "Measure and rank debt, then apply already-proven behavior-preserving recipes automatically in bounded batches. New runtime-contract uncertainty becomes a focused proof task; never mass-edit or add a suppression.",
+      "Start from the ranked suppression backlog and apply proven behavior-preserving recipes in bounded batches. When the next item lacks a proven recipe, investigate its runtime contract and derive the smallest safe proof instead of stopping at ranking. Never mass-edit or add a suppression.",
   },
   {
     patrolId: "P11",
@@ -203,7 +214,8 @@ export const PATROLS = [
     job: "Desktop and mobile header clearance",
     automationId: "pattern-patrol-p11-desktop-and-mobile-header-clearance",
     automationName: "Pattern Patrol P11 · Desktop and mobile header clearance",
-    tier: "M/R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: ".claude/skills/core-route-headers/SKILL.md",
     reportSlug: "core-route-header-integrity",
     rrule: "FREQ=WEEKLY;BYDAY=WE,SA;BYHOUR=9;BYMINUTE=10",
@@ -217,7 +229,8 @@ export const PATROLS = [
     job: "Surface Values completeness",
     automationId: "pattern-patrol-p12-surface-values-completeness",
     automationName: "Pattern Patrol P12 · Surface Values completeness",
-    tier: "M/C/R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: ".claude/skills/surface-authoring/SKILL.md",
     reportSlug: "surface-values-completeness",
     rrule: "FREQ=WEEKLY;BYDAY=TU,FR;BYHOUR=9;BYMINUTE=10",
@@ -231,7 +244,8 @@ export const PATROLS = [
     job: "Picker custom entry",
     automationId: "pattern-patrol-p13-picker-custom-entry",
     automationName: "Pattern Patrol P13 · Picker custom entry",
-    tier: "M/R",
+    mode: "ERADICATION",
+    status: "ACTIVE",
     recipePath: ".claude/skills/picker-custom-entry/SKILL.md",
     reportSlug: "picker-custom-entry",
     rrule: "FREQ=WEEKLY;BYDAY=SU;BYHOUR=1;BYMINUTE=10",
@@ -254,7 +268,7 @@ function patrolPrompt(patrol: PatrolDefinition): string {
   const { repoRoot, commonDocsRoot, automationRoot } = PATROL_PATHS;
   return `You are running Pattern Patrol ${patrol.patrolId}-${patrol.slug} in ${repoRoot}.
 
-CANONICAL DEFINITION: scripts/pattern-patrol/manifest.ts owns this automation's id, schedule, tier, recipe, and common contracts. If this prompt disagrees with it, stop and report configuration drift.
+CANONICAL DEFINITION: scripts/pattern-patrol/manifest.ts owns this automation's id, schedule, operating mode, recipe, and common contracts. If this prompt disagrees with it, stop and repair configuration drift before continuing.
 
 READ FIRST:
 1. ${commonDocsRoot}/VISION.md
@@ -268,7 +282,10 @@ READ FIRST:
 9. ${repoRoot}/.matrx/patrol-runs/${patrol.patrolId}/latest.json and ${repoRoot}/.matrx/patrol-reports/${patrol.reportSlug}.md when present
 
 RUN CONTRACT:
-- TIER ${patrol.tier}: ${patrol.runInstruction}
+- MODE ${patrol.mode}: ${patrol.runInstruction}
+- ERADICATION CONTRACT: a known actionable backlog is the work queue, not material for another report. Consume its first ready items before broad discovery. Use the executor's available parallel-agent capacity for disjoint repair units, never more than ten workers, and run additional waves when one wave does not exhaust the ready queue. Every worker implements and verifies; no worker is assigned to restate findings. The 15-file limit is per independently certified batch, not per run. Continue through multiple batches until the queue reaches verified zero or one hard blocker prevents every remaining ready item. A run with actionable backlog and no certified repair is degraded, never successful. Missing detector, recipe, test, or harness machinery is repaired in scope and then used; it is not a reason to stop at analysis.
+- MAINTENANCE CONTRACT: maintenance mode is allowed only after an independent full pass proves zero actionable backlog. Run the scoped check plus its scheduled full rotation. Zero stays a one-line result. The first verified finding switches this same run immediately to ERADICATION: repair it and every other ready item; never end by announcing that defects were found.
+- NO DETECTION-ONLY TERMINAL STATE: classify each verified item as repair-now, genuine-human-decision, or hard-blocked. Repair-now items execute now. A decision or blocker stays open, but it never prevents the patrol from taking the next independent repair-now item. Known actionable backlog may not be marked closed, clean, or complete.
 - Scope from the registry's structural-novelty recipe plus open sightings and its periodic full pass. Never scope by raw git churn. Route every verified finding to a standing-authority fix, genuine human decision, or unresolved missing-evidence/machinery task.
 - WORKTREE ISOLATION: run only in the automation worktree. Capture git status, type-check, and relevant detector diagnostics before editing. Never treat unrelated baseline debt as patrol evidence. Use a real worktree-local offline install when dependencies are absent; never symlink node_modules or expose env contents.
 - BASELINE-DELTA CERTIFICATION CONTRACT: every Tier-M batch is at most 15 files and gets a second adversarial agent for the exact candidate. REJECTED requires a concrete new batch-caused defect. Unchanged baseline failures cannot reject. INFRASTRUCTURE BLOCKED preserves and pushes the candidate for retry; never revert valid work because preview, browser, or an unrelated gate failed.
@@ -282,7 +299,7 @@ RUN CONTRACT:
 - PROFESSIONAL IMPROVEMENT AUTHORITY: automatically fix a verified defect or weakness when one remedy is clearly superior, follows a canonical project primitive or demonstrated industry standard, preserves product behavior/contracts, and fits a bounded certified batch. Known bugs, generic states, missing established affordances, and exact doctrine violations do not wait for Arman because an exact callsite recipe is absent. Ask only when legitimate alternatives materially change behavior, policy, workflow, permissions, data meaning, destructive impact, or visual intent. Missing evidence/machinery creates investigation, a focused task, or INFRASTRUCTURE BLOCKED. If a debatable enhancement surrounds a clear core repair, ship the core and ask only about the enhancement.
 - RECURSIVE LEARNING: append one concise learning to memory: what this run proved and the smallest detector, skill, test, manifest, or process change that would improve the next run. Promote proven professional repairs into reusable automatic recipes; genuine product taste and competing outcomes remain Arman's decisions.
 
-FINISH: update sighting outcomes, the permanent record, ${repoRoot}/.matrx/patrol-reports/${patrol.reportSlug}.md, and this automation's memory. Commit promptly and push all owned artifacts. Report findings count, fixed count, certifier verdict, approvals needed, and any degradation. A fully completed zero-finding run is one line.`;
+FINISH: update sighting outcomes, the permanent record, ${repoRoot}/.matrx/patrol-reports/${patrol.reportSlug}.md, and this automation's memory. Commit promptly and push all owned artifacts. If independent full proof reaches zero, return one line saying zero. Otherwise state only what was fixed, what repair wave continues next, and any genuine human decision or hard blocker; do not repeat the known defect inventory.`;
 }
 
 export function fleetHealthPrompt(): string {
@@ -292,27 +309,27 @@ export function fleetHealthPrompt(): string {
 READ FIRST: ${commonDocsRoot}/VISION.md, FEATURE.md, CODEX_OPERATOR.md, PATROL_REGISTRY.md, ${repoRoot}/scripts/pattern-patrol/manifest.ts, and ${automationRoot}/pattern-patrol-fleet-health/memory.md.
 
 CHECK:
-- Run pnpm check:patrol-contracts. The typed manifest owns all patrol ids, schedules, tiers, recipe paths, common prompt contracts, and execution environments. Any live-config or registry drift is a fleet failure.
-- Audit every registered patrol on every run, even when it has not run since the last audit. For each patrol, check its latest task, unresolved prior work, report, memory, permanent record, schedule, and human-facing inbox status. Separately count and inspect every new active patrol run since memory using Codex task status plus the local automation ledger. Alert on systemError, usage limits, over-two-hour stalls, blank inbox copy, missing/stale report, missing memory, or missing/invalid permanent run record.
+- Run pnpm check:patrol-contracts. The typed manifest owns all patrol ids, schedules, operating modes, recipe paths, common prompt contracts, and execution environments. Any live-config or registry drift is a fleet failure.
+- Use the memory cursor and inspect new or changed runs only; do not spend a daily run re-auditing unchanged reports or restating known backlogs. Check every changed patrol's latest task, unresolved work, report, memory, permanent record, schedule, and inbox state. Alert on systemError, usage limits, over-two-hour stalls, blank inbox copy, missing/stale artifacts, or invalid records.
 - Verify run records with pnpm patrol:run verify. Reports, memory, inbox, Git ancestry, release tags, and deployment must agree with the hash-chained record.
 - FAST INTEGRATION IS HEALTH: direct or frequent origin/main integration is normal in pre-production and must never be flagged merely for bypassing a controller. Flag owned candidate commits absent from every remote after ${PATROL_DELIVERY_POLICY.candidateRemoteDeadlineMinutes} minutes, certified candidates absent from origin/main after ${PATROL_DELIVERY_POLICY.certifiedMainDeadlineMinutes} minutes, uncommitted patrol work at task end, or any product change integrated without independent CERTIFIED evidence for its exact ancestor.
 - Deployment/version releases remain serialized through release.sh. Run pnpm patrol:delivery:check for release-record consistency, but never recommend slowing or restricting main integration before production readiness.
 - Verify exact-worktree preview ownership and the launcher-reported cap. A preview cap event is INFRASTRUCTURE BLOCKED, never REJECTED. Flag cross-worktree reuse, cap enforcement failure, or valid work reverted because proof infrastructure failed.
-- Findings in a successful report are not fleet failure. Unchanged baseline debt cannot reject. REJECTED names a concrete batch-caused defect. Human approval and missing machinery are distinct states.
+- BACKLOG GOVERNOR CONTRACT: every patrol declares ERADICATION or MAINTENANCE. ERADICATION with actionable backlog and no active repair wave is fleet failure. Wake or continue the existing patrol task with its exact next queue assignment; use parallel repair agents up to the executor limit and never more than ten. A run that only detects, ranks, inventories, or improves machinery while ready product repairs remain is degraded. MAINTENANCE is valid only after independent zero-backlog proof; any new finding flips that patrol to ERADICATION in the same run.
+- Unchanged baseline debt cannot reject a repair batch. REJECTED names a concrete batch-caused defect. Human approval and hard infrastructure blocks are distinct states, and neither permits independent ready work to stop.
 - Flag a patrol that withholds a verified clearly superior bounded repair or asks Arman to approve an obvious professional improvement. Missing evidence should create a focused task; only genuine product choices and exceptions belong in Arman's queue.
 - Never edit product code, another patrol's report, or another patrol's memory. Update only Fleet Health memory with audited ids, evidence, time, and one learning.
 - HUMAN-LANGUAGE CONTRACT: speak to Arman as a non-technical product owner. Never ask him to review a task id, record, ref, hash, controller, prerequisite, or other internal machinery. Translate internal evidence into: the patrol's plain-English job, what happened in the product or check, what the system will do next, and whether any real product decision remains. Keep ids and technical evidence in Fleet Health memory, not in the human ask.
 - SELF-REPAIR CONTRACT: retry, reconcile, or create focused machinery work for operational failures without asking Arman to diagnose them. Ask Arman only when a genuine product choice, policy exception, external account/capacity decision, or destructive action requires his authority. Phrase that request as one ordinary-language question with the consequences of each option.
 - ALL-REPOSITORY REPAIR CONTRACT: run from ${PATROL_PATHS.workspaceRoot}, where every Matrx repository is directly available. Trace deterministic failures into the owning repository and repair internal tools, integrations, local services, or orchestration instead of turning them into Arman's diagnosis task. Use each repository's own instructions and authorized local credentials/browser path. Report an external blocker only after the in-scope repair paths are genuinely exhausted.
 
-RESPONSE: always report the health of all registered patrols in plain English and separately state how many new runs were checked. If clean, begin "PATTERN PATROL FLEET HEALTHY — <number> new runs checked." If unhealthy, begin "AUTOMATION DEGRADED — ACTION REQUIRED" and give one terse bullet per affected patrol: its job, what failed, user impact if known, and the automatic next step. Do not include task ids unless Arman explicitly asks for technical evidence. End with a question only when Arman truly must make a decision; otherwise end by stating what the system is retrying or repairing. Never make failed or incomplete work look clean.`;
+RESPONSE: do not publish a daily catalogue of unchanged defects. If every patrol has independently verified zero backlog, return one line: "PATTERN PATROL FLEET HEALTHY — ZERO VERIFIED BACKLOG." If eradication work is active, return one line with the number of active repair waves and newly closed units. Use "AUTOMATION DEGRADED — ACTION REQUIRED" only for a stalled repair wave, configuration failure, or hard blocker; name only the affected patrol and automatic next step. Ask a question only when Arman truly must decide. Never make incomplete work look clean.`;
 }
 
 export function automationUpdateSpecs(): AutomationUpdateSpec[] {
   const base = {
     mode: "update" as const,
     kind: "cron" as const,
-    status: "ACTIVE" as const,
     model: "gpt-5.6-sol" as const,
     reasoningEffort: "high" as const,
     projectId: PATROL_PATHS.projectId,
@@ -322,6 +339,7 @@ export function automationUpdateSpecs(): AutomationUpdateSpec[] {
       ...base,
       id: patrol.automationId,
       name: patrol.automationName,
+      status: patrol.status,
       prompt: patrolPrompt(patrol),
       rrule: patrol.rrule,
       executionEnvironment: "worktree" as const,
@@ -332,6 +350,7 @@ export function automationUpdateSpecs(): AutomationUpdateSpec[] {
       ...base,
       id: FLEET_HEALTH.automationId,
       name: FLEET_HEALTH.automationName,
+      status: "ACTIVE" as const,
       prompt: fleetHealthPrompt(),
       rrule: FLEET_HEALTH.rrule,
       projectId: FLEET_HEALTH.projectId,
@@ -344,14 +363,14 @@ export function automationUpdateSpecs(): AutomationUpdateSpec[] {
 export function registryScheduleTable(): string {
   const rows = PATROLS.map(
     (patrol) =>
-      `| ${patrol.patrolId} | ${patrol.job} | ${patrol.tier} | ${patrol.cadence} | \`${patrol.automationId}\` |`,
+      `| ${patrol.patrolId} | ${patrol.job} | ${patrol.mode} | ${patrol.status} | ${patrol.cadence} | \`${patrol.automationId}\` |`,
   );
   return [
     "<!-- GENERATED: PATROL_MANIFEST_SCHEDULES START -->",
-    "| Patrol | Job | Operating tier | Schedule | Automation |",
-    "| --- | --- | --- | --- | --- |",
+    "| Patrol | Job | Mode | Status | Schedule | Automation |",
+    "| --- | --- | --- | --- | --- | --- |",
     ...rows,
-    `| Health | Fleet health | Read-only | ${FLEET_HEALTH.cadence} | \`${FLEET_HEALTH.automationId}\` |`,
+    `| Health | Fleet governor | MAINTENANCE | ACTIVE | ${FLEET_HEALTH.cadence} | \`${FLEET_HEALTH.automationId}\` |`,
     "<!-- GENERATED: PATROL_MANIFEST_SCHEDULES END -->",
   ].join("\n");
 }

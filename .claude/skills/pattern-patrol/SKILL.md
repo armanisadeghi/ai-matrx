@@ -14,12 +14,12 @@ This skill is the matrx-frontend mechanics. Never duplicate the registry here.
 ## The one-paragraph model
 
 A _patrol_ is a named pattern Arman wants permanently eliminated (or a good
-pattern he wants present everywhere), backed by five parts: doctrine, one-time
-sweep, a skill teaching the fix, a **scheduled recurring run** (executed in
-Codex on a several-day cadence), and **adversarial certification** of every
-fix batch. Ten patrols are registered (P1 dead-ends … P10 type-suppressions);
-the list is meant to reach fifty. Three duties below — you always have at least
-the last two, whatever your mission.
+pattern he wants present everywhere), backed by doctrine, a durable queue, a
+skill teaching the fix, a scheduled recurring run, and adversarial
+certification of every fix batch. The registry owns the current count. A patrol
+stays in **ERADICATION** until an independent full pass proves zero actionable
+backlog; only then may it enter **MAINTENANCE**. Detection is never the terminal
+job while actionable work exists.
 
 ## Duty 1 — running a patrol (you were launched as one)
 
@@ -35,9 +35,17 @@ system doc). The repo-specific facts it needs:
   before a new scan. An unfinished approval, fix, certification,
   infrastructure retry, or delivery resumes with its exact candidate first.
   Never strand it, overwrite its report, or ask Arman to repeat a decision.
-- **Tiers (from the registry row — when unsure, downgrade):** R = report/rank
-  only · M = mechanical fixes per the named skill, batches ≤15 files · C =
-  write a precise chip, fix nothing.
+- **Modes, not reporting tiers:** ERADICATION consumes the ranked ready queue
+  before broad discovery, uses every available parallel-agent slot (never more
+  than ten workers), and runs multiple independently certified batches until
+  verified zero or one hard blocker stops every remaining ready item.
+  MAINTENANCE is allowed only after independent zero proof; its first finding
+  switches the same run back to ERADICATION and starts repair immediately.
+- **Per-item routing:** every verified item is `repair-now`,
+  `genuine-human-decision`, or `hard-blocked`. Repair-now executes now. A
+  decision or blocker stays open while the patrol takes the next independent
+  repair-now item. A detector, ranked list, chip, or machinery improvement is
+  never a completed patrol outcome while ready product work remains.
 - **Professional improvement standing authority:** automatically fix a
   verified defect or weakness when one remedy is clearly superior, reuses a
   canonical primitive or demonstrated industry standard, preserves product
@@ -49,13 +57,14 @@ system doc). The repo-specific facts it needs:
   destructive impact, or visual intent. Missing evidence/machinery creates a
   focused task or infrastructure state. If the core repair is clear and an
   optional enhancement is debatable, ship the core and ask only about the
-  enhancement. Tier R never turns implementation uncertainty into a pointless
+  enhancement. Implementation uncertainty never turns into a pointless
   approval request.
 - **Human decisions are item-scoped:** when Arman chooses among legitimate
   alternatives, apply only that decision. The resulting repair still uses a
   bounded Tier-M batch with normal gates and adversarial certification. Reports
   separate standing-authority fixes, genuine human decisions, unresolved
-  evidence/machinery, and the batch verification/certifier verdict.
+  evidence/machinery, and the batch verification/certifier verdict. It never
+  repeats a known defect inventory as a substitute for execution.
 - **Hard rules, non-negotiable:** never disable a check, add a suppression,
   touch generated files, or change how a component enters a chunk (THE
   FRAGMENTATION LAW — `code-splitting` skill before ANY such change); fixing
@@ -101,7 +110,7 @@ system doc). The repo-specific facts it needs:
 - **Scoping:** structural novelty (new `app/**/page.tsx` leaves, new
   `features/*` dirs, new files matching the patrol's surface signature) + the
   ledger + a full pass every Nth run. NEVER scope by raw git churn.
-- **Loud degradation:** if a Tier-M patrol is forced down to report-only, or a
+- **Loud degradation:** if a patrol cannot execute its ready queue, or a
   required read, scan, fix, certification, gate, release, report, or memory
   update does not happen, follow `FEATURE.md`'s exact Loud Degradation
   Contract. Begin with `AUTOMATION DEGRADED — ACTION REQUIRED`; when Arman must
@@ -151,8 +160,10 @@ patterns.
   unpushed, or delaying certified work behind a fictitious integration gate.
 - Treating a Markdown report or automation memory as more authoritative than
   the permanent run record, or rewriting an earlier lifecycle event.
-- Stopping after detection when a clearly superior bounded repair is known, or
+- Stopping after detection while any actionable repair remains, or
   asking Arman to approve an obvious professional improvement.
+- Assigning parallel agents to summarize or rank defects instead of giving
+  each one a disjoint repair unit with required verification.
 - Treating “looks intentional” or “false positive” as approval to suppress it.
 - Growing this skill with per-patrol content — that belongs in the registry row
   or the pattern's own skill.

@@ -70,6 +70,9 @@ function validateManifest(): string[] {
       "LOUD FAILURE CONTRACT",
       "HUMAN EXCEPTION CONTRACT",
       "PROFESSIONAL IMPROVEMENT AUTHORITY",
+      "ERADICATION CONTRACT",
+      "MAINTENANCE CONTRACT",
+      "NO DETECTION-ONLY TERMINAL STATE",
     ]) {
       if (
         spec.executionEnvironment === "worktree" &&

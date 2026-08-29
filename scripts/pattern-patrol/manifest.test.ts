@@ -34,6 +34,9 @@ describe("Pattern Patrol typed manifest", () => {
         "LOUD FAILURE CONTRACT",
         "HUMAN EXCEPTION CONTRACT",
         "PROFESSIONAL IMPROVEMENT AUTHORITY",
+        "ERADICATION CONTRACT",
+        "MAINTENANCE CONTRACT",
+        "NO DETECTION-ONLY TERMINAL STATE",
       ]) {
         expect(spec.prompt.match(new RegExp(contract, "g"))).toHaveLength(1);
       }
@@ -68,6 +71,32 @@ describe("Pattern Patrol typed manifest", () => {
     expect(
       PATROLS.find((patrol) => patrol.patrolId === "P8")?.runInstruction,
     ).toContain("every verified generic loader automatically");
+  });
+
+  it("keeps every known-backlog patrol in execution mode", () => {
+    for (const patrol of PATROLS) {
+      expect(patrol.mode).toBe("ERADICATION");
+    }
+    for (const prompt of automationUpdateSpecs()
+      .filter((candidate) => candidate.executionEnvironment === "worktree")
+      .map((candidate) => candidate.prompt)) {
+      expect(prompt).toContain("Every worker implements and verifies");
+      expect(prompt).toContain(
+        "Known actionable backlog may not be marked closed, clean, or complete",
+      );
+      expect(prompt).not.toContain("Remain report-only");
+    }
+  });
+
+  it("makes fleet health govern repair waves without repeating unchanged defects", () => {
+    const fleet = automationUpdateSpecs().find(
+      (candidate) => candidate.id === FLEET_HEALTH.automationId,
+    );
+    expect(fleet?.prompt).toContain("BACKLOG GOVERNOR CONTRACT");
+    expect(fleet?.prompt).toContain("inspect new or changed runs only");
+    expect(fleet?.prompt).toContain(
+      "do not publish a daily catalogue of unchanged defects",
+    );
   });
 
   it("keeps Fleet Health on the workspace-root project with human self-repair contracts", () => {
@@ -106,8 +135,8 @@ describe("Pattern Patrol typed manifest", () => {
     const instruction = PATROLS.find(
       (patrol) => patrol.patrolId === "P12",
     )?.runInstruction;
-    expect(PATROLS.find((patrol) => patrol.patrolId === "P12")?.tier).toBe(
-      "M/C/R",
+    expect(PATROLS.find((patrol) => patrol.patrolId === "P12")?.mode).toBe(
+      "ERADICATION",
     );
     expect(instruction).toContain("Ranked Surface Queue");
     expect(instruction).toContain(
