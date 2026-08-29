@@ -163,7 +163,8 @@ attributable to this page in analytics.
   `features/agents/redux/execution-system/`.
 - Multi-run request fan-out uses the generic execution-system
   `copyInstanceRequestDraft`; no Battle mode maintains a parallel text-only
-  request shape.
+  request shape. `pnpm check:agent-submit-content` blocks hand-built shared
+  Battle request textareas and missing full-draft fan-out.
 - `cmp_comparison_sets` and `cmp_comparison_entries` are intentionally
   generic — the future judge feature will write its scores into
   `cmp_comparison_sets.metadata` (or a sibling table) without changing

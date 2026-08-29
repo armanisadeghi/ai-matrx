@@ -11,6 +11,14 @@ import path from "node:path";
 
 const ROOT = path.resolve(__dirname, "..");
 const PRODUCTION_ROOTS = ["features/agents/", "features/agent-comparison/"];
+const SHARED_BATTLE_MODES = [
+  "model",
+  "settings",
+  "system-prompt",
+  "tools",
+  "tuning",
+  "variations",
+] as const;
 
 const FORBIDDEN = [
   "requireTextForSubmit",
@@ -31,6 +39,11 @@ interface Finding {
   token: string;
 }
 
+function lineOf(source: string, token: string): number {
+  const offset = source.indexOf(token);
+  return offset < 0 ? 1 : source.slice(0, offset).split("\n").length;
+}
+
 function productionFiles(): string[] {
   const output = execSync("git ls-files '*.ts' '*.tsx'", {
     cwd: ROOT,
@@ -41,7 +54,9 @@ function productionFiles(): string[] {
     .filter(Boolean)
     .filter((file) => PRODUCTION_ROOTS.some((root) => file.startsWith(root)))
     .filter((file) => existsSync(path.join(ROOT, file)))
-    .filter((file) => !file.includes("/__tests__/") && !/\.test\.tsx?$/.test(file));
+    .filter(
+      (file) => !file.includes("/__tests__/") && !/\.test\.tsx?$/.test(file),
+    );
 }
 
 function main(): void {
@@ -61,22 +76,53 @@ function main(): void {
     }
   }
 
+  for (const mode of SHARED_BATTLE_MODES) {
+    const component = `features/agent-comparison/modes/${mode}/components/LockedInputSection.tsx`;
+    const componentSource = readFileSync(path.join(ROOT, component), "utf8");
+    if (!componentSource.includes("<SharedBattleInput")) {
+      findings.push({
+        file: component,
+        line: 1,
+        token: "missing canonical <SharedBattleInput",
+      });
+    }
+    if (componentSource.includes("<textarea")) {
+      findings.push({
+        file: component,
+        line: lineOf(componentSource, "<textarea"),
+        token: "hand-built Battle request textarea",
+      });
+    }
+
+    const thunks = `features/agent-comparison/modes/${mode}/redux/thunks.ts`;
+    const thunkSource = readFileSync(path.join(ROOT, thunks), "utf8");
+    if (!thunkSource.includes("copyInstanceRequestDraft")) {
+      findings.push({
+        file: thunks,
+        line: 1,
+        token: "missing complete request-draft fan-out",
+      });
+    }
+  }
+
   if (findings.length === 0) {
     console.log(
-      "✅ Agent submit controls do not require typed user_input content.",
+      "✅ Agent submit controls are content-optional and every shared Battle request uses the canonical multimodal input path.",
     );
     return;
   }
 
-  console.error("\n🚨 AGENT SUBMISSION IS GATED ON TYPED USER INPUT\n");
+  console.error("\n🚨 AGENT INPUT OR SUBMISSION CONTRACT REGRESSION\n");
   for (const finding of findings) {
     console.error(
       `  ✗ ${finding.file}:${finding.line}  forbidden: ${finding.token}`,
     );
   }
   console.error(
-    "\nRemove the content test. Submit eligibility may enforce agent/instance " +
-      "identity and unresolved uploads, but never typed message presence.\n",
+    "\nRemove content tests and hand-built Battle composers. Submit eligibility " +
+      "may enforce agent/instance identity and unresolved uploads, but never " +
+      "typed message presence; shared Battle requests must fan out the complete " +
+      "Smart Agent Input draft.\n",
   );
   process.exit(1);
 }
