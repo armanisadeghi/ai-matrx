@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ae48b585-c52d-4f15-a576-8ab736c3065e",
-  "state": "certified",
-  "updatedAt": "2026-08-30T14:36:43.468Z",
-  "summary": "CERTIFIED after correction: exact 15-file compact/control P8 batch has no batch-caused regression.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-30T14:36:48.911Z",
+  "summary": "Corrected certified candidate is integrated on origin/main and queued for the serialized release lane; no redundant release created.",
   "source": "ae48b585-c52d-4f15-a576-8ab736c3065e.json",
-  "eventHash": "36af12ffdd6318616af20392474d84b2d94f4343b059381f840e79b4cc391a4e"
+  "eventHash": "30f5885d581873a3fe44c5719720a07413c9ea9b8e680e95ac3f8a5806bb90be"
 }
