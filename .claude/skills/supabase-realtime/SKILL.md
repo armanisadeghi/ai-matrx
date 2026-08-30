@@ -5,6 +5,8 @@ description: The canonical doctrine for ALL Supabase realtime in matrx-frontend 
 
 # Supabase Realtime — the Matrx doctrine
 
+> Cross-repo node: [`common-docs/systems/platform/realtime/STATE.md`](../../../../common-docs/systems/platform/realtime/STATE.md). `@ai-matrx/realtime` will absorb these rules as code (R8 makes its README the doctrine's home and this skill the pointer); it is **not built** as of 2026-08-30, so this page governs.
+
 Realtime + Redux + autosave is the most freeze-prone combination in this app. Every historical browser lockup traced to one of the mechanisms below. Reference implementations: **`features/notes/redux/realtimeMiddleware.ts`** (postgres_changes, the canonical one), `features/files/redux/realtime-middleware.ts` (request-ledger id-dedup variant), `features/data-tables/collab/SupabaseYjsProvider.ts` (broadcast CRDT).
 
 ## Rule 1 — Suppress your own echoes, timestamp-monotonic FIRST
@@ -75,7 +77,9 @@ A subscription that compiles but receives nothing has one of these:
 - [ ] Kill the network for 30s, restore: catch-up fetch fires once, missed rows appear, no reconnect loop at 1s.
 - [ ] Table verified in the `supabase_realtime` publication + middleware registered in the store.
 
-## Current per-feature state (2026-07-15)
+## Current per-feature state (2026-07-15; file list re-verified 2026-08-30)
+
+> Two former suspects are gone, not fixed: `features/public-chat/.../SidebarChats.tsx` was deleted with the orphaned `/p/chat` surface (`d2d94ab10d`) and `features/transcripts/context/TranscriptsContext.tsx` with the app-root TranscriptsProvider (`e504edcdc8`). Every other file named on this page still exists. The *behavior* claims below carry their original 2026-07-15 date — they were not re-probed.
 
 | Feature | Transport | Echo strategy | Status |
 |---|---|---|---|
@@ -84,7 +88,7 @@ A subscription that compiles but receives nothing has one of these:
 | Transcript studio (`features/transcript-studio/redux/realtimeMiddleware.ts`) | postgres_changes | event-split routing | Good |
 | DM (`hooks/useSupabaseMessaging.ts`, `features/messaging/MessagingInitializer.tsx`, `lib/supabase/messaging.ts`) | pg_changes + manual broadcast + 2 presence channels | id+client_message_id dedup; self-RPC skip + monotonic UPDATE guard + own-send refetch skip + debounced list reload (2026-07-15) | Improved; **open backlog:** no catch-up on reconnect; `useConversations` still subscribes per mount (5 consumers that mostly only need `createConversation`); manual broadcast doubles delivery; N+1 `get_dm_user_info` waterfalls; 3 channels per open conversation |
 | Data tables (`SupabaseYjsProvider`) | broadcast CRDT (`self:false`) | Yjs idempotence | Good |
-| **Suspicious set — apply this skill before touching:** `features/tasks/hooks/useTaskManager.ts` (static topics + refetch-on-any-change, no suppression), `features/file-analysis/hooks/useAnnotations.ts` (writes + listens, no suppression, static topic), `features/code/hooks/useTabRealtimeWatcher.ts` (conflict detection without self-write flag), `features/agents/ui-first-tools/redux/agent-lists.thunks.ts`, `features/public-chat/components/sidebar/SidebarChats.tsx` (static topic), `features/transcripts/context/TranscriptsContext.tsx`, `features/memory/components/MemoryManager.tsx` | | | |
+| **Suspicious set — apply this skill before touching:** `features/tasks/hooks/useTaskManager.ts` (static topics + refetch-on-any-change, no suppression), `features/file-analysis/hooks/useAnnotations.ts` (writes + listens, no suppression, static topic), `features/code/hooks/useTabRealtimeWatcher.ts` (conflict detection without self-write flag), `features/agents/ui-first-tools/redux/agent-lists.thunks.ts`, `features/memory/components/MemoryManager.tsx` | | | |
 
 Polling loops that should become realtime (candidates, verified 2026-07-15): `features/ai-runs/hooks/useAiTasks.ts`, `features/code/redux/codeEditHistoryThunks.ts` (its own Phase-2 comment says so), `features/cms/hooks/useCmsAdminActivity.ts`, `features/pdf/scanner/useScanSaveFlow.ts`, admin events/scanner-health/sandbox status pages.
 
