@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { useEffect } from "react";
 import { Panel, type Layout } from "react-resizable-panels";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
 import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
@@ -45,7 +44,6 @@ export function TasksDesktopShell({
   defaultLayout,
   cookieName,
 }: TasksDesktopShellProps) {
-  const isMobile = useIsMobile();
   const dispatch = useAppDispatch();
 
   // ~60s tick so snooze expiry / overdue windows resurface tasks without an
@@ -58,65 +56,57 @@ export function TasksDesktopShell({
     dispatch(loadTaskUserStateThunk());
   }, [dispatch]);
 
-  // First paint always renders desktop so SSR + initial client tree match.
-  // After mount, swap to the mobile view if the viewport is below the
-  // breakpoint. The brief desktop-on-mobile-first-paint is acceptable —
-  // matches the agents builder pattern.
-  if (isMobile) {
-    // Mobile owns its own scroll/swipe, but still has to clear the shell's
-    // transparent header glass — without this padding the list title slides
-    // up under the shell controls.
-    return (
-      <div className="h-full pt-[var(--shell-header-h)]">
+  return (
+    <>
+      <div className="h-full pt-[var(--shell-header-h)] md:hidden">
         <MobileTasksView />
       </div>
-    );
-  }
+      <div className="hidden h-full w-full md:block">
+        <ClientGroup
+          id={GROUP_ID}
+          groupKey={GROUP_KEY}
+          cookieName={cookieName}
+          orientation="horizontal"
+          defaultLayout={defaultLayout}
+          className="h-full w-full"
+        >
+          <RegisteredPanel
+            registerAs="sidebar"
+            groupKey={GROUP_KEY}
+            id="sidebar"
+            collapsible
+            collapsedSize="0%"
+            defaultSize="16%"
+            minSize="8%"
+          >
+            <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+              <TasksContextSidebar />
+            </div>
+          </RegisteredPanel>
+          <Handle hideWhenCollapsed={["sidebar"]} />
 
-  return (
-    <ClientGroup
-      id={GROUP_ID}
-      groupKey={GROUP_KEY}
-      cookieName={cookieName}
-      orientation="horizontal"
-      defaultLayout={defaultLayout}
-      className="h-full w-full"
-    >
-      <RegisteredPanel
-        registerAs="sidebar"
-        groupKey={GROUP_KEY}
-        id="sidebar"
-        collapsible
-        collapsedSize="0%"
-        defaultSize="16%"
-        minSize="8%"
-      >
-        <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
-          <TasksContextSidebar />
-        </div>
-      </RegisteredPanel>
-      <Handle hideWhenCollapsed={["sidebar"]} />
+          <RegisteredPanel
+            registerAs="list"
+            groupKey={GROUP_KEY}
+            id="list"
+            collapsible
+            collapsedSize="0%"
+            defaultSize="16%"
+            minSize="8%"
+          >
+            <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+              <TaskListPane />
+            </div>
+          </RegisteredPanel>
+          <Handle hideWhenCollapsed={["list"]} />
 
-      <RegisteredPanel
-        registerAs="list"
-        groupKey={GROUP_KEY}
-        id="list"
-        collapsible
-        collapsedSize="0%"
-        defaultSize="16%"
-        minSize="8%"
-      >
-        <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
-          <TaskListPane />
-        </div>
-      </RegisteredPanel>
-      <Handle hideWhenCollapsed={["list"]} />
-
-      <Panel id="editor" minSize="30%">
-        <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
-          <TaskEditor />
-        </div>
-      </Panel>
-    </ClientGroup>
+          <Panel id="editor" minSize="30%">
+            <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+              <TaskEditor />
+            </div>
+          </Panel>
+        </ClientGroup>
+      </div>
+    </>
   );
 }
