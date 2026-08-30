@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.manifest";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { useScheduledTasks } from "../../hooks/useScheduledTasks";
 import { useDuplicateSchedules } from "../../hooks/useDuplicateSchedules";
 import { DuplicateScheduleBanner } from "./DuplicateScheduleBanner";
 import { buildScheduleRosterValues } from "../../lib/schedules-scope";
 import { scheduleKpis } from "../../lib/copy";
+import { scheduleSummary } from "../../lib/copy";
 import { ScheduleRow } from "./ScheduleRow";
 
 /**
@@ -25,15 +27,34 @@ import { ScheduleRow } from "./ScheduleRow";
  */
 export function ScheduleList() {
   const { tasks, status, error } = useScheduledTasks();
+  const getSchedulesScope = () =>
+    createSchedulesScope(buildScheduleRosterValues(tasks, status, error));
 
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/schedules"
-      getScope={() =>
-        createSchedulesScope(buildScheduleRosterValues(tasks, status, error))
-      }
+      getScope={getSchedulesScope}
     >
-      <ScheduleListBody />
+      <NonEditableContextMenu
+        sourceFeature="system"
+        surfaceName="matrx-user/schedules"
+        menuVersion={1}
+        getApplicationScope={getSchedulesScope}
+        contentSource={{ type: "raw" }}
+        resolveContextOnOpen={(target) => {
+          const row = target?.closest<HTMLElement>("[data-schedule-id]");
+          const task = tasks.find(
+            (item) => item.id === row?.dataset.scheduleId,
+          );
+          if (!task) return null;
+          return {
+            content: scheduleSummary(task),
+            open_schedule: task,
+          };
+        }}
+      >
+        <ScheduleListBody />
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }

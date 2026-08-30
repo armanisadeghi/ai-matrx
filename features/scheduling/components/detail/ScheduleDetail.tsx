@@ -20,6 +20,7 @@ import {
   updateScheduledTask,
 } from "../../redux/tasks/thunks";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { createSchedulesScope } from "@/features/surfaces/manifests/schedules.manifest";
 import { useTaskDetail } from "../../hooks/useTaskDetail";
 import { useScheduledTasks } from "../../hooks/useScheduledTasks";
@@ -59,6 +60,12 @@ export function ScheduleDetail({ taskId }: Props) {
   const { task } = useTaskDetail(taskId);
   const { tasks, status, error } = useScheduledTasks();
   const { runs, status: runsStatus, error: runsError } = useTaskRuns(taskId);
+  const getSchedulesScope = () =>
+    createSchedulesScope({
+      ...buildScheduleRosterValues(tasks, status, error),
+      ...(task ? buildOpenScheduleValues(task) : {}),
+      ...buildScheduleRunValues(runs, runsStatus, runsError),
+    });
 
   // Write half of the schedules surface, ENTITY side (the editor registers the
   // `schedule_draft_*` targets instead — see ScheduleForm). This route owns no
@@ -101,15 +108,17 @@ export function ScheduleDetail({ taskId }: Props) {
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/schedules"
       getWriteHandlers={getSurfaceWriteHandlers}
-      getScope={() =>
-        createSchedulesScope({
-          ...buildScheduleRosterValues(tasks, status, error),
-          ...(task ? buildOpenScheduleValues(task) : {}),
-          ...buildScheduleRunValues(runs, runsStatus, runsError),
-        })
-      }
+      getScope={getSchedulesScope}
     >
-      <ScheduleDetailBody taskId={taskId} />
+      <NonEditableContextMenu
+        sourceFeature="system"
+        surfaceName="matrx-user/schedules"
+        menuVersion={1}
+        getApplicationScope={getSchedulesScope}
+        contentSource={{ type: "raw" }}
+      >
+        <ScheduleDetailBody taskId={taskId} />
+      </NonEditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }

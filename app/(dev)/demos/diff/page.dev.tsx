@@ -110,7 +110,7 @@ export default function DiffDemoPage() {
       <div className="shrink-0 border-b border-border px-4 py-2">
         <h1 className="text-sm font-semibold">Diff System — dev playground</h1>
         <p className="text-xs text-muted-foreground">
-          Canonical core: <code>components/diff/DiffViewer</code>. Light =
+          Canonical core: <code>@ai-matrx/diff/react</code> DiffViewer. Light =
           custom text engine with word-level highlighting. Heavy = Monaco.
         </p>
       </div>

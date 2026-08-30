@@ -52,6 +52,7 @@ import { ContextMatchForm } from "./triggers/ContextMatchForm";
 import { VariablesEditor } from "./VariablesEditor";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 
 interface FormState {
   title: string;
@@ -69,7 +70,6 @@ interface FormState {
   triggerType: TriggerType;
   triggerConfig: Record<string, unknown>;
 }
-
 function makeDefault(
   task?: AgendaTask,
   initialAgentId?: string | null,
@@ -378,6 +378,14 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
       getWriteHandlers={getSurfaceWriteHandlers}
       getScope={getSchedulesScope}
     >
+      {/* context-menu-exempt: entity — schedule drafts have no registered attachable EntityTypeToken; create mode has no persisted id */}
+      <EditableContextMenu
+        sourceFeature="system"
+        surfaceName="matrx-user/schedules"
+        menuVersion={1}
+        getApplicationScope={getSchedulesScope}
+        contentSource={{ type: "raw" }}
+      >
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -728,6 +736,7 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt }: Props) {
           </Button>
         </div>
       </form>
+      </EditableContextMenu>
     </SurfaceRuntimeProvider>
   );
 }

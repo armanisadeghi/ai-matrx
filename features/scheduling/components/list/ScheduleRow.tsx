@@ -104,6 +104,7 @@ export function ScheduleRow({ task, kpis }: Props) {
 
   return (
     <div
+      data-schedule-id={task.id}
       className={cn(
         "group grid grid-cols-[1fr_auto] gap-3 items-center",
         "border border-border rounded-lg p-3 bg-card hover:bg-accent/30 transition-colors",

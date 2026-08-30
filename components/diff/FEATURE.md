@@ -1,25 +1,37 @@
-# Diff System (canonical)
+# Diff System — host wiring
 
-**Status:** active · **Owner dir:** `components/diff/`
+**Status:** active · **Owner dir:** `components/diff/` · **The product lives in
+`@ai-matrx/diff`** (`aidream/apps/shared/diff`), not here.
 
-The single canonical place to render a difference between two pieces of
-content anywhere in the app. One **headless core** picks between two
-engines so callers never wire diff internals by hand:
+Since **2026-08-30 (@ai-matrx/diff 0.2.0)** the whole diff product —
+`DiffViewer`, `TextDiff`, `DiffReview`, `InlineTextDiff`,
+`AnimatedDiffReveal`/`useDiffReveal`, the structured entity viewer
+(`DiffViewerShell` + views + field adapters) and the diff palette — ships from
+`@ai-matrx/diff/react`. The originals in this directory were **deleted**, not
+shimmed. **Change diff behaviour IN THE PACKAGE**, release it, and adopt here
+in the same session (THE SAME-SESSION LAW).
 
-| Engine | Component | Backed by | Use for |
-|---|---|---|---|
-| **light** | `text/TextDiff.tsx` | custom LCS engine (`@ai-matrx/diff/text`) | plain text, markdown, prose, version history, clipboard compares |
-| **heavy** | `code/CodeDiff.tsx` | Monaco `DiffEditor` (lazy) | source code, large inputs |
+What remains in this directory is host wiring only:
 
-> Two pre-existing structured frameworks remain and are **not** replaced:
-> `@ai-matrx/diff/structural` + `views/` + `adapters/` is the **structured
-> object/entity** diff (agent versions, note fields). This canonical text/
-> code system is for *content* diffs. They are complementary.
+| File | What it is |
+|---|---|
+| `code/CodeDiff.tsx` | The app's Monaco `DiffEditor` wrapper — the HOST HALF of the package's one injection seam. Tuning (`MONACO_DIFF_EDITOR_OPTIONS`) comes from the package; this file is the `next/dynamic({ssr:false})` boundary + theme lookup. |
+| `heavy-renderer-setup.ts` | Registers `CodeDiff` as the package's heavy renderer. Side-effect import from `app/DeferredSingletonWrapper.tsx`, so it runs at client-bundle eval, before any diff renders. |
+| `LegacyDiffChip.tsx` | Admin-only marker for a non-canonical diff renderer (app chrome, no diff logic). |
+
+Two Tailwind/theme facts a frontend agent must not lose:
+`app/globals.css` registers `@source "../node_modules/@ai-matrx/diff/dist"` (without
+it the package's utilities are never compiled), and this app defines the semantic
+token vocabulary itself, so it must **not** import `@ai-matrx/diff/styles.css`.
+
+Without a registered heavy renderer the package still renders a complete light
+diff, and an explicit `engine="monaco"` says so in its toolbar — it never fails
+silently.
 
 ## The core contract — import THIS
 
 ```tsx
-import { DiffViewer } from "@/components/diff/DiffViewer";
+import { DiffViewer } from "@ai-matrx/diff/react";
 
 <DiffViewer
   original={a}
@@ -51,7 +63,7 @@ overlay/router/Redux state, and renders identically as:
 ### Merge, don't just view — `DiffReview`
 
 ```tsx
-import { DiffReview } from "@/components/diff/DiffReview";
+import { DiffReview } from "@ai-matrx/diff/react";
 
 <DiffReview original={a} modified={b} onApply={(mergedText) => save(mergedText)} />
 ```
@@ -80,24 +92,14 @@ inline views. One computation produces both representations.
 
 ```
 components/diff/
-  DiffViewer.tsx              # ⭐ canonical headless core (engine router), read-only
-  DiffReview.tsx             # ⭐ per-hunk accept/reject MERGE tool → onApply(mergedText)
-  text/
-    TextDiff.tsx              # light core: inline + split + highlight, word-level, Swap toggle
-    diffColors.ts            # ⭐ ONE source of truth for diff colors (every renderer imports)
-    AnimatedDiffReveal.tsx    # single-pane human reader; animates a known edit landing
-    useDiffReveal.ts          # paced "fill the replacement in" reveal for a known before→after
-    engine/
-      types.ts                # DiffRow, InlineDiffLine, WordSegment, stats
-      computeTextDiff.ts      # line LCS + inline/aligned builders + stats
-      wordDiff.ts             # intra-line word/char LCS
-      hunks.ts               # getHunks + applyHunks (per-hunk merge model for DiffReview)
-  code/
-    CodeDiff.tsx              # heavy core: Monaco DiffEditor behind ONE next/dynamic({ssr:false})
-  adapters/
-    InlineTextDiff.tsx       # compact, self-sizing, chrome-less light diff (structured grid / markdown blocks)
-  engine/ views/              # (pre-existing) STRUCTURED entity diff — unchanged
+  code/CodeDiff.tsx          # host Monaco wrapper — the heavy-renderer seam
+  heavy-renderer-setup.ts    # registers it into @ai-matrx/diff (side-effect import)
+  LegacyDiffChip.tsx         # admin-only "non-canonical renderer" marker
 ```
+
+Everything else is `@ai-matrx/diff` — engines at `/text` and `/structural`, the
+viewer at `/react`. Its own contract doc is
+`aidream/apps/shared/diff/FEATURE.md`.
 
 ## Wrappers & integration
 
@@ -211,6 +213,19 @@ compare/merge), agent-emittable `matrx-diff` block, 3-way merge, since-last-seen
 > [`ROLLOUT_HANDOFF.md`](./ROLLOUT_HANDOFF.md) — pick-up-here backlog.
 
 ## Change Log
+
+- `2026-08-30` — claude: **The viewer moved INTO `@ai-matrx/diff` (0.2.0)** — THE
+  ALL-INCLUSIVE LAW / C23. `DiffViewer`, `DiffReview`, `TextDiff`,
+  `InlineTextDiff`, `AnimatedDiffReveal`/`useDiffReveal`, `diffColors`, and the
+  whole structured family (`DiffViewerShell`, `AllChangesView`,
+  `ChangesOnlyView`, `SummaryView`, `RawJsonView`, `DiffTemporalRow`,
+  the adapter registry/types and the six default adapters) were **deleted here**
+  and every import site now reads `@ai-matrx/diff/react` (C9 full elimination —
+  re-grep clean). What stayed: `code/CodeDiff.tsx` (now the registered heavy
+  renderer, consuming the package's `MONACO_DIFF_EDITOR_OPTIONS`),
+  `heavy-renderer-setup.ts`, and `LegacyDiffChip.tsx`. `app/globals.css` gained
+  the package `@source` line. Feature-specific adapters (agents, notes) stay in
+  their features and now implement the package's `FieldAdapter` contract.
 
 - `2026-08-29` — claude: **Engines extracted to `@ai-matrx/diff`** (C9 campaign): `text/engine/` and `engine/` deleted; every import now `@ai-matrx/diff/text` / `@ai-matrx/diff/structural`. The UI (viewers, adapters, views, colors, reveal) stays here.
 

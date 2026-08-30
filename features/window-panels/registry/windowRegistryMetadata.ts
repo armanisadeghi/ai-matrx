@@ -1268,7 +1268,7 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
   },
 
   // ── Diff Viewer ───────────────────────────────────────────────────────────
-  // Canonical diff core (components/diff/DiffViewer) in a movable window.
+  // Canonical diff core (@ai-matrx/diff/react DiffViewer) in a movable window.
   // Multi-instance + ephemeral: spawn one per "Compare …" action; live
   // comparisons are not restored across reloads.
   {

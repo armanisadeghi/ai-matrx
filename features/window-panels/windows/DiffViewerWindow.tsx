@@ -4,7 +4,7 @@
  * DiffViewerWindow
  *
  * A movable / resizable WindowPanel wrapper around the canonical headless
- * `DiffViewer` core (`components/diff/DiffViewer`). This is ONLY chrome —
+ * `DiffViewer` core (`@ai-matrx/diff/react`). This is ONLY chrome —
  * all diff logic lives in the core, so the same component also renders as
  * a route, modal, sheet, or inline region without this wrapper.
  *
