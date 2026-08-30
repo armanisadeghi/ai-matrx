@@ -17,7 +17,7 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { emitPayloadFence, emitPayloadJson } from "@ai-matrx/content-ir";
+import { emitPayloadFence, emitPayloadJson } from "@ai-matrx/content-ir/wire";
 
 export interface KindEmitTemplateProps {
   kind: string;

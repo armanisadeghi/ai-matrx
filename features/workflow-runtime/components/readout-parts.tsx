@@ -32,7 +32,7 @@ import KindInstanceRender from "@/features/content-ir/studio/components/KindInst
 import {
   NODE_OUTCOME_KIND,
   RUN_RESULT_KIND,
-} from "@ai-matrx/content-ir";
+} from "@ai-matrx/content-ir/wire";
 
 import { SettledOutputBody } from "./SettledOutputBody";
 

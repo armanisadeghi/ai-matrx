@@ -29,7 +29,7 @@
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { sanitizeInboundEnvelopeMetadata } from "@/features/content-ir/redux/render-block-envelope";
-import { sanitizeInboundPartialKindMetadata } from "@ai-matrx/content-ir";
+import { sanitizeInboundPartialKindMetadata } from "@ai-matrx/content-ir/wire";
 import { fromRenderBlock } from "@/features/files/blocks/image/adapters/from-render-block";
 
 /** Per-stream staleness gate, as returned by `makePartialKindStalenessGate`. */
