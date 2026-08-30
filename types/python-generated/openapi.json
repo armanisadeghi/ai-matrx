@@ -17321,6 +17321,90 @@
         }
       }
     },
+    "/aweber/public/status": {
+      "get": {
+        "tags": [
+          "AWeber Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_aweber_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AWeberServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/getresponse/public/status": {
+      "get": {
+        "tags": [
+          "GetResponse Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_getresponse_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetResponseServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/surveymonkey/public/status": {
+      "get": {
+        "tags": [
+          "SurveyMonkey Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_surveymonkey_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SurveyMonkeyStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/slido/public/status": {
+      "get": {
+        "tags": [
+          "Slido Status Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_slido_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlidoStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/superhuman/public/status": {
       "get": {
         "tags": [
@@ -17707,6 +17791,49 @@
         }
       }
     },
+    "/environment-agency-flood/public/station": {
+      "get": {
+        "tags": [
+          "Environment Agency Flood Monitoring Integrations"
+        ],
+        "summary": "Public Station",
+        "operationId": "public_station_environment_agency_flood_public_station_get",
+        "parameters": [
+          {
+            "name": "station_reference",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{3,20}$",
+              "title": "Station Reference"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvironmentAgencyPublicStation"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/rcsb-pdb/public/entry": {
       "get": {
         "tags": [
@@ -17906,6 +18033,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DataGovUKPublicDataset"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bls-public-data/public/latest": {
+      "get": {
+        "tags": [
+          "BLS Public Data Integrations"
+        ],
+        "summary": "Public Latest",
+        "operationId": "public_latest_bls_public_data_public_latest_get",
+        "parameters": [
+          {
+            "name": "series_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9][A-Z0-9_#-]{2,49}$",
+              "title": "Series Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BLSPublicLatestObservation"
                 }
               }
             }
@@ -69428,6 +69598,47 @@
   },
   "components": {
     "schemas": {
+      "AWeberServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "aweber_public_service_status",
+            "title": "Kind",
+            "default": "aweber_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "aweber",
+            "title": "Provider",
+            "default": "aweber"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.aweber.com/",
+            "title": "Status Page",
+            "default": "https://status.aweber.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "AWeberServiceStatus",
+        "description": "Safe aggregate status projection for AWeber's fixed status page."
+      },
       "AcceptBriefResult": {
         "properties": {
           "node_id": {
@@ -79301,6 +79512,80 @@
         ],
         "title": "AwsPriceListOffer",
         "description": "Safe projection of one AWS Price List service offer."
+      },
+      "BLSPublicLatestObservation": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "bls_public_latest_observation",
+            "title": "Kind",
+            "default": "bls_public_latest_observation"
+          },
+          "provider": {
+            "type": "string",
+            "const": "bls_public_data",
+            "title": "Provider",
+            "default": "bls_public_data"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "series_id": {
+            "type": "string",
+            "maxLength": 50,
+            "pattern": "^[A-Z0-9][A-Z0-9_#-]{2,49}$",
+            "title": "Series Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "year": {
+            "type": "integer",
+            "maximum": 2200,
+            "minimum": 1900,
+            "title": "Year"
+          },
+          "period": {
+            "type": "string",
+            "pattern": "^[A-Z][0-9]{2}$",
+            "title": "Period"
+          },
+          "period_name": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Period Name"
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "^-?[0-9]+(?:\\.[0-9]+)?$",
+            "title": "Value"
+          },
+          "preliminary": {
+            "type": "boolean",
+            "title": "Preliminary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "series_id",
+          "canonical_url",
+          "year",
+          "period",
+          "period_name",
+          "value",
+          "preliminary"
+        ],
+        "title": "BLSPublicLatestObservation",
+        "description": "Safe factual projection of one latest published BLS series point."
       },
       "BackfillPassResult": {
         "properties": {
@@ -115188,6 +115473,114 @@
         ],
         "title": "EntryFidelity"
       },
+      "EnvironmentAgencyPublicStation": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "environment_agency_public_station",
+            "title": "Kind",
+            "default": "environment_agency_public_station"
+          },
+          "provider": {
+            "type": "string",
+            "const": "environment_agency_flood",
+            "title": "Provider",
+            "default": "environment_agency_flood"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "station_reference": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{3,20}$",
+            "title": "Station Reference"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Label"
+          },
+          "river_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "River Name"
+          },
+          "town": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Town"
+          },
+          "catchment_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catchment Name"
+          },
+          "date_opened": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date Opened"
+          },
+          "active": {
+            "type": "boolean",
+            "const": true,
+            "title": "Active",
+            "default": true
+          },
+          "attribution": {
+            "type": "string",
+            "const": "This uses Environment Agency flood and river level data from the real-time data API (Beta).",
+            "title": "Attribution",
+            "default": "This uses Environment Agency flood and river level data from the real-time data API (Beta)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "station_reference",
+          "canonical_url",
+          "label"
+        ],
+        "title": "EnvironmentAgencyPublicStation",
+        "description": "Safe factual identity projection of one active public station."
+      },
       "EscrowRecoverBody": {
         "properties": {
           "session_id": {
@@ -124575,6 +124968,47 @@
           "success"
         ],
         "title": "GetHtmlResult"
+      },
+      "GetResponseServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "getresponse_public_service_status",
+            "title": "Kind",
+            "default": "getresponse_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "getresponse",
+            "title": "Provider",
+            "default": "getresponse"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.getresponse.com/",
+            "title": "Status Page",
+            "default": "https://status.getresponse.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "GetResponseServiceStatus",
+        "description": "Safe aggregate status projection for GetResponse's fixed status page."
       },
       "GetTextCommand": {
         "properties": {
@@ -184633,6 +185067,56 @@
         "title": "SlideSpec",
         "description": "One slide of a generated presentation."
       },
+      "SlidoStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "slido_official_service_status",
+            "title": "Kind",
+            "default": "slido_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "slido",
+            "title": "Provider",
+            "default": "slido"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.slido.com",
+            "title": "Status Url",
+            "default": "https://status.slido.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SlidoStatusResult",
+        "description": "Safe projection of Slido's high-level service status."
+      },
       "SmkPublicArtwork": {
         "properties": {
           "__kind": {
@@ -189338,6 +189822,56 @@
         ],
         "title": "SurfaceManifest",
         "description": "The server's authoritative view of one surface's tool manifest.\n\nSurface authors compare this against their local tool registrations on\nevery boot — a drift means either the DB or the surface code is stale\nand needs reconciliation per TOOL_ROUTING_RULES.md §11.\n\nSources can be one of:\n  - ``db_surface`` — resolved from ``ui.ui_surface`` +\n    ``public.tool_surface_defaults`` (the common path; 60+ matrx-user\n    surfaces).\n  - ``capability`` — resolved from a Python-registered ``Capability``\n    in matrx-ai's registry (payload-bearing extras like ``editor-state``,\n    ``sandbox-fs``, ``browser-dom``)."
+      },
+      "SurveyMonkeyStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "surveymonkey_official_service_status",
+            "title": "Kind",
+            "default": "surveymonkey_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "surveymonkey",
+            "title": "Provider",
+            "default": "surveymonkey"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.surveymonkey.com",
+            "title": "Status Url",
+            "default": "https://status.surveymonkey.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "SurveyMonkeyStatusResult",
+        "description": "Safe projection of SurveyMonkey's high-level service status."
       },
       "SweepRequest": {
         "properties": {

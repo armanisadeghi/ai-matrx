@@ -6974,6 +6974,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/aweber/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_aweber_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/getresponse/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_getresponse_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/surveymonkey/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_surveymonkey_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/slido/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_slido_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/superhuman/public/status": {
         parameters: {
             query?: never;
@@ -7195,6 +7263,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/environment-agency-flood/public/station": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Station */
+        get: operations["public_station_environment_agency_flood_public_station_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rcsb-pdb/public/entry": {
         parameters: {
             query?: never;
@@ -7272,6 +7357,23 @@ export interface paths {
         };
         /** Public Dataset */
         get: operations["public_dataset_data_gov_uk_public_dataset_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bls-public-data/public/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Latest */
+        get: operations["public_latest_bls_public_data_public_latest_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -26806,6 +26908,38 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AWeberServiceStatus
+         * @description Safe aggregate status projection for AWeber's fixed status page.
+         */
+        AWeberServiceStatus: {
+            /**
+             * Kind
+             * @default aweber_public_service_status
+             * @constant
+             */
+            __kind?: "aweber_public_service_status";
+            /**
+             * Provider
+             * @default aweber
+             * @constant
+             */
+            provider?: "aweber";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.aweber.com/
+             * @constant
+             */
+            status_page?: "https://status.aweber.com/";
+        };
         /** AcceptBriefResult */
         AcceptBriefResult: {
             /** Node Id */
@@ -30983,6 +31117,44 @@ export interface components {
             current_version_path: string;
             /** Current Region Index Path */
             current_region_index_path: string;
+        };
+        /**
+         * BLSPublicLatestObservation
+         * @description Safe factual projection of one latest published BLS series point.
+         */
+        BLSPublicLatestObservation: {
+            /**
+             * Kind
+             * @default bls_public_latest_observation
+             * @constant
+             */
+            __kind?: "bls_public_latest_observation";
+            /**
+             * Provider
+             * @default bls_public_data
+             * @constant
+             */
+            provider?: "bls_public_data";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Series Id */
+            series_id: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Year */
+            year: number;
+            /** Period */
+            period: string;
+            /** Period Name */
+            period_name: string;
+            /** Value */
+            value: string;
+            /** Preliminary */
+            preliminary: boolean;
         };
         /**
          * BackfillPassResult
@@ -44891,6 +45063,56 @@ export interface components {
          * @enum {string}
          */
         EntryFidelity: "event_mirror" | "native";
+        /**
+         * EnvironmentAgencyPublicStation
+         * @description Safe factual identity projection of one active public station.
+         */
+        EnvironmentAgencyPublicStation: {
+            /**
+             * Kind
+             * @default environment_agency_public_station
+             * @constant
+             */
+            __kind?: "environment_agency_public_station";
+            /**
+             * Provider
+             * @default environment_agency_flood
+             * @constant
+             */
+            provider?: "environment_agency_flood";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Station Reference */
+            station_reference: string;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Label */
+            label: string;
+            /** River Name */
+            river_name?: string | null;
+            /** Town */
+            town?: string | null;
+            /** Catchment Name */
+            catchment_name?: string | null;
+            /** Date Opened */
+            date_opened?: string | null;
+            /**
+             * Active
+             * @default true
+             * @constant
+             */
+            active?: true;
+            /**
+             * Attribution
+             * @default This uses Environment Agency flood and river level data from the real-time data API (Beta).
+             * @constant
+             */
+            attribution?: "This uses Environment Agency flood and river level data from the real-time data API (Beta).";
+        };
         /** EscrowRecoverBody */
         EscrowRecoverBody: {
             /** Session Id */
@@ -48656,6 +48878,38 @@ export interface components {
             url?: string | null;
             /** Html */
             html?: string | null;
+        };
+        /**
+         * GetResponseServiceStatus
+         * @description Safe aggregate status projection for GetResponse's fixed status page.
+         */
+        GetResponseServiceStatus: {
+            /**
+             * Kind
+             * @default getresponse_public_service_status
+             * @constant
+             */
+            __kind?: "getresponse_public_service_status";
+            /**
+             * Provider
+             * @default getresponse
+             * @constant
+             */
+            provider?: "getresponse";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.getresponse.com/
+             * @constant
+             */
+            status_page?: "https://status.getresponse.com/";
         };
         /** GetTextCommand */
         GetTextCommand: {
@@ -73513,6 +73767,43 @@ export interface components {
             layout?: "title" | "title_content" | "section" | "blank";
         };
         /**
+         * SlidoStatusResult
+         * @description Safe projection of Slido's high-level service status.
+         */
+        SlidoStatusResult: {
+            /**
+             * Kind
+             * @default slido_official_service_status
+             * @constant
+             */
+            __kind?: "slido_official_service_status";
+            /**
+             * Provider
+             * @default slido
+             * @constant
+             */
+            provider?: "slido";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.slido.com
+             * @constant
+             */
+            status_url?: "https://status.slido.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
+        };
+        /**
          * SmkPublicArtwork
          * @description Safe bounded projection of one provider-marked public-domain artwork.
          */
@@ -75574,6 +75865,43 @@ export interface components {
             client_tools?: components["schemas"]["ManifestClientToolEntry"][];
             /** Intro */
             intro?: string | null;
+        };
+        /**
+         * SurveyMonkeyStatusResult
+         * @description Safe projection of SurveyMonkey's high-level service status.
+         */
+        SurveyMonkeyStatusResult: {
+            /**
+             * Kind
+             * @default surveymonkey_official_service_status
+             * @constant
+             */
+            __kind?: "surveymonkey_official_service_status";
+            /**
+             * Provider
+             * @default surveymonkey
+             * @constant
+             */
+            provider?: "surveymonkey";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.surveymonkey.com
+             * @constant
+             */
+            status_url?: "https://status.surveymonkey.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /** SweepRequest */
         SweepRequest: {
@@ -96284,6 +96612,86 @@ export interface operations {
             };
         };
     };
+    public_status_aweber_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AWeberServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_getresponse_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetResponseServiceStatus"];
+                };
+            };
+        };
+    };
+    public_status_surveymonkey_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyMonkeyStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_slido_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlidoStatusResult"];
+                };
+            };
+        };
+    };
     public_status_superhuman_public_status_get: {
         parameters: {
             query?: never;
@@ -96599,6 +97007,37 @@ export interface operations {
             };
         };
     };
+    public_station_environment_agency_flood_public_station_get: {
+        parameters: {
+            query: {
+                station_reference: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentAgencyPublicStation"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     public_entry_rcsb_pdb_public_entry_get: {
         parameters: {
             query: {
@@ -96741,6 +97180,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DataGovUKPublicDataset"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_latest_bls_public_data_public_latest_get: {
+        parameters: {
+            query: {
+                series_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BLSPublicLatestObservation"];
                 };
             };
             /** @description Validation Error */
