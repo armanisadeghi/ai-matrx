@@ -31,7 +31,7 @@ importers:
         version: 0.7.1(react@19.2.7)
       '@ai-matrx/data':
         specifier: latest
-        version: 0.3.0
+        version: 0.4.0
       '@ai-matrx/design-system':
         specifier: latest
         version: 0.3.1(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -843,10 +843,6 @@ packages:
 
   '@ai-matrx/content-ir@0.9.0':
     resolution: {integrity: sha512-waZZuB0CX9NkphvIwWXA9F9ztlH2Fpj7zOpHem+MvtuSfeHqc1Cuhy1Xx4pxqREf5Y+pzVRHpxVFPnTBAA8HXQ==}
-    engines: {node: '>=20'}
-
-  '@ai-matrx/data@0.3.0':
-    resolution: {integrity: sha512-YlcJtuNvgDpz+Gve6cjZl91AyAevWN5mOZCbKh9/A0uAjtOE7gN2AGzKUdJpPcqVPHAa1P46lDi4HKUEC9rQnA==}
     engines: {node: '>=20'}
 
   '@ai-matrx/data@0.4.0':
@@ -13130,8 +13126,6 @@ snapshots:
   '@ai-matrx/content-ir@0.9.0':
     dependencies:
       ajv: 8.20.0
-
-  '@ai-matrx/data@0.3.0': {}
 
   '@ai-matrx/data@0.4.0': {}
 
