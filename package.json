@@ -278,6 +278,7 @@
         "@ai-matrx/diff": "latest",
         "@ai-matrx/icons": "latest",
         "@ai-matrx/kit": "latest",
+        "@ai-matrx/media": "latest",
         "@ai-matrx/tap-target": "latest",
         "@ai-sdk/google": "^3.0.43",
         "@anthropic-ai/sdk": "latest",
