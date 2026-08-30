@@ -54,7 +54,7 @@ import type {
   MessagesEntry,
   MessageRecord,
 } from "@/features/agents/redux/execution-system/messages/messages.slice";
-import { extractFlatText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { extractInspectableText } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import type { InstanceUIStateSlice } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import type {
   InstanceVariableValuesState,
@@ -510,7 +510,8 @@ function HistoryTab({ data }: { data: MessagesEntry | undefined }) {
         <div className="space-y-1.5">
           {orderedRecords.map((record) => {
             const isExpanded = expandedMessage === record.id;
-            const preview = extractFlatText(record);
+            // Raw-faithful: structured (non-text) content previews as its JSON.
+            const preview = extractInspectableText(record).text;
             return (
               <div
                 key={record.id}

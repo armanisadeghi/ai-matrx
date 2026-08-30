@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
-  extractFlatText,
+  extractInspectableText,
   selectMessageById,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { selectInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
@@ -91,7 +91,9 @@ export function MessagePreviewContent({
   const conversation = useAppSelector(selectInstance(conversationId));
   const [copied, setCopied] = useState(false);
 
-  const text = message ? extractFlatText(message) : "";
+  // Raw-faithful: structured (non-text) payloads preview as their stored
+  // JSON instead of a blank ("screen lies" class fix).
+  const text = message ? extractInspectableText(message).text : "";
   const toolCalls = countToolCalls(message?.content);
 
   const handleCopy = async () => {

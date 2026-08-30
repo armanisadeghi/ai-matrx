@@ -73,7 +73,7 @@ import {
   selectConversationMessages,
   selectApiEndpointMode,
   selectMessageCount,
-  extractFlatText,
+  extractInspectableText,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import type { MessageRecord } from "@/features/agents/redux/execution-system/messages/messages.slice";
 
@@ -557,7 +557,8 @@ function MessageCard({
         ? "text-emerald-400"
         : "text-muted-foreground";
 
-  const preview = extractFlatText(record).slice(0, 120);
+  // Raw-faithful: structured (non-text) content previews as its JSON.
+  const preview = extractInspectableText(record).text.slice(0, 120);
 
   return (
     <div className="border-b border-border/50 last:border-0">

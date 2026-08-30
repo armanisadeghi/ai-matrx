@@ -37,7 +37,7 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
 import { makeSelectConversationHistoryScope } from "@/features/agents/redux/conversation-history/selectors";
 import {
-  extractFlatText,
+  extractInspectableText,
   selectLatestAssistantMessageId,
   selectMessageById,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -340,7 +340,9 @@ function ChatHistoryWindowInner({
       : undefined,
   );
   const lastRunText = lastAssistantRecord
-    ? extractFlatText(lastAssistantRecord)
+    ? // Raw-faithful: a structured (non-text) result shows its stored JSON,
+      // never a blank.
+      extractInspectableText(lastAssistantRecord).text
     : "";
 
   return (
