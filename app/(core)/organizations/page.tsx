@@ -145,9 +145,17 @@ function OrgCard({
       <span className={`absolute inset-x-0 top-0 h-1 ${meta.bar} opacity-80`} />
       {isPending && (
         <div className="absolute inset-0 bg-background/70 backdrop-blur-sm z-10 flex items-center justify-center">
-          <span className="text-sm font-medium text-muted-foreground">
+          <EntityRef
+            token="organization"
+            id={org.id}
+            name={org.name}
+            href={href}
+            showIcon={false}
+            className="text-sm text-muted-foreground"
+            labelClassName="font-medium"
+          >
             Opening {org.name}…
-          </span>
+          </EntityRef>
         </div>
       )}
 

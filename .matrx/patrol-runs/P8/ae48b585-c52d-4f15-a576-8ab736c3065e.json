@@ -20,6 +20,21 @@
       ],
       "previousEventHash": null,
       "eventHash": "b3f6b44c54bf04553f4d1f30eb2e636204b71574c58c736fc7c75855dee4d252"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:23:52.462Z",
+      "actor": "p8-eradication-controller-20260830",
+      "summary": "First compact/control wave repaired across 15 bounded files; exact candidate published for baseline-delta gates.",
+      "evidence": [
+        "candidate=18a0f0ce19e24dd879242cb06f850aaa95ca0392",
+        "preserved-ref=refs/heads/codex/p8-eradication-20260830-batch1",
+        "mapping classes: ReactNode inline content, submit-button pendingText, select placeholders, compact button labels, contextual full-region loader",
+        "unrelated shared-checkout dirty paths were not staged or edited"
+      ],
+      "previousEventHash": "b3f6b44c54bf04553f4d1f30eb2e636204b71574c58c736fc7c75855dee4d252",
+      "eventHash": "5f6b29347184e05596f779f80f6d35e85e16afe3201d6c01df443b0fe13cb8b1"
     }
   ]
 }

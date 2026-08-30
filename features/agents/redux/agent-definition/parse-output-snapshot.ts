@@ -54,36 +54,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string");
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
 }
 
 function fail(path: string, expected: string): never {
   throw new TypeError(`[agent-version-snapshot] ${path} must be ${expected}`);
 }
 
-function requiredField(
-  record: Record<string, unknown>,
-  key: string,
-): unknown {
+function requiredField(record: Record<string, unknown>, key: string): unknown {
   if (!Object.prototype.hasOwnProperty.call(record, key)) {
     fail(key, "present in the RPC row");
   }
   return record[key];
 }
 
-function requiredString(
-  record: Record<string, unknown>,
-  key: string,
-): string {
+function requiredString(record: Record<string, unknown>, key: string): string {
   const value = requiredField(record, key);
   if (typeof value !== "string") fail(key, "a string");
   return value;
 }
 
-function requiredNumber(
-  record: Record<string, unknown>,
-  key: string,
-): number {
+function requiredNumber(record: Record<string, unknown>, key: string): number {
   const value = requiredField(record, key);
   if (typeof value !== "number" || !Number.isFinite(value)) {
     fail(key, "a finite number");
@@ -133,11 +126,7 @@ function validateOptionalNumber(
   }
 }
 
-type SchemaNode = AgentDefinition["outputSchema"] extends infer Envelope | null
-  ? Envelope extends { schema: infer Schema }
-    ? Schema
-    : never
-  : never;
+type SchemaNode = NonNullable<AgentDefinition["outputSchema"]>["schema"];
 type SchemaDefinition = SchemaNode | boolean;
 
 function parseSchemaDefinition(value: unknown, path: string): SchemaDefinition {
@@ -154,8 +143,7 @@ function parseSchemaNode(value: unknown, path: string): SchemaNode {
       (typeof type === "string" && JSON_SCHEMA_TYPES.has(type)) ||
       (Array.isArray(type) &&
         type.every(
-          (entry) =>
-            typeof entry === "string" && JSON_SCHEMA_TYPES.has(entry),
+          (entry) => typeof entry === "string" && JSON_SCHEMA_TYPES.has(entry),
         ));
     if (!valid) fail(`${path}.type`, "a valid JSON Schema type or type array");
   }
@@ -251,10 +239,7 @@ export function parseAgentOutputSchema(
   if (raw === null) return null;
   if (!isRecord(raw)) fail("output_schema", "null or an object");
   if (typeof raw.name !== "string" || !OUTPUT_SCHEMA_NAME.test(raw.name)) {
-    fail(
-      "output_schema.name",
-      "1-64 letters, numbers, underscores, or dashes",
-    );
+    fail("output_schema.name", "1-64 letters, numbers, underscores, or dashes");
   }
   if (raw.description !== undefined && typeof raw.description !== "string") {
     fail("output_schema.description", "a string");
@@ -349,7 +334,7 @@ function parseMatrxDirectives(raw: unknown): MatrxDirectivesConfig {
     raw.apply_policy !== "ask" &&
     raw.apply_policy !== "off"
   ) {
-    fail('matrx_actions.apply_policy', '"auto", "ask", or "off"');
+    fail("matrx_actions.apply_policy", '"auto", "ask", or "off"');
   }
   if (raw.auto_apply !== undefined && typeof raw.auto_apply !== "boolean") {
     fail("matrx_actions.auto_apply", "a boolean");
@@ -392,11 +377,12 @@ export function parseAgentVersionSnapshot(raw: unknown): AgentVersionSnapshot {
     model_id: requiredString(raw, "model_id"),
     model_tiers: parseModelTiers(requiredField(raw, "model_tiers")),
     settings: parseAgentSettings(requiredField(raw, "settings"), parseContext),
-    output_schema: parseAgentOutputSchema(
-      requiredField(raw, "output_schema"),
-    ),
+    output_schema: parseAgentOutputSchema(requiredField(raw, "output_schema")),
     tools: requiredStringArray(raw, "tools"),
-    custom_tools: parseCustomTools(requiredField(raw, "custom_tools"), parseContext),
+    custom_tools: parseCustomTools(
+      requiredField(raw, "custom_tools"),
+      parseContext,
+    ),
     context_policies: parseAgentContextPolicies(
       requiredField(raw, "context_policies"),
       parseContext,

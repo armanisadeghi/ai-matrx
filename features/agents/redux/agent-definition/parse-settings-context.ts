@@ -54,7 +54,12 @@ function isJsonValue(
 }
 
 function isJsonRecord(value: unknown): value is Record<string, JsonValue> {
-  return !Array.isArray(value) && isJsonValue(value) && value !== null;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    isJsonValue(value)
+  );
 }
 
 function isOptionalString(value: JsonValue | undefined): boolean {

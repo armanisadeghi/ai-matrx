@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P2",
-  "runId": "2026-08-18-weekly",
-  "state": "delivered",
-  "updatedAt": "2026-08-29T14:18:20.167Z",
-  "summary": "Delivered certified P2 repair: integrated on main and first shipped in v0.4.779; no redundant release created.",
-  "source": "2026-08-18-weekly.json",
-  "eventHash": "5454a4efac3b1de9232f3e6fa8dff8aa68d6cba52fb9531ec8ca98e87b9f4575"
+  "runId": "20260830T142407Z",
+  "state": "fixing",
+  "updatedAt": "2026-08-30T14:24:09.094Z",
+  "summary": "Implementing disjoint site action, list service, and presentation seams before integrating SitesPortfolio.",
+  "source": "20260830T142407Z.json",
+  "eventHash": "3ae0b893975bbcff1d43e1ad9a445ae0e0fad9b6af8a10501cd51bd8867c47a8"
 }

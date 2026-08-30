@@ -110,7 +110,7 @@ describe("Unwired copy config", () => {
     expect(variants.map((variant) => variant.label)).toEqual([
       "Finish-the-wiring brief",
     ]);
-    await expect(variants[0]?.build?.()).resolves.toContain(
+    expect(await variants[0]?.build?.()).toContain(
       "Finish this purpose-built but unwired artifact",
     );
   });

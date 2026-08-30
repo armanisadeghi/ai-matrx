@@ -7,7 +7,7 @@ import {
   joinChannel
 } from '../utils/slackUtils';
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
-import { RotateCcw, X } from 'lucide-react';
+import { ExternalLink, RotateCcw, X } from 'lucide-react';
 
 interface SlackManagerProps {
   tokenData: SlackTokenResponse | { access_token: string };
@@ -373,7 +373,26 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                                           <svg className="w-4 h-4 text-muted-foreground mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                                           </svg>
-                                          <span className="text-sm font-medium">{file.name}</span>
+                                          {file.permalink ? (
+                                              <a
+                                                  href={file.permalink}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  className="inline-flex min-w-0 items-center gap-1 text-sm font-medium underline-offset-2 hover:text-primary hover:underline"
+                                                  title={`Open ${file.name} in Slack`}
+                                                  aria-label={`Open ${file.name} in Slack`}
+                                              >
+                                                <span className="truncate">{file.name}</span>
+                                                <ExternalLink aria-hidden="true" className="h-3 w-3 shrink-0" />
+                                              </a>
+                                          ) : (
+                                              <span
+                                                  className="text-sm font-medium"
+                                                  title="Slack did not provide a link for this file"
+                                              >
+                                                Slack file link unavailable
+                                              </span>
+                                          )}
                                         </div>
                                         {file.mimetype.startsWith('image/') && file.thumb_360 && (
                                             <div className="mt-2">

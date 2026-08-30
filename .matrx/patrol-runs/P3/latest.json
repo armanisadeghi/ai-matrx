@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "20260830T141852Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:18:53.739Z",
-  "summary": "Verified provider-sync mobile header defect; beginning bounded canonical responsive repair while detector machinery runs in a disjoint scripts-only unit.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:23:57.878Z",
+  "summary": "Provider-sync responsive toolbar repair is preserved at exact candidate 141d52a518e50714c865419f020c0aa81f028566; requesting independent four-quadrant certification.",
   "source": "20260830T141852Z.json",
-  "eventHash": "d15864a8f230c2a2cc4c3761810f2b224b7de3fef27228a9b01ec29abc521020"
+  "eventHash": "49ff609d56c2fca1969d31194294afce11fadc3b97ce97aec9333c43c3a5e937"
 }

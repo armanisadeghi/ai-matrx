@@ -16934,6 +16934,48 @@
         }
       }
     },
+    "/quip/public/status": {
+      "get": {
+        "tags": [
+          "Quip Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_quip_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuipStatusResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/patreon/public/status": {
+      "get": {
+        "tags": [
+          "Patreon Integrations"
+        ],
+        "summary": "Public Status",
+        "operationId": "public_status_patreon_public_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PatreonServiceStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/framer/public/status": {
       "get": {
         "tags": [
@@ -17111,6 +17153,50 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/OBISPublicTaxon"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/worms/public/taxon": {
+      "get": {
+        "tags": [
+          "WoRMS Integrations"
+        ],
+        "summary": "Public Taxon",
+        "operationId": "public_taxon_worms_public_taxon_get",
+        "parameters": [
+          {
+            "name": "aphia_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "maximum": 2147483647,
+              "minimum": 1,
+              "title": "Aphia Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WoRMSPublicTaxon"
                 }
               }
             }
@@ -152850,6 +152936,47 @@
         "type": "object",
         "title": "PatchFolderRequest"
       },
+      "PatreonServiceStatus": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "patreon_public_service_status",
+            "title": "Kind",
+            "default": "patreon_public_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "patreon",
+            "title": "Provider",
+            "default": "patreon"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "indicator": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 3,
+            "title": "Indicator"
+          },
+          "status_page": {
+            "type": "string",
+            "const": "https://status.patreon.com/",
+            "title": "Status Page",
+            "default": "https://status.patreon.com/"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator"
+        ],
+        "title": "PatreonServiceStatus",
+        "description": "Safe aggregate status projection for Patreon's fixed status page."
+      },
       "PauseRequest": {
         "properties": {
           "organization_id": {
@@ -162672,6 +162799,56 @@
           "urls"
         ],
         "title": "QuickScrapeRequest"
+      },
+      "QuipStatusResult": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "quip_official_service_status",
+            "title": "Kind",
+            "default": "quip_official_service_status"
+          },
+          "provider": {
+            "type": "string",
+            "const": "quip",
+            "title": "Provider",
+            "default": "quip"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "status_url": {
+            "type": "string",
+            "const": "https://status.quip.com",
+            "title": "Status Url",
+            "default": "https://status.quip.com"
+          },
+          "indicator": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minor",
+              "major",
+              "critical"
+            ],
+            "title": "Indicator"
+          },
+          "operational": {
+            "type": "boolean",
+            "title": "Operational"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "indicator",
+          "operational"
+        ],
+        "title": "QuipStatusResult",
+        "description": "Safe projection of Quip's high-level production-cloud status."
       },
       "RaceRequest": {
         "properties": {
@@ -203607,6 +203784,117 @@
         ],
         "title": "WireReplayStepOut",
         "description": "One ARM of a Level-1 wire replay (`hindsight.replay_step`, C-16).\n\nArms of one replay share `replay_group_id`; the control arm (empty `delta`)\nis the baseline every candidate's verdict is read against, so a client must\nrender the group, never a single row."
+      },
+      "WoRMSPublicTaxon": {
+        "properties": {
+          "__kind": {
+            "type": "string",
+            "const": "worms_public_taxon",
+            "title": "Kind",
+            "default": "worms_public_taxon"
+          },
+          "provider": {
+            "type": "string",
+            "const": "worms",
+            "title": "Provider",
+            "default": "worms"
+          },
+          "access": {
+            "type": "string",
+            "const": "public_no_auth",
+            "title": "Access",
+            "default": "public_no_auth"
+          },
+          "aphia_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Aphia Id"
+          },
+          "canonical_url": {
+            "type": "string",
+            "maxLength": 150,
+            "minLength": 1,
+            "title": "Canonical Url"
+          },
+          "scientific_name": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Scientific Name"
+          },
+          "authority": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Authority"
+          },
+          "rank": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Rank"
+          },
+          "status": {
+            "type": "string",
+            "const": "accepted",
+            "title": "Status",
+            "default": "accepted"
+          },
+          "valid_aphia_id": {
+            "type": "integer",
+            "maximum": 2147483647,
+            "minimum": 1,
+            "title": "Valid Aphia Id"
+          },
+          "valid_name": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Valid Name"
+          },
+          "valid_authority": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Valid Authority"
+          },
+          "is_marine": {
+            "type": "boolean",
+            "const": true,
+            "title": "Is Marine",
+            "default": true
+          },
+          "is_brackish": {
+            "type": "boolean",
+            "title": "Is Brackish"
+          },
+          "is_freshwater": {
+            "type": "boolean",
+            "title": "Is Freshwater"
+          },
+          "is_terrestrial": {
+            "type": "boolean",
+            "title": "Is Terrestrial"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "aphia_id",
+          "canonical_url",
+          "scientific_name",
+          "authority",
+          "rank",
+          "valid_aphia_id",
+          "valid_name",
+          "valid_authority",
+          "is_brackish",
+          "is_freshwater",
+          "is_terrestrial"
+        ],
+        "title": "WoRMSPublicTaxon",
+        "description": "Safe factual projection of one accepted public WoRMS taxon."
       },
       "WooCommerceProductQueryResult": {
         "properties": {

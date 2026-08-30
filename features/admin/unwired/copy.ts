@@ -14,6 +14,8 @@ export interface UnwiredCopyContext {
   scanAge: number | null;
 }
 
+export const UNWIRED_STALE_AFTER_DAYS = 7;
+
 /** The finding as readable text — shared by the rendered row and copy paths. */
 export function unwiredFindingContent(finding: UnwiredFinding): string {
   return [
@@ -42,7 +44,7 @@ function coverageWarnings({
   return [
     ...problems,
     ...report.partial.map((note) => `Partial scan: ${note}`),
-    ...(scanAge !== null && scanAge > 7
+    ...(scanAge !== null && scanAge > UNWIRED_STALE_AFTER_DAYS
       ? [
           `Snapshot is ${scanAge} days old. Refresh it with pnpm check:unwired:write.`,
         ]

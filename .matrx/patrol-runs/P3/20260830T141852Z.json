@@ -29,6 +29,20 @@
       ],
       "previousEventHash": "107afc1c7799cdebeb272d6af444573a259aa68736caf587f7cdaa124502c17a",
       "eventHash": "d15864a8f230c2a2cc4c3761810f2b224b7de3fef27228a9b01ec29abc521020"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:23:57.878Z",
+      "actor": "p3-eradication",
+      "summary": "Provider-sync responsive toolbar repair is preserved at exact candidate 141d52a518e50714c865419f020c0aa81f028566; requesting independent four-quadrant certification.",
+      "evidence": [
+        "Owned path delta from pre-edit base 79ed448edf: ProviderSyncDashboard toolbar, feature changelog, responsive regression test.",
+        "Local in-app Browser: 375x812 light/dark no overlaps or overflow, 44px actions; 1440x900 light/dark compact 45px toolbar and 28px actions.",
+        "Focused Jest 2/2 passed; post-edit type-check failures are concurrent in AdvancedMenu test, UnwiredConsole, and parse-messages-variables, with no owned-path diagnostic."
+      ],
+      "previousEventHash": "d15864a8f230c2a2cc4c3761810f2b224b7de3fef27228a9b01ec29abc521020",
+      "eventHash": "49ff609d56c2fca1969d31194294afce11fadc3b97ce97aec9333c43c3a5e937"
     }
   ]
 }

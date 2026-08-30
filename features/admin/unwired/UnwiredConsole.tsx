@@ -17,13 +17,16 @@ import {
   type UnwiredHistoryPoint,
   type UnwiredReport,
 } from "@/scripts/unwired/types";
-import { buildUnwiredCopyConfig, unwiredFindingContent } from "./copy";
+import {
+  buildUnwiredCopyConfig,
+  UNWIRED_STALE_AFTER_DAYS,
+  unwiredFindingContent,
+} from "./copy";
 
 function findingKey(finding: UnwiredFinding): string {
   return `${finding.repository}:${finding.file}:${finding.line}:${finding.symbol}`;
 }
 
-const STALE_AFTER_DAYS = 7;
 const subscribeToNothing = () => () => {};
 
 function ageInDays(iso: string): number {
@@ -40,7 +43,7 @@ interface UnwiredConsoleProps {
 export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProps) {
   const [clickedFinding, setClickedFinding] = useState<UnwiredFinding | null>(null);
   const scanAge = useSyncExternalStore(subscribeToNothing, () => ageInDays(report.generatedAt), () => null);
-  const prior = history.length > 1 ? history.at(-2) : null;
+  const prior = history.length > 1 ? (history.at(-2) ?? null) : null;
 
   const columns: MatrxColumnDef<UnwiredFinding>[] = [
     {
@@ -130,12 +133,12 @@ export function UnwiredConsole({ report, history, problems }: UnwiredConsoleProp
         <code className="rounded bg-muted px-2 py-1 text-xs">pnpm check:unwired:write</code>
       </header>
 
-      {(problems.length > 0 || report.partial.length > 0 || (scanAge !== null && scanAge > STALE_AFTER_DAYS)) && (
+      {(problems.length > 0 || report.partial.length > 0 || (scanAge !== null && scanAge > UNWIRED_STALE_AFTER_DAYS)) && (
         <div className="rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">
           <div className="flex items-center gap-2 font-semibold"><AlertTriangle className="size-4" />This snapshot cannot be read as proof of complete coverage.</div>
           {problems.map((problem) => <p key={problem} className="mt-1">{problem}</p>)}
           {report.partial.map((note) => <p key={note} className="mt-1">Partial scan: {note}</p>)}
-          {scanAge !== null && scanAge > STALE_AFTER_DAYS && <p className="mt-1">Snapshot is {scanAge} days old. Refresh it with <code>pnpm check:unwired:write</code>.</p>}
+          {scanAge !== null && scanAge > UNWIRED_STALE_AFTER_DAYS && <p className="mt-1">Snapshot is {scanAge} days old. Refresh it with <code>pnpm check:unwired:write</code>.</p>}
         </div>
       )}
 

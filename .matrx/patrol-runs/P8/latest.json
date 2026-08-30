@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ae48b585-c52d-4f15-a576-8ab736c3065e",
-  "state": "discovered",
-  "updatedAt": "2026-08-30T14:17:30.069Z",
-  "summary": "ERADICATION backlog wave: claimed the first four compact/control mapping items for disjoint repair-now execution.",
+  "state": "fixing",
+  "updatedAt": "2026-08-30T14:23:52.462Z",
+  "summary": "First compact/control wave repaired across 15 bounded files; exact candidate published for baseline-delta gates.",
   "source": "ae48b585-c52d-4f15-a576-8ab736c3065e.json",
-  "eventHash": "b3f6b44c54bf04553f4d1f30eb2e636204b71574c58c736fc7c75855dee4d252"
+  "eventHash": "5f6b29347184e05596f779f80f6d35e85e16afe3201d6c01df443b0fe13cb8b1"
 }

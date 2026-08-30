@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P2",
+  "runId": "20260830T142407Z",
+  "baseSha": "857dcd2c3b7bed591441c6a175caf72eb1397ec4",
+  "createdAt": "2026-08-30T14:24:08.479Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-30T14:24:08.479Z",
+      "actor": "codex-p2-eradication",
+      "summary": "Resumed ERADICATION at ranked item 1: canonical site action authority and bounded EntityListPage adoption for /marketing/sites.",
+      "evidence": [
+        "Canonical shared checkout baseline type-check passed.",
+        "Door detector baseline reported 7 unrelated findings and did not list SitesPortfolio.",
+        "Concurrent dirty paths were captured and excluded from P2 ownership."
+      ],
+      "previousEventHash": null,
+      "eventHash": "c7063291c0fe6a7194ad4368f42abab71cb8c7f9da83e44c9b361de9dd6fec85"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-30T14:24:09.094Z",
+      "actor": "codex-p2-eradication",
+      "summary": "Implementing disjoint site action, list service, and presentation seams before integrating SitesPortfolio.",
+      "evidence": [
+        "Owned product batch is bounded to the marketing sites surface and new supporting files."
+      ],
+      "previousEventHash": "c7063291c0fe6a7194ad4368f42abab71cb8c7f9da83e44c9b361de9dd6fec85",
+      "eventHash": "3ae0b893975bbcff1d43e1ad9a445ae0e0fad9b6af8a10501cd51bd8867c47a8"
+    }
+  ]
+}

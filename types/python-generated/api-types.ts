@@ -6744,6 +6744,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/quip/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_quip_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/patreon/public/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Status */
+        get: operations["public_status_patreon_public_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/framer/public/status": {
         parameters: {
             query?: never;
@@ -6838,6 +6872,23 @@ export interface paths {
         };
         /** Public Taxon */
         get: operations["public_taxon_obis_public_taxon_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/worms/public/taxon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Public Taxon */
+        get: operations["public_taxon_worms_public_taxon_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -59962,6 +60013,38 @@ export interface components {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
+        /**
+         * PatreonServiceStatus
+         * @description Safe aggregate status projection for Patreon's fixed status page.
+         */
+        PatreonServiceStatus: {
+            /**
+             * Kind
+             * @default patreon_public_service_status
+             * @constant
+             */
+            __kind?: "patreon_public_service_status";
+            /**
+             * Provider
+             * @default patreon
+             * @constant
+             */
+            provider?: "patreon";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Indicator */
+            indicator: string;
+            /**
+             * Status Page
+             * @default https://status.patreon.com/
+             * @constant
+             */
+            status_page?: "https://status.patreon.com/";
+        };
         /** PauseRequest */
         PauseRequest: {
             /**
@@ -64357,6 +64440,43 @@ export interface components {
              * @default false
              */
             stream?: boolean;
+        };
+        /**
+         * QuipStatusResult
+         * @description Safe projection of Quip's high-level production-cloud status.
+         */
+        QuipStatusResult: {
+            /**
+             * Kind
+             * @default quip_official_service_status
+             * @constant
+             */
+            __kind?: "quip_official_service_status";
+            /**
+             * Provider
+             * @default quip
+             * @constant
+             */
+            provider?: "quip";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /**
+             * Status Url
+             * @default https://status.quip.com
+             * @constant
+             */
+            status_url?: "https://status.quip.com";
+            /**
+             * Indicator
+             * @enum {string}
+             */
+            indicator: "none" | "minor" | "major" | "critical";
+            /** Operational */
+            operational: boolean;
         };
         /**
          * RaceRequest
@@ -80846,6 +80966,64 @@ export interface components {
             completed_at?: string | null;
         };
         /**
+         * WoRMSPublicTaxon
+         * @description Safe factual projection of one accepted public WoRMS taxon.
+         */
+        WoRMSPublicTaxon: {
+            /**
+             * Kind
+             * @default worms_public_taxon
+             * @constant
+             */
+            __kind?: "worms_public_taxon";
+            /**
+             * Provider
+             * @default worms
+             * @constant
+             */
+            provider?: "worms";
+            /**
+             * Access
+             * @default public_no_auth
+             * @constant
+             */
+            access?: "public_no_auth";
+            /** Aphia Id */
+            aphia_id: number;
+            /** Canonical Url */
+            canonical_url: string;
+            /** Scientific Name */
+            scientific_name: string;
+            /** Authority */
+            authority: string;
+            /** Rank */
+            rank: string;
+            /**
+             * Status
+             * @default accepted
+             * @constant
+             */
+            status?: "accepted";
+            /** Valid Aphia Id */
+            valid_aphia_id: number;
+            /** Valid Name */
+            valid_name: string;
+            /** Valid Authority */
+            valid_authority: string;
+            /**
+             * Is Marine
+             * @default true
+             * @constant
+             */
+            is_marine?: true;
+            /** Is Brackish */
+            is_brackish: boolean;
+            /** Is Freshwater */
+            is_freshwater: boolean;
+            /** Is Terrestrial */
+            is_terrestrial: boolean;
+        };
+        /**
          * WooCommerceProductQueryResult
          * @description Provider-formatted result from one fixed, one-product catalog query.
          */
@@ -94261,6 +94439,46 @@ export interface operations {
             };
         };
     };
+    public_status_quip_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuipStatusResult"];
+                };
+            };
+        };
+    };
+    public_status_patreon_public_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatreonServiceStatus"];
+                };
+            };
+        };
+    };
     public_status_framer_public_status_get: {
         parameters: {
             query?: never;
@@ -94401,6 +94619,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OBISPublicTaxon"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    public_taxon_worms_public_taxon_get: {
+        parameters: {
+            query: {
+                aphia_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WoRMSPublicTaxon"];
                 };
             };
             /** @description Validation Error */
