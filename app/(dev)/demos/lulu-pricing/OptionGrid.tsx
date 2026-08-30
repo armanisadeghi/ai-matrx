@@ -51,7 +51,10 @@ export function OptionGrid({
     >
       {entries.map(({ option, availability }) => {
         const isSelected = option.id === selectedId;
-        const isDisabled = disabled || !availability.available;
+        const isUnavailable = !availability.available;
+        // A selected option that just became invalid stays clickable so the
+        // user can back out of it; only unselected invalid options lock.
+        const isDisabled = disabled || (isUnavailable && !isSelected);
         return (
           <button
             key={option.id}
@@ -64,20 +67,24 @@ export function OptionGrid({
               isSelected
                 ? "border-primary bg-primary/10"
                 : "border-border bg-card hover:bg-accent",
-              isDisabled &&
+              isUnavailable && !isSelected &&
                 "cursor-not-allowed border-dashed border-border bg-muted/40 opacity-60 hover:bg-muted/40",
+              isSelected && isUnavailable && "border-destructive bg-destructive/10",
+              disabled && "cursor-not-allowed opacity-60",
             )}
           >
             <span className="flex items-center gap-1.5">
               {isSelected ? (
                 <Check className="size-3.5 shrink-0 text-primary" />
-              ) : isDisabled ? (
+              ) : isUnavailable ? (
                 <Ban className="size-3.5 shrink-0 text-muted-foreground" />
               ) : null}
               <span
                 className={cn(
                   "text-sm font-medium",
-                  isDisabled ? "text-muted-foreground" : "text-foreground",
+                  isUnavailable && !isSelected
+                    ? "text-muted-foreground"
+                    : "text-foreground",
                 )}
               >
                 {option.label}

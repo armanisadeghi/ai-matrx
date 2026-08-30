@@ -41,7 +41,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { AccessDeniedView } from "@/features/access-gate/components/AccessDenied";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -91,6 +91,12 @@ export interface HrAccessDeniedProps {
    * absolute. See the header: this is the only requestable HR class today.
    */
   employerRef?: string | null;
+  /**
+   * HR's own trailing disclosure — the "Refusal reference" `<details>` holding a
+   * reason code and an audit id. The frame has no idea these exist; HR earned
+   * them and does not give them up by moving into the frame.
+   */
+  footer?: ReactNode;
 }
 
 /**
@@ -101,6 +107,7 @@ export function HrAccessDenied({
   fallbackHref,
   fallbackLabel,
   employerRef,
+  footer,
 }: HrAccessDeniedProps) {
   if (employerRef?.trim()) {
     return (
@@ -109,6 +116,7 @@ export function HrAccessDenied({
         sentence={sentence}
         fallbackHref={fallbackHref}
         fallbackLabel={fallbackLabel}
+        footer={footer}
       />
     );
   }
@@ -119,6 +127,7 @@ export function HrAccessDenied({
       id=""
       requestability="absolute"
       reason={sentence}
+      footer={footer}
       fallbackHref={fallbackHref}
       fallbackLabel={fallbackLabel}
       onChanged={NOOP}
@@ -155,11 +164,13 @@ function HrEmployerStandingDenied({
   sentence,
   fallbackHref,
   fallbackLabel,
+  footer,
 }: {
   employerRef: string;
   sentence: string;
   fallbackHref: string;
   fallbackLabel: string;
+  footer?: ReactNode;
 }) {
   const directId = UUID_RE.test(employerRef) ? employerRef : null;
 
@@ -192,6 +203,7 @@ function HrEmployerStandingDenied({
         id={id}
         requestability="requestable"
         reason={sentence}
+        footer={footer}
         fallbackHref={fallbackHref}
         fallbackLabel={fallbackLabel}
       />
@@ -210,6 +222,7 @@ function HrEmployerStandingDenied({
       id=""
       requestability="absolute"
       reason={sentence}
+      footer={footer}
       fallbackHref={fallbackHref}
       fallbackLabel={fallbackLabel}
       onChanged={NOOP}

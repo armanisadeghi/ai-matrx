@@ -95,6 +95,8 @@ export interface AccessDeniedProps {
   reason?: string;
   /** The surface's own headline, in place of the kind-naming generic one. */
   headline?: string;
+  /** The surface's own trailing disclosure (a reference code, an audit id). */
+  footer?: React.ReactNode;
 }
 
 function initials(name: string | null): string {
@@ -226,6 +228,7 @@ export function AccessDeniedView({
   requestability = "requestable",
   reason,
   headline: headlineOverride,
+  footer,
 }: {
   context: AccessDeniedContext;
   id: string;
@@ -240,6 +243,13 @@ export function AccessDeniedView({
   reason?: string;
   /** The surface's own headline, in place of the kind-naming generic one. */
   headline?: string;
+  /**
+   * The surface's own trailing disclosure — a reference code, an audit id, the
+   * things a feature earned the right to show and the frame cannot know about.
+   * Rendered above the doors. Machine tokens belong in here behind a
+   * `<details>`, never in the body: that rule predates this slot and outlives it.
+   */
+  footer?: React.ReactNode;
 }) {
   const router = useRouter();
   const signInHref = useLoginHref();
@@ -403,6 +413,8 @@ export function AccessDeniedView({
           </div>
         ) : null}
 
+        {footer ? <div className="mt-4">{footer}</div> : null}
+
         {/* Always a real way forward. */}
         <div className="mt-5 flex flex-wrap items-center gap-2">
           {context.status === "anonymous" ? (
@@ -469,6 +481,7 @@ export function AccessDenied({
   requestability,
   reason,
   headline,
+  footer,
 }: AccessDeniedProps) {
   const { context, isLoading, refresh } = useAccessGate(token, id, {
     readError,
@@ -496,6 +509,7 @@ export function AccessDenied({
       requestability={requestability}
       reason={reason}
       headline={headline}
+      footer={footer}
     />
   );
 }

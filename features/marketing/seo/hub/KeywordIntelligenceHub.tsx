@@ -97,6 +97,8 @@ export function KeywordIntelligenceHub({
   // list hook's query-state type is the table's, not ours; this page needs only
   // the first page of sites by clicks, which is that type's default shape.
   const sites = useSites(LIST_STATE as any, brandId ?? null);
+  // TEMP-DIAG (remove before commit)
+  console.log("[kih]", { brandId, status: sites.status, fetch: sites.fetchStatus, rows: sites.data?.rows?.length, err: (sites.error as Error | null)?.message });
 
   const rows = useMemo(
     () =>

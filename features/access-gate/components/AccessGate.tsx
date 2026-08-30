@@ -64,6 +64,8 @@ export interface AccessGateProps {
   reason?: string;
   /** The surface's own headline, in place of the kind-naming generic one. */
   headline?: string;
+  /** The surface's own trailing disclosure (a reference code, an audit id). */
+  footer?: React.ReactNode;
 }
 
 export function AccessGate({
@@ -79,6 +81,7 @@ export function AccessGate({
   requestability,
   reason,
   headline,
+  footer,
 }: AccessGateProps) {
   // A hard fault (network, timeout, malformed query) is not an access story.
   // Surfaces with a good error component keep using it; everyone else gets the
@@ -108,6 +111,7 @@ export function AccessGate({
         requestability={requestability}
         reason={reason}
         headline={headline}
+        footer={footer}
       />
     </>
   );

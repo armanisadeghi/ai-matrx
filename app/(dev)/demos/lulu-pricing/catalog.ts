@@ -558,8 +558,24 @@ export function resolveCombination(
 }
 
 /**
- * Drop any already-chosen option that the latest change invalidated, so the UI
- * never sits on a combination the catalog does not contain.
+ * Least-destructive order for giving up a chosen option: the most downstream
+ * decision goes first, so changing a binding never costs you the trim size.
+ */
+const PRUNE_ORDER: LuluDimension[] = [
+  "coverFinish",
+  "paper",
+  "color",
+  "binding",
+  "trim",
+];
+
+/**
+ * Drop the FEWEST already-chosen options needed to reach a combination the
+ * catalog actually contains — never the whole configuration.
+ *
+ * Page count is deliberately ignored here: an out-of-range page count disables
+ * options with a reason and flags the field, exactly like Lulu's calculator.
+ * It must never silently destroy a configuration the user just built.
  */
 export function pruneInvalidSelections(
   catalog: LuluCatalog,
@@ -568,13 +584,16 @@ export function pruneInvalidSelections(
   protectedDimension?: LuluDimension,
 ): LuluSelection {
   let next = selection;
-  for (const dimension of ALL_DIMENSIONS) {
+  if (reachableCombinations(catalog, next, { ignorePages: true }).length > 0) {
+    return next;
+  }
+  for (const dimension of PRUNE_ORDER) {
     if (dimension === protectedDimension) continue;
-    const chosen = selectedValue(next, dimension);
-    if (chosen === null) continue;
-    const cleared: LuluSelection = { ...next, ...clearDimension(dimension) };
-    const verdict = availabilityFor(catalog, cleared, dimension, chosen);
-    if (!verdict.available) next = cleared;
+    if (selectedValue(next, dimension) === null) continue;
+    next = { ...next, ...clearDimension(dimension) };
+    if (reachableCombinations(catalog, next, { ignorePages: true }).length > 0) {
+      return next;
+    }
   }
   return next;
 }
