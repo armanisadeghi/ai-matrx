@@ -1857,13 +1857,21 @@ export function SeoChangeTrackingWorkspace() {
         header: "Theories",
         accessorFn: (row) => row.theory_count ?? 0,
         cell: (row) => (
-          <span className="tabular-nums">
+          <span className="inline-flex items-center gap-1.5 tabular-nums">
             {row.theory_count ?? 0}{" "}
-            <span className="text-emerald-600">
-              ✓{row.supported_theory_count ?? 0}
+            <span
+              className="inline-flex items-center gap-0.5 text-emerald-600"
+              title={`${row.supported_theory_count ?? 0} supported`}
+            >
+              <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+              {row.supported_theory_count ?? 0}
             </span>{" "}
-            <span className="text-destructive">
-              ×{row.refuted_theory_count ?? 0}
+            <span
+              className="inline-flex items-center gap-0.5 text-destructive"
+              title={`${row.refuted_theory_count ?? 0} refuted`}
+            >
+              <XCircle className="h-3 w-3" aria-hidden="true" />
+              {row.refuted_theory_count ?? 0}
             </span>
           </span>
         ),

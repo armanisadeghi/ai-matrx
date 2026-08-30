@@ -15,7 +15,14 @@
 
 import React, { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronRight, History, RefreshCw } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  History,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useStore } from "react-redux";
 import { cn } from "@/lib/utils";
@@ -248,14 +255,22 @@ export const EditHistorySection: React.FC = () => {
                   </button>
                   <span className="ml-1 shrink-0 font-mono text-[10px]">
                     {row.applied > 0 && (
-                      <span className="text-emerald-600 dark:text-emerald-400">
-                        ✓{row.applied}
+                      <span
+                        className="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400"
+                        title={`${row.applied} applied`}
+                      >
+                        <Check className="h-3 w-3" aria-hidden="true" />
+                        {row.applied}
                       </span>
                     )}
                     {row.applied > 0 && row.rejected > 0 && " "}
                     {row.rejected > 0 && (
-                      <span className="text-red-600 dark:text-red-400">
-                        ✗{row.rejected}
+                      <span
+                        className="inline-flex items-center gap-0.5 text-red-600 dark:text-red-400"
+                        title={`${row.rejected} rejected`}
+                      >
+                        <X className="h-3 w-3" aria-hidden="true" />
+                        {row.rejected}
                       </span>
                     )}
                   </span>
