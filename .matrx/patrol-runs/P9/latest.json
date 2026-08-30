@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P9",
   "runId": "01a05301-8fab-7d50-87f1-ea38599319d4",
-  "state": "certified",
-  "updatedAt": "2026-08-30T14:36:02.522Z",
-  "summary": "Batch 1 independently CERTIFIED with no concrete batch-caused defect.",
+  "state": "infrastructure_blocked",
+  "updatedAt": "2026-08-30T14:36:08.834Z",
+  "summary": "Batch 2 has no behavioral defect but delivery is blocked by the generated route-manifest lockfile: 174 unrelated drifts plus three truthful P9 status changes, and this patrol is forbidden to edit generated files.",
   "source": "01a05301-8fab-7d50-87f1-ea38599319d4.json",
-  "eventHash": "71fd8c440f6c557c001db43debbc52b197aca169be79d3c5bd670dd623b79179"
+  "eventHash": "15e5723e68cc840a036b8febc21089acd5ee1e9f6eb5c2c549572ef427db86d7"
 }

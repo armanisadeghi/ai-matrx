@@ -74,6 +74,26 @@
       },
       "previousEventHash": "1d9fa122ffa12d3a7b7076cf062d0359a41ac8ea06828ad599e13db0347af79a",
       "eventHash": "71fd8c440f6c557c001db43debbc52b197aca169be79d3c5bd670dd623b79179"
+    },
+    {
+      "sequence": 5,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-30T14:36:08.834Z",
+      "actor": "pattern-patrol-p9-eradication",
+      "summary": "Batch 2 has no behavioral defect but delivery is blocked by the generated route-manifest lockfile: 174 unrelated drifts plus three truthful P9 status changes, and this patrol is forbidden to edit generated files.",
+      "evidence": [
+        "certifier:/root/p9_certifier_retry",
+        "focused-jest:9-of-9",
+        "type-check:pass",
+        "route-drift:174-baseline-plus-3-P9"
+      ],
+      "blocker": {
+        "prerequisite": "An authorized route-manifest owner must regenerate and certify the lockfile outside this patrol's generated-file prohibition.",
+        "preservedRef": "refs/heads/patrol-runs/P9/01a05301-8fab-7d50-87f1-ea38599319d4-batch2-candidate",
+        "preservedSha": "8f0041cebc"
+      },
+      "previousEventHash": "71fd8c440f6c557c001db43debbc52b197aca169be79d3c5bd670dd623b79179",
+      "eventHash": "15e5723e68cc840a036b8febc21089acd5ee1e9f6eb5c2c549572ef427db86d7"
     }
   ]
 }
