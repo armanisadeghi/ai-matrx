@@ -12,6 +12,15 @@
 // post-1W), edited in place through PATCH /mandates/{key}/goal, and every edit
 // grounds it 'H' — permanent platform-wide (the boot sync only refreshes 'A'
 // goals). Copy is tight everywhere; the data does the talking.
+//
+// 🚨 `authoring` — WHERE, not who (Arman, 2026-08-29). A mandate's goal and
+// its declared inputs are SYSTEM definitions: one edit changes the job for
+// every user on the platform. So they are editable ONLY on the admin route
+// (/administration/agents/mandates/[key]); everywhere else — the user route,
+// the window panel — the same sections render READ-ONLY. The server agrees:
+// PATCH /mandates/{key}/goal and /draft-inputs are `require_super_admin`
+// (aidream 304fe1848), so an ungated pencil here would just be a 403 waiting
+// to happen.
 
 import { useState } from "react";
 import {
@@ -76,9 +85,12 @@ export function TriadFlowMark() {
 export function TriadInputSection({
   data,
   onChanged,
+  authoring = false,
 }: {
   data: MandateWorkspaceData;
   onChanged: () => void;
+  /** Admin route only — see the `authoring` note at the top of this file. */
+  authoring?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const draftInputs = parseDraftInputs(
@@ -193,7 +205,7 @@ export function TriadInputSection({
           </p>
         )}
 
-        {!data.offer && !editing ? (
+        {authoring && !data.offer && !editing ? (
           <div className="flex items-center gap-1.5 pt-0.5">
             <Button
               variant="outline"
@@ -267,9 +279,12 @@ function applyConversion(current: DraftInput[], output: string): DraftInput[] {
 export function TriadGoalSection({
   data,
   onChanged,
+  authoring = false,
 }: {
   data: MandateWorkspaceData;
   onChanged: () => void;
+  /** Admin route only — see the `authoring` note at the top of this file. */
+  authoring?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const goal = goalOfMandate(data.mandate);

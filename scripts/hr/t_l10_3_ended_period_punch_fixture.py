@@ -26,7 +26,7 @@ so the R40 T-L10-3 group and Zzz Punchemployee keep the state their own proofs r
 IDEMPOTENT: every step checks for its own prior result first. Re-running prints EXISTS and changes
 nothing.
 """
-import asyncio, json, os, sys
+import asyncio, datetime, json, os, sys
 import asyncpg
 from dotenv import load_dotenv
 
@@ -45,7 +45,7 @@ EMAIL       = "zzz.ended.punchme@example.test"
 HIRE_DATE   = "2026-08-01"
 PG_NAME     = "T-L10-3 ended-period skip-walk (fixture)"
 PG_FIRST    = "2026-08-01"
-THROUGH     = "2026-08-29"      # lays down whole weeks; the last one ENDS 2026-08-28
+THROUGH     = datetime.date(2026, 8, 29)      # lays down whole weeks; the last one ENDS 2026-08-28
 
 def as_admin(uid=HR_ADMIN):
     return json.dumps({"sub": uid, "role": "authenticated"})
@@ -128,7 +128,7 @@ async def main():
             r = await door(PRIYA_UID,
                 "select hr.punch_record($1::uuid,$2,($3::date + $4::time) at time zone 'UTC',"
                 "'manager_entry',$5,null,null,null,null)",
-                emp, kind, str(target["period_start_on"]), hhmm, f"tl103-ended-{kind}-{emp[:8]}")
+                emp, kind, target["period_start_on"], hhmm, f"tl103-ended-{kind}-{emp[:8]}")
             print(f"punch {kind:3}       {json.dumps(r)[:150]}")
         print("punches         CREATED   by G2V-Priya Raman (proves the punch reach this fixture is for)")
 
