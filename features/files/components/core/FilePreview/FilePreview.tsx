@@ -20,7 +20,7 @@ import { resolvePdfSurfaceIds } from "@/features/pdf/hooks/usePdfSurfaceLinks";
 import { useExistingPdfExtraction } from "@/features/pdf/hooks/useExistingPdfExtraction";
 import { buildPdfExtractorHref } from "@/features/pdf/surfaces/hrefs";
 import { selectFileById } from "@/features/files/redux/selectors";
-import { useFileAs } from "@/features/files/handler/hooks/useFileAs";
+import { useMediaResolution } from "@ai-matrx/media/core";
 import { useFileAsset } from "@/features/files/hooks/useFileAsset";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
 import { useEnsureCloudFile } from "@/features/files/hooks/useEnsureCloudFile";
@@ -97,7 +97,9 @@ export function FilePreview({
   //
   // For everything else (video / audio / svg / fetched-by-fileId previewers
   // like data / code / markdown / text — those don't actually consume `url`),
-  // fall back to the file handler's URL hook. The asset endpoint works for
+  // resolve the durable URL synchronously through `@ai-matrx/media`'s
+  // `useMediaResolution` (the injected MediaClient — media wave 2 replaced
+  // the old async `useFileAs(html_src)` lane). The asset endpoint works for
   // any cld_files row, but the round-trip adds latency and the asset
   // metadata doesn't help video/audio playback.
   const fileMime = file?.mimeType ?? "";
@@ -108,11 +110,10 @@ export function FilePreview({
     primaryVariant,
     isLoading: assetLoading,
   } = useFileAsset(useAssetForPreview ? fileId : null);
-  const { result: resolvedUrl, status: resolvedStatus } = useFileAs(
-    !useAssetForPreview && fileId ? { kind: "file_id", fileId } : null,
-    { kind: "html_src" },
+  const { resolution: previewResolution } = useMediaResolution(
+    !useAssetForPreview && fileId ? { file_id: fileId } : null,
   );
-  const resolvedLoading = resolvedStatus === "resolving";
+  const resolvedUrl = previewResolution?.src ?? null;
   // Prefer a larger variant (hero / cover) when present, else the canonical
   // `primary_url`, else the original variant. Asset endpoint guarantees at
   // least `original`, so the third arm is a safety net.
@@ -148,9 +149,10 @@ export function FilePreview({
       ? authenticatedImage.url
       : assetUrl
     : resolvedUrl;
+  // Resolution is synchronous now — only the asset/blob lanes still load.
   const loading = useAssetForPreview
     ? assetLoading || Boolean(privateImageFileId && authenticatedImage.loading)
-    : resolvedLoading;
+    : false;
 
   const capability = useMemo(() => {
     if (!file) return null;

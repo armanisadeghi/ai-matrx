@@ -10,7 +10,10 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMediaLoadRecovery } from "@ai-matrx/media/core";
+import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { useMediaElementPlaybackSession } from "@/features/audio/session/useMediaElementPlaybackSession";
 
 export interface VideoPreviewProps {
@@ -36,6 +39,12 @@ export function VideoPreview({
     label: label || "Video preview",
     trackKey: url ?? undefined,
   });
+  // Media durability: an owned durable URL that fails to load gets the
+  // client's ONE retry contract (session refresh → same-URL retry once →
+  // terminal). Foreign URLs fail straight.
+  const { retryKey, onLoadError, failed } = useMediaLoadRecovery(url, {
+    recoverable: !!url && recognizeOurFileUrl(url) !== null,
+  });
   if (!url) {
     return (
       <div
@@ -48,6 +57,19 @@ export function VideoPreview({
       </div>
     );
   }
+  if (failed) {
+    return (
+      <div
+        className={cn(
+          "flex h-full w-full flex-col items-center justify-center gap-2 bg-black text-muted-foreground",
+          className,
+        )}
+      >
+        <AlertCircle className="h-6 w-6" />
+        <span className="text-xs">This video failed to load.</span>
+      </div>
+    );
+  }
   return (
     <div
       className={cn(
@@ -56,6 +78,7 @@ export function VideoPreview({
       )}
     >
       <video
+        key={retryKey}
         ref={elementRef}
         controls
         src={url}
@@ -64,6 +87,7 @@ export function VideoPreview({
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
         onEnded={() => setIsPlaying(false)}
+        onError={onLoadError}
       >
         <source src={url} type={mimeType ?? undefined} />
       </video>

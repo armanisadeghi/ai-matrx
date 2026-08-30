@@ -15,9 +15,10 @@
 
 "use client";
 
-import { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useMediaLoadRecovery } from "@ai-matrx/media/core";
+import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { useFileViewerControls } from "@/features/files/components/surfaces/FileViewerControlsContext";
 
 export interface ImagePreviewProps {
@@ -41,7 +42,12 @@ const TRANSPARENCY_GRID_STYLE: React.CSSProperties = {
 
 export function ImagePreview({ url, fileName, className }: ImagePreviewProps) {
   const controls = useFileViewerControls();
-  const [errored, setErrored] = useState(false);
+  // Media durability: an owned durable URL that fails to load gets the
+  // client's ONE retry contract (session refresh → same-URL retry once →
+  // terminal) instead of an immediate dead end. Foreign URLs fail straight.
+  const { retryKey, onLoadError, failed } = useMediaLoadRecovery(url, {
+    recoverable: !!url && recognizeOurFileUrl(url) !== null,
+  });
 
   if (!url) {
     return (
@@ -56,7 +62,7 @@ export function ImagePreview({ url, fileName, className }: ImagePreviewProps) {
     );
   }
 
-  if (errored) {
+  if (failed) {
     return (
       <div
         className={cn(
@@ -83,10 +89,11 @@ export function ImagePreview({ url, fileName, className }: ImagePreviewProps) {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
+          key={retryKey}
           src={url}
           alt={fileName}
           className="max-h-full max-w-full object-contain"
-          onError={() => setErrored(true)}
+          onError={onLoadError}
         />
       </div>
     );
@@ -139,12 +146,13 @@ export function ImagePreview({ url, fileName, className }: ImagePreviewProps) {
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
+          key={retryKey}
           src={url}
           alt={fileName}
           draggable={false}
           className={cn("select-none", isFit ? "object-contain" : "")}
           style={imgStyle}
-          onError={() => setErrored(true)}
+          onError={onLoadError}
         />
       </div>
     </div>

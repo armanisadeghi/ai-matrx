@@ -124,12 +124,17 @@ const deletedFileHooksRestriction = {
     {
       name: "@/features/files/handler/hooks/useFileMediaBlock",
       message:
-        'useFileMediaBlock will fold into useFileAs({kind:"media_block"}) in a follow-up.',
+        'useFileMediaBlock was deleted (media wave 2). Use fileHandler.use(source).as({kind:"media_block"}).',
     },
     {
       name: "@/features/files/handler/hooks/useFileDownloadUrl",
       message:
-        'useFileDownloadUrl will fold into useFileSrc({mode:"download"}) in a follow-up.',
+        'useFileDownloadUrl was deleted (media wave 2). Use fileHandler.use(source).as({kind:"anchor_download"}) or useMediaResolution from @ai-matrx/media/core.',
+    },
+    {
+      name: "@/features/files/handler/hooks/useFileAs",
+      message:
+        "useFileAs was deleted (media wave 2). Resolve media via useMediaResolution/useMediaBlob from @ai-matrx/media/core, or call fileHandler.use(source).as(target) imperatively.",
     },
     {
       name: "@/features/files/upload/cloudUpload",

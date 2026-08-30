@@ -10,8 +10,6 @@ pipeline. This is the single source of resistance for file flows.
 ```ts
 import { fileHandler }        from "@/features/files/handler/handler";
 import { useFile }            from "@/features/files/handler/hooks/useFile";
-import { useFileMediaBlock }  from "@/features/files/handler/hooks/useFileMediaBlock";
-import { useFileDownloadUrl } from "@/features/files/handler/hooks/useFileDownloadUrl";
 import { useFileUpload }      from "@/features/files/handler/hooks/useFileUpload";
 // types: @/features/files/handler/types   errors: @/features/files/handler/errors
 // RENDER surface (src resolution, load recovery, blob state, thumbnails,
@@ -48,10 +46,10 @@ Auth lanes for the durable byte routes:
   (`components/layout/AuthSessionWatcher.tsx`) and established on BOTH backend bases (main +
   standalone files host) since cookies are per-host. In-memory dedupe/freshness only.
 - **Error recovery = session refresh, not URL re-mint.** `MediaClient.recoverLoadError`
-  (media-client adapter; consumed by `useMediaLoadRecovery` from `@ai-matrx/media/core`) and
-  `useUnifiedImageUrl`/`useUnifiedVideoUrl`'s `reportLoadError` call
-  `ensureFilesSession({ force: true })` once on a media load failure and re-request the SAME URL
-  (key bump). A second failure is terminal.
+  (media-client adapter; consumed by `useMediaLoadRecovery` from `@ai-matrx/media/core`) calls
+  `ensureFilesSession({ force: true })` once on a media load failure and re-requests the SAME URL
+  (key bump). A second failure is terminal. The ONE retry contract — no consumer-side copies remain
+  (the divergent `useUnifiedImageUrl`/`useUnifiedVideoUrl` twins were deleted in media wave 2).
 - A bare `fetch(durableUrl)` outside the python-client does NOT send the cross-origin cookie —
   byte reads go through `Files.downloadFile` / `useFileBlob`.
 
@@ -134,12 +132,20 @@ Then confirm the service is up: `curl https://files.matrxserver.com/files-servic
 
 ## Change log
 
+- **2026-08-30** — **Media wave 2.** `hooks/useFileAs.ts` (+ test) and its unreferenced
+  wrappers `hooks/useFileDownloadUrl.ts` / `hooks/useFileMediaBlock.ts` DELETED (last
+  consumers — the block URL hooks and FilePreview — moved onto `useMediaResolution`).
+  Hook-shaped resolution rides `@ai-matrx/media/core`; imperative one-shot renders go
+  through `fileHandler.use(source).as(target)` directly. `useFile` and `useFileUpload`
+  remain. The media-client `shareableUrl` grew the reuse-or-mint public-link path
+  (M-SHARE); the divergent block-level retry copies are gone.
 - **2026-08-29** — **C20 media swap.** `hooks/{useFileSrc,useDurableSrc,useFileBlob}.ts`
   DELETED; the render surface is `@ai-matrx/media` (`useMediaResolution`,
   `useMediaLoadRecovery`, `useMediaBlob`, `useThumbnailSource`, `useMediaUpload` + the
   components), backed by this handler via the `MediaClient` adapter in
-  `features/files/media-client/`. `useFileAs` remains for the wave-2 units
-  (`FilePreview`, `useUnifiedImageUrl`/`useUnifiedVideoUrl`) and retires with them.
+  `features/files/media-client/`. `useFileAs` (and its unreferenced wrappers `useFileDownloadUrl`/`useFileMediaBlock`)
+  retired with them in media wave 2 — resolution rides `useMediaResolution`; imperative
+  one-shot renders go through `fileHandler.use(...).as(...)` directly.
 
 - **2026-08-27** — Typed unavailable-file reads stopped generating duplicate durable incidents;
   callers still receive the refusal, while unexpected resolver and file-service failures stay loud.

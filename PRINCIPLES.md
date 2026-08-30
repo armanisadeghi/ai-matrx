@@ -144,7 +144,7 @@ These are the failure modes agents repeat in this codebase. Every one is a viola
 
 - **General-purpose:** [`hooks/`](./hooks/) — `use-mobile.tsx`, `use-media-query.ts`, `use-toast.ts`, `use-outside-click.ts`, `useApiAuth.ts`, `useBackendApi.ts`, `useClipboard.ts`, `useTextToSpeech.ts`, `useContentBlocks.ts`, `useContextCollection.ts`, `useSystemPrompts.ts`, `useTools.ts`, etc.
 - **Schema / metadata / RPCs:** [`lib/hooks/`](./lib/hooks/) — `useModule`, `useDatabase`, `useSchema`, `useEnums`, `useNavigationInterceptor`, `useSqlFunctions`, `useCommonFormats`, `useUser`.
-- **File pipeline (the entire family):** [`@/features/files`](./features/files/) re-exports `useFile`, `useFileAs`, `useFileSrc`, `useFileBlob`, `useFileMediaBlock`, `useFileDownloadUrl`, `useFileUpload`, `useFileNode`, `useFolderNode`, `useCloudTree`, `useFolderContents`, plus the imperative `fileHandler` / `requestUpload`. ESLint hard-bans bypassing them.
+- **File pipeline (the entire family):** rendering rides `@ai-matrx/media` (`useMediaResolution`, `useMediaBlob`, `useMediaUpload`, `useMediaLoadRecovery`, `InlineMediaRef`, …) over the `MediaClient` adapter in [`features/files/media-client/`](./features/files/media-client/); the handler layer keeps `useFile`, `useFileBlob`, `useFileUpload`, `useFileNode`, `useFolderNode`, `useCloudTree`, `useFolderContents`, plus the imperative `fileHandler` / `requestUpload`. ESLint hard-bans bypassing them.
 - **Feature-scoped hooks:** under `features/*/hooks/` — read the feature's `FEATURE.md` before assuming the hook you need doesn't exist.
 
 **Search algorithm.**
