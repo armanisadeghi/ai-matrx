@@ -48,7 +48,7 @@ export function DealStageFlow({ deal, pipeline, onChanged }: Props) {
         if (!ok) return;
       }
       await moveDealToStage({ dealId: deal.id, stageId });
-      if (target.outcome === "won") toast.success(`"${deal.name}" won 🎉`);
+      if (target.outcome === "won") toast.success(`"${deal.name}" won`);
       await onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not move the deal");

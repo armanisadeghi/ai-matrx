@@ -13,6 +13,7 @@
 
 import React, { useMemo, useState } from "react";
 import { AlertTriangle, RotateCw } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CardLoading } from "@/components/matrx/LoadingComponents";
@@ -137,9 +138,14 @@ function FilterDemo({ data }: { data: PickerData }) {
                 <span className="min-w-0 flex-1 truncate text-[13px]">
                   {p.name}
                 </span>
-                <span className="shrink-0 text-[10px] text-muted-foreground/70">
-                  {org.name}
-                </span>
+                <EntityRef
+                  token="organization"
+                  id={org.id}
+                  name={org.name}
+                  showIcon={false}
+                  openInNewTab
+                  className="shrink-0 text-[10px] text-muted-foreground/70"
+                />
                 {p.scope_ids.map((id) => {
                   const fs = data.flatScopes.find((x) => x.scope.id === id);
                   if (!fs) return null;

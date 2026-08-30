@@ -34,6 +34,7 @@
 // component now SAYS SO instead of dressing it up. (D4A/D4B, `hr_l1_63`.)
 
 import { Badge } from "@/components/ui/badge";
+import { TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HR_DIRECTORY_STATUSES } from "../../constants";
 
@@ -80,12 +81,12 @@ export function HrStatusChip({
     }
   }
 
-  const label = known ? LABELS[status] : `⚠ ${status.replace(/_/g, " ")}`;
+  const label = known ? LABELS[status] : status.replace(/_/g, " ");
   return (
     <Badge
       variant="outline"
       className={cn(
-        "px-1.5 py-0 text-[0.6875rem] font-normal",
+        "gap-1 px-1.5 py-0 text-[0.6875rem] font-normal",
         known
           ? TONES[status]
           : "border-destructive bg-destructive/10 text-destructive",
@@ -93,6 +94,9 @@ export function HrStatusChip({
       )}
       title={known ? undefined : `Unrecognised status "${status}" — server bug (hr_l1_63).`}
     >
+      {!known && (
+        <TriangleAlert className="h-3 w-3 shrink-0" aria-hidden="true" />
+      )}
       {label}
     </Badge>
   );

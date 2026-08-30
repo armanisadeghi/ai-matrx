@@ -1158,10 +1158,10 @@ export default function ProviderSyncDashboard({
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden">
       {/* ── Compact toolbar ── */}
-      <div className="shrink-0 flex items-center gap-4 px-4 py-2 border-b bg-card">
+      <div className="matrx-touch-targets shrink-0 flex flex-wrap items-center gap-x-3 gap-y-2 border-b bg-card px-3 py-2 sm:flex-nowrap sm:gap-4 sm:px-4">
         {/* Stats */}
         {!loading && (
-          <div className="flex items-center gap-4">
+          <div className="grid w-full grid-cols-5 gap-x-2 sm:flex sm:w-auto sm:items-center sm:gap-4">
             {[
               { value: summaries.length, label: "Providers" },
               { value: supportedCount, label: "API sync" },
@@ -1169,9 +1169,12 @@ export default function ProviderSyncDashboard({
               { value: totalProviderModels, label: "Cached" },
               { value: localModels.length, label: "In DB" },
             ].map(({ value, label }) => (
-              <div key={label} className="flex items-baseline gap-1">
+              <div
+                key={label}
+                className="flex min-w-0 flex-col items-center sm:flex-row sm:items-baseline sm:gap-1"
+              >
                 <span className="text-sm font-bold tabular-nums">{value}</span>
-                <span className="text-[10px] text-muted-foreground">
+                <span className="truncate text-[10px] text-muted-foreground">
                   {label}
                 </span>
               </div>
@@ -1180,10 +1183,10 @@ export default function ProviderSyncDashboard({
         )}
 
         {/* Spacer */}
-        <div className="flex-1" />
+        <div className="hidden flex-1 sm:block" />
 
         {/* Legend */}
-        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+        <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground sm:w-auto sm:flex-nowrap">
           {[
             { color: "bg-green-400", label: "Matched" },
             { color: "bg-amber-400", label: "Not in DB" },
@@ -1198,22 +1201,24 @@ export default function ProviderSyncDashboard({
         </div>
 
         {/* Refresh + page copy */}
-        <ProviderSyncPageCopyForAiButton
-          exports={pageExports}
-          disabled={loading}
-        />
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 gap-1.5 text-xs"
-          onClick={loadSummaries}
-          disabled={loading}
-        >
-          <RefreshCw
-            className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+        <div className="flex w-full items-center justify-end gap-1 sm:w-auto sm:justify-start">
+          <ProviderSyncPageCopyForAiButton
+            exports={pageExports}
+            disabled={loading}
           />
-          Refresh
-        </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 text-xs"
+            onClick={loadSummaries}
+            disabled={loading}
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {/* Notifications */}

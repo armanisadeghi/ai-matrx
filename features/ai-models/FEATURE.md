@@ -74,6 +74,9 @@ must obey.
 
 ## Change log
 
+- `2026-08-30` — Provider Sync now gives its mobile toolbar distinct stats,
+  legend, and action rows plus the canonical coarse-pointer touch floor while
+  preserving the compact desktop toolbar.
 - `2026-08-29` — `service.ts` now validates catalog API responses and JSONB model/provider/
   endpoint/API/offering/setting fields at ingress, then constructs generated update shapes without
   boundary assertions. Malformed stored contracts fail closed instead of being trusted by cast.
