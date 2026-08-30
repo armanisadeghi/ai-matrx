@@ -125,6 +125,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
   const [newFolderName, setNewFolderName] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Menu uploads opt into instant Knowledge when the preference is on. Drag-drop
   // never sets this — the scheduled auto-Knowledge sweep still covers those.
@@ -185,7 +186,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <TooltipIcon label="Upload files or create a folder">
           <DropdownMenuTrigger asChild>
             <button
@@ -205,6 +206,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
           <FileAcquisitionActions
             presentation="menu"
             onFiles={handleUploadFiles}
+            onLocalSelectionComplete={() => setMenuOpen(false)}
             onError={(message) => toast.error(message)}
             enableExistingFiles={false}
           />

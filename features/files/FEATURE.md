@@ -78,7 +78,7 @@ in the same change.
 17. **No barrel.** `features/files/index.ts` is gone and ESLint bans `@/features/files` (exact);
     `cache/`, `virtual-sources/`, `upload/`, `providers/`, `services/`, `api/` stay ring-fenced.
 18. **Docs are updated in the same change as the code.** Stale docs cascade across parallel agents.
-19. **`FileAcquisitionActions` is the one source chooser.** Local file/folder inputs, existing-Matrx-Files selection, and Google Drive connect/import belong there; hosts select a presentation and disable sources with props. Drag/drop and paste remain host gestures, but their resulting `File[]` must enter the same upload callback. Never synthesize an input, query a page-wide file input, or fork a partial source menu.
+19. **`FileAcquisitionActions` is the one source chooser.** Local file/folder inputs, existing-Matrx-Files selection, and Google Drive connect/import belong there; hosts select a presentation and disable sources with props. A menu host keeps its chooser mounted until local selection returns, then closes through `onLocalSelectionComplete`. Drag/drop and paste remain host gestures, but their resulting `File[]` must enter the same upload callback. Never synthesize an input, query a page-wide file input, or fork a partial source menu.
 20. **A selectable file thumbnail is `SelectableFileThumbnail`.** Its thumbnail opens the canonical File Preview WindowPanel, its independent 44px control changes selection, and `FileRightClickMenu` supplies the universal menu. Hosts provide labels/icons and the selection callback; they never rebuild any of those three behaviors.
 21. **`get_user_file_tree` is an authenticated Data API door.** Keep its exact signature in
     `platform.client_callable_door` before granting `authenticated`; keep `anon` and `PUBLIC`
@@ -97,6 +97,7 @@ and zero layout shift, with Cache Components disabled by repository doctrine.
 
 ## Change log
 
+- **2026-08-30 — Menu-hosted uploads survive the native chooser.** Local file/folder actions keep the dropdown content mounted until selection returns, then close through the host callback; this prevents Files **New** from silently discarding every chosen file.
 - **2026-08-30** — **C9 collapse: `media-client/client.ts` is now a thin construction over
   `@ai-matrx/data/files` 0.4.1** (436 → 202 lines, all injection per C22). Absorbed into the
   package and DELETED here: ref normalization + byte-endpoint promotion (QA F2), the

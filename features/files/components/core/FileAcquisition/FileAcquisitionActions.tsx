@@ -26,6 +26,7 @@ export interface FileAcquisitionActionsProps {
   onFiles: (files: File[]) => void | Promise<void>;
   onError?: (message: string) => void;
   onChooseExisting?: () => void;
+  onLocalSelectionComplete?: () => void;
   presentation?: FileAcquisitionPresentation;
   accept?: string;
   multiple?: boolean;
@@ -47,6 +48,7 @@ export function FileAcquisitionActions({
   onFiles,
   onError,
   onChooseExisting,
+  onLocalSelectionComplete,
   presentation = "buttons",
   accept,
   multiple = true,
@@ -102,9 +104,10 @@ export function FileAcquisitionActions({
   const onInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       deliverFiles(Array.from(event.target.files ?? []));
+      onLocalSelectionComplete?.();
       event.target.value = "";
     },
-    [deliverFiles],
+    [deliverFiles, onLocalSelectionComplete],
   );
   const runAction = useCallback(
     (key: FileAcquisitionActionKey) => {
@@ -158,7 +161,12 @@ export function FileAcquisitionActions({
         {enableLocalFiles ? (
           <DropdownMenuItem
             disabled={disabled}
-            onSelect={() => runAction("files")}
+            onSelect={(event) => {
+              // A native chooser returns asynchronously. Keep the dropdown
+              // content (and its hidden input) mounted until that happens.
+              event.preventDefault();
+              runAction("files");
+            }}
           >
             <FileUp className="mr-2 h-4 w-4" />
             Upload files
@@ -167,7 +175,10 @@ export function FileAcquisitionActions({
         {enableLocalFolder ? (
           <DropdownMenuItem
             disabled={disabled}
-            onSelect={() => runAction("folder")}
+            onSelect={(event) => {
+              event.preventDefault();
+              runAction("folder");
+            }}
           >
             <FolderUp className="mr-2 h-4 w-4" />
             Upload folder
