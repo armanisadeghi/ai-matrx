@@ -1,8 +1,11 @@
 // utils/icon-mapper.tsx
 
 import React from "react";
-import { getIconComponent } from "@ai-matrx/icons";
-import { isLucideModuleIconExport } from "@ai-matrx/icons";
+import {
+  getCuratedIconIdsForPicker,
+  getIconComponent,
+  isRegisteredOrLucideIconName,
+} from "@ai-matrx/icons";
 import {
   Code,
   Zap,
@@ -73,10 +76,7 @@ export function mapIcon(
  * consider using the icon-picker component which handles this internally.
  */
 export async function getAvailableIconNames(): Promise<string[]> {
-  const LucideIcons = (await import("lucide-react")) as Record<string, unknown>;
-  return Object.keys(LucideIcons).filter((key) =>
-    isLucideModuleIconExport(key, LucideIcons[key]),
-  );
+  return getCuratedIconIdsForPicker();
 }
 
 /**
@@ -88,13 +88,5 @@ export async function isValidIconName(iconName: string): Promise<boolean> {
   const cleanIconName = iconName
     .replace(/\s+/g, "")
     .replace(/^\w/, (c) => c.toUpperCase());
-  try {
-    const LucideIcons = (await import("lucide-react")) as Record<
-      string,
-      unknown
-    >;
-    return isLucideModuleIconExport(cleanIconName, LucideIcons[cleanIconName]);
-  } catch {
-    return false;
-  }
+  return isRegisteredOrLucideIconName(cleanIconName);
 }
