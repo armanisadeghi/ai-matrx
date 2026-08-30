@@ -266,22 +266,38 @@ function hasTouchVisibleToken(tokens: string[]): boolean {
   );
 }
 
-function hasFocusReveal(tokens: string[]): boolean {
-  return tokens.some(
+function hasFocusReveal(
+  tokens: string[],
+  interaction: InteractionEvidence | undefined,
+): boolean {
+  const structuralFocus = tokens.some(
     (token) =>
       VISIBLE_OPACITY.test(token) &&
-      /(?:focus-visible|focus-within|group-focus|peer-focus)/.test(token),
+      /(?:focus-within|group-focus|peer-focus)/.test(token),
+  );
+  if (structuralFocus) return true;
+  return Boolean(
+    interaction?.direct &&
+    tokens.some(
+      (token) =>
+        VISIBLE_OPACITY.test(token) &&
+        /(?:^|:)focus(?:-visible)?:opacity-/.test(token),
+    ),
   );
 }
 
-function safeReason(tokens: string[], hidden: string[]): string | undefined {
+function safeReason(
+  tokens: string[],
+  hidden: string[],
+  interaction: InteractionEvidence | undefined,
+): string | undefined {
   if (hidden.every(hasHoverCapableMediaPrefix)) {
     return "hidden state is gated to hover-capable media";
   }
   if (hasTouchVisibleToken(tokens)) {
     return "coarse-pointer or hover-none visibility fallback is explicit";
   }
-  if (hasFocusReveal(tokens)) {
+  if (hasFocusReveal(tokens, interaction)) {
     return "focus-visible/focus-within reveal accompanies hover reveal";
   }
   const hasBaseVisible = tokens.some(
@@ -342,8 +358,8 @@ export function analyzeP3HoverSource(
         opening.getStart(),
       );
       const tag = jsxTagName(opening.tagName);
-      const safe = safeReason(tokens, hidden);
       const interaction = interactionEvidence(node);
+      const safe = safeReason(tokens, hidden, interaction);
       let classification: P3HoverClassification;
       let rank: number;
       let reason: string;

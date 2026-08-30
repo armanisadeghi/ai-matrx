@@ -45,6 +45,30 @@ describe("P3 hover-only interaction detector", () => {
     });
   });
 
+  it("does not accept focus-visible on a non-focusable interaction wrapper", () => {
+    const [finding] = analyzeP3HoverSource(`
+      <div className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100">
+        <button>Edit</button>
+      </div>
+    `);
+    expect(finding).toMatchObject({
+      classification: "actionable",
+      tag: "div",
+    });
+  });
+
+  it("accepts focus-within on a wrapper containing a focusable control", () => {
+    const [finding] = analyzeP3HoverSource(`
+      <div className="opacity-0 group-hover:opacity-100 focus-within:opacity-100">
+        <button>Edit</button>
+      </div>
+    `);
+    expect(finding).toMatchObject({
+      classification: "safe",
+      tag: "div",
+    });
+  });
+
   it.each([
     [
       "responsive mobile visibility",
