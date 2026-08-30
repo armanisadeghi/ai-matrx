@@ -87,7 +87,6 @@ import {
   type LocalCompetitorSearchResult,
 } from "./landscapeBrief";
 import { ProTextarea } from "@/components/official/ProTextarea";
-
 import {
   competitorOpportunityCopyRow,
   competitorOpportunityHuman,
