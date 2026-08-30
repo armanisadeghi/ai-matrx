@@ -74,6 +74,24 @@
       },
       "previousEventHash": "6503d4c69bc100d96700733c7e3d8aacdb810a0682d8ca40317088dabf3cff1e",
       "eventHash": "d34d64a4a5741dd834ac980bdfec0f59c78495a5a332fb86fa0c4c7c44d22342"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-30T14:51:27.247Z",
+      "actor": "codex-p6-controller",
+      "summary": "DELIVERED to origin/main as a certified ancestor; versioned release remains pending in the serialized release lane.",
+      "evidence": [
+        "Candidate is an ancestor of origin/main at 05ad7aa37eb95e8f0f539068ff732ec87a3957d5."
+      ],
+      "delivery": {
+        "candidateSha": "68294e85d79077c2ef526bb180cac43032f9c6e0",
+        "preservedRef": "refs/heads/patrol-runs/P6/fa598c34-b3a6-4c08-abe0-15a9c1d2ac2f",
+        "integratedSha": "05ad7aa37eb95e8f0f539068ff732ec87a3957d5",
+        "release": "pending-serialized-release"
+      },
+      "previousEventHash": "d34d64a4a5741dd834ac980bdfec0f59c78495a5a332fb86fa0c4c7c44d22342",
+      "eventHash": "a4058e0a2bb1997993dbdf581e3e1f8c114ea48eadd30f16bdc6cea04fcc7a1e"
     }
   ]
 }
