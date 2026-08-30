@@ -11,6 +11,10 @@ describe("GovernedActionDialog responsive contract", () => {
       join(__dirname, "../../../app/globals.css"),
       "utf8",
     );
+    const sharedDialog = readFileSync(
+      join(__dirname, "../../../components/ui/dialog.tsx"),
+      "utf8",
+    );
 
     expect(dialog).toContain(
       '<DialogContent className="matrx-touch-targets sm:max-w-xl">',
@@ -18,5 +22,6 @@ describe("GovernedActionDialog responsive contract", () => {
     expect(globals).toContain("@media (pointer: coarse), (max-width: 1023px)");
     expect(globals).toContain("min-height: 2.75rem; /* 44px */");
     expect(globals).toContain("min-width: 2.75rem;");
+    expect(sharedDialog).toContain('aria-label="Close"');
   });
 });
