@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { copyToClipboard, removeThinkingContent } from "@/components/matrx/buttons/markdown-copy-utils";
-import { getWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
-import { markdownToWordPressHTML } from "@/features/html-pages/utils/markdown-wordpress-utils";
+import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
+import {
+    getMarkdownStylesheet,
+    markdownToHtml,
+    removeThinkingContent,
+} from "@ai-matrx/print/markdown";
 import { useHTMLPages } from "@/features/html-pages/hooks/useHTMLPages";
 import {
     generateCompleteHtmlFromSources,
@@ -60,10 +63,10 @@ export function useHtmlPreviewState({
         if (htmlContent) {
             return extractBodyContent(htmlContent, "");
         }
-        return markdownToWordPressHTML(removeThinkingContent(markdownContent));
+        return markdownToHtml(removeThinkingContent(markdownContent));
     });
 
-    const [wordPressCSS, setWordPressCSSInternal] = useState<string>(() => getWordPressCSS());
+    const [wordPressCSS, setWordPressCSSInternal] = useState<string>(() => getMarkdownStylesheet());
     
     // Initialize metadata as empty to avoid hydration mismatch
     // Will be populated in useEffect after component mounts (client-side only)
@@ -264,7 +267,7 @@ export function useHtmlPreviewState({
 
             // Step 1: If markdown is dirty, regenerate content.html from markdown
             if (isMarkdownDirty) {
-                const newContentHtml = markdownToWordPressHTML(removeThinkingContent(currentMarkdown));
+                const newContentHtml = markdownToHtml(removeThinkingContent(currentMarkdown));
                 finalContentHtml = newContentHtml; // Use the new content
                 setContentHtml(newContentHtml);
                 
@@ -358,7 +361,7 @@ export function useHtmlPreviewState({
      */
     const handleUpdateFromMarkdown = useCallback(() => {
         // Regenerate content.html from current markdown
-        const newContentHtml = markdownToWordPressHTML(removeThinkingContent(currentMarkdown));
+        const newContentHtml = markdownToHtml(removeThinkingContent(currentMarkdown));
         setContentHtml(newContentHtml);
         
         // ALWAYS extract and update metadata (even if empty)
@@ -385,7 +388,7 @@ export function useHtmlPreviewState({
         setCurrentMarkdown(initialMarkdown);
         
         // Regenerate content.html from original markdown
-        const newContentHtml = markdownToWordPressHTML(removeThinkingContent(initialMarkdown));
+        const newContentHtml = markdownToHtml(removeThinkingContent(initialMarkdown));
         setContentHtml(newContentHtml);
         
         // ALWAYS extract and update metadata (even if empty)

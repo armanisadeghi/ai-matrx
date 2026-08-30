@@ -29,14 +29,11 @@ import {
   useSaveAndOpenInCodeEditor,
   CHAT_CAPTURES_FOLDER_NAME,
 } from "@/features/code/actions/saveAndOpenInCodeEditor";
+import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import {
-  copyToClipboard,
+  getMarkdownStylesheet,
   removeThinkingContent,
-} from "@/components/matrx/buttons/markdown-copy-utils";
-import {
-  getWordPressCSS,
-  loadWordPressCSS,
-} from "@/features/html-pages/css/wordpress-styles";
+} from "@ai-matrx/print/markdown";
 import SmallCodeEditor from "@/features/code-editor/components/code-block/SmallCodeEditor";
 import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
@@ -149,13 +146,8 @@ function HtmlPreviewModalBody({
 
   // Load WordPress CSS for accurate preview
   useEffect(() => {
-    const loadCSS = async () => {
-      const cssContent = await loadWordPressCSS();
-      setWordPressCSS(cssContent);
-    };
-
     if (isOpen) {
-      loadCSS();
+      setWordPressCSS(getMarkdownStylesheet());
     }
   }, [isOpen]);
 

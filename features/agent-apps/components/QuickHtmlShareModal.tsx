@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { X, Copy, Check, Download, ExternalLink } from 'lucide-react';
-import { markdownToWordPressHTML } from '@/features/html-pages/utils/markdown-wordpress-utils';
+import { markdownToHtml } from '@ai-matrx/print/markdown';
 
 interface QuickHtmlShareModalProps {
     isOpen: boolean;
@@ -80,7 +80,7 @@ ${bodyHtml}
 export default function QuickHtmlShareModal({ isOpen, onClose, markdown, title = 'AI Response' }: QuickHtmlShareModalProps) {
     const [copied, setCopied] = useState(false);
 
-    const bodyHtml = useMemo(() => markdownToWordPressHTML(markdown), [markdown]);
+    const bodyHtml = useMemo(() => markdownToHtml(markdown), [markdown]);
     const standaloneHtml = useMemo(() => buildStandaloneHtml(bodyHtml, title), [bodyHtml, title]);
 
     const handleCopy = useCallback(async () => {

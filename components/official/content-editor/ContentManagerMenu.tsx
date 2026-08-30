@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { extractErrorMessage } from "@/utils/errors";
-import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
+import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
 import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import HtmlPreviewFullScreenEditor from "@/features/html-pages/components/HtmlPreviewFullScreenEditor";
@@ -143,7 +143,7 @@ export function ContentManagerMenu({
       showHtmlPreview: true,
       onShowHtmlPreview: async (filteredHtml) => {
         try {
-          const cssContent = await loadWordPressCSS();
+          const cssContent = getMarkdownStylesheet();
           const completeHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>

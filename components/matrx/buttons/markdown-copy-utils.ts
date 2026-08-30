@@ -4,7 +4,7 @@
  */
 
 // Import WordPress utility function
-import { markdownToWordPressHTML } from '@/features/html-pages/utils/markdown-wordpress-utils';
+import { markdownToHtml, removeThinkingContent } from '@ai-matrx/print/markdown';
 // Last-resort manual-copy dialog (pure-TS opener; the host mounts in Providers)
 import { showManualCopy } from '@/components/dialogs/clipboard-fallback/manualCopyOpener';
 
@@ -31,46 +31,6 @@ interface CopyOptions {
   onError?: (err: unknown) => void;
   onShowHtmlPreview?: (html: string) => void;
 }
-
-/**
- * Removes thinking tags and their content from markdown
- * Handles both <thinking> and <think> tags
- * Removes surrounding newlines to avoid leaving blank lines
- * @param {string} content - The content to process
- * @returns {string} - Content without thinking tags
- */
-export function removeThinkingContent(content: string): string {
-  if (!content || typeof content !== 'string') return content || '';
-  
-  let result = content;
-  
-  // Remove thinking/reasoning tags with surrounding newlines
-  // Handles <thinking>, <think>, and <reasoning> as equivalent
-  result = result
-    .replace(/\n*<thinking>[\s\S]*?<\/thinking>\n*/gi, '\n')
-    .replace(/\n*<think>[\s\S]*?<\/think>\n*/gi, '\n')
-    .replace(/\n*<reasoning>[\s\S]*?<\/reasoning>\n*/gi, '\n');
-  
-  // Clean up any excessive newlines (3+ becomes 2, preserving intentional paragraph breaks)
-  result = result.replace(/\n{3,}/g, '\n\n');
-  
-  // Trim any leading/trailing whitespace that might have been left
-  result = result.trim();
-  
-  return result;
-}
-
-/**
- * Checks whether content contains any thinking/reasoning blocks
- * Handles <thinking>, <think>, and <reasoning> tags
- */
-export function hasThinkingContent(content: string): boolean {
-  if (!content || typeof content !== 'string') return false;
-  return /<thinking>|<think>|<reasoning>/i.test(content);
-}
-
-
-
 
 /**
  * Converts markdown text to Google Docs-friendly HTML
@@ -361,7 +321,7 @@ export function markdownToGoogleDocsHTML(markdown: string, includeThinking: bool
           htmlContent = markdownToGoogleDocsHTML(textToCopy, includeThinking);
         } else if (formatForWordPress) {
           // Convert markdown to HTML for WordPress
-          htmlContent = markdownToWordPressHTML(textToCopy, includeThinking);
+          htmlContent = markdownToHtml(textToCopy, { includeThinking });
         }
 
         // If showHtmlPreview is requested, call the callback instead of copying

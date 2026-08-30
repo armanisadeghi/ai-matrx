@@ -25,7 +25,7 @@ import {
   Share2,
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
-import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
+import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
 import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
 import { EmailInputDialog } from "@/components/dialogs/EmailInputDialog";
 import { AuthGateDialog } from "@/components/dialogs/AuthGateDialog";
@@ -301,7 +301,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       showHtmlPreview: true,
       onShowHtmlPreview: async (filteredHtml) => {
         try {
-          const cssContent = await loadWordPressCSS();
+          const cssContent = getMarkdownStylesheet();
           const completeHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>

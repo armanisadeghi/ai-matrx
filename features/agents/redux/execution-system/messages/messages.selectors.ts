@@ -38,7 +38,7 @@ import {
   fromCxVideoPart,
 } from "@/features/files/blocks/adapters/from-cx-av-part";
 import { seedPersistedEnvelopeCache } from "@/features/content-ir/registry/region-envelope-memo";
-import { removeThinkingContent } from "@/components/matrx/buttons/markdown-copy-utils";
+import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { NON_ANSWER_BLOCK_TYPES } from "../active-requests/active-requests.selectors";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
 import {

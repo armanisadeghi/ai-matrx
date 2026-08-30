@@ -58,7 +58,7 @@ import {
 } from "@/components/branding/RouteFaviconIcon";
 import { fileHandler } from "@/features/files/handler/handler";
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
-import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
+import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
@@ -568,7 +568,7 @@ function actionsItems(ctx: MessageActionContext): MenuItem[] {
           formatForWordPress: true,
           showHtmlPreview: true,
           onShowHtmlPreview: async (filteredHtml) => {
-            const cssContent = await loadWordPressCSS();
+            const cssContent = getMarkdownStylesheet();
             const html = `<!DOCTYPE html>\n<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>Content</title><style>${cssContent}</style></head><body>${filteredHtml}</body></html>`;
             await copyToClipboard(html, {
               onSuccess: () => {},
@@ -975,7 +975,7 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
         try {
           // Markdown → styled offscreen render → multi-page PDF blob.
           const { markdownToPdfBlob } =
-            await import("@/lib/print/markdown-pdf");
+            await import("@ai-matrx/print/pdf");
           const blob = await markdownToPdfBlob(content);
 
           const title = deriveMessageTitle(ctx);
@@ -2129,7 +2129,7 @@ export function resumePendingAuthAction(
         })
         .catch(() => toast.error("Failed to publish webpage"));
     } else if (action === "save-as-pdf") {
-      import("@/lib/print/markdown-pdf")
+      import("@ai-matrx/print/pdf")
         .then(async ({ markdownToPdfBlob }) => {
           const blob = await markdownToPdfBlob(savedContent);
           const ts = new Date()

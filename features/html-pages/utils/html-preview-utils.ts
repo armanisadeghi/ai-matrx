@@ -3,12 +3,11 @@
  * Extracted from useHtmlPreviewState to keep the hook focused on state management
  */
 
-import { removeThinkingContent } from "@/components/matrx/buttons/markdown-copy-utils";
+import { markdownToHtml, removeThinkingContent } from "@ai-matrx/print/markdown";
 import {
   evaluateMetaDescription,
   evaluateMetaTitle,
 } from "@/features/marketing/seo/serp/metrics";
-import { markdownToWordPressHTML } from "./markdown-wordpress-utils";
 
 /**
  * Detect whether a string is a complete, standalone HTML document — i.e. it has
@@ -118,7 +117,7 @@ export function analyzeHtmlForPreview(code: string): HtmlPreviewAnalysis {
  */
 export function convertMarkdownToHtml(markdown: string): string {
   const cleanedMarkdown = removeThinkingContent(markdown);
-  return markdownToWordPressHTML(cleanedMarkdown);
+  return markdownToHtml(cleanedMarkdown);
 }
 
 /**

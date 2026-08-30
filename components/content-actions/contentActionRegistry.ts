@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { printMarkdownContent } from "@/features/conversation/utils/markdown-print";
-import { loadWordPressCSS } from "@/features/html-pages/css/wordpress-styles";
+import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
@@ -417,7 +417,7 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
           formatForWordPress: true,
           showHtmlPreview: true,
           onShowHtmlPreview: async (filteredHtml) => {
-            const cssContent = await loadWordPressCSS();
+            const cssContent = getMarkdownStylesheet();
             const html = `<!DOCTYPE html>\n<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>${
               title ?? "Content"
             }</title><style>${cssContent}</style></head><body>${filteredHtml}</body></html>`;
