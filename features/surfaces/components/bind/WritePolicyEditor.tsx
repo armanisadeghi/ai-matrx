@@ -16,6 +16,18 @@
  * Controlled component — consumed by the per-agent surfaces shell
  * (Agent access column), the batch binding editor, and the shortcut editor.
  * Never fetches, never saves; the owner round-trips the FULL map.
+ *
+ * WHERE THE MAP IS STORED (census #20). A write policy is TREATMENT, never
+ * consumption (THE-MODEL law 4), so it never rides inside a value-mapping
+ * blob:
+ *  - surface bindings — `write_policies` on the `surface_binding` edge payload
+ *    (`features/surfaces/types.ts` `SurfaceBindingPayload`);
+ *  - shortcuts — `mandate.treatment.config.write_policies`, reaching the
+ *    client as `mandate.vw_shortcut.write_policies` through
+ *    `readShortcutWritePolicies` / `packShortcutMappingColumns`
+ *    (`features/agents/redux/agent-shortcuts/converters.ts`). The legacy
+ *    `__write_policies` key nested in `value_mappings` is the pre-cutover
+ *    home only, and no live row carries it.
  */
 
 import { Lock, PenLine } from "lucide-react";

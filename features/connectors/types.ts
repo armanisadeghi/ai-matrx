@@ -39,7 +39,7 @@ export interface ConnectorLogoProps {
   className?: string;
 }
 
-/** A brand mark. Local inline SVG or a Lucide icon adapted via `lucideMark`. */
+/** A local brand mark. Dynamic MCP providers use their catalogue artwork. */
 export type ConnectorLogo = ComponentType<ConnectorLogoProps>;
 
 export interface ConnectorDefinition {
@@ -49,8 +49,12 @@ export interface ConnectorDefinition {
   name: string;
   /** One user-facing line: what connecting unlocks. No jargon, no feature list. */
   blurb: string;
-  /** Local brand mark. Never a hotlinked remote logo. */
-  logo: ConnectorLogo;
+  /** Local first-party brand mark. */
+  logo?: ConnectorLogo;
+  /** Canonical MCP catalogue artwork for dynamically discovered providers. */
+  iconUrl?: string | null;
+  /** Canonical provider color, used only if its artwork fails to load. */
+  brandColor?: string | null;
   /** Surfaces this connector may appear on. Explicit, never inferred. */
   surfaces: ConnectorSurface[];
   /**

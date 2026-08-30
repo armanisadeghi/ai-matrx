@@ -478,6 +478,29 @@ export default function AdminEditAgentAppPage({
                     <Field label="Slug" value={app.slug} mono />
                     <Field label="Category" value={app.category ?? "—"} />
                     <Field label="Creator" value={app.creator_email ?? "—"} />
+                    {/*
+                      THE APP'S JOB (census #61). After 6.9 an app's job is its
+                      mandate; the holder behind it is the mandate's business,
+                      not the app's, so this console shows the job and links to
+                      it. Binding lives on the app's own settings page.
+                    */}
+                    <div className="col-span-2">
+                      <div className="text-xs text-muted-foreground">
+                        Mandate
+                      </div>
+                      <div className="mt-0.5 font-mono text-xs text-foreground break-words">
+                        {app.mandate_key ? (
+                          <Link
+                            href={`/mandates/${encodeURIComponent(app.mandate_key)}`}
+                            className="hover:underline"
+                          >
+                            {app.mandate_key}
+                          </Link>
+                        ) : (
+                          "—"
+                        )}
+                      </div>
+                    </div>
                     <Field
                       label="Tagline"
                       value={app.tagline ?? "—"}

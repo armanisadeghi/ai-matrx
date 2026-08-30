@@ -28,6 +28,12 @@ import {
 } from "@/utils/auth/auth-destination";
 import { routeRequiresAuthentication } from "@/utils/auth/protected-routes";
 
+const AUTH_COOKIE_RESPONSE_HEADERS = {
+  "Cache-Control": "private, no-cache, no-store, must-revalidate, max-age=0",
+  Expires: "0",
+  Pragma: "no-cache",
+} as const;
+
 export async function updateSession(
   request: NextRequest,
   // Satellite hosts (manage./demos.aimatrx.com) don't compile /dashboard —
@@ -80,7 +86,11 @@ export async function updateSession(
     cookiesToSet.forEach(({ name, value, options }) =>
       nextResponse.cookies.set(name, value, options),
     );
-    Object.entries(headers).forEach(([name, value]) =>
+    const responseHeaders =
+      cookiesToSet.length > 0
+        ? { ...AUTH_COOKIE_RESPONSE_HEADERS, ...headers }
+        : headers;
+    Object.entries(responseHeaders).forEach(([name, value]) =>
       nextResponse.headers.set(name, value),
     );
     supabaseResponse = nextResponse;

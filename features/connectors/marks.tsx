@@ -1,7 +1,7 @@
 // features/connectors/marks.tsx
 //
-// Local brand marks for connectors. NEVER hotlink a remote logo — a connector
-// row that waits on a third-party CDN is a layout shift and a privacy leak.
+// Local first-party brand marks for connectors. Dynamic MCP providers render
+// their canonical catalogue artwork through ConnectorMark.
 //
 // Same contract as `components/icons/brand-glyphs.tsx`: `colored={false}` paints
 // `currentColor` so a mark inherits the row's muted/foreground token, and a

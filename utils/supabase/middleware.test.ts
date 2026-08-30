@@ -57,6 +57,8 @@ describe("Supabase proxy session continuity", () => {
     expect(response.headers.get("set-cookie")).toContain(
       `${LEGACY_AUTH_COOKIE_NAME}=;`,
     );
+    expect(response.headers.get("cache-control")).toContain("private");
+    expect(response.headers.get("cache-control")).toContain("no-store");
   });
 
   it("never persists a West-only session that East rejects", async () => {
@@ -74,6 +76,8 @@ describe("Supabase proxy session continuity", () => {
     expect(response.headers.get("set-cookie")).toContain(
       `${LEGACY_AUTH_COOKIE_NAME}=;`,
     );
+    expect(response.headers.get("cache-control")).toContain("private");
+    expect(response.headers.get("cache-control")).toContain("no-store");
   });
 
   it("carries refreshed session cookies and no-cache headers through redirects", async () => {

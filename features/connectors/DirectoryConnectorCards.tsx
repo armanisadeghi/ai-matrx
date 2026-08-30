@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { ConnectorMark } from "./ConnectorMark";
 import { connectorsFor } from "./registry";
 import {
   googleConnectionFor,
@@ -66,9 +67,10 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
       {connectors.map((connector) => {
         const id = connector.id as GoogleConnectorId;
         const connection = googleConnectionFor(id, rows);
-        const stale = connection ? undefined : googleStaleConnectionFor(id, rows);
+        const stale = connection
+          ? undefined
+          : googleStaleConnectionFor(id, rows);
         const connected = connection !== undefined;
-        const Logo = connector.logo;
         const reason = CONNECT_REASON[id];
         const accountEmail =
           connection?.account_email ?? stale?.account_email ?? null;
@@ -89,7 +91,7 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <div className="shrink-0 mt-0.5 w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
-                  <Logo colored={connected} className="h-5 w-5" />
+                  <ConnectorMark connector={connector} className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-medium text-sm text-foreground truncate">
@@ -157,7 +159,9 @@ export function DirectoryConnectorCards({ className }: { className?: string }) {
                   <Button
                     size="sm"
                     className="h-7 text-xs flex-1"
-                    onClick={() => openGoogleConnect({ reason: reason ?? undefined })}
+                    onClick={() =>
+                      openGoogleConnect({ reason: reason ?? undefined })
+                    }
                   >
                     <ConnectIcon className="h-3 w-3 mr-1" />
                     {connectLabel}

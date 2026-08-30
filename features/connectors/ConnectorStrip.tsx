@@ -9,7 +9,8 @@
 //
 // Design rules it must keep:
 //  - One line. It sits under a chat input and must never compete with it.
-//  - Color means connected. An unconnected mark is monochrome and muted.
+//  - Provider artwork keeps its real brand color. Connection state is carried
+//    by the check and chip treatment, never by destroying the logo.
 //  - Exactly the connectors supplied by the host stay visible, whether they
 //    are connected or not. A final More door opens the complete live set.
 
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/tooltip";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { cn } from "@/lib/utils";
+import { ConnectorMark } from "./ConnectorMark";
 import { connectorsFor } from "./registry";
 import type {
   ConnectorDefinition,
@@ -88,19 +90,14 @@ export function ConnectorStrip({
         )}
       >
         {rows.map(({ connector, status }) => {
-          const Logo = connector.logo;
           const connected = status === "connected";
           const unavailable = status === "unavailable";
 
           const mark = (
-            <Logo
-              colored={connected}
-              className={cn(
-                "h-3 w-3",
-                connected
-                  ? undefined
-                  : "text-muted-foreground/70 transition-colors group-hover:text-foreground",
-              )}
+            <ConnectorMark
+              connector={connector}
+              colored={!unavailable}
+              className="h-3 w-3 rounded-[2px]"
             />
           );
 

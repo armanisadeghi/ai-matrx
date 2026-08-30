@@ -234,8 +234,9 @@ import {
   agentShortcutToInsert,
   agentShortcutToUpdate,
   parseValueMappings,
-  parseShortcutWritePolicies,
-  packShortcutValueMappings,
+  readShortcutWritePolicies,
+  packShortcutMappingColumns,
+  shortcutMappingColumnsAreShared,
 } from "./converters";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
@@ -330,8 +331,8 @@ export const buildAgentShortcutMenu = createAsyncThunk<
           valueMappings: parseValueMappings(
             (item as { value_mappings?: unknown }).value_mappings,
           ),
-          writePolicies: parseShortcutWritePolicies(
-            (item as { value_mappings?: unknown }).value_mappings,
+          writePolicies: readShortcutWritePolicies(
+            item as unknown as Record<string, unknown>,
           ),
           contextMappings: parseScopeMappings(item.context_mappings),
 
@@ -447,8 +448,8 @@ export const fetchShortcutsForContext = createAsyncThunk<
         valueMappings: parseValueMappings(
           (row as { value_mappings?: unknown }).value_mappings,
         ),
-        writePolicies: parseShortcutWritePolicies(
-          (row as { value_mappings?: unknown }).value_mappings,
+        writePolicies: readShortcutWritePolicies(
+          row as unknown as Record<string, unknown>,
         ),
         contextMappings: parseScopeMappings(row.context_mappings),
 
@@ -523,11 +524,14 @@ export const saveShortcut = createAsyncThunk<void, string, ThunkApi>(
       assignField(dirtyPartial, field, record[field]);
     }
 
-    // valueMappings + writePolicies share ONE JSONB column — when either is
-    // dirty, ship both from the record so the pack never clears a half.
+    // Pre-cutover valueMappings + writePolicies share ONE JSONB column — when
+    // either is dirty, ship both from the record so the pack never clears a
+    // half. Post-cutover policies are treatment (their own column) and each
+    // half saves on its own.
     if (
-      dirtyPartial.valueMappings !== undefined ||
-      dirtyPartial.writePolicies !== undefined
+      shortcutMappingColumnsAreShared() &&
+      (dirtyPartial.valueMappings !== undefined ||
+        dirtyPartial.writePolicies !== undefined)
     ) {
       dirtyPartial.valueMappings = record.valueMappings;
       dirtyPartial.writePolicies = record.writePolicies ?? null;
@@ -574,11 +578,12 @@ export const saveShortcutField = createAsyncThunk<
     // Optimistic update
     dispatch(setShortcutField({ id: shortcutId, field, value }));
 
-    // valueMappings + writePolicies share ONE JSONB column — a single-field
-    // save of either must carry the other from the existing record or the
-    // pack clears it.
+    // Pre-cutover valueMappings + writePolicies share ONE JSONB column — a
+    // single-field save of either must carry the other from the existing
+    // record or the pack clears it. Post-cutover they are separate columns.
     const patch: Partial<AgentShortcut> =
-      field === "valueMappings" || field === "writePolicies"
+      shortcutMappingColumnsAreShared() &&
+      (field === "valueMappings" || field === "writePolicies")
         ? {
             valueMappings:
               field === "valueMappings"
@@ -859,7 +864,9 @@ export const syncUserShortcutToSlice = createAsyncThunk<
       surfaceName: item.surface_name ?? null,
       scopeMappings: item.scope_mappings,
       valueMappings: parseValueMappings(item.value_mappings),
-      writePolicies: parseShortcutWritePolicies(item.value_mappings),
+      writePolicies: readShortcutWritePolicies(
+        item as unknown as Record<string, unknown>,
+      ),
       contextMappings: item.context_mappings,
       ...menuItemToConfigFields(item),
       isActive: item.is_active,
@@ -933,7 +940,9 @@ export function shortcutRowToFrontend(row: ShortcutApiRow): AgentShortcut {
     surfaceName: row.surface_name ?? null,
     scopeMappings: parseScopeMappings(row.scope_mappings),
     valueMappings: parseValueMappings(row.value_mappings),
-    writePolicies: parseShortcutWritePolicies(row.value_mappings),
+    writePolicies: readShortcutWritePolicies(
+      row as unknown as Record<string, unknown>,
+    ),
     contextMappings: parseScopeMappings(row.context_mappings),
     ...menuItemToConfigFields(row),
     // Mandate identity rides the same REST rows (census #47) — the route
@@ -974,8 +983,8 @@ function shortcutToApiBody(
   if (patch.valueMappings !== undefined || patch.writePolicies !== undefined) {
     // Shared-column pack — see agentShortcutToUpdate for the same rule.
     if (
-      patch.valueMappings === undefined ||
-      patch.writePolicies === undefined
+      shortcutMappingColumnsAreShared() &&
+      (patch.valueMappings === undefined || patch.writePolicies === undefined)
     ) {
       console.error(
         "[agent-shortcuts] REST value_mappings patch is one-sided — valueMappings and writePolicies share one column; the missing half is being CLEARED. Pass both (updateShortcut fills them automatically).",
@@ -985,10 +994,14 @@ function shortcutToApiBody(
         },
       );
     }
-    out.value_mappings = packShortcutValueMappings(
+    const columns = packShortcutMappingColumns(
       patch.valueMappings ?? null,
       patch.writePolicies ?? null,
-    ) as unknown;
+    );
+    if (shortcutMappingColumnsAreShared() || patch.valueMappings !== undefined)
+      out.value_mappings = columns.value_mappings;
+    if (!shortcutMappingColumnsAreShared() && patch.writePolicies !== undefined)
+      out.write_policies = columns.write_policies;
   }
   if (patch.contextMappings !== undefined)
     out.context_mappings = patch.contextMappings as unknown;
@@ -1095,11 +1108,12 @@ export const updateShortcut = createAsyncThunk<
 
   const existing = selectShortcutById(getState(), id);
 
-  // valueMappings + writePolicies share ONE JSONB column — a one-sided patch
-  // would clear the other half. Fill the missing half from the loaded record.
+  // Pre-cutover valueMappings + writePolicies share ONE JSONB column — a
+  // one-sided patch would clear the other half, so fill the missing half from
+  // the loaded record. Post-cutover a one-sided patch is a one-column patch.
   if (
-    (patch.valueMappings !== undefined) !==
-    (patch.writePolicies !== undefined)
+    shortcutMappingColumnsAreShared() &&
+    (patch.valueMappings !== undefined) !== (patch.writePolicies !== undefined)
   ) {
     if (!existing) {
       console.warn(

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowUp, Paperclip } from "lucide-react";
+import { ConnectorMark } from "@/features/connectors/ConnectorMark";
 import { ConnectorStrip } from "@/features/connectors/ConnectorStrip";
 import { CONNECTORS, connectorsFor } from "@/features/connectors/registry";
 import { cn } from "@/lib/utils";
@@ -182,7 +183,7 @@ export default function ConnectorStripDemo() {
                     key={c.id}
                     className="flex items-center gap-1.5 text-[11px] text-muted-foreground"
                   >
-                    <c.logo className="h-3 w-3" />
+                    <ConnectorMark connector={c} className="h-3 w-3" />
                     <span className="text-foreground">{c.name}</span>
                     <span className="truncate">{c.blurb}</span>
                   </li>
