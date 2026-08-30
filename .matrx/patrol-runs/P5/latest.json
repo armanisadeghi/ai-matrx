@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P5",
   "runId": "2026-08-30-copy-everywhere-eradication",
-  "state": "fixing",
-  "updatedAt": "2026-08-30T14:18:57.229Z",
-  "summary": "Extending the canonical MatrxDataTable copy config with row AI variants, then folding Unwired's finish brief into the table-owned row menu.",
+  "state": "certifying",
+  "updatedAt": "2026-08-30T14:26:05.013Z",
+  "summary": "Exact candidate a48dda0a079abac8bc27990da4b0e3c63e10da20: shared MatrxDataTable row AI variants and Unwired menu consolidation are ready for adversarial certification.",
   "source": "2026-08-30-copy-everywhere-eradication.json",
-  "eventHash": "9f476b6c4dd1aed472f5eb26e8c78298c8c0e4fca325ae3fda24a3a84817442e"
+  "eventHash": "14927bd255f5b3f621af99dde79778aaeabeda17df273d556c10f4bc3f78e8c0"
 }

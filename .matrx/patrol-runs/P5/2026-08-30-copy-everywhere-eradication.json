@@ -30,6 +30,23 @@
       ],
       "previousEventHash": "b9d67de499ebbbd51bf9d446ee9f31cf87ff0b52ae84fd3ee1acc7402c525118",
       "eventHash": "9f476b6c4dd1aed472f5eb26e8c78298c8c0e4fca325ae3fda24a3a84817442e"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-30T14:26:05.013Z",
+      "actor": "codex-pattern-patrol-p5",
+      "summary": "Exact candidate a48dda0a079abac8bc27990da4b0e3c63e10da20: shared MatrxDataTable row AI variants and Unwired menu consolidation are ready for adversarial certification.",
+      "evidence": [
+        "Focused Jest: 30/30 passed.",
+        "P5 detector: 105 compliant, 26 auto-approved, 1 equivalent, 33 review, 17 excluded; Unwired moved from REVIEW to compliant.",
+        "check:patrol-contracts passed.",
+        "Scoped ESLint: 0 errors, one unchanged barrel warning.",
+        "Type-check has one unrelated concurrent failure in components/official/AdvancedMenu.coming-soon.test.tsx for missing @testing-library/react; no P5-owned diagnostics.",
+        "In-app Browser automation unavailable because the required node_repl js tool is not exposed; component render tests cover row and mobile copy controls."
+      ],
+      "previousEventHash": "9f476b6c4dd1aed472f5eb26e8c78298c8c0e4fca325ae3fda24a3a84817442e",
+      "eventHash": "14927bd255f5b3f621af99dde79778aaeabeda17df273d556c10f4bc3f78e8c0"
     }
   ]
 }
