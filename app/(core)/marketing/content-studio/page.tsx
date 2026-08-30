@@ -1,9 +1,11 @@
-// Reserved Marketing route. Body, copy, and status come from the shared
-// placeholder — see features/marketing/components/MarketingComingSoon.tsx.
-// The promise is tracked as `marketing.content-studio` in lib/coming-soon/registry.ts.
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-import { MarketingComingSoon } from "@/features/marketing/components/MarketingComingSoon";
-
-export default function Page() {
-  return <MarketingComingSoon comingSoonId="marketing.content-studio" />;
+/**
+ * Legacy flat pillar. Content work now lives on the brand, under /marketing/[brand]/content.
+ * Which client's work this is can only be answered by a person, so the shim
+ * lands on the client roster rather than guessing a brand.
+ */
+export default function MarketingContentStudioShim() {
+  permanentRedirect(marketingRoutes.brands());
 }

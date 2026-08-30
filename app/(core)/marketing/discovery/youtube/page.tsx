@@ -1,5 +1,7 @@
-import { YouTubeDiscovery } from "@/features/marketing/discovery/youtube/YouTubeDiscovery";
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export default function YouTubeDiscoveryPage() {
-  return <YouTubeDiscovery />;
+/** Legacy address — YouTube research is an agency tool now. */
+export default function YouTubeDiscoveryShim() {
+  permanentRedirect(marketingRoutes.youtubeDiscovery());
 }

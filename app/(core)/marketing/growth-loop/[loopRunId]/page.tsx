@@ -6,9 +6,11 @@
  * `platform.shareable_resource_registry` declares `growth_loop_run`'s
  * `url_path_template` as `/marketing/growth-loop/{id}`, so this URL must
  * resolve — it is what a share link, an assist, or a server-side notice hands
- * a user. The loop lives inside its site's workspace (a loop with no site is
- * not a thing), so this route resolves the run to its site and replaces the
- * URL with the canonical brand-first one.
+ * a user. The loop lives inside the SEO practice on its site (a loop with no
+ * site is not a thing), so this route resolves the run to its site and
+ * replaces the URL with the canonical brand-first address
+ * `/marketing/[brand]/seo/[site]/growth-loop`. A run whose brand cannot be
+ * read still gets the flat site shim, which resolves the brand server-side.
  */
 
 import { use, useEffect } from "react";
@@ -39,7 +41,11 @@ export default function GrowthLoopRunRedirect({
     // Wait for the brand only while the site read is still in flight; a site
     // with no brand still has a working flat route.
     if (site.isLoading) return;
-    router.replace(marketingRoutes.site(brandId, siteId, "/growth-loop"));
+    router.replace(
+      brandId
+        ? marketingRoutes.seoSite(brandId, siteId, "/growth-loop")
+        : marketingRoutes.site(null, siteId, "/growth-loop"),
+    );
   }, [brandId, router, site.isLoading, siteId]);
 
   if (loop.isError) {
@@ -49,8 +55,8 @@ export default function GrowthLoopRunRedirect({
         id={loopRunId}
         error={loop.error}
         onRetry={() => void loop.refetch()}
-        fallbackHref="/marketing/sites"
-        fallbackLabel="All sites"
+        fallbackHref={marketingRoutes.brands()}
+        fallbackLabel="All clients"
       />
     );
   }

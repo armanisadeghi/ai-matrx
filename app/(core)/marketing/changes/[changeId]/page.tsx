@@ -1,10 +1,17 @@
 import { notFound, redirect } from "next/navigation";
+
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { resolveLegacySiteAddress } from "@/features/marketing/lib/shim-resolve-server";
 import { createClient } from "@/utils/supabase/server";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Generic entity door → the owning site's canonical Changes workspace. */
+/**
+ * Generic entity door → the owning site's canonical Changes workspace, which
+ * is part of the SEO practice on that site:
+ * /marketing/[brand]/seo/[site]/changes?change=<id>.
+ */
 export default async function MarketingChangeShortLink({
   params,
 }: {
@@ -26,15 +33,9 @@ export default async function MarketingChangeShortLink({
     .maybeSingle();
   if (changeResponse.error) throw changeResponse.error;
   if (!changeResponse.data) notFound();
-  const siteResponse = await supabase
-    .schema("web")
-    .from("site")
-    .select("id,brand_id")
-    .eq("id", changeResponse.data.site_id)
-    .maybeSingle();
-  if (siteResponse.error) throw siteResponse.error;
-  if (!siteResponse.data?.brand_id) notFound();
+  const address = await resolveLegacySiteAddress(changeResponse.data.site_id);
+  if (!address) notFound();
   redirect(
-    `/marketing/brands/${siteResponse.data.brand_id}/sites/${siteResponse.data.id}/changes?change=${changeId}`,
+    marketingRoutes.siteChanges(address.brandSeg, address.siteSeg, changeId),
   );
 }

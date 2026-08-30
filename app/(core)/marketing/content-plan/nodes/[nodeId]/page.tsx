@@ -1,11 +1,18 @@
 import { notFound, redirect } from "next/navigation";
 
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { resolveLegacySiteAddress } from "@/features/marketing/lib/shim-resolve-server";
 import { createClient } from "@/utils/supabase/server";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Resolve a plan-node identity to the exact node in its site workspace. */
+/**
+ * Resolve a plan-node identity to the exact node in its site workspace — now
+ * the brand-first address /marketing/[brand]/content/plan/[site]. The tree is
+ * the workspace index, so no view segment is emitted; `?node=` still carries
+ * the selection.
+ */
 export default async function ContentPlanNodeShortLink({
   params,
 }: {
@@ -24,7 +31,10 @@ export default async function ContentPlanNodeShortLink({
     .maybeSingle();
   if (response.error || !response.data) notFound();
 
+  const address = await resolveLegacySiteAddress(response.data.site_id);
+  if (!address) notFound();
+
   redirect(
-    `/marketing/content-plan/${response.data.site_id}?view=tree&node=${nodeId}`,
+    `${marketingRoutes.brandContentPlanSite(address.brandSeg, address.siteSeg)}?node=${nodeId}`,
   );
 }

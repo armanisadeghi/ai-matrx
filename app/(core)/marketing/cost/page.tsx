@@ -1,11 +1,7 @@
-import { Suspense } from "react";
-import { WorkspaceCostWorkspace } from "@/features/marketing/components/operations/WorkspaceCostWorkspace";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export default function MarketingCostPage() {
-  return (
-    <Suspense fallback={<LoadingSurface label="Loading cost rollups…" />}>
-      <WorkspaceCostWorkspace />
-    </Suspense>
-  );
+/** Legacy address — the cost roll-up is an agency report now. */
+export default function MarketingCostShim() {
+  permanentRedirect(marketingRoutes.cost());
 }

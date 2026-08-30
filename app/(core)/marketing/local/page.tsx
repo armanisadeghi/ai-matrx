@@ -1,50 +1,31 @@
-import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { Suspense } from "react";
+import { permanentRedirect } from "next/navigation";
 
-import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
-import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import LocalListingsWorkspace from "@/features/marketing/local/LocalListingsWorkspace";
+import { marketingSeg } from "@/features/marketing/lib/keys";
+import { resolveBrandParam } from "@/features/marketing/lib/keys-server";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import RouteHeader from "@/features/shell/components/header/RouteHeader";
 
-export const metadata: Metadata = {
-  title: "Local & Listings",
-  description:
-    "Manage every physical location's canonical profile, track its presence across the directories that drive local rank, and keep name/address/phone consistent everywhere.",
-};
-
-export default async function MarketingLocalPage({
+/**
+ * Legacy flat pillar. Locations belong to a client, so Local & Listings is a
+ * brand section now: /marketing/[brand]/locations (and /locations/[locationId]
+ * for one canonical location). The old cross-brand door already accepted
+ * `?brand=` / `?location=`; those keep resolving, straight onto the new
+ * address with slug segments. A plain visit names no client, so it lands on
+ * the roster.
+ */
+export default async function MarketingLocalShim({
   searchParams,
 }: {
   searchParams: Promise<{ brand?: string; location?: string }>;
 }) {
   const { brand, location } = await searchParams;
-  if (brand) {
-    redirect(
+  const resolved = brand ? await resolveBrandParam(brand) : null;
+  if (resolved) {
+    const seg = marketingSeg(resolved);
+    permanentRedirect(
       location
-        ? marketingRoutes.brandLocation(brand, location)
-        : marketingRoutes.brandLocal(brand),
+        ? marketingRoutes.brandLocation(seg, location)
+        : marketingRoutes.brandLocal(seg),
     );
   }
-  return (
-    <>
-      <RouteHeader
-        left={
-          <div className="flex min-w-0 items-center">
-            <ChevronLeftTapButton
-              href={marketingRoutes.home()}
-              ariaLabel="Marketing"
-            />
-            <h1 className="truncate text-sm font-medium text-foreground">
-              Local &amp; Listings
-            </h1>
-          </div>
-        }
-      />
-      <Suspense fallback={<LoadingSurface label="Loading locations…" />}>
-        <LocalListingsWorkspace />
-      </Suspense>
-    </>
-  );
+  permanentRedirect(marketingRoutes.brands());
 }

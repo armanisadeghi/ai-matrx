@@ -1,23 +1,11 @@
-import PageHeader from "@/features/shell/components/header/PageHeader";
-import { GoogleAdsWorkspace } from "@/features/marketing/ads/GoogleAdsWorkspace";
-import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
-import { GOOGLE_ADS_REPORTING_SCOPES } from "@/lib/googleScopes";
+import { permanentRedirect } from "next/navigation";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
-export default function Page() {
-  return (
-    <>
-      <PageHeader>
-        <div className="flex w-full min-w-0 items-center">
-          <h1 className="truncate text-sm font-medium text-foreground">
-            Google Ads
-          </h1>
-        </div>
-      </PageHeader>
-      <div className="h-full overflow-y-auto overflow-x-hidden">
-        <LazyGoogleAPIProvider scopes={[...GOOGLE_ADS_REPORTING_SCOPES]}>
-          <GoogleAdsWorkspace />
-        </LazyGoogleAPIProvider>
-      </div>
-    </>
-  );
+/**
+ * Legacy flat pillar. Google Ads now lives on the brand, at /marketing/[brand]/ads.
+ * Which client's work this is can only be answered by a person, so the shim
+ * lands on the client roster rather than guessing a brand.
+ */
+export default function MarketingAdsShim() {
+  permanentRedirect(marketingRoutes.brands());
 }

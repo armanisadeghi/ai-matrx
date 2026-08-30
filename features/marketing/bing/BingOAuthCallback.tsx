@@ -7,6 +7,7 @@ import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCompleteBingOAuth } from "@/features/marketing/bing/hooks";
 import { BING_PROVIDER } from "@/features/marketing/lib/provider-names";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 type CallbackStatus = "working" | "success" | "error";
 
@@ -43,7 +44,7 @@ export function BingOAuthCallback() {
         // OAuth callback: replace so Back never re-enters the consumed
         // callback URL. NEVER convert this to push.
         window.setTimeout(
-          () => router.replace("/marketing/connections/bing"),
+          () => router.replace(marketingRoutes.connectionsBing()),
           700,
         );
       })
@@ -75,7 +76,7 @@ export function BingOAuthCallback() {
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>
         {status === "error" ? (
           <Button asChild className="mt-4" size="sm">
-            <Link href="/marketing/connections/bing">
+            <Link href={marketingRoutes.connectionsBing()}>
               Return to Bing connections
             </Link>
           </Button>
