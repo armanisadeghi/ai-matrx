@@ -64,6 +64,16 @@ function permanentRecordIdentity(
   return { patrolId: match[1], runId: match[2] };
 }
 
+function explicitCandidateShas(event: PatrolRunRecord["events"][number]): string[] {
+  return [
+    event.certification?.candidateSha,
+    event.blocker?.preservedSha,
+    event.delivery?.candidateSha,
+    event.escape?.candidateSha,
+    event.reconciliation?.candidateSha,
+  ].filter((candidateSha): candidateSha is string => Boolean(candidateSha));
+}
+
 function git(repoRoot: string, args: string[]): string {
   return execFileSync("git", args, { cwd: repoRoot, encoding: "utf8" }).trim();
 }
@@ -363,6 +373,30 @@ export function checkPatrolCommits(input: {
         );
         if (candidateProblems.length > 0 || releaseProblems.length > 0)
           continue;
+        let parentEventCount = 0;
+        try {
+          const parentRecord = loadRecordAtRef(
+            repoRoot,
+            `${commitSha}^`,
+            identity.patrolId,
+            identity.runId,
+          );
+          parentEventCount = parentRecord.events.length;
+        } catch {
+          // A new record has no parent history, so every event belongs to this commit.
+        }
+        const explicitCandidates = candidateRecord.events
+          .slice(parentEventCount)
+          .flatMap(explicitCandidateShas);
+        if (
+          explicitCandidates.length > 0 &&
+          !explicitCandidates.includes(commitSha)
+        ) {
+          // Shared-checkout commits can contain an unrelated product edit and a
+          // delivery projection for an older exact candidate. The explicit SHA
+          // owns that record append; do not misattribute it to this commit.
+          continue;
+        }
         const certification = releaseRecord.events.find(
           (event) =>
             event.state === "certified" &&
