@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ImageSource } from "./types";
-import { useFileSrc } from "@/features/files/handler/hooks/useFileSrc";
+import { useMediaResolution } from "@ai-matrx/media/core";
 
 /**
  * Resolve an `ImageSource` to a single, browser-loadable URL plus a
@@ -24,15 +24,10 @@ export function useImageSource(source: ImageSource | null): {
   ready: boolean;
 } {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
-  const cloudFileUrl = useFileSrc(
-    source?.kind === "cloudFileId"
-      ? {
-          kind: "file_id",
-          fileId: source.cloudFileId,
-          mime: "image/*",
-        }
-      : null,
-  );
+  const cloudFileUrl =
+    useMediaResolution(
+      source?.kind === "cloudFileId" ? source.cloudFileId : null,
+    ).resolution?.src ?? null;
 
   useEffect(() => {
     if (source?.kind !== "file") return undefined;

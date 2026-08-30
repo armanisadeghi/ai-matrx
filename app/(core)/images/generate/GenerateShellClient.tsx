@@ -35,7 +35,7 @@ import {
   IMAGE_GENERATE_SIZE_OPTIONS,
   type ImageGenerateSize,
 } from "@/features/image-studio/constants/generation-options";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { InlineMediaRef } from "@ai-matrx/media/react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   IMAGE_GENERATE_SURFACE_NAME,
