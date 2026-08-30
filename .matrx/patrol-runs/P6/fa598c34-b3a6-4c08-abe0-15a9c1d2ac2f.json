@@ -59,6 +59,21 @@
       },
       "previousEventHash": "16b72cb5254c5c91add0af4ee1b22193fe90c3af49c36c26e59bb3cb78f9c054",
       "eventHash": "6503d4c69bc100d96700733c7e3d8aacdb810a0682d8ca40317088dabf3cff1e"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:51:21.068Z",
+      "actor": "codex-p6-controller",
+      "summary": "Certified candidate preserved and queued after integration to origin/main.",
+      "evidence": [],
+      "delivery": {
+        "candidateSha": "68294e85d79077c2ef526bb180cac43032f9c6e0",
+        "preservedRef": "refs/heads/patrol-runs/P6/fa598c34-b3a6-4c08-abe0-15a9c1d2ac2f",
+        "integratedSha": "05ad7aa37eb95e8f0f539068ff732ec87a3957d5"
+      },
+      "previousEventHash": "6503d4c69bc100d96700733c7e3d8aacdb810a0682d8ca40317088dabf3cff1e",
+      "eventHash": "d34d64a4a5741dd834ac980bdfec0f59c78495a5a332fb86fa0c4c7c44d22342"
     }
   ]
 }
