@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "20260830T141852Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-30T14:39:29.429Z",
-  "summary": "Queue already-integrated certified provider-sync candidate; no new release requested",
+  "state": "delivered",
+  "updatedAt": "2026-08-30T14:39:36.956Z",
+  "summary": "Certified provider-sync candidate already present on origin/main; release lane intentionally not invoked",
   "source": "20260830T141852Z.json",
-  "eventHash": "3abaee20a796ac4f9f73452c82ee5677a4773555c14a3a8c49ca9072906cfd58"
+  "eventHash": "e8ccbdbe05bc317cc9248b165e70226003484b118f360daaae57f2e46d48b5e5"
 }

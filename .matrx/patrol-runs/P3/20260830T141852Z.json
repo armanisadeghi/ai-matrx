@@ -82,6 +82,24 @@
       },
       "previousEventHash": "841ca7a3f90f02f627b46f9e44235b66b10ff1417ec432316fa659a3c18f65e1",
       "eventHash": "3abaee20a796ac4f9f73452c82ee5677a4773555c14a3a8c49ca9072906cfd58"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-30T14:39:36.956Z",
+      "actor": "root",
+      "summary": "Certified provider-sync candidate already present on origin/main; release lane intentionally not invoked",
+      "evidence": [
+        "shared checkpoint integration preceded certification; immutable event ordering retained"
+      ],
+      "delivery": {
+        "candidateSha": "141d52a518e50714c865419f020c0aa81f028566",
+        "preservedRef": "refs/heads/patrol-runs/P3/20260830T141852Z",
+        "integratedSha": "f7c8e22764418a14fa3b191762b71561f77ea8f6",
+        "release": "integration-only-no-new-release"
+      },
+      "previousEventHash": "3abaee20a796ac4f9f73452c82ee5677a4773555c14a3a8c49ca9072906cfd58",
+      "eventHash": "e8ccbdbe05bc317cc9248b165e70226003484b118f360daaae57f2e46d48b5e5"
     }
   ]
 }
