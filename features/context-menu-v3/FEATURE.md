@@ -219,7 +219,37 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 - **`EditableContextMenu`** — textareas/editors. Presets `isEditable`; accepts `getTextarea` / `onTextReplace` / `onTextInsertBefore|After` / `onContentInserted` / `onSave` / `onDelete` (Cut/Paste/Insert/Save/Delete light up).
 - **`NonEditableContextMenu`** — viewers, results, rendered markdown. No text mutation; Copy/AI/Attach/Share/Export/Convert still work via content self-resolution.
 
-Both take: `sourceFeature` (required — attribution), `surfaceName` (registry surface → AI actions + bound agents + value mappings), `getApplicationScope` / `contextData` (values), `contentSource` (rich-document source → Copy-as/Export/Convert), `entity` (`{type,id,title,resourceType?,isOwner?}` → Attach To + Share), `placementMode`, `addedContexts`/`excludedContexts`, `extraSections` (surface passthrough), history props, `scope`/`scopeId`, `enableFloatingIcon`. Types: `types.ts`.
+## Availability — why an item is in this menu at all
+
+**Derived, not declared** (Phase 6.7; THE-MODEL law 3 "Availability = capability").
+`model/requirement-gate.ts` is the whole rule, and the menu consults it in this order:
+
+1. **Requirements.** Every surface value an item consumes (`value_mappings` entries whose
+   `mapType` is `surface_value`, plus the legacy `scope_mappings`/`context_mappings` KEYS)
+   must have a read path here. Read path = the baseline floor ∪ the manifest's declared
+   values ∪ the keys that actually landed in the resolved scope. It is the KEY EXISTING,
+   never the value being populated — a surface that declares `raw_transcript_text` offers
+   the transcript items before a word has been recorded.
+2. **Scope.** One column, `surface_name`, carries three rungs, inherited downward:
+   `null`/`*` = global · `<client>` or `<client>/*` = that whole domain (the domain IS the
+   first path segment of a surface name) · `<client>/<surface>` = exactly that page.
+3. **The exclusion valve.** The surface's `menu` config namespace
+   (`{"excludedItemIds":[...]}`, layered global → org → scope → user, union-merged, never
+   re-admitting) refuses an item that qualified. Authored in the surface admin detail.
+
+One population check survives — an item consuming `selection` stays hidden until there is a
+selection — because the menu is selection-triggered anyway. Everything else is key-existence.
+
+**Categories GROUP, they never GATE.** A category's `placementType` decides which placement
+submenu it renders under; that is layout, and it is the only thing `placementTypes` does. A
+category is never dropped for failing a filter, and no item's availability consults its
+category. `enabled_features` (16 hardcoded slugs) and the RED `legacyMatch` rows it produced
+are GONE: an item qualifies or is absent, and nothing renders as broken.
+
+Both shortcut-storage positions are covered for free — the gate consumes the row shape the
+storage router serves (`lib/supabase/shortcutStorage.ts`), never a table name.
+
+Both take: `sourceFeature` (required — attribution), `surfaceName` (registry surface → AI actions + bound agents + value mappings), `getApplicationScope` / `contextData` (values), `contentSource` (rich-document source → Copy-as/Export/Convert), `entity` (`{type,id,title,resourceType?,isOwner?}` → Attach To + Share), `placementMode`, `extraSections` (surface passthrough), history props, `scope`/`scopeId`, `enableFloatingIcon`. Types: `types.ts`.
 
 ### THE PER-ROW ENTITY — one menu, N rows, the RIGHT record
 
