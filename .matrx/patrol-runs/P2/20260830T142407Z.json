@@ -90,6 +90,20 @@
       },
       "previousEventHash": "139df74784a5c4a8b2802124c5928b44ec836177d1fefb3b37eb54ef4093fb88",
       "eventHash": "0588a09ec217952f6a220dea6afc052a5a8574c6a5b8665e387f46b45a667cd0"
+    },
+    {
+      "sequence": 6,
+      "state": "reversed",
+      "at": "2026-08-30T14:51:10.201Z",
+      "actor": "codex-p2-integration-audit",
+      "summary": "REVERSED: later shared-lane merges restored the pre-adoption SitesPortfolio bytes while retaining the certified candidate only as Git ancestry.",
+      "evidence": [
+        "origin/main SitesPortfolio blob matched the candidate parent 93277a031700bec58e65a0e3cd6310a3f60d2075 rather than certified blob e12eeec5a4856c7c8bcbfdbfea80504f3fedaf57.",
+        "The same later merge restored EntityListTable sortable:true and deleted the presentation and column-capability tests.",
+        "No candidate-caused product defect exists; this event records integration reversal before the exact repair is reapplied and recertified."
+      ],
+      "previousEventHash": "0588a09ec217952f6a220dea6afc052a5a8574c6a5b8665e387f46b45a667cd0",
+      "eventHash": "788df987e7a8292aa869dec10e5ecda52286ecf2c95772f19ce0918762d463f7"
     }
   ]
 }

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P2",
   "runId": "20260830T142407Z",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-30T14:45:02.992Z",
-  "summary": "Certified sites candidate is integrated on origin/main and queued for the serialized release lane.",
+  "state": "reversed",
+  "updatedAt": "2026-08-30T14:51:10.201Z",
+  "summary": "REVERSED: later shared-lane merges restored the pre-adoption SitesPortfolio bytes while retaining the certified candidate only as Git ancestry.",
   "source": "20260830T142407Z.json",
-  "eventHash": "0588a09ec217952f6a220dea6afc052a5a8574c6a5b8665e387f46b45a667cd0"
+  "eventHash": "788df987e7a8292aa869dec10e5ecda52286ecf2c95772f19ce0918762d463f7"
 }
