@@ -229,6 +229,22 @@
       },
       "previousEventHash": "43cd0186b1a3ef5084a7556efbd0840937504300b946f4cb338cfce3151d0f7c",
       "eventHash": "852472e8cdf491a97a27250dc05f1cdb1755a652514f7324066137d32fc4b3ca"
+    },
+    {
+      "sequence": 15,
+      "state": "delivery_queued",
+      "at": "2026-08-30T14:40:23.807Z",
+      "actor": "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+      "summary": "Certified corrected candidate queued for historical delivery reconciliation",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P11/2026-08-29T161426Z"
+      ],
+      "delivery": {
+        "candidateSha": "4b06080808465764e280fbfef3cd895abb093c24",
+        "preservedRef": "refs/heads/patrol-runs/P11/2026-08-29T161426Z"
+      },
+      "previousEventHash": "852472e8cdf491a97a27250dc05f1cdb1755a652514f7324066137d32fc4b3ca",
+      "eventHash": "05c199cc125bca806b09d473c385acd4683e34115043c1fb2047c21d0a5c2ecb"
     }
   ]
 }
