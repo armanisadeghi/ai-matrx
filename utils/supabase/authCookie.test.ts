@@ -1,32 +1,40 @@
+/**
+ * The auth-cookie BINDING, not the cookie algorithm.
+ *
+ * The algorithm (domain-wide span, the rename migration, chunk-suffix
+ * recognition) lives in `@ai-matrx/data` and is tested there. What only THIS
+ * repo can get wrong is the binding: our apex domain, our current cookie name,
+ * and the superseded name we migrate from and clear.
+ */
 import {
   AUTH_COOKIE_NAME,
   LEGACY_AUTH_COOKIE_NAME,
   authCookieOptions,
   isCurrentAuthCookie,
-  legacyAuthCookieMigration,
+  supabaseNext,
 } from "./authCookie";
 
-describe("auth cookie authority isolation", () => {
-  it("uses a different storage key from the retired Supabase authority", () => {
+describe("this app's auth-cookie binding", () => {
+  it("binds the current name, the superseded name, and our apex", () => {
     expect(AUTH_COOKIE_NAME).toBe("sb-matrx-auth-v2");
     expect(AUTH_COOKIE_NAME).not.toBe(LEGACY_AUTH_COOKIE_NAME);
+    expect(supabaseNext.authCookie.legacyCookieName).toBe(
+      LEGACY_AUTH_COOKIE_NAME,
+    );
     expect(authCookieOptions("www.aimatrx.com")).toEqual({
       name: AUTH_COOKIE_NAME,
       domain: ".aimatrx.com",
     });
+    // Off-apex hosts must stay host-only — a browser silently rejects a
+    // Set-Cookie whose Domain does not cover the current host.
+    expect(authCookieOptions("localhost:3000")).toEqual({
+      name: AUTH_COOKIE_NAME,
+    });
   });
 
-  it("renames an unchunked legacy session for validation", () => {
+  it("migrates the superseded key onto ours, chunks included, absent-only", () => {
     expect(
-      legacyAuthCookieMigration([
-        { name: LEGACY_AUTH_COOKIE_NAME, value: "session" },
-      ]),
-    ).toEqual([{ name: AUTH_COOKIE_NAME, value: "session" }]);
-  });
-
-  it("renames every numeric session chunk and ignores lookalikes", () => {
-    expect(
-      legacyAuthCookieMigration([
+      supabaseNext.authCookie.migrateLegacyCookies([
         { name: `${LEGACY_AUTH_COOKIE_NAME}.0`, value: "first" },
         { name: `${LEGACY_AUTH_COOKIE_NAME}.1`, value: "second" },
         { name: `${LEGACY_AUTH_COOKIE_NAME}.01`, value: "bad" },
@@ -36,18 +44,16 @@ describe("auth cookie authority isolation", () => {
       { name: `${AUTH_COOKIE_NAME}.0`, value: "first" },
       { name: `${AUTH_COOKIE_NAME}.1`, value: "second" },
     ]);
-  });
-
-  it("never lets a legacy cookie overwrite an existing current session", () => {
+    // A live session under the current key is never overwritten.
     expect(
-      legacyAuthCookieMigration([
+      supabaseNext.authCookie.migrateLegacyCookies([
         { name: `${AUTH_COOKIE_NAME}.0`, value: "current" },
         { name: `${LEGACY_AUTH_COOKIE_NAME}.0`, value: "legacy" },
       ]),
     ).toEqual([]);
   });
 
-  it("recognizes only the current unchunked key and numeric chunks", () => {
+  it("recognizes our current cookie and nothing that merely shares its prefix", () => {
     expect(isCurrentAuthCookie(AUTH_COOKIE_NAME)).toBe(true);
     expect(isCurrentAuthCookie(`${AUTH_COOKIE_NAME}.12`)).toBe(true);
     expect(isCurrentAuthCookie(`${AUTH_COOKIE_NAME}.01`)).toBe(false);

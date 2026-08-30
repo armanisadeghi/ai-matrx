@@ -33,10 +33,10 @@
  */
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useMemo, useRef } from "react";
 
+import { useRealtimeChannel } from "@ai-matrx/data/react";
 import { supabase } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@ai-matrx/data/db";
 
 export type TableRealtimeRow = {
   id?: string;
@@ -69,44 +69,43 @@ export function useTableRealtime(
   // Held in a ref so the subscription's lifetime is tied to the TABLE, not to
   // the identity of the handler.
   const onChangeRef = useRef(onChange);
-  useEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
+  onChangeRef.current = onChange;
 
-  useEffect(() => {
-    if (!enabled || !tableId) return undefined;
-
-    const channel = supabase
-      .channel(uniqueChannelTopic(`udt_rows:${tableId}`))
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "workbench",
-          table: "udt_dataset_rows",
-          filter: `table_id=eq.${tableId}`,
-        },
-        (payload) => {
+  const bindings = useMemo(
+    () => [
+      {
+        event: "*" as const,
+        schema: "workbench",
+        table: "udt_dataset_rows",
+        filter: `table_id=eq.${tableId ?? ""}`,
+        // `onChange` is read through a ref: an inline callback changes
+        // identity every render, and depending on it would tear the channel
+        // down and rebuild it each time. The package keeps the subscription
+        // stable as long as the binding SHAPE is stable, which is what this
+        // memo guarantees.
+        onChange: (payload: {
+          eventType?: string;
+          new?: unknown;
+          old?: unknown;
+        }) => {
           const kind = payload.eventType as TableRealtimeEvent["kind"];
           // `new` is empty on DELETE; `old` is empty on INSERT.
-          const newRow = payload.new as TableRealtimeRow | null;
-          const oldRow = payload.old as TableRealtimeRow | null;
+          const newRow = (payload.new ?? null) as TableRealtimeRow | null;
+          const oldRow = (payload.old ?? null) as TableRealtimeRow | null;
           onChangeRef.current({
             kind,
             rowId: newRow?.id ?? oldRow?.id ?? null,
             row: newRow && Object.keys(newRow).length > 0 ? newRow : null,
           });
         },
-      )
-      .subscribe();
+      },
+    ],
+    [tableId],
+  );
 
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-    // `onChange` is deliberately NOT a dependency — it is read through a ref.
-    // An inline callback changes identity every render, so depending on it
-    // tears down and re-creates the channel on EVERY render: a subscribe/
-    // unsubscribe storm, and a window after each render where events are
-    // missed entirely. Rule 4 of the `supabase-realtime` skill.
-  }, [tableId, enabled]);
+  // Unique topics, reconnect with backoff, honest status and guaranteed
+  // teardown all live in @ai-matrx/data/react.
+  useRealtimeChannel(supabase, `udt_rows:${tableId ?? "none"}`, bindings, {
+    enabled: enabled && Boolean(tableId),
+  });
 }

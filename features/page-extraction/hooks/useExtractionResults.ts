@@ -22,8 +22,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@ai-matrx/data/db";
+import { useAsyncData, useRealtimeChannel } from "@ai-matrx/data/react";
+import { supabase } from "@/utils/supabase/client";
 import { listResults } from "@/features/page-extraction/api/runs";
 import type { PageExtractionResult } from "@/features/page-extraction/types";
 
@@ -48,96 +48,86 @@ export function useExtractionResults(
   jobId: string | null,
   opts: UseExtractionResultsOptions = {},
 ): UseExtractionResultsResult {
-  const [results, setResults] = useState<PageExtractionResult[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [refetchTick, setRefetchTick] = useState(0);
+  const runId = opts.runId ?? null;
 
-  // Load results for the job (optionally narrowed to a specific run).
-  useEffect(() => {
-    if (!jobId) {
-      setResults([]);
-      return undefined;
-    }
-    let cancelled = false;
-    setLoading(true);
-    void listResults({ jobId, runId: opts.runId ?? null })
-      .then((rows) => {
-        if (!cancelled) {
-          setResults(rows);
-          setError(null);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setError(String(err));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [jobId, opts.runId, refetchTick]);
+  // Cancellation, stale-response ordering, honest error conversion and retry
+  // of transport failures live in @ai-matrx/data/react. (The old hand-wired
+  // version did `setError(String(err))`, which renders a PostgREST error —
+  // a plain object, not an Error — as "[object Object]".)
+  const query = useAsyncData(
+    () => listResults({ jobId: jobId as string, runId }),
+    [jobId, runId],
+    { enabled: jobId !== null },
+  );
 
-  // Realtime subscription — INSERT (new extraction rows) AND UPDATE
-  // (a validation pass writing is_duplicate / canonical_entry / other
-  // validation columns back onto existing rows). Scope to the job.
-  useEffect(() => {
-    if (!jobId) return undefined;
-    const supabase = createClient();
-    const filter = opts.runId
-      ? `run_id=eq.${opts.runId}`
-      : `job_id=eq.${jobId}`;
-    const channel = supabase
-      .channel(
-        uniqueChannelTopic(
-          `page-extraction-results:${jobId}:${opts.runId ?? "all"}`,
-        ),
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "docproc",
-          table: "page_extraction_results",
-          filter,
-        },
-        (payload) => {
+  // Rows arrive incrementally and are merged in place rather than refetched:
+  // a 200-page extraction would otherwise re-read the whole result set per
+  // event. The subscription's reconnect/teardown hygiene is the package's;
+  // the merge is this feature's domain logic.
+  const [live, setLive] = useState<PageExtractionResult[]>([]);
+  useEffect(() => setLive([]), [jobId, runId, query.data]);
+
+  const filter = runId ? `run_id=eq.${runId}` : `job_id=eq.${jobId ?? ""}`;
+  const bindings = useMemo(
+    () => [
+      {
+        event: "INSERT" as const,
+        schema: "docproc",
+        table: "page_extraction_results",
+        filter,
+        onChange: (payload: { new?: unknown }) => {
           const row = payload.new as PageExtractionResult;
-          setResults((prev) => {
-            if (prev.some((r) => r.id === row.id)) return prev;
-            return [...prev, row].sort((a, b) => {
-              const ap = a.canonical_page ?? Number.MAX_SAFE_INTEGER;
-              const bp = b.canonical_page ?? Number.MAX_SAFE_INTEGER;
-              if (ap !== bp) return ap - bp;
-              return (
-                new Date(a.created_at).getTime() -
-                new Date(b.created_at).getTime()
-              );
-            });
-          });
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "docproc",
-          table: "page_extraction_results",
-          filter,
-        },
-        (payload) => {
-          const row = payload.new as PageExtractionResult;
-          setResults((prev) =>
-            prev.map((r) => (r.id === row.id ? row : r)),
+          setLive((prev) =>
+            prev.some((r) => r.id === row.id) ? prev : [...prev, row],
           );
         },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [jobId, opts.runId]);
+      },
+      {
+        event: "UPDATE" as const,
+        schema: "docproc",
+        table: "page_extraction_results",
+        filter,
+        onChange: (payload: { new?: unknown }) => {
+          const row = payload.new as PageExtractionResult;
+          setLive((prev) =>
+            prev.some((r) => r.id === row.id)
+              ? prev.map((r) => (r.id === row.id ? row : r))
+              : [...prev, row],
+          );
+        },
+      },
+    ],
+    [filter],
+  );
+
+  useRealtimeChannel(
+    supabase,
+    `page-extraction-results:${jobId ?? "none"}:${runId ?? "all"}`,
+    bindings,
+    {
+      enabled: jobId !== null,
+      // Rows written while the socket was down never arrive as events; the
+      // re-read is the only way back to a complete list.
+      onReconnect: query.refresh,
+    },
+  );
+
+  const results = useMemo(() => {
+    const merged = [...(query.data ?? [])];
+    for (const row of live) {
+      const at = merged.findIndex((r) => r.id === row.id);
+      if (at === -1) merged.push(row);
+      else merged[at] = row;
+    }
+    return merged.sort((a, b) => {
+      const ap = a.canonical_page ?? Number.MAX_SAFE_INTEGER;
+      const bp = b.canonical_page ?? Number.MAX_SAFE_INTEGER;
+      if (ap !== bp) return ap - bp;
+      return (
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
+  }, [query.data, live]);
 
   const filtered = useMemo(() => {
     if (!opts.pageNumber) return results;
@@ -150,8 +140,8 @@ export function useExtractionResults(
 
   return {
     results: filtered,
-    loading,
-    error,
-    refetch: () => setRefetchTick((n) => n + 1),
+    loading: query.loading,
+    error: query.error?.message ?? null,
+    refetch: query.refresh,
   };
 }

@@ -15,9 +15,9 @@
 // delivers the user's own rows). Mirrors the proven scheduling pattern
 // (features/scheduling/hooks/useRunStream.ts).
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useRealtimeChannel } from "@ai-matrx/data/react";
 import { supabase } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@ai-matrx/data/db";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
@@ -50,38 +50,55 @@ export function useRunListRealtime({
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
+  const active =
+    enabled && typeof userId === "string" && userId.length > 0;
+  // An empty filter (`user_id=eq.`) is malformed and would silently never
+  // match, so a missing id turns the subscription OFF rather than watching
+  // everything.
+  const filter = active ? `${ownerColumn}=eq.${userId}` : "";
+
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fire = useRef(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => onChangeRef.current(), debounceMs);
+  });
+  fire.current = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => onChangeRef.current(), debounceMs);
+  };
+
+  const bindings = useMemo(
+    () =>
+      (["INSERT", "UPDATE"] as const).map((event) => ({
+        event,
+        schema,
+        table,
+        filter,
+        onChange: () => fire.current(),
+      })),
+    [schema, table, filter],
+  );
+
+  // Reconnect/backoff, unique topics, teardown and the catch-up refetch on a
+  // recovered subscription all live in @ai-matrx/data/react.
+  useRealtimeChannel(
+    supabase,
+    `run-list-${table}-${userId ?? "anon"}`,
+    bindings,
+    { enabled: active, onReconnect: () => fire.current() },
+  );
+
   useEffect(() => {
-    // Guard hard against a missing/empty id — an empty filter (`user_id=eq.`)
-    // is malformed and would silently never match.
-    if (!enabled || typeof userId !== "string" || userId.length === 0) return undefined;
-
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const fire = () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => onChangeRef.current(), debounceMs);
-    };
-    const filter = `${ownerColumn}=eq.${userId}`;
-    const channel = supabase
-      .channel(uniqueChannelTopic(`run-list-${table}-${userId}`))
-      .on("postgres_changes", { event: "INSERT", schema, table, filter }, fire)
-      .on("postgres_changes", { event: "UPDATE", schema, table, filter }, fire)
-      .subscribe((status) => {
-        // Realtime can drop silently (network blip, server restart). On a
-        // recovered subscription, refetch once so the list can't stay frozen
-        // on a status the missed events would have changed.
-        if (status === "SUBSCRIBED") fire();
-      });
-
-    // A backgrounded tab also misses events; refetch when it regains focus.
+    if (!active) return undefined;
+    // A backgrounded tab misses events even on a healthy socket; refetch when
+    // it regains focus.
     const onVisible = () => {
-      if (document.visibilityState === "visible") fire();
+      if (document.visibilityState === "visible") fire.current();
     };
     document.addEventListener("visibilitychange", onVisible);
-
     return () => {
-      if (timer) clearTimeout(timer);
+      if (timerRef.current) clearTimeout(timerRef.current);
       document.removeEventListener("visibilitychange", onVisible);
-      void supabase.removeChannel(channel);
     };
-  }, [enabled, userId, table, schema, ownerColumn, debounceMs]);
+  }, [active]);
 }

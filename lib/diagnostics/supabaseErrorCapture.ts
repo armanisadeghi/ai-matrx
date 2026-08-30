@@ -364,11 +364,18 @@ function wrapScope<T extends object>(scope: T, schema: string): T {
  * PostgREST surface (`from` / `rpc` / `schema`); everything else is passed
  * through untouched.
  */
-export function wrapClientForCapture<T extends object>(client: T): T {
+export function wrapClientForCapture<T>(client: T): T {
   if (typeof window === "undefined") return client; // browser-only
-  if ((client as { [WRAPPED]?: boolean })[WRAPPED]) return client;
+  if (
+    client === null ||
+    (typeof client !== "object" && typeof client !== "function")
+  ) {
+    return client;
+  }
+  const target = client as object;
+  if ((target as { [WRAPPED]?: boolean })[WRAPPED]) return client;
 
-  return new Proxy(client, {
+  return new Proxy(target, {
     get(target, prop, receiver) {
       if (prop === WRAPPED) return true;
       const value = Reflect.get(target, prop, receiver);
@@ -395,5 +402,5 @@ export function wrapClientForCapture<T extends object>(client: T): T {
       }
       return value;
     },
-  });
+  }) as T;
 }

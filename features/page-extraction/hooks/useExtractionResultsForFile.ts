@@ -14,9 +14,9 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
-import { uniqueChannelTopic } from "@ai-matrx/data/db";
+import { useEffect, useMemo, useState } from "react";
+import { useAsyncData, useRealtimeChannel } from "@ai-matrx/data/react";
+import { supabase } from "@/utils/supabase/client";
 import { listResultsForFile } from "@/features/page-extraction/api/runs";
 import type { PageExtractionResult } from "@/features/page-extraction/types";
 
@@ -30,75 +30,61 @@ export interface UseExtractionResultsForFileResult {
 export function useExtractionResultsForFile(
   fileId: string | null,
 ): UseExtractionResultsForFileResult {
-  const [results, setResults] = useState<PageExtractionResult[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [refetchTick, setRefetchTick] = useState(0);
+  // Cancellation, stale-response ordering and honest errors from the package
+  // (this hook used to render a PostgREST error as "[object Object]").
+  const query = useAsyncData(
+    () => listResultsForFile(fileId as string),
+    [fileId],
+    { enabled: fileId !== null },
+  );
 
-  useEffect(() => {
-    if (!fileId) {
-      setResults([]);
-      return undefined;
-    }
-    let cancelled = false;
-    setLoading(true);
-    void listResultsForFile(fileId)
-      .then((rows) => {
-        if (!cancelled) {
-          setResults(rows);
-          setError(null);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setError(String(err));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [fileId, refetchTick]);
+  const [live, setLive] = useState<PageExtractionResult[]>([]);
+  useEffect(() => setLive([]), [fileId, query.data]);
 
-  useEffect(() => {
-    if (!fileId) return undefined;
-    const supabase = createClient();
-    const channel = supabase
-      .channel(uniqueChannelTopic(`page-extraction-results:file:${fileId}`))
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "docproc",
-          table: "page_extraction_results",
-          filter: `file_id=eq.${fileId}`,
-        },
-        (payload) => {
+  const bindings = useMemo(
+    () => [
+      {
+        event: "INSERT" as const,
+        schema: "docproc",
+        table: "page_extraction_results",
+        filter: `file_id=eq.${fileId ?? ""}`,
+        onChange: (payload: { new?: unknown }) => {
           const row = payload.new as PageExtractionResult;
-          setResults((prev) => {
-            if (prev.some((r) => r.id === row.id)) return prev;
-            return [...prev, row].sort((a, b) => {
-              const ap = a.canonical_page ?? Number.MAX_SAFE_INTEGER;
-              const bp = b.canonical_page ?? Number.MAX_SAFE_INTEGER;
-              if (ap !== bp) return ap - bp;
-              return (
-                new Date(a.created_at).getTime() -
-                new Date(b.created_at).getTime()
-              );
-            });
-          });
+          setLive((prev) =>
+            prev.some((r) => r.id === row.id) ? prev : [...prev, row],
+          );
         },
-      )
-      .subscribe();
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [fileId]);
+      },
+    ],
+    [fileId],
+  );
+
+  useRealtimeChannel(
+    supabase,
+    `page-extraction-results:file:${fileId ?? "none"}`,
+    bindings,
+    { enabled: fileId !== null, onReconnect: query.refresh },
+  );
+
+  const results = useMemo(() => {
+    const merged = [...(query.data ?? [])];
+    for (const row of live) {
+      if (!merged.some((r) => r.id === row.id)) merged.push(row);
+    }
+    return merged.sort((a, b) => {
+      const ap = a.canonical_page ?? Number.MAX_SAFE_INTEGER;
+      const bp = b.canonical_page ?? Number.MAX_SAFE_INTEGER;
+      if (ap !== bp) return ap - bp;
+      return (
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    });
+  }, [query.data, live]);
 
   return {
     results,
-    loading,
-    error,
-    refetch: () => setRefetchTick((n) => n + 1),
+    loading: query.loading,
+    error: query.error?.message ?? null,
+    refetch: query.refresh,
   };
 }
