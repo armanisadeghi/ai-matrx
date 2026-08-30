@@ -25,11 +25,12 @@ export function unitPriceOf(
 ): number | null {
   const line = result.lineItems[0];
   if (!line) return null;
-  const tier = parseMoney(line.unitTierCost);
-  if (tier !== null) return tier;
+  // The EFFECTIVE per-book price: bulk discounts land on the line total, not
+  // on `unit_tier_cost`, so divide the discounted total — this is the number
+  // Lulu's own tier table shows falling as quantity rises.
   const total = parseMoney(line.totalCostExclTax);
-  if (total === null || quantity <= 0) return null;
-  return total / quantity;
+  if (total !== null && quantity > 0) return total / quantity;
+  return parseMoney(line.unitTierCost);
 }
 
 function feeTotal(result: LuluPriceResult, feeType: string): number | null {
