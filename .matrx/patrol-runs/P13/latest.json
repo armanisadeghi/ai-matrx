@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P13",
   "runId": "20260830T081317Z",
-  "state": "delivered",
-  "updatedAt": "2026-08-30T08:25:49.577Z",
-  "summary": "Recorded certified candidate as delivered in fleet release v0.4.1485",
+  "state": "reconciled",
+  "updatedAt": "2026-08-30T08:25:56.842Z",
+  "summary": "Reconciled v0.4.1485 ordering escape with later exact-candidate certification",
   "source": "20260830T081317Z.json",
-  "eventHash": "4a297e050568d32971881c1ee224b6eab517854e9ce46888068fa1d981bb439e"
+  "eventHash": "88e872dfc9f4f2f56816e5ca1b313b8a01a52c8b0427eb532564a71d2c49b42a"
 }
