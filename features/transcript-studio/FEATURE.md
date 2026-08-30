@@ -16,7 +16,7 @@ A 4-column live transcription workspace. Users record audio, see raw transcript 
 
 **Routes**
 
-- `app/(core)/transcripts/studio/` — full-page workspace, sidebar + active session view. Public URL: `/transcripts/studio` (see `next.config.js` redirects from `/transcript-studio`). `StudioRoute` also consumes `/transcripts/studio?import=<transcript-id>` from the canonical transcript list: it fetches the source transcript, dispatches the existing `promoteTranscriptThunk`, then replaces the import URL with `?session=<studio-session-id>`.
+- `app/(core)/transcripts/studio/` — full-page workspace, sidebar + active session view. Public URL: `/transcripts/studio` (see `next.config.js` redirects from `/transcript-studio`). The server page parses `session` and `import` once and passes that stable first-render snapshot to `StudioRoute`; an import fetches the source transcript, dispatches the existing `promoteTranscriptThunk`, then replaces the URL with `?session=<studio-session-id>`.
 - `app/(core)/transcripts/scribe/` — Scribe: voice-first capture + assistant + working-document workspace. Public URL: `/transcripts/scribe` (legacy `/transcripts/mobile` 308-redirects here). Reuses the same session + segment data layer; SSR-seeds via `StudioHydrator`, mounts `ScribeScreen` per session.
 
 **Scribe capture + assistant** (`components/scribe/`)
@@ -160,6 +160,7 @@ These are sibling features. The simple `features/transcripts/` view is shaped fo
 
 ## Change Log
 
+- **2026-08-29** — **Studio deep links have one hydration-safe query owner.** The server page parses both `session` and `import` and passes them into `StudioRoute`; the client no longer independently reparses the import URL during hydration, preventing the import-only first render from disagreeing with its server HTML.
 - **2026-08-29** — **The `/transcripts` "Open in Studio" row action now completes the canonical bridge.** The action already linked to `/transcripts/studio?import=<id>`, but `StudioRoute` ignored `import`, so production navigation silently did nothing. `StudioRoute` now fetches the transcript, dispatches the existing idempotent `promoteTranscriptThunk`, and replaces the dead import URL with `?session=<id>`; there is still one conversion path.
 
 - **2026-08-22** — **The Scribe assistant's default agent is decided by mandate `transcript_studio.document_edit`, not a constant.** `resolveDefaultAssistantAgentId` (`redux/assistantRoster.ts`) is now async: surface-config `assistant` role → `resolveMandate(TRANSCRIPT_STUDIO_ASSISTANT_MANDATE_KEY)`, throwing loudly when unresolvable; `ensureAssistantConversation`'s legacy-session fallback resolves the same mandate; the settings `DefaultAssistantAgentPicker` reads it via `useMandate` and shows resolving/unavailable states. `AUDIO_ASSISTANT_AGENT_ID` stays ONLY as the documented seed mirror read by the static `transcript-scribe` surface manifest (ROLLOUT F7 closed; shortcut ids untouched).

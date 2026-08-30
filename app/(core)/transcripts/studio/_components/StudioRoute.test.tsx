@@ -12,13 +12,12 @@ const dispatchMock = jest.fn();
 const fetchTranscriptByIdMock = jest.fn();
 const promoteTranscriptThunkMock = jest.fn();
 const toastErrorMock = jest.fn();
+const studioViewMock = jest.fn();
 
-let searchParams = new URLSearchParams();
 let userId: string | null = "user-1";
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock }),
-  useSearchParams: () => searchParams,
 }));
 
 jest.mock("@/lib/redux/hooks", () => ({
@@ -36,7 +35,10 @@ jest.mock("@/features/transcript-studio/redux/transcriptBridge.thunks", () => ({
 }));
 
 jest.mock("@/features/transcript-studio/components/StudioView", () => ({
-  StudioView: () => <div data-testid="studio-view" />,
+  StudioView: (props: unknown) => {
+    studioViewMock(props);
+    return <div data-testid="studio-view" />;
+  },
 }));
 
 jest.mock("@/lib/toast", () => ({
@@ -54,10 +56,10 @@ async function mount({ strict = false }: { strict?: boolean } = {}) {
     root.render(
       strict ? (
         <StrictMode>
-          <StudioRoute />
+          <StudioRoute importTranscriptId="transcript-1" />
         </StrictMode>
       ) : (
-        <StudioRoute />
+        <StudioRoute importTranscriptId="transcript-1" />
       ),
     );
   });
@@ -77,7 +79,6 @@ async function mount({ strict = false }: { strict?: boolean } = {}) {
 describe("StudioRoute transcript import", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    searchParams = new URLSearchParams("import=transcript-1");
     userId = "user-1";
     promoteTranscriptThunkMock.mockReturnValue({ type: "promote" });
   });
@@ -123,5 +124,24 @@ describe("StudioRoute transcript import", () => {
     expect(fetchTranscriptByIdMock).not.toHaveBeenCalled();
     expect(dispatchMock).not.toHaveBeenCalled();
     await view.unmount();
+  });
+
+  it("passes the server-derived session snapshot into the first studio render", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    let root!: Root;
+    await act(async () => {
+      root = createRoot(container);
+      root.render(<StudioRoute initialSessionId="server-session" />);
+    });
+
+    expect(studioViewMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        config: expect.objectContaining({ initialSessionId: "server-session" }),
+      }),
+    );
+    expect(fetchTranscriptByIdMock).not.toHaveBeenCalled();
+    await act(async () => root.unmount());
+    container.remove();
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { Layout } from "react-resizable-panels";
 import { StudioView } from "@/features/transcript-studio/components/StudioView";
 import { promoteTranscriptThunk } from "@/features/transcript-studio/redux/transcriptBridge.thunks";
@@ -11,19 +11,20 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 
 interface StudioRouteProps {
+  initialSessionId?: string | null;
+  importTranscriptId?: string | null;
   defaultColumnLayout?: Record<string, number>;
   defaultSidebarLayout?: Layout;
 }
 
 export function StudioRoute({
+  initialSessionId,
+  importTranscriptId,
   defaultColumnLayout,
   defaultSidebarLayout,
 }: StudioRouteProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialSessionId = searchParams.get("session");
-  const importTranscriptId = searchParams.get("import");
   const userId = useAppSelector(selectUserId);
   const attemptedImportRef = useRef<string | null>(null);
 
